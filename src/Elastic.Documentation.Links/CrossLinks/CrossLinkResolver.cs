@@ -186,7 +186,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			return false;
 		}
 
-		resolvedUri = uriResolver.ResolveSitePath(crossLinkUri, sitePath);
+		resolvedUri = uriResolver.ResolveSitePath(crossLinkUri, sitePath + crossLinkUri.Fragment);
 		return true;
 	}
 

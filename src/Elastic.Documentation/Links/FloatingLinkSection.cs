@@ -37,10 +37,13 @@ public record FloatingLinkSection
 	[JsonPropertyName("pages")]
 	public required Dictionary<string, ulong> Pages { get; init; }
 
-	/// <summary>Former page paths that forward to a canonical path, for example the operations a collapsed page replaced.</summary>
+	/// <summary>
+	/// Former page paths that forward to a canonical path, for example the operations a collapsed page replaced,
+	/// per version name. An alias exists only in the versions that list it and may name different pages in different versions.
+	/// </summary>
 	[JsonPropertyName("aliases")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public Dictionary<string, string>? Aliases { get; init; }
+	public Dictionary<string, Dictionary<string, string>>? Aliases { get; init; }
 
 	[JsonIgnore]
 	private FrozenDictionary<string, int> VersionBits =>
@@ -59,7 +62,11 @@ public record FloatingLinkSection
 		var mask = 1UL << bit;
 		if (!Pages.TryGetValue(page, out var versions) || (versions & mask) == 0)
 		{
-			if (Aliases is null || !Aliases.TryGetValue(page, out var canonical))
+			if (
+				Aliases is null
+				|| !Aliases.TryGetValue(version, out var versionAliases)
+				|| !versionAliases.TryGetValue(page, out var canonical)
+			)
 				return false;
 			if (!Pages.TryGetValue(canonical, out versions) || (versions & mask) == 0)
 				return false;

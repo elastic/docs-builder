@@ -111,14 +111,13 @@ internal static class ApiLinkSections
 {
 	/// <summary>
 	/// One page path once, with the versions that contain it. A collapsed operation also answers to its former
-	/// per-operation paths, which become aliases of the canonical path. An alias that names different canonical pages
-	/// in different versions keeps the first.
+	/// per-operation paths, which become aliases of the canonical path, kept per version.
 	/// </summary>
 	public static FloatingLinkSection Create(string urlRoot, ApiProductTrees trees)
 	{
 		var monikers = trees.Resolved.Documents.Select(d => d.Version.Moniker).Take(FloatingLinkSection.MaxVersions).ToArray();
 		var pages = new Dictionary<string, ulong>(StringComparer.Ordinal);
-		var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
+		var aliases = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
 		var hidden = 0UL;
 
 		for (var bit = 0; bit < monikers.Length; bit++)
@@ -127,6 +126,7 @@ internal static class ApiLinkSections
 			if (monikers[bit] != "main")
 				hidden |= mask;
 
+			var versionAliases = new Dictionary<string, string>(StringComparer.Ordinal);
 			foreach (var (name, all) in trees.PageNames[monikers[bit]])
 			{
 				var page = name.Trim('/');
@@ -134,8 +134,11 @@ internal static class ApiLinkSections
 				if (page == canonical)
 					pages[page] = pages.GetValueOrDefault(page) | mask;
 				else
-					_ = aliases.TryAdd(page, canonical);
+					versionAliases[page] = canonical;
 			}
+
+			if (versionAliases.Count > 0)
+				aliases[monikers[bit]] = versionAliases;
 		}
 
 		return new FloatingLinkSection

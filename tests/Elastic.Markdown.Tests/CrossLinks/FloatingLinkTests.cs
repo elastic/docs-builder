@@ -24,7 +24,11 @@ public class FloatingLinkTests
 			["operation/operation-new"] = 0b011,
 			["types/legacy"] = 0b100
 		},
-		Aliases = new Dictionary<string, string> { ["operation/operation-search-1"] = "operation/operation-search" }
+		Aliases = new Dictionary<string, Dictionary<string, string>>
+		{
+			["9"] = new() { ["operation/operation-search-1"] = "operation/operation-search" },
+			["8"] = new() { ["operation/operation-old"] = "types/legacy" }
+		}
 	};
 
 	private static FetchedCrossLinks CrossLinks()
@@ -67,6 +71,10 @@ public class FloatingLinkTests
 	[Arguments("main", "types/legacy", false, "")]
 	[Arguments("9", "operation/operation-search-1", true, "api/doc/elasticsearch/v9/operation/operation-search")]
 	[Arguments("7", "operation/operation-search", false, "")]
+	[Arguments("main", "operation/operation-search-1", false, "")]
+	[Arguments("8", "operation/operation-search-1", false, "")]
+	[Arguments("8", "operation/operation-old", true, "api/doc/elasticsearch/v8/types/legacy")]
+	[Arguments("9", "operation/operation-old", false, "")]
 	public void TryResolvePage_Bitmask_ChecksTheVersion(string version, string page, bool expected, string sitePath)
 	{
 		var resolved = Api.TryResolvePage(version.Length == 0 ? "main" : version, page, out var path);
@@ -82,6 +90,42 @@ public class FloatingLinkTests
 
 		resolved.Should().BeTrue();
 		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search");
+	}
+
+	[Test]
+	public void CrossLink_ToAnApiPageWithAnchor_KeepsTheAnchor()
+	{
+		var (resolved, url, _) = Resolve("elasticsearch://api/elasticsearch/operation/operation-search#responses");
+
+		resolved.Should().BeTrue();
+		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search#responses");
+	}
+
+	[Test]
+	public void CrossLink_ToAnAliasWithAnchor_KeepsTheAnchor()
+	{
+		var (_, url, _) = Resolve("elasticsearch://api/elasticsearch/v9/operation/operation-search-1#responses");
+
+		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search#responses");
+	}
+
+	[Test]
+	public void CodexAwareResolver_ForAnApiPage_LinksToThePublishedPage()
+	{
+		foreach (var relative in new[] { false, true })
+		{
+			var resolver = new CodexAwareUriResolver(new[] { "other" }.ToFrozenSet(), relative);
+			var resolved = CrossLinkResolver.TryResolve(
+				_ => { },
+				CrossLinks(),
+				resolver,
+				new Uri("elasticsearch://api/elasticsearch/operation/operation-search"),
+				out var uri
+			);
+
+			resolved.Should().BeTrue();
+			uri!.ToString().Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search");
+		}
 	}
 
 	[Test]

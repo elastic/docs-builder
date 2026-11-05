@@ -52,4 +52,6 @@ public class CodexAwareUriResolver(FrozenSet<string> codexRepositories, bool use
 				? new Uri($"/r/{crossLinkUri.Scheme}/{path}", UriKind.Relative)
 				: new Uri(CodexBaseUri, $"r/{crossLinkUri.Scheme}/{path}")
 			: PublicResolver.Resolve(crossLinkUri, path);
+
+	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => PublicResolver.ResolveSitePath(crossLinkUri, sitePath);
 }
