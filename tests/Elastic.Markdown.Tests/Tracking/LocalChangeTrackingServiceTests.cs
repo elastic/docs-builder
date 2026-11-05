@@ -58,7 +58,7 @@ public sealed class LocalChangeTrackingServiceTests
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"error {temp} Missing 'troubleshoot/deployments/serverless.md' in redirects.yml. 'troubleshoot/deployments/serverless.md' was deleted but it has no redirect targets. This will lead to broken links."
+				"error {temp}/diff-validate-test-{id}/redirects.yml Missing 'troubleshoot/deployments/serverless.md' in redirects.yml. 'troubleshoot/deployments/serverless.md' was deleted but it has no redirect targets. This will lead to broken links."
 			);
 	}
 
@@ -98,7 +98,7 @@ public sealed class LocalChangeTrackingServiceTests
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"error {temp} Missing 'reference/old-page.md' in redirects.yml. 'docs/reference/old-page.md' was deleted but it has no redirect targets. This will lead to broken links."
+				"error {temp}/diff-validate-test-{id}/docs/redirects.yml Missing 'reference/old-page.md' in redirects.yml. 'docs/reference/old-page.md' was deleted but it has no redirect targets. This will lead to broken links."
 			);
 	}
 
@@ -146,7 +146,7 @@ public sealed class LocalChangeTrackingServiceTests
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"error {temp} Missing 'troubleshoot/old.md' in redirects.yml. 'troubleshoot/old.md' was renamed to 'troubleshoot/new.md' but it has no redirect configuration set."
+				"error {temp}/diff-validate-test-{id}/redirects.yml Missing 'troubleshoot/old.md' in redirects.yml. 'troubleshoot/old.md' was renamed to 'troubleshoot/new.md' but it has no redirect configuration set."
 			);
 	}
 
