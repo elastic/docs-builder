@@ -25,10 +25,8 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
             serviceName: options.serviceName ?? docsConfig.serviceName,
             serviceVersion: options.serviceVersion ?? '1.0.0',
             logLevel: options.debug ? 'debug' : 'warn',
-            // EDOT validates this with new URL() and appends v1/traces and v1/logs.
             exportConfig: {
-                url: new URL(docsConfig.apiBasePath, window.location.origin)
-                    .href,
+                url: otlpBaseUrl(),
                 headers: { 'X-Docs-Session': 'active' },
             },
             resourceAttributes: {
@@ -55,6 +53,13 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
         isInitialized = false
         return false
     }
+}
+
+// EDOT validates this with new URL() and appends v1/traces, v1/logs and v1/metrics by plain
+// concatenation, so the path needs a trailing slash: /docs/_api/ gives /docs/_api/v1/traces.
+function otlpBaseUrl(): string {
+    const basePath = docsConfig.apiBasePath.replace(/\/+$/, '')
+    return new URL(`${basePath}/`, window.location.origin).href
 }
 
 // The backend excludes synthetic traffic via the X-Docs-Synthetic-Monitor header (see

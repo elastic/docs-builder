@@ -39,7 +39,7 @@ describe('initializeOtel', () => {
         expect(startBrowserSdk).toHaveBeenCalledTimes(1)
     })
 
-    it('passes an absolute export URL to the SDK', () => {
+    it('exports to a URL that the SDK extends to /v1/traces and /v1/logs', () => {
         mockUserAgent('Mozilla/5.0 Chrome/120.0.0.0')
 
         initializeOtel()
@@ -47,6 +47,10 @@ describe('initializeOtel', () => {
         const calls = startBrowserSdk.mock.calls as unknown as Array<
             [{ exportConfig: { url: string } }]
         >
-        expect(() => new URL(calls[0][0].exportConfig.url)).not.toThrow()
+        const url = new URL(calls[0][0].exportConfig.url)
+        // The SDK appends 'v1/traces' to the pathname without adding a separator.
+        expect(url.origin).toBe(window.location.origin)
+        expect(`${url.pathname}v1/traces`).toBe('/docs/_api/v1/traces')
+        expect(`${url.pathname}v1/logs`).toBe('/docs/_api/v1/logs')
     })
 })
