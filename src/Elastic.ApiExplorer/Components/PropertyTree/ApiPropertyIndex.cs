@@ -38,12 +38,15 @@ internal static class ApiPropertyIndex
 
 	/// <summary>The rows nested directly under a property: its fields, its map values' fields, then each listed variant's fields.</summary>
 	internal static IEnumerable<ApiProperty> DirectChildren(ApiProperty property) =>
-		(property.Children.Properties?.Items ?? []).Concat(property.Children.Dictionary?.Properties.Items ?? []).Concat(
-			VariantChildren(property.Children.Variants)
-		);
+		(property.Children.Properties?.Items ?? [])
+			.Concat(property.Children.Dictionary?.Properties.Items ?? [])
+			.Concat(VariantChildren(property.Children.Dictionary?.Variants))
+			.Concat(VariantChildren(property.Children.Variants));
 
+	/// <summary>The fields of each listed variant, then those of the variants nested inside it.</summary>
 	private static IEnumerable<ApiProperty> VariantChildren(ApiUnionVariants? variants) =>
-		variants?.Variants.Where(v => v.ShowProperties && v.Properties is not null).SelectMany(v => v.Properties!.Items) ?? [];
+		variants?.Variants.Where(v => v.ShowProperties).SelectMany(v => (v.Properties?.Items ?? []).Concat(VariantChildren(v.Variants)))
+			?? [];
 
 	private static string PlainText(string markdown, Dictionary<string, string> plainDescriptions)
 	{

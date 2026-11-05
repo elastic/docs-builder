@@ -27,6 +27,9 @@ public record ApiUnionVariant
 	public required bool UseHidden { get; init; }
 	public ApiPropertyList? Properties { get; init; }
 
+	/// <summary>The variants of a variant that is itself a union (a chart type with a DSL and an ES|QL form), after its own properties.</summary>
+	public ApiUnionVariants? Variants { get; init; }
+
 	/// <summary>The first paragraph of the variant schema's description; empty when it has none.</summary>
 	public HtmlString DescriptionHtml { get; init; } = HtmlString.Empty;
 	public string? DescriptionMarkdown { get; init; }

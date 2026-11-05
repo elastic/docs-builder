@@ -120,12 +120,14 @@
 				{
 					<div class="nested-properties" id="@variant.ChildrenId" hidden="until-found">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
+						@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(variant.Variants ?? ApiUnionVariants.Empty))
 					</div>
 				}
 				else
 				{
 					<div class="nested-properties" id="@variant.ChildrenId">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
+						@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(variant.Variants ?? ApiUnionVariants.Empty))
 					</div>
 				}
 			}

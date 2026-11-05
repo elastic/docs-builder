@@ -512,6 +512,7 @@ public partial class ApiPropertyTreeBuilder(
 		var keyPath = AppendPath(row.JsonPath, DictionaryKeyName);
 		var dictIsCollapsible = expansion.NestedCount > 0;
 		var dictDefaultExpanded = ComputeDefaultExpanded();
+		var valueScope = childScope with { Prefix = keyAnchorId, JsonPath = keyPath, Depth = childScope.Depth + 1 };
 		return new ApiPropertyChildren
 		{
 			Kind = ChildKind.Dictionary,
@@ -527,13 +528,22 @@ public partial class ApiPropertyTreeBuilder(
 				UseHidden = options.UseHiddenUntilFound && dictIsCollapsible && !dictDefaultExpanded,
 				ValueType = Describe(row.TypeInfo.DictValueSchema),
 				EnumValues = _analyzer.GetEnumValues(row.TypeInfo.DictValueSchema),
-				Properties = BuildPropertyList(
-					row.TypeInfo.DictValueSchema,
-					childScope with { Prefix = keyAnchorId, JsonPath = keyPath, Depth = childScope.Depth + 1 }
-				)
-					?? new ApiPropertyList([])
+				Properties = BuildPropertyList(row.TypeInfo.DictValueSchema, valueScope) ?? new ApiPropertyList([]),
+				Variants = BuildMapValueVariants(row.TypeInfo.DictValueSchema, valueScope)
 			}
 		};
+	}
+
+	/// <summary>The variants of a map whose values are a union (<c>field_settings</c>), labelled like a row's own; null for any other value.</summary>
+	private ApiUnionVariants? BuildMapValueVariants(IOpenApiSchema? value, PropertyTreeScope valueScope)
+	{
+		var options = _analyzer.GetNestedUnionOptions(value).Where(_analyzer.UnionOptionHasProperties).ToList();
+		if (options.Count == 0)
+			return null;
+		var keyword = UnionSchemas.TryGet(_analyzer.ResolveSchema(value), out var union, out _) ? union : UnionKeyword.AnyOf;
+		return BuildUnionVariants(options, valueScope, _analyzer.GetUnionDiscriminator(value)) is { } built
+			? built with { Label = SchemaHelpers.UnionLabel(keyword) }
+			: null;
 	}
 
 	/// <summary>The ancestors below a row: these plus the type the row expands, the item or map value type for a collection.</summary>

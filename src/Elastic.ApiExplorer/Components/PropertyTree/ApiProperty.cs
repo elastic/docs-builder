@@ -133,6 +133,9 @@ public record DictionaryChildDisplay
 	/// <summary>The literals a map value can take, as a "Values:" row under the key.</summary>
 	public IReadOnlyList<string> EnumValues { get; init; } = [];
 	public required ApiPropertyList Properties { get; init; }
+
+	/// <summary>The variants of a map whose values are a union, listed after the value's own properties.</summary>
+	public ApiUnionVariants? Variants { get; init; }
 }
 
 /// <summary>The precomputed children of a property, discriminated by <see cref="Kind"/>.</summary>

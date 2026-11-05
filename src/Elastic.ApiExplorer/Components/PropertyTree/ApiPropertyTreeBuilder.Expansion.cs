@@ -76,7 +76,7 @@ public partial class ApiPropertyTreeBuilder
 	private ChildPlan? PlanChildren(IOpenApiSchema propSchema, TypeInfo typeInfo, bool hasUnionOptions, PropertyTreeScope scope)
 	{
 		if (typeInfo is { IsDictionary: true, HasLink: false, DictValueSchema: { } value } && ListsMapValue(value, scope))
-			return new ChildPlan.Dictionary(PropertyCount(value, scope));
+			return new ChildPlan.Dictionary(PropertyCount(value, scope) + MapValueVariantCount(value));
 
 		var variantCount = hasUnionOptions ? typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties) : 0;
 		var listsOwnProperties = typeInfo is { IsObject: true, HasLink: false }
@@ -111,7 +111,14 @@ public partial class ApiPropertyTreeBuilder
 	/// <c>map string to X</c> type does not show. A default alone does not say what a value may be.
 	/// </summary>
 	private bool ListsMapValue(IOpenApiSchema value, PropertyTreeScope scope) =>
-		PropertyCount(value, scope) > 0 || BuildLimits(value).Count > 0 || _analyzer.GetEnumValues(value).Count > 0;
+		PropertyCount(value, scope) > 0
+			|| MapValueVariantCount(value) > 0
+			|| BuildLimits(value).Count > 0
+			|| _analyzer.GetEnumValues(value).Count > 0;
+
+	/// <summary>How many variants of a map's union value list fields; 0 when the value is no union.</summary>
+	private int MapValueVariantCount(IOpenApiSchema value) =>
+		_analyzer.GetNestedUnionOptions(value).Count(_analyzer.UnionOptionHasProperties);
 
 	/// <summary>The base name of an <c>X | X[]</c> union, or null for any other type.</summary>
 	private static string? DetectSimpleArrayUnion(TypeInfo typeInfo)

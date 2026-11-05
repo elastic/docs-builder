@@ -53,8 +53,12 @@ public partial class ApiPropertyTreeBuilder
 
 	private static int CountRows(ApiPropertyChildren children) =>
 		CountRows(children.Properties)
-			+ (children.Variants?.Variants.Sum(v => CountRows(v.Properties)) ?? 0)
-			+ CountRows(children.Dictionary?.Properties);
+			+ CountRows(children.Variants)
+			+ CountRows(children.Dictionary?.Properties)
+			+ CountRows(children.Dictionary?.Variants);
+
+	private static int CountRows(ApiUnionVariants? variants) =>
+		variants?.Variants.Sum(v => CountRows(v.Properties) + CountRows(v.Variants)) ?? 0;
 
 	private static int CountRows(ApiPropertyList? properties) => properties?.Items.Sum(p => 1 + CountRows(p.Children)) ?? 0;
 

@@ -190,12 +190,14 @@
 						{
 							<div class="nested-properties" id="@dict.ChildrenId" hidden="until-found">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 						else
 						{
 							<div class="nested-properties" id="@dict.ChildrenId">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 					</div>
