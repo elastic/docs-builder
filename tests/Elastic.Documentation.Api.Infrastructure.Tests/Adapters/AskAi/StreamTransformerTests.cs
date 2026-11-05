@@ -5,10 +5,12 @@
 using System.IO.Pipelines;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.Adapters.AskAi;
 using Elastic.Documentation.Api.AskAi;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Adapters.AskAi;
 
@@ -33,6 +35,17 @@ internal static class StreamTransformerTestHelpers
 		}
 		return events;
 	}
+
+	/// <summary>The transformer output exactly as the client receives it: SSE text.</summary>
+	public static async Task<string> ReadSseAsync(Stream stream)
+	{
+		using var reader = new StreamReader(stream, Encoding.UTF8);
+		return await reader.ReadToEndAsync();
+	}
+
+	/// <summary>Replaces what changes per run: generated conversation ids and millisecond timestamps taken from the clock.</summary>
+	public static SnapshotOptions Scrub() =>
+		new SnapshotOptions().Scrub(Scrubbers.Guids).Scrub(new Regex(@"""timestamp"":\d{13}"), "\"timestamp\":{now}");
 }
 
 public class AgentBuilderStreamTransformerTests
@@ -80,45 +93,30 @@ public class AgentBuilderStreamTransformerTests
 
 		// Act - No generated ID (Agent Builder handles IDs in stream)
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
+		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		// Assert
-		// Note: Due to async streaming, the final event might not be written before the input stream closes
-		// In production, real SSE streams stay open, so this isn't an issue
-		events.Should().HaveCountGreaterThanOrEqualTo(7);
+		// Assert - every event type of the Agent Builder stream, in order, with its content
+		// (ConversationStart comes from the stream for Agent Builder)
+		output.Should().MatchInlineSnapshot(
+			options: StreamTransformerTestHelpers.Scrub(),
+			expected: """
+			data: {"type":"conversation_start","conversationId":"Guid_1","id":"Guid_2","timestamp":{now}}
 
-		// Verify we got the key events (ConversationStart comes from stream for Agent Builder)
-		events.Should().ContainSingle(e => e is AskAiEvent.ConversationStart);
-		events.Should().ContainSingle(e => e is AskAiEvent.Reasoning);
-		events.Should().ContainSingle(e => e is AskAiEvent.SearchToolCall);
-		events.Should().ContainSingle(e => e is AskAiEvent.ToolResult);
-		events.Should().Contain(e => e is AskAiEvent.MessageChunk);
-		events.Should().ContainSingle(e => e is AskAiEvent.MessageComplete);
+			data: {"type":"reasoning","message":"Searching for relevant documents...","id":"Guid_3","timestamp":{now}}
 
-		// Verify specific content
-		var convStart = events.OfType<AskAiEvent.ConversationStart>().First();
-		convStart.ConversationId.Should().Be("360222c5-76aa-405a-8316-703e1061b621");
+			data: {"type":"search_tool_call","toolCallId":"tooluse_abc123","searchQuery":"semantic search","id":"Guid_4","timestamp":{now}}
 
-		var reasoning = events.OfType<AskAiEvent.Reasoning>().First();
-		reasoning.Message.Should().Contain("Searching");
+			data: {"type":"tool_result","toolCallId":"tooluse_abc123","result":"[{\u0022type\u0022:\u0022query\u0022,\u0022data\u0022:{\u0022esql\u0022:\u0022FROM semantic-docs-prod-latest | WHERE MATCH(title.semantic_text, \\\u0022semantic search\\\u0022)\u0022},\u0022tool_result_id\u0022:\u0022result1\u0022}]","id":"Guid_5","timestamp":{now}}
 
-		// Tool call should be SearchToolCall type with extracted query
-		var searchToolCall = events.OfType<AskAiEvent.SearchToolCall>().FirstOrDefault();
-		searchToolCall.Should().NotBeNull();
-		searchToolCall.ToolCallId.Should().Be("tooluse_abc123");
-		searchToolCall.SearchQuery.Should().Be("semantic search");
+			data: {"type":"message_chunk","content":"Hello","id":"Guid_6","timestamp":{now}}
 
-		var toolResult = events.OfType<AskAiEvent.ToolResult>().First();
-		toolResult.ToolCallId.Should().Be("tooluse_abc123");
-		toolResult.Result.Should().Contain("semantic-docs-prod-latest");
+			data: {"type":"message_chunk","content":" world","id":"Guid_7","timestamp":{now}}
 
-		var chunks = events.OfType<AskAiEvent.MessageChunk>().ToList();
-		chunks.Should().HaveCount(2);
-		chunks[0].Content.Should().Be("Hello");
-		chunks[1].Content.Should().Be(" world");
+			data: {"type":"message_complete","fullContent":"Hello world","id":"Guid_8","timestamp":{now}}
 
-		var complete = events.OfType<AskAiEvent.MessageComplete>().First();
-		complete.FullContent.Should().Be("Hello world");
+			data: {"type":"conversation_end","id":"Guid_9","timestamp":{now}}
+			"""
+		);
 	}
 
 	[Test]
@@ -143,11 +141,17 @@ public class AgentBuilderStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
+		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		// Assert - Should have at least 1 event (round_complete might not be written in time)
-		events.Should().HaveCountGreaterThanOrEqualTo(1);
-		events[0].Should().BeOfType<AskAiEvent.MessageChunk>();
+		// Assert - the keepalive comments are dropped
+		output.Should().MatchInlineSnapshot(
+			options: StreamTransformerTestHelpers.Scrub(),
+			expected: """
+			data: {"type":"message_chunk","content":"test","id":"Guid_1","timestamp":{now}}
+
+			data: {"type":"conversation_end","id":"Guid_2","timestamp":{now}}
+			"""
+		);
 	}
 
 	[Test]
@@ -167,12 +171,14 @@ public class AgentBuilderStreamTransformerTests
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
+		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		// Assert - This test has malformed SSE data (missing proper blank line terminator)
-		// In a real scenario with proper SSE formatting, this would work
-		// For now, skip this test or mark as known limitation
-		events.Should().HaveCountGreaterThanOrEqualTo(0);
+		// This test has malformed SSE data (missing proper blank line terminator). The old assertion
+		// (HaveCountGreaterThanOrEqualTo(0)) could not fail; the snapshot pins what is actually emitted.
+		output.Should().MatchInlineSnapshot(
+			options: StreamTransformerTestHelpers.Scrub(),
+			expected: "data: {\"type\":\"message_chunk\",\"content\":\"multiline\",\"id\":\"Guid_1\",\"timestamp\":{now}}"
+		);
 	}
 }
 
@@ -217,46 +223,28 @@ public class LlmGatewayStreamTransformerTests
 		// Act - Simulate new conversation to get ConversationStart event
 		var testConversationId = Guid.NewGuid().ToString();
 		var outputStream = await _transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
+		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		// Assert
-		events.Should().HaveCount(7);
+		// Assert - ConversationStart (generated by the transformer), both chunks, the search tool call with its extracted query,
+		// the tool result with the payload stripped on purpose (CloudFront OAC buffering), the complete message and the end
+		output.Should().MatchInlineSnapshot(
+			options: StreamTransformerTestHelpers.Scrub(),
+			expected: """
+			data: {"type":"conversation_start","conversationId":"Guid_1","id":"Guid_2","timestamp":{now}}
 
-		// Event 1: ConversationStart (emitted by transformer for new conversation)
-		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
-		var convStart = events[0] as AskAiEvent.ConversationStart;
-		convStart!.ConversationId.Should().Be(testConversationId);
+			data: {"type":"message_chunk","content":"Hello","id":"2","timestamp":1234567891}
 
-		// Event 2: ai_message_chunk (first)
-		events[1].Should().BeOfType<AskAiEvent.MessageChunk>();
-		var chunk1 = events[1] as AskAiEvent.MessageChunk;
-		chunk1!.Content.Should().Be("Hello");
+			data: {"type":"message_chunk","content":" world","id":"3","timestamp":1234567892}
 
-		// Event 3: ai_message_chunk (second)
-		events[2].Should().BeOfType<AskAiEvent.MessageChunk>();
-		var chunk2 = events[2] as AskAiEvent.MessageChunk;
-		chunk2!.Content.Should().Be(" world");
+			data: {"type":"search_tool_call","toolCallId":"tool1","searchQuery":"Index Lifecycle Management (ILM) Elasticsearch documentation","id":"4","timestamp":1234567893}
 
-		// Event 4: tool_call -> Should be SearchToolCall with extracted query
-		events[3].Should().BeOfType<AskAiEvent.SearchToolCall>();
-		var searchToolCall = events[3] as AskAiEvent.SearchToolCall;
-		searchToolCall!.ToolCallId.Should().Be("tool1");
-		searchToolCall.SearchQuery.Should().Be("Index Lifecycle Management (ILM) Elasticsearch documentation");
+			data: {"type":"tool_result","toolCallId":"tool1","result":"","id":"5","timestamp":1234567894}
 
-		// Event 5: tool_message
-		events[4].Should().BeOfType<AskAiEvent.ToolResult>();
-		var toolResult = events[4] as AskAiEvent.ToolResult;
-		toolResult!.ToolCallId.Should().Be("tool1");
-		// Result is intentionally empty - payload stripped to prevent CloudFront OAC buffering issues
-		toolResult.Result.Should().BeEmpty();
+			data: {"type":"message_complete","fullContent":"Hello world","id":"6","timestamp":1234567895}
 
-		// Event 6: ai_message
-		events[5].Should().BeOfType<AskAiEvent.MessageComplete>();
-		var complete = events[5] as AskAiEvent.MessageComplete;
-		complete!.FullContent.Should().Be("Hello world");
-
-		// Event 7: agent_end
-		events[6].Should().BeOfType<AskAiEvent.ConversationEnd>();
+			data: {"type":"conversation_end","id":"7","timestamp":1234567896}
+			"""
+		);
 	}
 
 	[Test]
@@ -284,12 +272,17 @@ public class LlmGatewayStreamTransformerTests
 		// Act - Simulate new conversation
 		var testConversationId = Guid.NewGuid().ToString();
 		var outputStream = await _transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
+		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		// Assert - Should only have 2 events (ConversationStart + ConversationEnd)
-		events.Should().HaveCount(2);
-		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
-		events[1].Should().BeOfType<AskAiEvent.ConversationEnd>();
+		// Assert - the empty data lines are skipped: only ConversationStart and ConversationEnd remain
+		output.Should().MatchInlineSnapshot(
+			options: StreamTransformerTestHelpers.Scrub(),
+			expected: """
+			data: {"type":"conversation_start","conversationId":"Guid_1","id":"Guid_2","timestamp":{now}}
+
+			data: {"type":"conversation_end","id":"2","timestamp":1234567891}
+			"""
+		);
 	}
 
 	[Test]
@@ -311,12 +304,17 @@ public class LlmGatewayStreamTransformerTests
 		// Act - Simulate new conversation
 		var testConversationId = Guid.NewGuid().ToString();
 		var outputStream = await _transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
+		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		// Assert - Should only have the ConversationStart and message chunk, model events skipped
-		events.Should().HaveCount(2);
-		events[0].Should().BeOfType<AskAiEvent.ConversationStart>();
-		events[1].Should().BeOfType<AskAiEvent.MessageChunk>();
+		// Assert - the model lifecycle events are skipped: only ConversationStart and the message chunk remain
+		output.Should().MatchInlineSnapshot(
+			options: StreamTransformerTestHelpers.Scrub(),
+			expected: """
+			data: {"type":"conversation_start","conversationId":"Guid_1","id":"Guid_2","timestamp":{now}}
+
+			data: {"type":"message_chunk","content":"test","id":"2","timestamp":1234567891}
+			"""
+		);
 	}
 }
 
@@ -350,6 +348,10 @@ public class StreamTransformerCommonBehaviorTests
 			""");
 	}
 
+	/// <summary>
+	/// A new conversation starts with a ConversationStart event that has a conversation id, an event id and a clock
+	/// timestamp (scrubbed to {now}, which also fails on a zero timestamp), whatever the transformer.
+	/// </summary>
 	[Test]
 	[MethodDataSource(nameof(StreamTransformerTestCases))]
 	public async Task TransformAsyncWhenIsNewConversationEmitsConversationStartEvent(
@@ -358,80 +360,12 @@ public class StreamTransformerCommonBehaviorTests
 		string sseData
 	)
 	{
-		// Arrange
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 		var testConversationId = Guid.NewGuid().ToString();
 
-		// Act - Pass isNewConversation: true to simulate new conversation
 		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
-		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
+		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		// Assert - Should have ConversationStart event
-		events.Should().ContainSingle(
-			e => e is AskAiEvent.ConversationStart,
-			$"{transformerName} should emit ConversationStart when isNewConversation is true"
-		);
-
-		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().First();
-		conversationStart
-			.ConversationId
-			.Should()
-			.NotBeNullOrEmpty($"{transformerName} should have a non-empty conversation ID in ConversationStart event");
-	}
-
-	[Test]
-	[MethodDataSource(nameof(StreamTransformerTestCases))]
-	public async Task TransformAsyncConversationStartEventHasValidTimestamp(
-		string transformerName,
-		IStreamTransformer transformer,
-		string sseData
-	)
-	{
-		// Arrange
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
-		var testConversationId = Guid.NewGuid().ToString();
-
-		// Act
-		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
-		var events = new List<AskAiEvent>();
-		var reader = PipeReader.Create(outputStream);
-		await foreach (var sseEvent in SseParser.ParseAsync(reader, CancellationToken.None))
-		{
-			var evt = JsonSerializer.Deserialize<AskAiEvent>(sseEvent.Data, AskAiEventJsonContext.Default.AskAiEvent);
-			if (evt != null)
-				events.Add(evt);
-		}
-
-		// Assert
-		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().FirstOrDefault();
-		conversationStart.Should().NotBeNull($"{transformerName} should emit ConversationStart event");
-
-		conversationStart.Timestamp.Should().BeGreaterThan(0, $"{transformerName} ConversationStart should have a valid timestamp");
-	}
-
-	[Test]
-	[MethodDataSource(nameof(StreamTransformerTestCases))]
-	public async Task TransformAsyncConversationStartEventHasValidId(string transformerName, IStreamTransformer transformer, string sseData)
-	{
-		// Arrange
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
-		var testConversationId = Guid.NewGuid().ToString();
-
-		// Act
-		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
-		var events = new List<AskAiEvent>();
-		var reader = PipeReader.Create(outputStream);
-		await foreach (var sseEvent in SseParser.ParseAsync(reader, CancellationToken.None))
-		{
-			var evt = JsonSerializer.Deserialize<AskAiEvent>(sseEvent.Data, AskAiEventJsonContext.Default.AskAiEvent);
-			if (evt != null)
-				events.Add(evt);
-		}
-
-		// Assert
-		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().FirstOrDefault();
-		conversationStart.Should().NotBeNull($"{transformerName} should emit ConversationStart event");
-
-		conversationStart.Id.Should().NotBeNullOrEmpty($"{transformerName} ConversationStart should have a non-empty event ID");
+		output.Should().MatchSnapshot(name: transformerName, options: StreamTransformerTestHelpers.Scrub());
 	}
 }
