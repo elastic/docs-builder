@@ -8,6 +8,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -55,7 +56,7 @@ public class InlineLinkTests() : LinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -75,7 +76,7 @@ public class LinkToPageTests() : LinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -98,7 +99,7 @@ public class InsertPageTitleTests() : LinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -123,7 +124,7 @@ public class RepositoryLinksTest() : LinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -144,7 +145,7 @@ public class CrossLinkReferenceTest() : LinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsCrossLink()
@@ -162,13 +163,17 @@ public class CrossLinkTest() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Go to
+			<a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a>
+		</p>
+		""",
+			DocsHtml.Body()
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsCrossLink()
@@ -186,14 +191,24 @@ public class CrossLinkEmptyTextTest() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		// language=html - empty crosslinks now emit an error
-		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer"></a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Go to
+			<a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer"></a>
+		</p>
+		""",
+			DocsHtml.Body()
 		);
 
 	[Test]
 	public void HasError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("empty link text"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:4 Crosslink 'kibana://index.md' has empty link text. Please provide explicit link text."
+			);
 
 	[Test]
 	public void EmitsCrossLink()
@@ -211,14 +226,24 @@ public class CrossLinkEmptyTextNoTitleTest() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		// language=html - empty crosslinks emit an error; isolated builds get target=_blank
-		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/get-started" target="_blank" rel="noopener noreferrer"></a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Go to
+			<a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/get-started" target="_blank" rel="noopener noreferrer"></a>
+		</p>
+		""",
+			DocsHtml.Body()
 		);
 
 	[Test]
 	public void HasError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("empty link text"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:4 Crosslink 'kibana://get-started/index.md' has empty link text. Please provide explicit link text."
+			);
 
 	[Test]
 	public void EmitsCrossLink()
@@ -236,19 +261,14 @@ public class LinkWithUnresolvedInterpolationError() : LinkTestBase(
 )
 {
 	[Test]
-	public void HasErrors()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.First().Severity.Should().Be(Severity.Error);
+	public void HasErrors() =>
 		Collector
 			.Diagnostics
-			.First()
-			.Message
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				"he url contains unresolved template expressions: '{{this-variable-does-not-exist}}/introduction.html#kibana-navigation-search'. Please check if there is an appropriate global or frontmatter subs variable."
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 The url contains unresolved template expressions: '{{this-variable-does-not-exist}}/introduction.html#kibana-navigation-search'. Please check if there is an appropriate global or frontmatter subs variable."
 			);
-	}
 }
 
 [InheritsTests]
@@ -264,7 +284,7 @@ public class ExternalLinksWithInterpolationSuccess() : LinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoWarningsOrErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoWarningsOrErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -273,19 +293,14 @@ public class InternalLinksWithInterpolationWarning() : LinkTestBase("""
 	""")
 {
 	[Test]
-	public void HasWarnings()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.First().Severity.Should().Be(Severity.Error);
+	public void HasWarnings() =>
 		Collector
 			.Diagnostics
-			.First()
-			.Message
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				"Link is resolved to '/something/hello-world'. Only external links are allowed to be resolved from template expressions."
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Link is resolved to '/something/hello-world'. Only external links are allowed to be resolved from template expressions."
 			);
-	}
 }
 
 [InheritsTests]
@@ -294,10 +309,14 @@ public class NonExistingLinks() : LinkTestBase("""
 	""")
 {
 	[Test]
-	public void HasErrors() => Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Should().HaveCount(1);
-
-	[Test]
-	public void HasNoWarning() => Collector.Diagnostics.Where(d => d.Severity == Severity.Warning).Should().HaveCount(0);
+	public void EmitsDiagnostics() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 `/non-existing.md` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/non-existing.md`"
+			);
 }
 
 [InheritsTests]
@@ -311,7 +330,7 @@ public class CommentedNonExistingLinks() : LinkTestBase("""
 		Html.Should().BeNullOrWhiteSpace();
 
 	[Test]
-	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -341,7 +360,7 @@ public class CommentedNonExistingLinks2() : LinkTestBase(
 		);
 
 	[Test]
-	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -355,7 +374,18 @@ public class NonExistingLinkShouldFail() : LinkTestBase(
 )
 {
 	[Test]
-	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(3);
+	public void HasErrors() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 `/non-existing.md` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/non-existing.md`
+		error {repo}/docs/index.md:4 `/non-existing.md` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/non-existing.md`
+		error {repo}/docs/index.md:5 `/non-existing.md` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/non-existing.md`
+		"""
+			);
 }
 
 [InheritsTests]
@@ -366,10 +396,18 @@ public class CursorProtocolLinkTest() : LinkTestBase(
 )
 {
 	[Test]
-	public void GeneratesHtml() => Html.Should().Contain("""href="cursor://""");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=elastic&amp;config=eyJmb28iOiJiYXIifQ==">Install with Cursor</a>
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
@@ -381,10 +419,18 @@ public class VscodeProtocolLinkTest() : LinkTestBase("""
 	""")
 {
 	[Test]
-	public void GeneratesHtml() => Html.Should().Contain("""href="vscode:""");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="vscode:extension/elastic.elasticsearch">Install VS Code Extension</a>
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
@@ -398,10 +444,18 @@ public class VscodeInsidersProtocolLinkTest() : LinkTestBase(
 )
 {
 	[Test]
-	public void GeneratesHtml() => Html.Should().Contain("""href="vscode-insiders:""");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22oblt-cli%22%7D">Install with VS Code Insiders</a>
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
@@ -438,7 +492,7 @@ public class LiteralSpaceLinkToExistingFile() : LinkTestBase("""
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -24,7 +25,7 @@ not a comment
 {
 	[Test]
 	public void ReplacesSubsFromFrontMatter() =>
-		Html.Should().Contain("""Hello World!""").And.Contain("""not a comment""").And.NotContain("""{{hello-world}}""");
+		Html.Should().MatchInlineHtmlSnapshot("<p>The following should be subbed: Hello World! not a comment</p>", DocsHtml.Body());
 }
 
 public class NeedsDoubleBrackets() : InlineTest(
@@ -44,19 +45,12 @@ not a {substitution}
 )
 {
 	[Test]
+	// treated as attributes to the block
 	public void PreservesSingleBracket() =>
-		Html
-			.Should()
-			.Contain("""Hello World!""")
-			.And
-			.Contain("""not a comment""")
-			.And
-			.NotContain("""{{hello-world}}""")
-			.And
-			.Contain( // treated as attributes to the block
-				"""{substitution}""")
-			.And
-			.Contain("""{{valid-key}}""");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"<p>The following should be subbed: Hello World! not a comment not a {{valid-key}} not a {substitution}</p>",
+			DocsHtml.Body()
+		);
 }
 
 [InheritsTests]
@@ -80,7 +74,23 @@ cd elasticsearch-{{version}}/ <2>
 )
 {
 	[Test]
-	public void ReplacesSubsInCode() => Html.Should().Contain("7.17.0");
+	public void ReplacesSubsInCode() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<div class="highlight-sh notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-sh">wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.0-linux-x86_64.tar.gz wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.0-linux-x86_64.tar.gz.sha512 shasum -a 512 -c elasticsearch-7.17.0-linux-x86_64.tar.gz.sha512<span style="display: inline-block; width: 1ch"></span>
+						<span class="code-callout" data-index="1"></span>
+						tar -xzf elasticsearch-7.17.0-linux-x86_64.tar.gz cd elasticsearch-7.17.0/<span style="display: inline-block; width: 1ch"></span>
+						<span class="code-callout" data-index="2"></span>
+					</code>
+				</pre>
+			</div>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public class SupportsSubstitutionsFromDocSet() : InlineTest(
@@ -97,15 +107,10 @@ The following should be subbed as well: {{global-var}}
 {
 	[Test]
 	public void EmitsGlobalVariable() =>
-		Html
-			.Should()
-			.Contain("Hello World!")
-			.And
-			.NotContain("{{hello-world}}")
-			.And
-			.Contain("A variable from docset.yml")
-			.And
-			.NotContain("{{global-var}}");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"<p>The following should be subbed: Hello World! The following should be subbed as well: A variable from docset.yml</p>",
+			DocsHtml.Body()
+		);
 }
 
 public class CanNotShadeGlobalVariables() : InlineTest(
@@ -125,16 +130,20 @@ The following should be subbed as well: {{hello-world}}
 {
 	[Test]
 	public void OnlySeesGlobalVariable() =>
-		Html.Should().NotContain("Hello World!<br />").And.NotContain("{{hello-world}}").And.Contain("A variable from docset.yml");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"<p>The following should be subbed: A variable from docset.yml The following should be subbed as well: A variable from docset.yml</p>",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void HasError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.Contain(d => d.Message.Contains("{hello-world} can not be redeclared in front matter as its a global substitution"));
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md {hello-world} can not be redeclared in front matter as its a global substitution"
+			);
 }
 
 public class ReplaceInHeader() : InlineTest(
@@ -165,7 +174,7 @@ sub:
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 public class ReplaceInImageAlt() : InlineTest(
@@ -182,7 +191,15 @@ sub:
 )
 {
 	[Test]
-	public void OnlySeesGlobalVariable() => Html.Should().NotContain("alt=\"{{hello-world}}\"").And.Contain("alt=\"Hello World\"");
+	public void OnlySeesGlobalVariable() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<img src="/docs/_static/img/observability.png" alt="Hello World" title="Hello World">
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public class ReplaceInImageTitle() : InlineTest(
@@ -199,7 +216,15 @@ sub:
 )
 {
 	[Test]
-	public void OnlySeesGlobalVariable() => Html.Should().NotContain("title=\"{{hello-world}}\"").And.Contain("title=\"Observability\"");
+	public void OnlySeesGlobalVariable() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<img src="/docs/_static/img/observability.png" alt="Observability" title="Observability">
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public class MutationOperatorTest() : InlineTest(
@@ -225,34 +250,15 @@ Increase minor with space: {{version | M.M+1}}
 )
 {
 	[Test]
-	public void MutationOperatorsWorkWithAndWithoutSpaces()
-	{
-		// Both versions with and without spaces should render the same way
-		Html
-			.Should()
-			.Contain("Version: 9.0")
-			.And
-			.Contain("Version with space: 9.0")
-			.And
-			.Contain("Major only: 9")
-			.And
-			.Contain("Major only with space: 9")
-			.And
-			.Contain("Major.x: 9.x")
-			.And
-			.Contain("Major.x with space: 9.x")
-			.And
-			.Contain("Increase major: 10.0.0")
-			.And
-			.Contain("Increase major with space: 10.0.0")
-			.And
-			.Contain("Increase minor: 9.1.0")
-			.And
-			.Contain("Increase minor with space: 9.1.0");
-	}
+	// Both versions with and without spaces should render the same way
+	public void MutationOperatorsWorkWithAndWithoutSpaces() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"<p>Version: 9.0 Version with space: 9.0 Major only: 9 Major only with space: 9 Major.x: 9.x Major.x with space: 9.x Increase major: 10.0.0 Increase major with space: 10.0.0 Increase minor: 9.1.0 Increase minor with space: 9.1.0</p>",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 public class MultipleMutationOperatorsTest() : InlineTest(
@@ -273,22 +279,15 @@ Product with spaces: {{product | uc}}
 )
 {
 	[Test]
-	public void MultipleMutationOperatorsWorkWithAndWithoutSpaces()
-	{
-		// Both versions with and without spaces should render the same way
-		Html
-			.Should()
-			.Contain("Version: 9.0")
-			.And
-			.Contain("Version with spaces: 9.0")
-			.And
-			.Contain("Product: ELASTICSEARCH")
-			.And
-			.Contain("Product with spaces: ELASTICSEARCH");
-	}
+	// Both versions with and without spaces should render the same way
+	public void MultipleMutationOperatorsWorkWithAndWithoutSpaces() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"<p>Version: 9.0 Version with spaces: 9.0 Product: ELASTICSEARCH Product with spaces: ELASTICSEARCH</p>",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 public class MutationOperatorsInLinksTest() : InlineTest(
@@ -310,26 +309,22 @@ sub:
 )
 {
 	[Test]
-	public void MutationOperatorsWorkInLinks()
-	{
-		// Check URL mutations
-		Html
-			.Should()
-			.Contain("href=\"https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html\"")
-			.And
-			.NotContain("{{version|M.M}}")
-			.And
-			.NotContain("{{version | M.M}}");
-
-		// Check link text mutations
-		Html.Should().Contain("ELASTICSEARCH 9.0").And.NotContain("{{product|uc}}").And.NotContain("{{version|M.M}}");
-
-		// Check link text mutations with spaces
-		Html.Should().Contain("ELASTICSEARCH 9.0").And.NotContain("{{product | uc}}").And.NotContain("{{version | M.M}}");
-	}
+	// Check URL mutations
+	// Check link text mutations
+	// Check link text mutations with spaces
+	public void MutationOperatorsWorkInLinks() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html" target="_blank" rel="noopener noreferrer">Link with mutation operator</a>
+			<a href="https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html" target="_blank" rel="noopener noreferrer">Link with mutation operator and space</a>
+			[Link text with mutation](ELASTICSEARCH 9.0) [Link text with mutation and space](ELASTICSEARCH 9.0)</p>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -355,16 +350,20 @@ wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{versio
 {
 	[Test]
 	public void MutationOperatorsWorkInCodeBlocks() =>
-		Html
-			.Should()
-			.Contain("# Install Elasticsearch 9.0")
-			.And
-			.Contain("elasticsearch-9.0-linux-x86_64.tar.gz")
-			.And
-			.NotContain("{{version|M.M}}")
-			.And
-			.NotContain("{{version | M.M}}");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<div class="highlight-sh notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-sh"># Install Elasticsearch 9.0 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.0-linux-x86_64.tar.gz  # With space in mutation wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.0-linux-x86_64.tar.gz
+					</code>
+				</pre>
+			</div>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }

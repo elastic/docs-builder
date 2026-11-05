@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -66,7 +67,7 @@ public class InPageDirectiveLinkTests() : DirectiveBlockLinkTests("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -94,5 +95,5 @@ public class ExternalDirectiveLinkTests() : DirectiveBlockLinkTests("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }

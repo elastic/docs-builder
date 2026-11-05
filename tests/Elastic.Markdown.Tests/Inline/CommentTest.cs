@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using AwesomeAssertions;
 using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -13,14 +14,10 @@ not a comment
 """)
 {
 	[Test]
-	public void GeneratesAttributesInHtml()
-	{
-		// language=html
-		Html.Should().NotContain("""<p>% comment""").And.Contain("""<p>not a comment</p>""");
+	public void GeneratesAttributesInHtml() =>
 		Html.Should().MatchInlineHtmlSnapshot("""
 			<p>not a comment</p>
 			""", DocsHtml.Body());
-	}
 }
 
 public class MultipleLineCommentTest() : InlineTest(
@@ -37,20 +34,7 @@ public class MultipleLineCommentTest() : InlineTest(
 )
 {
 	[Test]
-	public void GeneratesAttributesInHtml()
-	{
-		// language=html
-		Html
-			.Should()
-			.NotContainAny(
-				"<p><!--",
-				"<p>Multi line comment, first line",
-				"<p>Another line inside the commented area",
-				"<p>end of comments",
-				"<p>-->"
-			)
-			.And
-			.ContainAll("<p>not a comment, and multi line comment below</p>", "<p>also not a comment</p>");
+	public void GeneratesAttributesInHtml() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<p>not a comment, and multi line comment below</p>
@@ -58,7 +42,6 @@ public class MultipleLineCommentTest() : InlineTest(
 			""",
 			DocsHtml.Body()
 		);
-	}
 }
 
 public class MultipleLineCommentWithLinkTest() : InlineTest(
@@ -76,25 +59,10 @@ public class MultipleLineCommentWithLinkTest() : InlineTest(
 )
 {
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
-	public void GeneratesAttributesInHtml()
-	{
-		// language=html
-		Html
-			.ReplaceLineEndings()
-			.Should()
-			.NotContainAny(
-				"<p><!--",
-				"<p>Multi line comment, first line",
-				"regular link",
-				"global search field",
-				"<p>end of comments",
-				"<p>-->"
-			)
-			.And
-			.ContainAll("<p>not a comment, and multi line comment below</p>", "<p>also not a comment</p>");
+	public void GeneratesAttributesInHtml() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<p>not a comment, and multi line comment below</p>
@@ -102,7 +70,6 @@ public class MultipleLineCommentWithLinkTest() : InlineTest(
 			""",
 			DocsHtml.Body()
 		);
-	}
 }
 
 /// <summary>
@@ -123,18 +90,16 @@ public class CommentWithClosingTagAtEndOfLineTest() : InlineTest(
 )
 {
 	[Test]
-	public void ContentAfterCommentShouldBeRendered()
-	{
-		// This test verifies GitHub issue #2456 is fixed.
-		// The "content after comment" should be rendered, not silently dropped.
-		Html.Should().Contain("<p>content after comment</p>");
-	}
-
-	[Test]
-	public void ContentBeforeCommentShouldBeRendered() => Html.Should().Contain("<p>content before comment</p>");
-
-	[Test]
-	public void CommentContentShouldNotBeRendered() => Html.Should().NotContain("TODO: Uncomment once page is live.");
+	// This test verifies GitHub issue #2456 is fixed.
+	// The "content after comment" should be rendered, not silently dropped.
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>content before comment</p>
+		<p>content after comment</p>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 /// <summary>
@@ -149,11 +114,11 @@ public class SingleLineCommentTest() : InlineTest("""
 	""")
 {
 	[Test]
-	public void ContentBeforeAndAfterShouldBeRendered() =>
-		Html.Should().Contain("<p>content before</p>").And.Contain("<p>content after</p>");
-
-	[Test]
-	public void CommentContentShouldNotBeRendered() => Html.Should().NotContain("single line comment");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot("""
+		<p>content before</p>
+		<p>content after</p>
+		""", DocsHtml.Body());
 }
 
 /// <summary>
@@ -172,10 +137,9 @@ public class CommentWithOpeningContentOnSameLineTest() : InlineTest(
 )
 {
 	[Test]
-	public void ContentBeforeAndAfterShouldBeRendered() =>
-		Html.Should().Contain("<p>content before</p>").And.Contain("<p>content after</p>");
-
-	[Test]
-	public void CommentContentShouldNotBeRendered() =>
-		Html.Should().NotContain("start of comment").And.NotContain("middle of comment").And.NotContain("end of comment");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot("""
+		<p>content before</p>
+		<p>content after</p>
+		""", DocsHtml.Body());
 }

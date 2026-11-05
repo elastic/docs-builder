@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -73,7 +74,7 @@ public class InPageAnchorTests() : AnchorLinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -100,7 +101,7 @@ public class ExternalPageAnchorTests() : AnchorLinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -127,7 +128,7 @@ public class ExternalPageCustomAnchorTests() : AnchorLinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -153,7 +154,7 @@ public class ExternalPageAnchorAutoTitleTests() : AnchorLinkTestBase("""
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -180,7 +181,11 @@ public class InPageBadAnchorTests() : AnchorLinkTestBase("""
 
 	[Test]
 	public void HasError() =>
-		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("`hello-world2` does not exist"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:7 `hello-world2` does not exist in index.md.");
 }
 
 [InheritsTests]
@@ -207,7 +212,11 @@ public class ExternalPageBadAnchorTests() : AnchorLinkTestBase("""
 
 	[Test]
 	public void HasError() =>
-		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("`sub-requirements2` does not exist"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:7 `sub-requirements2` does not exist in testing/req.md.");
 }
 
 [InheritsTests]
@@ -232,7 +241,7 @@ public class NestedHeadingTest() : AnchorLinkTestBase("""
 			DocsHtml.Body()
 		);
 	[Test]
-	public void HasError() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasError() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -242,7 +251,13 @@ public class MissingMdExtensionTests() : AnchorLinkTestBase("""
 {
 	[Test]
 	public void HasMdExtensionHintError() =>
-		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:7 `testing/req` is not a valid internal link. Did you forget to add the .md extension?"
+			);
 }
 
 [InheritsTests]
@@ -252,7 +267,13 @@ public class MissingMdExtensionWithAnchorTests() : AnchorLinkTestBase("""
 {
 	[Test]
 	public void HasMdExtensionHintError() =>
-		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:7 `testing/req` is not a valid internal link. Did you forget to add the .md extension?"
+			);
 }
 
 [InheritsTests]
@@ -264,10 +285,9 @@ public class MissingFileNoMdHintTests() : AnchorLinkTestBase("""
 	public void HasGenericNotFoundError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.Contain(d => d.Message.Contains("does not exist"))
-			.And
-			.NotContain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:7 `testing/nonexistent` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/testing/nonexistent`"
+			);
 }
