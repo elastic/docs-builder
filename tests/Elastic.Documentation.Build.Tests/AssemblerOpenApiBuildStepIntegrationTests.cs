@@ -5,8 +5,11 @@
 using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using System.Net;
+using System.Text;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
@@ -26,8 +29,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Elastic.Documentation.Build.Tests;
 
 /// <summary>
-/// End-to-end check that the assembler OpenAPI step can generate HTML from the live version index.
-/// Requires network access to CloudFront.
+/// End-to-end check that the assembler OpenAPI step generates API pages into the assembled output.
+/// The default tests serve a small version index and spec from memory. The live variant fetches the real
+/// index and the Elasticsearch spec from CloudFront and renders every version, so it only runs when asked for.
 /// </summary>
 public class AssemblerOpenApiBuildStepIntegrationTests
 {
@@ -126,6 +130,20 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 	[Test]
 	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent(CancellationToken cancellationToken)
 	{
+		using var versionIndexClient = CreateInMemoryVersionIndexClient();
+		await BuildApiPagesAsync(versionIndexClient, cancellationToken);
+	}
+
+	[Test]
+	[Explicit]
+	public async Task BuildAsync_GeneratesApiPagesFromTheLiveVersionIndex(CancellationToken cancellationToken) =>
+		await BuildApiPagesAsync(versionIndexClient: null, cancellationToken);
+
+	private static VersionIndexClient CreateInMemoryVersionIndexClient() =>
+		new(new Uri("https://specs.example.test/"), new InMemorySpecHandler(), sleep: (_, _) => Task.CompletedTask);
+
+	private static async Task BuildApiPagesAsync(VersionIndexClient? versionIndexClient, CancellationToken cancellationToken)
+	{
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
 
@@ -140,7 +158,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			context,
 			AssemblerApiSections.Create(context, assembleSources),
 			siteTopNav: null,
-			cancellationToken
+			cancellationToken,
+			versionIndexClient
 		);
 		stopwatch.Stop();
 
@@ -176,6 +195,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
 
+		using var versionIndexClient = CreateInMemoryVersionIndexClient();
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
 		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
 		var navigation = new SiteNavigation(
@@ -209,7 +229,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		docsetRoot.Hidden.Should().BeTrue();
 
 		// the build then attaches the generators and resolves the floating sections again
-		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav);
+		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
 		await Task.WhenAll(
 			workspace.Set.DocumentationSet.Navigation.FloatingSections.Select(section => section.ResolveAsync(cancellationToken))
 		);
@@ -226,6 +246,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
 
+		using var versionIndexClient = CreateInMemoryVersionIndexClient();
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
 		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
 		var siteNavFile = SiteNavigationFile.Deserialize(
@@ -246,7 +267,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		);
 
 		// the build creates the generators before the docsets resolve their trees
-		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav);
+		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
 		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
 
 		var docsetRoot = workspace
@@ -275,7 +296,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			workspace.Context,
 			apiSections,
 			navigation.TopNav,
-			cancellationToken
+			cancellationToken,
+			versionIndexClient
 		);
 
 		workspace.Collector.Errors.Should().Be(0);
@@ -293,5 +315,48 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		var listing = new LlmsNavigationEnhancer().GenerateNavigationSections(navigation, new Uri(workspace.Context.Environment.Uri));
 		listing.Should().Contain("## APIs").And.Contain("api/doc/elasticsearch.md)", "the llms.txt listing comes from the navigation walk");
+	}
+
+	private sealed class InMemorySpecHandler : HttpMessageHandler
+	{
+		private const string Index = /*lang=json,strict*/
+			"""
+			{
+				"elastic/elasticsearch-specification": {
+					"elasticsearch.json": {
+						"main": { "version": "9.5" },
+						"9.4": { "version": "9.4" }
+					}
+				}
+			}
+			""";
+
+		private const string Spec = /*lang=json,strict*/
+			"""
+			{
+				"openapi": "3.0.3",
+				"info": { "title": "Elasticsearch", "version": "1.0" },
+				"tags": [{ "name": "search" }],
+				"paths": {
+					"/_search": {
+						"get": {
+							"operationId": "search",
+							"summary": "Run a search",
+							"tags": ["search"],
+							"responses": { "200": { "description": "OK" } }
+						}
+					}
+				}
+			}
+			""";
+
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		{
+			var body = request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal) ? Index : Spec;
+			return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(body, Encoding.UTF8, "application/json")
+			});
+		}
 	}
 }

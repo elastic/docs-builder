@@ -69,6 +69,8 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider, IDisposable
 	/// <summary>The client that every generator reads the version index and the specs through. It exists once the generators do.</summary>
 	internal VersionIndexClient? VersionIndexClient { get; private set; }
 
+	private bool _ownsVersionIndexClient;
+
 	internal IReadOnlyList<AssemblerApiOwner> Owners => [.. _owners.Select(o => o.Owner)];
 
 	public string Kind => "api";
@@ -87,13 +89,16 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider, IDisposable
 	internal IReadOnlyList<(AssemblerApiOwner Owner, OpenApiGenerator Generator)> EnsureGenerators(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
-		TopNavRenderModel? siteTopNav
+		TopNavRenderModel? siteTopNav,
+		VersionIndexClient? versionIndexClient = null
 	)
 	{
 		if (_generators is not null)
 			return _generators;
 
-		VersionIndexClient = new VersionIndexClient();
+		// A caller can supply the client, for example a test that serves the specs from memory. This class then does not dispose it.
+		_ownsVersionIndexClient = versionIndexClient is null;
+		VersionIndexClient = versionIndexClient ?? new VersionIndexClient();
 		var generators = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(_owners.Count);
 		foreach (var (owner, provider) in _owners)
 		{
@@ -114,5 +119,9 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider, IDisposable
 	/// <summary>Fills the children of every section the site navigation lists, from the generators.</summary>
 	internal Task ResolveAsync(Cancel ctx) => Task.WhenAll(GetSections().Select(section => section.ResolveAsync(ctx)));
 
-	public void Dispose() => VersionIndexClient?.Dispose();
+	public void Dispose()
+	{
+		if (_ownsVersionIndexClient)
+			VersionIndexClient?.Dispose();
+	}
 }

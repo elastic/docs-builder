@@ -30,7 +30,7 @@ public static class SearchExplainExtensions
 			service.Configuration.RulesetName
 		);
 
-		var combinedQuery = (Query)new BoolQuery { Should = [lexicalQuery], MinimumShouldMatch = 1 };
+		var combinedQuery = SearchQueryBuilder.FilterDocuments(lexicalQuery, page: null);
 
 		var getDocResponse = await service
 			.Client

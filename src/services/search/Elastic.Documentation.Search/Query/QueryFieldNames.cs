@@ -29,9 +29,12 @@ public static class QueryFieldNames
 	public static string ApiIdWords { get; } = $"{Doc.Fields.Api}.id_words";
 	public static string ApiMethod { get; } = $"{Doc.Fields.Api}.method";
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
+	public static string ApiKey { get; } = $"{Doc.Fields.Api}.key";
+	public static string ApiTreesTree { get; } = $"{Doc.Fields.Api}.trees.tree";
 	public static string ApiPropertiesName { get; } = $"{ApiProperties}.name";
 	public static string ApiPropertiesParent { get; } = $"{ApiProperties}.parent";
 	public static string ApiPropertiesPathWords { get; } = $"{ApiProperties}.path_words";
+	public static string ApiPropertiesNameWords { get; } = $"{ApiProperties}.name_words";
 	public static string PathKeyword { get; } = $"{Doc.Fields.Path}.keyword";
 	public static string PathMatch { get; } = $"{Doc.Fields.Path}.match";
 	public static string TitleKeyword { get; } = $"{Doc.Fields.Title}.keyword";
@@ -44,6 +47,7 @@ public static class QueryFieldNames
 	public static string Body { get; } = Doc.Fields.Body;
 	public static string Hidden { get; } = Doc.Fields.Hidden;
 	public static string LastUpdated { get; } = Doc.Fields.LastUpdated;
+	public static string ContentLastUpdated { get; } = Doc.Fields.ContentLastUpdated;
 	public static string TitleSemanticText { get; } = $"{Doc.Fields.Title}.semantic_text";
 	public static string SummarySemanticText { get; } = $"{Doc.Fields.Summary}.semantic_text";
 	public static string AiRagSummarySemanticText { get; } = $"{Doc.Fields.AiRagOptimizedSummary}.semantic_text";

@@ -9,6 +9,9 @@
     <!-- Tests run hundreds of allocation-heavy scenarios at once; background GC adds a GC thread per core and
          made the Authoring suite 3-4x slower on many-core machines than on 4 cores. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <!-- Test projects do not treat warnings as errors, so code-style diagnostics cannot fail them; skipping the analyzers
+         saves about a third of their compile time. The TUnit and compiler analyzers still run. -->
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -27,5 +30,12 @@
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+    <PackageReference Include="Nullean.Snapshots.TUnit" />
+    <PackageReference Include="Nullean.Snapshots.AwesomeAssertions" />
+    <PackageReference Include="Nullean.Snapshots.Html" />
+    <PackageReference Include="Nullean.Snapshots.Json" />
+    <PackageReference Include="Nullean.Snapshots.Yaml" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\tests-shared\Elastic.Documentation.Testing\Linked\*.cs" Link="Linked\%(Filename)%(Extension)" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\tests-shared\Elastic.Documentation.Testing\Elastic.Documentation.Testing.csproj" />
   </ItemGroup>
 </Project>

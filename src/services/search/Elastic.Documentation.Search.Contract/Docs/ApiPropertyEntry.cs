@@ -22,6 +22,11 @@ public record ApiPropertyEntry
 	[JsonPropertyName("path_words")]
 	public string PathWords { get; init; } = "";
 
+	/// <summary>The <see cref="ApiPropertyPath.IdentifierWords"/> of <see cref="Name"/> joined by spaces, so <c>unrated docs</c> or <c>docs unrated</c> finds <c>unrated_docs</c>.</summary>
+	[Text]
+	[JsonPropertyName("name_words")]
+	public string NameWords { get; init; } = "";
+
 	[Keyword]
 	[JsonPropertyName("type")]
 	public required string Type { get; init; }

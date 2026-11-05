@@ -22,7 +22,10 @@
 
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnforceCodeStyleInBuild Condition="'$(EnforceCodeStyleInBuild)' == ''">true</EnforceCodeStyleInBuild>
+    <!-- Nothing here uses static web assets: _static is served from embedded resources and there is no wwwroot or scoped CSS.
+         The pipeline made Site, Api and Mcp.Remote wait 25-50 s for their referenced projects on CI runners. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
     <PagefindFrontendDisableExtract>true</PagefindFrontendDisableExtract>
 
     <!-- Static graph evaluation speeds up restore by evaluating the dependency graph once up front -->

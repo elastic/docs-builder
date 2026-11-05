@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -17,7 +19,10 @@ public class InlineImageTest() : InlineTest<LinkInline>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml("""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""",
+			DocsHtml.Body()
+		);
 }
 
 [InheritsTests]
@@ -31,7 +36,10 @@ public class RelativeInlineImageTest() : InlineTest<LinkInline>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml("""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""",
+			DocsHtml.Body()
+		);
 }
 
 // Test image sizing with space before =
@@ -48,8 +56,9 @@ public class InlineImageWithSizingSpaceBeforeTest() : InlineTest<LinkInline>(
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>""",
+			DocsHtml.Body()
 		);
 }
 
@@ -67,8 +76,9 @@ public class InlineImageWithSizingNoSpaceBeforeTest() : InlineTest<LinkInline>(
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>""",
+			DocsHtml.Body()
 		);
 }
 
@@ -84,8 +94,9 @@ public class InlineImageWithPixelSizingTest() : InlineTest<LinkInline>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="330px" title="Elasticsearch" /></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="330px" title="Elasticsearch" /></p>""",
+			DocsHtml.Body()
 		);
 }
 
@@ -103,8 +114,9 @@ public class InlineImageWithTitleAndSizingTest() : InlineTest<LinkInline>(
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>""",
+			DocsHtml.Body()
 		);
 }
 
@@ -120,7 +132,8 @@ public class InlineImageWithWidthOnlyTest() : InlineTest<LinkInline>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="250px" title="Elasticsearch" /></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="250px" title="Elasticsearch" /></p>""",
+			DocsHtml.Body()
 		);
 }

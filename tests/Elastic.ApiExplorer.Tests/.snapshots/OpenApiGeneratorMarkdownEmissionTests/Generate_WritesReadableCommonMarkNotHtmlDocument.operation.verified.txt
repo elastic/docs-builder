@@ -1,0 +1,186 @@
+---
+type: api
+title: Run a search
+description: Returns hits that match the query defined in the request.
+url: /api/doc/elasticsearch/operation/operation-search
+resource: /api/doc/elasticsearch/operation/operation-search
+products:
+  - elasticsearch
+---
+
+# Run a search
+
+Authentication: required
+
+Availability: Generally available since 7.7
+
+- Server: `https://fixture.example.com` (Fixture server)
+
+## Paths
+
+- `POST` `/{index}/_search`
+
+#### Path parameters
+
+- `index` (string) — required
+  A comma-separated list of index names to search.
+
+## Description
+
+Returns hits that match the query defined in the request.
+
+Supports pagination through `size` and `from`.
+
+[Read the reference documentation](https://www.elastic.co/docs/fixture/search-reference)
+
+## Required privileges
+
+- Requires the `read` index privilege for the target data stream or index.
+- Requires the `monitor` cluster privilege when profiling is enabled.
+
+## Authentication
+
+- Api key: `Authorization: <value>`
+  Send the encoded key with the ApiKey prefix.
+- Basic: `Authorization: Basic <credentials>`
+- Bearer: `Authorization: Bearer <token>`
+
+## Query string parameters
+
+- `expand_wildcards` (enum) — optional
+  The type of index that wildcard patterns can match.
+  Values: `all`, `open`, `closed`, `hidden`
+- `q` (string · min length: 1 · max length: 2048) — optional
+  A query in the Lucene query string syntax.
+- `routing` (string) — optional
+  A custom value used to route operations to a specific shard.
+- `timeout` (integer | string) — optional
+  The period to wait for a response, as an integer number of milliseconds or a duration string.
+- `pretty` (boolean) — optional — deprecated
+  Pretty-print the response body.
+
+## Request body
+
+The search definition using the fixture Query DSL.
+
+`application/json`
+
+- `query` ({} Query) — required
+  A container for a single query variant. Query containers can nest other query containers, which exercises recursion detection.
+  See [Query](/api/doc/elasticsearch/types/_types-query_dsl-querycontainer)
+- `fields` (union string | string[]) — optional
+  A field or list of fields to return, exercising the X | X[] simple-union path.
+- `aggs` (map string to {} Aggregation) — optional
+  Aggregations to run, keyed by name.
+  See [Aggregation](/api/doc/elasticsearch/types/_types-aggregations-aggregationcontainer)
+- `settings` (map string to string) — optional
+  Free-form string settings, exercising the plain dictionary path.
+- `sort` (union oneOf) — optional
+  How to sort matching documents.
+  - **SortField**
+    Sort by a field value.
+    - `field` (string) — required
+      A field name or field path.
+    - `order` (enum) — optional
+      Values: `asc`, `desc`
+  - **ScoreSort**
+    Sort by relevance score.
+    - `order` (enum) — optional
+      Values: `asc`, `desc`
+- `mode` (enum) — optional
+  Trade accuracy for speed.
+  Values: `fast`, `accurate`
+- `pit` (object) — optional
+  A point in time to search, exercising inline nested object expansion.
+  - `id` (string) — required
+  - `keep_alive` (string) — optional
+- `legacy_size` (integer) — optional — deprecated
+  Use `size` on the query string instead.
+
+## Responses
+
+#### `200`
+
+Search results
+
+`application/json`
+
+- `took` (integer)
+  The time the request took in milliseconds.
+- `timed_out` (boolean)
+- `hits` (object[])
+  The matching documents.
+  - `_id` (string)
+  - `_score` (number)
+  - `_source` (object)
+- `aggregations` (map string to {} Aggregation result)
+  Aggregation results keyed by name.
+  See [Aggregation result](/api/doc/elasticsearch/types/_types-aggregations-aggregate)
+##### Response headers
+
+- `X-Found` (boolean) — required
+  Whether any documents matched.
+
+#### `404`
+
+The target index does not exist.
+
+`application/json`
+
+- `error` (object)
+  - `type` (string)
+  - `reason` (string)
+- `status` (integer)
+## Code examples
+
+#### Console
+
+```console
+POST /my-index/_search
+{
+  "query": { "match_all": {} }
+}
+```
+
+#### Python
+
+```python
+resp = client.search(index="my-index", query={"match_all": {}})
+```
+
+## Response examples
+
+#### A successful response
+
+`application/json`
+
+Two documents matched.
+
+```json
+{
+  "took": 5,
+  "timed_out": false,
+  "hits": [
+    {
+      "_id": "1",
+      "_score": 1.0
+    }
+  ]
+}
+```
+
+#### 404
+
+`application/json`
+
+Generated from the API spec. Values are representative. Unions use the first variant; deeply nested or large bodies may omit fields.
+
+```json
+{
+  "error": {
+    "type": "index_not_found_exception",
+    "reason": "no such index [my-index]"
+  },
+  "status": 404
+}
+```

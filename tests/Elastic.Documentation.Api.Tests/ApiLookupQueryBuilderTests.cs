@@ -10,6 +10,7 @@ using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Search;
 using Elastic.Transport;
 using Elastic.Transport.Extensions;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -37,6 +38,15 @@ public class ApiLookupQueryBuilderTests
 			.Select(o => o.EnumerateObject().Single().Value)
 			.ToDictionary(o => o.GetProperty("_name").GetString()!);
 
+	/// <summary>The name options of the word at <paramref name="index"/>: exact, prefix, then words of the field name.</summary>
+	private static JsonElement NameOptions(JsonDocument json, int index) =>
+		OptionsByName(TokenClause(json, index))[$"field_{index}"]
+			.GetProperty("query")
+			.GetProperty("dis_max")
+			.GetProperty("queries")[0]
+			.GetProperty("dis_max")
+			.GetProperty("queries");
+
 	/// <summary>The <c>key_0</c> option, whether the word offers other roles or, as a path, only this one.</summary>
 	private static JsonElement KeyOption(JsonDocument json)
 	{
@@ -60,10 +70,16 @@ public class ApiLookupQueryBuilderTests
 	private static Dictionary<string, string?[]> ExactOptions(JsonElement key) =>
 		TermsOptions(key).Take(2).ToDictionary(p => p.Name, p => p.Value.EnumerateArray().Select(v => v.GetString()).ToArray());
 
-	/// <summary>
-	/// Each routes-under alternation as <c>field pattern boost</c>, in option order, checked to carry no name of its own.
-	/// </summary>
+	/// <summary>Each routes-under alternation, <c>(templates)/.+</c>, as <c>field pattern boost</c> in option order.</summary>
 	private static string[] RoutesUnder(JsonElement key) =>
+		Regexps(key).Where(r => r.Split(' ')[1].EndsWith(")/.+", StringComparison.Ordinal)).ToArray();
+
+	/// <summary>Each completion of the last typed segment, <c>(templates)[^/]+</c> and the routes under it, in option order.</summary>
+	private static string[] Completions(JsonElement key) =>
+		Regexps(key).Where(r => r.Contains(")[^/]+", StringComparison.Ordinal)).ToArray();
+
+	/// <summary>Each regexp alternation as <c>field pattern boost</c>, in option order, checked to carry no name of its own.</summary>
+	private static string[] Regexps(JsonElement key) =>
 		key
 			.GetProperty("queries")
 			.EnumerateArray()
@@ -369,14 +385,92 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	[Arguments("/")]
-	[Arguments("GET /")]
 	[Arguments("/{index}")]
 	public void Build_RouteWithoutALiteralSegment_MatchesNothing(string typed)
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build(typed));
 
 		json.RootElement.TryGetProperty("match_none", out _).Should().BeTrue();
+	}
+
+	[Test]
+	[Arguments("/", null)]
+	[Arguments("GET /", "GET")]
+	[Arguments("HEAD /", "HEAD")]
+	public void Build_RootRoute_LooksUpOnlyTheRootKey(string typed, string? method)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(typed));
+		var key = KeyOption(json);
+
+		key.GetProperty("queries").GetArrayLength().Should().Be(1);
+		var exact = key.GetProperty("queries")[0].GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
+		exact.GetProperty("boost").GetSingle().Should().Be(6.0f);
+		exact.GetProperty("filter").GetProperty("terms").GetRawText().Should().Be("""{"api.endpoints":["/"]}""");
+		key.GetRawText().Should().NotContain("api.endpoints_bare").And.NotContain("regexp");
+		Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Where(q => q.TryGetProperty("term", out var term) && term.TryGetProperty("api.method", out _))
+			.Select(q => q.GetProperty("term").GetProperty("api.method").GetProperty("value").GetString())
+			.Should()
+			.Equal(new[] { method }.OfType<string>());
+	}
+
+	[Test]
+	public void Build_TypedRouteStoppingInsideASegment_CompletesItBelowTheFullKeys()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_sear"));
+		var key = KeyOption(json);
+
+		Completions(key)
+			.Should()
+			.Equal(
+				"api.endpoints (_sear)[^/]+ 5",
+				"api.endpoints (_sear)[^/]+/.+ 4.5",
+				"api.endpoints_bare (sear)[^/]+ 5",
+				"api.endpoints_bare (sear)[^/]+/.+ 4.5"
+			);
+		RoutesUnder(key).Should().Equal("api.endpoints (_sear)/.+ 5.5", "api.endpoints_bare (sear)/.+ 5.5");
+	}
+
+	[Test]
+	public void Build_TypedRouteWithAParameterValue_CompletesOnlyTheTemplatesEndingInALiteral()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_cat/ind"));
+		var completions = Completions(KeyOption(json));
+
+		completions
+			.Where(r => r.StartsWith("api.endpoints ", StringComparison.Ordinal))
+			.Should()
+			.Equal(
+				"api.endpoints (_cat/ind)[^/]+ 5",
+				@"api.endpoints (\*/ind)[^/]+ 3.333",
+				"api.endpoints (_cat/ind)[^/]+/.+ 4.5",
+				@"api.endpoints (\*/ind)[^/]+/.+ 3"
+			);
+		completions.Should().NotContain(r => r.Contains(@"_cat/\*", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public void Build_TypedRouteEndingInASlash_DoesNotCompleteTheSegment()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_cat/"));
+
+		Completions(KeyOption(json)).Should().BeEmpty();
+	}
+
+	[Test]
+	public void Build_TypedRouteEndingInAParameter_DoesNotCompleteTheParameter()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_cat/{index}"));
+
+		Completions(KeyOption(json)).Should().BeEmpty();
+	}
+
+	[Test]
+	public void Build_PlainWord_DoesNotCompleteAnEndpoint()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("_sear"));
+
+		Completions(KeyOption(json)).Should().BeEmpty();
 	}
 
 	[Test]
@@ -452,12 +546,7 @@ public class ApiLookupQueryBuilderTests
 		var innerHits = field.GetProperty("inner_hits");
 		innerHits.GetProperty("name").GetString().Should().Be("api_properties_1");
 		innerHits.GetProperty("size").GetInt32().Should().Be(20);
-		var names = field
-			.GetProperty("query")
-			.GetProperty("dis_max")
-			.GetProperty("queries")[0]
-			.GetProperty("dis_max")
-			.GetProperty("queries");
+		var names = NameOptions(json, 1);
 		names[0].GetProperty("constant_score").GetProperty("boost").GetSingle().Should().Be(1.0f);
 		names[1].GetProperty("constant_score").GetProperty("boost").GetSingle().Should().Be(0.6f);
 		names[1].GetProperty("constant_score").GetProperty("_name").GetString().Should().Be("api_name");
@@ -503,7 +592,7 @@ public class ApiLookupQueryBuilderTests
 		var options = fieldQuery.GetProperty("dis_max").GetProperty("queries");
 		options.GetArrayLength().Should().Be(1);
 		var matches = options[0].GetProperty("dis_max").GetProperty("queries");
-		matches.GetArrayLength().Should().Be(2);
+		matches.GetArrayLength().Should().Be(3);
 		matches[0]
 			.GetProperty("constant_score")
 			.GetProperty("filter")
@@ -523,9 +612,188 @@ public class ApiLookupQueryBuilderTests
 			.Should()
 			.Be(name);
 		fieldQuery.GetRawText().Should().NotContain("api.properties.description").And.NotContain("api.properties.path");
-		var scores = matches.EnumerateArray().Select(q => q.GetProperty("constant_score").GetProperty("boost").GetSingle()).ToArray();
+		var scores = matches
+			.EnumerateArray()
+			.Take(2)
+			.Select(q => q.GetProperty("constant_score").GetProperty("boost").GetSingle())
+			.ToArray();
 		scores.Should().OnlyContain(score => score > 0 && score <= 1);
 		scores[0].Should().BeGreaterThan(scores[1], "an exact field name ranks ahead of a prefix");
+		matches[2].GetProperty("bool").GetProperty("_name").GetString().Should().Be(SearchQueryBuilder.ApiNameHits);
+	}
+
+	[Test]
+	public void Build_FieldWords_MatchEachWordFuzzilyAndLiftARowNamingSeveral()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("unreated docs"));
+		var wordOption = NameOptions(json, 0)[2];
+
+		wordOption
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+				{
+				  "bool": {
+				    "must": {
+				      "constant_score": {
+				        "boost": 0.5,
+				        "filter": {
+				          "bool": {
+				            "must": {
+				              "bool": {
+				                "minimum_should_match": 1,
+				                "should": [
+				                  {
+				                    "match": {
+				                      "api.properties.name_words": {
+				                        "fuzziness": "AUTO:4,100",
+				                        "prefix_length": 1,
+				                        "query": "unreated"
+				                      }
+				                    }
+				                  },
+				                  {
+				                    "prefix": {
+				                      "api.properties.name_words": {
+				                        "value": "unreated"
+				                      }
+				                    }
+				                  }
+				                ]
+				              }
+				            }
+				          }
+				        }
+				      }
+				    },
+				    "_name": "api_name",
+				    "should": {
+				      "constant_score": {
+				        "boost": 0.5,
+				        "filter": {
+				          "match": {
+				            "api.properties.name_words": {
+				              "fuzziness": "AUTO:4,100",
+				              "prefix_length": 1,
+				              "query": "docs"
+				            }
+				          }
+				        }
+				      }
+				    }
+				  }
+				}
+				"""
+			);
+	}
+
+	[Test]
+	public void Build_CompoundNextToAnotherWord_LiftsOnlyByTheOtherWord()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("unrated_docs rank"));
+		var lift = NameOptions(json, 0)[2].GetProperty("bool").GetProperty("should").GetProperty("constant_score").GetProperty("filter");
+
+		lift
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+			{
+			  "match": {
+			    "api.properties.name_words": {
+			      "fuzziness": "AUTO:4,100",
+			      "prefix_length": 1,
+			      "query": "rank"
+			    }
+			  }
+			}
+			"""
+			);
+	}
+
+	[Test]
+	public void Build_IdentifierFragment_MatchesTheWordsOfAFieldName()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("_uri"));
+		var wordOption = NameOptions(json, 0)[2];
+
+		wordOption
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+				{
+				  "bool": {
+				    "must": {
+				      "constant_score": {
+				        "boost": 0.5,
+				        "filter": {
+				          "bool": {
+				            "must": {
+				              "bool": {
+				                "minimum_should_match": 1,
+				                "should": [
+				                  {
+				                    "match": {
+				                      "api.properties.name_words": {
+				                        "fuzziness": "AUTO:4,100",
+				                        "prefix_length": 1,
+				                        "query": "uri"
+				                      }
+				                    }
+				                  },
+				                  {
+				                    "prefix": {
+				                      "api.properties.name_words": {
+				                        "value": "uri"
+				                      }
+				                    }
+				                  }
+				                ]
+				              }
+				            }
+				          }
+				        }
+				      }
+				    },
+				    "_name": "api_name"
+				  }
+				}
+				"""
+			);
+	}
+
+	[Test]
+	public void Build_ShortFieldWord_MatchesWholeWordsOnly()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("scroll id"));
+		var wordFilter = NameOptions(json, 1)[2]
+			.GetProperty("bool")
+			.GetProperty("must")
+			.GetProperty("constant_score")
+			.GetProperty("filter");
+
+		wordFilter
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+				{
+				  "bool": {
+				    "must": {
+				      "match": {
+				        "api.properties.name_words": {
+				          "fuzziness": "AUTO:4,100",
+				          "prefix_length": 1,
+				          "query": "id"
+				        }
+				      }
+				    }
+				  }
+				}
+				"""
+			);
 	}
 
 	[Test]
@@ -692,7 +960,12 @@ public class ApiLookupQueryBuilderTests
 
 		lifts.Should().Contain("\"rank_feature\":{\"boost\":0.5,\"field\":\"api.id_words\"}");
 		lifts.Should().Contain("\"api.deprecated\":{\"boost\":0.2,\"value\":false}");
-		Clauses(json.RootElement.GetProperty("bool").GetProperty("filter")).Should().ContainSingle();
+		json
+			.RootElement
+			.GetProperty("bool")
+			.TryGetProperty("filter", out _)
+			.Should()
+			.BeFalse("the service filters documents around the lookup");
 	}
 
 	[Test]
@@ -704,6 +977,14 @@ public class ApiLookupQueryBuilderTests
 	[Test]
 	public void ApiLookupWeights_EndpointKeyBeatsNamespaceKey() =>
 		ApiLookupWeights.EndpointKey.Should().BeGreaterThan(ApiLookupWeights.NamespaceKey);
+
+	[Test]
+	public void ApiLookupWeights_NamespaceKeyBeatsEndpointCompletion() =>
+		ApiLookupWeights.NamespaceKey.Should().BeGreaterThan(ApiLookupWeights.EndpointCompletion);
+
+	[Test]
+	public void ApiLookupWeights_EndpointCompletionBeatsNamespaceCompletion() =>
+		ApiLookupWeights.EndpointCompletion.Should().BeGreaterThan(ApiLookupWeights.NamespaceCompletion);
 
 	[Test]
 	public void ApiLookupWeights_NamespaceAndOperationWordBeatEndpointAndGroupWord() =>

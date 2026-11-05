@@ -7,6 +7,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -78,25 +80,39 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains("Hidden feature") && d.Message.Contains(
-					"feature:hidden-api"
-				) && d.Message.Contains("will be commented out")
+			.MatchInlineSnapshot(
+				"warning  Changelog entry 'Hidden feature' with feature-id 'feature:hidden-api' will be commented out in markdown output"
 			);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			% * Hidden feature. [#100](https://github.com/elastic/elastic/pull/100)
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		// Hidden entry should be commented out with % prefix
-		indexContent.Should().Contain("% * Hidden feature");
-		// Visible entry should not be commented
-		indexContent.Should().Contain("* Visible feature");
-		indexContent.Should().NotContain("% * Visible feature");
+			%   This feature should be hidden
+			* Visible feature. [#101](https://github.com/elastic/elastic/pull/101)
+
+			  This feature should be visible
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -151,19 +167,9 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var breakingFile = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
-		FileSystem.File.Exists(breakingFile).Should().BeTrue();
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 
-		var breakingContent = await FileSystem.File.ReadAllTextAsync(breakingFile, TestContext.Current!.Execution.CancellationToken);
-		// Should use block comments <!-- -->
-		breakingContent.Should().Contain("<!--");
-		breakingContent.Should().Contain("-->");
-		breakingContent.Should().Contain("Hidden breaking change");
-		// Entry should be between comment markers
-		var commentStart = breakingContent.IndexOf("<!--", StringComparison.Ordinal);
-		var commentEnd = breakingContent.IndexOf("-->", StringComparison.Ordinal);
-		commentStart.Should().BeLessThan(commentEnd);
-		breakingContent.Substring(commentStart, commentEnd - commentStart).Should().Contain("Hidden breaking change");
+		// The hidden entry is wrapped in a block comment <!-- -->
 	}
 
 	[Test]
@@ -216,17 +222,7 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.2.0", "deprecations.md");
-		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
-
-		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(
-			deprecationsFile,
-			TestContext.Current!.Execution.CancellationToken
-		);
-		// Should use block comments <!-- -->
-		deprecationsContent.Should().Contain("<!--");
-		deprecationsContent.Should().Contain("-->");
-		deprecationsContent.Should().Contain("Hidden deprecation");
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -305,12 +301,28 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("% * First hidden feature");
-		indexContent.Should().Contain("% * Second hidden feature");
-		indexContent.Should().Contain("* Visible feature");
-		indexContent.Should().NotContain("% * Visible feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			% * First hidden feature. [#100](https://github.com/elastic/elastic/pull/100)
+			% * Second hidden feature. [#101](https://github.com/elastic/elastic/pull/101)
+			* Visible feature. [#102](https://github.com/elastic/elastic/pull/102)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -371,9 +383,26 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("% * Hidden feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			% * Hidden feature. [#100](https://github.com/elastic/elastic/pull/100)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -425,10 +454,26 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		// Should match case-insensitively
-		indexContent.Should().Contain("% * Hidden feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			% * Hidden feature. [#100](https://github.com/elastic/elastic/pull/100)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -496,13 +541,27 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		// Entry from bundle hide-features should be commented out
-		indexContent.Should().Contain("% * Hidden from bundle");
-		// Visible entry should not be commented
-		indexContent.Should().Contain("* Visible feature");
-		indexContent.Should().NotContain("% * Visible feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			% * Hidden from bundle. [#100](https://github.com/elastic/elastic/pull/100)
+			* Visible feature. [#101](https://github.com/elastic/elastic/pull/101)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -584,13 +643,27 @@ public class HideFeaturesTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		// Both CLI and bundle hidden entries should be commented
-		indexContent.Should().Contain("% * Hidden from CLI");
-		indexContent.Should().Contain("% * Hidden from bundle");
-		// Visible entry should not be commented
-		indexContent.Should().Contain("* Visible feature");
-		indexContent.Should().NotContain("% * Visible feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			% * Hidden from CLI. [#100](https://github.com/elastic/elastic/pull/100)
+			% * Hidden from bundle. [#101](https://github.com/elastic/elastic/pull/101)
+			* Visible feature. [#102](https://github.com/elastic/elastic/pull/102)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 }

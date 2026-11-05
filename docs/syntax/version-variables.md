@@ -104,6 +104,7 @@ This is dictated by the [`versions.yml`](https://github.com/elastic/docs-builder
 * `edot_java`
 * `edot_node`
 * `edot_browser`
+* `edot_react_native`
 * `edot_php`
 * `edot_python`
 * `edot_cf_aws`

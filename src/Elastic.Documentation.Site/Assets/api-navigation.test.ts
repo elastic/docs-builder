@@ -114,6 +114,21 @@ describe('changesApiTree', () => {
         ).toBe(true)
     })
 
+    it('is true between main and the unversioned path', () => {
+        expect(
+            changesApiTree(
+                '/docs/api/doc/elasticsearch/main/group/endpoint-search',
+                main
+            )
+        ).toBe(true)
+        expect(
+            changesApiTree(
+                '/docs/api/doc/elasticsearch/main/group/a',
+                '/docs/api/doc/elasticsearch/main/operation/b'
+            )
+        ).toBe(false)
+    })
+
     it('is true between two released versions', () => {
         expect(changesApiTree(v8, v9)).toBe(true)
     })

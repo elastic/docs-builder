@@ -1,0 +1,32 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "published_date": "2023-06-15T17:00:00+00:00",
+  "modified_date": "2023-07-10T09:15:00+00:00",
+  "og": {
+    "title": "Ingesting Data into Elasticsearch | Elastic Webinar",
+    "description": "Learn about data ingestion patterns with Elasticsearch.",
+    "image": "https://images.contentstack.io/v3/assets/sample/seo-image.png"
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Ingesting Data into Elasticsearch",
+  "search_title": "Webinar: Ingesting Data into Elasticsearch",
+  "content_type": "site",
+  "path": "/webinars/ingesting-data-into-elasticsearch",
+  "url": "/webinars/ingesting-data-into-elasticsearch",
+  "hash": "4d31971fe7ddc1f9",
+  "last_updated": "2023-07-10T09:15:00+00:00",
+  "description": "Learn about data ingestion patterns with Elasticsearch.",
+  "headings": [],
+  "body": "Join us for a deep dive into data ingestion patterns with Elasticsearch. We cover Logstash, Beats, and the Elasticsearch ingest pipeline.",
+  "summary": "Learn about data ingestion patterns with Elasticsearch.",
+  "parents": [],
+  "translated": true,
+  "section": "webinar",
+  "content_tier": "supplementary",
+  "navigation": {
+    "depth": 3,
+    "table_of_contents": 100
+  }
+}

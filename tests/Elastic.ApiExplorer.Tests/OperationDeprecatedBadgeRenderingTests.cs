@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -42,9 +43,7 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
 		var html = await fixture.RenderAsync(nav);
 
-		Slice(html, "class=\"api-title-badges\"", "</header>")
-			.Should()
-			.Contain("<a class=\"applicable-info\" href=\"#authentication\"><span class=\"applicable-name\">Auth</span></a>");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-title-badges"));
 		html.Should().Contain("data-section=\"authentication\"");
 	}
 
