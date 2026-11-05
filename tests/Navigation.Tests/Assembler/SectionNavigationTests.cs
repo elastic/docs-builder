@@ -10,6 +10,7 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -77,7 +78,7 @@ public class SectionNavigationTests()
 		var (nav, _, _) = BuildTwoChildSection(yaml);
 
 		// Top-level should have exactly one item: the SectionNavigation
-		NavigationTreeDump
+		NavigationDump
 			.ToText(nav)
 			.Should()
 			.MatchInlineSnapshot(

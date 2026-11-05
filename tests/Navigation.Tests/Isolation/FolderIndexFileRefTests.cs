@@ -9,6 +9,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -40,7 +41,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Should create a FolderNavigation with the file as index
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(

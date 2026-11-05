@@ -10,6 +10,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -124,7 +125,7 @@ public class SiteDocumentationSetsTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -205,7 +206,7 @@ public class SiteDocumentationSetsTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -284,7 +285,7 @@ public class SiteDocumentationSetsTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -364,7 +365,7 @@ public class SiteDocumentationSetsTests()
 			GenericDocumentationFileFactory.Instance
 		);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(observabilityNav)
 			.Should()
 			.MatchInlineSnapshot(
@@ -401,7 +402,7 @@ public class SiteDocumentationSetsTests()
 			GenericDocumentationFileFactory.Instance
 		);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(platformNav)
 			.Should()
 			.MatchInlineSnapshot(
@@ -441,7 +442,7 @@ public class SiteDocumentationSetsTests()
 			GenericDocumentationFileFactory.Instance
 		);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(securityNav)
 			.Should()
 			.MatchInlineSnapshot(
@@ -492,7 +493,7 @@ public class SiteDocumentationSetsTests()
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// Verify root URL has path prefix
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -546,7 +547,7 @@ public class SiteDocumentationSetsTests()
 		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(

@@ -9,6 +9,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -107,7 +108,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -148,7 +149,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -193,7 +194,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -239,7 +240,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -281,7 +282,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(

@@ -9,6 +9,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -32,7 +33,7 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -64,7 +65,7 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -100,7 +101,7 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -137,7 +138,7 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -210,7 +211,7 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(

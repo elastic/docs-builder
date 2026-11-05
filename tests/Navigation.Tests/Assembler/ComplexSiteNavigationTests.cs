@@ -11,6 +11,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
@@ -124,7 +125,7 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -212,7 +213,7 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -271,7 +272,7 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -331,7 +332,7 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(siteNavigation)
 			.Should()
 			.MatchInlineSnapshot(

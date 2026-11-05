@@ -11,6 +11,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Navigation.Tests.Isolation;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -72,7 +73,7 @@ public class SiteNavigationTests()
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -139,7 +140,7 @@ public class SiteNavigationTests()
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(

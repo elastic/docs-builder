@@ -9,6 +9,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -171,7 +172,7 @@ public class NavigationStructureTests() : DocumentationSetNavigationTestBase()
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
@@ -239,7 +240,7 @@ public class NavigationStructureTests() : DocumentationSetNavigationTestBase()
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		// the urls are /setup/advanced and /setup/advanced/performance, not /setup/setup/advanced and so on
-		NavigationTreeDump
+		NavigationDump
 			.ToText(navigation)
 			.Should()
 			.MatchInlineSnapshot(
