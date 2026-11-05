@@ -91,4 +91,47 @@ public class SnapshotHelpersTests
 			)
 			.Should()
 			.MatchInlineSnapshot("error {temp}/diff-validate-test-{id}/docs/redirects.yml Missing");
+
+	[Test]
+	public void ToSnapshotText_WindowsPaths_ReadLikeUnixPaths()
+	{
+		var diagnostics = new List<Diagnostic>
+		{
+			new()
+			{
+				Severity = Severity.Error,
+				File = @"C:\docs\section-b\toc.yml",
+				Message = @"`sub-requirements2` does not exist in testing\req.md."
+			},
+			new() { Severity = Severity.Error, File = "C:/docs/docset.yml", Line = 4, Message = "see https://elastic.co/docs and D:/x" },
+			new() { Severity = Severity.Warning, File = @"/docs\docset.yml", Message = "mixed" }
+		};
+		diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			error /docs/section-b/toc.yml `sub-requirements2` does not exist in testing/req.md.
+			error /docs/docset.yml:4 see https://elastic.co/docs and /x
+			warning /docs/docset.yml mixed
+			"""
+			);
+	}
+
+	[Test]
+	public void ToSnapshotText_FirstLineOnly_DropsTheStackTrace()
+	{
+		var diagnostics = new List<Diagnostic>
+		{
+			new()
+			{
+				Severity = Severity.Error,
+				File = "index.md",
+				Line = 3,
+				Message =
+					"registry could not be read\nSystem.IO.FileNotFoundException: Could not find file 'x'.\n   at Some.Method() in /src/File.cs:line 209"
+			}
+		};
+		diagnostics.ToSnapshotText(firstLineOnly: true).Should().MatchInlineSnapshot("error index.md:3 registry could not be read");
+	}
 }
