@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
@@ -65,7 +64,6 @@ public class FloatingSectionLinksTests
 						project: test
 						toc:
 						- file: index.md
-						- api: demo
 						- file: page.md
 						"""
 					)
@@ -96,11 +94,9 @@ public class FloatingSectionLinksTests
 
 		public string Kind => "api";
 
-		public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
-		{
-			section = key == "demo" ? new DemoSection(this) : null;
-			return section is not null;
-		}
+		public bool MountsImplicitly => true;
+
+		public IReadOnlyList<IFloatingSection> GetSections() => [new DemoSection(this)];
 	}
 
 	private sealed class DemoSection(DemoProvider provider) : IFloatingSection
@@ -109,7 +105,8 @@ public class FloatingSectionLinksTests
 		public string Key => "demo";
 		public string UrlRoot => "api/doc/demo";
 
-		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) => new DemoRoot(parent);
+		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
+			new DemoRoot(parent) { Hidden = hidden };
 
 		public Task ResolveAsync(Cancel ctx)
 		{
@@ -152,7 +149,7 @@ public class FloatingSectionLinksTests
 		public string NavigationTitle => Index.NavigationTitle;
 		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-		public bool Hidden => false;
+		public bool Hidden { get; set; }
 		public int NavigationIndex { get; set; }
 		public bool IsIsland { get; set; }
 		public string Id => "demo";

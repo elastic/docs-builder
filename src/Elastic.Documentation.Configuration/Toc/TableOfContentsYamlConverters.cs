@@ -53,7 +53,6 @@ public class TocItemYamlConverter(ApplicableToYamlConverter appliesToConverter) 
 
 	private static readonly string[] KnownKeys =
 	[
-		"api",
 		"file",
 		"folder",
 		"hidden",
@@ -201,15 +200,6 @@ public class TocItemYamlConverter(ApplicableToYamlConverter appliesToConverter) 
 			// Reuse the already-captured sort and exclude variables from the outer scope
 			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
 			return new ListingRef(listing, listing, children, placeholderContext, options);
-		}
-
-		// Check for a floating section (api: <key>). It owns its URL root, so it takes no children or folder.
-		foreach (var kind in FloatingSectionRef.Kinds)
-		{
-			if (!dictionary.TryGetValue(kind, out var floatingKey) || floatingKey is not string key || string.IsNullOrWhiteSpace(key))
-				continue;
-			var extraKeys = dictionary.Keys.Where(k => k != kind).ToArray();
-			return new FloatingSectionRef(kind, key, key, key, placeholderContext, extraKeys);
 		}
 
 		// Check for CLI reference (cli: schema.json, optional folder: supplemental-docs/)

@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
@@ -21,36 +20,38 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		project: 'docs-builder'
 		toc:
 		  - file: index.md
-		  - api: demo
 		  - file: page.md
 		""";
 
-	private static (MockFileSystem FileSystem, TestDocumentationSetContext Context, DocumentationSetFile DocSet) Arrange(
-		Func<MockFileSystem, TestDocumentationSetContext> createContext
-	)
+	private (TestDocumentationSetContext Context, DocumentationSetFile DocSet) Arrange()
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/page.md", new MockFileData("# Page"));
-		var context = createContext(fileSystem);
+		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, Yaml, fileSystem.NewDirInfo("docs"));
-		return (fileSystem, context, docSet);
+		return (context, docSet);
 	}
 
-	[Test]
-	public async Task FloatingSectionRef_MountedWithProvider_RendersAsIslandUnderTheDocset()
-	{
-		var (_, context, docSet) = Arrange(CreateContext);
-		var registry = new FloatingSectionRegistry([new DemoProvider()]);
-
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+	private static DocumentationSetNavigation<TestDocumentationFile> CreateNavigation(
+		TestDocumentationSetContext context,
+		DocumentationSetFile docSet,
+		FloatingSectionRegistry? registry = null
+	) =>
+		new(
 			docSet,
 			context,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance,
 			floatingSections: registry
 		);
-		await Task.CompletedTask;
+
+	[Test]
+	public void FloatingSection_FromAProviderThatMountsImplicitly_IsInTheTreeWithoutATocEntry()
+	{
+		var (context, docSet) = Arrange();
+
+		var navigation = CreateNavigation(context, docSet, new FloatingSectionRegistry([new DemoProvider()]));
 
 		var section = navigation.NavigationItems.OfType<DemoRoot>().Should().ContainSingle().Subject;
 		section.IsIsland.Should().BeTrue();
@@ -59,22 +60,57 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		section.Url.Should().Be("/api/doc/demo");
 		section.NavigationIndex.Should().BeGreaterThan(0, "the section takes part in the navigation order");
 		section.Index.NavigationIndex.Should().Be(section.NavigationIndex);
-		navigation.NavigationItems.Select(i => i.NavigationTitle).Should().ContainInOrder("Demo API", "page");
+		navigation.NavigationItems.Last().Should().BeSameAs(section, "implicit sections follow the toc entries");
+		navigation.FloatingSections.Should().ContainSingle();
 		context.Diagnostics.Should().BeEmpty();
+	}
+
+	[Test]
+	public void FloatingSection_MountedImplicitly_IsHiddenInTheSidebar()
+	{
+		var (context, docSet) = Arrange();
+
+		var navigation = CreateNavigation(context, docSet, new FloatingSectionRegistry([new DemoProvider()]));
+
+		navigation
+			.NavigationItems
+			.OfType<DemoRoot>()
+			.Single()
+			.Hidden
+			.Should()
+			.BeTrue("a docset's sidebar does not change because it declares an API");
+		navigation.NavigationItems.Where(i => !i.Hidden).Select(i => i.NavigationTitle).Should().Equal("page");
+	}
+
+	[Test]
+	public void FloatingSection_FromAProviderThatDoesNotMountImplicitly_IsNotInTheTree()
+	{
+		var (context, docSet) = Arrange();
+
+		var navigation = CreateNavigation(context, docSet, new FloatingSectionRegistry([new DemoProvider { MountsImplicitly = false }]));
+
+		navigation.NavigationItems.OfType<DemoRoot>().Should().BeEmpty();
+		navigation.FloatingSections.Should().BeEmpty();
+	}
+
+	[Test]
+	public void FloatingSection_WithoutAProvider_LeavesTheNavigationUnchanged()
+	{
+		var (context, docSet) = Arrange();
+
+		var navigation = CreateNavigation(context, docSet);
+
+		navigation.NavigationItems.OfType<DemoRoot>().Should().BeEmpty();
+		navigation.NavigationItems.Select(i => i.NavigationTitle).Should().Equal("page");
+		navigation.FloatingSections.Should().BeEmpty();
 	}
 
 	[Test]
 	public async Task FloatingSection_FilledAfterConstruction_StaysOutOfTheGlobalNavigationOrder()
 	{
-		var (_, context, docSet) = Arrange(CreateContext);
+		var (context, docSet) = Arrange();
 		var provider = new DemoProvider();
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
-			docSet,
-			context,
-			TestDocumentationFileFactory.Instance,
-			crossLinkResolver: TestCrossLinkResolver.Instance,
-			floatingSections: new FloatingSectionRegistry([provider])
-		);
+		var navigation = CreateNavigation(context, docSet, new FloatingSectionRegistry([provider]));
 		var root = navigation.NavigationItems.OfType<DemoRoot>().Should().ContainSingle().Subject;
 		root.NavigationItems.Should().BeEmpty("the root exists before the section is resolved");
 
@@ -88,25 +124,7 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 	}
 
 	[Test]
-	public async Task FloatingSectionRef_WithoutProvider_EmitsAnErrorAndDropsTheEntry()
-	{
-		var (_, context, docSet) = Arrange(CreateContext);
-		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
-
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
-			docSet,
-			context,
-			TestDocumentationFileFactory.Instance,
-			crossLinkResolver: TestCrossLinkResolver.Instance
-		);
-		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
-
-		navigation.NavigationItems.OfType<DemoRoot>().Should().BeEmpty();
-		context.Diagnostics.Should().ContainSingle(d => d.Message.Contains("'api: demo'"));
-	}
-
-	[Test]
-	public async Task FloatingSectionRef_WithOtherKeys_EmitsAnError()
+	public async Task TocEntry_ForAnApi_IsNoLongerAKnownKey()
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
@@ -119,13 +137,17 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 			toc:
 			  - file: index.md
 			  - api: demo
-			    children:
-			      - file: index.md
 			""";
 
 		_ = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		context.Diagnostics.Should().Contain(d => d.Message.Contains("'api: demo'") && d.Message.Contains("'children'"));
+		context
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.StartsWith("Unknown key 'api'", StringComparison.Ordinal),
+				"a docset declares its APIs in the api: block, and the toc takes no entry for them"
+			);
 	}
 }

@@ -301,27 +301,26 @@ toc:
     crosslink: elasticsearch://api/elasticsearch/
 ```
 
-## Mount an API in the navigation [api-toc-entry]
+## APIs in the navigation tree [api-navigation]
 
-An `api:` entry in the table of contents mounts the pages of one API as a section of the navigation tree:
+A docset that declares an API in its `api:` block has that API in its navigation tree. The `toc.yml` or `docset.yml` table of contents needs no entry for it, and the API pages still render at the same URLs.
 
-```yaml
-toc:
-  - file: index.md
-  - api: elasticsearch
-```
+Each API is an island at the end of the table of contents, with its own sidebar. Every version of the API is part of it, and only the current version is visible. The sidebar of your pages does not show the API for now, so a docset's sidebar does not change because it declares one.
 
-The value is the key in the URL of the API, as in `/api/doc/elasticsearch/`. The entry takes no other keys. It must match an API declared in the `api:` block of `docset.yml`, or the build reports an error.
+The API in the tree is what the rest of the build reads:
 
-The section is an island. The sidebar of your pages shows a link to the API, and the API pages keep their own sidebar and URLs. Every version of the API is part of the section, and only the current version is visible. The API Explorer does not move: the pages still render at the same URLs whether or not the table of contents mounts them.
+- `links.json` lists the pages of the API, so other docsets can [link to them](#api-cross-links).
+- The assembler lists every declared API under the `APIs` section of the site navigation, which the sitemap and `llms.txt` read. Refer to [`navigation.yml`](../../documentation/assembler/navigation.md#navigation-floating).
+
+An isolated build and an assembler build put the APIs in the tree when they render the API Explorer. A build run with `--skip-api` leaves them out. The `serve` and Codex builds do not put them in the tree yet.
 
 :::{note}
-Only the isolated `build` command accepts `api:` entries for now. The assembler, `serve` and Codex builds report an error for an `api:` entry, so don't add one to a docset those builds load. The assembler mounts every declared API through a `floating: api` section in [`navigation.yml`](../../documentation/assembler/navigation.md#navigation-floating).
+A toc entry such as `- api: elasticsearch` is not valid. Declare the API in the `api:` block, and the docset has it.
 :::
 
 ### Link to an API page from Markdown [api-cross-links]
 
-A docset that mounts an API with an `api:` toc entry publishes the pages of that API in its `links.json`. Other docsets can then use a cross-link to any page of it, and the build checks that the page exists:
+A docset that declares an API in its `api:` block publishes the pages of that API in its `links.json`. Other docsets can then use a cross-link to any page of it, and the build checks that the page exists:
 
 ```markdown
 [Search API](elasticsearch://api/elasticsearch/operation/operation-search)
@@ -329,7 +328,7 @@ A docset that mounts an API with an `api:` toc entry publishes the pages of that
 [Elasticsearch API](elasticsearch://api/elasticsearch)
 ```
 
-The scheme is the repository of the docset that mounts the API. The path is `api/<key>`, then an optional version, then the path of the page under the API. The version is the exact name of an API version, such as `8` or `main`, and not a URL segment. Without a version, the link reaches the current version. The published page keeps whatever URL that version has. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them, in the versions that list them. A `#fragment` stays on the resolved URL, but the build does not check that the anchor exists.
+The scheme is the repository of the docset that declares the API. The path is `api/<key>`, then an optional version, then the path of the page under the API. The version is the exact name of an API version, such as `8` or `main`, and not a URL segment. Without a version, the link reaches the current version. The published page keeps whatever URL that version has. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them, in the versions that list them. A `#fragment` stays on the resolved URL, but the build does not check that the anchor exists.
 
 An assembler build links to the page on the site it builds. An isolated build links to the published page on `https://www.elastic.co/docs/`.
 

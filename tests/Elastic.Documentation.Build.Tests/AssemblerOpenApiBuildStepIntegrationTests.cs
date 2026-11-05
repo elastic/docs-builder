@@ -190,6 +190,57 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 	}
 
 	[Test]
+	public async Task DocsetApiSection_ResolvedAfterTheGenerators_IsFilledAndKeepsItsVisibility(CancellationToken cancellationToken)
+	{
+		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
+			return;
+
+		using var versionIndexClient = CreateInMemoryVersionIndexClient();
+		using var workspace = await CreateWorkspaceAsync(cancellationToken);
+		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
+		var navigation = new SiteNavigation(
+			SiteNavigationFile.Deserialize(
+				// language=yaml
+				"""
+				toc:
+				  - section: APIs
+				    floating: api
+				"""
+			),
+			workspace.Context,
+			[workspace.Set.DocumentationSet.Navigation],
+			"/docs",
+			navigationPreviewEnabled: false,
+			new FloatingSectionRegistry([apiSections])
+		);
+
+		// AssembleAsync resolves the docset before any generator exists
+		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
+		var docsetRoot = workspace
+			.Set
+			.DocumentationSet
+			.Navigation
+			.NavigationItems
+			.OfType<IFloatingSectionRoot>()
+			.Should()
+			.ContainSingle()
+			.Subject;
+		docsetRoot.NavigationItems.Should().BeEmpty("no generator existed when the docset resolved");
+		docsetRoot.Hidden.Should().BeTrue();
+
+		// the build then attaches the generators and resolves the floating sections again
+		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
+		await Task.WhenAll(
+			workspace.Set.DocumentationSet.Navigation.FloatingSections.Select(section => section.ResolveAsync(cancellationToken))
+		);
+
+		docsetRoot.NavigationItems.Should().NotBeEmpty("the second resolution fills the docset's API section");
+		docsetRoot.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
+		var links = workspace.Set.DocumentationSet.CreateLinkReference();
+		links.Floating.Should().ContainKey("api/elasticsearch").WhoseValue.Pages.Should().ContainKey("");
+	}
+
+	[Test]
 	public async Task ApiSections_AfterTheStep_AreInTheNavigationTheSitemapAndTheLlmsListing(CancellationToken cancellationToken)
 	{
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
@@ -214,6 +265,26 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			navigationPreviewEnabled: false,
 			new FloatingSectionRegistry([apiSections])
 		);
+
+		// the build creates the generators before the docsets resolve their trees
+		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
+		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
+
+		var docsetRoot = workspace
+			.Set
+			.DocumentationSet
+			.Navigation
+			.NavigationItems
+			.OfType<IFloatingSectionRoot>()
+			.Should()
+			.ContainSingle()
+			.Subject;
+		docsetRoot.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
+		docsetRoot.NavigationItems.Should().NotBeEmpty("the docset resolved its API section while it resolved its tree");
+		var links = workspace.Set.DocumentationSet.CreateLinkReference();
+		var published = links.Floating.Should().ContainKey("api/elasticsearch").WhoseValue;
+		published.Versions.Should().ContainSingle(v => v.Current).Which.Name.Should().Be("main");
+		published.Pages.Should().ContainKey("", "an assembled docset publishes its APIs in links.json without a toc entry");
 
 		var hub = navigation.TopLevelItems.OfType<SectionNavigation>().Should().ContainSingle(s => s.Title == "APIs").Subject;
 		var root = hub.NavigationItems.Should().ContainSingle().Subject.Should().BeAssignableTo<IFloatingSectionRoot>().Subject;

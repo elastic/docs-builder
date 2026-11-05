@@ -137,7 +137,7 @@ public class AssemblerBuildService(
 		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
-		var apiSections = AssemblerApiSections.For(assembleContext, assembleSources, exporters);
+		using var apiSections = AssemblerApiSections.For(assembleContext, assembleSources, exporters);
 		var navigation = new SiteNavigation(
 			siteNavigationFile,
 			assembleContext,
@@ -154,6 +154,13 @@ public class AssemblerBuildService(
 			|| assembleContext.Collector.Errors > 0
 		)
 			return false;
+
+		// AssembleAsync has already resolved the docsets' trees, before any generator existed, so their API sections
+		// stayed empty. Attach the generators, then resolve the floating sections again.
+		_ = apiSections.EnsureGenerators(logFactory, assembleContext, navigation.TopNav);
+		await Task.WhenAll(
+			documentationSets.Select(n => n.FloatingSections.Select(section => section.ResolveAsync(ctx))).SelectMany(t => t)
+		);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);

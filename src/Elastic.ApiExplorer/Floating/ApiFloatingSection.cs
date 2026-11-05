@@ -15,8 +15,8 @@ using Elastic.Documentation.Navigation.Floating;
 namespace Elastic.ApiExplorer.Floating;
 
 /// <summary>
-/// Mounts the API pages of one API key where a toc has <c>- api: &lt;key&gt;</c>. The key is the one the API's URL
-/// uses: <c>/api/doc/{key}/</c>.
+/// Offers one section for each API that a docset declares in its <c>api:</c> block. The key of a section is the one the
+/// API's URL uses: <c>/api/doc/{key}/</c>.
 /// </summary>
 /// <remarks>
 /// The provider is created before the <see cref="OpenApiGenerator"/> exists, because the docset needs the provider
@@ -34,6 +34,9 @@ public sealed class ApiFloatingSectionProvider(BuildContext context) : IFloating
 	/// <summary>The page that lists every API, <c>/api/</c> under the site prefix.</summary>
 	public string? HubPath => "api";
 
+	/// <summary>A docset that declares an API has it in its navigation tree, with no toc entry.</summary>
+	public bool MountsImplicitly => true;
+
 	public void Attach(OpenApiGenerator generator) => Generator = generator;
 
 	public IReadOnlyList<IFloatingSection> GetSections() =>
@@ -42,20 +45,6 @@ public sealed class ApiFloatingSectionProvider(BuildContext context) : IFloating
 				c => (IFloatingSection)new ApiFloatingSection(c.Key, c.Value, this, context)
 			)
 		];
-
-	public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
-	{
-		section = null;
-		foreach (var (_, urlKey, config) in OpenApiGenerator.ApiConfigsToRender(context))
-		{
-			if (!string.Equals(urlKey, key, StringComparison.OrdinalIgnoreCase))
-				continue;
-			section = new ApiFloatingSection(urlKey, config, this, context);
-			return true;
-		}
-
-		return false;
-	}
 }
 
 internal sealed class ApiFloatingSection(
@@ -66,6 +55,7 @@ internal sealed class ApiFloatingSection(
 ) : IFloatingSection
 {
 	private ApiFloatingRoot? _root;
+	private bool _createdHidden;
 	private ApiProductTrees? _trees;
 
 	public string Kind => "api";
@@ -74,13 +64,14 @@ internal sealed class ApiFloatingSection(
 
 	public string UrlRoot => $"api/doc/{urlKey}";
 
-	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) =>
+	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
 		_root = new ApiFloatingRoot(
 			urlKey,
 			ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, urlKey),
 			config.Product.DisplayName ?? urlKey,
 			parent
-		);
+		)
+		{ Hidden = _createdHidden = hidden };
 
 	public async Task ResolveAsync(Cancel ctx)
 	{
@@ -93,6 +84,9 @@ internal sealed class ApiFloatingSection(
 			_root.Hidden = true;
 			return;
 		}
+
+		// A resolve before the generator existed hid the root; a later resolve starts from how the root was created.
+		_root.Hidden = _createdHidden;
 
 		ApiProductTrees trees;
 		try
