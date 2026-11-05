@@ -11,6 +11,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
@@ -124,52 +125,57 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		// Verify we have all expected top-level items
-		siteNavigation.NavigationItems.Should().HaveCount(4);
-
-		// Test 1: Observability - verify root URL has path prefix
-		var observability = siteNavigation.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		observability.Should().NotBeNull();
-		observability.Url.Should().Be("/serverless/observability");
-		observability.NavigationTitle.Should().Be(observability.Index.NavigationTitle);
-
-		// Test 2: Serverless Search - verify root URL has path prefix
-		var search = siteNavigation.NavigationItems.ElementAt(1);
-		search.Should().NotBeNull();
-		search.Url.Should().Be("/serverless/search");
-
-		// Test 3: Platform - verify root URL has path prefix
-		var platform = siteNavigation.NavigationItems.ElementAt(2) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform");
-		platform.NavigationItems.Should().HaveCount(2, "platform should only show the two nested TOCs as children");
-
-		// Verify nested TOC URLs have their specified path prefixes
-		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		deploymentGuide.Should().NotBeNull();
-		deploymentGuide.Url.Should().Be("/platform/deployment");
-		deploymentGuide.NavigationTitle.Should().Be(deploymentGuide.Index.NavigationTitle);
-
-		var cloudGuide = platform.NavigationItems.ElementAt(1);
-		cloudGuide.Should().NotBeNull();
-		cloudGuide.Url.Should().Be("/platform/cloud");
-		cloudGuide.NavigationTitle.Should().Be("Cloud Guide");
-
-		// Test 4: Elasticsearch Reference - verify root URL has path prefix
-		var elasticsearch = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		elasticsearch.Should().NotBeNull();
-		elasticsearch.Url.Should().Be("/elasticsearch/reference");
-		elasticsearch.NavigationItems.Should().HaveCount(2, "elasticsearch should have read its toc");
-
-		// rest-apis is a folder (not a TOC)
-		var restApis = elasticsearch.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-		restApis.Url.Should().Be("/elasticsearch/reference/rest-apis");
-		restApis.NavigationItems.Should().HaveCount(2, "rest-apis folder should have 2 files");
-
-		// Verify the file inside the folder has the correct path prefix
-		var documentApisFile = restApis.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		documentApisFile.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
-		documentApisFile.NavigationTitle.Should().Be("Document APIs");
+		NavigationDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			  DocumentationSetNavigation  /serverless/observability  "Serverless Observability" [island]
+			    index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			    FolderNavigation  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      index: FileNavigationLeaf  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      FileNavigationLeaf  /serverless/observability/getting-started/installation  "Installation"
+			    FolderNavigation  /serverless/observability/monitoring  "Monitoring"
+			      index: FileNavigationLeaf  /serverless/observability/monitoring  "Monitoring"
+			      FileNavigationLeaf  /serverless/observability/monitoring/logs  "Logs"
+			      FileNavigationLeaf  /serverless/observability/monitoring/metrics  "Metrics"
+			      FileNavigationLeaf  /serverless/observability/monitoring/traces  "Traces"
+			  DocumentationSetNavigation  /serverless/search  "Serverless Search" [island]
+			    index: FileNavigationLeaf  /serverless/search  "Serverless Search"
+			    FolderNavigation  /serverless/search/indexing  "Indexing"
+			      index: FileNavigationLeaf  /serverless/search/indexing  "Indexing"
+			      FileNavigationLeaf  /serverless/search/indexing/documents  "Documents"
+			      FileNavigationLeaf  /serverless/search/indexing/bulk-api  "Bulk API"
+			    FolderNavigation  /serverless/search/searching  "Searching"
+			      index: FileNavigationLeaf  /serverless/search/searching  "Searching"
+			      FileNavigationLeaf  /serverless/search/searching/query-dsl  "Query DSL"
+			  DocumentationSetNavigation  /platform  "Platform" [island]
+			    index: FileNavigationLeaf  /platform  "Platform"
+			    TableOfContentsNavigation  /platform/deployment  "Deployment Guide"
+			      index: FileNavigationLeaf  /platform/deployment  "Deployment Guide"
+			      FolderNavigation  /platform/deployment/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /platform/deployment/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /platform/deployment/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /platform/cloud  "Cloud Guide"
+			      index: FileNavigationLeaf  /platform/cloud  "Cloud Guide"
+			      FolderNavigation  /platform/cloud/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /platform/cloud/aws/setup  "AWS Setup"
+			      FolderNavigation  /platform/cloud/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /platform/cloud/azure/setup  "Azure Setup"
+			  DocumentationSetNavigation  /elasticsearch/reference  "Elasticsearch Reference" [island]
+			    index: FileNavigationLeaf  /elasticsearch/reference  "Elasticsearch Reference"
+			    FolderNavigation  /elasticsearch/reference/rest-apis  "REST APIs"
+			      index: FileNavigationLeaf  /elasticsearch/reference/rest-apis  "REST APIs"
+			      FileNavigationLeaf  /elasticsearch/reference/rest-apis/document-apis  "Document APIs"
+			      FileNavigationLeaf  /elasticsearch/reference/rest-apis/search-apis  "Search APIs"
+			    FolderNavigation  /elasticsearch/reference/query-dsl  "Query DSL"
+			      index: FileNavigationLeaf  /elasticsearch/reference/query-dsl  "Query DSL"
+			      FileNavigationLeaf  /elasticsearch/reference/query-dsl/term-queries  "Term Queries"
+			      FileNavigationLeaf  /elasticsearch/reference/query-dsl/full-text-queries  "Full Text Queries"
+			"""
+			);
 	}
 
 	[Test]
@@ -207,23 +213,28 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
-		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/docs/platform");
-
-		// Platform should have its children (deployment-guide, cloud-guide)
-		platform.NavigationItems.Should().HaveCount(2);
-
-		// Find the deployment-guide TOC (it's the second item after index)
-		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		deploymentGuide.Should().NotBeNull();
-		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
-		deploymentGuide.Url.Should().StartWith("/docs/platform");
-
-		// Walk through the entire tree and verify every single URL starts with a path prefix
-		var allUrls = CollectAllUrls(platform.NavigationItems);
-		allUrls.Should().NotBeEmpty();
-		allUrls.Should().OnlyContain(url => url.StartsWith("/docs/platform/"), "all URLs in platform should start with /docs/platform");
+		NavigationDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /docs/platform  "Platform"
+			  DocumentationSetNavigation  /docs/platform  "Platform" [island]
+			    index: FileNavigationLeaf  /docs/platform  "Platform"
+			    TableOfContentsNavigation  /docs/platform/deployment-guide  "Deployment Guide"
+			      index: FileNavigationLeaf  /docs/platform/deployment-guide  "Deployment Guide"
+			      FolderNavigation  /docs/platform/deployment-guide/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /docs/platform/deployment-guide/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /docs/platform/deployment-guide/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /docs/platform/cloud-guide  "Cloud Guide"
+			      index: FileNavigationLeaf  /docs/platform/cloud-guide  "Cloud Guide"
+			      FolderNavigation  /docs/platform/cloud-guide/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /docs/platform/cloud-guide/aws/setup  "AWS Setup"
+			      FolderNavigation  /docs/platform/cloud-guide/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /docs/platform/cloud-guide/azure/setup  "Azure Setup"
+			"""
+			);
 	}
 
 	[Test]
@@ -261,39 +272,28 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
-		platform.Should().NotBeNull();
-
-		// Platform should have its children including deployment-guide TOC
-		platform.NavigationItems.Should().HaveCount(2);
-
-		// Get deployment-guide TOC
-		var deploymentGuide = platform.NavigationItems.ElementAt(0) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		deploymentGuide.Should().NotBeNull();
-		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
-
-		// Find all FileNavigationLeaf items recursively
-		var fileLeaves = CollectAllFileLeaves(deploymentGuide.NavigationItems);
-		fileLeaves.Should().NotBeEmpty("deployment-guide should contain file leaves");
-
-		// Verify every single file leaf has the correct path prefix
-		foreach (var fileLeaf in fileLeaves)
-		{
-			fileLeaf
-				.Url
-				.Should()
-				.StartWith(
-					"/platform",
-					$"file '{fileLeaf.NavigationTitle}' should have URL starting with /platform but got '{fileLeaf.Url}'"
-				);
-		}
-
-		// Verify at least one specific file to ensure we're testing real data
-		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>().FirstOrDefault(
-			f => f.FileInfo.FullName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-		);
-		indexFile.Should().NotBeNull();
-		indexFile.Url.Should().StartWith("/platform");
+		NavigationDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /platform  "Platform"
+			  DocumentationSetNavigation  /platform  "Platform" [island]
+			    index: FileNavigationLeaf  /platform  "Platform"
+			    TableOfContentsNavigation  /platform/deployment-guide  "Deployment Guide"
+			      index: FileNavigationLeaf  /platform/deployment-guide  "Deployment Guide"
+			      FolderNavigation  /platform/deployment-guide/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /platform/deployment-guide/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /platform/deployment-guide/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /platform/cloud-guide  "Cloud Guide"
+			      index: FileNavigationLeaf  /platform/cloud-guide  "Cloud Guide"
+			      FolderNavigation  /platform/cloud-guide/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /platform/cloud-guide/aws/setup  "AWS Setup"
+			      FolderNavigation  /platform/cloud-guide/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /platform/cloud-guide/azure/setup  "Azure Setup"
+			"""
+			);
 	}
 
 	[Test]
@@ -332,107 +332,27 @@ public class ComplexSiteNavigationTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
-		platform.Should().NotBeNull();
-
-		// Platform should have its children including cloud-guide TOC
-		platform.NavigationItems.Should().HaveCount(2);
-
-		// Get cloud-guide TOC (third item after deployment-guide)
-		var cloudGuide = platform.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		cloudGuide.Should().NotBeNull();
-		cloudGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
-
-		// cloud-guide should have folders (index, aws, azure)
-		var folders = cloudGuide.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().ToList();
-
-		folders.Should().NotBeEmpty("cloud-guide should contain folders");
-
-		// Verify each folder and all its contents have a correct path prefix
-		foreach (var folder in folders)
-		{
-			folder
-				.Url
-				.Should()
-				.StartWith("/platform/cloud", $"folder '{folder.NavigationTitle}' should have URL starting with /platform/cloud");
-
-			// Verify all items within the folder
-			AssertAllUrlsStartWith(folder.NavigationItems, "/platform/cloud");
-
-			// Verify specific file leaves within the folder
-			var filesInFolder = CollectAllFileLeaves(folder.NavigationItems);
-			foreach (var file in filesInFolder)
-			{
-				file
-					.Url
-					.Should()
-					.StartWith(
-						"/platform/cloud",
-						$"file '{file.NavigationTitle}' in folder '{folder.NavigationTitle}' should have URL starting with /platform/cloud"
-					);
-			}
-		}
-	}
-
-	/// <summary>
-	/// Helper method to recursively assert all URLs start with a given prefix
-	/// </summary>
-	private static void AssertAllUrlsStartWith(IEnumerable<INavigationItem> items, string expectedPrefix)
-	{
-		foreach (var item in items)
-		{
-			item
-				.Url
-				.Should()
-				.StartWith(
-					expectedPrefix,
-					$"item '{item.NavigationTitle}' should have URL starting with '{expectedPrefix}' but got '{item.Url}'"
-				);
-
-			if (item is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
-				AssertAllUrlsStartWith(nodeItem.NavigationItems, expectedPrefix);
-		}
-	}
-
-	/// <summary>
-	/// Helper method to collect all URLs recursively
-	/// </summary>
-	private static List<string> CollectAllUrls(IEnumerable<INavigationItem> items)
-	{
-		var urls = new List<string>();
-
-		foreach (var item in items)
-		{
-			urls.Add(item.Url);
-
-			if (item is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
-				urls.AddRange(CollectAllUrls(nodeItem.NavigationItems));
-		}
-
-		return urls;
-	}
-
-	/// <summary>
-	/// Helper method to collect all FileNavigationLeaf items recursively
-	/// </summary>
-	private static List<ILeafNavigationItem<INavigationModel>> CollectAllFileLeaves(IEnumerable<INavigationItem> items)
-	{
-		var fileLeaves = new List<ILeafNavigationItem<INavigationModel>>();
-
-		foreach (var item in items)
-		{
-			switch (item)
-			{
-				case ILeafNavigationItem<IDocumentationFile> fileLeaf:
-					fileLeaves.Add(fileLeaf);
-					break;
-				case INodeNavigationItem<INavigationModel, INavigationItem> node:
-					fileLeaves.Add(node.Index);
-					fileLeaves.AddRange(CollectAllFileLeaves(node.NavigationItems));
-					break;
-			}
-		}
-
-		return fileLeaves;
+		NavigationDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /platform/cloud  "Platform"
+			  DocumentationSetNavigation  /platform/cloud  "Platform" [island]
+			    index: FileNavigationLeaf  /platform/cloud  "Platform"
+			    TableOfContentsNavigation  /platform/cloud  "Deployment Guide"
+			      index: FileNavigationLeaf  /platform/cloud  "Deployment Guide"
+			      FolderNavigation  /platform/cloud/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /platform/cloud/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /platform/cloud/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /platform/cloud  "Cloud Guide"
+			      index: FileNavigationLeaf  /platform/cloud  "Cloud Guide"
+			      FolderNavigation  /platform/cloud/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /platform/cloud/aws/setup  "AWS Setup"
+			      FolderNavigation  /platform/cloud/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /platform/cloud/azure/setup  "Azure Setup"
+			"""
+			);
 	}
 }
