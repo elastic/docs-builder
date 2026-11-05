@@ -84,10 +84,15 @@ export function syncStripHeight(carousel: HTMLElement) {
     if (!strip || !card || !body) return
     const cap = parseFloat(getComputedStyle(body).maxHeight)
     const code = Number.isFinite(cap)
-        ? Math.min(body.scrollHeight, cap)
-        : body.scrollHeight
+        ? Math.min(fullHeight(body), cap)
+        : fullHeight(body)
     const height = stripChrome(strip, card) + code
     if (code > 0) strip.style.setProperty('--api-strip-height', `${height}px`)
+}
+
+/** The height the code needs to show in full. scrollHeight leaves out a horizontal scrollbar, max-height counts it. */
+export function fullHeight(element: HTMLElement): number {
+    return element.scrollHeight + element.offsetHeight - element.clientHeight
 }
 
 /** The part of the strip that is not code: the card's header and border, and the strip's own padding. */

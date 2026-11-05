@@ -4,6 +4,7 @@
  * gets the rest, and two long ones split the room evenly.
  */
 import {
+    fullHeight,
     stripChrome,
     syncStripHeight,
     visibleCarousel,
@@ -74,9 +75,9 @@ function balance(panel: HTMLElement) {
     )
     const natural = {
         request: Number.isFinite(cap)
-            ? Math.min(requestBody.scrollHeight, cap)
-            : requestBody.scrollHeight,
-        response: responseBody?.scrollHeight ?? 0,
+            ? Math.min(fullHeight(requestBody), cap)
+            : fullHeight(requestBody),
+        response: responseBody ? fullHeight(responseBody) : 0,
     }
     const panelTop = panel.getBoundingClientRect().top - panel.scrollTop
     const content = examples.getBoundingClientRect().bottom - panelTop
