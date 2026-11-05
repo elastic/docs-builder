@@ -151,6 +151,14 @@ public static class ApiLookupQueryBuilder
 			RoutesUnder(route, QueryFieldNames.ApiEndpoints),
 			RoutesUnder(route, QueryFieldNames.ApiEndpointsBare)
 		];
+
+		// An index written before the bare view exists has no api.endpoints.bare and the service deploys on its own,
+		// so a bare word keeps its underscore alias on the exact field until every index carries the bare view.
+		if (SearchQueryBuilder.BuildBareWordEndpointQuery(route, ApiLookupWeights.EndpointKey) is { } alias)
+			options.Add(alias);
+		if (SearchQueryBuilder.EndpointName(route) is { } name && name != route)
+			options.Add(RoutesUnder(name, QueryFieldNames.ApiEndpoints));
+
 		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
 	}
 

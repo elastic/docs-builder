@@ -36,6 +36,8 @@ public class ApiLookupQueryBuilderTests
 			.Select(o => o.EnumerateObject().Single().Value)
 			.ToDictionary(o => o.GetProperty("_name").GetString()!);
 
+	private const int CoreOptionCount = 4;
+
 	/// <summary>The <c>key_0</c> option, whether the word offers other roles or, as a path, only this one.</summary>
 	private static JsonElement KeyOption(JsonDocument json)
 	{
@@ -50,6 +52,7 @@ public class ApiLookupQueryBuilderTests
 		key
 			.GetProperty("queries")
 			.EnumerateArray()
+			.Take(CoreOptionCount)
 			.Where(q => q.TryGetProperty("dis_max", out _))
 			.Select(
 				q => q
@@ -67,6 +70,7 @@ public class ApiLookupQueryBuilderTests
 		key
 			.GetProperty("queries")
 			.EnumerateArray()
+			.Take(CoreOptionCount)
 			.Where(q => q.TryGetProperty("constant_score", out _))
 			.Select(q => q.GetProperty("constant_score"))
 			.Select(cs =>
@@ -196,6 +200,35 @@ public class ApiLookupQueryBuilderTests
 		PrefixOptions(key)
 			.Should()
 			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = route + "/", ["api.endpoints.bare"] = route + "/" });
+	}
+
+	[Test]
+	public void Build_PlainWord_KeyOptionKeepsTheUnderscoreAliasOnTheExactFieldForIndexesWithoutTheBareView()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("snapshot"));
+		var options = KeyOption(json).GetProperty("queries").EnumerateArray().Skip(CoreOptionCount).ToList();
+
+		options.Should().HaveCount(2);
+		var terms = options[0].GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
+		terms.GetProperty("boost").GetSingle().Should().Be(6.0f);
+		var field = terms.GetProperty("filter").GetProperty("terms").EnumerateObject().Single();
+		field.Name.Should().Be("api.endpoints");
+		field.Value.EnumerateArray().Select(v => v.GetString()).Should().Contain("_snapshot");
+		var prefix = options[1].GetProperty("constant_score");
+		prefix.GetProperty("boost").GetSingle().Should().Be(5.5f);
+		var prefixField = prefix.GetProperty("filter").GetProperty("prefix").EnumerateObject().Single();
+		prefixField.Name.Should().Be("api.endpoints");
+		prefixField.Value.GetProperty("value").GetString().Should().Be("_snapshot/");
+	}
+
+	[Test]
+	[Arguments("_snapshot")]
+	[Arguments("/api/fleet")]
+	public void Build_NonBareKey_HasNoUnderscoreAlias(string typed)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(typed));
+
+		KeyOption(json).GetProperty("queries").GetArrayLength().Should().Be(CoreOptionCount);
 	}
 
 	[Test]
