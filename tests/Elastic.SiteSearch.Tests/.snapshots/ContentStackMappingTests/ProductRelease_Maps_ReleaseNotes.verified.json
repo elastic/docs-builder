@@ -1,7 +1,7 @@
 {
   "$type": "site",
   "locale": "en",
-  "published_date": "2024-01-10T00:00:00+01:00",
+  "published_date": "2024-01-10T00:00:00+00:00",
   "modified_date": "2024-01-10T12:00:00+00:00",
   "og": {
     "title": "Download Elasticsearch 8.12.0",
