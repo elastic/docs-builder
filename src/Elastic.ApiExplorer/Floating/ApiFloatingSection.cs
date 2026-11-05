@@ -80,7 +80,7 @@ internal sealed class ApiFloatingSection(
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			context.Collector.EmitGlobalError($"API '{urlKey}' could not be generated: {ex.Message}");
+			// The generator awaits the same cached task and reports the failure with its stack trace, so don't report it twice.
 			_root!.Hidden = true;
 			return;
 		}

@@ -373,7 +373,11 @@ public class OpenApiGeneratorMultiVersionTests
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateVersionedReader(("9.4", SpecDocument("Elasticsearch 9")), ("8.19", SpecDocument("Elasticsearch 8")));
+		var reader = CreateVersionedReader(
+			missingVersionsAreUnreadable: true,
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 		var provider = new ApiFloatingSectionProvider(context);
 		provider.Attach(generator);
@@ -382,6 +386,12 @@ public class OpenApiGeneratorMultiVersionTests
 
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
 
+		var trees = await generator.TreesFor(
+			"elasticsearch",
+			context.Configuration.ApiConfigurations!["elasticsearch"],
+			TestContext.Current!.Execution.CancellationToken
+		);
+		trees.Resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
 		root.Hidden.Should().BeTrue("no main document renders no page at the unversioned URL");
 	}
 
@@ -640,16 +650,22 @@ public class OpenApiGeneratorMultiVersionTests
 	) => new(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient, reader);
 
 	/// <summary>Returns the document whose version segment (<c>main</c>, <c>9.4</c>, <c>8.19</c>) is in the fetched spec path.</summary>
-	private static IOpenApiSpecificationReader CreateVersionedReader(params (string Version, OpenApiDocument Document)[] documents)
+	private static IOpenApiSpecificationReader CreateVersionedReader(params (string Version, OpenApiDocument Document)[] documents) =>
+		CreateVersionedReader(false, documents);
+
+	/// <param name="missingVersionsAreUnreadable">Return no document for a version that has none, instead of throwing.</param>
+	private static IOpenApiSpecificationReader CreateVersionedReader(
+		bool missingVersionsAreUnreadable,
+		params (string Version, OpenApiDocument Document)[] documents
+	)
 	{
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(call =>
 		{
 			using var body = new StreamReader(call.GetArgument<Stream>(0)!);
 			var path = body.ReadToEnd();
-			return Task.FromResult<OpenApiDocument?>(
-				documents.Single(d => path.Contains($"/{d.Version}/", StringComparison.Ordinal)).Document
-			);
+			var matches = documents.Where(d => path.Contains($"/{d.Version}/", StringComparison.Ordinal)).ToArray();
+			return Task.FromResult(missingVersionsAreUnreadable && matches.Length == 0 ? null : matches.Single().Document);
 		});
 		return reader;
 	}
