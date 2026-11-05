@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Clients.Elasticsearch;
@@ -59,19 +60,23 @@ public class ApiLookupQueryBuilderTests
 	private static Dictionary<string, string?[]> ExactOptions(JsonElement key) =>
 		TermsOptions(key).Take(2).ToDictionary(p => p.Name, p => p.Value.EnumerateArray().Select(v => v.GetString()).ToArray());
 
-	/// <summary>Each routes-under prefix as <c>field value</c>, checked to carry the namespace weight and no name of its own.</summary>
-	private static string[] Prefixes(JsonElement key) =>
+	/// <summary>
+	/// Each routes-under alternation as <c>field pattern boost</c>, in option order, checked to carry no name of its own.
+	/// </summary>
+	private static string[] RoutesUnder(JsonElement key) =>
 		key
 			.GetProperty("queries")
 			.EnumerateArray()
-			.Where(q => q.TryGetProperty("constant_score", out _))
+			.Where(q => q.TryGetProperty("dis_max", out _))
+			.SelectMany(q => q.GetProperty("dis_max").GetProperty("queries").EnumerateArray())
 			.Select(q => q.GetProperty("constant_score"))
+			.Where(cs => cs.GetProperty("filter").TryGetProperty("regexp", out _))
 			.Select(cs =>
 			{
-				cs.GetProperty("boost").GetSingle().Should().Be(5.5f);
 				cs.TryGetProperty("_name", out _).Should().BeFalse();
-				var prefix = cs.GetProperty("filter").GetProperty("prefix").EnumerateObject().Single();
-				return $"{prefix.Name} {prefix.Value.GetProperty("value").GetString()}";
+				var regexp = cs.GetProperty("filter").GetProperty("regexp").EnumerateObject().Single();
+				var boost = cs.GetProperty("boost").GetSingle().ToString("0.###", CultureInfo.InvariantCulture);
+				return $"{regexp.Name} {regexp.Value.GetProperty("value").GetString()} {boost}";
 			})
 			.ToArray();
 
@@ -176,7 +181,9 @@ public class ApiLookupQueryBuilderTests
 			.EnumerateArray()
 			.Where(q => q.TryGetProperty("dis_max", out _))
 			.SelectMany(q => q.GetProperty("dis_max").GetProperty("queries").EnumerateArray())
-			.Select(o => o.GetProperty("constant_score").GetProperty("boost").GetSingle())
+			.Select(o => o.GetProperty("constant_score"))
+			.Where(cs => cs.GetProperty("filter").TryGetProperty("terms", out _))
+			.Select(cs => cs.GetProperty("boost").GetSingle())
 			.Should()
 			.AllSatisfy(b => b.Should().Be(6.0f));
 	}
@@ -193,7 +200,7 @@ public class ApiLookupQueryBuilderTests
 		ExactOptions(key)
 			.Should()
 			.BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = [route], ["api.endpoints_bare"] = [bare] });
-		Prefixes(key).Should().Equal("api.endpoints _snapshot/");
+		RoutesUnder(key).Should().Equal("api.endpoints (_snapshot)/.+ 5.5");
 	}
 
 	[Test]
@@ -201,7 +208,7 @@ public class ApiLookupQueryBuilderTests
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("api"));
 
-		Prefixes(KeyOption(json)).Should().Equal("api.endpoints _api/");
+		RoutesUnder(KeyOption(json)).Should().Equal("api.endpoints (_api)/.+ 5.5");
 	}
 
 	[Test]
@@ -216,11 +223,7 @@ public class ApiLookupQueryBuilderTests
 		var field = terms.GetProperty("filter").GetProperty("terms").EnumerateObject().Single();
 		field.Name.Should().Be("api.endpoints");
 		field.Value.EnumerateArray().Select(v => v.GetString()).Should().Contain("_snapshot");
-		var prefix = options[1].GetProperty("constant_score");
-		prefix.GetProperty("boost").GetSingle().Should().Be(5.5f);
-		var prefixField = prefix.GetProperty("filter").GetProperty("prefix").EnumerateObject().Single();
-		prefixField.Name.Should().Be("api.endpoints");
-		prefixField.Value.GetProperty("value").GetString().Should().Be("_snapshot/");
+		RoutesUnder(KeyOption(json)).Should().Equal("api.endpoints (_snapshot)/.+ 5.5");
 	}
 
 	[Test]
@@ -245,7 +248,14 @@ public class ApiLookupQueryBuilderTests
 		var exact = ExactOptions(key);
 		exact.Keys.Should().BeEquivalentTo("api.endpoints", "api.endpoints_bare");
 		exact.Values.Should().AllSatisfy(terms => terms.Should().Contain("api/fleet"));
-		Prefixes(key).Should().BeEquivalentTo("api.endpoints api/fleet/", "api.endpoints_bare api/fleet/");
+		RoutesUnder(key)
+			.Should()
+			.Equal(
+				"api.endpoints (api/fleet)/.+ 5.5",
+				@"api.endpoints (\*/fleet|api/\*)/.+ 3.667",
+				"api.endpoints_bare (api/fleet)/.+ 5.5",
+				@"api.endpoints_bare (\*/fleet|api/\*)/.+ 3.667"
+			);
 	}
 
 	[Test]
@@ -253,7 +263,52 @@ public class ApiLookupQueryBuilderTests
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("/api/fleet/{id}"));
 
-		Prefixes(KeyOption(json)).Should().BeEquivalentTo("api.endpoints api/fleet/*/", "api.endpoints_bare api/fleet/*/");
+		RoutesUnder(KeyOption(json))
+			.Should()
+			.Equal(
+				@"api.endpoints (api/fleet/\*)/.+ 5.5",
+				@"api.endpoints (\*/fleet/\*|api/\*/\*)/.+ 3.667",
+				@"api.endpoints_bare (api/fleet/\*)/.+ 5.5",
+				@"api.endpoints_bare (\*/fleet/\*|api/\*/\*)/.+ 3.667"
+			);
+	}
+
+	[Test]
+	public void Build_TypedRouteWithAParameterValue_CoversTheDescendantsOfEveryTemplateByLiteralCount()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_security/user/alice"));
+
+		RoutesUnder(KeyOption(json))
+			.Where(r => r.StartsWith("api.endpoints ", StringComparison.Ordinal))
+			.Should()
+			.Equal(
+				"api.endpoints (_security/user/alice)/.+ 5.5",
+				@"api.endpoints (\*/user/alice|_security/\*/alice|_security/user/\*)/.+ 4.125",
+				@"api.endpoints (\*/\*/alice|\*/user/\*|_security/\*/\*)/.+ 2.75"
+			);
+	}
+
+	[Test]
+	public void Build_TypedSingleSegmentRoute_CoversTheRoutesUnderItAtFiveAndAHalf()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/search"));
+
+		RoutesUnder(KeyOption(json))
+			.Where(r => r.StartsWith("api.endpoints ", StringComparison.Ordinal))
+			.Should()
+			.Equal("api.endpoints (search)/.+ 5.5", "api.endpoints (_search)/.+ 5.5");
+	}
+
+	[Test]
+	public void Build_LongTypedRoute_KeepsEveryRegexpUnderTheIndexLengthLimit()
+	{
+		using var json = Json(
+			ApiLookupQueryBuilder.Build("/" + string.Join('/', Enumerable.Range(0, 8).Select(i => $"segment-number-{i}")))
+		);
+		var routes = RoutesUnder(KeyOption(json));
+
+		routes.Should().HaveCountGreaterThan(16, "eight template groups on two fields need splitting");
+		routes.Should().OnlyContain(r => r.Split(' ')[1].Length <= 1000);
 	}
 
 	[Test]
@@ -267,7 +322,7 @@ public class ApiLookupQueryBuilderTests
 		ExactOptions(key)
 			.Should()
 			.BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = [route], ["api.endpoints_bare"] = [bare] });
-		Prefixes(key).Should().Contain([$"api.endpoints {route}/", $"api.endpoints_bare {bare}/"]);
+		RoutesUnder(key).Should().Contain([$"api.endpoints ({route})/.+ 5.5", $"api.endpoints_bare ({bare})/.+ 5.5"]);
 	}
 
 	[Test]
@@ -287,7 +342,7 @@ public class ApiLookupQueryBuilderTests
 		var key = KeyOption(json);
 
 		ExactOptions(key).Should().BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = ["_"] });
-		Prefixes(key).Should().Equal("api.endpoints _/");
+		RoutesUnder(key).Should().Equal("api.endpoints (_)/.+ 5.5");
 	}
 
 	[Test]

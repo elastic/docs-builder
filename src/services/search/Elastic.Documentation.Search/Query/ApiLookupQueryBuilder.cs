@@ -30,6 +30,9 @@ public static class ApiLookupQueryBuilder
 	// Each word adds a dis_max with nested inner hits to a per-keystroke request; same bound as ApiEndpointPath's path segments.
 	private const int MaxTokens = 8;
 
+	// index.max_regex_length defaults to 1,000 characters, and a long typed route has up to 70 templates in one group.
+	private const int MaxRegexpLength = 900;
+
 	private static readonly FrozenSet<string> HttpMethods = new[] { "GET", "POST", "PUT", "DELETE", "HEAD", "PATCH" }.ToFrozenSet(
 		StringComparer.OrdinalIgnoreCase
 	);
@@ -166,8 +169,44 @@ public static class ApiLookupQueryBuilder
 		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
 	}
 
-	private static Query RoutesUnder(string route, Field field) =>
-		new ConstantScoreQuery { Filter = new PrefixQuery { Field = field, Value = route + "/" }, Boost = ApiLookupWeights.NamespaceKey };
+	/// <summary>
+	/// The routes under every template <see cref="ApiEndpointPath.QueryCandidates"/> reads the route as, so
+	/// <c>/_security/user/alice</c> covers <c>_security/user/*/_password</c>. Like the exact lookup, a template scores by the
+	/// literal segments it keeps.
+	/// </summary>
+	private static Query RoutesUnder(string route, Field field)
+	{
+		var groups = ApiEndpointPath.QueryCandidates(route);
+		var total = groups[0].LiteralSegments;
+		return new DisMaxQuery
+		{
+			Queries = groups.SelectMany(
+				g => RegexpBatches(g.Terms).Select(
+					pattern =>
+						(Query)new ConstantScoreQuery
+						{
+							Filter = new RegexpQuery { Field = field, Value = pattern + "/.+" },
+							Boost = ApiLookupWeights.NamespaceKey * (1 + g.LiteralSegments) / (1 + total)
+						}
+				)
+			).ToList()
+		};
+	}
+
+	private static IEnumerable<string> RegexpBatches(IReadOnlyList<string> terms)
+	{
+		var batch = new List<string>();
+		foreach (var term in terms)
+		{
+			if (batch.Count > 0 && ApiEndpointPath.RegexpAlternation([.. batch, term]).Length > MaxRegexpLength)
+			{
+				yield return ApiEndpointPath.RegexpAlternation(batch);
+				batch = [];
+			}
+			batch.Add(term);
+		}
+		yield return ApiEndpointPath.RegexpAlternation(batch);
+	}
 
 	/// <summary>A method word, such as <c>get</c>, also stays an operation, title and description word.</summary>
 	private static Query? MethodOption(string text, int index) =>

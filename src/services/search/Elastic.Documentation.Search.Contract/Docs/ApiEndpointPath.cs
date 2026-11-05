@@ -21,6 +21,9 @@ public static partial class ApiEndpointPath
 	// 2^8 terms at most; a long pasted query would otherwise grow the clause count exponentially.
 	private const int MaxQuerySegments = 8;
 
+	// Lucene escapes any character with a backslash; '-' is escaped too, since it marks a range inside a character class.
+	private const string RegexpOperators = "\\.?+*|{}[]()\"#@&<>~-";
+
 	/// <summary>
 	/// Every way a user could type an endpoint path: lowercased, no leading <c>/</c>, each path also without
 	/// its leading and/or trailing <c>{param}</c> segments, and every <c>{param}</c> written as <c>*</c>.
@@ -63,6 +66,15 @@ public static partial class ApiEndpointPath
 		}
 		return byLiterals.Select(g => new EndpointCandidateGroup(g.Key, g.Value)).ToList();
 	}
+
+	/// <summary>
+	/// The <paramref name="terms"/> as one Elasticsearch <c>regexp</c> alternation, <c>(a|b)</c>, with every regexp operator
+	/// escaped so each term, its <c>*</c> placeholders included, matches only itself.
+	/// </summary>
+	public static string RegexpAlternation(IEnumerable<string> terms) => "(" + string.Join('|', terms.Select(RegexpEscape)) + ")";
+
+	private static string RegexpEscape(string term) =>
+		string.Concat(term.Select(c => RegexpOperators.Contains(c) ? "\\" + c : c.ToString()));
 
 	/// <summary>
 	/// Strips a leading HTTP method and <c>/</c>, lowercases, and writes each <c>{param}</c> segment as <c>*</c>:
