@@ -675,9 +675,8 @@ public class ApiLookupQueryBuilderTests
 				          "match": {
 				            "api.properties.name_words": {
 				              "fuzziness": "AUTO:4,100",
-				              "minimum_should_match": 2,
 				              "prefix_length": 1,
-				              "query": "unreated docs"
+				              "query": "docs"
 				            }
 				          }
 				        }
@@ -686,6 +685,30 @@ public class ApiLookupQueryBuilderTests
 				  }
 				}
 				"""
+			);
+	}
+
+	[Test]
+	public void Build_CompoundNextToAnotherWord_LiftsOnlyByTheOtherWord()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("unrated_docs rank"));
+		var lift = NameOptions(json, 0)[2].GetProperty("bool").GetProperty("should").GetProperty("constant_score").GetProperty("filter");
+
+		lift
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+			{
+			  "match": {
+			    "api.properties.name_words": {
+			      "fuzziness": "AUTO:4,100",
+			      "prefix_length": 1,
+			      "query": "rank"
+			    }
+			  }
+			}
+			"""
 			);
 	}
 

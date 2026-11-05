@@ -242,9 +242,10 @@ public static class SearchQueryBuilder
 
 	/// <summary>
 	/// Only an API-filtered lookup matches by prefix and by the words of a field name, and only one ending in a dot lists the
-	/// typed path's children. <paramref name="Words"/> are the lookup's plain words, so a row naming two of them scores as a name match.
+	/// typed path's children. <paramref name="OtherWords"/> are the words of the lookup's other plain words, so a row that also
+	/// names one of them scores as a name match.
 	/// </summary>
-	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren, IReadOnlyList<string>? Words = null);
+	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren, IReadOnlyList<string>? OtherWords = null);
 
 	internal static Query BuildNestedPropertyQuery(
 		string property,
@@ -318,7 +319,7 @@ public static class SearchQueryBuilder
 			Boost = PrefixNameMatchBoost,
 			QueryName = ApiNameHits
 		};
-		Query?[] options = [exact, prefix, BuildPropertyWordOption(name, lookup.Words ?? [])];
+		Query?[] options = [exact, prefix, BuildPropertyWordOption(name, lookup.OtherWords ?? [])];
 		return new DisMaxQuery { Queries = options.OfType<Query>().ToList() };
 	}
 
@@ -327,7 +328,7 @@ public static class SearchQueryBuilder
 	/// and <c>_uri</c> finds <c>last_uri</c>. A row that also names another typed word scores as a name match, which lists it above
 	/// rows naming only one. A dotted path is matched by its segments instead, so it has no word option.
 	/// </summary>
-	private static Query? BuildPropertyWordOption(string name, IReadOnlyList<string> words)
+	private static Query? BuildPropertyWordOption(string name, IReadOnlyList<string> otherWords)
 	{
 		var parts = ApiPropertyPath.IdentifierWords(name);
 		if (parts.Length == 0 || name.Contains('.'))
@@ -345,16 +346,10 @@ public static class SearchQueryBuilder
 			},
 			Boost = ApiLookupWeights.FieldWord
 		};
-		// A row naming every word of one typed identifier is already a word match; only other typed words lift it.
-		List<Query>? namesSeveral = words.Count > parts.Length
-			? [
-				new ConstantScoreQuery
-				{
-					Filter = NameWordsMatch(string.Join(' ', words), minimumShouldMatch: 2),
-					Boost = ApiLookupWeights.FieldSeveralWords
-				}
-			]
-			: null;
+		// The typed name's own words are already the word match, so only the other typed words lift the row.
+		List<Query>? namesSeveral = otherWords.Count == 0
+			? null
+			: [new ConstantScoreQuery { Filter = NameWordsMatch(string.Join(' ', otherWords)), Boost = ApiLookupWeights.FieldSeveralWords }];
 		return new BoolQuery { Must = [wordMatch], Should = namesSeveral, QueryName = ApiNameHits };
 	}
 
@@ -371,15 +366,8 @@ public static class SearchQueryBuilder
 		};
 	}
 
-	private static MatchQuery NameWordsMatch(string query, MinimumShouldMatch? minimumShouldMatch = null) =>
-		new()
-		{
-			Field = QueryFieldNames.ApiPropertiesNameWords,
-			Query = query,
-			Fuzziness = WordFuzziness,
-			PrefixLength = 1,
-			MinimumShouldMatch = minimumShouldMatch
-		};
+	private static MatchQuery NameWordsMatch(string query) =>
+		new() { Field = QueryFieldNames.ApiPropertiesNameWords, Query = query, Fuzziness = WordFuzziness, PrefixLength = 1 };
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{
