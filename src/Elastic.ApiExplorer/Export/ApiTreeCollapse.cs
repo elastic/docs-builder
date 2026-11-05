@@ -20,21 +20,32 @@ internal static class ApiTreeCollapse
 	/// <paramref name="renderings"/> are documents of one API with one tree each, as <see cref="OpenApiDocumentExporter.ConvertToDocuments"/> returns them.
 	/// Each result's trees are ordered default tree first, then <c>main</c>, then majors descending, and its URLs point into the first.
 	/// </summary>
-	public static IEnumerable<DocumentationDocument> Collapse(IEnumerable<DocumentationDocument> renderings, string defaultTree) =>
-		renderings.GroupBy(Fingerprint, StringComparer.Ordinal).Select(group => Merge([.. group], defaultTree));
-
-	private static DocumentationDocument Merge(IReadOnlyList<DocumentationDocument> group, string defaultTree)
+	public static IEnumerable<DocumentationDocument> Collapse(IEnumerable<DocumentationDocument> renderings, string defaultTree)
 	{
-		var trees = group
-			.SelectMany(static d => d.Api!.Trees)
-			.DistinctBy(static t => t.Tree)
-			.OrderByDescending(t => t.Tree == defaultTree)
-			.ThenByDescending(static t => t.Tree == "main")
-			.ThenByDescending(static t => ApiVersions.TryParseMajor(t.Tree))
-			.ToArray();
-		var lead = group.First(d => d.Api!.Trees[0].Tree == trees[0].Tree);
-		return lead with { Api = lead.Api! with { Trees = trees }, Hidden = trees.All(t => t.Tree != defaultTree) };
+		var groups = new Dictionary<string, (DocumentationDocument Lead, List<ApiTreeEntry> Trees)>(StringComparer.Ordinal);
+		foreach (var rendering in renderings)
+		{
+			var key = Fingerprint(rendering);
+			var tree = rendering.Api!.Trees[0];
+			if (!groups.TryGetValue(key, out var group))
+				groups[key] = (rendering, [tree]);
+			else
+			{
+				group.Trees.Add(tree);
+				if (Comparer<(bool, int)>.Default.Compare(Rank(tree, defaultTree), Rank(group.Lead.Api!.Trees[0], defaultTree)) > 0)
+					groups[key] = (rendering, group.Trees);
+			}
+		}
+
+		foreach (var (lead, trees) in groups.Values)
+		{
+			ApiTreeEntry[] ordered = [.. trees.DistinctBy(static t => t.Tree).OrderByDescending(t => Rank(t, defaultTree))];
+			yield return lead with { Api = lead.Api! with { Trees = ordered }, Hidden = ordered[0].Tree != defaultTree };
+		}
 	}
+
+	private static (bool IsDefault, int Recency) Rank(ApiTreeEntry tree, string defaultTree) =>
+		(tree.Tree == defaultTree, ApiVersions.Recency(tree.Tree));
 
 	/// <summary>Everything the index stores for the document except the URLs, which differ per tree by construction.</summary>
 	private static string Fingerprint(DocumentationDocument doc)

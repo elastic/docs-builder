@@ -368,7 +368,7 @@ public class OpenApiGenerator(
 			);
 		}
 
-		var latestDeclared = versionsToRender.Any(v => v.Moniker == "main") ? "main" : versionsToRender[0].Moniker;
+		var latestDeclared = ApiVersions.DefaultTree(versionsToRender.Select(static v => v.Moniker))!;
 
 		// Download and parse every version at once; results keep the declared version order.
 		var documents = await Task.WhenAll(
