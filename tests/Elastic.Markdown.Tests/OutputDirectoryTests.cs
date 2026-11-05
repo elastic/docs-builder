@@ -49,6 +49,54 @@ toc:
 	}
 
 	[Test]
+	public async Task GenerateAll_TogglingSkipOpenApi_RebuildsUnchangedPages()
+	{
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/docset.yml", new MockFileData("project: test\ntoc:\n- file: index.md\n") },
+				{ "docs/index.md", new MockFileData("# Test") }
+			},
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
+
+		async Task<DocumentationGenerator> BuildAsync(bool skipOpenApi)
+		{
+			var logger = new TestLoggerFactory();
+			await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
+			var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+			var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
+			{
+				SkipStaticAssetExtraction = true,
+				SkipOpenApi = skipOpenApi
+			};
+			var generator = new DocumentationGenerator(new DocumentationSet(context, logger, new TestCrossLinkResolver()), logger);
+			await generator.GenerateAll(TestContext.Current!.Execution.CancellationToken);
+			await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
+			return generator;
+		}
+
+		var first = await BuildAsync(skipOpenApi: false);
+		first.GetPreviousGenerationState()!.SkipOpenApi.Should().BeFalse();
+		var index = fileSystem.Path.Join(first.DocumentationSet.OutputDirectory.FullName, "index.html");
+		fileSystem.File.Exists(index).Should().BeTrue();
+
+		// CI forces full builds, so only assert that an unchanged rebuild is skipped outside of it
+		fileSystem.File.WriteAllText(index, "stale");
+		await BuildAsync(skipOpenApi: false);
+		if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
+			fileSystem.File.ReadAllText(index).Should().Be("stale");
+
+		var skipped = await BuildAsync(skipOpenApi: true);
+		fileSystem.File.ReadAllText(index).Should().NotBe("stale", "the API navigation links change with --skip-api");
+		skipped.GetPreviousGenerationState()!.SkipOpenApi.Should().BeTrue();
+
+		fileSystem.File.WriteAllText(index, "stale");
+		await BuildAsync(skipOpenApi: false);
+		fileSystem.File.ReadAllText(index).Should().NotBe("stale");
+	}
+
+	[Test]
 	public void FilesWithSnippetsInNameNotTreatedAsSnippets()
 	{
 		var logger = new TestLoggerFactory();

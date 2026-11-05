@@ -301,6 +301,24 @@ toc:
     crosslink: elasticsearch://api/elasticsearch/
 ```
 
+## Mount an API in the navigation [api-toc-entry]
+
+An `api:` entry in the table of contents mounts the pages of one API as a section of the navigation tree:
+
+```yaml
+toc:
+  - file: index.md
+  - api: elasticsearch
+```
+
+The value is the key in the URL of the API, as in `/api/doc/elasticsearch/`. The entry takes no other keys. It must match an API declared in the `api:` block of `docset.yml`, or the build reports an error.
+
+The section is an island. The sidebar of your pages shows a link to the API, and the API pages keep their own sidebar and URLs. Every version of the API is part of the section, and only the current version is visible. The API Explorer does not move: the pages still render at the same URLs whether or not the table of contents mounts them.
+
+:::{note}
+Only the isolated `build` command accepts `api:` entries for now. The assembler, `serve` and Codex builds report an error for an `api:` entry, so don't add one to a docset those builds load.
+:::
+
 ## What the API Explorer renders
 
 The API Explorer generates the following types of pages from your OpenAPI spec:
