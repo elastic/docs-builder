@@ -34,7 +34,10 @@ toc:
 		);
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
+		{
+			SkipStaticAssetExtraction = true
+		};
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);

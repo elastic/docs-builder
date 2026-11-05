@@ -20,10 +20,12 @@ internal static class ApiPropertyIndex
 		rows.Select(row =>
 		{
 			var (property, parent) = row;
+			var path = PathOf(property);
 			return new ApiPropertyEntry
 			{
 				Name = property.Name,
-				Path = PathOf(property),
+				Path = path,
+				PathWords = string.Join(' ', ApiPropertyPath.Words(path)),
 				Type = property.Type.Text,
 				Location = location,
 				Anchor = property.AnchorId,

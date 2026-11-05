@@ -21,6 +21,9 @@ public static partial class ApiEndpointPath
 	// 2^8 terms at most; a long pasted query would otherwise grow the clause count exponentially.
 	private const int MaxQuerySegments = 8;
 
+	// Lucene escapes any character with a backslash; '-' is escaped too, since it marks a range inside a character class.
+	private const string RegexpOperators = "\\.?+*|{}[]()\"#@&<>~-";
+
 	/// <summary>
 	/// Every way a user could type an endpoint path: lowercased, no leading <c>/</c>, each path also without
 	/// its leading and/or trailing <c>{param}</c> segments, and every <c>{param}</c> written as <c>*</c>.
@@ -28,6 +31,17 @@ public static partial class ApiEndpointPath
 	/// </summary>
 	public static string[] IndexKeys(IEnumerable<string> paths) =>
 		paths.SelectMany(Variants).Where(HasLiteralSegment).Distinct(StringComparer.Ordinal).ToArray();
+
+	/// <summary>
+	/// Removes the underscores that start each <c>/</c>-separated segment, so <c>_cluster/health/*</c> becomes
+	/// <c>cluster/health/*</c>. Users leave out the underscore that starts an Elasticsearch system route, and index and
+	/// query must strip it the same way.
+	/// </summary>
+	public static string StripRouteUnderscores(string route) => string.Join('/', route.Split('/').Select(s => s.TrimStart('_')));
+
+	/// <summary>The <paramref name="keys"/> through <see cref="StripRouteUnderscores"/>, deduped in first-seen order.</summary>
+	public static string[] BareKeys(IEnumerable<string> keys) =>
+		keys.Select(StripRouteUnderscores).Distinct(StringComparer.Ordinal).ToArray();
 
 	/// <summary>
 	/// Every template the normalized query could be an instance of: each subset of segments replaced by <c>*</c>,
@@ -52,6 +66,15 @@ public static partial class ApiEndpointPath
 		}
 		return byLiterals.Select(g => new EndpointCandidateGroup(g.Key, g.Value)).ToList();
 	}
+
+	/// <summary>
+	/// The <paramref name="terms"/> as one Elasticsearch <c>regexp</c> alternation, <c>(a|b)</c>, with every regexp operator
+	/// escaped so each term, its <c>*</c> placeholders included, matches only itself.
+	/// </summary>
+	public static string RegexpAlternation(IEnumerable<string> terms) => "(" + string.Join('|', terms.Select(RegexpEscape)) + ")";
+
+	private static string RegexpEscape(string term) =>
+		string.Concat(term.Select(c => RegexpOperators.Contains(c) ? "\\" + c : c.ToString()));
 
 	/// <summary>
 	/// Strips a leading HTTP method and <c>/</c>, lowercases, and writes each <c>{param}</c> segment as <c>*</c>:

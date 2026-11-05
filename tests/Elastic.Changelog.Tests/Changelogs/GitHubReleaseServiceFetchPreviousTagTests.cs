@@ -21,8 +21,10 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 	private static readonly string[] Page1StartTags = ["v4.2.0", "v4.1.2"];
 	private static readonly string[] Page1PatchTags = ["v4.2.0", "v4.1.0", "v4.1.1"];
 
+	// Without a delay function the service sleeps through its real 1, 2 and 4 second back-off on every transient error,
+	// so tests retry without waiting unless they pass their own delay.
 	private GitHubReleaseService Service(StubHandler handler, Func<int, TimeSpan>? retryDelay = null) =>
-		new(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token"), retryDelay);
+		new(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token"), retryDelay ?? (_ => TimeSpan.Zero));
 
 	/// <summary>Builds a JSON releases array string (newest-first order).</summary>
 	private static string ReleasesJson(params string[] tagNames)

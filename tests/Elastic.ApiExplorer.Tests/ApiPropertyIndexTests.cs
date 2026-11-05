@@ -90,6 +90,16 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Export_MarkedPaths_IndexesPathWordsWithoutMarkers()
+	{
+		var (_, entries) = await IndexRequestBody(NestedDictionaryAndUnionProperties);
+
+		entries.Single(p => p.Path == "labels.<string>.value").PathWords.Should().Be("labels value");
+		entries.Single(p => p.Path == "pets[].owner.name").PathWords.Should().Be("pets owner name");
+		entries.Single(p => p.Path == "flight").PathWords.Should().Be("flight");
+	}
+
+	[Test]
 	public async Task Export_UnionVariantsSharingAField_IndexesEachVariantsRow()
 	{
 		var (_, entries) = await IndexRequestBody(

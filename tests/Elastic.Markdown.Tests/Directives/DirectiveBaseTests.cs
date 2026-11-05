@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+using System.Collections.Concurrent;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
@@ -33,19 +34,31 @@ public abstract class DirectiveTest<TDirective>([LanguageInjection("markdown")] 
 
 public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 {
-	protected MarkdownFile File { get; }
+	// TUnit creates a new instance for every test method, but building the documentation set, parsing and rendering the document
+	// is the expensive part. It is built once per concrete test class and shared by that class's tests, which only read from it.
+	// Anything a class needs to change on the shared objects goes through ConfigureDocumentationSet or OnFixtureBuilt, which run once.
+	private static readonly ConcurrentDictionary<Type, Lazy<Task<BuiltFixture>>> Fixtures = new();
+
+	private sealed record BuiltFixture(
+		MarkdownFile File,
+		string Html,
+		MarkdownDocument Document,
+		TestDiagnosticsCollector Collector,
+		MockFileSystem FileSystem,
+		DocumentationSet Set
+	);
+
+	protected MarkdownFile File { get; private set; }
 	protected string Html { get; private set; }
 	protected MarkdownDocument Document { get; private set; }
-	protected MockFileSystem FileSystem { get; }
-	protected TestDiagnosticsCollector Collector { get; }
-	protected DocumentationSet Set { get; set; }
+	protected MockFileSystem FileSystem { get; private set; }
+	protected TestDiagnosticsCollector Collector { get; private set; }
+	protected DocumentationSet Set { get; private set; }
 
 	private bool TestingFullDocument { get; }
 
 	protected DirectiveTest([LanguageInjection("markdown")] string content)
 	{
-		var logger = new TestLoggerFactory();
-
 		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 		var documentContents = TestingFullDocument
 			? content
@@ -66,25 +79,15 @@ public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 		AddToFileSystem(FileSystem);
 
 		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
+		// The docset lists the Markdown files present now, so it has to be generated before a subclass constructor adds more.
 		// ReSharper disable once VirtualMemberCallInConstructor
 		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts(), extraYaml: GetDocsetExtraYaml());
-		Collector = new TestDiagnosticsCollector();
-		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		// ReSharper disable once VirtualMemberCallInConstructor
-		var environment = GetEnvironment();
-		// ReSharper disable once VirtualMemberCallInConstructor
-		var context = new BuildContext(
-			Collector,
-			TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()),
-			configurationContext,
-			environment
-		)
-		{ ContentSource = GetContentSource() };
-		var linkResolver = new TestCrossLinkResolver();
-		// ReSharper disable once VirtualMemberCallInConstructor
-		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
-		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
-		Html = default!; //assigned later
+
+		// Assigned from the shared fixture in InitializeAsync.
+		File = null!;
+		Set = null!;
+		Collector = null!;
+		Html = default!;
 		Document = default!;
 	}
 
@@ -119,20 +122,63 @@ public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 	/// </summary>
 	protected virtual ContentSource? GetContentSource() => null;
 
+	/// <summary>
+	/// Runs once per test class, right after the documentation set is created and before its directory tree is resolved.
+	/// Use it to configure the set. Do not touch the set from a test or from <see cref="InitializeAsync"/>: it is shared.
+	/// </summary>
+	protected virtual void ConfigureDocumentationSet(DocumentationSet set) { }
+
+	/// <summary>
+	/// Runs once per test class, after the document is parsed and rendered.
+	/// Use it to change the parsed document, for example a directive block. Do not do that from a test or from
+	/// <see cref="InitializeAsync"/>: the document is shared by the tests of the class, which run in parallel.
+	/// </summary>
+	protected virtual void OnFixtureBuilt(MarkdownDocument document) { }
+
 	public virtual async Task InitializeAsync()
 	{
-		_ = Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var fixture = await Fixtures.GetOrAdd(GetType(), _ => new Lazy<Task<BuiltFixture>>(BuildAsync)).Value;
+		File = fixture.File;
+		Html = fixture.Html;
+		Document = fixture.Document;
+		Collector = fixture.Collector;
+		FileSystem = fixture.FileSystem;
+		Set = fixture.Set;
+	}
 
-		await Set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
-		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current!.Execution.CancellationToken);
-		var html = MarkdownFile.CreateHtml(Document).AsSpan();
+	// Runs on the first instance of the class only, after its constructors (including the subclass constructor) have finished.
+	private async Task<BuiltFixture> BuildAsync()
+	{
+		var ctx = Cancel.None;
+		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
+		var collector = new TestDiagnosticsCollector();
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
+		var context = new BuildContext(
+			collector,
+			TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()),
+			configurationContext,
+			GetEnvironment()
+		)
+		{ ContentSource = GetContentSource() };
+		var set = new DocumentationSet(context, new TestLoggerFactory(), new TestCrossLinkResolver(), GetReleaseNotesResolver());
+		var file = set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
+		ConfigureDocumentationSet(set);
+
+		_ = collector.StartAsync(ctx);
+
+		await set.ResolveDirectoryTree(ctx);
+		var document = await file.ParseFullAsync(set.TryFindDocumentByRelativePath, ctx);
+		var html = MarkdownFile.CreateHtml(document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
-		Html = start >= 0
+		var renderedHtml = start >= 0
 			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())
 			: html.ToString().Trim(Environment.NewLine.ToCharArray());
 
-		await Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
+		await collector.StopAsync(ctx);
+		OnFixtureBuilt(document);
+
+		return new BuiltFixture(file, renderedHtml, document, collector, FileSystem, set);
 	}
 
 	/// <summary>
@@ -151,9 +197,10 @@ public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 			.ToList();
 	}
 
-	public async ValueTask DisposeAsync()
+	// The fixture is shared by every test of the class and lives for the whole run, so there is nothing to release per test.
+	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		await Collector.DisposeAsync();
+		return ValueTask.CompletedTask;
 	}
 }

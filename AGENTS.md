@@ -71,7 +71,7 @@ Tests live in `tests/` (unit) and `tests-integration/` (integration).
   - Verified files live in `{TestProject}/.snapshots/{Class}/{Method}.verified.html`. Use one named test per snapshot rather than `[Arguments]`, which puts a hash in the file name.
   - Create or update them with `SNAPSHOT_ACCEPT=1 dotnet test --project tests/Elastic.ApiExplorer.Tests --treenode-filter "/*/*/MyTests/*"`, then review the diff of the `.verified.html` files. The variable is ignored when `CI=true`.
   - Before committing, change the markup in the partial and confirm the test fails, then revert.
-- **Integration**: clones real repos, runs full assembler — only run when integration files change
+- **Integration** (`tests-integration/`): needs real Elasticsearch credentials in the `docs-builder` user-secrets store, or Docker. Not run in CI; run with `mise run integrate` when you change search, MCP or content-date enrichment code.
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
 

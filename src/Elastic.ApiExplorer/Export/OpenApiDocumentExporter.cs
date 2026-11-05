@@ -150,6 +150,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					new ParentDocument { Title = productLabel, Path = productUrl }
 				];
 
+				var endpointKeys = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]);
 				var api = new ApiOperationMetadata
 				{
 					Properties = trees.IndexEntries(plainDescriptions),
@@ -163,11 +164,15 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 							}
 						)
 						.ToArray(),
-					Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
+					Endpoints = endpointKeys,
+					EndpointsBare = ApiEndpointPath.BareKeys(endpointKeys),
 					Method = method,
 					Path = path.Key,
 					OperationId = operationId,
-					Deprecated = operation.Value.Deprecated
+					Deprecated = operation.Value.Deprecated,
+					Words = ApiSearchWords.Of(operationId, path.Key),
+					Group = groupParent?.Title ?? "",
+					IdWords = ApiSearchWords.OfOperationId(operationId).Length
 				};
 
 				yield return new DocumentationDocument

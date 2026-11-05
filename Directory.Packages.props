@@ -34,7 +34,6 @@
     <PackageVersion Include="HtmlSanitizer" Version="9.2.1039" />
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.0.5" />
     <PackageVersion Include="Elastic.Transport" Version="0.17.3" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.3" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.9.7" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.18.5" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.3.8" />
@@ -55,12 +54,15 @@
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.55.0" />
     <PackageVersion Include="Elastic.Mapping" Version="0.55.0" />
     <PackageVersion Include="Elastic.Transport.VirtualizedCluster" Version="0.17.3" />
-    <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
     <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.31" />
     <PackageVersion Include="Tomlyn" Version="2.3.2" />
     <PackageVersion Include="TUnit" Version="1.78.0" />
+    <!-- The TUnit package pulls these in. Test projects exclude their assets: nothing here uses code coverage or sends test telemetry,
+         and the coverage extension copies about 43 MB of native runtimes into every test project's output. Keep the versions in line with TUnit's dependencies. -->
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.Telemetry" Version="2.5.2" />
     <PackageVersion Include="CsCheck" Version="4.0.0" />
     <PackageVersion Include="WireMock.Net" Version="1.6.11" />
   </ItemGroup>
@@ -99,7 +101,7 @@
     <PackageVersion Include="System.IO.Abstractions" Version="22.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
-    <PackageVersion Include="SharpYaml" Version="3.16.0" />
+    <PackageVersion Include="SharpYaml" Version="3.17.0" />
     <PackageVersion Include="Utf8StreamReader" Version="1.3.2" />
     <PackageVersion Include="Westwind.AspNetCore.LiveReload" Version="0.5.2" />
   </ItemGroup>
@@ -121,12 +123,9 @@
     <PackageVersion Include="Scriban.Signed" Version="7.2.6" />
     <!-- System.Linq.Dynamic.Core 1.3.12 has GHSA-4cv2-4hjh-77rx (high); pin to 1.7.3 -->
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.3" />
-    <!-- MessagePack 2.5.302 (via Aspire) has GHSA-qhrr-8q5h-9q3h (moderate, NU1902); pin to 2.5.303 -->
-    <PackageVersion Include="MessagePack" Version="2.5.303" />
   </ItemGroup>
   <!-- Test packages -->
   <ItemGroup>
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.3" />
     <PackageVersion Include="AngleSharp.Diffing" Version="1.1.1" />
     <PackageVersion Include="Nullean.Snapshots.Html" Version="0.2.0" />
     <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.2.0" />
