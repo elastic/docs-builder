@@ -302,8 +302,8 @@ sub:
 
 [Link with mutation operator](https://www.elastic.co/guide/en/elasticsearch/reference/{{version|M.M}}/index.html)
 [Link with mutation operator and space](https://www.elastic.co/guide/en/elasticsearch/reference/{{version | M.M}}/index.html)
-[Link text with mutation]({{product|uc}} {{version|M.M}})
-[Link text with mutation and space]({{product | uc}} {{version | M.M}})
+[{{product|uc}} {{version|M.M}}](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
+[{{product | uc}} {{version | M.M}} spaced](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
 
 """
 )
@@ -315,11 +315,13 @@ sub:
 	public void MutationOperatorsWorkInLinks() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<p>
-			<a href="https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html" target="_blank" rel="noopener noreferrer">Link with mutation operator</a>
-			<a href="https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html" target="_blank" rel="noopener noreferrer">Link with mutation operator and space</a>
-			[Link text with mutation](ELASTICSEARCH 9.0) [Link text with mutation and space](ELASTICSEARCH 9.0)</p>
-		""",
+			<p>
+				<a href="https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html" target="_blank" rel="noopener noreferrer">Link with mutation operator</a>
+				<a href="https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html" target="_blank" rel="noopener noreferrer">Link with mutation operator and space</a>
+				<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="noopener noreferrer">ELASTICSEARCH 9.0</a>
+				<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="noopener noreferrer">ELASTICSEARCH 9.0 spaced</a>
+			</p>
+			""",
 			DocsHtml.Body()
 		);
 
