@@ -6,7 +6,9 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -184,11 +186,7 @@ public class CsvIncludeWithHtmlBreaksTests() : DirectiveTest("""
 	public void RendersHtmlBreaksInCsvCells() => Html.Should().Contain("<br");
 
 	[Test]
-	public void RendersLinksWithBreaks()
-	{
-		Html.Should().Contain(">Terms A</a>");
-		Html.Should().Contain(">Terms B</a>");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]

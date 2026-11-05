@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Table;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -26,13 +28,28 @@ public class TableDirectiveBasicTests() : DirectiveTest<TableDirectiveBlock>(
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("table");
 
 	[Test]
-	public void RendersTableInOutput()
-	{
-		Html.Should().Contain("table-wrapper");
-		Html.Should().Contain("<table");
-		Html.Should().Contain("head a");
-		Html.Should().Contain("head b");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -57,13 +74,7 @@ public class TableDirectiveWithWidthsTests() : DirectiveTest<TableDirectiveBlock
 	}
 
 	[Test]
-	public void RendersColgroupWithWidths()
-	{
-		Html.Should().Contain("colgroup");
-		Html.Should().Contain("table-layout:fixed");
-		Html.Should().Contain("width:33.33%");
-		Html.Should().Contain("width:66.67%");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -163,11 +174,30 @@ public class TableDirectiveFilterableTests() : DirectiveTest<TableDirectiveBlock
 	public void ParsesFilterableOption() => Block!.Filterable.Should().BeTrue();
 
 	[Test]
-	public void WrapsTableInHostElement()
-	{
-		Html.Should().Contain("<filterable-table>");
-		Html.Should().Contain("</filterable-table>");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<filterable-table>
+			<div class="table-wrapper">
+				<table>
+					<thead>
+						<tr>
+							<th>head a</th>
+							<th>head b</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>a</td>
+							<td>b</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</filterable-table>
+		"""
+		);
 
 	[Test]
 	public void KeepsServerRenderedTableInsideHost() => Html.Should().Contain("<filterable-table><div class=\"table-wrapper\"");
@@ -207,12 +237,7 @@ public class TableDirectiveFilterableWithMatrixAndWidthsTests() : DirectiveTest<
 )
 {
 	[Test]
-	public void ComposesWithMatrixAndWidths()
-	{
-		Html.Should().Contain("<filterable-table><div class=\"table-wrapper table-matrix\"");
-		Html.Should().Contain("colgroup");
-		Html.Should().Contain("table-layout:fixed");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]

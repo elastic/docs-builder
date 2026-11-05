@@ -6,7 +6,9 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Storybook;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -104,15 +106,7 @@ public class StorybookInlineIdTests() : StorybookRegistryTest(
 	}
 
 	[Test]
-	public void RendersInlineStory()
-	{
-		Html.Should().Contain("<storybook-story");
-		Html.Should().Contain("story-id=\"ai-components-aibutton--default\"");
-		Html.Should().Contain("entry=\"http://127.0.0.1:6007/storybook-docs/shared_ux/registry.js\"");
-		Html.Should().Contain("http://127.0.0.1:6007/storybook/shared_ux/kbn-ui-shared-deps-src.css");
-		Html.Should().Contain("https://fonts.googleapis.com");
-		Html.Should().NotContain("kibana:shared_ux:ai-components-aibutton--default");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>Deterministic <see cref="IEnvironmentVariables"/> so storybook interpolation tests don't depend on the host shell.</summary>

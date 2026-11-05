@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.SubPages;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -38,12 +40,20 @@ public class ListSubPagesTests() : DirectiveTest<ListSubPagesBlock>("""
 		Block!.SubPages.Should().OnlyContain(p => !string.IsNullOrEmpty(p.Title) && !string.IsNullOrEmpty(p.Url));
 
 	[Test]
-	public void RendersListWithLinks()
-	{
-		Html.Should().Contain("list-sub-pages");
-		Html.Should().Contain("<a ");
-		Html.Should().Contain("</a>");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<ul class="list-sub-pages">
+			<li>
+				<a href="/page1">Page One</a>
+			</li>
+			<li>
+				<a href="/page2">Page Two</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
