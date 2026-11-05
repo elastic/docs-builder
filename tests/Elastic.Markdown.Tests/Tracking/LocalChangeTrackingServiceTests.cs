@@ -8,7 +8,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Refactor.Tracking;
+using Elastic.Documentation.Testing;
 using Nullean.ScopedFileSystem;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Tracking;
 
@@ -51,14 +53,12 @@ public sealed class LocalChangeTrackingServiceTests
 		var ok = await service.ValidateRedirects(collector, source, fs);
 
 		ok.Should().BeFalse();
-		collector.Errors.Should().BeGreaterThan(0);
 		collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("troubleshoot/deployments/serverless.md") && d.Message.Contains(
-					"redirects.yml"
-				)
+			.MatchInlineSnapshot(
+				"error {temp} Missing 'troubleshoot/deployments/serverless.md' in redirects.yml. 'troubleshoot/deployments/serverless.md' was deleted but it has no redirect targets. This will lead to broken links."
 			);
 	}
 
@@ -93,7 +93,13 @@ public sealed class LocalChangeTrackingServiceTests
 		var ok = await service.ValidateRedirects(collector, source, fs);
 
 		ok.Should().BeFalse();
-		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("reference/old-page.md"));
+		collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {temp} Missing 'reference/old-page.md' in redirects.yml. 'docs/reference/old-page.md' was deleted but it has no redirect targets. This will lead to broken links."
+			);
 	}
 
 	[Test]
@@ -137,9 +143,10 @@ public sealed class LocalChangeTrackingServiceTests
 		ok.Should().BeFalse();
 		collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("troubleshoot/old.md") && d.Message.Contains("troubleshoot/new.md")
+			.MatchInlineSnapshot(
+				"error {temp} Missing 'troubleshoot/old.md' in redirects.yml. 'troubleshoot/old.md' was renamed to 'troubleshoot/new.md' but it has no redirect configuration set."
 			);
 	}
 
