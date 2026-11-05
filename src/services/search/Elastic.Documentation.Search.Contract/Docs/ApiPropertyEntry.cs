@@ -17,6 +17,11 @@ public record ApiPropertyEntry
 	[JsonPropertyName("path")]
 	public required string Path { get; init; }
 
+	/// <summary>The <see cref="ApiPropertyPath.Words"/> of <see cref="Path"/> joined by spaces: the standard analyzer keeps <c>min_score</c> whole and gives each word a position for a phrase match.</summary>
+	[Text]
+	[JsonPropertyName("path_words")]
+	public string PathWords { get; init; } = "";
+
 	[Keyword]
 	[JsonPropertyName("type")]
 	public required string Type { get; init; }

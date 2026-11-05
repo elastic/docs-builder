@@ -249,6 +249,7 @@ public class ApiPropertySearchTests
 		var fields = field.GetProperty("properties");
 		fields.GetProperty("name").GetProperty("type").GetString().Should().Be("keyword");
 		fields.GetProperty("anchor").GetProperty("type").GetString().Should().Be("keyword");
+		fields.GetProperty("path_words").GetProperty("type").GetString().Should().Be("text");
 
 		var routes = json
 			.RootElement
