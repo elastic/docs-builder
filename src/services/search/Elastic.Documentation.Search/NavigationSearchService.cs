@@ -32,7 +32,8 @@ public partial class NavigationSearchService(
 				Query = request.Query,
 				PageNumber = request.PageNumber,
 				PageSize = request.PageSize,
-				TypeFilter = request.TypeFilter
+				TypeFilter = request.TypeFilter,
+				ApiPage = request.ApiPage
 			},
 			ctx
 		);
@@ -43,24 +44,7 @@ public partial class NavigationSearchService(
 			PageNumber = resp.PageNumber,
 			PageSize = resp.PageSize,
 			Aggregations = new NavigationSearchAggregations { Type = resp.Aggregations.Type },
-			Results = resp
-				.Results
-				.Select(
-					item => new NavigationSearchResultItem
-					{
-						Type = item.Document.ContentType,
-						Url = item.Document.Path,
-						Title = item.Title,
-						Description = item.Description,
-						Routes = item.Document.Api?.Routes ?? [],
-						Properties = item.Properties.Select(property => ToNavigationSearchProperty(property, item.Document.Path)).ToArray(),
-						Parents = (item.Document.Parents ?? []).Select(
-							p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path }
-						).ToArray(),
-						Score = item.Score
-					}
-				)
-				.ToList()
+			Results = resp.Results.Select(item => ToNavigationSearchResultItem(item, request.ApiPage)).ToList()
 		};
 
 		LogNavigationSearchResults(
@@ -72,6 +56,28 @@ public partial class NavigationSearchService(
 		);
 
 		return response;
+	}
+
+	private static NavigationSearchResultItem ToNavigationSearchResultItem(
+		SearchResultItem<DocumentationDocument> item,
+		ApiPageContext? page
+	)
+	{
+		var rebase = ApiTreeRebase.For(item.Document.Api, page);
+		var url = rebase?.Apply(item.Document.Path) ?? item.Document.Path;
+		return new NavigationSearchResultItem
+		{
+			Type = item.Document.ContentType,
+			Url = url,
+			Title = item.Title,
+			Description = item.Description,
+			Routes = item.Document.Api?.Routes ?? [],
+			Properties = item.Properties.Select(property => ToNavigationSearchProperty(property, url)).ToArray(),
+			Parents = (item.Document.Parents ?? []).Select(
+				p => new NavigationSearchResultItemParent { Title = p.Title, Url = rebase?.Apply(p.Path) ?? p.Path }
+			).ToArray(),
+			Score = item.Score
+		};
 	}
 
 	private static NavigationSearchProperty ToNavigationSearchProperty(ApiPropertyEntry property, string documentPath) =>

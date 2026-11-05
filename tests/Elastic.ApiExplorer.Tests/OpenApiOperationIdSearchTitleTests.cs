@@ -51,7 +51,7 @@ public class OpenApiOperationIdSearchTitleTests
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateBulkSpec(), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(TestHelpers.EsTree("main", CreateBulkSpec())).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -85,8 +85,7 @@ public class OpenApiOperationIdSearchTitleTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(
-			CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"),
-			"elasticsearch"
+			TestHelpers.EsTree("main", CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"))
 		).ToArray();
 
 		docs.Should().HaveCount(1);
@@ -103,7 +102,7 @@ public class OpenApiOperationIdSearchTitleTests
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("   "), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(TestHelpers.EsTree("main", CreateSpecWithSummaryWhitespace("   "))).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -129,7 +128,7 @@ public class OpenApiOperationIdSearchTitleTests
 			}
 		};
 
-		var docs = new OpenApiDocumentExporter(VersionsConfiguration).ConvertToDocuments(spec, "elasticsearch").ToArray();
+		var docs = new OpenApiDocumentExporter(VersionsConfiguration).ConvertToDocuments(TestHelpers.EsTree("main", spec)).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -155,7 +154,7 @@ public class OpenApiOperationIdSearchTitleTests
 		);
 
 		var docs = new OpenApiDocumentExporter(VersionsConfiguration)
-			.ConvertToDocuments(spec, "elasticsearch")
+			.ConvertToDocuments(TestHelpers.EsTree("main", spec))
 			.ToDictionary(d => d.Api!.OperationId);
 
 		var flush = docs["ml-flush-job"];
