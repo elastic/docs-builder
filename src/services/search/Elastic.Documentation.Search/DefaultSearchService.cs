@@ -46,7 +46,10 @@ public partial class DefaultSearchService<TDocument>(
 		"api.method",
 		"api.path",
 		"api.operation_id",
-		"api.routes"
+		"api.routes",
+		// the navigation search points a hit into the reader's version tree
+		"api.key",
+		"api.trees"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
