@@ -52,15 +52,48 @@ public class DocumentFilterTests
 	[Test]
 	public async Task AutocompleteAsync_ApiLookupWithScope_FiltersTheWholeLookupOnce()
 	{
-		var scope = new ApiTreeScope("elasticsearch", "8");
+		var page = new ApiPageContext("elasticsearch", "8");
 
 		using var query = await CapturedQuery(
-			s => s.AutocompleteAsync(new AutocompleteRequest { Query = "knn", TypeFilter = "api", ApiTree = scope })
+			s => s.AutocompleteAsync(new AutocompleteRequest { Query = "knn", TypeFilter = "api", ApiPage = page })
+		);
+
+		var filtered = query.RootElement.GetProperty("bool").GetProperty("must").GetProperty("bool");
+		filtered.GetProperty("filter").GetRawText().Should().Be(Serialize(SearchQueryBuilder.DocumentFilterFor(page.TreeScope)));
+		filtered.GetProperty("must").GetRawText().Should().NotContain("\"hidden\"");
+	}
+
+	[Test]
+	[Arguments("api")]
+	[Arguments(null)]
+	public async Task AutocompleteAsync_ApiKey_LiftsThatApiOutsideTheFilter(string? typeFilter)
+	{
+		using var query = await CapturedQuery(
+			s => s.AutocompleteAsync(new AutocompleteRequest
+			{
+				Query = "search",
+				TypeFilter = typeFilter,
+				ApiPage = new ApiPageContext("elasticsearch", null)
+			})
 		);
 
 		var root = query.RootElement.GetProperty("bool");
-		root.GetProperty("filter").GetRawText().Should().Be(Serialize(SearchQueryBuilder.DocumentFilterFor(scope)));
-		root.GetProperty("must").GetRawText().Should().NotContain("\"hidden\"");
+		root
+			.GetProperty("should")
+			.GetRawText()
+			.Should()
+			.Be("""{"constant_score":{"boost":0.5,"filter":{"term":{"api.key":{"value":"elasticsearch"}}}}}""");
+		root.GetProperty("must").GetProperty("bool").GetProperty("filter").GetRawText().Should().Be(UnscopedFilter);
+	}
+
+	[Test]
+	public async Task AutocompleteAsync_NoApiKey_LiftsNothing()
+	{
+		using var query = await CapturedQuery(s => s.AutocompleteAsync(new AutocompleteRequest { Query = "search", TypeFilter = "api" }));
+
+		var root = query.RootElement.GetProperty("bool");
+		root.GetProperty("filter").GetRawText().Should().Be(UnscopedFilter);
+		root.TryGetProperty("should", out _).Should().BeFalse();
 	}
 
 	[Test]

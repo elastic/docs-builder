@@ -25,7 +25,7 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(PageFeedbackReaction))]
 [JsonSerializable(typeof(PageFeedbackReason))]
 [JsonSerializable(typeof(NavigationSearchRequest))]
-[JsonSerializable(typeof(Search.Contract.ApiTreeScope))]
+[JsonSerializable(typeof(Search.Contract.ApiPageContext))]
 [JsonSerializable(typeof(NavigationSearchResponse))]
 [JsonSerializable(typeof(NavigationSearchProperty))]
 [JsonSerializable(typeof(Search.Contract.ApiRouteEntry))]

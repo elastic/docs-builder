@@ -33,7 +33,7 @@ public partial class NavigationSearchService(
 				PageNumber = request.PageNumber,
 				PageSize = request.PageSize,
 				TypeFilter = request.TypeFilter,
-				ApiTree = request.ApiTree
+				ApiPage = request.ApiPage
 			},
 			ctx
 		);
@@ -44,7 +44,7 @@ public partial class NavigationSearchService(
 			PageNumber = resp.PageNumber,
 			PageSize = resp.PageSize,
 			Aggregations = new NavigationSearchAggregations { Type = resp.Aggregations.Type },
-			Results = resp.Results.Select(item => ToNavigationSearchResultItem(item, request.ApiTree)).ToList()
+			Results = resp.Results.Select(item => ToNavigationSearchResultItem(item, request.ApiPage?.TreeScope)).ToList()
 		};
 
 		LogNavigationSearchResults(

@@ -96,6 +96,26 @@ public static class SearchQueryBuilder
 	public static Query FilterDocuments(Query query, ApiTreeScope? scope) =>
 		new BoolQuery { Must = [query], Filter = [DocumentFilterFor(scope)] };
 
+	/// <summary>
+	/// Adds <see cref="ApiLookupWeights.SameApi"/> to the hits of API <paramref name="apiKey"/>. The lift is unnamed, so the
+	/// named query scores that pick each word's role and inner hits stay as they were.
+	/// </summary>
+	public static Query LiftApi(Query query, string? apiKey) =>
+		apiKey is null
+			? query
+			: new BoolQuery
+			{
+				Must = [query],
+				Should =
+				[
+					new ConstantScoreQuery
+					{
+						Filter = new TermQuery { Field = QueryFieldNames.ApiKey, Value = apiKey },
+						Boost = ApiLookupWeights.SameApi
+					}
+				]
+			};
+
 	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
 		ParseApiPropertyQuery(searchQuery, typeFilter) is { Readings: [var first, ..] }
