@@ -16,6 +16,7 @@ using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
@@ -64,7 +65,8 @@ public class DocumentationSet : INavigationTraversable
 		BuildContext context,
 		ILoggerFactory logFactory,
 		ICrossLinkResolver linkResolver,
-		IReleaseNotesResolver? releaseNotesResolver = null
+		IReleaseNotesResolver? releaseNotesResolver = null,
+		FloatingSectionRegistry? floatingSections = null
 	)
 	{
 		_logger = logFactory.CreateLogger<DocumentationSet>();
@@ -94,7 +96,8 @@ public class DocumentationSet : INavigationTraversable
 			null,
 			null,
 			context.UrlPathPrefix,
-			CrossLinkResolver
+			CrossLinkResolver,
+			floatingSections
 		);
 		VisitNavigation(Navigation);
 
@@ -268,7 +271,11 @@ public class DocumentationSet : INavigationTraversable
 
 		var markdownInNavigation = leafs
 			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
-			.Concat(nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)))
+			.Concat(
+				nodes.Where(g => g.Index.Model is MarkdownFile).Select(
+					g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)
+				)
+			)
 			.ToList();
 
 		var links = markdownInNavigation

@@ -106,6 +106,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			return [];
 		if (item is CliReferenceRef cliRef2)
 			return cliRef2.Children.SelectMany(GetFileRefs).ToArray();
+		if (item is FloatingSectionRef)
+			return [];
 		throw new Exception($"Unexpected item type {item.GetType().Name}");
 	}
 
@@ -262,6 +264,7 @@ public class DocumentationSetFile : TableOfContentsFile
 					),
 				CrossLinkRef crossLink =>
 					ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
+				FloatingSectionRef floatingSection => floatingSection with { Context = context },
 				_ => null
 			};
 

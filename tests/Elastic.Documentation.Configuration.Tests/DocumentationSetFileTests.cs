@@ -230,6 +230,26 @@ public class DocumentationSetFileTests
 	}
 
 	[Test]
+	public void DeserializesFloatingSectionReference()
+	{
+		// language=yaml
+		var yaml =
+			"""
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		             - api: elasticsearch
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.TableOfContents.Should().HaveCount(2);
+		var section = result.TableOfContents.ElementAt(1).Should().BeOfType<FloatingSectionRef>().Subject;
+		section.Kind.Should().Be("api");
+		section.Key.Should().Be("elasticsearch");
+	}
+
+	[Test]
 	public void DeserializesNestedStructure()
 	{
 		// language=yaml

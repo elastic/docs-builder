@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using ListingGroupRef = Elastic.Documentation.Configuration.Toc.ListingGroupRef;
 using ListingRef = Elastic.Documentation.Configuration.Toc.ListingRef;
@@ -34,10 +35,12 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		IRootNavigationItem<INavigationModel, INavigationItem>? parent = null,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
 		string? pathPrefix = null,
-		ICrossLinkResolver? crossLinkResolver = null
+		ICrossLinkResolver? crossLinkResolver = null,
+		FloatingSectionRegistry? floatingSections = null
 	)
 	{
 		_context = context;
+		_floatingSections = floatingSections ?? FloatingSectionRegistry.Empty;
 		_factory = factory;
 		_crossLinkResolver = crossLinkResolver ?? NoopCrossLinkResolver.Instance;
 		PathPrefix = pathPrefix ?? string.Empty;
@@ -104,6 +107,7 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 
 	private readonly Dictionary<Uri, IRootNavigationItem<TModel, INavigationItem>> _tableOfContentNodes = [];
 	private readonly IDocumentationSetContext _context;
+	private readonly FloatingSectionRegistry _floatingSections;
 	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes =>
 		_tableOfContentNodes.ToDictionary(kvp => kvp.Key, IRootNavigationItem<IDocumentationFile, INavigationItem> (kvp) => kvp.Value);
 
@@ -171,6 +175,7 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
 		CliReferenceRef cliRef => CreateCliReferenceNavigation(cliRef, index, context, parent, homeAccessor),
 		ListingRef listingRef => CreateListingNavigation(listingRef, index, context, parent, homeAccessor),
+		FloatingSectionRef floatingRef => CreateFloatingSectionNavigation(floatingRef, index, context, parent),
 		_ => null
 	};
 
@@ -369,6 +374,30 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		}
 		folderNavigation.SetNavigationItems(children);
 		return folderNavigation;
+	}
+
+	private INavigationItem? CreateFloatingSectionNavigation(
+		FloatingSectionRef floatingRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent
+	)
+	{
+		if (!_floatingSections.TryGetSection(floatingRef.Kind, floatingRef.Key, out var section))
+		{
+			context.Collector.EmitError(
+				floatingRef.Context,
+				$"'{floatingRef.Kind}: {floatingRef.Key}' in the table of contents does not match a section this build can resolve."
+			);
+			return null;
+		}
+
+		var root = section.CreateRoot(parent);
+		root.NavigationIndex = index;
+		root.Parent = parent;
+		if (root is IAssignableIslandNavigation island)
+			island.IsIsland = true;
+		return root;
 	}
 
 	private INavigationItem? CreateTocNavigation(
