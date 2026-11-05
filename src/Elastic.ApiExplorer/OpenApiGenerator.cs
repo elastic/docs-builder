@@ -167,8 +167,8 @@ public class OpenApiGenerator(
 
 	/// <summary>
 	/// Every version tree the explorer renders for every configured API, for the search index. A tree the version index
-	/// declares that did not load fails the export with an error per tree: indexing without it would delete that
-	/// tree's documents. Page rendering keeps skipping such a tree with a warning.
+	/// declares that did not load, or a version index that could not be fetched, fails the export: indexing without
+	/// those trees would delete their documents. Page rendering keeps its warning and its local-spec fallback.
 	/// </summary>
 	public async Task<IReadOnlyList<IndexedTree>> ResolveIndexedTrees(Cancel ctx = default)
 	{
@@ -176,17 +176,22 @@ public class OpenApiGenerator(
 		var resolved = await Task.WhenAll(configs.Select(c => DocumentsFor(c.Key, c.Value, ctx))).ConfigureAwait(false);
 		var apis = configs.Zip(resolved, static (c, r) => (c.Key, c.Value.Product.Id, Resolved: r)).ToList();
 
-		var unresolved = apis.SelectMany(static a => a.Resolved.UnresolvedMonikers.Select(m => (a.Key, Moniker: m))).ToList();
-		foreach (var (apiKey, moniker) in unresolved)
-		{
-			context.Collector.EmitGlobalError(
-				$"API '{apiKey}': version '{moniker}' is declared in the version index but could not be loaded, so its search documents cannot be exported."
-			);
-		}
-		if (unresolved.Count > 0)
-			throw new InvalidOperationException(
-				$"Declared API version trees could not be loaded, so the search export stops: {string.Join(", ", unresolved.Select(static u => $"{u.Key} {u.Moniker}"))}."
-			);
+		List<string> missing =
+		[
+			.. apis.SelectMany(
+				static a => a
+					.Resolved
+					.UnresolvedMonikers
+					.Select(m => $"API '{a.Key}': version '{m}' is declared in the version index but could not be loaded")
+			)
+		];
+		if (_versionIndexClient.RootIndexFetchError is { } fetchError)
+			missing.Add($"The API version index could not be fetched ({fetchError}), so the declared version trees are unknown");
+
+		foreach (var problem in missing)
+			context.Collector.EmitGlobalError($"{problem}, so the search export stops.");
+		if (missing.Count > 0)
+			throw new InvalidOperationException($"The API search export stops: {string.Join("; ", missing)}.");
 
 		return [
 			.. apis.SelectMany(static a => a.Resolved.Documents.Select(v => new IndexedTree(a.Key, a.Id, v.Version.Moniker, v.Document)))

@@ -136,9 +136,36 @@ public class OpenApiGeneratorCatalogSplitTests
 		entries.Should().ContainSingle("pages still render the trees that loaded");
 		errorsAfterRendering.Should().Be(0, "rendering skips the missing tree with a warning");
 		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
-			"Declared API version trees could not be loaded, so the search export stops: elasticsearch 8."
+			"The API search export stops: API 'elasticsearch': version '8' is declared in the version index but could not be loaded."
 		);
 		context.Collector.Errors.Should().Be(1);
+	}
+
+	[Test]
+	public async Task ResolveIndexedTrees_VersionIndexUnavailable_FailsTheExport()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+				: SpecResponse()
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			A.Fake<IOpenApiSpecificationReader>()
+		);
+
+		var export = () => generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
+
+		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
+			"The API search export stops: The API version index could not be fetched (*), so the declared version trees are unknown."
+		);
+		versionIndexClient.RootIndexFetchError.Should().NotBeNull();
 	}
 
 	/*lang=json,strict*/
