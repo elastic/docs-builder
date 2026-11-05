@@ -164,7 +164,10 @@ public static class ApiLookupQueryBuilder
 		if (SearchQueryBuilder.BuildBareWordEndpointQuery(route, ApiLookupWeights.EndpointKey) is { } alias)
 			options.Add(alias);
 		if (SearchQueryBuilder.EndpointName(route) is { } name && !(typedRoute && name == route))
-			options.Add(RoutesUnder(name, QueryFieldNames.ApiEndpoints));
+		{
+			if (RoutesUnder(name, QueryFieldNames.ApiEndpoints) is { } nameRoutes)
+				options.Add(nameRoutes);
+		}
 
 		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
 	}
@@ -174,29 +177,30 @@ public static class ApiLookupQueryBuilder
 	/// <c>/_security/user/alice</c> covers <c>_security/user/*/_password</c>. Like the exact lookup, a template scores by the
 	/// literal segments it keeps.
 	/// </summary>
-	private static Query RoutesUnder(string route, Field field)
+	private static Query? RoutesUnder(string route, Field field)
 	{
 		var groups = ApiEndpointPath.QueryCandidates(route);
 		var total = groups[0].LiteralSegments;
-		return new DisMaxQuery
-		{
-			Queries = groups.SelectMany(
-				g => RegexpBatches(g.Terms).Select(
-					pattern =>
-						(Query)new ConstantScoreQuery
-						{
-							Filter = new RegexpQuery { Field = field, Value = pattern + "/.+" },
-							Boost = ApiLookupWeights.NamespaceKey * (1 + g.LiteralSegments) / (1 + total)
-						}
-				)
-			).ToList()
-		};
+		var queries = groups.SelectMany(
+			g => RegexpBatches(g.Terms).Select(
+				pattern =>
+					(Query)new ConstantScoreQuery
+					{
+						Filter = new RegexpQuery { Field = field, Value = pattern + "/.+" },
+						Boost = ApiLookupWeights.NamespaceKey * (1 + g.LiteralSegments) / (1 + total)
+					}
+			)
+		).ToList();
+		if (queries.Count == 0)
+			return null;
+		return new DisMaxQuery { Queries = queries };
 	}
 
+	// A route segment that long names nothing, and one oversized pattern would fail the whole request.
 	private static IEnumerable<string> RegexpBatches(IReadOnlyList<string> terms)
 	{
 		var batch = new List<string>();
-		foreach (var term in terms)
+		foreach (var term in terms.Where(t => ApiEndpointPath.RegexpAlternation([t]).Length <= MaxRegexpLength))
 		{
 			if (batch.Count > 0 && ApiEndpointPath.RegexpAlternation([.. batch, term]).Length > MaxRegexpLength)
 			{
@@ -205,7 +209,8 @@ public static class ApiLookupQueryBuilder
 			}
 			batch.Add(term);
 		}
-		yield return ApiEndpointPath.RegexpAlternation(batch);
+		if (batch.Count > 0)
+			yield return ApiEndpointPath.RegexpAlternation(batch);
 	}
 
 	/// <summary>A method word, such as <c>get</c>, also stays an operation, title and description word.</summary>

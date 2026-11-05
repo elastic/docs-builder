@@ -312,6 +312,29 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	public void Build_RouteWithOneSegmentTooLongForARegexp_KeepsTheExactMatchAndDropsThePattern()
+	{
+		var segment = new string('a', 1000);
+		using var json = Json(ApiLookupQueryBuilder.Build("/" + segment));
+		var key = KeyOption(json);
+
+		ExactOptions(key)["api.endpoints"].Should().Contain(segment);
+		var routes = RoutesUnder(key);
+		routes.Should().OnlyContain(r => r.Split(' ')[1].Length <= 1000);
+		routes.Should().NotContain(r => r.Contains(segment, StringComparison.Ordinal));
+	}
+
+	[Test]
+	public void Build_RouteWithALongSecondSegment_KeepsTheTemplatesThatFit()
+	{
+		var segment = new string('a', 1000);
+		using var json = Json(ApiLookupQueryBuilder.Build("/_search/" + segment));
+		var routes = RoutesUnder(KeyOption(json));
+
+		routes.Should().Equal(@"api.endpoints (_search/\*)/.+ 3.667", @"api.endpoints_bare (search/\*)/.+ 3.667");
+	}
+
+	[Test]
 	[Arguments("/_snapshot", "_snapshot", "snapshot")]
 	[Arguments("/snapshot", "snapshot", "snapshot")]
 	public void Build_TypedSystemRoute_StripsTheTypedUnderscoreForTheBareKeys(string typed, string route, string bare)
