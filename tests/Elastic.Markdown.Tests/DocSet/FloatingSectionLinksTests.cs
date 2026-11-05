@@ -49,7 +49,8 @@ public class FloatingSectionLinksTests
 			new TestCrossLinkResolver(),
 			floatingSections: new FloatingSectionRegistry([provider])
 		);
-		await set.ResolveFloatingSectionsAsync(TestContext.Current!.Execution.CancellationToken);
+		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
+		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
 		var reference = set.CreateLinkReference();
 
 		reference.Links.Keys.Should().BeEquivalentTo("index.md", "page.md");

@@ -137,10 +137,10 @@ public class DocumentationSet : INavigationTraversable
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
 
 	/// <summary>
-	/// Fills the children of every mounted floating section. Call it once, before generation, so
-	/// <c>links.json</c> and the exporters see the pages of each section.
+	/// Fills the children of every mounted floating section. <see cref="ResolveDirectoryTree"/> runs it,
+	/// so <c>links.json</c> and the exporters see the pages of each section.
 	/// </summary>
-	public Task ResolveFloatingSectionsAsync(Cancel ctx) =>
+	private Task ResolveFloatingSectionsAsync(Cancel ctx) =>
 		Task.WhenAll(Navigation.FloatingSections.Select(section => section.ResolveAsync(ctx)));
 
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
@@ -264,6 +264,7 @@ public class DocumentationSet : INavigationTraversable
 			options,
 			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token)
 		);
+		await ResolveFloatingSectionsAsync(ctx);
 
 		_resolved = true;
 	}
