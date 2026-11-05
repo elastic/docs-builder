@@ -329,7 +329,7 @@ A docset that mounts an API with an `api:` toc entry publishes the pages of that
 [Elasticsearch API](elasticsearch://api/elasticsearch)
 ```
 
-The scheme is the repository of the docset that mounts the API. The path is `api/<key>`, then an optional version segment such as `v8`, then the path of the page under the API. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them. Anchors are not checked.
+The scheme is the repository of the docset that mounts the API. The path is `api/<key>`, then an optional version segment such as `v8`, then the path of the page under the API. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them, in the versions that list them. A `#fragment` stays on the resolved URL, but the build does not check that the anchor exists.
 
 An assembler build links to the page on the site it builds. An isolated build links to the published page on `https://www.elastic.co/docs/`.
 
