@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Markdig.Syntax;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -361,7 +362,14 @@ public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<Change
 	public void FallsBackToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
 	[Test]
-	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
+	public void EmitsWarning() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :description-visibility: value 'nonsense-value'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, hide-descriptions. Using auto."
+			);
 
 	[Test]
 	public void RendersHtml() =>

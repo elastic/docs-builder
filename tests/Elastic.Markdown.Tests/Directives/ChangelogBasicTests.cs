@@ -389,7 +389,11 @@ public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 
 	[Test]
 	public void EmitsWarningForUnmatchedVersion() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog bundle matches :version:"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 No changelog bundle matches :version: '1.2.3'.");
 }
 
 [InheritsTests]
@@ -475,11 +479,14 @@ public class ChangelogCdnInvalidProductTests() : DirectiveTest<ChangelogBlock>(
 	public void DoesNotSourceFromLocalFolder() => Block!.BundlesFolderPath.Should().BeNull();
 
 	[Test]
-	public void EmitsErrorForInvalidProduct()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid :cdn: product"));
-	}
+	public void EmitsErrorForInvalidProduct() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Invalid :cdn: product 'invalid$product'. Product names must match [a-zA-Z0-9_-]+."
+			);
 }
 
 /// <summary>
@@ -730,7 +737,13 @@ public class ChangelogCdnInferredProductUnavailableTests() : DirectiveTest<Chang
 	public void EmitsErrorWhenProductCannotBeInferred()
 	{
 		Block!.Found.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be inferred"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 The :cdn: product could not be inferred from the repository; specify it explicitly, e.g. ':cdn: elasticsearch'."
+			);
 	}
 }
 
@@ -754,8 +767,15 @@ public class ChangelogCdnUndeclaredProductTests() : DirectiveTest<ChangelogBlock
 		Block!.Found.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Message.Contains("not declared in docset.yml") && d.Message.Contains("release_notes"));
+			.MatchInlineSnapshot(
+				"""
+			error {repo}/docs/index.md:3 The :cdn: product 'not-declared' is not declared in docset.yml. Add it under 'release_notes:', for example:
+			  release_notes:
+			    - product: not-declared
+			"""
+			);
 	}
 }
 
@@ -792,11 +812,12 @@ public class ChangelogNotFoundTests() : DirectiveTest<ChangelogBlock>(
 	public void ReportsFolderNotFound() => Block!.Found.Should().BeFalse();
 
 	[Test]
-	public void EmitsErrorForMissingFolder()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("does not exist"));
-	}
+	public void EmitsErrorForMissingFolder() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Changelog bundles folder `missing-bundles` does not exist.");
 }
 
 [InheritsTests]
@@ -812,8 +833,11 @@ public class ChangelogDefaultPathMissingTests() : DirectiveTest<ChangelogBlock>(
 	public void EmitsErrorForMissingDefaultFolder()
 	{
 		// No bundles folder created, so it should emit an error
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("does not exist"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Changelog bundles folder `changelog/bundles` does not exist.");
 	}
 }
 
@@ -949,11 +973,12 @@ public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 	public void ReportsFolderEmpty() => Block!.Found.Should().BeFalse();
 
 	[Test]
-	public void EmitsErrorForEmptyFolder()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("contains no YAML files"));
-	}
+	public void EmitsErrorForEmptyFolder() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Changelog bundles folder `changelog/bundles` contains no YAML files.");
 }
 
 [InheritsTests]
@@ -1468,7 +1493,7 @@ public class ChangelogDoubleBraceEscapeTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void RendersWithoutErrors() => Collector.Errors.Should().Be(0);
+	public void RendersWithoutErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void RendersHtml() =>

@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Markdig.Syntax;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -783,7 +784,14 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 	public void LinkVisibilityFallsBackToAuto() => Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
 
 	[Test]
-	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
+	public void EmitsWarning() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :link-visibility: value 'banana'. Valid values are: auto, keep-links, hide-links. Using auto."
+			);
 }
 
 /// <summary>

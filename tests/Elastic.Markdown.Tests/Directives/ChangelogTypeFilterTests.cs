@@ -448,7 +448,14 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 	public void FallsBackToDefaultBehavior() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
 
 	[Test]
-	public void EmitsWarningForInvalidValue() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid :type: value"));
+	public void EmitsWarningForInvalidValue() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :type: value 'invalid-value'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior."
+			);
 
 	[Test]
 	public void RendersHtml() =>

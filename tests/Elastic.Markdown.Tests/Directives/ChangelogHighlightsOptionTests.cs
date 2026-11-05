@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -178,12 +179,10 @@ public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<Changel
 	public void EmitsWarningPointingToHighlightsOption() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains("Invalid :type: value 'highlight'", StringComparison.Ordinal) && d.Message.Contains(
-					":highlights:",
-					StringComparison.Ordinal
-				)
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :type: value 'highlight'. Highlights are controlled with :highlights: (not :type:). Using default behavior."
 			);
 
 	[Test]

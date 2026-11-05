@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -102,7 +103,13 @@ public class ChangelogVisibilityOnProductionTests() : ChangelogVersionVisibility
 
 	[Test]
 	public void EmitsHintForHiddenBundle() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Hint && d.Message.Contains("elasticsearch 8.1.0"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"hint {repo}/docs/index.md:3 Hiding changelog bundle 'elasticsearch 8.1.0': it targets a version newer than the current release (8.0.0) and this build publishes the 'current' content source."
+			);
 }
 
 [InheritsTests]

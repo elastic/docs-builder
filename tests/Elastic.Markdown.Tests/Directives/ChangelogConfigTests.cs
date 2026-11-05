@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -268,7 +269,7 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("changelog.yml"));
+	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -307,7 +308,11 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 
 	[Test]
 	public void EmitsWarningForMissingExplicitConfig() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("nonexistent/config.yml") && d.Message.Contains("not found"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 Specified changelog config path 'nonexistent/config.yml' not found.");
 
 	[Test]
 	public void RendersHtml() =>
@@ -825,7 +830,13 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests() : DirectiveTes
 
 	[Test]
 	public void EmitsDeprecationWarningForProductOption() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(":product:") && d.Message.Contains("deprecated"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 The :product: option is deprecated and has no effect. The directive does not apply rules.publish. Move type/area filtering to rules.bundle so it applies at bundle time."
+			);
 
 	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
