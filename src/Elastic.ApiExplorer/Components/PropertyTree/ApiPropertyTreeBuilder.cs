@@ -536,7 +536,7 @@ public partial class ApiPropertyTreeBuilder(
 
 	/// <summary>The variants of a map whose values are a union (<c>field_settings</c>), labelled like a row's own; null for any other value.</summary>
 	private ApiUnionVariants? BuildMapValueVariants(IOpenApiSchema? value, PropertyTreeScope valueScope) =>
-		valueScope.Depth < options.MaxDepth && _analyzer.GetListedUnion(value) is { } union
+		MapValueUnion(value, valueScope.Depth) is { } union
 			? BuildLabelledVariants(union.Keyword, union.Options, valueScope, _analyzer.GetUnionDiscriminator(value))
 			: null;
 

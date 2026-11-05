@@ -170,10 +170,38 @@ public class NestedUnionTests
 
 		var config = list.Items.Single(p => p.Name == "config").Children.Variants!.Variants;
 		config[0].Variants.Should().BeNull("the variant sits at the depth limit");
-		list.Items.Single(p => p.Name == "field_settings").Children.Dictionary!
-			.Variants
-			.Should()
-			.BeNull("a map value's variants stop at the limit too");
+	}
+
+	[Test]
+	[Arguments(1, false)]
+	[Arguments(2, false)]
+	[Arguments(3, true)]
+	public async Task BuildPropertyList_MapValueVariantsAtTheDepthLimit_CountAndListingAgree(int maxDepth, bool listed)
+	{
+		var document = await LoadSpecAsync(WithSchemas(Schemas));
+		var builder = new ApiPropertyTreeBuilder(
+			document,
+			new PropertyDisplayOptions
+			{
+				RenderMarkdown = static s => new HtmlString(s),
+				ApiRootUrl = "/api/doc/fixture",
+				MaxDepth = maxDepth
+			}
+		);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var children = list.Items.Single(p => p.Name == "field_settings").Children;
+		if (!listed)
+		{
+			children.Kind.Should().Be(ChildKind.None, "a key row with no rows to list is left out, not shown empty");
+			return;
+		}
+
+		var key = children.Dictionary!;
+		key.Variants!.Variants.Should().HaveCount(2);
+		key.NestedCount.Should().Be(2, "the count says what the key row lists");
+		key.IsCollapsible.Should().BeTrue();
 	}
 
 	[Test]
