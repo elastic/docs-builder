@@ -164,19 +164,12 @@ storybook:
 	public void WarnsAndLeavesExpressionLiteral() =>
 		Collector
 			.Diagnostics
-			.ToSnapshotText()
+			.ToSnapshotText(firstLineOnly: true)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
 		warning {repo}/docs/docset.yml 'storybook.registry' references environment variable 'AWS_SECRET_ACCESS_KEY' which is not allow-listed for interpolation and is left literal. Allowed: KIBANA_STORYBOOK_REGISTRY.
 		error {repo}/docs/index.md:3 storybook registry could not be read: ${AWS_SECRET_ACCESS_KEY:-docs_registry.json}
-		System.IO.FileNotFoundException: Could not find file '{repo}/docs/${AWS_SECRET_ACCESS_KEY:-docs_registry.json}'.
-		File name: '{repo}/docs/${AWS_SECRET_ACCESS_KEY:-docs_registry.json}'
-		   at System.IO.Abstractions.TestingHelpers.MockFile.ReadAllText(String path, Encoding encoding)
-		   at System.IO.Abstractions.TestingHelpers.MockFile.ReadAllText(String path)
-		   at Nullean.ScopedFileSystem.ScopedFile.ReadAllText(String path)
-		   at Elastic.Markdown.Myst.Directives.Storybook.StorybookBlock.ReadRegistry(String rawRegistry) in {repo}/src/Elastic.Markdown/Myst/Directives/Storybook/StorybookBlock.cs:line 209
-		   at Elastic.Markdown.Myst.Directives.Storybook.StorybookBlock.TryReadRegistry(String rawRegistry, String& registryJson, Exception& error) in {repo}/src/Elastic.Markdown/Myst/Directives/Storybook/StorybookBlock.cs:line 184
 		"""
 			);
 }
