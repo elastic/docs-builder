@@ -45,6 +45,19 @@ public record FloatingLinkSection
 	/// <summary>The most versions one section can hold, one bit each.</summary>
 	public const int MaxVersions = 64;
 
+	public FloatingLinkSection() { }
+
+	/// <summary>
+	/// A copy keeps the data and none of the lookups built from it. The generated copy would carry them over, and
+	/// <c>with { Versions = ... }</c> would keep answering from the versions it replaced.
+	/// </summary>
+	protected FloatingLinkSection(FloatingLinkSection original)
+	{
+		Versions = original.Versions;
+		Pages = original.Pages;
+		Aliases = original.Aliases;
+	}
+
 	/// <summary>The versions of the section. The index of a version is its bit position in the page masks.</summary>
 	[JsonPropertyName("versions")]
 	public required FloatingLinkVersion[] Versions { get; init; }

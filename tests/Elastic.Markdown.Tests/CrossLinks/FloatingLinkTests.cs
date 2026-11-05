@@ -101,8 +101,27 @@ public class FloatingLinkTests
 	}
 
 	[Test]
+	public void With_ReplacingTheAliases_DoesNotKeepAnsweringFromTheOldOnes()
+	{
+		Api.TryResolvePage("9", "operation/operation-search-1", out _).Should().BeTrue("this warms the alias lookup");
+
+		var replaced = Api with
+		{
+			Aliases = new Dictionary<string, Dictionary<string, string[]>>
+			{
+				["9"] = new() { ["operation/operation-search"] = ["operation/operation-search-3"] }
+			}
+		};
+
+		replaced.TryResolvePage("9", "operation/operation-search-3", out _).Should().BeTrue();
+		replaced.TryResolvePage("9", "operation/operation-search-1", out _).Should().BeFalse();
+	}
+
+	[Test]
 	public void TryResolvePage_WithoutACurrentVersion_DoesNotGuessOne()
 	{
+		// warm the lookups first: a copy that carried them over would still answer from the versions it replaced
+		Api.TryResolvePage(null, "operation/operation-search", out _).Should().BeTrue();
 		var noCurrent = Api with { Versions = [.. Api.Versions.Select(v => v with { Current = false })] };
 
 		noCurrent.TryResolvePage(null, "operation/operation-search", out _).Should().BeFalse();
