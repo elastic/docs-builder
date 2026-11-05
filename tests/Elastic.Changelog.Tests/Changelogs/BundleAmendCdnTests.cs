@@ -8,6 +8,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -102,9 +104,10 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("could not be fetched")
+			.MatchInlineSnapshot(
+				"error  Changelog entry 'never-uploaded.yaml' for 'elastic/elasticsearch/main' could not be fetched from https://d10xozp44eyz7q.cloudfront.net/changelog/elastic/elasticsearch/main/never-uploaded.yaml: 404 Not Found — entry does not exist in the pool. Ensure the entry was uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead."
 			);
 	}
 
@@ -145,7 +148,13 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("different checksum"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error existing.yaml Bundle contains 'existing.yaml' but with a different checksum than the sourced changelog. Re-create the bundle or use --force to remove by file name only."
+			);
 	}
 
 	[Test]

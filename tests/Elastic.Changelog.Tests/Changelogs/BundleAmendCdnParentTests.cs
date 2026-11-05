@@ -8,6 +8,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -58,8 +60,25 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		var amendPath = FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yaml");
 		FileSystem.File.Exists(amendPath).Should().BeTrue();
 		var amend = await FileSystem.File.ReadAllTextAsync(amendPath, TestContext.Current!.Execution.CancellationToken);
-		amend.Should().Contain("title: Late addition");
-		amend.Should().Contain("name: late.yaml");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: late.yaml
+			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			    type: enhancement
+			    title: Late addition
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			"""
+		);
 	}
 
 	[Test]
@@ -128,7 +147,13 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().BeEmpty("a local parent with --force-local must not reach the CDN");
 		FileSystem.File.Exists(FileSystem.Path.Join(FileSystem.Path.GetDirectoryName(bundlePath), "bundle.amend-1.yaml")).Should().BeTrue();
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("--output is ignored"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/Guid_1 --output is ignored for a local parent bundle; the amend file is written next to the parent."
+			);
 	}
 
 	[Test]
@@ -150,7 +175,13 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not exist"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/missing.yaml Bundle file does not exist. Current directory: {repo}. A CDN parent must look like /bundle/{product}/{file}.yaml (or an http(s) URL with that path)."
+			);
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
 	}
 
@@ -168,7 +199,13 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not listed"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error /bundle/elasticsearch/missing.yaml Bundle 'missing.yaml' is not listed in the changelog registry for product 'elasticsearch'."
+			);
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
 	}
 
@@ -191,7 +228,13 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("amend sidecar"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error /bundle/elasticsearch/9.3.0.amend-1.yaml The bundle path is an amend sidecar; pass the parent bundle instead."
+			);
 		handler.RequestedPaths.Should().BeEmpty();
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
 	}
@@ -252,7 +295,25 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		var amendPath = FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yml");
 		FileSystem.File.Exists(amendPath).Should().BeTrue();
 		var amend = await FileSystem.File.ReadAllTextAsync(amendPath, TestContext.Current!.Execution.CancellationToken);
-		amend.Should().NotContain("unrelated.yaml", "the mismatched-extension sidecar must not be merged in");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: late.yaml
+			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			    type: enhancement
+			    title: Late addition
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			"""
+		);
 	}
 
 	[Test]
@@ -308,7 +369,11 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("symlink"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/Guid_1/bundle.yaml The parent bundle must not be a symlink.");
 		handler.RequestedPaths.Should().BeEmpty();
 	}
 
@@ -331,7 +396,13 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("/bundle/{product}/{file}.yaml"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error /changelog/elastic/elasticsearch/main/9.3.0.yaml Bundle file does not exist. Current directory: {repo}. A CDN parent must look like /bundle/{product}/{file}.yaml (or an http(s) URL with that path)."
+			);
 		handler.RequestedPaths.Should().BeEmpty();
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
 	}

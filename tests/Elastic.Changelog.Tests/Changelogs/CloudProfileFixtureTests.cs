@@ -8,6 +8,7 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -181,17 +182,29 @@ public class CloudProfileFixtureTests() : ChangelogTestBase()
 
 		// Sound bundle: the matching feature is present and resolved; the docs entry and the other-product
 		// entry are excluded.
-		bundle.Should().Contain("Faster hosted search");
-		bundle.Should().NotContain("Tidy up the hosted docs", "rules.bundle.exclude_types drops docs entries");
-		bundle.Should().NotContain("Serverless-only change", "the cloud-hosted product filter excludes other products");
-
-		// Link sanitization is now handled exclusively by the scrubber Lambda, not at bundle creation time.
-		// Both the public and private repo links pass through unscrubbed into the private S3 bundle.
-		bundle.Should().Contain("- \"https://github.com/elastic/elasticsearch/pull/100\"");
-		bundle.Should().Contain("- \"https://github.com/elastic/widget-internal/pull/7\"");
-
-		// release_dates: false → no auto-populated release date.
-		bundle.Should().NotContain("release_date");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-05
+			    repo: widget
+			    owner: elastic
+			entries:
+			  - file:
+			      name: 1-feature.yaml
+			      checksum: 31e5ddcf2ce48521b213aee97c063e8402f6acca
+			    type: feature
+			    title: Faster hosted search
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-05-15
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			      - "https://github.com/elastic/widget-internal/pull/7"
+			"""
+		);
 	}
 
 	private static HttpResponseMessage Json(string body) =>

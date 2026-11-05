@@ -10,7 +10,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -101,8 +103,41 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().NotContain(p => p.Contains("registry.json", StringComparison.Ordinal));
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Alpha");
-		bundle.Should().Contain("Bravo");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			    type: feature
+			    title: Alpha
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 999.yaml
+			      checksum: 6e589c7dca3e9a62fd9cd768eee589d7c7d4ee85
+			    type: feature
+			    title: Bravo
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/999"
+			"""
+		);
 	}
 
 	[Test]
@@ -195,7 +230,28 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().BeEmpty("local fallback must not reach the CDN");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: 1-local.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1-local.yaml
+			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			    type: feature
+			    title: Alpha
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -239,7 +295,29 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().BeEmpty("use_local_changelogs must not reach the CDN");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: 1-local.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1-local.yaml
+			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			    type: feature
+			    title: Alpha
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -254,8 +332,11 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--all") && d.Message.Contains("--force-local"));
+			.MatchInlineSnapshot(
+				"error  --all is not supported when sourcing changelog entries from the CDN, because entries are fetched by key (one per PR) and there is no pool enumeration. Pass --force-local or --directory to bundle from a local checkout instead."
+			);
 	}
 
 	[Test]
@@ -275,8 +356,11 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--input-products") && d.Message.Contains("--force-local"));
+			.MatchInlineSnapshot(
+				"error  --input-products is not supported when sourcing changelog entries from the CDN, because entries are fetched by key (one per PR) and there is no pool enumeration. Pass --force-local or --directory to bundle from a local checkout instead."
+			);
 	}
 
 	[Test]
@@ -296,8 +380,11 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--issues") && d.Message.Contains("--force-local"));
+			.MatchInlineSnapshot(
+				"error  --issues is not supported when sourcing changelog entries from the CDN, because entries are fetched by key (one per PR) and there is no pool enumeration. Pass --force-local or --directory to bundle from a local checkout instead."
+			);
 	}
 
 	[Test]
@@ -336,7 +423,29 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			.Should()
 			.Be(1, "404 must not be retried on the probe path");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Alpha", "the entry found by probe must appear in the bundle");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			    type: feature
+			    title: Alpha
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -409,8 +518,29 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		);
 		Collector.Errors.Should().Be(0);
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Alpha", "the marker must resolve to its parent entry");
-		bundle.Should().NotContain("link:", "the marker itself must not appear in the output");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			    type: feature
+			    title: Alpha
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -446,7 +576,29 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		);
 		Collector.Errors.Should().Be(0);
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Split("title: Alpha").Length.Should().Be(2, "exactly one Alpha entry must appear");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			    type: feature
+			    title: Alpha
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -477,7 +629,11 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Marker chain"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error  Marker chain detected: '200.yaml' → '100.yaml' is also a marker. Marker chains are not allowed.");
 	}
 
 	[Test]
@@ -508,8 +664,11 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("marker") && d.Message.Contains("100"));
+			.MatchInlineSnapshot(
+				"error  Changelog entry '200.yaml' is a marker pointing to PR 100, but that entry does not exist in elastic/elasticsearch/main."
+			);
 	}
 
 	[Test]
@@ -545,11 +704,10 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains("source") && d.Message.Contains(
-					"deprecated"
-				) && d.Message.Contains("bundle.releases.github")
+			.MatchInlineSnapshot(
+				"warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.source is deprecated. Use bundle.releases.github to map release tags to profiles instead."
 			);
 	}
 
@@ -639,8 +797,27 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		// Only the main-branch note title should appear once.
-		bundle.Should().Contain("Known issue on main");
-		bundle.Should().NotContain("Known issue on 9.4 branch");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: main/note-known-issue.yml
+			      checksum: bd81e86814509f9260869ca8af921b405ae6658f
+			    type: known-issue
+			    title: Known issue on main
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -691,8 +868,27 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		// "9.4/note-known-issue.yml" sorts before "feature/note-known-issue.yml".
-		bundle.Should().Contain("Known issue on 9.4 branch");
-		bundle.Should().NotContain("Known issue on feature branch");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 9.4/note-known-issue.yml
+			      checksum: 11799cc69fef6c8db52121edbe36e656b3a5ccc2
+			    type: known-issue
+			    title: Known issue on 9.4 branch (backport)
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -738,9 +934,27 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		);
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Known issue on main");
-		// Note appears exactly once (not duplicated).
-		bundle.Split("Known issue on main", StringSplitOptions.None).Length.Should().Be(2, "note must appear exactly once");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: main/note-known-issue.yml
+			      checksum: bd81e86814509f9260869ca8af921b405ae6658f
+			    type: known-issue
+			    title: Known issue on main
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	private static HttpResponseMessage Json(string body) =>

@@ -9,7 +9,9 @@ using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -194,26 +196,21 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Pool entries win over inference.
-		bundle.Should().Contain("Faster hosted search");
-		bundle.Should().Contain("Sturdier snapshots");
+		bundle.Should().MatchSnapshot();
 
-		// The synthesized entry carries PR-body release-note text, the Impact and Action sections,
-		// the label-derived type, and the profile's output products.
-		bundle.Should().Contain("Sharper autocomplete");
-		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
-		bundle.Should().Contain("impact: Saved searches that relied on alphabetical order change position.");
-		bundle.Should().Contain("action: Pin the indices you need at the top.");
-		bundle.Should().Contain("name: 300.yaml");
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
-
-		// The published endpoint ref is recorded as bundle metadata.
-		bundle.Should().Contain($"git_ref: {EndRef}");
 
 		// PR 400 is reported, not silently dropped.
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("pull/400") && d.Message.Contains("could not be fetched"));
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			warning  No checked-in changelog entry was found for PR https://github.com/elastic/widget/pull/400 and its metadata could not be fetched from GitHub. The bundle will not include an entry for this PR.
+			"""
+			);
 	}
 
 	[Test]
@@ -271,8 +268,28 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
-		bundle.Should().Contain("Faster hosted search");
-		bundle.Should().NotContain("300");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: c2b6527c04530bf3cfffb127578481f3a1131e54
+			    type: feature
+			    title: Faster hosted search
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			        lifecycle: ga
+			"""
+		);
 		A.CallTo(prService).MustNotHaveHappened();
 	}
 
@@ -354,8 +371,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		lines.Should().Contain("notes: first paragraph only #300 · no release note #301");
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.NotContain(d => d.Message.Contains("No release note description") || d.Message.Contains("Only the first paragraph"));
+			.MatchInlineSnapshot(
+				"warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead."
+			);
 	}
 
 	private sealed class LineLogger(List<string> lines) : Microsoft.Extensions.Logging.ILogger
@@ -511,8 +531,38 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
-		bundle.Should().Contain("Faster hosted search");
-		bundle.Should().Contain("Heads up for the August release");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: c2b6527c04530bf3cfffb127578481f3a1131e54
+			    type: feature
+			    title: Faster hosted search
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			        lifecycle: ga
+			  - file:
+			      name: main/note-heads-up.yml
+			      checksum: c58b01d5eaf57a4b95f4686599684868e02f79ab
+			    type: known-issue
+			    title: Heads up for the August release
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -551,7 +601,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("must be provided together"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  --start-git-ref and --end-git-ref must be provided together; the start ref is never inferred from previous bundles."
+			);
 	}
 
 	[Test]
@@ -572,8 +628,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("cannot be combined with other filter sources"));
+			.MatchInlineSnapshot(
+				"error  --start-git-ref/--end-git-ref cannot be combined with other filter sources: --prs. The PR list is derived from the commit range itself."
+			);
 	}
 
 	[Test]
@@ -613,7 +672,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("products pattern"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Profile 'filtered' has a 'products' pattern configured. A git commit range cannot be combined with a products pattern filter; use 'output_products' and 'rules' to shape the bundle."
+			);
 	}
 
 	[Test]
@@ -652,9 +717,39 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Unlabeled change");
-		bundle.Should().Contain("type: other");
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			entries:
+			  - file:
+			      name: 999.yaml
+			      checksum: 4d4d007a3c2b6c3d737ef99d58bd66c2cfac8c14
+			    type: other
+			    title: Unlabeled change
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			    prs:
+			      - "https://github.com/elastic/widget/pull/999"
+			"""
+		);
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			warning https://github.com/elastic/widget/pull/999 Could not derive a changelog type from the labels of PR #999; defaulting to 'other'. Configure pivot.types in changelog.yml to map labels to types.
+			"""
+			);
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("no release note"));
 	}
 
@@ -798,7 +893,17 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		// The only entry carries elasticsearch alone, so rules.bundle drops it and the range bundle fails.
 		result.Should().BeFalse();
 		bundle.Should().BeNull();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			hint  Applied rules - excluded_disjoint: 1 entries
+			error  No changelog entries remained after applying rules.bundle filter
+			"""
+			);
 	}
 
 	[Test]
@@ -815,12 +920,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"No matching product label found on PR https://github.com/elastic/widget/pull/300",
-					StringComparison.Ordinal
-				) && d.Message.Contains("stateful, serverless", StringComparison.Ordinal)
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
+			"""
 			);
 	}
 
@@ -835,7 +941,16 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			"cloud-serverless"
 		);
 
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
+			"""
+			);
 	}
 
 	[Test]
@@ -850,8 +965,16 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			"*"
 		);
 
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Cannot determine products", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
+			"""
+			);
 	}
 
 	[Test]
@@ -977,12 +1100,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"No matching area label found on PR https://github.com/elastic/widget/pull/300",
-					StringComparison.Ordinal
-				)
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			error https://github.com/elastic/widget/pull/300 No matching area label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: :Search.
+			"""
 			);
 	}
 
@@ -1014,9 +1138,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("No matching product label found on PR", StringComparison.Ordinal)
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
+			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
+			"""
 			);
 	}
 }

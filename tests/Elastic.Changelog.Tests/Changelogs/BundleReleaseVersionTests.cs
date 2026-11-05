@@ -9,6 +9,7 @@ using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -95,8 +96,40 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("pr-12345.yaml");
-		bundleContent.Should().Contain("pr-12346.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: pr-12345.yaml
+			      checksum: 6cb20a9554c7d77cf5571d4c8f4ba75e97a89ac3
+			    type: bug-fix
+			    title: Fix query parsing
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/12345"
+			  - file:
+			      name: pr-12346.yaml
+			      checksum: bb5e93521f76b6774193a3765d27744bd283cd27
+			    type: feature
+			    title: New aggregation API
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/12346"
+			"""
+		);
 	}
 
 	// -----------------------------------------------------------------------
@@ -151,8 +184,31 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 		// Assert
 		result.Should().BeTrue();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("product: cloud-hosted");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2025-10-31
+			    lifecycle: ga
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: pr-12345.yaml
+			      checksum: 6cb20a9554c7d77cf5571d4c8f4ba75e97a89ac3
+			    type: bug-fix
+			    title: Fix query parsing
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/12345"
+			"""
+		);
 	}
 
 	// -----------------------------------------------------------------------

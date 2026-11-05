@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
-using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
@@ -470,10 +469,8 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		var bundleFiles = FileSystem.Directory.GetFiles(bundlesDir, "*.yml");
 		bundleFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(bundleFiles[0], TestContext.Current!.Execution.CancellationToken);
-		// the bundle is stamped with the day it was created
 		bundle.Should().MatchInlineSnapshot(
-			options: new SnapshotOptions().Scrub(new Regex(@"release-date: \d{4}-\d{2}-\d{2}"), "release-date: {today}"),
-			expected: """
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0

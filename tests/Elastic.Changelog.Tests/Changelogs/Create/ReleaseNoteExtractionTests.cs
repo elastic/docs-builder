@@ -153,6 +153,7 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		// Commas trigger SharpYaml's more conservative plain-scalar quoting rules.
 		yamlContent
 			.WithoutSchemaComments()
 			.Should()
@@ -491,6 +492,7 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 	public async Task CreateChangelog_WhenExtractNotSpecifiedByCli_UsesConfigExtractReleaseNotes()
 	{
 		// When CLI does not pass --no-extract-release-notes, config extract.release_notes applies.
+		// Config has release_notes: false, so PR title is used instead of extracted release note.
 
 		var prInfo = new GitHubPrInfo
 		{
