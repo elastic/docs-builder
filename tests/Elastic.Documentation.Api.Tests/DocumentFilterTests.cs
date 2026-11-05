@@ -30,8 +30,12 @@ public class DocumentFilterTests
 		Serialize(SearchQueryBuilder.DocumentFilterFor(null)).Should().Be(UnscopedFilter);
 
 	[Test]
+	public void DocumentFilterFor_ApiPageWithoutTree_ScopesNothing() =>
+		Serialize(SearchQueryBuilder.DocumentFilterFor(new ApiPageContext("elasticsearch", null))).Should().Be(UnscopedFilter);
+
+	[Test]
 	public void DocumentFilterFor_Scope_ShowsTheScopedTreeOfThatApiAndDefaultRenderingsOfTheRest() =>
-		Serialize(SearchQueryBuilder.DocumentFilterFor(new ApiTreeScope("elasticsearch", "8")))
+		Serialize(SearchQueryBuilder.DocumentFilterFor(new ApiPageContext("elasticsearch", "8")))
 			.Should()
 			.Be(
 				"""{"bool":{"minimum_should_match":1,"must_not":{"terms":{"path.keyword":["/docs","/docs/","/docs/404","/docs/404/"]}},"should":[{"bool":{"must_not":[{"term":{"hidden":{"value":true}}},{"term":{"api.key":{"value":"elasticsearch"}}}]}},{"bool":{"filter":[{"term":{"api.key":{"value":"elasticsearch"}}},{"term":{"api.trees.tree":{"value":"8"}}}]}}]}}"""
@@ -59,7 +63,7 @@ public class DocumentFilterTests
 		);
 
 		var filtered = query.RootElement.GetProperty("bool").GetProperty("must").GetProperty("bool");
-		filtered.GetProperty("filter").GetRawText().Should().Be(Serialize(SearchQueryBuilder.DocumentFilterFor(page.TreeScope)));
+		filtered.GetProperty("filter").GetRawText().Should().Be(Serialize(SearchQueryBuilder.DocumentFilterFor(page)));
 		filtered.GetProperty("must").GetRawText().Should().NotContain("\"hidden\"");
 	}
 

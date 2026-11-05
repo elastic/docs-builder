@@ -120,7 +120,7 @@ public partial class DefaultSearchService<TDocument>(
 		var query = SearchQueryBuilder.LiftApi(
 			SearchQueryBuilder.FilterDocuments(
 				apiLookup ? ApiLookupQueryBuilder.Build(request.Query) : BuildDocsWideAutocompleteQuery(request),
-				request.ApiPage?.TreeScope
+				request.ApiPage
 			),
 			request.ApiPage?.Key
 		);

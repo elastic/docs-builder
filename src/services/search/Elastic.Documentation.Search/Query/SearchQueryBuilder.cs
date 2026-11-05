@@ -74,27 +74,27 @@ public static class SearchQueryBuilder
 	/// Excludes bare root-URL placeholders and hidden documents. A reader in one version tree of an API instead gets
 	/// that API's documents for the tree, hidden or not, and every other document that is not hidden.
 	/// </summary>
-	public static Query DocumentFilterFor(ApiTreeScope? scope)
+	public static Query DocumentFilterFor(ApiPageContext? page)
 	{
-		if (scope is null)
+		if (page is not { Tree: { } tree })
 			return UnscopedDocumentFilter;
 
-		var scopedApi = new TermQuery { Field = QueryFieldNames.ApiKey, Value = scope.Key };
+		var scopedApi = new TermQuery { Field = QueryFieldNames.ApiKey, Value = page.Key };
 		return new BoolQuery
 		{
 			MustNot = [RootUrlPlaceholders],
 			Should =
 			[
 				new BoolQuery { MustNot = [HiddenDocuments, scopedApi] },
-				new BoolQuery { Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = scope.Tree }] }
+				new BoolQuery { Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = tree }] }
 			],
 			MinimumShouldMatch = 1
 		};
 	}
 
 	/// <summary>Restricts <paramref name="query"/> to the documents <see cref="DocumentFilterFor"/> lets through, without scoring the filter.</summary>
-	public static Query FilterDocuments(Query query, ApiTreeScope? scope) =>
-		new BoolQuery { Must = [query], Filter = [DocumentFilterFor(scope)] };
+	public static Query FilterDocuments(Query query, ApiPageContext? page) =>
+		new BoolQuery { Must = [query], Filter = [DocumentFilterFor(page)] };
 
 	/// <summary>
 	/// Adds <see cref="ApiLookupWeights.SameApi"/> to the hits of API <paramref name="apiKey"/>. The lift is unnamed, so the
