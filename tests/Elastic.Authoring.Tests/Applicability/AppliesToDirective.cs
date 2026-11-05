@@ -95,6 +95,6 @@ public class HintsOnInvalidKeys : MarkdownTest
 	[Test, DisplayName("reports diagnostics")]
 	public async Task ReportsDiagnostics() =>
 		await Docs.HasDiagnostics(
-			"hint {repo}/docs/index.md:2 Unknown key 'hosted' in applies_to. Valid keys: apm_agent_dotnet, deployment, ecctl, ece, ech, eck, elasticsearch, elasticsearch, ess, observability, product, security, …."
+			"hint {repo}/docs/index.md:2 Unknown key 'hosted' in applies_to. Valid keys: apm_agent_dotnet, deployment, ecctl, ece, ech, eck, elasticsearch, ess, observability, product, security, self, …."
 		);
 }
