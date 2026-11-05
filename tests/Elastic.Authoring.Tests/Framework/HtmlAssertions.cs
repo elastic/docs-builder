@@ -87,8 +87,8 @@ internal static class HtmlAssertions
 	// ────────────────────────────────────────────────────────────────────────────────
 
 	[DebuggerStepThrough]
-	internal static void ToHtml([LanguageInjection("html")] string expected, MarkdownResult actual) =>
-		actual.Html.Should().BeHtml(InSection(expected), Options);
+	internal static void ToHtml([LanguageInjection("html")] string? expected, MarkdownResult actual, CallSite site) =>
+		InlineSnapshots.Html(actual.Html, expected, nameof(MarkdownResultTask.ToHtml), site);
 
 	[DebuggerStepThrough]
 	internal static void ContainsHtml([LanguageInjection("html")] string expected, MarkdownResult actual) =>
@@ -137,8 +137,8 @@ But it was found in:
 			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
 
 	[DebuggerStepThrough]
-	internal static void ConvertsToHtml([LanguageInjection("html")] string expected, GeneratorResults results) =>
-		ToHtml(expected, FindIndexMd(results));
+	internal static void ConvertsToHtml([LanguageInjection("html")] string? expected, GeneratorResults results, CallSite site) =>
+		InlineSnapshots.Html(FindIndexMd(results).Html, expected, nameof(Scenario.ConvertsToHtml), site);
 
 	[DebuggerStepThrough]
 	internal static void ConvertsToContainingHtml([LanguageInjection("html")] string expected, GeneratorResults results) =>
