@@ -191,6 +191,14 @@ jobs:
           EnableSingleFileAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
         run: dotnet run --project build -c release -- compile
 
+      - name: Upload compile binlog (diagnostic)
+        if: ${{ always() && needs.changes.outputs.code == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-binlog-${{ matrix.os }}
+          path: .artifacts/ci-compile.binlog
+          if-no-files-found: warn
+
       - name: Check CLI schema is up to date
         if: ${{ needs.changes.outputs.code == 'true' && (matrix.os == 'ubuntu-latest') }}
         run: |
