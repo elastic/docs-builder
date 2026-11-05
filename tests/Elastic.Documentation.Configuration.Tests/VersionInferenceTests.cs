@@ -178,7 +178,6 @@ public class VersionInferenceTests
 			case nameof(ProductApplicability.EdotBrowser):
 				applicability.EdotBrowser = value;
 				break;
-
 			case nameof(ProductApplicability.EdotReactNative):
 				applicability.EdotReactNative = value;
 				break;

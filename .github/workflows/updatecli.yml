@@ -34,7 +34,6 @@ jobs:
           permission-pull-requests: write
           repositories: |
             docs-builder
-            elastic-otel-react-native
             edot-cloud-forwarder-aws
             edot-cloud-forwarder-azure
             edot-cloud-forwarder-gcp

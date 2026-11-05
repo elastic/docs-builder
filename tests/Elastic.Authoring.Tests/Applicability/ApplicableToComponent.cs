@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
+using AngleSharp.Html.Parser;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 
@@ -369,6 +371,48 @@ public class EdotAgentsFutureVersions : MarkdownTest
 </p>
 "
 		);
+}
+
+public class EdotReactNativePreview : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		```{applies_to}
+		product:
+		  edot_react_native: preview 0.1.0
+		```
+		""";
+
+	[Test]
+	public async Task ParsesProductPreviewVersion()
+	{
+		var directives = Docs.Converts("index.md").Parses<AppliesToDirectiveType>();
+		(await directives).Should().HaveCount(1);
+		await directives.AppliesToDirective(new ApplicableTo
+		{
+			ProductApplicability = new ProductApplicability { EdotReactNative = Applies("preview 0.1.0") }
+		});
+	}
+
+	[Test]
+	public async Task RendersReleasedPreviewBadge()
+	{
+		var document = new HtmlParser().ParseDocument(await Docs.IndexHtmlAsync());
+		var badge = document.QuerySelector("applies-to-popover");
+		badge.Should().NotBeNull();
+		badge.GetAttribute("badge-key").Should().Be("EDOT React Native");
+		badge.GetAttribute("lifecycle-name").Should().Be("Preview");
+		badge.GetAttribute("badge-version").Should().Be("0.1+");
+		badge.GetAttribute("show-version").Should().Be("true");
+		badge.GetAttribute("badge-lifecycle-text").Should().NotBe("Planned");
+		using var popover = JsonDocument.Parse(badge.GetAttribute("popover-data")!);
+		popover
+			.RootElement
+			.GetProperty("productDescription")
+			.GetString()
+			.Should()
+			.Contain("Elastic Distribution of OpenTelemetry (EDOT) React Native SDK");
+	}
 }
 
 public class MixedUnreleasedLifecyclesFallsBackToPlanned : MarkdownTest
