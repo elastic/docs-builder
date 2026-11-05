@@ -50,6 +50,51 @@ public class CodeSampleTests
 	}
 
 	[Test]
+	public void CodeSamples_ReadsLabelAsTheTitleOfTheExampleTheSampleBelongsTo()
+	{
+		var samples = new JsonArray(
+			new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET \"$URL/a\"" },
+			new JsonObject
+			{
+				["label"] = "Filter to pinned conversations",
+				["lang"] = "curl",
+				["source"] = "curl -X GET \"$URL/a?pinned=true\""
+			}
+		);
+
+		var result = OpenApiExtensionReader.ParseCodeSamples(CreateOperationWithCodeSamples(samples));
+
+		result.Select(s => s.ExampleTitle).Should().Equal(null, "Filter to pinned conversations");
+	}
+
+	[Test]
+	public void CodeSamples_LabelsThatNameTheLanguageOrStandAloneStayUntied()
+	{
+		var samples = new JsonArray(
+			new JsonObject { ["label"] = "curl", ["lang"] = "curl", ["source"] = "curl -X GET \"$URL/a\"" },
+			new JsonObject { ["label"] = "Console", ["lang"] = "console", ["source"] = "GET /a" },
+			new JsonObject { ["label"] = "Example request", ["lang"] = "Python", ["source"] = "client.a()" }
+		);
+
+		var result = OpenApiExtensionReader.ParseCodeSamples(CreateOperationWithCodeSamples(samples));
+
+		result.Should().OnlyContain(s => !s.IsTied);
+	}
+
+	[Test]
+	public void CodeSamples_LabelledSampleStaysUntiedWhenItsLanguageAppearsOnce()
+	{
+		var samples = new JsonArray(
+			new JsonObject { ["lang"] = "Console", ["source"] = "GET /a" },
+			new JsonObject { ["label"] = "Filter to pinned", ["lang"] = "curl", ["source"] = "curl -X GET \"$URL/a\"" }
+		);
+
+		var result = OpenApiExtensionReader.ParseCodeSamples(CreateOperationWithCodeSamples(samples));
+
+		result.Should().OnlyContain(s => !s.IsTied);
+	}
+
+	[Test]
 	public void CodeSamples_OrdersConsoleFirstThenByLanguagePopularity()
 	{
 		var samples = new JsonArray(
