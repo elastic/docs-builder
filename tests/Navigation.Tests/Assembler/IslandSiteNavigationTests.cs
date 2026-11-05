@@ -315,4 +315,41 @@ public class IslandSiteNavigationTests()
 		obsNode.NavigationItems.OfType<DemoRoot>().Should().ContainSingle();
 		siteContext.Diagnostics.Should().NotContain(d => d.Message.Contains("does not explicitly declare"));
 	}
+
+	[Test]
+	public void FloatingSectionMountedByNarrativeRoot_SurvivesSiteAssembly()
+	{
+		// language=yaml
+		var siteNavYaml =
+			"""
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: observability
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		const string narrativeDir = "/checkouts/current/docs-content";
+		const string docsetPath = $"{narrativeDir}/docs/docset.yml";
+		fileSystem.AddDirectory($"{narrativeDir}/.git");
+		fileSystem.AddFile(docsetPath, new MockFileData("project: docs-content\ntoc:\n  - file: index.md\n  - api: demo\n"));
+		fileSystem.AddFile($"{narrativeDir}/docs/index.md", new MockFileData("# Docs\n"));
+
+		var narrativeContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, narrativeDir);
+		var narrativeDocset = DocumentationSetFile.LoadAndResolve(
+			narrativeContext.Collector,
+			fileSystem.FileInfo.New(docsetPath),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var narrativeNav = new DocumentationSetNavigation<IDocumentationFile>(
+			narrativeDocset,
+			narrativeContext,
+			GenericDocumentationFileFactory.Instance,
+			floatingSections: new FloatingSectionRegistry([new DemoProvider()])
+		);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, narrativeDir);
+
+		var navigation = new SiteNavigation(siteNavFile, siteContext, [narrativeNav], sitePrefix: null);
+
+		navigation.NavigationItems.OfType<DemoRoot>().Should().ContainSingle();
+	}
 }

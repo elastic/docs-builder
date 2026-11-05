@@ -78,10 +78,12 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			root.Parent = this;
 			root.Index.Parent = this;
 			items.Add(root.Index);
-			foreach (var leaf in root.NavigationItems.OfType<ILeafNavigationItem<INavigationModel>>())
+			foreach (var narrativeChild in root.NavigationItems)
 			{
-				leaf.Parent = root;
-				items.Add(leaf);
+				if (narrativeChild is not (ILeafNavigationItem<INavigationModel> or IFloatingSectionRoot))
+					continue;
+				narrativeChild.Parent = root;
+				items.Add(narrativeChild);
 			}
 		}
 
