@@ -1,28 +1,5 @@
 {
   "bool": {
-    "filter": {
-      "bool": {
-        "must_not": [
-          {
-            "terms": {
-              "path.keyword": [
-                "/docs",
-                "/docs/",
-                "/docs/404",
-                "/docs/404/"
-              ]
-            }
-          },
-          {
-            "term": {
-              "hidden": {
-                "value": true
-              }
-            }
-          }
-        ]
-      }
-    },
     "minimum_should_match": 1,
     "should": [
       {
