@@ -324,7 +324,7 @@ public static class SearchQueryBuilder
 	/// clause per number of literal segments kept, weighted <c>weight * (1 + literals) / (1 + total)</c>, and
 	/// <c>dis_max</c> keeps the best.
 	/// </summary>
-	public static Query? BuildApiEndpointQuery(string searchQuery, float weight = EndpointBoost)
+	public static Query? BuildApiEndpointQuery(string searchQuery, float weight = EndpointBoost, Field? field = null)
 	{
 		var groups = ApiEndpointPath.QueryCandidates(ApiEndpointPath.NormalizeQuery(searchQuery));
 		if (groups.Count == 0)
@@ -338,7 +338,7 @@ public static class SearchQueryBuilder
 					(Query)new ConstantScoreQuery
 					{
 						Filter = new TermsQuery(
-							QueryFieldNames.ApiEndpoints,
+							field ?? QueryFieldNames.ApiEndpoints,
 							new TermsQueryField(g.Terms.Select(t => (FieldValue)t).ToArray())
 						),
 						Boost = weight * (1 + g.LiteralSegments) / (1 + total)

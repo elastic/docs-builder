@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Globalization;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Documentation.Search.Contract;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
 namespace Elastic.Documentation.Search;
@@ -132,34 +133,29 @@ public static class ApiLookupQueryBuilder
 		return new DisMaxQuery { Queries = options.OfType<Query>().ToList(), TieBreaker = 0 };
 	}
 
+	/// <summary>
+	/// A word or a typed route matches its endpoint exactly, or covers the routes under it just below. The bare view of the
+	/// keys makes the underscore that starts an Elasticsearch system route optional, so <c>snapshot</c>, <c>/snapshot</c> and
+	/// <c>/_snapshot</c> all cover <c>_snapshot/*/*/_restore</c>.
+	/// </summary>
 	private static Query? KeyOption(string text, int index)
 	{
-		Query?[] endpoints =
-		[
-			SearchQueryBuilder.BuildApiEndpointQuery(text, ApiLookupWeights.EndpointKey),
-			SearchQueryBuilder.BuildBareWordEndpointQuery(text, ApiLookupWeights.EndpointKey),
-			NamespaceKeyQuery(text)
-		];
-		var queries = endpoints.OfType<Query>().ToList();
-		if (queries.Count == 0)
+		var route = ApiEndpointPath.NormalizeQuery(text).TrimEnd('/');
+		if (SearchQueryBuilder.BuildApiEndpointQuery(route, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpoints) is not { } exact)
 			return null;
-		return new DisMaxQuery { Queries = queries, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
+
+		List<Query> options =
+		[
+			exact,
+			SearchQueryBuilder.BuildApiEndpointQuery(route, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpointsBare)!,
+			RoutesUnder(route, QueryFieldNames.ApiEndpoints),
+			RoutesUnder(route, QueryFieldNames.ApiEndpointsBare)
+		];
+		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
 	}
 
-	/// <summary>
-	/// A word also names the routes under its endpoint, so <c>snapshot</c> covers <c>_snapshot/*/*/_restore</c>, just below
-	/// the endpoint itself.
-	/// </summary>
-	private static Query? NamespaceKeyQuery(string text)
-	{
-		if (SearchQueryBuilder.EndpointName(text) is not { } name)
-			return null;
-		return new ConstantScoreQuery
-		{
-			Filter = new PrefixQuery { Field = QueryFieldNames.ApiEndpoints, Value = name + "/" },
-			Boost = ApiLookupWeights.NamespaceKey
-		};
-	}
+	private static Query RoutesUnder(string route, Field field) =>
+		new ConstantScoreQuery { Filter = new PrefixQuery { Field = field, Value = route + "/" }, Boost = ApiLookupWeights.NamespaceKey };
 
 	/// <summary>A method word, such as <c>get</c>, also stays an operation, title and description word.</summary>
 	private static Query? MethodOption(string text, int index) =>

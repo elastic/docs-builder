@@ -20,6 +20,7 @@ public static class QueryFieldNames
 	public static string NavigationDepth { get; } = $"{Doc.Fields.Navigation}.depth";
 	public static string NavigationTableOfContents { get; } = $"{Doc.Fields.Navigation}.table_of_contents";
 	public static string ApiEndpoints { get; } = $"{Doc.Fields.Api}.endpoints";
+	public static string ApiEndpointsBare { get; } = $"{Doc.Fields.Api}.endpoints.bare";
 	public static string ApiProperties { get; } = $"{Doc.Fields.Api}.properties";
 	public static string ApiWordsCompletion { get; } = $"{Doc.Fields.Api}.words.completion";
 	public static string ApiWordsCompletion2Gram { get; } = $"{Doc.Fields.Api}.words.completion._2gram";
