@@ -12,9 +12,13 @@ export function parseApiTree(path: string): ApiTree | null {
     return { product: match[1], tree: match[2] ?? match[3] ?? null }
 }
 
-/** The search scope for a path inside one version tree, and nothing anywhere else so those requests stay unchanged. */
-export function apiTreeSearchParams(path: string): Record<string, string> {
+/**
+ * The API page a search comes from: its key on any page of one API, which lifts that API's hits, plus the tree inside a
+ * version tree, which also scopes them. Markdown pages and the catalog send nothing, so those requests stay unchanged.
+ */
+export function apiPageSearchParams(path: string): Record<string, string> {
     const parsed = parseApiTree(path)
-    if (!parsed?.tree) return {}
+    if (!parsed) return {}
+    if (!parsed.tree) return { api_key: parsed.product }
     return { api_key: parsed.product, api_tree: parsed.tree }
 }

@@ -1,4 +1,4 @@
-import { apiTreeSearchParams, parseApiTree } from './api-tree'
+import { apiPageSearchParams, parseApiTree } from './api-tree'
 
 describe('parseApiTree', () => {
     it('reads a released version', () => {
@@ -36,21 +36,25 @@ describe('parseApiTree', () => {
     })
 })
 
-describe('apiTreeSearchParams', () => {
+describe('apiPageSearchParams', () => {
     it('scopes a versioned path', () => {
-        expect(apiTreeSearchParams('/docs/api/doc/elasticsearch/v8')).toEqual({
+        expect(apiPageSearchParams('/docs/api/doc/elasticsearch/v8')).toEqual({
             api_key: 'elasticsearch',
             api_tree: '8',
         })
         expect(
-            apiTreeSearchParams('/docs/api/doc/elasticsearch/main/group/x')
+            apiPageSearchParams('/docs/api/doc/elasticsearch/main/group/x')
         ).toEqual({ api_key: 'elasticsearch', api_tree: 'main' })
     })
 
-    it('sends nothing elsewhere', () => {
+    it('sends the key alone on the unversioned path', () => {
         expect(
-            apiTreeSearchParams('/docs/api/doc/elasticsearch/operation/x')
-        ).toEqual({})
-        expect(apiTreeSearchParams('/docs/get-started')).toEqual({})
+            apiPageSearchParams('/docs/api/doc/elasticsearch/operation/x')
+        ).toEqual({ api_key: 'elasticsearch' })
+    })
+
+    it('sends nothing outside an API product', () => {
+        expect(apiPageSearchParams('/docs/get-started')).toEqual({})
+        expect(apiPageSearchParams('/docs/api/')).toEqual({})
     })
 })

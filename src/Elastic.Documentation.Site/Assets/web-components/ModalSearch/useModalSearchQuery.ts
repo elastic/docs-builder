@@ -1,4 +1,4 @@
-import { apiTreeSearchParams } from '../../api-tree'
+import { apiPageSearchParams } from '../../api-tree'
 import { config } from '../../config'
 import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
@@ -90,9 +90,9 @@ export const useModalSearchQuery = () => {
         !awaitingNewInput &&
         true
 
-    // htmx swaps pages without remounting, so the scope is read on every render and shared by key and request.
+    // htmx swaps pages without remounting, so the API page is read on every render and shared by key and request.
     const { pathname } = location
-    const scope = useMemo(() => apiTreeSearchParams(pathname), [pathname])
+    const apiPage = useMemo(() => apiPageSearchParams(pathname), [pathname])
 
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
@@ -101,7 +101,7 @@ export const useModalSearchQuery = () => {
                 buildType: config.buildType,
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
-                scope,
+                apiPage,
             },
         ],
         queryFn: async ({ signal }) => {
@@ -139,7 +139,7 @@ export const useModalSearchQuery = () => {
                 const params = new URLSearchParams({
                     q: debouncedSearchTerm,
                     page: pageNumber.toString(),
-                    ...scope,
+                    ...apiPage,
                 })
 
                 const response = await fetch(
@@ -194,11 +194,11 @@ export const useModalSearchQuery = () => {
                     buildType: config.buildType,
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
-                    scope,
+                    apiPage,
                 },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber, scope])
+    }, [queryClient, debouncedSearchTerm, pageNumber, apiPage])
 
     useEffect(() => {
         if (query.error && isApiError(query.error)) {

@@ -272,9 +272,9 @@ describe('querySearch scope', () => {
         )
     })
 
-    it('sends no scope on the unversioned API path', async () => {
+    it('sends the api key alone on the unversioned API path', async () => {
         expect(await urlOn('/docs/api/doc/elasticsearch/operation/x')).toBe(
-            '/docs/_api/v1/navigation-search?q=alpha&page=1'
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch'
         )
     })
 

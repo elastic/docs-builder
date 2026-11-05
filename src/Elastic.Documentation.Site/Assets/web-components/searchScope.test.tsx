@@ -59,12 +59,14 @@ describe('navigation search scope', () => {
         )
     })
 
-    it('modal search sends today s request on the unversioned path', async () => {
+    it('modal search sends the api key alone on the unversioned path', async () => {
         history.pushState(null, '', unversioned)
         renderHook(() => useModalSearchQuery(), { wrapper })
 
         await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-        expect(lastUrl()).toBe('/docs/_api/v1/navigation-search?q=bulk&page=1')
+        expect(lastUrl()).toBe(
+            '/docs/_api/v1/navigation-search?q=bulk&page=1&api_key=elasticsearch'
+        )
     })
 
     it('navigation search keys and requests follow the page after a swap', async () => {
@@ -73,7 +75,9 @@ describe('navigation search scope', () => {
             wrapper,
         })
         await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
-        expect(lastUrl()).toBe('/docs/_api/v1/navigation-search?q=bulk&page=1')
+        expect(lastUrl()).toBe(
+            '/docs/_api/v1/navigation-search?q=bulk&page=1&api_key=elasticsearch'
+        )
 
         act(() => history.pushState(null, '', v8))
         rerender()
