@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -11,7 +13,15 @@ public class MathRoleTests() : InlineTest("""
 	""")
 {
 	[Test]
-	public void Render() => Html.Should().Contain("<span class=\"math\">E = mc^2</span>").And.NotContain("{math}`E = mc^2`");
+	public void Render() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Einstein's famous equation
+			<span class="math">E = mc^2</span>
+			relates energy and mass.</p>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public class MathRoleEscapesContentTests() : InlineTest("""
@@ -19,5 +29,13 @@ public class MathRoleEscapesContentTests() : InlineTest("""
 	""")
 {
 	[Test]
-	public void Render() => Html.Should().Contain("<span class=\"math\">a &lt; b &amp; b &gt; c</span>");
+	public void Render() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Compare
+			<span class="math">a &lt; b &amp; b &gt; c</span>
+			for ordering.</p>
+		""",
+			DocsHtml.Body()
+		);
 }

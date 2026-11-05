@@ -17,9 +17,9 @@ public class PageCardWithARelativeLink : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("resolves the link relative to the source file")]
-	public async Task ResolvesLinkRelative() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<a href="/admonitions" style="text-decoration:none;" class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group">
 			<div class="min-w-0">
@@ -70,8 +70,11 @@ public class PageCardWithAnAbsoluteUrl : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors")]
-	public async Task Errors() => await Docs.HasError("page-card url must be a local .md path or crosslink");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 page-card url must be a local .md path or crosslink, not an absolute URL: https://www.elastic.co"
+		);
 }
 
 public class PageCardWithoutAMarkdownLink : MarkdownTest
@@ -81,6 +84,7 @@ public class PageCardWithoutAMarkdownLink : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors")]
-	public async Task Errors() => await Docs.HasError("page-card requires a markdown link argument");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 page-card requires a markdown link argument: [Title](url)");
 }

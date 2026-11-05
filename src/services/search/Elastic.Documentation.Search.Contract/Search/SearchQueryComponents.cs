@@ -38,7 +38,7 @@ public enum SearchQueryComponents : uint
 	/// <summary>Phrase multimatch on <c>stripped_body</c> (3+ token queries only).</summary>
 	Phrase = 1 << 5, // 32
 
-	/// <summary>BoolQuery MustNot filter: exclude bare <c>/docs</c> roots and <c>hidden</c> docs.</summary>
+	/// <summary>Filter around the whole query, lexical and semantic: exclude bare <c>/docs</c> roots and <c>hidden</c> docs.</summary>
 	DocumentFilter = 1 << 6, // 64
 
 	/// <summary>2× RankFeatureQuery (nav depth/toc) + 2× TermQuery section boosts in <c>should</c>.</summary>

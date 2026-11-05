@@ -433,7 +433,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml API 'elasticsearch' is missing required 'spec:'. Its basename is required to resolve the remote version index, even when the file is not present locally."
+			);
 		config.ApiConfigurations.Should().BeNull();
 	}
 
@@ -450,7 +456,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml 'spec: ../../outside.json' for API 'elasticsearch' escapes the documentation source directory."
+			);
 		config.ApiConfigurations.Should().BeNull();
 	}
 
@@ -467,7 +479,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml API 'elasticsearch' is missing required 'product:'. It must match a product id defined in products.yml."
+			);
 		config.ApiConfigurations.Should().BeNull();
 	}
 
@@ -487,7 +505,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml Unknown 'product: not-a-product' for API 'elasticsearch'. It must be a product id defined in products.yml."
+			);
 		config.ApiConfigurations.Should().BeNull();
 	}
 
@@ -591,7 +615,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml Unknown catalog category 'eck' for API 'elasticsearch'. Valid categories: ece, ess, self, serverless (or ech for ess)."
+			);
 		config.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().Equal("self");
 	}
 
@@ -657,8 +687,8 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
-		config.ApiConfigurations.Should().BeNull();
+		// the output differs per case, so it is a file snapshot (keyed by the arguments) rather than a shared inline literal
+		collector.Captured.ToSnapshotText().Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -677,7 +707,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml API configuration for 'elasticsearch' must have exactly one entry, found 2."
+			);
 		config.ApiConfigurations.Should().BeNull();
 	}
 
@@ -705,7 +741,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml Child page 'missing.md' for API 'elasticsearch' does not exist under 'api/elasticsearch/'."
+			);
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
@@ -733,7 +775,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml Child page '../../outside.md' for API 'elasticsearch' escapes 'api/elasticsearch/'."
+			);
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
@@ -761,7 +809,13 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile, extraMarkdownFiles: ["op-search.md"]);
 
-		collector.Errors.Should().Be(1);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_docset.yml Child page 'op-search.md' for API 'elasticsearch' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:."
+			);
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
@@ -853,14 +907,14 @@ public class ConfigurationFileApiTests
 
 	private static readonly string[] DefaultProductIds = ["elasticsearch", "kibana"];
 
-	private static (ConfigurationFile Config, DiagnosticsCollector Collector) CreateConfiguration(
+	private static (ConfigurationFile Config, CapturingDiagnosticsCollector Collector) CreateConfiguration(
 		DocumentationSetFile docSet,
 		string[]? extraProducts = null,
 		bool withLocalSpecFile = true,
 		string[]? extraMarkdownFiles = null
 	)
 	{
-		var collector = new DiagnosticsCollector([]);
+		var collector = new CapturingDiagnosticsCollector();
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
 		var files = new Dictionary<string, MockFileData>

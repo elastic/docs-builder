@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Tests.Inline;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.TaskList;
 
@@ -13,14 +15,50 @@ public class BasicTaskListTests() : InlineTest("""
 """)
 {
 	[Test]
-	public void RendersTaskListContainer() => Html.Should().Contain("class=\"contains-task-list\"");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<ul class="contains-task-list">
+			<li class="task-list-item">
+				<input disabled="disabled" type="checkbox">
+				A pending task</li>
+			<li class="task-list-item">
+				<input disabled="disabled" type="checkbox" checked="checked">
+				A completed task</li>
+		</ul>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void RendersTaskListItem() => Html.Should().Contain("class=\"task-list-item\"");
+	public void RendersUncheckedCheckbox() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<ul class="contains-task-list">
+				<li class="task-list-item">
+					<input disabled="disabled" type="checkbox">
+					A pending task</li>
+				<li class="task-list-item">
+					<input disabled="disabled" type="checkbox" checked="checked">
+					A completed task</li>
+			</ul>
+			""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void RendersUncheckedCheckbox() => Html.ShouldContainHtml("""<input disabled="disabled" type="checkbox">""");
-
-	[Test]
-	public void RendersCheckedCheckbox() => Html.ShouldContainHtml("""<input disabled="disabled" type="checkbox" checked="checked">""");
+	public void RendersCheckedCheckbox() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<ul class="contains-task-list">
+				<li class="task-list-item">
+					<input disabled="disabled" type="checkbox">
+					A pending task</li>
+				<li class="task-list-item">
+					<input disabled="disabled" type="checkbox" checked="checked">
+					A completed task</li>
+			</ul>
+			""",
+			DocsHtml.Body()
+		);
 }

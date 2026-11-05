@@ -4,7 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -73,20 +76,7 @@ public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogB
 	public void HighlightsDisabledByDefault() => Block!.HighlightsEnabled.Should().BeFalse();
 
 	[Test]
-	public void OmitsHighlightsSection() => Html.Should().NotContain("Highlights");
-
-	[Test]
-	public void StillRendersHighlightedEntryUnderTypeSection()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Highlighted feature");
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("Fixes");
-		Html.Should().Contain("Bug fix");
-	}
-
-	[Test]
-	public void ExcludesSeparatedTypesByDefault() => Html.Should().NotContain("Breaking changes");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void TocOmitsHighlights()
@@ -113,18 +103,7 @@ public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBloc
 	public void HighlightsEnabledWhenFlagPresent() => Block!.HighlightsEnabled.Should().BeTrue();
 
 	[Test]
-	public void RendersHighlightsSection() => Html.Should().Contain("Highlights");
-
-	[Test]
-	public void DuplicatesHighlightedEntryInTypeSection()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Highlighted feature");
-		Html.Should().Contain("Regular feature");
-	}
-
-	[Test]
-	public void ExcludesSeparatedTypesWithoutTypeAll() => Html.Should().NotContain("Breaking changes");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void TocIncludesHighlights()
@@ -153,12 +132,7 @@ public class ChangelogHighlightsOptionWithTypeAllTests : DirectiveTest<Changelog
 		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Test]
-	public void RendersHighlightsAndSeparatedTypes()
-	{
-		Html.Should().Contain("Highlights");
-		Html.Should().Contain("Breaking changes");
-		Html.Should().Contain("Features and enhancements");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>:type: all without :highlights: — no Highlights section (breaking change from prior All behavior).</summary>
@@ -177,9 +151,7 @@ public class ChangelogHighlightsOptionTypeAllWithoutFlagTests : DirectiveTest<Ch
 	[Test]
 	public void TypeAllAloneDoesNotEmitHighlightsSection()
 	{
-		Html.Should().Contain("Breaking changes");
-		Html.Should().Contain("Highlighted feature");
-		Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
+		Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 		Block!.GeneratedTableOfContent.Should().NotContain(t => t.Heading == "Highlights");
 	}
 }
@@ -207,21 +179,14 @@ public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<Changel
 	public void EmitsWarningPointingToHighlightsOption() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains("Invalid :type: value 'highlight'", StringComparison.Ordinal) && d.Message.Contains(
-					":highlights:",
-					StringComparison.Ordinal
-				)
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :type: value 'highlight'. Highlights are controlled with :highlights: (not :type:). Using default behavior."
 			);
 
 	[Test]
-	public void RendersDefaultTypeSectionsNotHighlightsOnly()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Highlighted feature");
-		Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>:highlights: + :description-visibility: keep-descriptions shows bodies in the Highlights section.</summary>
@@ -239,7 +204,7 @@ public class ChangelogHighlightsOptionWithDescriptionsTests : DirectiveTest<Chan
 		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Test]
-	public void ShowsDescriptionInHighlightsSection() => Html.Should().Contain("This is the highlight description.");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -292,18 +257,7 @@ public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBl
 		Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.KeepHighlightDescriptions);
 
 	[Test]
-	public void ShowsDescriptionInHighlightsSection() => Html.Should().Contain("This is the highlight description.");
-
-	[Test]
-	public void HidesDescriptionsInTypeSections() => Html.Should().NotContain("This is the regular feature description.");
-
-	[Test]
-	public void StillRendersTitlesInTypeSections()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Highlighted feature");
-		Html.Should().Contain("Regular feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>keep-highlight-descriptions without :highlights: hides descriptions everywhere.</summary>
@@ -349,19 +303,28 @@ public class ChangelogKeepHighlightDescriptionsWithoutHighlightsTests : Directiv
 		);
 
 	[Test]
-	public void OmitsHighlightsSection() => Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
-
-	[Test]
-	public void HidesAllRecordDescriptions()
-	{
-		Html.Should().NotContain("This is the highlight description.");
-		Html.Should().NotContain("This is the regular feature description.");
-	}
-
-	[Test]
-	public void StillRendersTitles()
-	{
-		Html.Should().Contain("Highlighted feature");
-		Html.Should().Contain("Regular feature");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Highlighted feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/222222">#222222</a>
+			</li>
+		</ul>
+		"""
+		);
 }

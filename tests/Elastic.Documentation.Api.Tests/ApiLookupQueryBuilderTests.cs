@@ -776,7 +776,12 @@ public class ApiLookupQueryBuilderTests
 
 		lifts.Should().Contain("\"rank_feature\":{\"boost\":0.5,\"field\":\"api.id_words\"}");
 		lifts.Should().Contain("\"api.deprecated\":{\"boost\":0.2,\"value\":false}");
-		Clauses(json.RootElement.GetProperty("bool").GetProperty("filter")).Should().ContainSingle();
+		json
+			.RootElement
+			.GetProperty("bool")
+			.TryGetProperty("filter", out _)
+			.Should()
+			.BeFalse("the service filters documents around the lookup");
 	}
 
 	[Test]

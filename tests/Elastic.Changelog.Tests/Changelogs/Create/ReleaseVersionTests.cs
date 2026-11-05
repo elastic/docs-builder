@@ -9,7 +9,9 @@ using Elastic.Changelog.GithubRelease;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -103,7 +105,11 @@ public class ReleaseVersionTests() : ChangelogTestBase()
 
 		// Assert
 		result.Success.Should().BeTrue();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No PR") && d.Severity == Severity.Warning);
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("warning  No PRs found in commit range for this release. No changelogs will be created.");
 	}
 
 	// -----------------------------------------------------------------------
@@ -269,8 +275,13 @@ public class ReleaseVersionTests() : ChangelogTestBase()
 
 		// Assert
 		result.Success.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("unknown-repo"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Could not find a product for repository 'unknown-repo' in products.yml. Add a product to config/products.yml whose ID is 'unknown-repo', or set 'repository: unknown-repo' on one or more existing products."
+			);
 	}
 
 	// -----------------------------------------------------------------------

@@ -6,8 +6,11 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.SettingsInclusion;
 
@@ -43,7 +46,7 @@ public class IncludeTests() : DirectiveTest<SettingsBlock>(
 	}
 
 	[Test]
-	public void IncludesInclusionHtml() => Html.Should().Contain("xpack.encryptedSavedObjects.encryptionKey");
+	public void IncludesInclusionHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -104,27 +107,7 @@ groups:
 	}
 
 	[Test]
-	public void RendersAppliesToAndMetadata()
-	{
-		Html.Should().Contain("applies-to-popover");
-		Html.Should().Contain("settings-supported-on");
-		Html.Should().Contain("<strong>Datatype:</strong>");
-		Html.Should().Contain("<strong>Default:</strong>");
-		Html.Should().Contain("<strong>Options:</strong>");
-	}
-
-	[Test]
-	public void RendersNestedSettingName() => Html.Should().Contain("xpack.actions.customHostSettings[n].url");
-
-	[Test]
-	public void DotsInSettingNamesAreHyphensInAnchors()
-	{
-		Html.Should().Contain("id=\"xpack-actions-customhostsettings\"");
-		Html.Should().NotContain("id=\"xpack.actions.customhostsettings\"");
-	}
-
-	[Test]
-	public void NestedSettingAnchorIncludesParentPrefix() => Html.Should().Contain("id=\"xpack-actions-customhostsettingsn-url\"");
+	public void GeneratesHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -156,11 +139,28 @@ groups:
 	}
 
 	[Test]
-	public void RendersAsFencedCodeBlock()
-	{
-		Html.Should().Contain("language-yaml");
-		Html.Should().NotContain("[source,yaml]");
-	}
+	public void RendersAsFencedCodeBlock() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<h2 id="example">Example</h2>
+		<dl>
+			<dt id="xpack-legacy-example">xpack.legacy.example
+			</dt>
+			<dd>
+				<p>Example code:</p>
+				<div class="highlight-yaml notranslate">
+					<div class="highlight">
+						<pre>
+							<code class="language-yaml">xpack.legacy.example:   enabled: true
+							</code>
+						</pre>
+					</div>
+				</div>
+			</dd>
+		</dl>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 [InheritsTests]
@@ -193,13 +193,7 @@ groups:
 	}
 
 	[Test]
-	public void RendersPageDescriptionNotesAndInterpolatedGroupTitle()
-	{
-		Html.Should().Contain("General Kibana settings");
-		Html.Should().Contain("Top-level note for Kibana.");
-		Html.Should().Contain("Group-level note for Kibana.");
-		Html.Should().Contain("https://www.elastic.co/docs/reference/kibana/connectors-kibana/pre-configured-connectors");
-	}
+	public void RendersPageDescriptionNotesAndInterpolatedGroupTitle() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -286,10 +280,7 @@ public class DeploymentFilterEchOnKibanaGeneralSettings() : DirectiveTest<Settin
 	}
 
 	[Test]
-	public void ShowsEchGaSetting() => Html.Should().Contain("execution_context.enabled");
-
-	[Test]
-	public void HidesEchUnavailableSetting() => Html.Should().NotContain("console.ui.enabled");
+	public void GeneratesHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -331,13 +322,34 @@ groups:
 	}
 
 	[Test]
-	public void HidesSettingWhenEchIsMissing() => Html.Should().NotContain("self.only.setting");
-
-	[Test]
-	public void ShowsSettingWithExplicitEchGa() => Html.Should().Contain("ech.explicit.setting");
-
-	[Test]
-	public void ShowsSettingWithNoAppliesTo() => Html.Should().Contain("no.applies.to.setting");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<h2 id="example">Example</h2>
+		<dl>
+			<dt id="ech-explicit-setting">ech.explicit.setting
+				<span class="applies applies-inline">
+				</span>
+			</dt>
+			<dd>
+				<p class="settings-supported-on">
+					<strong>Supported on:</strong>
+					<span class="applies applies-inline">
+						<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+						<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+					</span>
+				</p>
+				<p>ECH is explicitly listed as ga.</p>
+			</dd>
+			<dt id="no-applies-to-setting">no.applies.to.setting
+			</dt>
+			<dd>
+				<p>No applies_to at all — universally available.</p>
+			</dd>
+		</dl>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 [InheritsTests]
@@ -360,10 +372,151 @@ public class DeploymentFilterWithUnknownValueEmitsWarning() : DirectiveTest<Sett
 
 	[Test]
 	public void EmitsWarning() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("invalid-deployment"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		warning {repo}/docs/index.md:3 Unknown deployment filter 'invalid-deployment'. Valid values are: ech, ece, eck, self.
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:3 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:3 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:3 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:3 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {hosted-ems} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:3 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:9 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:6 Substitution key {ecloud} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {kib} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:1 Substitution key {es} is undefined
+		error {repo}/docs/testing/kibana-general-settings.yml:2 Substitution key {ecloud} is undefined
+		"""
+			);
 
 	[Test]
-	public void StillRendersAllSettingsWhenFilterIsInvalid() => Html.Should().Contain("execution_context.enabled");
+	public void StillRendersAllSettingsWhenFilterIsInvalid() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -394,12 +547,34 @@ groups:
 	}
 
 	[Test]
-	public void RendersAppliesToRoleAsBadgeNotLiteralText()
-	{
-		Html.Should().Contain("applies-to-popover");
-		Html.Should().NotContain("Applies to (stack: ga 9.2)");
-		Html.Should().NotContain("Applies to (stack: ga 9.1)");
-	}
+	public void RendersAppliesToRoleAsBadgeNotLiteralText() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<h2 id="example">Example</h2>
+		<dl>
+			<dt id="xpack-sample-versioned">xpack.sample.versioned
+			</dt>
+			<dd>
+				<p>Behavior depends on version:</p>
+				<ul>
+					<li>
+						<span class="applies applies-inline">
+							<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+						</span>
+						Defaults to
+						<code>model-a</code>.</li>
+					<li>
+						<span class="applies applies-inline">
+							<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+						</span>
+						Defaults to
+						<code>model-b</code>.</li>
+				</ul>
+			</dd>
+		</dl>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 /// <summary>
@@ -437,21 +612,23 @@ groups:
 	}
 
 	[Test]
-	public void RendersPlannedStackBadge() => Html.Should().Contain("badge-key=\"Stack\"").And.Contain("Planned");
-
-	[Test]
-	public void DoesNotRenderSupportedOnLine()
-	{
-		Html.Should().NotContain("settings-supported-on");
-		Html.Should().NotContain("Supported on:");
-	}
-
-	[Test]
-	public void DoesNotRenderEchOrSelfManagedBadges()
-	{
-		Html.Should().NotContain("badge-key=\"ECH\"");
-		Html.Should().NotContain("badge-key=\"Self-managed\"");
-	}
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<h2 id="example">Example</h2>
+		<dl>
+			<dt id="i18n-defaultlocale">i18n.defaultLocale
+				<span class="applies applies-inline">
+					<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+				</span>
+			</dt>
+			<dd>
+				<p>Locale setting planned for a future stack version.</p>
+			</dd>
+		</dl>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 /// <summary>
@@ -486,12 +663,30 @@ groups:
 	}
 
 	[Test]
-	public void RendersSupportedOnLineWithBothBadges()
-	{
-		Html.Should().Contain("settings-supported-on");
-		Html.Should().Contain("badge-key=\"ECH\"");
-		Html.Should().Contain("badge-key=\"Self-managed\"");
-	}
+	public void RendersSupportedOnLineWithBothBadges() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<h2 id="example">Example</h2>
+		<dl>
+			<dt id="xpack-sample-released">xpack.sample.released
+				<span class="applies applies-inline">
+					<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+				</span>
+			</dt>
+			<dd>
+				<p class="settings-supported-on">
+					<strong>Supported on:</strong>
+					<span class="applies applies-inline">
+						<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+						<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+					</span>
+				</p>
+				<p>A setting that has been GA since 7.0.</p>
+			</dd>
+		</dl>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 /// <summary>
@@ -527,12 +722,30 @@ groups:
 	}
 
 	[Test]
-	public void RendersSupportedOnLine()
-	{
-		Html.Should().Contain("settings-supported-on");
-		Html.Should().Contain("badge-key=\"ECH\"");
-		Html.Should().Contain("badge-key=\"Self-managed\"");
-	}
+	public void RendersSupportedOnLine() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<h2 id="example">Example</h2>
+		<dl>
+			<dt id="xpack-sample-mixed">xpack.sample.mixed
+				<span class="applies applies-inline">
+					<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="true" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for deprecation&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be deprecated in a future Elastic Stack update. Subject to changes.&quot;},{&quot;text&quot;:&quot;Generally available since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+				</span>
+			</dt>
+			<dd>
+				<p class="settings-supported-on">
+					<strong>Supported on:</strong>
+					<span class="applies applies-inline">
+						<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+						<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+					</span>
+				</p>
+				<p>GA since an existing version, scheduled for deprecation in a future version.</p>
+			</dd>
+		</dl>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 /// <summary>
@@ -569,12 +782,8 @@ groups:
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
-	public void RendersBothSettings()
-	{
-		Html.Should().Contain("xpack.sample.one");
-		Html.Should().Contain("xpack.sample.two");
-	}
+	public void RendersBothSettings() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

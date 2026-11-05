@@ -8,6 +8,8 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -63,17 +65,22 @@ public class ChangelogUnpackTests() : CreateChangelogTestBase()
 		var written = FileSystem.Path.Join(outputDir, "7606.yaml");
 		FileSystem.File.Exists(written).Should().BeTrue();
 		var yaml = await FileSystem.File.ReadAllTextAsync(written, TestContext.Current!.Execution.CancellationToken);
-		yaml.Should().Contain("title: Add ECS user.domain to serverless audit logs");
-		yaml.Should().Contain("type: enhancement");
-		yaml.Should().Contain("https://github.com/elastic/elasticsearch-serverless/pull/7606");
-		yaml.Should().NotContain("# PRIVATE:");
-		yaml.Should().NotContain("checksum:");
 		yaml.Should().Contain("##### Required fields");
-
-		var parsed = ReleaseNotesSerialization.DeserializeEntry(yaml);
-		parsed.Title.Should().Be("Add ECS user.domain to serverless audit logs");
-		parsed.Type.Should().Be(ChangelogEntryType.Enhancement);
-		parsed.Prs.Should().ContainSingle().Which.Should().Be("https://github.com/elastic/elasticsearch-serverless/pull/7606");
+		yaml
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch-serverless/pull/7606"
+			type: enhancement
+			products:
+			  - product: cloud-serverless
+			areas:
+			  - Security
+			title: Add ECS user.domain to serverless audit logs
+			"""
+			);
 
 		ComputeSha1(yaml).Should().NotBe("88dfd443adb87e70e71e7d8cb8417e4de1b91268");
 	}
@@ -109,15 +116,28 @@ public class ChangelogUnpackTests() : CreateChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("note-alerts-are-not-generated-when-flapping-is-off.yml"));
+			.MatchInlineSnapshot(
+				"warning  Unpack will write 'note-alerts-are-not-generated-when-flapping-is-off.yml' for provenance file 'note-known-issue.yaml' using changelog note naming."
+			);
 
 		var files = FileSystem.Directory.GetFiles(outputDir, "note-*.yml");
 		files.Should().ContainSingle();
 		var yaml = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		var parsed = ReleaseNotesSerialization.DeserializeEntry(yaml);
-		parsed.Type.Should().Be(ChangelogEntryType.KnownIssue);
-		parsed.Products.Should().ContainSingle().Which.Versions.Should().Contain("9.3.0");
+		yaml
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			type: known-issue
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.3.0
+			title: Alerts are not generated when flapping is off
+			"""
+			);
 	}
 
 	[Test]
@@ -323,8 +343,13 @@ public class ChangelogUnpackTests() : CreateChangelogTestBase()
 		var result = await Unpack(bundlePath, configPath, outputDir);
 
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("scrubbed during changelog upload"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/bundle.yaml Entry '7606.yaml' cannot be unpacked: after stripping private-link sentinels it has no pull-request references and its products have no versions. changelog add requires a PR; changelog note requires product versions. Bundles scrubbed during changelog upload often drop private PRs and issues — unpack the private-side bundle instead."
+			);
 		FileSystem.Directory.Exists(outputDir).Should().BeFalse();
 	}
 

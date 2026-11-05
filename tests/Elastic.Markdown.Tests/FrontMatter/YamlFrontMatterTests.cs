@@ -5,10 +5,12 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.FrontMatter;
 
@@ -191,18 +193,17 @@ public class AllUnknownFrontMatterKeysAreHints() : DirectiveTest(
 )
 {
 	[Test]
-	public void ReportsOneHintPerKeyAndNoErrors()
-	{
-		Collector.Errors.Should().Be(0);
-		Collector.Diagnostics.Should().HaveCount(2).And.OnlyContain(d => d.Severity == Severity.Hint);
+	public void ReportsOneHintPerKeyAndNoErrors() =>
 		Collector
 			.Diagnostics
-			.Select(d => d.Message)
+			.ToSnapshotText()
 			.Should()
-			.Contain(m => m.Contains("Unknown key 'type'"))
-			.And
-			.Contain(m => m.Contains("Unknown key 'comment'"));
-	}
+			.MatchInlineSnapshot(
+				"""
+		hint {repo}/docs/index.md:2 Unknown key 'type'. Valid keys: applies_to, cta, description, layout, listing, mapped_pages, meta_title, navigation_title, noindex, products, sub, title. It is ignored.
+		hint {repo}/docs/index.md:3 Unknown key 'comment'. Valid keys: applies_to, cta, description, layout, listing, mapped_pages, meta_title, navigation_title, noindex, products, sub, title. It is ignored.
+		"""
+			);
 }
 
 public class YamlFrontMatterTests() : DirectiveTest(
@@ -245,7 +246,11 @@ public class EmptyFileWarnsNeedingATitle() : DirectiveTest("")
 
 	[Test]
 	public void WarnsOfNoTitle() =>
-		Collector.Diagnostics.Should().NotBeEmpty().And.Contain(d => d.Message.Contains("Document has no title, using file name as title."));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("warning {repo}/docs/index.md Document has no title, using file name as title.");
 }
 
 public class NavigationTitleSupportReplacements() : DirectiveTest(
@@ -408,7 +413,7 @@ public class MappedPagesValidUrl() : DirectiveTest(
 )
 {
 	[Test]
-	public void NoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void NoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 public class MappedPagesInvalidUrl() : DirectiveTest(
@@ -423,18 +428,14 @@ public class MappedPagesInvalidUrl() : DirectiveTest(
 )
 {
 	[Test]
-	public void HasErrors()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
+	public void HasErrors() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"Invalid mapped_pages URL: \"https://www.elastic.co/docs/get-started/deployment-options\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md Invalid mapped_pages URL: \"https://www.elastic.co/docs/get-started/deployment-options\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
 			);
-	}
 }
 
 public class MappedPagesMixedUrls() : DirectiveTest(
@@ -451,18 +452,14 @@ public class MappedPagesMixedUrls() : DirectiveTest(
 )
 {
 	[Test]
-	public void HasErrorsForInvalidUrl()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
+	public void HasErrorsForInvalidUrl() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"Invalid mapped_pages URL: \"https://www.elastic.co/docs/invalid-url\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md Invalid mapped_pages URL: \"https://www.elastic.co/docs/invalid-url\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
 			);
-	}
 }
 
 public class MappedPagesEmptyUrl() : DirectiveTest("""
@@ -475,11 +472,8 @@ public class MappedPagesEmptyUrl() : DirectiveTest("""
 	""")
 {
 	[Test]
-	public void NoErrorsForEmptyUrl()
-	{
-		// Empty URLs are ignored, no validation error should occur
-		Collector.Diagnostics.Should().BeEmpty();
-	}
+	// Empty URLs are ignored, no validation error should occur
+	public void NoErrorsForEmptyUrl() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 public class MappedPagesExternalUrl() : DirectiveTest(
@@ -494,18 +488,14 @@ public class MappedPagesExternalUrl() : DirectiveTest(
 )
 {
 	[Test]
-	public void HasErrorsForExternalUrl()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
+	public void HasErrorsForExternalUrl() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"Invalid mapped_pages URL: \"https://github.com/elastic/docs-builder\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md Invalid mapped_pages URL: \"https://github.com/elastic/docs-builder\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
 			);
-	}
 }
 
 public class MappedPagesMalformedUri() : DirectiveTest(
@@ -520,18 +510,14 @@ public class MappedPagesMalformedUri() : DirectiveTest(
 )
 {
 	[Test]
-	public void HasErrorsForMalformedUri()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
+	public void HasErrorsForMalformedUri() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"Invalid mapped_pages URL: \"https://www.elastic.co/guide/[invalid-characters]\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md Invalid mapped_pages URL: \"https://www.elastic.co/guide/[invalid-characters]\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
 			);
-	}
 }
 
 public class MappedPagesInvalidScheme() : DirectiveTest(
@@ -546,18 +532,14 @@ public class MappedPagesInvalidScheme() : DirectiveTest(
 )
 {
 	[Test]
-	public void HasErrorsForInvalidScheme()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
+	public void HasErrorsForInvalidScheme() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"Invalid mapped_pages URL: \"https://www.elastic.co/guide/invalid uri with spaces\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md Invalid mapped_pages URL: \"https://www.elastic.co/guide/invalid uri with spaces\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
 			);
-	}
 }
 
 public class MappedPagesNotAbsoluteUri() : DirectiveTest("""
@@ -570,16 +552,12 @@ public class MappedPagesNotAbsoluteUri() : DirectiveTest("""
 	""")
 {
 	[Test]
-	public void HasErrorsForNotAbsoluteUri()
-	{
-		Collector.Diagnostics.Should().HaveCount(1);
+	public void HasErrorsForNotAbsoluteUri() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"Invalid mapped_pages URL: \"not-a-uri-at-all\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md Invalid mapped_pages URL: \"not-a-uri-at-all\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
 			);
-	}
 }
