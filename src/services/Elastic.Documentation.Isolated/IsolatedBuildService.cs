@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Floating;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -17,6 +18,7 @@ using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Elastic.Markdown;
@@ -199,7 +201,14 @@ public class IsolatedBuildService(
 		var releaseNotesResolver = await ReleaseNotesFetcher.PrefetchAsync(context, logFactory, ctx);
 
 		// always delete output folder on CI
-		var set = new DocumentationSet(context, logFactory, crossLinkResolver, releaseNotesResolver);
+		var apiSections = new ApiFloatingSectionProvider(context);
+		var set = new DocumentationSet(
+			context,
+			logFactory,
+			crossLinkResolver,
+			releaseNotesResolver,
+			new FloatingSectionRegistry([apiSections])
+		);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
@@ -224,13 +233,18 @@ public class IsolatedBuildService(
 			markdownExporters.ToArray(),
 			documentInferrer: documentInferrer
 		);
+		var openApiGenerator = settings.SkipOpenApi ? null : new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
+		if (openApiGenerator is not null)
+		{
+			// The API section roots exist already; this fills their children before anything walks them.
+			apiSections.Attach(openApiGenerator);
+			await set.ResolveFloatingSectionsAsync(ctx);
+		}
+
 		var result = await generator.GenerateAll(ctx);
 
-		if (!settings.SkipOpenApi)
-		{
-			var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
+		if (openApiGenerator is not null)
 			await openApiGenerator.Generate(ctx);
-		}
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);

@@ -8,6 +8,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Floating;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -300,6 +301,61 @@ public class OpenApiGeneratorMultiVersionTests
 			.OfType<OperationNavigationItem>()
 			.Single();
 		operation.Url.Should().Be("/api/doc/elasticsearch/v8/operation/operation-ping");
+	}
+
+	[Test]
+	public async Task FloatingSection_AfterResolve_MountsEveryVersionAndHidesTheOlderOnes()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(generator);
+		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
+
+		var root = section!.CreateRoot(null);
+		root.Url.Should().Be("/api/doc/elasticsearch");
+		root.NavigationItems.Should().BeEmpty("the root exists before the specs are fetched");
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var versions = root.NavigationItems.Should().AllBeOfType<LandingNavigationItem>().Subject.ToArray();
+		versions
+			.Select(v => v.Url)
+			.Should()
+			.BeEquivalentTo(["/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8"]);
+		versions.Where(v => !v.Hidden).Select(v => v.Url).Should().Equal("/api/doc/elasticsearch");
+
+		// the generator renders from the trees the section mounted, so the build never builds a tree twice
+		var trees = await generator.TreesFor(
+			"elasticsearch",
+			context.Configuration.ApiConfigurations!["elasticsearch"],
+			TestContext.Current!.Execution.CancellationToken
+		);
+		trees.Navigations.Should().Equal(versions);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
+	}
+
+	[Test]
+	public void FloatingSection_UnknownKey_IsNotProvided()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+
+		new ApiFloatingSectionProvider(context).TryGetSection("kibana", out _).Should().BeFalse();
 	}
 
 	[Test]
