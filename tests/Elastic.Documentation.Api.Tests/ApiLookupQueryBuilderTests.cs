@@ -175,7 +175,7 @@ public class ApiLookupQueryBuilderTests
 		var key = KeyOption(json);
 
 		var exact = ExactOptions(key);
-		exact.Keys.Should().BeEquivalentTo("api.endpoints", "api.endpoints.bare");
+		exact.Keys.Should().BeEquivalentTo("api.endpoints", "api.endpoints_bare");
 		exact.Values.Should().AllSatisfy(terms => terms.Should().Equal("search"));
 		key
 			.GetProperty("queries")
@@ -188,18 +188,20 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	[Arguments("snapshot", "snapshot")]
-	[Arguments("Snapshot", "snapshot")]
-	[Arguments("_snapshot", "_snapshot")]
-	public void Build_PlainWord_KeyOptionCoversTheRoutesUnderTheEndpointAtFiveAndAHalf(string word, string route)
+	[Arguments("snapshot", "snapshot", "snapshot")]
+	[Arguments("Snapshot", "snapshot", "snapshot")]
+	[Arguments("_snapshot", "_snapshot", "snapshot")]
+	public void Build_PlainWord_KeyOptionCoversTheRoutesUnderTheEndpointAtFiveAndAHalf(string word, string route, string bare)
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build(word));
 		var key = KeyOption(json);
 
-		ExactOptions(key).Values.Should().AllSatisfy(terms => terms.Should().Equal(route));
+		ExactOptions(key)
+			.Should()
+			.BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = [route], ["api.endpoints_bare"] = [bare] });
 		PrefixOptions(key)
 			.Should()
-			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = route + "/", ["api.endpoints.bare"] = route + "/" });
+			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = route + "/", ["api.endpoints_bare"] = bare + "/" });
 	}
 
 	[Test]
@@ -241,11 +243,11 @@ public class ApiLookupQueryBuilderTests
 		var key = KeyOption(json);
 
 		var exact = ExactOptions(key);
-		exact.Keys.Should().BeEquivalentTo("api.endpoints", "api.endpoints.bare");
+		exact.Keys.Should().BeEquivalentTo("api.endpoints", "api.endpoints_bare");
 		exact.Values.Should().AllSatisfy(terms => terms.Should().Contain("api/fleet"));
 		PrefixOptions(key)
 			.Should()
-			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = "api/fleet/", ["api.endpoints.bare"] = "api/fleet/" });
+			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = "api/fleet/", ["api.endpoints_bare"] = "api/fleet/" });
 	}
 
 	[Test]
@@ -257,15 +259,39 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	[Arguments("/_snapshot", "_snapshot")]
-	[Arguments("/snapshot", "snapshot")]
-	public void Build_TypedSystemRoute_KeepsTheTypedUnderscoreForTheBareViewToStrip(string typed, string route)
+	[Arguments("/_snapshot", "_snapshot", "snapshot")]
+	[Arguments("/snapshot", "snapshot", "snapshot")]
+	public void Build_TypedSystemRoute_StripsTheTypedUnderscoreForTheBareKeys(string typed, string route, string bare)
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build(typed));
 		var key = KeyOption(json);
 
-		ExactOptions(key).Values.Should().AllSatisfy(terms => terms.Should().Equal(route));
-		PrefixOptions(key).Values.Should().AllBeEquivalentTo(route + "/");
+		ExactOptions(key)
+			.Should()
+			.BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = [route], ["api.endpoints_bare"] = [bare] });
+		PrefixOptions(key)
+			.Should()
+			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = route + "/", ["api.endpoints_bare"] = bare + "/" });
+	}
+
+	[Test]
+	public void Build_TypedSystemRouteWithSegments_StripsTheUnderscoreForTheBareKeys()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_cluster/health"));
+		var exact = ExactOptions(KeyOption(json));
+
+		exact["api.endpoints"].Should().Contain("_cluster/health");
+		exact["api.endpoints_bare"].Should().Contain("cluster/health");
+	}
+
+	[Test]
+	public void Build_RouteOfOnlyAnUnderscore_LooksUpOnlyTheExactKeys()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_"));
+		var key = KeyOption(json);
+
+		ExactOptions(key).Should().BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = ["_"] });
+		PrefixOptions(key).Should().BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = "_/" });
 	}
 
 	[Test]

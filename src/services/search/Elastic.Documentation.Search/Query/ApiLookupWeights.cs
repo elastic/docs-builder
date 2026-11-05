@@ -18,7 +18,7 @@ namespace Elastic.Documentation.Search;
 /// (11.90) above <c>snapshot-create</c> (11.40), whose group is "Snapshot and restore". It also widens <c>cluster health</c> to 11.40 against 6.90.</item>
 /// <item>A typed route takes the same two keys and beats the routes under it, so <c>/_search</c> keeps <c>search</c> above
 /// <c>scroll</c> (9.58 against 9.08) and <c>/api/fleet</c> lists the 326 Fleet routes.</item>
-/// <item>The bare view of the keys scores <c>/search</c> the same as <c>/_search</c>, and <c>/cluster health</c> finds <c>cluster-health</c> (11.07).</item>
+/// <item>The bare keys score <c>/search</c> the same as <c>/_search</c>, and <c>/cluster health</c> finds <c>cluster-health</c> (11.07).</item>
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// </list>
 /// </summary>
