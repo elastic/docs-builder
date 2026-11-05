@@ -176,6 +176,17 @@ describe('initExamplesBalance', () => {
         ])
     })
 
+    it('counts a horizontal scrollbar in a short response', () => {
+        const root = rail(1302, [{ lang: 'Console', scroll: 100 }], {
+            lang: 'JSON',
+            scroll: 40,
+            offset: 48,
+        })
+        initExamplesBalance()
+
+        expect(heights(root)).toEqual({ request: '100px', response: '48px' })
+    })
+
     it('stops balancing a panel once HTMX has swapped it out', () => {
         const old = rail(602, [{ lang: 'Console', scroll: 400 }], longResponse)
         initExamplesBalance()
