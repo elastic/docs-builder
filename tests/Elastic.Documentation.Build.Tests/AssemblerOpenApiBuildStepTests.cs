@@ -215,6 +215,26 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		sections.TryGetSection("docs-builder-elasticsearch", out _).Should().BeFalse();
 	}
 
+	[Test]
+	public void ApiSections_FlagEnabledWithoutHtmlExport_AreEmpty()
+	{
+		var fileSystem = new FileSystem();
+		var collector = new DiagnosticsCollector([]);
+		var content = CreateDocumentationSet("docs-content", "kibana", collector);
+		var context = CreateAssembleContext(fileSystem, collector, "staging");
+		var sources = AssembleSources.ForTests(
+			context,
+			new Dictionary<string, AssemblerDocumentationSet> { [content.Checkout.Repository.Name] = content }.ToFrozenDictionary()
+		);
+
+		var llmOnly = AssemblerApiSections.For(context, sources, new HashSet<Exporter> { Exporter.LLMText });
+		var withHtml = AssemblerApiSections.For(context, sources, new HashSet<Exporter> { Exporter.Html, Exporter.LLMText });
+
+		llmOnly.Should().BeSameAs(AssemblerApiSections.Empty, "the API pages are not generated without the HTML export");
+		llmOnly.GetSections().Should().BeEmpty();
+		withHtml.GetSections().Select(s => s.Key).Should().Equal("kibana");
+	}
+
 	public void Dispose()
 	{
 		foreach (var directory in _tempDirectories)

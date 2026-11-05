@@ -137,10 +137,7 @@ public class AssemblerBuildService(
 		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
-		// The API pages are only generated with the HTML export, so other exports must not list them.
-		var apiSections = exporters.Contains(Exporter.Html)
-			? AssemblerApiSections.Create(assembleContext, assembleSources)
-			: AssemblerApiSections.Empty;
+		var apiSections = AssemblerApiSections.For(assembleContext, assembleSources, exporters);
 		var navigation = new SiteNavigation(
 			siteNavigationFile,
 			assembleContext,
