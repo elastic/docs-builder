@@ -14,6 +14,10 @@ internal static class SnapshotSetup
 	[ModuleInitializer]
 	internal static void Register()
 	{
+		// Tests that do not inject an IEnvironmentVariables read the process environment, and the bundle service resolves
+		// the repository from GITHUB_REPOSITORY. On GitHub Actions it is set, on a laptop it is not, so a bundle would
+		// read `repo: docs-builder` on one and carry a warning on the other. Tests that need it pass it in explicitly.
+		Environment.SetEnvironmentVariable("GITHUB_REPOSITORY", null);
 		SnapshotDefaults.AddScrubber(Scrubbers.Guids);
 		SnapshotDefaults.AddScrubber(Today);
 	}
