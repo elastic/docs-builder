@@ -90,6 +90,10 @@
     <Project Path="src/tooling/docs-migrate/docs-migrate.csproj" />
     <Project Path="src/tooling/adoc-compare/adoc-compare.csproj" />
   </Folder>
+  <Folder Name="/tests-shared/">
+    <File Path="tests-shared/Directory.Build.props" />
+    <Project Path="tests-shared/Elastic.Documentation.Testing/Elastic.Documentation.Testing.csproj" />
+  </Folder>
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
