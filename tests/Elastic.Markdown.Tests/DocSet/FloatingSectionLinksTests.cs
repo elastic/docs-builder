@@ -71,9 +71,7 @@ public class FloatingSectionLinksTests
 		public string Key => "demo";
 		public string UrlRoot => "api/doc/demo";
 
-		public IRootNavigationItem<INavigationModel, INavigationItem> CreateRoot(
-			INodeNavigationItem<INavigationModel, INavigationItem>? parent
-		) => new DemoRoot(parent);
+		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) => new DemoRoot(parent);
 	}
 
 	private sealed record DemoModel : INavigationModel;
@@ -89,7 +87,7 @@ public class FloatingSectionLinksTests
 		public int NavigationIndex { get; set; }
 	}
 
-	private sealed class DemoRoot : IRootNavigationItem<INavigationModel, INavigationItem>, IAssignableIslandNavigation
+	private sealed class DemoRoot : IFloatingSectionRoot, IAssignableIslandNavigation
 	{
 		public DemoRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent)
 		{

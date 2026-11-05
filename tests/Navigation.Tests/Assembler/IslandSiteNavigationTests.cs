@@ -2,12 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Floating;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
@@ -275,5 +278,97 @@ public class IslandSiteNavigationTests()
 		// It has no island: true in navigation.yml and no island: true in its docset.yml.
 		searchNav.IsIsland.Should().BeFalse("nested toc: children without island: true are not implicit islands");
 		searchNav.RendersAsIsland().Should().BeFalse("nested child is not an island");
+	}
+
+	[Test]
+	public void FloatingSectionMountedByDocset_SurvivesSiteAssembly()
+	{
+		// language=yaml
+		var siteNavYaml =
+			"""
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: observability
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		const string docsetPath = "/checkouts/current/observability/docs/docset.yml";
+		fileSystem.File.WriteAllText(docsetPath, fileSystem.File.ReadAllText(docsetPath) + "\n  - api: demo\n");
+
+		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsContext.Collector,
+			fileSystem.FileInfo.New(docsetPath),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(
+			obsDocset,
+			obsContext,
+			GenericDocumentationFileFactory.Instance,
+			floatingSections: new FloatingSectionRegistry([new DemoProvider()])
+		);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+
+		var navigation = new SiteNavigation(siteNavFile, siteContext, [obsNav], sitePrefix: null);
+
+		var obsNode = navigation.NavigationItems.ElementAt(0).Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+		obsNode.NavigationItems.OfType<DemoRoot>().Should().ContainSingle();
+		siteContext.Diagnostics.Should().NotContain(d => d.Message.Contains("does not explicitly declare"));
+	}
+
+	private sealed class DemoProvider : IFloatingSectionProvider
+	{
+		public string Kind => "api";
+
+		public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
+		{
+			section = key == "demo" ? new DemoSection() : null;
+			return section is not null;
+		}
+	}
+
+	private sealed class DemoSection : IFloatingSection
+	{
+		public string Kind => "api";
+		public string Key => "demo";
+		public string UrlRoot => "api/doc/demo";
+		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) => new DemoRoot(parent);
+	}
+
+	private sealed record DemoModel : INavigationModel;
+
+	private sealed class DemoLandingLeaf(DemoRoot root) : ILeafNavigationItem<DemoModel>
+	{
+		public DemoModel Model { get; } = new();
+		public string Url => "/api/doc/demo";
+		public string NavigationTitle => "Demo API";
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => root;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = root;
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+	}
+
+	private sealed class DemoRoot : IFloatingSectionRoot, IAssignableIslandNavigation
+	{
+		public DemoRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent)
+		{
+			Parent = parent;
+			Index = new DemoLandingLeaf(this);
+		}
+
+		public string Url => Index.Url;
+		public string NavigationTitle => Index.NavigationTitle;
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+		public bool IsIsland { get; set; }
+		public string Id => "demo";
+		public ILeafNavigationItem<INavigationModel> Index { get; }
+		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
+		public bool IsUsingNavigationDropdown => false;
+		public Uri Identifier => new("api://demo");
+
+		public void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) { }
 	}
 }

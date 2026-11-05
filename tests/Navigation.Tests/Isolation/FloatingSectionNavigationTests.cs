@@ -81,6 +81,30 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		context.Diagnostics.Should().ContainSingle(d => d.Message.Contains("'api: demo'"));
 	}
 
+	[Test]
+	public async Task FloatingSectionRef_WithOtherKeys_EmitsAnError()
+	{
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
+		var context = CreateContext(fileSystem);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+		// language=yaml
+		const string yaml =
+			"""
+			project: 'docs-builder'
+			toc:
+			  - file: index.md
+			  - api: demo
+			    children:
+			      - file: index.md
+			""";
+
+		_ = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
+
+		context.Diagnostics.Should().Contain(d => d.Message.Contains("'api: demo'") && d.Message.Contains("'children'"));
+	}
+
 	private sealed class DemoProvider : IFloatingSectionProvider
 	{
 		public string Kind => "api";
@@ -98,9 +122,7 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		public string Key => "demo";
 		public string UrlRoot => "api/doc/demo";
 
-		public IRootNavigationItem<INavigationModel, INavigationItem> CreateRoot(
-			INodeNavigationItem<INavigationModel, INavigationItem>? parent
-		) => new DemoRoot(parent);
+		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) => new DemoRoot(parent);
 	}
 
 	private sealed record DemoModel : INavigationModel;
@@ -116,7 +138,7 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		public int NavigationIndex { get; set; }
 	}
 
-	private sealed class DemoRoot : IRootNavigationItem<INavigationModel, INavigationItem>, IAssignableIslandNavigation
+	private sealed class DemoRoot : IFloatingSectionRoot, IAssignableIslandNavigation
 	{
 		public DemoRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent)
 		{

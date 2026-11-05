@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
@@ -344,8 +345,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (nodeChild is INavigationHomeAccessor childAccessor)
 				childAccessor.HomeProvider = homeAccessor.HomeProvider;
 
-			// roots are only added if configured by navigation.yml (tocRef)
-			if (nodeChild is IRootNavigationItem<INavigationModel, INavigationItem>)
+			// roots are only added if configured by navigation.yml (tocRef); floating sections are mounted by the docset itself
+			if (nodeChild is IRootNavigationItem<INavigationModel, INavigationItem> and not IFloatingSectionRoot)
 				continue;
 
 			children.Add(nodeChild);
@@ -367,8 +368,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		INavigationItem[] allNodeChildren = [.. node.NavigationItems, node.Index];
 		foreach (var nodeChild in allNodeChildren)
 		{
-			if (nodeChild is not IRootNavigationItem<INavigationModel, INavigationItem> rootChild)
+			if (nodeChild is IFloatingSectionRoot or not IRootNavigationItem<INavigationModel, INavigationItem>)
 				continue;
+			var rootChild = (IRootNavigationItem<INavigationModel, INavigationItem>)nodeChild;
 			if (DeclaredTableOfContents.Contains(rootChild.Identifier) || DeclaredPhantoms.Contains(rootChild.Identifier))
 				continue;
 

@@ -25,8 +25,11 @@ public interface IFloatingSection
 	/// Creates the root of this section under <paramref name="parent"/>. The root is an island: the parent
 	/// navigation renders a stub and the pages render in the section's own sidebar.
 	/// </summary>
-	IRootNavigationItem<INavigationModel, INavigationItem> CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent);
+	IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent);
 }
+
+/// <summary>The root of a floating section. The site assembler keeps these where a docset or TOC mounts them.</summary>
+public interface IFloatingSectionRoot : IRootNavigationItem<INavigationModel, INavigationItem>;
 
 /// <summary>Resolves the floating sections of one <see cref="IFloatingSection.Kind"/>.</summary>
 public interface IFloatingSectionProvider

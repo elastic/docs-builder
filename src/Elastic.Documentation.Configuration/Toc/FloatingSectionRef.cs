@@ -14,7 +14,8 @@ public record FloatingSectionRef(
 	string Key,
 	string PathRelativeToDocumentationSet,
 	string PathRelativeToContainer,
-	string Context
+	string Context,
+	IReadOnlyCollection<string>? ExtraKeys = null
 ) : ITableOfContentsItem
 {
 	/// <summary>The toc keys that mount a floating section.</summary>
