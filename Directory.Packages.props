@@ -127,8 +127,12 @@
   <!-- Test packages -->
   <ItemGroup>
     <PackageVersion Include="AngleSharp.Diffing" Version="1.1.1" />
-    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.2.0" />
-    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.2.0" />
+    <PackageVersion Include="Nullean.Snapshots" Version="0.4.0" />
+    <PackageVersion Include="Nullean.Snapshots.AwesomeAssertions" Version="0.4.0" />
+    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.4.0" />
+    <PackageVersion Include="Nullean.Snapshots.Json" Version="0.4.0" />
+    <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.4.0" />
+    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.4.0" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
