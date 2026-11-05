@@ -39,11 +39,11 @@ public class InlineLinkWithMailtoNotAllowedExternalHost : MarkdownTest
 		</p>
 		""");
 
-	[Test, DisplayName("has no errors")]
-	public async Task HasNoErrors() => await Docs.HasNoErrors();
-
-	[Test, DisplayName("has error")]
-	public async Task HasError() => await Docs.HasWarning("mailto links should be to elastic.co domains.");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"warning {repo}/docs/index.md:2 mailto links should be to elastic.co domains. Found somehost.co in mailto:fake-email@somehost.co. "
+		);
 }
 
 public class EmptyLinkShouldResultInAnError : MarkdownTest
@@ -52,9 +52,6 @@ public class EmptyLinkShouldResultInAnError : MarkdownTest
 		[email me]()
 		""";
 
-	[Test, DisplayName("has error")]
-	public async Task HasError() => await Docs.HasError("Found empty url");
-
-	[Test, DisplayName("has no warnings")]
-	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() => await Docs.HasDiagnostics("error {repo}/docs/index.md:2 Found empty url");
 }

@@ -4,8 +4,6 @@
 
 using System.Diagnostics;
 using AwesomeAssertions;
-using DiffPlex.DiffBuilder;
-using DiffPlex.DiffBuilder.Model;
 using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Nullean.Snapshots.Html;
@@ -34,43 +32,6 @@ namespace Elastic.Authoring.Tests.Framework;
 internal static class HtmlAssertions
 {
 	// ────────────────────────────────────────────────────────────────────────────────
-	// DiffPlex plain-text diff (used by PlainText, LlmMarkdown assertions too)
-	// ────────────────────────────────────────────────────────────────────────────────
-
-	/// <summary>
-	/// Returns a readable unified-diff string (prefixed <c>- </c>/<c>+ </c>/<c>  </c>) between
-	/// <paramref name="expected"/> and <paramref name="actual"/>, or an empty string when they
-	/// are identical.
-	/// Port of <c>ResultsAssertions.diff</c>.
-	/// </summary>
-	internal static string Diff(string expected, string actual)
-	{
-		var result = InlineDiffBuilder.Diff(expected, actual);
-		var lines = result.Lines;
-		var mutatedCount = lines.Count(l => l.Type is ChangeType.Modified or ChangeType.Inserted or ChangeType.Deleted);
-
-		if (mutatedCount == 0)
-			return string.Empty;
-
-		var actualLineLength = actual.Split('\n').Length;
-		if (mutatedCount >= actualLineLength)
-			return $"Mutations {mutatedCount} on all {actualLineLength} showing actual: \n\n{actual}";
-
-		return string.Join(
-			'\n',
-			lines.Select(
-				l =>
-					l.Type switch
-					{
-						ChangeType.Deleted => "- " + l.Text,
-						ChangeType.Modified or ChangeType.Inserted => "+ " + l.Text,
-						_ => "  " + l.Text
-					}
-			)
-		);
-	}
-
-	// ────────────────────────────────────────────────────────────────────────────────
 	// HTML comparison on Nullean.Snapshots.Html
 	// ────────────────────────────────────────────────────────────────────────────────
 
@@ -80,19 +41,21 @@ internal static class HtmlAssertions
 	/// </summary>
 	private static HtmlSnapshotOptions Options => DocsHtml.Section();
 
-	private static string InSection(string fragment) => $"<section id=\"elastic-docs-v3\">{fragment}</section>";
-
 	// ────────────────────────────────────────────────────────────────────────────────
 	// Per-file assertions (called from MarkdownResultTask / Scenario)
 	// ────────────────────────────────────────────────────────────────────────────────
 
 	[DebuggerStepThrough]
-	internal static void ToHtml([LanguageInjection("html")] string? expected, MarkdownResult actual, CallSite site) =>
-		InlineSnapshots.Html(actual.Html, expected, nameof(MarkdownResultTask.ToHtml), site);
+	internal static void ToHtmlSnapshot(MarkdownResult actual, string? name, string file, string member, int line) =>
+		actual.Html.Should().MatchHtmlSnapshot(Options, name, null, string.Empty, file, member, line);
 
 	[DebuggerStepThrough]
-	internal static void ContainsHtml([LanguageInjection("html")] string expected, MarkdownResult actual) =>
-		actual.Html.Should().ContainHtml(InSection(expected), Options);
+	internal static void ConvertsToHtmlSnapshot(GeneratorResults results, string? name, string file, string member, int line) =>
+		ToHtmlSnapshot(FindIndexMd(results), name, file, member, line);
+
+	[DebuggerStepThrough]
+	internal static void ToHtml([LanguageInjection("html")] string? expected, MarkdownResult actual, CallSite site) =>
+		InlineSnapshots.Html(actual.Html, expected, nameof(MarkdownResultTask.ToHtml), site);
 
 	[DebuggerStepThrough]
 	internal static void ContainsRawHtml(string expected, MarkdownResult actual)
@@ -139,10 +102,6 @@ But it was found in:
 	[DebuggerStepThrough]
 	internal static void ConvertsToHtml([LanguageInjection("html")] string? expected, GeneratorResults results, CallSite site) =>
 		InlineSnapshots.Html(FindIndexMd(results).Html, expected, nameof(Scenario.ConvertsToHtml), site);
-
-	[DebuggerStepThrough]
-	internal static void ConvertsToContainingHtml([LanguageInjection("html")] string expected, GeneratorResults results) =>
-		ContainsHtml(expected, FindIndexMd(results));
 
 	[DebuggerStepThrough]
 	internal static void ConvertsToContainingRawHtml(string expected, GeneratorResults results) =>

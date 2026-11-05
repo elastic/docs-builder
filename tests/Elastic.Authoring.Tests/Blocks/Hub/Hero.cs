@@ -12,11 +12,19 @@ public class HeroWithTitleOnly : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("renders the title as an h1")]
-	public async Task RendersTitleAsH1() => await Docs.ConvertsToContainingHtml("""<h1>Elasticsearch documentation hub</h1>""");
-
-	[Test, DisplayName("renders no eyebrow link above the title")]
-	public async Task RendersNoEyebrow() => await Docs.DoesNotConvertToContainingHtml("hub-hero-eyebrow");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<section class="hub-hero">
+			<div class="hub-hero-inner">
+				<div class="hub-hero-top">
+					<h1>Elasticsearch documentation hub</h1>
+				</div>
+			</div>
+		</section>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -31,8 +39,8 @@ public class HeroWithoutATitle : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors")]
-	public async Task Errors() => await Docs.HasError("{hero} requires a `:title:` option.");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() => await Docs.HasDiagnostics("error {repo}/docs/index.md:2 {hero} requires a `:title:` option.");
 }
 
 public class HeroWithADescription : MarkdownTest
@@ -45,8 +53,22 @@ public class HeroWithADescription : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("renders inline markup in the description")]
-	public async Task RendersInlineMarkup() => await Docs.ConvertsToContainingHtml("""<strong>Elasticsearch</strong>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<section class="hub-hero">
+			<div class="hub-hero-inner">
+				<div class="hub-hero-top">
+					<h1>Kibana documentation hub</h1>
+				</div>
+				<p class="hub-hero-desc">The UI for the
+					<strong>Elasticsearch</strong>
+					platform.</p>
+			</div>
+		</section>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -61,9 +83,20 @@ public class HeroWithAnUnknownIconKey : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("falls back to a letter chip")]
-	public async Task FallsBackToLetterChip() =>
-		await Docs.ConvertsToContainingHtml("""<span class="hub-hero-icon" aria-hidden="true">N</span>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<section class="hub-hero">
+			<div class="hub-hero-inner">
+				<div class="hub-hero-top">
+					<span class="hub-hero-icon" aria-hidden="true">N</span>
+					<h1>Something else</h1>
+				</div>
+			</div>
+		</section>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -81,11 +114,10 @@ public class HeroWithAnchorActions : MarkdownTest
 		""";
 
 	// Actions render as buttons, and no button on the site carries an arrow, not even
-	// an anchor action that jumps within the page. The assertion starts at the section,
-	// because the pretty-printer only matches from the outermost element of the output.
-	[Test, DisplayName("renders both actions as buttons without an arrow")]
-	public async Task RendersBothActionsAsButtons() =>
-		await Docs.ConvertsToContainingHtml(
+	// an anchor action that jumps within the page.
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
@@ -123,13 +155,11 @@ public class HeroWithAnExternalAction : MarkdownTest
 		:::
 		""";
 
-	// External links follow the same rules as inline links: they open in a new tab. The
-	// assertion starts at the section, because the pretty-printer only matches from the
-	// outermost element of the directive output. It also strips `preload`, so the absence
-	// of preloading on an external action cannot be asserted here.
-	[Test, DisplayName("opens in a new tab")]
-	public async Task OpensInANewTab() =>
-		await Docs.ConvertsToContainingHtml(
+	// External links follow the same rules as inline links: they open in a new tab. The snapshot
+	// strips `preload`, so the absence of preloading on an external action cannot be asserted here.
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
@@ -162,9 +192,9 @@ public class HeroWithAnInternalAction : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("strips the markdown extension and does not open a new tab")]
-	public async Task StripsExtensionAndNoNewTab() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
@@ -197,8 +227,11 @@ public class HeroWithARelativeActionUrl : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("rejects a relative path")]
-	public async Task RejectsRelativePath() => await Docs.HasError("must be an absolute path starting with `/`");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 Directive link `get-started.md` must be an absolute path starting with `/`, a cross-link scheme (for example `kibana://`), or an external URL."
+		);
 }
 
 public class HeroWithAMalformedAction : MarkdownTest
@@ -211,8 +244,11 @@ public class HeroWithAMalformedAction : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors")]
-	public async Task Errors() => await Docs.HasError("must be a markdown link");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 {hero} action `Get started` must be a markdown link, for example `[Get started](#get-started)`."
+		);
 }
 
 public class HeroWithACrossLinkAction : MarkdownTest
@@ -226,12 +262,11 @@ public class HeroWithACrossLinkAction : MarkdownTest
 		""";
 
 	// A cross-link resolves to a full URL but still points at documentation this site serves,
-	// so it must not open in a new tab. Inline links make the same distinction. The assertion
-	// snapshots the section rather than looking for target="_blank" anywhere on the page,
-	// because site chrome carries that attribute too.
-	[Test, DisplayName("does not open in a new tab")]
-	public async Task DoesNotOpenInNewTab() =>
-		await Docs.ConvertsToContainingHtml(
+	// so it must not open in a new tab. Inline links make the same distinction. The snapshot covers
+	// the section only, because site chrome carries target="_blank" too.
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
@@ -268,8 +303,14 @@ public class HubLayoutWithoutAHero : DocumentTest
 		""";
 
 	// The hub layout removes the page H1, so {hero} is the only thing that can title the page.
-	[Test, DisplayName("errors")]
-	public async Task Errors() => await Docs.HasError("A page with `layout: hub` requires a {hero} directive.");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"""
+		error {repo}/docs/index.md A page with `layout: hub` requires a {hero} directive. Without it the page renders without a title.
+		warning {repo}/docs/index.md Document has no title, using file name as title.
+		"""
+		);
 }
 
 public class HubLayoutWithAHero : DocumentTest

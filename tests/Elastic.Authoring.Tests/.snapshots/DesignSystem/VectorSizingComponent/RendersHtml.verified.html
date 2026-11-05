@@ -1,0 +1,141 @@
+<section class="calc" data-calc="" hidden="">
+	<div class="calc__form">
+		<h3 class="calc__title">Vectors</h3>
+		<div class="field">
+			<label class="field__label" for="vector-sizing-vectors">Number of vectors</label>
+			<input class="input" id="vector-sizing-vectors" type="text" inputmode="numeric" list="vector-sizing-vector-presets" value="1,000,000" placeholder="e.g. 1,000,000" autocomplete="off" data-calc-vectors="" aria-describedby="vector-sizing-vectors-tip">
+			<datalist id="vector-sizing-vector-presets">
+				<option value="1,000"></option>
+				<option value="10,000"></option>
+				<option value="100,000"></option>
+				<option value="1,000,000"></option>
+				<option value="10,000,000"></option>
+				<option value="50,000,000"></option>
+			</datalist>
+			<p class="field__hint" id="vector-sizing-vectors-tip">The total number of vectors you plan to store in this index, not the number of documents. A single document can produce several vectors, such as one embedding for each product image and one for the description.</p>
+		</div>
+		<div class="field">
+			<label class="field__label" for="vector-sizing-dimensions">Dimensions</label>
+			<input class="input" id="vector-sizing-dimensions" type="text" inputmode="numeric" list="vector-sizing-dimension-presets" value="768" placeholder="e.g. 768" autocomplete="off" data-calc-dimensions="" aria-describedby="vector-sizing-dimensions-tip">
+			<datalist id="vector-sizing-dimension-presets">
+				<option value="128"></option>
+				<option value="256"></option>
+				<option value="384"></option>
+				<option value="512"></option>
+				<option value="768"></option>
+				<option value="1024"></option>
+				<option value="1536"></option>
+				<option value="2048"></option>
+				<option value="3072"></option>
+				<option value="4096"></option>
+			</datalist>
+			<p class="field__hint" id="vector-sizing-dimensions-tip">The number of values in each vector, set by your embedding model.</p>
+		</div>
+		<details class="calc__advanced">
+			<summary class="calc__advanced-summary">Advanced settings</summary>
+			<div class="calc__advanced-body">
+				<div class="field">
+					<label class="field__label" for="vector-sizing-element">Element type</label>
+					<div class="select">
+						<select class="input select__control" id="vector-sizing-element" data-calc-element="" aria-describedby="vector-sizing-element-tip">
+							<option value="float" selected="">float32</option>
+							<option value="bfloat16">bfloat16</option>
+							<option value="byte">int8</option>
+							<option value="bit">bit</option>
+						</select>
+						<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z" clip-rule="evenodd"></path>
+						</svg>
+					</div>
+					<p class="field__hint" id="vector-sizing-element-tip">The numeric format used to store each value in a vector. Use float32 in most cases, since Elasticsearch quantizes float vectors by default to reduce memory.</p>
+				</div>
+				<div class="field">
+					<label class="field__label" for="vector-sizing-index">Index structure</label>
+					<div class="select">
+						<select class="input select__control" id="vector-sizing-index" data-calc-index="" aria-describedby="vector-sizing-index-tip vector-sizing-index-note">
+							<option value="hnsw" selected="">HNSW</option>
+							<option value="flat">Flat (brute-force)</option>
+							<option value="disk_bbq">DiskBBQ</option>
+						</select>
+						<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z" clip-rule="evenodd"></path>
+						</svg>
+					</div>
+					<p class="field__hint" id="vector-sizing-index-tip">How vectors are indexed, which drives memory use and search speed. HNSW keeps a graph in memory for fast approximate search. Flat compares every vector for exact results, best at small scale. DiskBBQ reads compressed clusters from disk and needs far less memory than HNSW.</p>
+					<p class="field__hint" id="vector-sizing-index-note" data-calc-index-note=""></p>
+				</div>
+				<div class="field" data-calc-for="disk_bbq" hidden="">
+					<label class="field__label" for="vector-sizing-offheap">Vector data cached in RAM (%)</label>
+					<div class="calc__range">
+						<input class="calc__slider" type="range" id="vector-sizing-offheap" min="0" max="10" step="1" value="10" data-calc-offheap="">
+						<input class="input calc__number" type="number" min="0" max="10" step="1" value="10" aria-label="Vector data cached in RAM (%)" data-calc-offheap-number="">
+					</div>
+					<p class="field__hint">The percentage of clustered vector data, called posting lists, held in off-heap RAM. Supported values are 0 to 10 percent. Lower values save memory. Higher values raise query throughput and lower latency. This estimate assumes all centroids stay in RAM, since performance drops sharply otherwise.</p>
+				</div>
+				<div class="field" data-calc-for="hnsw">
+					<label class="field__label" for="vector-sizing-m">Graph connections (m)</label>
+					<div class="calc__range">
+						<input class="calc__slider" type="range" id="vector-sizing-m" min="2" max="512" step="2" value="16" data-calc-m="">
+						<input class="input calc__number" type="number" min="2" max="512" step="2" value="16" aria-label="Graph connections (m)" data-calc-m-number="">
+					</div>
+					<p class="field__hint">How many neighbors each node connects to in the HNSW graph. Higher values improve recall, but increase memory and build time.</p>
+				</div>
+				<div class="field" data-calc-for="disk_bbq" hidden="">
+					<label class="field__label" for="vector-sizing-cluster">Vectors per cluster</label>
+					<input class="input" type="number" id="vector-sizing-cluster" min="1" max="1000000" step="1" value="384" data-calc-cluster="">
+					<p class="field__hint">The target number of vectors per cluster. Smaller values create more centroids in RAM and usually improve recall at the cost of performance. The default is 384.</p>
+				</div>
+				<div class="calc__pair">
+					<div class="field" data-calc-quantization="">
+						<label class="field__label" for="vector-sizing-quantization">Quantization</label>
+						<div class="select">
+							<select class="input select__control" id="vector-sizing-quantization" data-calc-quantization-select=""></select>
+							<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+								<path fill-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z" clip-rule="evenodd"></path>
+							</svg>
+						</div>
+						<p class="field__hint">Compresses vectors to reduce memory, at some cost to accuracy. Applies to float and bfloat16 vectors only. Available options depend on your index structure.</p>
+					</div>
+					<div class="field">
+						<label class="field__label" for="vector-sizing-replicas">Replica shards</label>
+						<input class="input" type="number" id="vector-sizing-replicas" min="0" max="99" step="1" value="0" data-calc-replicas="">
+						<p class="field__hint">The number of replica copies, not counting the primary. Each replica holds a full copy of the vector data, so replicas multiply storage and memory. The default is 0.</p>
+					</div>
+				</div>
+			</div>
+		</details>
+		<div class="calc__warning" role="alert" data-calc-warning="" hidden="">
+			<p class="calc__warning-text" data-calc-warning-text=""></p>
+			<a class="link" data-calc-warning-link="" hidden="">See documentation</a>
+		</div>
+	</div>
+	<div class="calc__results" aria-live="polite" data-calc-results="">
+		<p class="calc__label" data-calc-total-label="">Cluster total:</p>
+		<div class="calc__hero">
+			<div class="calc__hero-column">
+				<span class="calc__hero-value" data-calc-disk-value="">0</span>
+				<span class="calc__hero-unit" data-calc-disk-unit="">MiB Disk</span>
+			</div>
+			<div class="calc__hero-column">
+				<span class="calc__hero-value" data-calc-ram-value="">0</span>
+				<span class="calc__hero-unit" data-calc-ram-unit="">MiB RAM</span>
+			</div>
+		</div>
+		<dl class="calc__details">
+			<dt>Index options type:</dt>
+			<dd data-calc-type="">-</dd>
+			<dt>Quantization:</dt>
+			<dd data-calc-quantization-label="">None</dd>
+			<dt>Disk per replica:</dt>
+			<dd data-calc-disk="">0 MiB</dd>
+			<dt>RAM per replica:</dt>
+			<dd data-calc-ram="">0 MiB</dd>
+		</dl>
+		<p class="calc__ratio" data-calc-ratio="" hidden="" title="This compares how much the field stores on disk with how much RAM it wants in the filesystem cache for fast search. A high number, typical of DiskBBQ, means most of the index can stay on disk. It is not a node type, not Java heap, and not a serverless capacity number."></p>
+		<p class="calc__note">Sizes use binary units (1 GiB = 1,024 MiB).</p>
+		<div class="calc__disclaimer" data-calc-disclaimer="" hidden="">
+			<p>Does not apply to Elastic Cloud Serverless.</p>
+			<p>These estimates are disk and RAM per copy for self-managed Elasticsearch and Elastic Cloud Hosted. This RAM is for fast search, not the Java heap, and is not a full node size. Actual needs still depend on data shape, indexing settings, and query patterns.</p>
+		</div>
+	</div>
+</section>
