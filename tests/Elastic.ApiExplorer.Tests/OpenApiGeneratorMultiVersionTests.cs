@@ -365,6 +365,27 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task FloatingSection_WithoutAMainDocument_IsHidden()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(("9.4", SpecDocument("Elasticsearch 9")), ("8.19", SpecDocument("Elasticsearch 8")));
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(generator);
+		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
+		var root = section!.CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		root.Hidden.Should().BeTrue("no main document renders no page at the unversioned URL");
+	}
+
+	[Test]
 	public void FloatingSection_UnknownKey_IsNotProvided()
 	{
 		var collector = new DiagnosticsCollector([]);

@@ -97,6 +97,7 @@ public class IsolatedBuildService(
 			AvailableExporters = settings.Exporters,
 			UrlPathPrefix = settings.PathPrefix,
 			Force = settings.Force,
+			SkipOpenApi = settings.SkipOpenApi,
 			AllowIndexing = settings.AllowIndexing,
 			CanonicalBaseUrl = settings.CanonicalBaseUri,
 		};

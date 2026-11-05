@@ -73,10 +73,22 @@ internal sealed class ApiFloatingSection(
 			return;
 		}
 
-		var trees = await generator.TreesFor(urlKey, config, ctx).ConfigureAwait(false);
-		if (trees.Navigations.Count == 0)
+		ApiProductTrees trees;
+		try
 		{
-			// the generator has already reported why the spec could not be loaded
+			trees = await generator.TreesFor(urlKey, config, ctx).ConfigureAwait(false);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			context.Collector.EmitGlobalError($"API '{urlKey}' could not be generated: {ex.Message}");
+			_root!.Hidden = true;
+			return;
+		}
+
+		// No main document means no page at the unversioned URL, so the root links nowhere.
+		// The generator has already reported why a spec could not be loaded.
+		if (!trees.Resolved.Documents.Any(d => d.Version.Moniker == "main"))
+		{
 			_root!.Hidden = true;
 			return;
 		}
