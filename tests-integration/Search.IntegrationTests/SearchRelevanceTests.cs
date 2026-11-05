@@ -288,6 +288,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("rrf.min_score", "operation-search", "min_score", "request");
 		yield return ("[].retriever.standard", "operation-msearch", "standard", "request");
 		yield return ("search rrf.min_score", "operation-search", "min_score", "request");
+		// 18,419 field names start with s on the live index, more than the 50 terms a phrase prefix expands to on a plain text field.
+		yield return ("retriever.s", "operation-search", "standard", "request");
+		yield return ("search retriever.sta", "operation-search", "standard", "request");
 	}
 
 	[Test]
