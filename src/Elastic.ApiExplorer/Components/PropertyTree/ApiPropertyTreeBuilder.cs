@@ -535,16 +535,10 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>The variants of a map whose values are a union (<c>field_settings</c>), labelled like a row's own; null for any other value.</summary>
-	private ApiUnionVariants? BuildMapValueVariants(IOpenApiSchema? value, PropertyTreeScope valueScope)
-	{
-		var unionOptions = _analyzer.GetNestedUnionOptions(value);
-		if (valueScope.Depth >= options.MaxDepth || !unionOptions.Any(_analyzer.UnionOptionHasProperties))
-			return null;
-		var keyword = UnionSchemas.TryGet(_analyzer.ResolveSchema(value), out var union, out _) ? union : UnionKeyword.AnyOf;
-		return BuildUnionVariants(unionOptions, valueScope, _analyzer.GetUnionDiscriminator(value)) is { } built
-			? built with { Label = SchemaHelpers.UnionLabel(keyword) }
+	private ApiUnionVariants? BuildMapValueVariants(IOpenApiSchema? value, PropertyTreeScope valueScope) =>
+		valueScope.Depth < options.MaxDepth && _analyzer.GetListedUnion(value) is { } union
+			? BuildLabelledVariants(union.Keyword, union.Options, valueScope, _analyzer.GetUnionDiscriminator(value))
 			: null;
-	}
 
 	/// <summary>The ancestors below a row: these plus the type the row expands, the item or map value type for a collection.</summary>
 	private static IReadOnlySet<string> AugmentAncestors(TypeInfo typeInfo, IReadOnlySet<string>? ancestors)

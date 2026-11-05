@@ -110,11 +110,12 @@ public partial class ApiPropertyTreeBuilder
 						?? new ApiPropertyList([])
 					: null,
 				Variants = nested is { } union && variant.Schema is not null
-					? childBuilder.BuildUnionVariants(
+					? childBuilder.BuildLabelledVariants(
+						union.Keyword,
 						union.Options,
 						variantScope,
 						_analyzer.GetUnionDiscriminator(variant.Schema)
-					) is { } built ? built with { Label = SchemaHelpers.UnionLabel(union.Keyword) } : null
+					)
 					: null,
 				DescriptionHtml = description is null ? HtmlString.Empty : options.RenderMarkdown(description),
 				DescriptionMarkdown = description,
@@ -124,6 +125,20 @@ public partial class ApiPropertyTreeBuilder
 
 		return new ApiUnionVariants { Variants = variants, ContainerId = $"{scope.Prefix}-union-options" };
 	}
+
+	/// <summary>
+	/// The variants of a union listed below a row's, a variant's or a map value's own fields, labelled <c>One of:</c> or
+	/// <c>Any of:</c> so they read apart from those fields.
+	/// </summary>
+	private ApiUnionVariants? BuildLabelledVariants(
+		UnionKeyword? keyword,
+		List<UnionOption> unionOptions,
+		PropertyTreeScope scope,
+		OpenApiDiscriminator? discriminator
+	) =>
+		BuildUnionVariants(unionOptions, scope, discriminator) is { } built
+			? built with { Label = SchemaHelpers.UnionLabel(keyword) }
+			: null;
 
 	/// <summary>
 	/// The union a variant is on top of its own fields, so a chart type lists its DSL and ES|QL forms. An option that refers back

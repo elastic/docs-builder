@@ -60,6 +60,9 @@ public record ApiUnionVariants
 
 	public required string ContainerId { get; init; }
 
+	/// <summary>The fields of each variant, then those of the variants nested inside it.</summary>
+	public IEnumerable<ApiProperty> Rows => Variants.SelectMany(v => (v.Properties?.Items ?? []).Concat(v.Variants?.Rows ?? []));
+
 	/// <summary>"Any of:" or "One of:" above a body-level list that has no property row to carry it.</summary>
 	public string? Label { get; init; }
 }

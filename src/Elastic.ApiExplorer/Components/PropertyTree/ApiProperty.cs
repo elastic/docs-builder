@@ -151,6 +151,17 @@ public record ApiPropertyChildren
 	public ApiPropertyList? Properties { get; init; }
 	public ApiUnionVariants? Variants { get; init; }
 	public DictionaryChildDisplay? Dictionary { get; init; }
+
+	/// <summary>
+	/// Every row nested directly under the property, in page order: its fields, its map values' fields, then the fields of each
+	/// listed variant, nested variants included. Walkers that visit rows (the search index, row counts) read this, so a new
+	/// kind of child needs one change here.
+	/// </summary>
+	public IEnumerable<ApiProperty> NestedRows =>
+		(Properties?.Items ?? [])
+			.Concat(Dictionary?.Properties.Items ?? [])
+			.Concat(Dictionary?.Variants?.Rows ?? [])
+			.Concat(Variants?.Rows ?? []);
 }
 
 /// <summary>
