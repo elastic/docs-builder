@@ -66,7 +66,7 @@ public static class SearchQueryBuilder
 		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])
 	);
 
-	private static readonly Query HiddenDocuments = new TermQuery { Field = QueryFieldNames.Hidden, Value = true };
+	internal static readonly Query HiddenDocuments = new TermQuery { Field = QueryFieldNames.Hidden, Value = true };
 
 	private static readonly Query UnscopedDocumentFilter = new BoolQuery { MustNot = [RootUrlPlaceholders, HiddenDocuments] };
 

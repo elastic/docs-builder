@@ -31,12 +31,10 @@ public class ApiTreeExportUrlTests
 			operation.Summary = "Search the v8 way";
 		(string Moniker, OpenApiDocument Spec)[] trees = [("main", await Fixture()), ("9", await Fixture()), ("8", eight)];
 		var pages = trees.ToDictionary(t => t.Moniker, t => PageUrls(generator, t.Moniker, t.Spec));
-		var exporter = new OpenApiDocumentExporter(
-			TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 5, patch: 6)
-		);
+		var exporter = TestHelpers.CurrentStackExporter();
 
 		var docs = ApiTreeCollapse.Collapse(
-			trees.SelectMany(t => exporter.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", t.Moniker, t.Spec))),
+			trees.SelectMany(t => exporter.ConvertToDocuments(TestHelpers.EsTree(t.Moniker, t.Spec))),
 			ApiVersions.DefaultTree(trees.Select(t => t.Moniker))!
 		).ToList();
 

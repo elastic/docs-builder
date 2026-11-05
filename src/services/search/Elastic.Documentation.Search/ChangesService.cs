@@ -111,7 +111,7 @@ public partial class ChangesService(
 		new BoolQuery
 		{
 			Filter = [new DateRangeQuery(QueryFieldNames.ContentLastUpdated) { Gt = since.ToString("O") }],
-			MustNot = [new TermQuery { Field = QueryFieldNames.Hidden, Value = true }]
+			MustNot = [SearchQueryBuilder.HiddenDocuments]
 		};
 
 	private static bool IsExpiredPit(EsSearchResponse response) =>
