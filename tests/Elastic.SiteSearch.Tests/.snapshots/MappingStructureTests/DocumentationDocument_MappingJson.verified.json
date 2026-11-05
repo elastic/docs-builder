@@ -3,6 +3,21 @@
     "api": {
       "type": "object",
       "properties": {
+        "key": {
+          "type": "keyword"
+        },
+        "trees": {
+          "type": "object",
+          "properties": {
+            "tree": {
+              "type": "keyword"
+            },
+            "root": {
+              "type": "keyword",
+              "index": false
+            }
+          }
+        },
         "properties": {
           "type": "nested",
           "properties": {
