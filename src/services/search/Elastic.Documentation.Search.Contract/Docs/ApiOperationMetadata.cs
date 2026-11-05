@@ -25,7 +25,7 @@ public record ApiOperationMetadata
 	/// <summary>
 	/// Lowercased endpoint paths without the leading <c>/</c>, with and without leading and trailing
 	/// parameters, each parameter stored as <c>*</c>, e.g. <c>*/_search</c> and <c>_search</c>.
-	/// Plain keyword so the typed term matches exactly.
+	/// Plain keyword so the typed term matches exactly. The root route is stored as <c>/</c>.
 	/// </summary>
 	[Keyword]
 	[JsonPropertyName("endpoints")]
