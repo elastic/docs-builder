@@ -354,11 +354,7 @@ public class StreamTransformerCommonBehaviorTests
 	/// </summary>
 	[Test]
 	[MethodDataSource(nameof(StreamTransformerTestCases))]
-	public async Task TransformAsyncWhenIsNewConversationEmitsConversationStartEvent(
-		string transformerName,
-		IStreamTransformer transformer,
-		string sseData
-	)
+	public async Task NewConversationEmitsConversationStart(string transformerName, IStreamTransformer transformer, string sseData)
 	{
 		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
 		var testConversationId = Guid.NewGuid().ToString();
