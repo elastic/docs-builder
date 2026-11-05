@@ -1,3 +1,4 @@
+import { apiTreeSearchParams } from '../../api-tree'
 import { config } from '../../config'
 import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
@@ -28,7 +29,7 @@ import {
     useQueryClient,
 } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useMemo } from 'react'
 import * as z from 'zod'
 
 const SearchResultItemParent = z.object({
@@ -89,6 +90,10 @@ export const useModalSearchQuery = () => {
         !awaitingNewInput &&
         true
 
+    // htmx swaps pages without remounting, so the scope is read on every render and shared by key and request.
+    const { pathname } = location
+    const scope = useMemo(() => apiTreeSearchParams(pathname), [pathname])
+
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'modal-search',
@@ -96,6 +101,7 @@ export const useModalSearchQuery = () => {
                 buildType: config.buildType,
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
+                scope,
             },
         ],
         queryFn: async ({ signal }) => {
@@ -133,6 +139,7 @@ export const useModalSearchQuery = () => {
                 const params = new URLSearchParams({
                     q: debouncedSearchTerm,
                     page: pageNumber.toString(),
+                    ...scope,
                 })
 
                 const response = await fetch(
@@ -187,10 +194,11 @@ export const useModalSearchQuery = () => {
                     buildType: config.buildType,
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
+                    scope,
                 },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber])
+    }, [queryClient, debouncedSearchTerm, pageNumber, scope])
 
     useEffect(() => {
         if (query.error && isApiError(query.error)) {

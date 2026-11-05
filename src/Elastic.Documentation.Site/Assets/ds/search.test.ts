@@ -3,6 +3,7 @@ import {
     groupResults,
     initSearch,
     bindSearchShortcut,
+    querySearch,
 } from './search'
 import type { Mock } from 'vitest'
 
@@ -239,5 +240,47 @@ describe('groupResults', () => {
             'Results',
         ])
         expect(groups[0].results.map((r) => r.title)).toEqual(['a', 'c'])
+    })
+})
+
+describe('querySearch scope', () => {
+    let fetchMock: Mock
+
+    beforeEach(() => {
+        fetchMock = vi.fn(async () => ({
+            ok: true,
+            json: async () => results,
+        }))
+        global.fetch = fetchMock as unknown as typeof fetch
+    })
+
+    const urlOn = async (path: string) => {
+        history.pushState(null, '', path)
+        await querySearch('alpha')
+        return fetchMock.mock.calls[0][0]
+    }
+
+    it('sends the api key and version tree on a versioned API path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/v8/operation/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=8'
+        )
+    })
+
+    it('sends the main tree on a main path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/main/group/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=main'
+        )
+    })
+
+    it('sends no scope on the unversioned API path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/operation/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1'
+        )
+    })
+
+    it('sends no scope on a markdown page', async () => {
+        expect(await urlOn('/docs/get-started')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1'
+        )
     })
 })

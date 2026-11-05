@@ -1,5 +1,6 @@
 // The search dialog. A <dialog> gives focus handling, Escape and the backdrop; this module opens it, queries the right backend
 // and draws results from a server-provided <template>. Hooks are data attributes, never styling classes.
+import { apiTreeSearchParams } from '../api-tree'
 import { config } from '../config'
 import { searchPagefind } from '../web-components/ModalSearch/pagefind'
 
@@ -30,7 +31,11 @@ export async function querySearch(
 ): Promise<SearchResult[]> {
     if (config.buildType === 'isolated') return searchPagefind(term)
 
-    const params = new URLSearchParams({ q: term, page: '1' })
+    const params = new URLSearchParams({
+        q: term,
+        page: '1',
+        ...apiTreeSearchParams(location.pathname),
+    })
     const response = await fetch(
         `${config.apiBasePath}/v1/navigation-search?${params}`,
         { signal }

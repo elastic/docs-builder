@@ -1,3 +1,4 @@
+import { apiTreeSearchParams } from '../../api-tree'
 import { config } from '../../config'
 import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
@@ -28,7 +29,7 @@ import {
     useQueryClient,
 } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useMemo } from 'react'
 import * as z from 'zod'
 
 const SearchResultItemParent = z.object({
@@ -92,6 +93,10 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
         !isCooldownActive &&
         !awaitingNewInput
 
+    // htmx swaps pages without remounting, so the scope is read on every render and shared by key and request.
+    const { pathname } = location
+    const scope = useMemo(() => apiTreeSearchParams(pathname), [pathname])
+
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'navigation-search',
@@ -99,6 +104,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
                 typeFilter,
+                scope,
             },
         ],
         queryFn: async ({ signal }) => {
@@ -121,6 +127,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 const params = new URLSearchParams({
                     q: debouncedSearchTerm,
                     page: pageNumber.toString(),
+                    ...scope,
                 })
 
                 // Only add type filter if not 'all'
@@ -182,10 +189,11 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
                     typeFilter,
+                    scope,
                 },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter])
+    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter, scope])
 
     // Track errors for observability
     useEffect(() => {
