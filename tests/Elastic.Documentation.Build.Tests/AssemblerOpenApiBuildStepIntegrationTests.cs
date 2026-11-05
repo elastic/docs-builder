@@ -5,7 +5,10 @@
 using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using System.Net;
+using System.Text;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
@@ -22,8 +25,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Elastic.Documentation.Build.Tests;
 
 /// <summary>
-/// End-to-end check that the assembler OpenAPI step can generate HTML from the live version index.
-/// Requires network access to CloudFront.
+/// End-to-end check that the assembler OpenAPI step generates API pages into the assembled output.
+/// The default test serves a small version index and spec from memory. The live variant fetches the real
+/// index and the Elasticsearch spec from CloudFront and renders every version, so it only runs when asked for.
 /// </summary>
 public class AssemblerOpenApiBuildStepIntegrationTests
 {
@@ -36,6 +40,21 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 	[Test]
 	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent(CancellationToken cancellationToken)
+	{
+		using var versionIndexClient = new VersionIndexClient(
+			new Uri("https://specs.example.test/"),
+			new InMemorySpecHandler(),
+			sleep: (_, _) => Task.CompletedTask
+		);
+		await BuildApiPagesAsync(versionIndexClient, cancellationToken);
+	}
+
+	[Test]
+	[Explicit]
+	public async Task BuildAsync_GeneratesApiPagesFromTheLiveVersionIndex(CancellationToken cancellationToken) =>
+		await BuildApiPagesAsync(versionIndexClient: null, cancellationToken);
+
+	private static async Task BuildApiPagesAsync(VersionIndexClient? versionIndexClient, CancellationToken cancellationToken)
 	{
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
@@ -114,7 +133,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			context,
 			assembleSources,
 			siteTopNav: null,
-			cancellationToken
+			cancellationToken,
+			versionIndexClient
 		);
 		stopwatch.Stop();
 
@@ -142,5 +162,48 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "doc", "elasticsearch"))
 			.FirstOrDefault(path => fileSystem.Path.GetFileName(path).StartsWith('v'));
 		versionedLanding.Should().NotBeNull("versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");
+	}
+
+	private sealed class InMemorySpecHandler : HttpMessageHandler
+	{
+		private const string Index = /*lang=json,strict*/
+			"""
+			{
+				"elastic/elasticsearch-specification": {
+					"elasticsearch.json": {
+						"main": { "version": "9.5" },
+						"9.4": { "version": "9.4" }
+					}
+				}
+			}
+			""";
+
+		private const string Spec = /*lang=json,strict*/
+			"""
+			{
+				"openapi": "3.0.3",
+				"info": { "title": "Elasticsearch", "version": "1.0" },
+				"tags": [{ "name": "search" }],
+				"paths": {
+					"/_search": {
+						"get": {
+							"operationId": "search",
+							"summary": "Run a search",
+							"tags": ["search"],
+							"responses": { "200": { "description": "OK" } }
+						}
+					}
+				}
+			}
+			""";
+
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		{
+			var body = request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal) ? Index : Spec;
+			return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(body, Encoding.UTF8, "application/json")
+			});
+		}
 	}
 }
