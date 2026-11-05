@@ -1,0 +1,43 @@
+products:
+  - product: elasticsearch
+    target: 9.2.0
+  - product: kibana
+    target: 9.2.0
+release-date: {today}
+entries:
+  - file:
+      name: 1755268130-elasticsearch.yaml
+      checksum: {sha1}
+    type: feature
+    title: Elasticsearch feature
+    products:
+      - product: elasticsearch
+        versions:
+          - 9.2.0
+    prs:
+      - "https://github.com/elastic/elasticsearch/pull/100"
+  - file:
+      name: 1755268140-kibana.yaml
+      checksum: {sha1}
+    type: feature
+    title: Kibana feature
+    products:
+      - product: kibana
+        versions:
+          - 9.2.0
+    prs:
+      - "https://github.com/elastic/kibana/pull/200"
+  - file:
+      name: 1755268150-multi-product.yaml
+      checksum: {sha1}
+    type: feature
+    title: Multi-product feature
+    products:
+      - product: elasticsearch
+        versions:
+          - 9.2.0
+      - product: kibana
+        versions:
+          - 9.2.0
+    prs:
+      - "https://github.com/elastic/elasticsearch/pull/300"

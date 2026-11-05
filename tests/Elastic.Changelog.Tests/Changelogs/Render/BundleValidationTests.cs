@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -80,12 +82,30 @@ public class BundleValidationTests() : RenderChangelogTestBase()
 
 		// Verify all 3 entries were rendered
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue("output should be rendered");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Feature one");
-		content.Should().Contain("Feature two");
-		content.Should().Contain("Feature three");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* Feature one. [#101](https://github.com/elastic/elastic/pull/101)
+			* Feature two. [#102](https://github.com/elastic/elastic/pull/102)
+
+			### Fixes [elastic-9.2.0-fixes]
+			* Feature three. [#103](https://github.com/elastic/elastic/pull/103)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -128,9 +148,27 @@ public class BundleValidationTests() : RenderChangelogTestBase()
 		Collector.Warnings.Should().Be(0, "provenance checksums are not verified at render time");
 
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Feature two");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* Feature one. [#101](https://github.com/elastic/elastic/pull/101)
+			* Feature two. [#102](https://github.com/elastic/elastic/pull/102)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -169,9 +207,27 @@ public class BundleValidationTests() : RenderChangelogTestBase()
 		Collector.Warnings.Should().Be(0);
 
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Resolved amend feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* Feature one. [#101](https://github.com/elastic/elastic/pull/101)
+			* Resolved amend feature. [#200](https://github.com/elastic/elastic/pull/200)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -207,10 +263,26 @@ public class BundleValidationTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Feature one");
-		content.Should().NotContain("Feature two");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* Feature one. [#101](https://github.com/elastic/elastic/pull/101)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	private string CreateBundleDir()
