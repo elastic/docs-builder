@@ -126,7 +126,6 @@
   </ItemGroup>
   <!-- Test packages -->
   <ItemGroup>
-    <PackageVersion Include="AngleSharp.Diffing" Version="1.1.1" />
     <PackageVersion Include="Nullean.Snapshots" Version="0.4.0" />
     <PackageVersion Include="Nullean.Snapshots.AwesomeAssertions" Version="0.4.0" />
     <PackageVersion Include="Nullean.Snapshots.Html" Version="0.4.0" />

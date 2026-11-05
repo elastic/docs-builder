@@ -164,7 +164,7 @@ public class GetStartedWithFourSteps : MarkdownTest
 		await Docs.ConvertsToContainingRawHtml("""<li class="hub-get-started-box is-fork">""");
 
 	[Test, DisplayName("marks exactly two options as a fork")]
-	public async Task MarksExactlyTwoOptionsAsAFork() => await Docs.ConvertsToContainingHtml("""is-fork""");
+	public async Task MarksExactlyTwoOptionsAsAFork() => await Docs.ConvertsToContainingRawHtml("""is-fork""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
