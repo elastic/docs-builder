@@ -134,4 +134,13 @@ public class SnapshotHelpersTests
 		};
 		diagnostics.ToSnapshotText(firstLineOnly: true).Should().MatchInlineSnapshot("error index.md:3 registry could not be read");
 	}
+
+	[Test]
+	public void PathScrubber_RootAfterDiagnosticsSnapshotNormalisedIt_StillReadsAsRepo()
+	{
+		// what a Windows run writes for D:\a\docs-builder\docs-builder\docs\index.md once the drive letter and backslashes are gone
+		var scrub = SnapshotScrubbing.Under(@"D:\a\docs-builder\docs-builder", "{repo}");
+		scrub("error /a/docs-builder/docs-builder/docs/index.md:3 bad").Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 bad");
+		scrub(@"error D:\a\docs-builder\docs-builder\docs\index.md:3 bad").Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 bad");
+	}
 }
