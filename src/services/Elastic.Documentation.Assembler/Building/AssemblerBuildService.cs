@@ -155,8 +155,12 @@ public class AssemblerBuildService(
 		)
 			return false;
 
-		// The docsets fill their API sections when they resolve their trees, so the generators must exist by then.
+		// AssembleAsync has already resolved the docsets' trees, before any generator existed, so their API sections
+		// stayed empty. Attach the generators, then resolve the floating sections again.
 		_ = apiSections.EnsureGenerators(logFactory, assembleContext, navigation.TopNav);
+		await Task.WhenAll(
+			documentationSets.Select(n => n.FloatingSections.Select(section => section.ResolveAsync(ctx))).SelectMany(t => t)
+		);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);

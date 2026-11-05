@@ -55,6 +55,7 @@ internal sealed class ApiFloatingSection(
 ) : IFloatingSection
 {
 	private ApiFloatingRoot? _root;
+	private bool _createdHidden;
 	private ApiProductTrees? _trees;
 
 	public string Kind => "api";
@@ -70,7 +71,7 @@ internal sealed class ApiFloatingSection(
 			config.Product.DisplayName ?? urlKey,
 			parent
 		)
-		{ Hidden = hidden };
+		{ Hidden = _createdHidden = hidden };
 
 	public async Task ResolveAsync(Cancel ctx)
 	{
@@ -83,6 +84,9 @@ internal sealed class ApiFloatingSection(
 			_root.Hidden = true;
 			return;
 		}
+
+		// A resolve before the generator existed hid the root; a later resolve starts from how the root was created.
+		_root.Hidden = _createdHidden;
 
 		ApiProductTrees trees;
 		try
