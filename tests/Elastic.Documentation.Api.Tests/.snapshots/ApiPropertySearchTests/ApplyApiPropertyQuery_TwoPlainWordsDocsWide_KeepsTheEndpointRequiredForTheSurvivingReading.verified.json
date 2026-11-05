@@ -1,0 +1,92 @@
+{
+  "bool": {
+    "minimum_should_match": 1,
+    "should": [
+      {
+        "match_none": {}
+      },
+      {
+        "bool": {
+          "must": [
+            {
+              "nested": {
+                "ignore_unmapped": true,
+                "inner_hits": {
+                  "name": "api_properties",
+                  "size": 5,
+                  "_source": {
+                    "includes": "api.properties.*"
+                  }
+                },
+                "path": "api.properties",
+                "query": {
+                  "dis_max": {
+                    "queries": [
+                      {
+                        "constant_score": {
+                          "boost": 1,
+                          "filter": {
+                            "term": {
+                              "api.properties.name": {
+                                "case_insensitive": true,
+                                "value": "track_total_hits"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "score_mode": "max"
+              }
+            },
+            {
+              "dis_max": {
+                "queries": [
+                  {
+                    "dis_max": {
+                      "queries": [
+                        {
+                          "constant_score": {
+                            "boost": 5,
+                            "filter": {
+                              "terms": {
+                                "api.endpoints": [
+                                  "bulk"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "dis_max": {
+                      "queries": [
+                        {
+                          "constant_score": {
+                            "boost": 5,
+                            "filter": {
+                              "terms": {
+                                "api.endpoints": [
+                                  "_bulk"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "_name": "api_properties"
+        }
+      }
+    ]
+  }
+}

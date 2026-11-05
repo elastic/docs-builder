@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using System.Text.Json;
-using System.Xml.Linq;
 using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -28,23 +28,27 @@ public class SitemapTests
 		// Act
 		SitemapBuilder.Generate(entries, fs, outputDir);
 
-		// Assert
-		var sitemapPath = fs.Path.Join("/output", "sitemap.xml");
-		fs.File.Exists(sitemapPath).Should().BeTrue();
-
-		var content = fs.File.ReadAllText(sitemapPath);
-		var doc = XDocument.Parse(content);
-		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
-
-		var urls = doc.Descendants(ns + "url").ToList();
-		urls.Should().HaveCount(2);
-
-		// Entries are ordered by URL
-		urls[0].Element(ns + "loc")!.Value.Should().Be("https://www.elastic.co/docs/elasticsearch/getting-started");
-		urls[0].Element(ns + "lastmod")!.Value.Should().Contain("2025-06-15");
-
-		urls[1].Element(ns + "loc")!.Value.Should().Be("https://www.elastic.co/docs/kibana/dashboard");
-		urls[1].Element(ns + "lastmod")!.Value.Should().Contain("2025-07-20");
+		// Assert - entries are ordered by URL, lastmod comes from the entry
+		fs.File.Exists(fs.Path.Join("/output", "sitemap.xml")).Should().BeTrue();
+		fs
+			.File
+			.ReadAllText(fs.Path.Join("/output", "sitemap.xml"))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+			<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+			  <url>
+			    <loc>https://www.elastic.co/docs/elasticsearch/getting-started</loc>
+			    <lastmod>2025-06-15T10:30:00.0000000+00:00</lastmod>
+			  </url>
+			  <url>
+			    <loc>https://www.elastic.co/docs/kibana/dashboard</loc>
+			    <lastmod>2025-07-20T14:00:00.0000000+00:00</lastmod>
+			  </url>
+			</urlset>
+			"""
+			);
 	}
 
 	[Test]
@@ -71,19 +75,36 @@ public class SitemapTests
 		var outputDir = fs.DirectoryInfo.New("/output");
 		fs.Directory.CreateDirectory("/output");
 
-		var now = DateTimeOffset.UtcNow;
+		var now = new DateTimeOffset(2025, 6, 15, 10, 30, 0, TimeSpan.Zero);
 		var entries = new Dictionary<string, DateTimeOffset> { ["/docs/z-last"] = now, ["/docs/a-first"] = now, ["/docs/m-middle"] = now, };
 
 		// Act
 		SitemapBuilder.Generate(entries, fs, outputDir);
 
 		// Assert
-		var content = fs.File.ReadAllText(fs.Path.Join("/output", "sitemap.xml"));
-		var doc = XDocument.Parse(content);
-		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
-
-		var locs = doc.Descendants(ns + "loc").Select(e => e.Value).ToList();
-		locs.Should().BeInAscendingOrder();
+		fs
+			.File
+			.ReadAllText(fs.Path.Join("/output", "sitemap.xml"))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+			<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+			  <url>
+			    <loc>https://www.elastic.co/docs/a-first</loc>
+			    <lastmod>2025-06-15T10:30:00.0000000+00:00</lastmod>
+			  </url>
+			  <url>
+			    <loc>https://www.elastic.co/docs/m-middle</loc>
+			    <lastmod>2025-06-15T10:30:00.0000000+00:00</lastmod>
+			  </url>
+			  <url>
+			    <loc>https://www.elastic.co/docs/z-last</loc>
+			    <lastmod>2025-06-15T10:30:00.0000000+00:00</lastmod>
+			  </url>
+			</urlset>
+			"""
+			);
 	}
 
 	[Test]
@@ -142,7 +163,7 @@ public class SitemapTests
 		var fs = new MockFileSystem();
 		var outputDir = fs.DirectoryInfo.New("/output");
 
-		var now = DateTimeOffset.UtcNow;
+		var now = new DateTimeOffset(2025, 6, 15, 10, 30, 0, TimeSpan.Zero);
 		var entries = new Dictionary<string, DateTimeOffset>
 		{
 			["/docs/elasticsearch/getting-started"] = now,
@@ -154,16 +175,26 @@ public class SitemapTests
 		// Act
 		SitemapBuilder.Generate(entries, fs, outputDir);
 
-		// Assert
-		var content = fs.File.ReadAllText(fs.Path.Join("/output", "sitemap.xml"));
-		var doc = XDocument.Parse(content);
-		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
-
-		var locs = doc.Descendants(ns + "loc").Select(e => e.Value).ToList();
-		locs.Should().HaveCount(2);
-		locs.Should().NotContain(l => l.Contains("/docs/api/"));
-		locs.Should().Contain("https://www.elastic.co/docs/elasticsearch/getting-started");
-		locs.Should().Contain("https://www.elastic.co/docs/kibana/dashboard");
+		// Assert - the /docs/api/ entries are left out
+		fs
+			.File
+			.ReadAllText(fs.Path.Join("/output", "sitemap.xml"))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+			<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+			  <url>
+			    <loc>https://www.elastic.co/docs/elasticsearch/getting-started</loc>
+			    <lastmod>2025-06-15T10:30:00.0000000+00:00</lastmod>
+			  </url>
+			  <url>
+			    <loc>https://www.elastic.co/docs/kibana/dashboard</loc>
+			    <lastmod>2025-06-15T10:30:00.0000000+00:00</lastmod>
+			  </url>
+			</urlset>
+			"""
+			);
 	}
 
 	[Test]
@@ -173,11 +204,37 @@ public class SitemapTests
 		var json = EsSitemapReader.BuildSearchBody("test-pit-id", null);
 
 		// Assert
-		json.Should().Contain("\"pit\"");
-		json.Should().Contain("\"test-pit-id\"");
-		json.Should().Contain("\"must_not\"");
-		json.Should().Contain("\"hidden\":true");
-		json.Should().NotContain("search_after");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "size": 1000,
+			  "_source": [
+			    "url",
+			    "content_last_updated"
+			  ],
+			  "query": {
+			    "bool": {
+			      "must_not": [
+			        {
+			          "term": {
+			            "hidden": true
+			          }
+			        }
+			      ]
+			    }
+			  },
+			  "pit": {
+			    "id": "test-pit-id",
+			    "keep_alive": "2m"
+			  },
+			  "sort": [
+			    {
+			      "url": "asc"
+			    }
+			  ]
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -187,8 +244,40 @@ public class SitemapTests
 		var json = EsSitemapReader.BuildSearchBody("test-pit-id", ["/docs/last-url"]);
 
 		// Assert
-		json.Should().Contain("\"search_after\"");
-		json.Should().Contain("/docs/last-url");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "size": 1000,
+			  "_source": [
+			    "url",
+			    "content_last_updated"
+			  ],
+			  "query": {
+			    "bool": {
+			      "must_not": [
+			        {
+			          "term": {
+			            "hidden": true
+			          }
+			        }
+			      ]
+			    }
+			  },
+			  "pit": {
+			    "id": "test-pit-id",
+			    "keep_alive": "2m"
+			  },
+			  "sort": [
+			    {
+			      "url": "asc"
+			    }
+			  ],
+			  "search_after": [
+			    "/docs/last-url"
+			  ]
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -196,9 +285,38 @@ public class SitemapTests
 	{
 		// Act
 		var json = EsSitemapReader.BuildSearchBody("pit-with-\"quotes\"", null);
-		var doc = JsonDocument.Parse(json);
 
-		// Assert — verify the value round-trips correctly through serialization
-		doc.RootElement.GetProperty("pit").GetProperty("id").GetString().Should().Be("pit-with-\"quotes\"");
+		// Assert - the quotes are escaped, so the value round-trips through serialization
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "size": 1000,
+			  "_source": [
+			    "url",
+			    "content_last_updated"
+			  ],
+			  "query": {
+			    "bool": {
+			      "must_not": [
+			        {
+			          "term": {
+			            "hidden": true
+			          }
+			        }
+			      ]
+			    }
+			  },
+			  "pit": {
+			    "id": "pit-with-\"quotes\"",
+			    "keep_alive": "2m"
+			  },
+			  "sort": [
+			    {
+			      "url": "asc"
+			    }
+			  ]
+			}
+			"""
+		);
 	}
 }

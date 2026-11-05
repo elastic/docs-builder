@@ -1,0 +1,57 @@
+{
+  "nested": {
+    "ignore_unmapped": true,
+    "inner_hits": {
+      "name": "api_properties",
+      "size": 5,
+      "_source": {
+        "includes": "api.properties.*"
+      }
+    },
+    "path": "api.properties",
+    "query": {
+      "dis_max": {
+        "queries": [
+          {
+            "constant_score": {
+              "boost": 1,
+              "filter": {
+                "term": {
+                  "api.properties.name": {
+                    "case_insensitive": true,
+                    "value": "retriever.rrf.min_score"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "bool": {
+              "filter": {
+                "match_phrase_prefix": {
+                  "api.properties.path_words": {
+                    "query": "retriever rrf min_score"
+                  }
+                }
+              },
+              "must": {
+                "constant_score": {
+                  "boost": 1,
+                  "filter": {
+                    "term": {
+                      "api.properties.name": {
+                        "case_insensitive": true,
+                        "value": "min_score"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "score_mode": "max"
+  }
+}
