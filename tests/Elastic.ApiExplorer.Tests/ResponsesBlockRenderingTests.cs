@@ -35,9 +35,7 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
 
-		html.Should().Contain(">Response</a>");
-		html.Should().NotContain(">Responses</a>");
-		html.Should().Contain("aria-controls=\"response-200-fields\"");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -69,10 +67,7 @@ public class ResponsesBlockRenderingTests
 			Headers = []
 		});
 
-		html.Should().Contain("PlatformErrorResponse");
-		html.Should().Contain("SiemErrorResponse");
-		html.Should().Contain("union-variant-item");
-		html.Should().NotContain("Response Type:");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -111,8 +106,7 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "Disabled by the `alerting:v2:enabled` setting."));
 
-		html.Should().Contain("<code>alerting:v2:enabled</code>");
-		html.Should().NotContain("`alerting:v2:enabled`");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -122,19 +116,7 @@ public class ResponsesBlockRenderingTests
 			Response("200", "success", "A JSON object containing pipelines statistics.\n\n- queue depth\n- worker utilization")
 		);
 
-		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
-		button.Should().Contain("response-status-chip");
-		button.Should().NotContain("application/json");
-		button.Should().NotContain("queue depth");
-		button.Should().NotContain("<ul>");
-		html.Should().Contain("<li>queue depth</li>");
-		var status = html.IndexOf("</button>", StringComparison.Ordinal);
-		var description = html.IndexOf("response-description", StringComparison.Ordinal);
-		var mediaType = html.IndexOf("content-type-tag", StringComparison.Ordinal);
-		var icon = html.IndexOf("response-toggle-icon", StringComparison.Ordinal);
-		description.Should().BeGreaterThan(status);
-		mediaType.Should().BeGreaterThan(description);
-		icon.Should().BeGreaterThan(mediaType);
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -142,13 +124,8 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "See the [guide](https://www.elastic.co/guide)."));
 
-		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
-		button.Should().NotContain("<a ");
-		html.Should().Contain("href=\"https://www.elastic.co/guide\"");
-		html
-			.IndexOf("href=\"https://www.elastic.co/guide\"", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+		// The anchor sits outside the toggle button: a link inside a button is not valid.
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -184,9 +161,7 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "OK"));
 
-		html.Should().Contain("<span class=\"content-type-tag\">application/json</span>");
-		html.Should().NotContain("data-content-type-current");
-		html.Should().NotContain("data-content-type-select");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)

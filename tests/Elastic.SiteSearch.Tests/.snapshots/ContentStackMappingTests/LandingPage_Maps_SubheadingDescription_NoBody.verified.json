@@ -1,0 +1,28 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "og": {
+    "title": "Elasticsearch tutorials",
+    "description": ""
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Tutorials",
+  "search_title": "Tutorials",
+  "content_type": "site",
+  "path": "/search-labs/tutorials",
+  "url": "/search-labs/tutorials",
+  "hash": "c27e667d2a905da9",
+  "description": "Long-form guides to get you started",
+  "headings": [],
+  "body": "Long-form guides to get you started",
+  "summary": "Long-form guides to get you started",
+  "parents": [],
+  "translated": true,
+  "section": "search-labs",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 3,
+    "table_of_contents": 100
+  }
+}

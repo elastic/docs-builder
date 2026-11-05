@@ -39,11 +39,11 @@ public class ErrorWhenUsingWrongScheme : MarkdownTest
 		[APM Server binary](docs-x:/solutions/observability/apps/apm-server-binary.md)
 		""";
 
-	[Test, DisplayName("error on bad scheme")]
-	public async Task ErrorOnBadScheme() => await Docs.HasError("'docs-x' was not found in the cross link index");
-
-	[Test, DisplayName("has no warning")]
-	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 'docs-x' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml"
+		);
 }
 
 public class ErrorWhenBadAnchorIsUsed : MarkdownTest
@@ -53,12 +53,11 @@ public class ErrorWhenBadAnchorIsUsed : MarkdownTest
 		[APM Server binary](docs-content:/solutions/observability/apps/apm-server-binary.md#apm-deb-x)
 		""";
 
-	[Test, DisplayName("error when linking to unknown anchor")]
-	public async Task ErrorWhenLinkingToUnknownAnchor() =>
-		await Docs.HasError("'solutions/observability/apps/apm-server-binary.md' has no anchor named: '#apm-deb-x");
-
-	[Test, DisplayName("has no warning")]
-	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 'solutions/observability/apps/apm-server-binary.md' has no anchor named: '#apm-deb-x'."
+		);
 }
 
 public class LinkToValidAnchor : MarkdownTest
@@ -121,11 +120,11 @@ public class LinkToRepositoryThatDoesNotResolveYet : MarkdownTest
 		"""
 		);
 
-	[Test, DisplayName("error when not found in links.json")]
-	public async Task ErrorWhenNotFound() => await Docs.HasError("'elasticsearch' was not found in the cross link index");
-
-	[Test, DisplayName("has no warning")]
-	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 'elasticsearch' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml"
+		);
 }
 
 public class ErrorWhenLinkingToNonExistentFileInDeclaredRepository : MarkdownTest
@@ -146,12 +145,11 @@ public class ErrorWhenLinkingToNonExistentFileInDeclaredRepository : MarkdownTes
 		"""
 		);
 
-	[Test, DisplayName("error when file not found in links.json")]
-	public async Task ErrorWhenFileNotFound() =>
-		await Docs.HasError("'non-existent-file.md' is not a valid link in the 'docs-content' cross link index");
-
-	[Test, DisplayName("has no warning")]
-	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 'non-existent-file.md' is not a valid link in the 'docs-content' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/docs-builder-tests/docs-content/links.json"
+		);
 }
 
 public class UsingDoubleForwardSlashes : MarkdownTest
@@ -200,9 +198,9 @@ public class LinkToRepositoryThatDoesNotResolveYetUsingDoubleSlashes : MarkdownT
 		"""
 		);
 
-	[Test, DisplayName("error when not found in links.json")]
-	public async Task ErrorWhenNotFound() => await Docs.HasError("'elasticsearch' was not found in the cross link index");
-
-	[Test, DisplayName("has no warning")]
-	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 'elasticsearch' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml"
+		);
 }

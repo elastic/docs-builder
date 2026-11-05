@@ -17,30 +17,11 @@ internal static class PlainTextAssertions
 		PlainTextExporter.ConvertToPlainText(actual.Document, actual.Context.Generator.Context).Trim();
 
 	[DebuggerStepThrough]
-	internal static void ConvertsToPlainText([LanguageInjection("text")] string expected, GeneratorResults results)
+	internal static void ConvertsToPlainText([LanguageInjection("text")] string? expected, GeneratorResults results, CallSite site)
 	{
 		var defaultFile = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
 			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
 
-		var actual = ToPlainText(defaultFile);
-		var expectedTrimmed = expected.Trim();
-		var difference = HtmlAssertions.Diff(expectedTrimmed, actual);
-
-		if (string.IsNullOrEmpty(difference))
-			return;
-
-		throw new AwesomeAssertions.Execution.AssertionFailedException(
-			$"""
-Plain text was not equal
--- DIFF --
-{difference}
-
--- EXPECTED --
-{expectedTrimmed}
-
--- ACTUAL --
-{actual}
-"""
-		);
+		InlineSnapshots.Text(ToPlainText(defaultFile), expected, nameof(Scenario.ConvertsToPlainText), site);
 	}
 }

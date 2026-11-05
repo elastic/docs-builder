@@ -54,7 +54,8 @@ public static class ApiLookupQueryBuilder
 	public static Query Build(string query)
 	{
 		var tokens = Tokenize(query);
-		var clauses = tokens.Select(TokenClause).OfType<Query>().ToList();
+		var tokenWords = tokens.Select(t => t.Kind == ApiLookupTokenKind.Plain ? ApiPropertyPath.IdentifierWords(t.Text) : []).ToArray();
+		var clauses = tokens.Select((token, index) => TokenClause(token, index, OtherWords(tokenWords, index))).OfType<Query>().ToList();
 		if (clauses.Count == 0)
 			return new MatchNoneQuery();
 
@@ -62,10 +63,12 @@ public static class ApiLookupQueryBuilder
 		return new BoolQuery
 		{
 			Must = [new BoolQuery { Should = clauses, MinimumShouldMatch = TokensMinimumShouldMatch }],
-			Filter = [SearchQueryBuilder.DocumentFilter],
 			Should = Lifts(typed, tokens)
 		};
 	}
+
+	/// <summary>The words of every plain word but the one at <paramref name="index"/>, which a field row may name besides it.</summary>
+	private static string[] OtherWords(string[][] tokenWords, int index) => [.. tokenWords.Where((_, i) => i != index).SelectMany(w => w)];
 
 	/// <summary>A word typed with a trailing dot, as in <c>retriever.</c>, asks for the children of the field it names.</summary>
 	public static bool ExpandsChildren(string query) => Tokenize(query).Any(t => t.ExpandChildren);
@@ -109,7 +112,7 @@ public static class ApiLookupQueryBuilder
 	}
 
 	/// <summary>The roles a word may play, best one wins. A path that names no endpoint explains nothing, so it drops out.</summary>
-	private static Query? TokenClause(ApiLookupToken token, int index)
+	private static Query? TokenClause(ApiLookupToken token, int index, IReadOnlyList<string> otherWords)
 	{
 		var key = KeyOption(token.Text, index);
 		if (token.Kind == ApiLookupTokenKind.Path)
@@ -126,7 +129,7 @@ public static class ApiLookupQueryBuilder
 			),
 			Constant(TitleQuery(token.Text), ApiLookupWeights.TitleWord, ApiLookupRoles.QueryName(ApiLookupRole.Title, index)),
 			MethodOption(token.Text, index),
-			FieldOption(token, index),
+			FieldOption(token, index, otherWords),
 			Constant(
 				SynonymsMatch(QueryFieldNames.Body, token.Text),
 				ApiLookupWeights.BodyWord,
@@ -141,59 +144,95 @@ public static class ApiLookupQueryBuilder
 	/// the routes under it; a bare word covers only the routes under its system route, because words such as <c>api</c> are the
 	/// first segment of every Kibana route. The bare keys and the typed route both drop the underscore that starts an
 	/// Elasticsearch system route, so <c>snapshot</c>, <c>/snapshot</c> and <c>/_snapshot</c> all cover <c>_snapshot/*/*/_restore</c>.
+	/// A typed route that stops inside a segment completes it just below the full keys, so <c>/_sear</c> finds <c>_search</c>;
+	/// a trailing slash asks for the routes under it instead. The root route names only its own operations.
 	/// </summary>
 	private static Query? KeyOption(string text, int index)
 	{
-		var route = ApiEndpointPath.NormalizeQuery(text).TrimEnd('/');
+		var name = ApiLookupRoles.QueryName(ApiLookupRole.Key, index);
+		var route = ApiEndpointPath.NormalizeQuery(text);
 		if (SearchQueryBuilder.BuildApiEndpointQuery(route, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpoints) is not { } exact)
 			return null;
+		// A lone slash is the first keystroke of every route, so it names the root operations rather than listing every route.
+		if (route == ApiEndpointPath.Root)
+			return new DisMaxQuery { Queries = [exact], QueryName = name };
 
 		var typedRoute = text.Contains('/');
+		var completes = typedRoute && !text.EndsWith('/');
 		var bare = ApiEndpointPath.StripRouteUnderscores(route);
 		var bareExact = SearchQueryBuilder.BuildApiEndpointQuery(bare, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpointsBare);
-		var options = new Query?[]
-		{
+		Query?[] options =
+		[
 			exact,
 			bareExact,
 			typedRoute ? RoutesUnder(route, QueryFieldNames.ApiEndpoints) : null,
-			typedRoute && bareExact is not null ? RoutesUnder(bare, QueryFieldNames.ApiEndpointsBare) : null
-		}.OfType<Query>().ToList();
-
-		// An index written before the bare keys exist has no api.endpoints_bare and the service deploys on its own,
-		// so a bare word keeps its underscore alias on the exact field until every index carries the bare keys.
-		if (SearchQueryBuilder.BuildBareWordEndpointQuery(route, ApiLookupWeights.EndpointKey) is { } alias)
-			options.Add(alias);
-		if (SearchQueryBuilder.EndpointName(route) is { } name && !(typedRoute && name == route))
-		{
-			if (RoutesUnder(name, QueryFieldNames.ApiEndpoints) is { } nameRoutes)
-				options.Add(nameRoutes);
-		}
-
-		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
+			typedRoute && bareExact is not null ? RoutesUnder(bare, QueryFieldNames.ApiEndpointsBare) : null,
+			.. completes ? Completions(route, QueryFieldNames.ApiEndpoints) : [],
+			.. completes && bareExact is not null ? Completions(bare, QueryFieldNames.ApiEndpointsBare) : [],
+			.. UnderscoreAliasOptions(route, typedRoute: typedRoute)
+		];
+		return new DisMaxQuery { Queries = options.OfType<Query>().ToList(), QueryName = name };
 	}
 
 	/// <summary>
-	/// The routes under every template <see cref="ApiEndpointPath.QueryCandidates"/> reads the route as, so
-	/// <c>/_security/user/alice</c> covers <c>_security/user/*/_password</c>. Like the exact lookup, a template scores by the
-	/// literal segments it keeps.
+	/// An index written before the bare keys exist has no <c>api.endpoints_bare</c> and the service deploys on its own, so a
+	/// bare word keeps its underscore alias on the exact field until every index carries the bare keys.
 	/// </summary>
-	private static Query? RoutesUnder(string route, Field field)
+	private static IEnumerable<Query> UnderscoreAliasOptions(string route, bool typedRoute)
 	{
-		var groups = ApiEndpointPath.QueryCandidates(route);
+		if (SearchQueryBuilder.BuildBareWordEndpointQuery(route, ApiLookupWeights.EndpointKey) is { } alias)
+			yield return alias;
+		if (SearchQueryBuilder.EndpointName(route) is not { } name || (typedRoute && name == route))
+			yield break;
+		if (RoutesUnder(name, QueryFieldNames.ApiEndpoints) is { } nameRoutes)
+			yield return nameRoutes;
+	}
+
+	private static Query? RoutesUnder(string route, Field field) =>
+		RoutesMatching(ApiEndpointPath.QueryCandidates(route), field, RouteTier.Under);
+
+	/// <summary>
+	/// The keys that finish the last typed segment and the routes under them. A <c>*</c> is a complete parameter value, so
+	/// templates ending in one complete nothing, while the full-literal group still sets the weights.
+	/// </summary>
+	private static IEnumerable<Query> Completions(string route, Field field)
+	{
+		var groups = ApiEndpointPath
+			.QueryCandidates(route)
+			.Select(g => g with { Terms = g.Terms.Where(t => t.Split('/')[^1] != "*").ToList() })
+			.ToList();
+		return new[] { RouteTier.Completion, RouteTier.Deeper }.Select(tier => RoutesMatching(groups, field, tier)).OfType<Query>();
+	}
+
+	/// <summary>
+	/// The keys that relate to every template <see cref="ApiEndpointPath.QueryCandidates"/> reads the route as the way
+	/// <paramref name="tier"/> says, so <c>/_security/user/alice</c> covers <c>_security/user/*/_password</c>. Like the exact
+	/// lookup, a template scores by the literal segments it keeps.
+	/// </summary>
+	private static Query? RoutesMatching(IReadOnlyList<EndpointCandidateGroup> groups, Field field, RouteTier tier)
+	{
 		var total = groups[0].LiteralSegments;
 		var queries = groups.SelectMany(
 			g => RegexpBatches(g.Terms).Select(
 				pattern =>
 					(Query)new ConstantScoreQuery
 					{
-						Filter = new RegexpQuery { Field = field, Value = pattern + "/.+" },
-						Boost = ApiLookupWeights.NamespaceKey * (1 + g.LiteralSegments) / (1 + total)
+						Filter = new RegexpQuery { Field = field, Value = pattern + tier.Suffix },
+						Boost = tier.Weight * (1 + g.LiteralSegments) / (1 + total)
 					}
 			)
 		).ToList();
 		if (queries.Count == 0)
 			return null;
 		return new DisMaxQuery { Queries = queries };
+	}
+
+	/// <summary>How a key relates to a typed route R: under it (R/…), finishing its last segment (Rx), or under that (Rx/…).</summary>
+	private sealed record RouteTier(string Suffix, float Weight)
+	{
+		public static readonly RouteTier Under = new("/.+", ApiLookupWeights.NamespaceKey);
+		public static readonly RouteTier Completion = new("[^/]+", ApiLookupWeights.EndpointCompletion);
+		public static readonly RouteTier Deeper = new("[^/]+/.+", ApiLookupWeights.NamespaceCompletion);
 	}
 
 	// A route segment that long names nothing, and one oversized pattern would fail the whole request.
@@ -223,11 +262,11 @@ public static class ApiLookupQueryBuilder
 			)
 			: null;
 
-	private static Query FieldOption(ApiLookupToken token, int index) =>
+	private static Query FieldOption(ApiLookupToken token, int index, IReadOnlyList<string> otherWords) =>
 		SearchQueryBuilder.BuildNestedPropertyQuery(
 			token.Text,
 			FieldHitsName(index),
-			new SearchQueryBuilder.PropertyLookup(AllowPrefix: true, token.ExpandChildren),
+			new SearchQueryBuilder.PropertyLookup(AllowPrefix: true, token.ExpandChildren, otherWords),
 			ApiLookupRoles.QueryName(ApiLookupRole.Field, index)
 		);
 

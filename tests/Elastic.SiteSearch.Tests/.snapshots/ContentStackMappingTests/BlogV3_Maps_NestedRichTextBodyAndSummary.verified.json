@@ -1,0 +1,31 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "published_date": "2026-06-01T00:00:00+00:00",
+  "og": {
+    "title": "Hybrid Search With Elasticsearch",
+    "description": ""
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Hybrid Search With Elasticsearch",
+  "search_title": "Hybrid Search With Elasticsearch",
+  "content_type": "site",
+  "path": "/search-labs/blog/hybrid-search-with-elasticsearch",
+  "url": "/search-labs/blog/hybrid-search-with-elasticsearch",
+  "hash": "c04874ba5dc0d16d",
+  "description": "Combine lexical and semantic search for better relevance.",
+  "headings": [
+    "Why hybrid search"
+  ],
+  "body": "Why hybrid search Hybrid search combines BM25 lexical scoring with dense vector search to improve relevance.",
+  "summary": "Combine lexical and semantic search for better relevance.",
+  "parents": [],
+  "translated": true,
+  "section": "search-labs",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 4,
+    "table_of_contents": 100
+  }
+}

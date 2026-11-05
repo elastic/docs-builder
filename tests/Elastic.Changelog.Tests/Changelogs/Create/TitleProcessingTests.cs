@@ -5,7 +5,9 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -66,9 +68,20 @@ public class TitleProcessingTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Update Vector Similarity To Support BFLOAT16");
-		yamlContent.Should().NotContain("[ES|QL]");
-		yamlContent.Should().NotContain("[ES|QL]:");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Update Vector Similarity To Support BFLOAT16
+			"""
+			);
 	}
 
 	[Test]
@@ -126,8 +139,20 @@ public class TitleProcessingTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Improve authentication handling");
-		yamlContent.Should().NotContain("[Security]");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Improve authentication handling
+			"""
+			);
 	}
 
 	[Test]
@@ -185,9 +210,20 @@ public class TitleProcessingTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Fix filtering by multiline string fields");
-		yamlContent.Should().NotContain("[Discover]");
-		yamlContent.Should().NotContain("[ESQL]");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Fix filtering by multiline string fields
+			"""
+			);
 	}
 
 	[Test]
@@ -236,8 +272,20 @@ public class TitleProcessingTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Enable cases numerical id service");
-		yamlContent.Should().NotContain("title: '- Enable");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/kibana/pull/238555"
+			type: feature
+			products:
+			  - product: kibana
+			    lifecycle: ga
+			title: Enable cases numerical id service
+			"""
+			);
 	}
 
 	[Test]
@@ -278,8 +326,19 @@ public class TitleProcessingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Custom Title Override");
-		yamlContent.Should().NotContain("PR Title from GitHub");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Custom Title Override
+			"""
+			);
 	}
 
 	[Test]
@@ -317,8 +376,21 @@ public class TitleProcessingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("issues:");
-		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/123\"");
-		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/456\"");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			issues:
+			  - "https://github.com/elastic/elasticsearch/issues/123"
+			  - "https://github.com/elastic/elasticsearch/issues/456"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			title: Fix multiple issues
+			"""
+			);
 	}
 }

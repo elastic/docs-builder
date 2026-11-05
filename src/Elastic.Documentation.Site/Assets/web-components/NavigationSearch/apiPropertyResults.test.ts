@@ -81,20 +81,33 @@ const routes = [
 
 it.each([
     ['_search', ['_search'], '/_search'],
-    ['/_search', ['_search'], '/_search'],
-    ['GET /_search knn', ['_search', 'knn'], '/_search'],
+    ['/_search', ['/_search'], '/_search'],
+    ['GET /_search knn', ['/_search', 'knn'], '/_search'],
+    ['/', [], '/{index}/_search'],
     ['search', ['search'], '/{index}/_search'],
     ['index', [], '/{index}/_search'],
     ['in', [], '/{index}/_search'],
     ['scroll', ['scroll'], '/_search/scroll'],
     ['knn', [], '/{index}/_search'],
     ['get', [], '/{index}/_search'],
-    ['GET /_search', ['_search'], '/_search'],
+    ['GET /_search', ['/_search'], '/_search'],
     ['a', [], '/{index}/_search'],
 ])('picks the route for %s', (searchTerm, tokens, path) => {
     const matched = primaryRoute(routes, searchTerm)
     expect(matched.tokens).toEqual(tokens)
     expect(matched.route?.path).toBe(path)
+})
+
+it('highlights the leading slash of a typed route', () => {
+    const matched = primaryRoute(
+        [
+            { path: '/api/fleet/agents', methods: ['GET'] },
+            { path: '/api/fleet/agent_policies', methods: ['GET'] },
+        ],
+        '/api/fleet'
+    )
+    expect(matched.tokens).toEqual(['/api/fleet'])
+    expect(matched.route?.path).toBe('/api/fleet/agents')
 })
 
 it("falls back to the page's primary route when no query word names one", () => {

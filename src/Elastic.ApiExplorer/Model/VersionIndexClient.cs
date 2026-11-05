@@ -98,6 +98,9 @@ public sealed class VersionIndexClient : IDisposable
 	/// </summary>
 	public SpecBodyCache? SpecBodies { get; init; }
 
+	/// <summary>Why the version index could not be fetched, once a resolve tried and failed; otherwise <c>null</c>.</summary>
+	public string? RootIndexFetchError => _rootIndexFetched ? _rootIndexFetchError : null;
+
 	public async Task<IReadOnlyList<ResolvedApiVersion>> ResolveVersionsAsync(
 		GitCheckoutInformation git,
 		string apiKey,

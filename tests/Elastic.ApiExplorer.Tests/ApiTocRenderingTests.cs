@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Documentation;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -17,10 +18,7 @@ public class ApiTocRenderingTests
 	{
 		var html = await Render([]);
 
-		html.Should().NotContain("View as Markdown");
-		html.Should().NotContain("view-as-markdown");
-		html.Should().NotContain("/api/doc/elasticsearch/v9.md");
-		html.Should().NotContain("On this page");
+		html.Should().MatchInlineHtmlSnapshot("");
 	}
 
 	[Test]
@@ -28,9 +26,7 @@ public class ApiTocRenderingTests
 	{
 		var html = await Render([new TocItem("Paths", "paths", 2)]);
 
-		html.Should().Contain("On this page");
-		html.Should().Contain("href=\"#paths\"");
-		html.Should().Contain("Paths");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	private static async Task<string> Render(IReadOnlyList<TocItem> tocItems) =>

@@ -29,7 +29,8 @@ public static class AssemblerOpenApiBuildStep
 		AssembleContext assembleContext,
 		AssemblerApiSections apiSections,
 		TopNavRenderModel? siteTopNav,
-		Cancel ctx
+		Cancel ctx,
+		VersionIndexClient? versionIndexClient = null
 	)
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
@@ -45,7 +46,8 @@ public static class AssemblerOpenApiBuildStep
 
 		var stopwatch = Stopwatch.StartNew();
 		var catalogEntries = new List<ApiCatalogEntry>();
-		using var versionIndexClient = new VersionIndexClient();
+		using var ownedVersionIndexClient = versionIndexClient is null ? new VersionIndexClient() : null;
+		versionIndexClient ??= ownedVersionIndexClient!;
 
 		var planned = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(owners.Count);
 		foreach (var owner in owners)

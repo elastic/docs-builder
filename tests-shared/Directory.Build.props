@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- Shared test helpers: a library, not a test project, so it lives outside tests/ and tests-integration/
+       (build/Targets.fs runs `dotnet test` on every csproj it finds in those two folders). -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
+  <PropertyGroup>
+    <NoWarn>CA1822;CA1707;IDE0058</NoWarn>
+    <IsTestProject>false</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

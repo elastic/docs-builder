@@ -16,6 +16,9 @@ public sealed record EndpointCandidateGroup(int LiteralSegments, IReadOnlyList<s
 /// </summary>
 public static partial class ApiEndpointPath
 {
+	/// <summary>The root route's key, the one key with no literal segment. Every other key starts without a <c>/</c>.</summary>
+	public const string Root = "/";
+
 	private const string Wildcard = "*";
 
 	// 2^8 terms at most; a long pasted query would otherwise grow the clause count exponentially.
@@ -27,10 +30,10 @@ public static partial class ApiEndpointPath
 	/// <summary>
 	/// Every way a user could type an endpoint path: lowercased, no leading <c>/</c>, each path also without
 	/// its leading and/or trailing <c>{param}</c> segments, and every <c>{param}</c> written as <c>*</c>.
-	/// Deduped in first-seen order. A key needs at least one literal segment.
+	/// Deduped in first-seen order. A key needs at least one literal segment, or is the <see cref="Root"/>.
 	/// </summary>
 	public static string[] IndexKeys(IEnumerable<string> paths) =>
-		paths.SelectMany(Variants).Where(HasLiteralSegment).Distinct(StringComparer.Ordinal).ToArray();
+		paths.SelectMany(Variants).Where(IsKey).Distinct(StringComparer.Ordinal).ToArray();
 
 	/// <summary>
 	/// Removes the underscores that start each <c>/</c>-separated segment, so <c>_cluster/health/*</c> becomes
@@ -49,6 +52,9 @@ public static partial class ApiEndpointPath
 	/// </summary>
 	public static IReadOnlyList<EndpointCandidateGroup> QueryCandidates(string endpoint)
 	{
+		if (endpoint == Root)
+			return [new EndpointCandidateGroup(1, [Root])];
+
 		var segments = endpoint.Split('/', StringSplitOptions.RemoveEmptyEntries).Take(MaxQuerySegments).ToArray();
 		var byLiterals = new SortedDictionary<int, List<string>>(Comparer<int>.Create((a, b) => b.CompareTo(a)));
 		var n = segments.Length;
@@ -77,12 +83,15 @@ public static partial class ApiEndpointPath
 		string.Concat(term.Select(c => RegexpOperators.Contains(c) ? "\\" + c : c.ToString()));
 
 	/// <summary>
-	/// Strips a leading HTTP method and <c>/</c>, lowercases, and writes each <c>{param}</c> segment as <c>*</c>:
-	/// <c>GET /{index}/_search</c> becomes <c>*/_search</c>.
+	/// Strips a leading HTTP method and the leading and trailing <c>/</c>, lowercases, and writes each <c>{param}</c> segment
+	/// as <c>*</c>: <c>GET /{index}/_search</c> becomes <c>*/_search</c>. A typed route of only slashes is the <see cref="Root"/>.
 	/// </summary>
 	public static string NormalizeQuery(string searchQuery)
 	{
-		var normalized = HttpMethodPrefix().Replace(searchQuery.Trim(), string.Empty).TrimStart('/').ToLowerInvariant().Trim();
+		var stripped = HttpMethodPrefix().Replace(searchQuery.Trim(), string.Empty).ToLowerInvariant().Trim();
+		var normalized = stripped.Trim('/').Trim();
+		if (normalized.Length == 0)
+			return stripped.StartsWith('/') ? Root : string.Empty;
 		return string.Join('/', normalized.Split('/').Select(s => IsPathParameter(s) ? Wildcard : s));
 	}
 
@@ -95,6 +104,12 @@ public static partial class ApiEndpointPath
 			.Split('/', StringSplitOptions.RemoveEmptyEntries)
 			.Select(s => IsPathParameter(s) ? Wildcard : s)
 			.ToArray();
+		if (segments.Length == 0)
+		{
+			yield return Root;
+			yield break;
+		}
+
 		var leading = segments.TakeWhile(s => s == Wildcard).Count();
 		var trailing = Enumerable.Reverse(segments).TakeWhile(s => s == Wildcard).Count();
 		var innerLength = Math.Max(0, segments.Length - leading - trailing);
@@ -104,6 +119,8 @@ public static partial class ApiEndpointPath
 		yield return string.Join('/', segments.Take(segments.Length - trailing));
 		yield return string.Join('/', segments.Skip(leading).Take(innerLength));
 	}
+
+	private static bool IsKey(string key) => key == Root || HasLiteralSegment(key);
 
 	private static bool HasLiteralSegment(string key) => key.Split('/').Any(s => s.Length > 0 && s != Wildcard);
 
