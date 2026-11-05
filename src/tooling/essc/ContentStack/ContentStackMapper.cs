@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -631,11 +632,13 @@ internal static partial class ContentStackMapper
 		return null;
 	}
 
-	private static DateTimeOffset? ParseDate(string? value)
+	internal static DateTimeOffset? ParseDate(string? value)
 	{
 		if (string.IsNullOrWhiteSpace(value))
 			return null;
-		return DateTimeOffset.TryParse(value, out var dto) ? dto : null;
+		// A value without an offset ("2023-09-01") is UTC, not the time zone of the machine running essc. A value that
+		// carries an offset or Z keeps it: AdjustToUniversal is left out on purpose.
+		return DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dto) ? dto : null;
 	}
 
 	[GeneratedRegex("<[^>]+>")]
