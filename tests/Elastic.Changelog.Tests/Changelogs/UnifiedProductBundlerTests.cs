@@ -232,11 +232,11 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 		outcome.Should().Be(ProductBundleOutcome.Failed);
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/bundles/widget/changelog-config-widget-aaaaaaaa.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			error  Could not fetch changelog entry registry for 'elastic/widget/main' from https://d10xozp44eyz7q.cloudfront.net/changelog/elastic/widget/main/registry.json: Response status code does not indicate success: 404 (Not Found).
 			"""
 			);
@@ -360,11 +360,11 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 		outcome.Should().Be(ProductBundleOutcome.Failed);
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/bundles/widget/changelog-config-widget-aaaaaaaa.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			warning  No checked-in changelog entry was found for PR https://github.com/elastic/widget/pull/100 and its metadata could not be fetched from GitHub. The bundle will not include an entry for this PR.
 			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
 			"""
