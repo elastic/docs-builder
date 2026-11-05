@@ -2205,6 +2205,14 @@ a.docs-reference-btn::after {
 	position: relative;
 }
 
+/* Below a box's own fields (a variant's, a map value's or a row's), the label and the chips take the fields' inset (the
+   `.property-item.depth-N` padding), so they line up with the field names above them. A list with no fields above it
+   (a row that is only a union) keeps the box's edge. */
+.nested-properties > .property-list ~ .union-variants-label,
+.nested-properties > .property-list ~ .union-variants-container {
+	margin-left: 1.25rem;
+}
+
 /* Two or more variants: the examples rail's chips pick the one shown (_UnionOptions.cshtml, api-union-chips.ts). */
 .union-chips-row {
 	margin: calc(var(--spacing) * 1) 0;
