@@ -5,6 +5,7 @@
 using System.Text;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Microsoft.AspNetCore.Html;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -33,6 +34,7 @@ public class NestedUnionTests
 		  "Metric": { "title": "Metric", "anyOf": [ { "$ref": "#/components/schemas/ChartDsl" }, { "$ref": "#/components/schemas/ChartEsql" } ] },
 		  "Gauge": { "type": "object", "title": "Gauge", "properties": { "goal": { "type": "number" } } },
 		  "Config": { "anyOf": [ { "$ref": "#/components/schemas/Metric" }, { "$ref": "#/components/schemas/Gauge" } ] },
+		  "Mixed": { "anyOf": [ { "type": "string" }, { "$ref": "#/components/schemas/Setting" } ] },
 		  "Loop": { "anyOf": [ { "$ref": "#/components/schemas/Metric" }, { "$ref": "#/components/schemas/LoopLeaf" } ] },
 		  "LoopLeaf": { "type": "object", "properties": { "again": { "$ref": "#/components/schemas/Loop" } } },
 		  "Holder": {
@@ -49,6 +51,13 @@ public class NestedUnionTests
 		              { "type": "object", "properties": { "title": { "type": "string" } } }
 		            ]
 		          },
+		          { "type": "object", "properties": { "ref_id": { "type": "string" } } }
+		        ]
+		      },
+		      "mixed_map": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Mixed" } },
+		      "mixed_config": {
+		        "anyOf": [
+		          { "allOf": [ { "$ref": "#/components/schemas/Mixed" }, { "type": "object", "properties": { "title": { "type": "string" } } } ] },
 		          { "type": "object", "properties": { "ref_id": { "type": "string" } } }
 		        ]
 		      },
@@ -130,6 +139,77 @@ public class NestedUnionTests
 		var paths = ApiPropertyIndex.Flatten(holder).Select(r => r.Property.Name).ToArray();
 
 		paths.Should().Contain(["title", "esql", "data_source", "custom_label"]);
+	}
+
+	[Test]
+	public async Task BuildPropertyList_MapValueUnionWithAPrimitiveChoice_ListsTheChoiceToo()
+	{
+		var variants = (await RowAsync("mixed_map")).Children.Dictionary!.Variants!.Variants;
+
+		variants.Select(v => v.IsObjectType).Should().Equal([false, true], "the string choice stays beside the object");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_VariantUnionWithAPrimitiveChoice_ListsTheChoiceToo()
+	{
+		var byValue = (await RowAsync("mixed_config")).Children.Variants!.Variants[0];
+
+		byValue.Variants!.Variants.Select(v => v.IsObjectType).Should().Equal([false, true]);
+	}
+
+	[Test]
+	public async Task BuildPropertyList_NestedVariantsBeyondMaxDepth_AreNotListed()
+	{
+		var document = await LoadSpecAsync(WithSchemas(Schemas));
+		var shallow = new ApiPropertyTreeBuilder(
+			document,
+			new PropertyDisplayOptions { RenderMarkdown = static s => new HtmlString(s), ApiRootUrl = "/api/doc/fixture", MaxDepth = 1 }
+		);
+
+		var list = shallow.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var config = list.Items.Single(p => p.Name == "config").Children.Variants!.Variants;
+		config[0].Variants.Should().BeNull("the variant sits at the depth limit");
+		list.Items.Single(p => p.Name == "field_settings").Children.Dictionary!
+			.Variants
+			.Should()
+			.BeNull("a map value's variants stop at the limit too");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_RowsThatDifferOnlyInNestedVariants_ShareNoListing()
+	{
+		var fields = string.Join(", ", Enumerable.Range(0, 12).Select(i => $"\"f{i}\": {{ \"type\": \"string\" }}"));
+
+		string Row(string last) =>
+			$$"""
+			{ "anyOf": [
+			  { "allOf": [ { "type": "object", "properties": { {{fields}} } }, { "oneOf": [ { "$ref": "#/components/schemas/X" }, { "$ref": "#/components/schemas/{{last}}" } ] } ] },
+			  { "type": "object", "properties": { "ref_id": { "type": "string" } } } ] }
+			""";
+
+		var json = WithSchemas(
+			$$"""
+			{
+			  "X": { "type": "object", "title": "X", "properties": { "x": { "type": "string" } } },
+			  "Y": { "type": "object", "title": "Y", "properties": { "y": { "type": "string" } } },
+			  "Z": { "type": "object", "title": "Z", "properties": { "z": { "type": "string" } } },
+			  "Holder": { "type": "object", "properties": { "a": {{Row("Y")}}, "b": {{Row("Z")}}, "c": {{Row("Y")}} } }
+			}
+			"""
+		);
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		list.Items.Single(p => p.Name == "a").Repeats.Should().BeNull("the first listing is the original");
+		list
+			.Items
+			.Single(p => p.Name == "c")
+			.Repeats
+			.Should()
+			.NotBeNull("an identical listing links back, which proves the rows are shareable");
+		list.Items.Single(p => p.Name == "b").Repeats.Should().BeNull("Z differs from Y only inside the nested variants");
 	}
 
 	[Test]

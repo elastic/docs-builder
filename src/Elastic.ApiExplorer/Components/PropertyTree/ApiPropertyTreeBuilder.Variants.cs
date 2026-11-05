@@ -74,12 +74,14 @@ public partial class ApiPropertyTreeBuilder
 				RequiredProperties = null,
 				Owner = VariantDisplayName(variant)
 			};
-			var nested = variant.PageUrl is null ? NestedUnion(variant.Schema, newAncestors) : null;
+			var nested = variant.PageUrl is null ? NestedUnion(variant.Schema, newAncestors, scope.Depth) : null;
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null || nested is not null;
 			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
 			var showProperties = hasProperties;
 
-			var nestedCount = (variant.Props?.Count ?? 0) + (dictionaryValue is null ? 0 : 1) + (nested?.Options.Count ?? 0);
+			var nestedCount = (variant.Props?.Count ?? 0)
+				+ (dictionaryValue is null ? 0 : 1)
+				+ (nested?.Options.Count(_analyzer.UnionOptionHasProperties) ?? 0);
 			var isCollapsible = showProperties && nestedCount > 0;
 			var defaultExpanded = ComputeDefaultExpanded();
 
@@ -127,12 +129,16 @@ public partial class ApiPropertyTreeBuilder
 	/// The union a variant is on top of its own fields, so a chart type lists its DSL and ES|QL forms. An option that refers back
 	/// to a type above it stays out, as a row that does is not listed again.
 	/// </summary>
-	private (UnionKeyword Keyword, List<UnionOption> Options)? NestedUnion(IOpenApiSchema? schema, IReadOnlySet<string> ancestors)
+	private (UnionKeyword Keyword, List<UnionOption> Options)? NestedUnion(
+		IOpenApiSchema? schema,
+		IReadOnlySet<string> ancestors,
+		int depth
+	)
 	{
-		if (_analyzer.GetListedUnion(schema) is not { } union)
+		if (depth >= options.MaxDepth || _analyzer.GetListedUnion(schema) is not { } union)
 			return null;
-		var options = union.Options.Where(o => string.IsNullOrEmpty(o.Ref) || !ancestors.Contains(o.Ref)).ToList();
-		return options.Count > 0 ? (union.Keyword, options) : null;
+		var kept = union.Options.Where(o => string.IsNullOrEmpty(o.Ref) || !ancestors.Contains(o.Ref)).ToList();
+		return kept.Any(_analyzer.UnionOptionHasProperties) ? (union.Keyword, kept) : null;
 	}
 
 	/// <summary>

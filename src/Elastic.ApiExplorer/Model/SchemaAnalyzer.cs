@@ -186,7 +186,8 @@ public class SchemaAnalyzer(
 	/// <summary>
 	/// The union a schema is: its own <c>oneOf</c>/<c>anyOf</c>, or the union member of an <c>allOf</c> that wraps one with
 	/// other members. Those options are the union's own, not merged with the other members, which a caller lists as
-	/// fields. Only options that list something are kept; null when the schema is no union or none of them does.
+	/// fields. Every option stays, a primitive one included, so the list names every choice. Null when the schema is no union
+	/// or none of its options lists fields.
 	/// </summary>
 	public (UnionKeyword Keyword, List<UnionOption> Options)? GetListedUnion(IOpenApiSchema? schema)
 	{
@@ -203,8 +204,8 @@ public class SchemaAnalyzer(
 
 	private (UnionKeyword Keyword, List<UnionOption> Options)? ListedUnion(UnionKeyword keyword, IEnumerable<IOpenApiSchema> members)
 	{
-		var options = GetUnionOptions(members).Where(UnionOptionHasProperties).ToList();
-		return options.Count > 0 ? (keyword, options) : null;
+		var options = GetUnionOptions(members);
+		return options.Any(UnionOptionHasProperties) ? (keyword, options) : null;
 	}
 
 	/// <summary>
