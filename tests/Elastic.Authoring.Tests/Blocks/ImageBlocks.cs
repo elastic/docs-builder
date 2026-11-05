@@ -162,9 +162,9 @@ public class ImageRefOutOfScope : GeneratorTest
 	public async Task ReportsDiagnostics() =>
 		await Docs.HasDiagnostics(
 			"""
-		error {repo}/docs/index.md:2 `../img/observability.png` does not exist. resolved to `Nullean.ScopedFileSystem.ScopedFileInfo
-		warning {repo}/docs/index.md:2 Image '../img/observability.png' is referenced out of table of contents scope '{repo}/docs'.
-		"""
+			error {repo}/docs/index.md:2 `../img/observability.png` does not exist. resolved to `{repo}/img/observability.png`
+			warning {repo}/docs/index.md:2 Image '../img/observability.png' is referenced out of table of contents scope '{repo}/docs'.
+			"""
 		);
 }
 

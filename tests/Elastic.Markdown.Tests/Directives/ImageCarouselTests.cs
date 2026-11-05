@@ -204,8 +204,6 @@ public class ImageCarouselWithMissingImageTests() : DirectiveTest<ImageCarouselB
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot(
-				"error {repo}/docs/index.md:5 `img/missing.png` does not exist. resolved to `Nullean.ScopedFileSystem.ScopedFileInfo"
-			);
+			.MatchInlineSnapshot("error {repo}/docs/index.md:5 `img/missing.png` does not exist. resolved to `{repo}/docs/img/missing.png`");
 	}
 }
