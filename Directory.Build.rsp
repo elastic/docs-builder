@@ -2,3 +2,4 @@
 # -graph schedules projects from the static dependency graph instead of blocking nodes on ProjectReference builds,
 # which keeps all cores busy on the 4-core CI runners.
 -graph
+-bl:.artifacts/ci-compile.binlog
