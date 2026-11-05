@@ -358,6 +358,50 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		);
 	}
 
+	[Test]
+	public async Task ApiSearchTypedRouteWithAParameterValueListsItsDescendantRoutes()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "/_security/user/alice", PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", results.Select(r => r.Url)));
+		results.Should().NotBeEmpty();
+		// Get, put and delete user share the route the value fills, so they tie and only the route is asserted.
+		results[0].Routes.Should().Contain(route => route.Path == "/_security/user/{username}", "the template the value fills ranks first");
+		results.Should().Contain(r => r.Url.EndsWith("/operation/operation-security-change-password", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task ApiSearchPlainWordDoesNotCoverTheRoutesUnderItsOwnName()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "api key", PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var urls = searchResult.Results.Select(r => r.Url).ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", urls));
+		// Every Kibana route starts with api/, so the word must not lift Kibana operations above the API-key ones.
+		urls
+			.Should()
+			.NotBeEmpty()
+			.And
+			.OnlyContain(u => u.Contains("api-key", StringComparison.Ordinal) && !u.Contains("/kibana", StringComparison.Ordinal));
+	}
+
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
 	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
 

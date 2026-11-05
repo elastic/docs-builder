@@ -30,6 +30,9 @@ public static class ApiLookupQueryBuilder
 	// Each word adds a dis_max with nested inner hits to a per-keystroke request; same bound as ApiEndpointPath's path segments.
 	private const int MaxTokens = 8;
 
+	// index.max_regex_length defaults to 1,000 characters, and a long typed route has up to 70 templates in one group.
+	private const int MaxRegexpLength = 900;
+
 	private static readonly FrozenSet<string> HttpMethods = new[] { "GET", "POST", "PUT", "DELETE", "HEAD", "PATCH" }.ToFrozenSet(
 		StringComparer.OrdinalIgnoreCase
 	);
@@ -134,9 +137,10 @@ public static class ApiLookupQueryBuilder
 	}
 
 	/// <summary>
-	/// A word or a typed route matches its endpoint exactly, or covers the routes under it just below. The bare keys and the
-	/// typed route both drop the underscore that starts an Elasticsearch system route, so <c>snapshot</c>, <c>/snapshot</c> and
-	/// <c>/_snapshot</c> all cover <c>_snapshot/*/*/_restore</c>.
+	/// A word or a typed route matches its endpoint exactly, or covers the routes under it just below. A typed route covers
+	/// the routes under it; a bare word covers only the routes under its system route, because words such as <c>api</c> are the
+	/// first segment of every Kibana route. The bare keys and the typed route both drop the underscore that starts an
+	/// Elasticsearch system route, so <c>snapshot</c>, <c>/snapshot</c> and <c>/_snapshot</c> all cover <c>_snapshot/*/*/_restore</c>.
 	/// </summary>
 	private static Query? KeyOption(string text, int index)
 	{
@@ -144,28 +148,65 @@ public static class ApiLookupQueryBuilder
 		if (SearchQueryBuilder.BuildApiEndpointQuery(route, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpoints) is not { } exact)
 			return null;
 
+		var typedRoute = text.Contains('/');
 		var bare = ApiEndpointPath.StripRouteUnderscores(route);
 		var bareExact = SearchQueryBuilder.BuildApiEndpointQuery(bare, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpointsBare);
 		var options = new Query?[]
 		{
 			exact,
 			bareExact,
-			RoutesUnder(route, QueryFieldNames.ApiEndpoints),
-			bareExact is null ? null : RoutesUnder(bare, QueryFieldNames.ApiEndpointsBare)
+			typedRoute ? RoutesUnder(route, QueryFieldNames.ApiEndpoints) : null,
+			typedRoute && bareExact is not null ? RoutesUnder(bare, QueryFieldNames.ApiEndpointsBare) : null
 		}.OfType<Query>().ToList();
 
 		// An index written before the bare keys exist has no api.endpoints_bare and the service deploys on its own,
 		// so a bare word keeps its underscore alias on the exact field until every index carries the bare keys.
 		if (SearchQueryBuilder.BuildBareWordEndpointQuery(route, ApiLookupWeights.EndpointKey) is { } alias)
 			options.Add(alias);
-		if (SearchQueryBuilder.EndpointName(route) is { } name && name != route)
+		if (SearchQueryBuilder.EndpointName(route) is { } name && !(typedRoute && name == route))
 			options.Add(RoutesUnder(name, QueryFieldNames.ApiEndpoints));
 
 		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
 	}
 
-	private static Query RoutesUnder(string route, Field field) =>
-		new ConstantScoreQuery { Filter = new PrefixQuery { Field = field, Value = route + "/" }, Boost = ApiLookupWeights.NamespaceKey };
+	/// <summary>
+	/// The routes under every template <see cref="ApiEndpointPath.QueryCandidates"/> reads the route as, so
+	/// <c>/_security/user/alice</c> covers <c>_security/user/*/_password</c>. Like the exact lookup, a template scores by the
+	/// literal segments it keeps.
+	/// </summary>
+	private static Query RoutesUnder(string route, Field field)
+	{
+		var groups = ApiEndpointPath.QueryCandidates(route);
+		var total = groups[0].LiteralSegments;
+		return new DisMaxQuery
+		{
+			Queries = groups.SelectMany(
+				g => RegexpBatches(g.Terms).Select(
+					pattern =>
+						(Query)new ConstantScoreQuery
+						{
+							Filter = new RegexpQuery { Field = field, Value = pattern + "/.+" },
+							Boost = ApiLookupWeights.NamespaceKey * (1 + g.LiteralSegments) / (1 + total)
+						}
+				)
+			).ToList()
+		};
+	}
+
+	private static IEnumerable<string> RegexpBatches(IReadOnlyList<string> terms)
+	{
+		var batch = new List<string>();
+		foreach (var term in terms)
+		{
+			if (batch.Count > 0 && ApiEndpointPath.RegexpAlternation([.. batch, term]).Length > MaxRegexpLength)
+			{
+				yield return ApiEndpointPath.RegexpAlternation(batch);
+				batch = [];
+			}
+			batch.Add(term);
+		}
+		yield return ApiEndpointPath.RegexpAlternation(batch);
+	}
 
 	/// <summary>A method word, such as <c>get</c>, also stays an operation, title and description word.</summary>
 	private static Query? MethodOption(string text, int index) =>

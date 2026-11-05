@@ -99,6 +99,14 @@ public class ApiEndpointPathTests
 	public void QueryCandidates_Empty_ReturnsEmpty() => ApiEndpointPath.QueryCandidates("").Should().BeEmpty();
 
 	[Test]
+	public void RegexpAlternation_Templates_EscapesTheWildcardAsALiteralStar() =>
+		ApiEndpointPath.RegexpAlternation(["_security/user/*", "*/user/alice"]).Should().Be(@"(_security/user/\*|\*/user/alice)");
+
+	[Test]
+	public void RegexpAlternation_DotAndDash_AreEscaped() =>
+		ApiEndpointPath.RegexpAlternation(["my-index.v1/_search"]).Should().Be(@"(my\-index\.v1/_search)");
+
+	[Test]
 	[Arguments("GET /_search", "_search")]
 	[Arguments("post   /{index}/_Search ", "*/_search")]
 	[Arguments("{index}/_doc/{id}", "*/_doc/*")]
