@@ -2951,13 +2951,13 @@ button.example-response-tab:focus-visible {
 		min-width: 0;
 		padding-top: 16px;
 		padding-bottom: 48px;
-		/* Stays in view while the sections scroll and never scrolls itself. It is exactly as tall as the window, so
-		   api-examples-balance.ts can share the room left under the chips and captions between the request and the
-		   response code. It does not clip, so the Copy page menu can open past its edge. */
+		/* Stays in view while the sections scroll and never scrolls itself. api-examples-balance.ts reads this
+		   max-height to share the room left under the chips and captions between the request and the response
+		   code. It does not clip, so the Copy page menu can open past its edge. */
 		position: sticky;
 		top: var(--offset-top, 0px);
 		align-self: start;
-		height: calc(100vh - var(--offset-top, 0px));
+		max-height: calc(100vh - var(--offset-top, 0px));
 		box-sizing: border-box;
 	}
 
@@ -2967,7 +2967,7 @@ button.example-response-tab:focus-visible {
 
 	/* Scrolls only in a window too short for the chips, headers and captions alone. */
 	.api-page-rail > #api-examples-panel {
-		flex: 1 1 0;
+		flex: 0 1 auto;
 		min-height: 0;
 		overflow-y: auto;
 	}

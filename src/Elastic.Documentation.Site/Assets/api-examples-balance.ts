@@ -86,7 +86,11 @@ function balance(panel: HTMLElement) {
         height(strip) +
         stripChrome(strip, card) -
         height(responseBody)
-    const room = panel.clientHeight - chrome
+    // From the rail's max-height, not the panel's height: the panel is only as tall as the code it last allowed.
+    const rail = panel.parentElement
+    const railMax = rail ? parseFloat(getComputedStyle(rail).maxHeight) : NaN
+    if (!rail || !Number.isFinite(railMax)) return
+    const room = railMax - (height(rail) - height(panel)) - chrome
     const floor = Number.isFinite(cap) ? (cap * minLines) / capLines : 0
     const next = balanceCodeHeights(room, natural, floor)
 
@@ -108,6 +112,7 @@ export function initExamplesBalance(root: ParentNode = document): void {
             }
             schedule()
             if (typeof ResizeObserver === 'undefined') return
+            window.addEventListener('resize', schedule, { passive: true })
             const resize = new ResizeObserver(schedule)
             resize.observe(panel)
             const examples = panel.querySelector('[data-api-examples]')
