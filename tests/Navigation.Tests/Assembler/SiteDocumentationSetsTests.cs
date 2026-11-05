@@ -124,18 +124,43 @@ public class SiteDocumentationSetsTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		siteNavigation.Should().NotBeNull();
-		siteNavigation.NavigationItems.Should().HaveCount(3);
-
-		var observability = siteNavigation.NavigationItems.ElementAt(0);
-		observability.Url.Should().Be("/serverless/observability");
-		observability.NavigationTitle.Should().NotBeNullOrEmpty();
-
-		var search = siteNavigation.NavigationItems.ElementAt(1);
-		search.Url.Should().Be("/serverless/search");
-
-		var security = siteNavigation.NavigationItems.ElementAt(2);
-		security.Url.Should().Be("/serverless/security");
+		NavigationTreeDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			  DocumentationSetNavigation  /serverless/observability  "Serverless Observability" [island]
+			    index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			    FolderNavigation  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      index: FileNavigationLeaf  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      FileNavigationLeaf  /serverless/observability/getting-started/installation  "Installation"
+			    FolderNavigation  /serverless/observability/monitoring  "Monitoring"
+			      index: FileNavigationLeaf  /serverless/observability/monitoring  "Monitoring"
+			      FileNavigationLeaf  /serverless/observability/monitoring/logs  "Logs"
+			      FileNavigationLeaf  /serverless/observability/monitoring/metrics  "Metrics"
+			      FileNavigationLeaf  /serverless/observability/monitoring/traces  "Traces"
+			  DocumentationSetNavigation  /serverless/search  "Serverless Search" [island]
+			    index: FileNavigationLeaf  /serverless/search  "Serverless Search"
+			    FolderNavigation  /serverless/search/indexing  "Indexing"
+			      index: FileNavigationLeaf  /serverless/search/indexing  "Indexing"
+			      FileNavigationLeaf  /serverless/search/indexing/documents  "Documents"
+			      FileNavigationLeaf  /serverless/search/indexing/bulk-api  "Bulk API"
+			    FolderNavigation  /serverless/search/searching  "Searching"
+			      index: FileNavigationLeaf  /serverless/search/searching  "Searching"
+			      FileNavigationLeaf  /serverless/search/searching/query-dsl  "Query DSL"
+			  DocumentationSetNavigation  /serverless/security  "Serverless Security" [island]
+			    index: FileNavigationLeaf  /serverless/security  "Serverless Security"
+			    FolderNavigation  /serverless/security/authentication  "Authentication"
+			      index: FileNavigationLeaf  /serverless/security/authentication  "Authentication"
+			      FileNavigationLeaf  /serverless/security/authentication/api-keys  "API Keys"
+			      FileNavigationLeaf  /serverless/security/authentication/oauth  "OAuth"
+			    FolderNavigation  /serverless/security/authorization  "Authorization"
+			      index: FileNavigationLeaf  /serverless/security/authorization  "Authorization"
+			      FileNavigationLeaf  /serverless/security/authorization/rbac  "RBAC"
+			"""
+			);
 	}
 
 	[Test]
@@ -180,18 +205,28 @@ public class SiteDocumentationSetsTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		siteNavigation.NavigationItems.Should().HaveCount(1);
-
-		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
-		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform");
-		platform.NavigationItems.Should().HaveCount(2);
-
-		var deployment = platform.NavigationItems.ElementAt(0);
-		deployment.Url.Should().Be("/platform/deployment");
-
-		var cloud = platform.NavigationItems.ElementAt(1);
-		cloud.Url.Should().Be("/platform/cloud");
+		NavigationTreeDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /platform  "Platform"
+			  DocumentationSetNavigation  /platform  "Platform" [island]
+			    index: FileNavigationLeaf  /platform  "Platform"
+			    TableOfContentsNavigation  /platform/deployment  "Deployment Guide"
+			      index: FileNavigationLeaf  /platform/deployment  "Deployment Guide"
+			      FolderNavigation  /platform/deployment/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /platform/deployment/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /platform/deployment/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /platform/cloud  "Cloud Guide"
+			      index: FileNavigationLeaf  /platform/cloud  "Cloud Guide"
+			      FolderNavigation  /platform/cloud/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /platform/cloud/aws/setup  "AWS Setup"
+			      FolderNavigation  /platform/cloud/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /platform/cloud/azure/setup  "Azure Setup"
+			"""
+			);
 	}
 
 	[Test]
@@ -249,26 +284,66 @@ public class SiteDocumentationSetsTests()
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		siteNavigation.Should().NotBeNull();
-		siteNavigation.NavigationItems.Should().HaveCount(5);
-
-		// Verify top-level items
-		var observability = siteNavigation.NavigationItems.ElementAt(0);
-		observability.Url.Should().Be("/serverless/observability");
-
-		var search = siteNavigation.NavigationItems.ElementAt(1);
-		search.Url.Should().Be("/serverless/search");
-
-		var security = siteNavigation.NavigationItems.ElementAt(2);
-		security.Url.Should().Be("/serverless/security");
-
-		var platform = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform");
-		platform.NavigationItems.Should().HaveCount(2);
-
-		var elasticsearch = siteNavigation.NavigationItems.ElementAt(4);
-		elasticsearch.Url.Should().Be("/elasticsearch/reference");
+		NavigationTreeDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			  DocumentationSetNavigation  /serverless/observability  "Serverless Observability" [island]
+			    index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			    FolderNavigation  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      index: FileNavigationLeaf  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      FileNavigationLeaf  /serverless/observability/getting-started/installation  "Installation"
+			    FolderNavigation  /serverless/observability/monitoring  "Monitoring"
+			      index: FileNavigationLeaf  /serverless/observability/monitoring  "Monitoring"
+			      FileNavigationLeaf  /serverless/observability/monitoring/logs  "Logs"
+			      FileNavigationLeaf  /serverless/observability/monitoring/metrics  "Metrics"
+			      FileNavigationLeaf  /serverless/observability/monitoring/traces  "Traces"
+			  DocumentationSetNavigation  /serverless/search  "Serverless Search" [island]
+			    index: FileNavigationLeaf  /serverless/search  "Serverless Search"
+			    FolderNavigation  /serverless/search/indexing  "Indexing"
+			      index: FileNavigationLeaf  /serverless/search/indexing  "Indexing"
+			      FileNavigationLeaf  /serverless/search/indexing/documents  "Documents"
+			      FileNavigationLeaf  /serverless/search/indexing/bulk-api  "Bulk API"
+			    FolderNavigation  /serverless/search/searching  "Searching"
+			      index: FileNavigationLeaf  /serverless/search/searching  "Searching"
+			      FileNavigationLeaf  /serverless/search/searching/query-dsl  "Query DSL"
+			  DocumentationSetNavigation  /serverless/security  "Serverless Security" [island]
+			    index: FileNavigationLeaf  /serverless/security  "Serverless Security"
+			    FolderNavigation  /serverless/security/authentication  "Authentication"
+			      index: FileNavigationLeaf  /serverless/security/authentication  "Authentication"
+			      FileNavigationLeaf  /serverless/security/authentication/api-keys  "API Keys"
+			      FileNavigationLeaf  /serverless/security/authentication/oauth  "OAuth"
+			    FolderNavigation  /serverless/security/authorization  "Authorization"
+			      index: FileNavigationLeaf  /serverless/security/authorization  "Authorization"
+			      FileNavigationLeaf  /serverless/security/authorization/rbac  "RBAC"
+			  DocumentationSetNavigation  /platform  "Platform" [island]
+			    index: FileNavigationLeaf  /platform  "Platform"
+			    TableOfContentsNavigation  /platform  "Deployment Guide"
+			      index: FileNavigationLeaf  /platform  "Deployment Guide"
+			      FolderNavigation  /platform/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /platform/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /platform/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /platform  "Cloud Guide"
+			      index: FileNavigationLeaf  /platform  "Cloud Guide"
+			      FolderNavigation  /platform/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /platform/aws/setup  "AWS Setup"
+			      FolderNavigation  /platform/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /platform/azure/setup  "Azure Setup"
+			  DocumentationSetNavigation  /elasticsearch/reference  "Elasticsearch Reference" [island]
+			    index: FileNavigationLeaf  /elasticsearch/reference  "Elasticsearch Reference"
+			    FolderNavigation  /elasticsearch/reference/rest-apis  "REST APIs"
+			      index: FileNavigationLeaf  /elasticsearch/reference/rest-apis  "REST APIs"
+			      FileNavigationLeaf  /elasticsearch/reference/rest-apis/document-apis  "Document APIs"
+			      FileNavigationLeaf  /elasticsearch/reference/rest-apis/search-apis  "Search APIs"
+			    FolderNavigation  /elasticsearch/reference/query-dsl  "Query DSL"
+			      index: FileNavigationLeaf  /elasticsearch/reference/query-dsl  "Query DSL"
+			      FileNavigationLeaf  /elasticsearch/reference/query-dsl/term-queries  "Term Queries"
+			      FileNavigationLeaf  /elasticsearch/reference/query-dsl/full-text-queries  "Full Text Queries"
+			"""
+			);
 	}
 
 	[Test]
@@ -289,23 +364,23 @@ public class SiteDocumentationSetsTests()
 			GenericDocumentationFileFactory.Instance
 		);
 
-		observabilityNav.NavigationTitle.Should().Be(observabilityNav.NavigationTitle);
-		observabilityNav.NavigationItems.Should().HaveCount(2); // index.md, getting-started folder, monitoring folder
-
-		var indexFile = observabilityNav.Index;
-		indexFile.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>();
-		indexFile.Url.Should().Be("/");
-
-		var gettingStarted = observabilityNav.NavigationItems.ElementAt(0);
-		gettingStarted.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
-		var gettingStartedFolder = (FolderNavigation<IDocumentationFile>)gettingStarted;
-		gettingStartedFolder.Index.Should().NotBeNull(); //quick-start.md
-		gettingStartedFolder.NavigationItems.Should().HaveCount(1); // installation.md
-
-		var monitoring = observabilityNav.NavigationItems.ElementAt(1);
-		monitoring.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
-		var monitoringFolder = (FolderNavigation<IDocumentationFile>)monitoring;
-		monitoringFolder.NavigationItems.Should().HaveCount(3); // logs.md, metrics.md, traces.md
+		NavigationTreeDump
+			.ToText(observabilityNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /  "Serverless Observability"
+			  index: FileNavigationLeaf  /  "Serverless Observability"
+			  FolderNavigation  /getting-started/quick-start  "Quick Start"
+			    index: FileNavigationLeaf  /getting-started/quick-start  "Quick Start"
+			    FileNavigationLeaf  /getting-started/installation  "Installation"
+			  FolderNavigation  /monitoring  "Monitoring"
+			    index: FileNavigationLeaf  /monitoring  "Monitoring"
+			    FileNavigationLeaf  /monitoring/logs  "Logs"
+			    FileNavigationLeaf  /monitoring/metrics  "Metrics"
+			    FileNavigationLeaf  /monitoring/traces  "Traces"
+			"""
+			);
 	}
 
 	[Test]
@@ -326,24 +401,26 @@ public class SiteDocumentationSetsTests()
 			GenericDocumentationFileFactory.Instance
 		);
 
-		platformNav.NavigationTitle.Should().Be("Platform");
-		platformNav.NavigationItems.Should().HaveCount(2); // deployment-guide TOC, cloud-guide TOC
-
-		var indexFile = platformNav.Index;
-		indexFile.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>();
-		indexFile.Url.Should().Be("/");
-
-		var deploymentGuide = platformNav.NavigationItems.ElementAt(0);
-		deploymentGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
-		deploymentGuide.Url.Should().Be("/deployment-guide");
-		var deploymentToc = (TableOfContentsNavigation<IDocumentationFile>)deploymentGuide;
-		deploymentToc.NavigationItems.Should().HaveCount(1); // self-managed folder
-
-		var cloudGuide = platformNav.NavigationItems.ElementAt(1);
-		cloudGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
-		cloudGuide.Url.Should().Be("/cloud-guide");
-		var cloudToc = (TableOfContentsNavigation<IDocumentationFile>)cloudGuide;
-		cloudToc.NavigationItems.Should().HaveCount(2); // aws folder, azure folder
+		NavigationTreeDump
+			.ToText(platformNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /  "Platform"
+			  index: FileNavigationLeaf  /  "Platform"
+			  TableOfContentsNavigation  /deployment-guide  "Deployment Guide"
+			    index: FileNavigationLeaf  /deployment-guide  "Deployment Guide"
+			    FolderNavigation  /deployment-guide/self-managed/installation  "Installation"
+			      index: FileNavigationLeaf  /deployment-guide/self-managed/installation  "Installation"
+			      FileNavigationLeaf  /deployment-guide/self-managed/configuration  "Configuration"
+			  TableOfContentsNavigation  /cloud-guide  "Cloud Guide"
+			    index: FileNavigationLeaf  /cloud-guide  "Cloud Guide"
+			    FolderNavigation  /cloud-guide/aws/setup  "AWS Setup"
+			      index: FileNavigationLeaf  /cloud-guide/aws/setup  "AWS Setup"
+			    FolderNavigation  /cloud-guide/azure/setup  "Azure Setup"
+			      index: FileNavigationLeaf  /cloud-guide/azure/setup  "Azure Setup"
+			"""
+			);
 	}
 
 	[Test]
@@ -364,18 +441,22 @@ public class SiteDocumentationSetsTests()
 			GenericDocumentationFileFactory.Instance
 		);
 
-		securityNav.NavigationTitle.Should().Be("Serverless Security");
-		securityNav.NavigationItems.Should().HaveCount(2); // authentication folder, authorization folder
-
-		var authentication = securityNav.NavigationItems.ElementAt(0);
-		authentication.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
-		var authenticationFolder = (FolderNavigation<IDocumentationFile>)authentication;
-		authenticationFolder.NavigationItems.Should().HaveCount(2); // api-keys.md, oauth.md
-
-		var authorization = securityNav.NavigationItems.ElementAt(1);
-		authorization.Should().BeOfType<FolderNavigation<IDocumentationFile>>();
-		var authorizationFolder = (FolderNavigation<IDocumentationFile>)authorization;
-		authorizationFolder.NavigationItems.Should().HaveCount(1); // rbac.md
+		NavigationTreeDump
+			.ToText(securityNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /  "Serverless Security"
+			  index: FileNavigationLeaf  /  "Serverless Security"
+			  FolderNavigation  /authentication  "Authentication"
+			    index: FileNavigationLeaf  /authentication  "Authentication"
+			    FileNavigationLeaf  /authentication/api-keys  "API Keys"
+			    FileNavigationLeaf  /authentication/oauth  "OAuth"
+			  FolderNavigation  /authorization  "Authorization"
+			    index: FileNavigationLeaf  /authorization  "Authorization"
+			    FileNavigationLeaf  /authorization/rbac  "RBAC"
+			"""
+			);
 	}
 
 	[Test]
@@ -411,15 +492,25 @@ public class SiteDocumentationSetsTests()
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// Verify root URL has path prefix
-		var root = siteNavigation.NavigationItems.First();
-		root.Url.Should().StartWith("/serverless/observability");
-
-		// Verify all nested items also have the path prefix
-		if (root is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
-		{
-			foreach (var item in nodeItem.NavigationItems)
-				item.Url.Should().StartWith("/serverless/observability");
-		}
+		NavigationTreeDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			  DocumentationSetNavigation  /serverless/observability  "Serverless Observability" [island]
+			    index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			    FolderNavigation  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      index: FileNavigationLeaf  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      FileNavigationLeaf  /serverless/observability/getting-started/installation  "Installation"
+			    FolderNavigation  /serverless/observability/monitoring  "Monitoring"
+			      index: FileNavigationLeaf  /serverless/observability/monitoring  "Monitoring"
+			      FileNavigationLeaf  /serverless/observability/monitoring/logs  "Logs"
+			      FileNavigationLeaf  /serverless/observability/monitoring/metrics  "Metrics"
+			      FileNavigationLeaf  /serverless/observability/monitoring/traces  "Traces"
+			"""
+			);
 	}
 
 	[Test]
@@ -455,16 +546,28 @@ public class SiteDocumentationSetsTests()
 		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
-		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/platform");
-
-		// Verify child TOCs have their specific path prefixes
-		var deployment = platform.NavigationItems.ElementAt(0);
-		deployment.Url.Should().StartWith("/platform/deployment");
-
-		var cloud = platform.NavigationItems.ElementAt(1);
-		cloud.Url.Should().StartWith("/platform/cloud");
+		NavigationTreeDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /platform  "Platform"
+			  DocumentationSetNavigation  /platform  "Platform" [island]
+			    index: FileNavigationLeaf  /platform  "Platform"
+			    TableOfContentsNavigation  /platform/deployment  "Deployment Guide"
+			      index: FileNavigationLeaf  /platform/deployment  "Deployment Guide"
+			      FolderNavigation  /platform/deployment/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /platform/deployment/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /platform/deployment/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /platform/cloud  "Cloud Guide"
+			      index: FileNavigationLeaf  /platform/cloud  "Cloud Guide"
+			      FolderNavigation  /platform/cloud/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /platform/cloud/aws/setup  "AWS Setup"
+			      FolderNavigation  /platform/cloud/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /platform/cloud/azure/setup  "Azure Setup"
+			"""
+			);
 	}
 
 	[Test]

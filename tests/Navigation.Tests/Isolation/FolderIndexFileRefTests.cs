@@ -40,14 +40,20 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Should create a FolderNavigation with the file as index
-		navigation.NavigationItems.Should().HaveCount(1);
-		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+		NavigationTreeDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /getting-started/getting-started  "getting-started"
+			  index: FileNavigationLeaf  /getting-started/getting-started  "getting-started"
+			  FolderNavigation  /getting-started/getting-started  "getting-started"
+			    index: FileNavigationLeaf  /getting-started/getting-started  "getting-started"
+			    FileNavigationLeaf  /getting-started/install  "install"
+			    FileNavigationLeaf  /getting-started/configure  "configure"
+			"""
+			);
 
-		// Children should be scoped to the folder
-		folder.Url.Should().Be("/getting-started/getting-started");
-		folder.NavigationItems.Should().HaveCount(2); // install.md, configure.md
-
-		// Verify no errors
 		context.Collector.Errors.Should().Be(0);
 	}
 
