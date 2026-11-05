@@ -35,8 +35,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>
-	/// Converts the default tree of every API the generators render. When two generators declare the same
-	/// API key, the first one wins.
+	/// Converts every version tree of every API the generators render, one document per operation and distinct rendering
+	/// (<see cref="ApiTreeCollapse"/>). When two generators declare the same API key, the first one owns all its trees.
 	/// </summary>
 	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
 		IEnumerable<OpenApiGenerator> generators,
@@ -52,8 +52,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				if (!seenKeys.Add(api.Key))
 					continue;
 
-				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker));
-				foreach (var doc in ConvertToDocuments(api.First(t => t.Moniker == defaultTree)))
+				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker))!;
+				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToDocuments), defaultTree))
 					yield return doc;
 			}
 		}

@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
@@ -581,6 +582,93 @@ public class OpenApiDocumentExporterTests
 		doc.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
 		doc.Api!.Trees.Should().Equal(new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/elasticsearch" });
 	}
+
+	[Test]
+	public void Collapse_MainAndIdenticalNine_OneVisibleDocumentPerOperation()
+	{
+		var docs = ExportTrees(("main", TreeSpec()), ("9", TreeSpec()));
+
+		docs.Select(d => d.Api!.OperationId).Should().Equal("search", "count");
+		var search = SearchOperation(docs);
+		search.Api!
+			.Trees
+			.Select(t => $"{t.Tree} {t.Root}")
+			.Should()
+			.Equal("main /docs/api/doc/elasticsearch", "9 /docs/api/doc/elasticsearch/v9");
+		search.Hidden.Should().BeFalse();
+		search.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
+	}
+
+	[Test]
+	public void Collapse_EightDiffersOnSearch_AddsAHiddenEightDocument()
+	{
+		var docs = ExportTrees(("main", TreeSpec()), ("9", TreeSpec()), ("8", TreeSpec("Search the v8 way")));
+
+		docs
+			.Select(d => $"{d.Api!.OperationId} {string.Join(",", d.Api.Trees.Select(t => t.Tree))} {d.Hidden}")
+			.Should()
+			.Equal("search main,9 False", "count main,9,8 False", "search 8 True");
+		var eight = docs.Single(d => d.Api!.Trees is [{ Tree: "8" }]);
+		eight.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
+		eight.Parents[1].Path.Should().Be("/docs/api/doc/elasticsearch/v8");
+		eight.Parents[1].Title.Should().Be("Elasticsearch API");
+	}
+
+	[Test]
+	public void Collapse_OperationOnlyInEight_OneHiddenDocument()
+	{
+		var docs = ExportTrees(("main", TreeSpec()), ("8", TreeSpec(extra: ("knn-search", null))));
+
+		var knn = docs.Single(d => d.Api!.OperationId == "knn-search");
+		knn.Api!.Trees.Select(t => t.Tree).Should().Equal("8");
+		knn.Hidden.Should().BeTrue();
+		knn.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-knn-search");
+	}
+
+	[Test]
+	public void Collapse_VersionlessApi_ListsOnlyMain()
+	{
+		var search = SearchOperation(ExportTrees(("main", TreeSpec())));
+
+		search.Api!.Trees.Select(t => t.Tree).Should().Equal("main");
+		search.Hidden.Should().BeFalse();
+	}
+
+	[Test]
+	public void Collapse_OperationAddedAfterCurrentStack_IsLeftOutOfEveryTree()
+	{
+		var unreleased = TreeSpec(extra: ("new-thing", "Generally available; Added in 9.6.0"));
+
+		var docs = ExportTrees(("main", unreleased), ("9", unreleased), ("8", unreleased));
+
+		docs.Select(d => d.Api!.OperationId).Should().Equal("search", "count");
+	}
+
+	[Test]
+	public void Collapse_DefaultTreeIsNine_SharedRenderingPointsIntoNine()
+	{
+		var renderings = new[] { ("main", TreeSpec()), ("9", TreeSpec()), ("8", TreeSpec("Search the v8 way")) }.SelectMany(
+			t => CurrentStackExporter().ConvertToDocuments(EsTree(t.Item1, t.Item2))
+		);
+
+		var docs = ApiTreeCollapse.Collapse(renderings, defaultTree: "9").ToList();
+
+		var shared = docs.Single(d => d.Api!.OperationId == "search" && !d.Hidden);
+		shared.Api!.Trees.Select(t => t.Tree).Should().Equal("9", "main");
+		shared.Path.Should().Be("/docs/api/doc/elasticsearch/v9/operation/operation-search");
+		docs.Single(d => d.Api!.OperationId == "search" && d.Hidden).Api!.Trees.Select(t => t.Tree).Should().Equal("8");
+	}
+
+	/// <summary>Collapses the trees under the API's real default-tree rule, with Stack current at 9.5.6 as in <c>config/versions.yml</c>.</summary>
+	private static List<DocumentationDocument> ExportTrees(params (string Moniker, OpenApiDocument Spec)[] trees)
+	{
+		var exporter = CurrentStackExporter();
+		var defaultTree = ApiVersions.DefaultTree(trees.Select(t => t.Moniker))!;
+		return [.. ApiTreeCollapse.Collapse(trees.SelectMany(t => exporter.ConvertToDocuments(EsTree(t.Moniker, t.Spec))), defaultTree)];
+	}
+
+	private static OpenApiDocumentExporter CurrentStackExporter() =>
+		new(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 5, patch: 6));
 
 	private static DocumentationDocument SearchOperation(IEnumerable<DocumentationDocument> docs) =>
 		docs.Single(d => d.Api!.OperationId == "search");
