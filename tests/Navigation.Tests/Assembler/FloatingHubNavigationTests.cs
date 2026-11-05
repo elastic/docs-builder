@@ -159,6 +159,41 @@ public class FloatingHubNavigationTests
 		enhancer.GenerateNavigationSections(navigation, baseUrl).Should().NotContain("Demo API");
 	}
 
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task Paging_NeverWalksIntoTheApisHubOrItsRoots(bool apisBeforeTheDocs)
+	{
+		// the preview navigation puts the APIs between two sections of the docs, so the hub is in the middle of the order
+		var siteNavYaml = apisBeforeTheDocs
+			? """
+			  toc:
+			    - section: APIs
+			      floating: api
+			    - toc: observability://
+			      path_prefix: observability
+			  """
+			: SiteNavYaml;
+		var (navigation, _) = CreateNavigation(new FloatingSectionRegistry([new DemoProvider()]), navYaml: siteNavYaml);
+		await navigation.ResolveFloatingSectionsAsync(TestContext.Current!.Execution.CancellationToken);
+		INavigationTraversable traversable = navigation;
+
+		var reachedByPaging = traversable.YieldAll().ToArray();
+
+		reachedByPaging.Should().NotBeEmpty();
+		reachedByPaging.Should().NotContain(
+			i => i is DemoRoot || i is SectionNavigation,
+			"paging through the docs does not go through the APIs"
+		);
+		foreach (var leaf in navigation.NavigationDocumentationFileLookup.Select(kv => kv.Key).ToArray())
+		{
+			var previous = traversable.GetPrevious(leaf);
+			var next = traversable.GetNext(leaf);
+			(previous is DemoRoot || previous is SectionNavigation).Should().BeFalse($"the previous page of {leaf.NavigationTitle}");
+			(next is DemoRoot || next is SectionNavigation).Should().BeFalse($"the next page of {leaf.NavigationTitle}");
+		}
+	}
+
 	private sealed class AnchorLeaf : ILeafNavigationItem<DemoModel>
 	{
 		public DemoModel Model { get; } = new();
