@@ -347,6 +347,55 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task FloatingSection_ToLinkSection_PublishesEachPageOnceWithItsVersions()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(CreateGenerator(context, versionIndexClient, reader));
+		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
+		_ = section!.CreateRoot(null);
+		section.ToLinkSection().Should().BeNull("nothing is resolved yet");
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+		var links = section.ToLinkSection()!;
+
+		links.Versions.Select(v => v.Name).Should().BeEquivalentTo(["main", "9", "8"]);
+		links
+			.Versions
+			.ToDictionary(v => v.Name, v => v.Root)
+			.Should()
+			.BeEquivalentTo(
+				new Dictionary<string, string>
+				{
+					["main"] = "api/doc/elasticsearch",
+					["9"] = "api/doc/elasticsearch/v9",
+					["8"] = "api/doc/elasticsearch/v8"
+				},
+				"the API Explorer states where each version lives"
+			);
+		links.Versions.Where(v => !v.Hidden).Select(v => v.Name).Should().Equal("main");
+		links.Versions.Where(v => v.Current).Select(v => v.Name).Should().Equal("main");
+		var all = (1UL << links.Versions.Length) - 1;
+		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("", all), "every version has a landing page");
+		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("operation/operation-ping", all), "one entry, not one per version");
+		links.TryResolvePage("8", "operation/operation-ping", out var path).Should().BeTrue();
+		path.Should().Be("api/doc/elasticsearch/v8/operation/operation-ping");
+		links.TryResolvePage(null, "operation/operation-ping", out var currentPath).Should().BeTrue();
+		currentPath.Should().Be("api/doc/elasticsearch/operation/operation-ping");
+		links.TryResolvePage("main", "operation/operation-missing", out _).Should().BeFalse();
+	}
+
+	[Test]
 	public async Task FloatingSection_WithoutAGenerator_StaysEmptyAndHidden()
 	{
 		var collector = new DiagnosticsCollector([]);

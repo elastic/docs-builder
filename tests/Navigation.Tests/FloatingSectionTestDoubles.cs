@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation.Floating;
 
 namespace Elastic.Documentation.Navigation.Tests;
@@ -45,6 +46,8 @@ internal sealed class DemoSection : IFloatingSection
 		_root!.SetNavigationItems([new DemoPage(_root)]);
 		return Task.CompletedTask;
 	}
+
+	public FloatingLinkSection? ToLinkSection() => null;
 }
 
 internal sealed record DemoModel : INavigationModel;

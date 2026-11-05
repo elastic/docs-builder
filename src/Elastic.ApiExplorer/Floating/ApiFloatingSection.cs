@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Floating;
 
@@ -55,6 +56,7 @@ internal sealed class ApiFloatingSection(
 ) : IFloatingSection
 {
 	private ApiFloatingRoot? _root;
+	private ApiProductTrees? _trees;
 
 	public string Kind => "api";
 
@@ -98,7 +100,70 @@ internal sealed class ApiFloatingSection(
 		for (var i = 0; i < trees.Navigations.Count; i++)
 			trees.Navigations[i].Hidden = trees.Resolved.Documents[i].Version.Moniker != "main";
 
+		_trees = trees;
 		_root!.SetNavigationItems(trees.Navigations);
+	}
+
+	public FloatingLinkSection? ToLinkSection() => _trees is null ? null : ApiLinkSections.Create(urlKey, _trees);
+}
+
+internal static class ApiLinkSections
+{
+	/// <summary>The API Explorer owns its routing, so it states where each version lives. Only <c>main</c> is visible and current.</summary>
+	private static FloatingLinkVersion Version(string apiKey, string moniker) =>
+		new()
+		{
+			Name = moniker,
+			Root = ApiUrlBuilder.ProductRoot(null, ApiUrlBuilder.ProductSuffix(apiKey, moniker)).Trim('/'),
+			Hidden = moniker != "main",
+			Current = moniker == "main"
+		};
+
+	/// <summary>
+	/// One page path once, with the versions that contain it. A collapsed operation also answers to its former
+	/// per-operation paths, which become aliases of the canonical path, kept per version.
+	/// </summary>
+	public static FloatingLinkSection Create(string apiKey, ApiProductTrees trees)
+	{
+		var monikers = trees.Resolved.Documents.Select(d => d.Version.Moniker).Take(FloatingLinkSection.MaxVersions).ToArray();
+		var pages = new Dictionary<string, ulong>(StringComparer.Ordinal);
+		var aliases = new Dictionary<string, Dictionary<string, string[]>>(StringComparer.Ordinal);
+
+		for (var bit = 0; bit < monikers.Length; bit++)
+		{
+			var mask = 1UL << bit;
+
+			var formerPaths = new List<(string Canonical, string Alias)>();
+			foreach (var (name, all) in trees.PageNames[monikers[bit]])
+			{
+				var page = name.Trim('/');
+				var canonical = all[0].Trim('/');
+				if (page == canonical)
+					pages[page] = pages.GetValueOrDefault(page) | mask;
+				else
+					formerPaths.Add((canonical, page));
+			}
+
+			// sorted, so a rebuild that changes nothing writes a byte-identical links.json
+			if (formerPaths.Count > 0)
+			{
+				aliases[monikers[bit]] = formerPaths
+					.GroupBy(p => p.Canonical, StringComparer.Ordinal)
+					.OrderBy(g => g.Key, StringComparer.Ordinal)
+					.ToDictionary(
+						g => g.Key,
+						g => g.Select(p => p.Alias).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+						StringComparer.Ordinal
+					);
+			}
+		}
+
+		return new FloatingLinkSection
+		{
+			Versions = [.. monikers.Select(moniker => Version(apiKey, moniker))],
+			Pages = pages,
+			Aliases = aliases.Count == 0 ? null : aliases
+		};
 	}
 }
 
