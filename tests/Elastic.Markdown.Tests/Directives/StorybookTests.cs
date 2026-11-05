@@ -224,9 +224,13 @@ public class StorybookIframeTests() : StorybookRegistryTest("""
 	public void RendersIframeFallback()
 	{
 		Block!.HasInlineStory.Should().BeFalse();
-		Html.Should().Contain("<iframe");
-		Html.Should().Contain(
-			"src=\"http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story\""
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+			<div class="storybook-embed">
+				<iframe src="http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story" title="Storybook story" style="width:100%;height:400px;border:none;" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>
+			</div>
+			"""
 		);
 	}
 }
@@ -263,7 +267,14 @@ public class StorybookInvalidHeightTests() : StorybookRegistryTest(
 			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains(":height: must be a positive integer"));
-		Html.Should().Contain("height:400px");
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+			<div class="storybook-embed">
+				<iframe src="http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story" title="Storybook story" style="width:100%;height:400px;border:none;" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>
+			</div>
+			"""
+		);
 	}
 }
 

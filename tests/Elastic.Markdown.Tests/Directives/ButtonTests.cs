@@ -272,9 +272,6 @@ public class ButtonGroupTests() : DirectiveTest<ButtonGroupBlock>(
 		</div>
 		"""
 		);
-
-	[Test]
-	public void ContainsBothButtons() => Html.Should().Contain("Primary").And.Contain("Secondary");
 }
 
 [InheritsTests]

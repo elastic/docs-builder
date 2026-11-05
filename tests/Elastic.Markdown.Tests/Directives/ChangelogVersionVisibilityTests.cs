@@ -78,11 +78,27 @@ public class ChangelogVisibilityOnProductionTests() : ChangelogVersionVisibility
 	protected override ContentSource? GetContentSource() => ContentSource.Current;
 
 	[Test]
-	public void HidesBundlesTargetingUnreleasedVersions()
-	{
-		Html.Should().Contain(ReleasedTitle);
-		Html.Should().NotContain(UnreleasedTitle, "8.1.0 is newer than the current release (8.0.0) and production publishes 'current'");
-	}
+	public void HidesBundlesTargetingUnreleasedVersions() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="7.9.0">
+			<h2>
+				<a class="headerlink" href="#7.9.0">7.9.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-7.9.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-7.9.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Released change.
+				<a href="https://github.com/elastic/elasticsearch/pull/100">#100</a>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test]
 	public void EmitsHintForHiddenBundle() =>
@@ -95,11 +111,42 @@ public class ChangelogVisibilityOnStagingTests() : ChangelogVersionVisibilityTes
 	protected override ContentSource? GetContentSource() => ContentSource.Next;
 
 	[Test]
-	public void ShowsUnreleasedBundlesForPreReleaseReview()
-	{
-		Html.Should().Contain(ReleasedTitle);
-		Html.Should().Contain(UnreleasedTitle, "staging publishes 'next' so staged bundles are reviewable before release day");
-	}
+	public void ShowsUnreleasedBundlesForPreReleaseReview() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="8.1.0">
+			<h2>
+				<a class="headerlink" href="#8.1.0">8.1.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-8.1.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-8.1.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Unreleased staged change.
+				<a href="https://github.com/elastic/elasticsearch/pull/200">#200</a>
+			</li>
+		</ul>
+		<div class="heading-wrapper" id="7.9.0">
+			<h2>
+				<a class="headerlink" href="#7.9.0">7.9.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-7.9.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-7.9.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Released change.
+				<a href="https://github.com/elastic/elasticsearch/pull/100">#100</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -108,11 +155,42 @@ public class ChangelogVisibilityOnIsolatedBuildTests() : ChangelogVersionVisibil
 	// No override: isolated/local builds have no content source and render everything.
 
 	[Test]
-	public void ShowsAllBundles()
-	{
-		Html.Should().Contain(ReleasedTitle);
-		Html.Should().Contain(UnreleasedTitle);
-	}
+	public void ShowsAllBundles() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="8.1.0">
+			<h2>
+				<a class="headerlink" href="#8.1.0">8.1.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-8.1.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-8.1.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Unreleased staged change.
+				<a href="https://github.com/elastic/elasticsearch/pull/200">#200</a>
+			</li>
+		</ul>
+		<div class="heading-wrapper" id="7.9.0">
+			<h2>
+				<a class="headerlink" href="#7.9.0">7.9.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-7.9.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-7.9.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Released change.
+				<a href="https://github.com/elastic/elasticsearch/pull/100">#100</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>

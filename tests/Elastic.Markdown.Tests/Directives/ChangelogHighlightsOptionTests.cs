@@ -150,9 +150,7 @@ public class ChangelogHighlightsOptionTypeAllWithoutFlagTests : DirectiveTest<Ch
 	[Test]
 	public void TypeAllAloneDoesNotEmitHighlightsSection()
 	{
-		Html.Should().Contain("Breaking changes");
-		Html.Should().Contain("Highlighted feature");
-		Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
+		Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 		Block!.GeneratedTableOfContent.Should().NotContain(t => t.Heading == "Highlights");
 	}
 }

@@ -612,8 +612,26 @@ public class ChangelogCdnVersionFilterTests() : DirectiveTest<ChangelogBlock>(
 	public void RendersOnlyMatchingVersion()
 	{
 		Block!.Found.Should().BeTrue();
-		Html.Should().Contain("Selected version entry");
-		Html.Should().NotContain("Filtered out entry");
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+			<div class="heading-wrapper" id="9.4.0">
+				<h2>
+					<a class="headerlink" href="#9.4.0">9.4.0</a>
+				</h2>
+			</div>
+			<div class="heading-wrapper" id="elasticsearch-9.4.0-features-enhancements">
+				<h3>
+					<a class="headerlink" href="#elasticsearch-9.4.0-features-enhancements">Features and enhancements</a>
+				</h3>
+			</div>
+			<ul>
+				<li>Selected version entry.
+					<a href="https://github.com/elastic/elasticsearch/pull/999">#999</a>
+				</li>
+			</ul>
+			"""
+		);
 	}
 }
 
@@ -668,7 +686,26 @@ public class ChangelogCdnInferredProductTests() : DirectiveTest<ChangelogBlock>(
 	public void RendersInferredCdnBundleBody()
 	{
 		Block!.Found.Should().BeTrue();
-		Html.Should().Contain("Inferred product from the repository");
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+			<div class="heading-wrapper" id="9.4.0">
+				<h2>
+					<a class="headerlink" href="#9.4.0">9.4.0</a>
+				</h2>
+			</div>
+			<div class="heading-wrapper" id="docs-builder-9.4.0-features-enhancements">
+				<h3>
+					<a class="headerlink" href="#docs-builder-9.4.0-features-enhancements">Features and enhancements</a>
+				</h3>
+			</div>
+			<ul>
+				<li>Inferred product from the repository.
+					<a href="https://github.com/elastic/docs-builder/pull/999">#999</a>
+				</li>
+			</ul>
+			"""
+		);
 	}
 }
 
