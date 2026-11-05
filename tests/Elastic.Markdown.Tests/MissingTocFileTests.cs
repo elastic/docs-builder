@@ -6,7 +6,9 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.IO;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests;
 
@@ -47,10 +49,15 @@ public class MissingTocFileTests()
 
 		act.Should().NotThrow("a missing toc file must surface a validation error, not crash the build");
 
-		collector.Errors.Should().BeGreaterThan(0);
 		collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("missing.md") && d.Message.Contains("does not exist"));
+			.MatchInlineSnapshot(
+				"""
+			error {repo}/docs/docset.yml Table of contents references 'missing.md' but the file does not exist on disk.
+			error {repo}/docs/docset.yml Documentation set 'test' ({repo}/docs/docset.yml) table of contents has items defined but none could be created
+			"""
+			);
 	}
 }
