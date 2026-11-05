@@ -198,16 +198,20 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>Validation constraint labels for a schema, then its default; empty when it declares none.</summary>
-	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema)
-	{
-		var constraints = BuildLimits(schema);
-		var compact = CompactDefault(schema);
-		var defaultText = compact ?? schema.Default?.ToString();
-		// A long object default would only be cut in a chip; the row lists it in full instead (see LongDefault).
-		if (!string.IsNullOrEmpty(defaultText) && (compact is null || compact.Length <= MaxInlineConstraintLength))
-			constraints.Add(new ConstraintDisplay($"default: {defaultText}"));
+	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema) =>
+		DefaultConstraint(schema) is { } defaultChip ? [.. BuildLimits(schema), defaultChip] : BuildLimits(schema);
 
-		return constraints;
+	/// <summary>
+	/// The constraints a property row shows in its type. A default too long for a chip has a row of its own
+	/// (<see cref="LongDefault"/>), so it stays out of them. Every other place that describes a type keeps it as a chip.
+	/// </summary>
+	private static IReadOnlyList<ConstraintDisplay> BuildRowConstraints(IOpenApiSchema schema) =>
+		LongDefault(schema) is null ? BuildConstraints(schema) : BuildLimits(schema);
+
+	private static ConstraintDisplay? DefaultConstraint(IOpenApiSchema schema)
+	{
+		var text = CompactDefault(schema) ?? schema.Default?.ToString();
+		return string.IsNullOrEmpty(text) ? null : new ConstraintDisplay($"default: {text}");
 	}
 
 	/// <summary>An object or array default as one compact line; null for any other default.</summary>
@@ -321,7 +325,7 @@ public partial class ApiPropertyTreeBuilder(
 			IsRecursive = isRecursive,
 			IsRequest = scope.IsRequest,
 			Type = WithTypeLink(
-				WithConstraints(BuildAnnotation(typeInfo, HasActualProperties(propSchema)), BuildConstraints(propSchema)),
+				WithConstraints(BuildAnnotation(typeInfo, HasActualProperties(propSchema)), BuildRowConstraints(propSchema)),
 				typeLink
 			),
 			DescriptionHtml = descriptionHtml,
@@ -331,7 +335,7 @@ public partial class ApiPropertyTreeBuilder(
 				? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration, designSystem: options.DesignSystem)
 				: null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
-			Constraints = BuildConstraints(propSchema),
+			Constraints = BuildRowConstraints(propSchema),
 			// A union that mixes literals with objects lists the literals in its "One of:" row instead.
 			EnumValues = MixesLiteralsWithObjects(typeInfo, expansion) ? [] : typeInfo.EnumValues ?? [],
 			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.

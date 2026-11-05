@@ -538,6 +538,19 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Describe_LongObjectDefault_KeepsItAsAChipWhereARowHasNoDefaultRow()
+	{
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Default = new JsonObject { ["auto_apply_filters"] = true, ["use_margins"] = true, ["sync_cursor"] = true }
+		};
+
+		CreateBuilder().Describe(schema).Text.Should().Contain("""default: {"auto_apply_filters":true""");
+		ApiPropertyTreeBuilder.BuildConstraints(schema).Single().Text.Should().NotContain("\n", "one line, as a chip reads it");
+	}
+
+	[Test]
 	public void BuildConstraints_EmptyObjectAndScalarDefaults_StayInTheChip()
 	{
 		ApiPropertyTreeBuilder.BuildConstraints(new OpenApiSchema { Default = new JsonObject() }).Single().Text.Should().Be("default: {}");

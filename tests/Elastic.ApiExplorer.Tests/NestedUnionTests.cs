@@ -241,6 +241,44 @@ public class NestedUnionTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_RowsThatDifferOnlyInALongDefault_ShareNoListing()
+	{
+		string Field(string value) =>
+			$$"""{ "type": "object", "default": { "mode": "{{value}}", "retries": 3, "sync": true, "borders": false } }""";
+
+		string Row(string value)
+		{
+			var fields = string.Join(", ", Enumerable.Range(1, 11).Select(i => $"\"f{i}\": {{ \"type\": \"string\" }}"));
+			return $$"""
+				{ "anyOf": [
+				  { "allOf": [ { "type": "object", "properties": { "f0": {{Field(value)}}, {{fields}} } }, { "oneOf": [ { "$ref": "#/components/schemas/X" }, { "$ref": "#/components/schemas/Y" } ] } ] },
+				  { "type": "object", "properties": { "ref_id": { "type": "string" } } } ] }
+				""";
+		}
+
+		var json = WithSchemas(
+			$$"""
+			{
+			  "X": { "type": "object", "title": "X", "properties": { "x": { "type": "string" } } },
+			  "Y": { "type": "object", "title": "Y", "properties": { "y": { "type": "string" } } },
+			  "Holder": { "type": "object", "properties": { "a": {{Row("fast")}}, "b": {{Row("slow")}}, "c": {{Row("fast")}} } }
+			}
+			"""
+		);
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		list
+			.Items
+			.Single(p => p.Name == "c")
+			.Repeats
+			.Should()
+			.NotBeNull("an identical listing links back, which proves the rows are shareable");
+		list.Items.Single(p => p.Name == "b").Repeats.Should().BeNull("only the long default of `f0` differs");
+	}
+
+	[Test]
 	public async Task WriteList_NestedVariants_ListsTheirFields()
 	{
 		var markdown = new StringBuilder();

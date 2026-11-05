@@ -104,6 +104,8 @@ internal static class ListingContent
 				.AppendJoin(',', property.Requires?.Options ?? [])
 				.Append('|')
 				.Append(property.TypeLink?.Url)
+				.Append('|')
+				.Append(property.DefaultValue)
 				.Append('|');
 			// Children count by their hash, so a full listing and a link to an identical listing contribute the same.
 			_ = property.Repeats is { } repeats
