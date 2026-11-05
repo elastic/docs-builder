@@ -269,6 +269,13 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("POST /_count", "operation-count");
 		yield return ("snapshot restore", "operation-snapshot-restore");
 		yield return ("search template", "operation-search-template");
+		yield return ("/_cluster health", "operation-cluster-health");
+		yield return ("/cluster health", "operation-cluster-health");
+		yield return ("/search", "operation-search");
+		yield return ("/search knn", "operation-search");
+		yield return ("/count", "operation-count");
+		yield return ("/snapshot restore", "operation-snapshot-restore");
+		yield return ("/_security role", "operation-security-put-role");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -323,6 +330,29 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var operations = results.Where(r => r.Url.EndsWith($"/operation/{expectedOperation}", StringComparison.Ordinal)).ToList();
 		operations.Should().NotBeEmpty($"'{query}' should find {expectedOperation}");
 		operations.Should().AllSatisfy(r => r.Properties.Should().Contain(p => p.Name == field && p.Location == location));
+	}
+
+	[Test]
+	public async Task ApiSearchTypedRouteListsTheRoutesUnderIt()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "/api/fleet", PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		results.Should().NotBeEmpty("'/api/fleet' should list the Fleet operations");
+		results.Should().AllSatisfy(
+			r => r
+				.Routes
+				.Should()
+				.Contain(route => route.Path.StartsWith("/api/fleet", StringComparison.Ordinal), $"{r.Url} has a Fleet route")
+		);
 	}
 
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
