@@ -100,8 +100,6 @@ public class Lists : DocumentTest
 		3. Ordered item 3
 		""";
 
-	// The expected output below is what the exporter writes today. Until it moved to snapshots this test compared with
-	// whitespace ignored, so it did not notice that the second level of nesting loses its indentation. Worth a look.
 	[Test, DisplayName("converts to standard markdown lists")]
 	public async Task ConvertsToStandardMarkdownLists() =>
 		await Docs.ConvertsToNewLlm(
@@ -109,17 +107,17 @@ public class Lists : DocumentTest
 			- Item 1
 			- Item 2
 			  - Nested item 1
-			- Nested item 2
-			  - Nested Nested item 1
-			- Nested Nested item 2
+			  - Nested item 2
+			    - Nested Nested item 1
+			    - Nested Nested item 2
 			- Item 3
 
 			1. Ordered item 1
 			2. Ordered item 2
 			   1. Nested ordered item 1
-			2. Nested ordered item 2
-			   - Nested unordered item 1
-			- Nested unordered item 2
+			   2. Nested ordered item 2
+			      - Nested unordered item 1
+			      - Nested unordered item 2
 			3. Ordered item 3
 			"""
 		);
@@ -781,8 +779,6 @@ public class CodeblockInList : DocumentTest
 		     ```
 		""";
 
-	// The expected output below is what the exporter writes today. Until it moved to snapshots this test compared with
-	// whitespace ignored, so it did not notice that the fenced code block in a nested list item loses its indentation. Worth a look.
 	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
@@ -794,10 +790,10 @@ public class CodeblockInList : DocumentTest
 			  ```
 			- List item 2
 			  1. Nested list item
-			   ```python
-			   def hello():
-			       print("Hello, world!")
-			   ```
+			     ```python
+			     def hello():
+			         print("Hello, world!")
+			     ```
 			"""
 		);
 }
