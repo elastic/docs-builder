@@ -81,6 +81,45 @@ public class ContentStackMappingTests
 		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
+	/// <summary>
+	/// A date without an offset is UTC whatever the machine's time zone is. TZ is read by .NET on Linux and macOS (Windows
+	/// ignores it), and the cached zone is dropped so the mapper sees the change.
+	/// </summary>
+	[Test]
+	[NotInParallel]
+	[Arguments("Asia/Tokyo")]
+	[Arguments("America/Los_Angeles")]
+	public void PressRelease_DateWithoutOffset_IsUtcInAnyTimeZone(string timeZone)
+	{
+		var previous = Environment.GetEnvironmentVariable("TZ");
+		try
+		{
+			Environment.SetEnvironmentVariable("TZ", timeZone);
+			TimeZoneInfo.ClearCachedData();
+
+			var item = LoadFixture("press_release.json", "press");
+			var doc = ContentStackMapper.ToSiteDocument(item);
+
+			doc.Should().NotBeNull();
+			doc!.PublishedDate.Should().Be(new DateTimeOffset(2023, 9, 1, 0, 0, 0, TimeSpan.Zero));
+			doc.PublishedDate!.Value.Offset.Should().Be(TimeSpan.Zero);
+		}
+		finally
+		{
+			Environment.SetEnvironmentVariable("TZ", previous);
+			TimeZoneInfo.ClearCachedData();
+		}
+	}
+
+	/// <summary>A date that carries an offset keeps it.</summary>
+	[Test]
+	public void ParseDate_KeepsAnExplicitOffset()
+	{
+		ContentStackMapper.ParseDate("2023-09-01T10:00:00+05:00")!.Value.Offset.Should().Be(TimeSpan.FromHours(5));
+		ContentStackMapper.ParseDate("2023-09-01T10:00:00Z")!.Value.Offset.Should().Be(TimeSpan.Zero);
+		ContentStackMapper.ParseDate("not a date").Should().BeNull();
+	}
+
 	/// <summary>Covers: product_versions (release_notes body, date, version_number)</summary>
 	[Test]
 	public void ProductRelease_Maps_ReleaseNotes()
