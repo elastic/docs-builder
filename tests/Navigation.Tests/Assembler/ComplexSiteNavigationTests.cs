@@ -316,6 +316,69 @@ public class ComplexSiteNavigationTests()
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+
+		var documentationSets = new List<IDocumentationSetNavigation>
+		{
+			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
+		};
+
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
+
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
+
+		NavigationDump
+			.ToText(siteNavigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				SiteNavigation  /  "Docs"
+				  index: FileNavigationLeaf  /platform/cloud  "Platform"
+				  DocumentationSetNavigation  /platform/cloud  "Platform" [island]
+				    index: FileNavigationLeaf  /platform/cloud  "Platform"
+				    TableOfContentsNavigation  /platform/deployment-guide  "Deployment Guide"
+				      index: FileNavigationLeaf  /platform/deployment-guide  "Deployment Guide"
+				      FolderNavigation  /platform/deployment-guide/self-managed/installation  "Installation"
+				        index: FileNavigationLeaf  /platform/deployment-guide/self-managed/installation  "Installation"
+				        FileNavigationLeaf  /platform/deployment-guide/self-managed/configuration  "Configuration"
+				    TableOfContentsNavigation  /platform/cloud-guide  "Cloud Guide"
+				      index: FileNavigationLeaf  /platform/cloud-guide  "Cloud Guide"
+				      FolderNavigation  /platform/cloud-guide/aws/setup  "AWS Setup"
+				        index: FileNavigationLeaf  /platform/cloud-guide/aws/setup  "AWS Setup"
+				      FolderNavigation  /platform/cloud-guide/azure/setup  "Azure Setup"
+				        index: FileNavigationLeaf  /platform/cloud-guide/azure/setup  "Azure Setup"
+				"""
+			);
+	}
+
+	// Documents current behaviour: outside an assembler build (BuildType.Isolated) TOCs share the
+	// documentation set home provider, so the nested path_prefix values are not applied.
+	// See FolderNavigationWithinNestedTocsHasCorrectPathPrefix for the assembler behaviour.
+	[Test]
+	public void NestedTocPathPrefixesAreIgnoredInNonAssemblerContext()
+	{
+		// language=YAML - don't specify children so we can access the actual folders
+		var siteNavYaml =
+			"""
+		                  toc:
+		                    - toc: platform://
+		                      path_prefix: /platform/cloud
+		                      children:
+		                        - toc: platform://deployment-guide
+		                          path_prefix: /platform/deployment-guide
+		                        - toc: platform://cloud-guide
+		                          path_prefix: /platform/cloud-guide
+
+		                  """;
+
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
 			platformContext.Collector,
