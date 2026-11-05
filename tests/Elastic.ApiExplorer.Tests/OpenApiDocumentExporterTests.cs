@@ -558,7 +558,7 @@ public class OpenApiDocumentExporterTests
 	[Test]
 	public void ConvertToDocuments_NumericTree_PointsEveryUrlIntoTheTree()
 	{
-		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(EsTree("8", TreeSpec())));
+		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(TestHelpers.EsTree("8", TreeSpec())));
 
 		doc.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
 		doc
@@ -577,7 +577,7 @@ public class OpenApiDocumentExporterTests
 	[Test]
 	public void ConvertToDocuments_MainTree_KeepsUnversionedUrls()
 	{
-		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(EsTree("main", TreeSpec())));
+		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(TestHelpers.EsTree("main", TreeSpec())));
 
 		doc.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
 		doc.Api!.Trees.Should().Equal(new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/elasticsearch" });
@@ -648,7 +648,7 @@ public class OpenApiDocumentExporterTests
 	public void Collapse_DefaultTreeIsNine_SharedRenderingPointsIntoNine()
 	{
 		var renderings = new[] { ("main", TreeSpec()), ("9", TreeSpec()), ("8", TreeSpec("Search the v8 way")) }.SelectMany(
-			t => CurrentStackExporter().ConvertToDocuments(EsTree(t.Item1, t.Item2))
+			t => TestHelpers.CurrentStackExporter().ConvertToDocuments(TestHelpers.EsTree(t.Item1, t.Item2))
 		);
 
 		var docs = ApiTreeCollapse.Collapse(renderings, defaultTree: "9").ToList();
@@ -662,18 +662,18 @@ public class OpenApiDocumentExporterTests
 	/// <summary>Collapses the trees under the API's real default-tree rule, with Stack current at 9.5.6 as in <c>config/versions.yml</c>.</summary>
 	private static List<DocumentationDocument> ExportTrees(params (string Moniker, OpenApiDocument Spec)[] trees)
 	{
-		var exporter = CurrentStackExporter();
+		var exporter = TestHelpers.CurrentStackExporter();
 		var defaultTree = ApiVersions.DefaultTree(trees.Select(t => t.Moniker))!;
-		return [.. ApiTreeCollapse.Collapse(trees.SelectMany(t => exporter.ConvertToDocuments(EsTree(t.Moniker, t.Spec))), defaultTree)];
+		return [
+			.. ApiTreeCollapse.Collapse(
+				trees.SelectMany(t => exporter.ConvertToDocuments(TestHelpers.EsTree(t.Moniker, t.Spec))),
+				defaultTree
+			)
+		];
 	}
-
-	private static OpenApiDocumentExporter CurrentStackExporter() =>
-		new(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 5, patch: 6));
 
 	private static DocumentationDocument SearchOperation(IEnumerable<DocumentationDocument> docs) =>
 		docs.Single(d => d.Api!.OperationId == "search");
-
-	private static IndexedTree EsTree(string moniker, OpenApiDocument spec) => new("elasticsearch", "elasticsearch", moniker, spec);
 
 	/// <summary>A small spec in the shape of one Elasticsearch tree: <c>search</c> and <c>count</c> under the <c>search</c> tag, plus any extra operations.</summary>
 	private static OpenApiDocument TreeSpec(string searchSummary = "Run a search", params (string Id, string? XState)[] extra)
