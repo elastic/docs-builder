@@ -12,4 +12,14 @@ public static class ApiVersions
 	/// <summary>The highest numeric major, or null when there is none.</summary>
 	public static string? LatestMajor(IEnumerable<string> monikers) =>
 		monikers.Where(static m => TryParseMajor(m) is not null).OrderByDescending(static m => TryParseMajor(m)).FirstOrDefault();
+
+	/// <summary>
+	/// The tree an API serves readers who name no version: <c>main</c> when present, else the first resolved tree.
+	/// The explorer's canonical document and the search index's non-hidden documents both follow it.
+	/// </summary>
+	public static string? DefaultTree(IEnumerable<string> monikers)
+	{
+		var all = monikers.ToList();
+		return all.Contains("main") ? "main" : all.FirstOrDefault();
+	}
 }

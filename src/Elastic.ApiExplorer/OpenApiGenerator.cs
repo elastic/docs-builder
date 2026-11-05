@@ -300,7 +300,9 @@ public class OpenApiGenerator(
 	}
 
 	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
-		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? (resolved.Documents.Count > 0 ? resolved.Documents[0] : null);
+		ApiVersions.DefaultTree(resolved.Documents.Select(static v => v.Version.Moniker)) is { } tree
+			? resolved.Documents.First(v => v.Version.Moniker == tree)
+			: null;
 
 	internal ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{
