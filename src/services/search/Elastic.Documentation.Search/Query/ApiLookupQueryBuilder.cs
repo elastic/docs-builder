@@ -62,7 +62,6 @@ public static class ApiLookupQueryBuilder
 		return new BoolQuery
 		{
 			Must = [new BoolQuery { Should = clauses, MinimumShouldMatch = TokensMinimumShouldMatch }],
-			Filter = [SearchQueryBuilder.DocumentFilter],
 			Should = Lifts(typed, tokens)
 		};
 	}

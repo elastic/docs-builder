@@ -114,7 +114,10 @@ public partial class DefaultSearchService<TDocument>(
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
 		var apiLookup = request.TypeFilter == ApiContentType;
-		var query = apiLookup ? ApiLookupQueryBuilder.Build(request.Query) : BuildDocsWideAutocompleteQuery(request);
+		var query = SearchQueryBuilder.FilterDocuments(
+			apiLookup ? ApiLookupQueryBuilder.Build(request.Query) : BuildDocsWideAutocompleteQuery(request),
+			request.ApiTree
+		);
 
 		var response = await client.SearchAsync<TDocument>(
 			s =>
@@ -315,7 +318,8 @@ public partial class DefaultSearchService<TDocument>(
 
 	private static Query ApplyFilters(Query baseQuery, SearchRequest request)
 	{
-		var filters = new List<Query>();
+		// The semantic branch is a sibling of the lexical one, so the document filter has to wrap both.
+		var filters = new List<Query> { SearchQueryBuilder.DocumentFilterFor(null) };
 
 		if (request.TypeFilter is { Length: > 0 })
 		{
@@ -339,9 +343,6 @@ public partial class DefaultSearchService<TDocument>(
 		}
 
 		// TODO: applies_to nested filters for DeploymentFilter / VersionFilter.
-
-		if (filters.Count == 0)
-			return baseQuery;
 
 		return new BoolQuery { Must = [baseQuery], Filter = filters };
 	}

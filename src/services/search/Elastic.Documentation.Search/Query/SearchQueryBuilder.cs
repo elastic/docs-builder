@@ -61,15 +61,40 @@ public static class SearchQueryBuilder
 		new TermQuery { Field = QueryFieldNames.Section, Value = "getting-started", Boost = 0.1f }
 	];
 
-	/// <summary>Excludes hidden documents and bare root-URL placeholders.</summary>
-	public static Query DocumentFilter { get; } = new BoolQuery
+	private static readonly Query RootUrlPlaceholders = new TermsQuery(
+		QueryFieldNames.PathKeyword,
+		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])
+	);
+
+	private static readonly Query HiddenDocuments = new TermQuery { Field = QueryFieldNames.Hidden, Value = true };
+
+	private static readonly Query UnscopedDocumentFilter = new BoolQuery { MustNot = [RootUrlPlaceholders, HiddenDocuments] };
+
+	/// <summary>
+	/// Excludes bare root-URL placeholders and hidden documents. A reader in one version tree of an API instead gets
+	/// that API's documents for the tree, hidden or not, and every other document that is not hidden.
+	/// </summary>
+	public static Query DocumentFilterFor(ApiTreeScope? scope)
 	{
-		MustNot =
-		[
-			new TermsQuery(QueryFieldNames.PathKeyword, new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])),
-			new TermQuery { Field = QueryFieldNames.Hidden, Value = true }
-		]
-	};
+		if (scope is null)
+			return UnscopedDocumentFilter;
+
+		var scopedApi = new TermQuery { Field = QueryFieldNames.ApiKey, Value = scope.Key };
+		return new BoolQuery
+		{
+			MustNot = [RootUrlPlaceholders],
+			Should =
+			[
+				new BoolQuery { MustNot = [HiddenDocuments, scopedApi] },
+				new BoolQuery { Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = scope.Tree }] }
+			],
+			MinimumShouldMatch = 1
+		};
+	}
+
+	/// <summary>Restricts <paramref name="query"/> to the documents <see cref="DocumentFilterFor"/> lets through, without scoring the filter.</summary>
+	public static Query FilterDocuments(Query query, ApiTreeScope? scope) =>
+		new BoolQuery { Must = [query], Filter = [DocumentFilterFor(scope)] };
 
 	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
@@ -89,7 +114,7 @@ public static class SearchQueryBuilder
 			return query;
 
 		var properties = branches.Count == 1 ? branches[0] : new BoolQuery { Should = branches, MinimumShouldMatch = 1 };
-		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
+		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1 };
 	}
 
 	private static Query? BuildReadingQuery((string Operation, string Property) reading, string innerHitsName, bool endpointRequired)
@@ -409,8 +434,8 @@ public static class SearchQueryBuilder
 	/// <summary>
 	/// Builds the lexical search query: prefix completion on <c>search_title.completion</c> +
 	/// best-fields on <c>stripped_body</c>, OR'ed with title-keyword, title-starts-with,
-	/// URL match (single-token), and phrase match (multi-token). Wrapped with the document
-	/// filter, scoring rank-features, optional diminish-boost, and optional rule query.
+	/// URL match (single-token), and phrase match (multi-token). Wrapped with scoring rank-features,
+	/// optional diminish-boost, and optional rule query. Callers apply <see cref="DocumentFilterFor"/> around the result.
 	/// </summary>
 	public static Query BuildLexicalQuery(
 		string searchQuery,
@@ -466,7 +491,7 @@ public static class SearchQueryBuilder
 		if (tokens.Length > 2)
 			query |= BuildPhraseMatchQuery(searchQuery);
 
-		var positiveQuery = new BoolQuery { Must = [query], Filter = [DocumentFilter], Should = ScoringQueries };
+		var positiveQuery = new BoolQuery { Must = [query], Should = ScoringQueries };
 
 		var diminishQuery = BuildDiminishQuery(diminishTerms);
 		var baseQuery = ApplyDiminishBoost(positiveQuery, diminishQuery);
