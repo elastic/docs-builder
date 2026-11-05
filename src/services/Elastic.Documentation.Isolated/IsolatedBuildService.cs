@@ -234,12 +234,9 @@ public class IsolatedBuildService(
 			documentInferrer: documentInferrer
 		);
 		var openApiGenerator = settings.SkipOpenApi ? null : new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
+		// The API section roots exist already. The generator fills their children when the docset resolves its tree.
 		if (openApiGenerator is not null)
-		{
-			// The API section roots exist already; this fills their children before anything walks them.
 			apiSections.Attach(openApiGenerator);
-			await set.ResolveFloatingSectionsAsync(ctx);
-		}
 
 		var result = await generator.GenerateAll(ctx);
 

@@ -20,15 +20,13 @@ namespace Elastic.ApiExplorer.Floating;
 /// <remarks>
 /// The provider is created before the <see cref="OpenApiGenerator"/> exists, because the docset needs the provider
 /// to build its navigation and the generator needs the docset's Markdown renderer. The build calls
-/// <see cref="Attach"/> once the generator exists and before it resolves the sections.
+/// <see cref="Attach"/> once the generator exists and before the docset resolves its sections. A build that
+/// skips the API Explorer never attaches one, and its sections stay empty and hidden.
 /// </remarks>
 public sealed class ApiFloatingSectionProvider(BuildContext context) : IFloatingSectionProvider
 {
-	internal OpenApiGenerator Generator
-	{
-		get => field ?? throw new InvalidOperationException($"{nameof(Attach)} must run before an API section resolves.");
-		private set;
-	}
+	/// <summary>The generator that builds the API trees. It stays unset when the build skips the API Explorer.</summary>
+	internal OpenApiGenerator? Generator { get; private set; }
 
 	public string Kind => "api";
 
@@ -69,7 +67,13 @@ internal sealed class ApiFloatingSection(
 
 	public async Task ResolveAsync(Cancel ctx)
 	{
-		var trees = await provider.Generator.TreesFor(urlKey, config, ctx).ConfigureAwait(false);
+		if (provider.Generator is not { } generator)
+		{
+			_root!.Hidden = true;
+			return;
+		}
+
+		var trees = await generator.TreesFor(urlKey, config, ctx).ConfigureAwait(false);
 		if (trees.Navigations.Count == 0)
 		{
 			// the generator has already reported why the spec could not be loaded

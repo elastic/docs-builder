@@ -347,6 +347,24 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task FloatingSection_WithoutAGenerator_StaysEmptyAndHidden()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
+		var root = section!.CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		root.Hidden.Should().BeTrue("a build that skips the API Explorer has no pages to show");
+		root.NavigationItems.Should().BeEmpty();
+	}
+
+	[Test]
 	public void FloatingSection_UnknownKey_IsNotProvided()
 	{
 		var collector = new DiagnosticsCollector([]);
