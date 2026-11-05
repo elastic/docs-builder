@@ -143,4 +143,11 @@ public class SnapshotHelpersTests
 		scrub("error /a/docs-builder/docs-builder/docs/index.md:3 bad").Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 bad");
 		scrub(@"error D:\a\docs-builder\docs-builder\docs\index.md:3 bad").Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 bad");
 	}
+
+	[Test]
+	public void ContentHashScrubber_ReplacesTheAssetCacheBustingHash_OnlyThere() =>
+		SnapshotScrubbing
+			.ContentHash("""<img src="/docs/_static/logo.svg?v=19bc4040eda89518"> and ?v=1.2 and id=19bc4040eda89518""")
+			.Should()
+			.MatchInlineSnapshot("""<img src="/docs/_static/logo.svg?v={hash}"> and ?v=1.2 and id=19bc4040eda89518""");
 }

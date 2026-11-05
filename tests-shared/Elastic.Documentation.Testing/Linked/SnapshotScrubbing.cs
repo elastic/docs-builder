@@ -25,6 +25,7 @@ internal static class SnapshotScrubbing
 			SnapshotDefaults.AddScrubber(Under(root, "{repo}"));
 		// a test folder in the temp directory is usually named after a fresh Guid; that name is not part of what is verified
 		SnapshotDefaults.AddScrubber(Under(Path.GetTempPath(), "{temp}", RandomName));
+		SnapshotDefaults.AddScrubber(ContentHash);
 	}
 
 	/// <summary>
@@ -50,6 +51,14 @@ internal static class SnapshotScrubbing
 
 	/// <summary>A run of 32 hex digits: a <c>Guid.ToString("N")</c> used as a folder name.</summary>
 	private static readonly Regex RandomName = new("[0-9a-fA-F]{32}", RegexOptions.Compiled);
+
+	/// <summary>
+	/// The cache-busting <c>?v=</c> hash of a static asset URL. It is a hash of the file's bytes, and a Windows checkout can change an
+	/// SVG's line endings, so the footer logo read <c>?v=19bc…</c> on Linux and macOS and another value on Windows.
+	/// </summary>
+	internal static string ContentHash(string text) => AssetHash.Replace(text, "{hash}");
+
+	private static readonly Regex AssetHash = new("(?<=\\?v=)[0-9a-f]{16}", RegexOptions.Compiled);
 
 	private static string? FindSolutionRoot()
 	{
