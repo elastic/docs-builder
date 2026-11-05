@@ -1,4 +1,3 @@
-import { apiPageSearchParams } from '../../api-tree'
 import { config } from '../../config'
 import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
@@ -16,6 +15,7 @@ import {
     isRateLimitError,
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
+import { useApiPageSearchParams } from '../useApiPageSearchParams'
 import { ApiPropertyResult, ApiRoute } from './apiPropertyResults'
 import { usePageNumber, useSearchTerm } from './navigationSearch.store'
 import {
@@ -29,7 +29,7 @@ import {
     useQueryClient,
 } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
-import { useRef, useEffect, useCallback, useMemo } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import * as z from 'zod'
 
 const SearchResultItemParent = z.object({
@@ -93,9 +93,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
         !isCooldownActive &&
         !awaitingNewInput
 
-    // htmx swaps pages without remounting, so the API page is read on every render and shared by key and request.
-    const { pathname } = location
-    const apiPage = useMemo(() => apiPageSearchParams(pathname), [pathname])
+    const apiPage = useApiPageSearchParams()
 
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
