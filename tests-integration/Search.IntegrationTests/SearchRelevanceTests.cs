@@ -276,6 +276,13 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("/count", "operation-count");
 		yield return ("/snapshot restore", "operation-snapshot-restore");
 		yield return ("/_security role", "operation-security-put-role");
+		yield return ("HEAD /", "operation-ping");
+		yield return ("/_sear", "operation-search");
+		yield return ("/_sea", "operation-search");
+		yield return ("/sear", "operation-search");
+		yield return ("/_cat/ind", "operation-cat-indices");
+		yield return ("/{index}/_sear", "operation-search");
+		yield return ("/_cluster/hea", "operation-cluster-health");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -380,6 +387,58 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		// Get, put and delete user share the route the value fills, so they tie and only the route is asserted.
 		results[0].Routes.Should().Contain(route => route.Path == "/_security/user/{username}", "the template the value fills ranks first");
 		results.Should().Contain(r => r.Url.EndsWith("/operation/operation-security-change-password", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task ApiSearchRootRouteListsOnlyTheRootOperations()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "/", PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", results.Select(r => r.Url)));
+		results.Should().NotBeEmpty("'/' names the root route");
+		results.Should().AllSatisfy(r => r.Routes.Should().Contain(route => route.Path == "/", $"{r.Url} is on the root route"));
+		results.Should().Contain(r => r.Url.EndsWith("/elasticsearch/operation/operation-ping", StringComparison.Ordinal));
+		results.Should().Contain(r => r.Url.EndsWith("/elasticsearch/operation/operation-info", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task ApiSearchTypedRouteWithATrailingSlashListsOnlyTheRoutesUnderIt()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "/_search/", PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", results.Select(r => r.Url)));
+		results.Should().NotBeEmpty("'/_search/' lists /_search and the routes under it");
+		results.Should().AllSatisfy(
+			r => r
+				.Routes
+				.Should()
+				.Contain(
+					route => route.Path == "/_search" || route.Path.StartsWith("/_search/", StringComparison.Ordinal),
+					$"{r.Url} is /_search or a route under it"
+				)
+		);
+		results.Should().NotContain(
+			r => r.Url.EndsWith("/operation/operation-search-shards", StringComparison.Ordinal),
+			"the trailing slash completes nothing"
+		);
 	}
 
 	[Test]

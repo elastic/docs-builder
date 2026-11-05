@@ -68,10 +68,19 @@ public class SearchQueryBuilderTests
 	[Test]
 	[Arguments("   ")]
 	[Arguments("GET")]
-	[Arguments("/")]
 	[Arguments("POST /{index}")]
 	public void BuildApiEndpointQuery_NoLiteralSegmentAfterNormalizing_ReturnsNull(string input) =>
 		SearchQueryBuilder.BuildApiEndpointQuery(input).Should().BeNull();
+
+	[Test]
+	[Arguments("/")]
+	[Arguments("HEAD /")]
+	public void BuildApiEndpointQuery_RootRoute_ReturnsTheRootTerm(string input) =>
+		Client
+			.RequestResponseSerializer
+			.SerializeToString(SearchQueryBuilder.BuildApiEndpointQuery(input))
+			.Should()
+			.Be("""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["/"]}}}}]}}""");
 
 	[Test]
 	[Arguments("search")]
