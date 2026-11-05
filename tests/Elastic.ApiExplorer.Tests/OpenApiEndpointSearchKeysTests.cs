@@ -80,7 +80,7 @@ public class OpenApiEndpointSearchKeysTests
 
 	private static Dictionary<string, DocumentationDocument> ConvertByOperationId() =>
 		new OpenApiDocumentExporter(VersionsConfiguration)
-			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", CreateSpec()))
+			.ConvertToDocuments(TestHelpers.EsTree("main", CreateSpec()))
 			.ToDictionary(d => d.Api!.OperationId);
 
 	[Test]
