@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -33,33 +35,13 @@ A regular paragraph.
 	public void SetsDirective() => Block!.Directive.Should().Be("agent-skill");
 
 	[Test]
-	public void RendersAgentSkillDiv()
-	{
-		Html.Should().Contain("class=\"agent-skill\"");
-		Html.Should().Contain("class=\"agent-skill-header\"");
-		Html.Should().Contain("class=\"agent-skill-content\"");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void RendersTitle() => Html.Should().Contain("Agent skill available");
 
 	[Test]
 	public void RendersDefaultText() => Html.Should().Contain("A skill is available to help AI agents with this topic.");
-
-	[Test]
-	public void RendersLearnMoreLink()
-	{
-		Html.Should().Contain("Learn more about agent skills for Elastic");
-		Html.Should().Contain("href=\"https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills#available-skills\"");
-	}
-
-	[Test]
-	public void RendersCopyButton()
-	{
-		Html.Should().Contain("class=\"agent-skill-button\"");
-		Html.Should().Contain("Copy install command");
-		Html.Should().Contain("data-copy-text=\"npx skills add elastic/agent-skills@elasticsearch-esql\"");
-	}
 
 	[Test]
 	public void DoesNotRenderLinkButton() => Html.Should().NotContain("Get the skill");
@@ -132,10 +114,5 @@ A regular paragraph.
 	public void InstallCommandIsNull() => Block!.InstallCommand.Should().BeNull();
 
 	[Test]
-	public void FallsBackToLinkButton()
-	{
-		Html.Should().Contain("Get the skill");
-		Html.Should().Contain("href=\"https://github.com/elastic/agent-skills\"");
-		Html.Should().NotContain("data-copy-text");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
