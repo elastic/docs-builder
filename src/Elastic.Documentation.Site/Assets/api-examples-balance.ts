@@ -100,31 +100,68 @@ function balance(panel: HTMLElement) {
     syncStripHeight(carousel)
 }
 
+interface Balanced {
+    schedule: () => void
+    stop: () => void
+}
+
+// HTMX swaps in a new panel on every page, so one window listener serves them all and drops the detached ones.
+const balanced = new Map<HTMLElement, Balanced>()
+let listening = false
+
+function forEachConnected(run: (entry: Balanced) => void) {
+    balanced.forEach((entry, panel) => {
+        if (panel.isConnected) return run(entry)
+        entry.stop()
+        balanced.delete(panel)
+    })
+}
+
+function watch(panel: HTMLElement): Balanced {
+    let frame = 0
+    const schedule = () => {
+        cancelAnimationFrame(frame)
+        frame = requestAnimationFrame(() => balance(panel))
+    }
+    const resize = new ResizeObserver(schedule)
+    resize.observe(panel)
+    // A capped sample keeps its size when the language, tab or scenario changes, so no resize reports it.
+    const mutation = new MutationObserver(schedule)
+    const examples = panel.querySelector('[data-api-examples]')
+    if (examples) {
+        resize.observe(examples)
+        mutation.observe(examples, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'hidden'],
+        })
+    }
+    const stop = () => {
+        cancelAnimationFrame(frame)
+        resize.disconnect()
+        mutation.disconnect()
+    }
+    return { schedule, stop }
+}
+
 /** Balances every examples rail in `root` and keeps it balanced as the window, language, scenario, tab or caption changes. */
 export function initExamplesBalance(root: ParentNode = document): void {
+    if (typeof ResizeObserver === 'undefined') return
+    if (!listening) {
+        listening = true
+        window.addEventListener(
+            'resize',
+            () => forEachConnected((entry) => entry.schedule()),
+            { passive: true }
+        )
+    }
+    forEachConnected(() => {})
     root.querySelectorAll<HTMLElement>('#api-examples-panel').forEach(
         (panel) => {
-            if (panel.dataset.balanced) return
-            panel.dataset.balanced = 'true'
-            let frame = 0
-            const schedule = () => {
-                cancelAnimationFrame(frame)
-                frame = requestAnimationFrame(() => balance(panel))
-            }
-            schedule()
-            if (typeof ResizeObserver === 'undefined') return
-            window.addEventListener('resize', schedule, { passive: true })
-            const resize = new ResizeObserver(schedule)
-            resize.observe(panel)
-            const examples = panel.querySelector('[data-api-examples]')
-            if (!examples) return
-            resize.observe(examples)
-            // A capped sample keeps its size when the language, tab or scenario changes, so no resize reports it.
-            new MutationObserver(schedule).observe(examples, {
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class', 'hidden'],
-            })
+            if (balanced.has(panel)) return
+            const entry = watch(panel)
+            balanced.set(panel, entry)
+            entry.schedule()
         }
     )
 }
