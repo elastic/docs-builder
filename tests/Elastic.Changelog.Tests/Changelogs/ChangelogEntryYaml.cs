@@ -16,6 +16,8 @@ public static class ChangelogEntryYaml
 	/// </summary>
 	public static string WithoutSchemaComments(this string yaml)
 	{
+		// the writer uses the platform's line ending, so on Windows the blank line that ends the header is "\r\n\r\n"
+		yaml = yaml.Replace("\r\n", "\n");
 		var subtype = yaml.IndexOf("# subtype:", StringComparison.Ordinal);
 		if (subtype < 0)
 			return yaml;
