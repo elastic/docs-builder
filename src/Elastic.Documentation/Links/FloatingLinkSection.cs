@@ -69,6 +69,12 @@ public record FloatingLinkSection
 	private FrozenDictionary<string, int> VersionBits =>
 		field ??= Versions.Take(MaxVersions).Select((version, bit) => (version.Name, bit)).ToFrozenDictionary(v => v.Name, v => v.bit);
 
+	[JsonIgnore]
+	private int CurrentBit => CurrentBitCache ??= Array.FindIndex(Versions, v => v.Current);
+
+	[JsonIgnore]
+	private int? CurrentBitCache { get; set; }
+
 	/// <summary>The reverse of <see cref="Aliases"/>, built once, so that finding the canonical page of an alias is one lookup.</summary>
 	[JsonIgnore]
 	private FrozenDictionary<string, FrozenDictionary<string, string>> CanonicalByAlias =>
@@ -92,7 +98,7 @@ public record FloatingLinkSection
 	public bool TryResolvePage(string? version, string page, out string sitePath)
 	{
 		sitePath = string.Empty;
-		var bit = version is null ? Array.FindIndex(Versions, v => v.Current) : VersionBits.GetValueOrDefault(version, -1);
+		var bit = version is null ? CurrentBit : VersionBits.GetValueOrDefault(version, -1);
 		if (bit is < 0 or >= MaxVersions)
 			return false;
 

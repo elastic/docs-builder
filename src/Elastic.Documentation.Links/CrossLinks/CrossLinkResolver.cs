@@ -162,7 +162,8 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		var rest = segments.Length == 3 ? segments[2] : string.Empty;
 		var versionEnd = rest.IndexOf('/');
 		var first = versionEnd < 0 ? rest : rest[..versionEnd];
-		if (section.HasVersion(first))
+		// A page of the current version wins over a version of the same name, so adding a version never retargets an existing link.
+		if (section.HasVersion(first) && !section.TryResolvePage(null, rest.Trim('/'), out _))
 		{
 			version = first;
 			rest = versionEnd < 0 ? string.Empty : rest[(versionEnd + 1)..];

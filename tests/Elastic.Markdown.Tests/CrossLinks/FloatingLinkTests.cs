@@ -26,7 +26,8 @@ public class FloatingLinkTests
 			[""] = 0b111,
 			["operation/operation-search"] = 0b111,
 			["operation/operation-new"] = 0b011,
-			["types/legacy"] = 0b100
+			["types/legacy"] = 0b100,
+			["main"] = 0b001
 		},
 		Aliases = new Dictionary<string, Dictionary<string, string[]>>
 		{
@@ -65,6 +66,15 @@ public class FloatingLinkTests
 			out var uri
 		);
 		return (resolved, uri?.ToString(), error);
+	}
+
+	[Test]
+	public void Resolve_PageNamedLikeVersion_PageWinsOverVersion()
+	{
+		var (resolved, url, error) = Resolve("elasticsearch://api/elasticsearch/main");
+
+		resolved.Should().BeTrue(error);
+		url.Should().EndWith("/api/doc/elasticsearch/main");
 	}
 
 	[Test]
