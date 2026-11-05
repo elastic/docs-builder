@@ -23,7 +23,9 @@ let private clean _ =
     removeArtifacts "tests"
     removeArtifacts "docs-builder"
 
-let private compile _ = exec { run "dotnet" "build" "-c" "release" }
+// -graph schedules projects from the static dependency graph instead of blocking nodes on ProjectReference builds,
+// which keeps all cores busy on the 4-core runners.
+let private compile _ = exec { run "dotnet" "build" "-c" "release" "-graph" }
 
 let private build _ = printfn "build"
 let private release _ = printfn "release"
