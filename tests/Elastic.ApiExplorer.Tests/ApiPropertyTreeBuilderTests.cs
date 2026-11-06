@@ -827,6 +827,36 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.OnlyContain(p => !p.DefaultExpanded, "the optional parent above it is folded");
 	}
 
+	[Test]
+	public void BuildPropertyList_VariantToggleCount_LeavesOutFieldsTheRequestDoesNotList()
+	{
+		var builder = CreateBuilder();
+
+		OpenApiSchema Variant(string extra) =>
+			new()
+			{
+				Type = JsonSchemaType.Object,
+				Properties = new Dictionary<string, IOpenApiSchema>
+				{
+					["id"] = new OpenApiSchema { Type = JsonSchemaType.String, ReadOnly = true },
+					["name"] = new OpenApiSchema { Type = JsonSchemaType.String },
+					[extra] = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			};
+
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema> { ["choice"] = new OpenApiSchema { OneOf = [Variant("a"), Variant("b")] } }
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var variants = list!.Items.Single().Children.Variants!.Variants;
+		variants.Should().OnlyContain(v => v.NestedCount == 2, "id is readOnly, so a request lists name and one more");
+		variants.Should().OnlyContain(v => v.Properties!.Items.Count == 2);
+	}
+
 	private static OpenApiSchema ObjectsAtTwoDepths() =>
 		new()
 		{

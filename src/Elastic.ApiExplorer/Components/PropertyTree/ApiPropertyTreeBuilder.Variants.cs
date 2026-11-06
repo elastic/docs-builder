@@ -79,7 +79,7 @@ public partial class ApiPropertyTreeBuilder
 			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
 			var showProperties = hasProperties;
 
-			var nestedCount = (variant.Props?.Count ?? 0)
+			var nestedCount = (variant.Props?.Values.Count(p => p is not null && IsListed(p, variantScope)) ?? 0)
 				+ (dictionaryValue is null ? 0 : 1)
 				+ (nested?.Options.Count(_analyzer.UnionOptionHasProperties) ?? 0);
 			var isCollapsible = showProperties && nestedCount > 0;
