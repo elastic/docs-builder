@@ -5,12 +5,15 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using FakeItEasy;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -26,7 +29,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		var layout = viewModel.CreateGlobalLayoutModel();
 
-		layout.Title.Should().Be("Run a search | Fixture API");
+		layout.Title.Should().Be("Run a search | Fixture API documentation");
 		layout.Description.Should().Be("Returns hits that match the query defined in the request.");
 		layout.Breadcrumbs.Take(2).Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
 		layout.Breadcrumbs[1].Url.Should().Be("/api");
@@ -43,9 +46,70 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		var layout = viewModel.CreateGlobalLayoutModel();
 
-		layout.Title.Should().Be("Query | Fixture API");
+		layout.Title.Should().Be("Query | Fixture API documentation");
 		layout.Description.Should().StartWith("A container for a single query variant");
 	}
+
+	[Test]
+	[Arguments("v8", "Run a search | Elasticsearch API documentation (v8)")]
+	[Arguments("v9", "Run a search | Elasticsearch API documentation (v9)")]
+	[Arguments("latest", "Run a search | Elasticsearch API documentation")]
+	public void OperationLayout_Version_TitleSuffix(string version, string expected)
+	{
+		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var context = Versioned(RenderContext(item), version);
+		var viewModel = new OperationViewModel(context) { Operation = item.Model, Page = OperationPageModel.Create(item.Model, context) };
+
+		viewModel.CreateGlobalLayoutModel().Title.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments("v8", "Elasticsearch API documentation (v8)")]
+	[Arguments("v9", "Elasticsearch API documentation (v9)")]
+	public void VersionLanding_Title_UsesProductNameNotSpecTitle(string version, string expected)
+	{
+		var document = new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "Elasticsearch Request & Response Specification", Version = version }
+		};
+		var context = Versioned(
+			new ApiRenderContext(
+				fixture.Context,
+				document,
+				new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
+			)
+			{
+				NavigationHtml = string.Empty,
+				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
+			},
+			version
+		);
+		var viewModel = new LandingViewModel(context) { Landing = new ApiLanding(), ApiInfo = document.Info, OverviewRows = [] };
+
+		viewModel.CreateGlobalLayoutModel().Title.Should().Be(expected);
+	}
+
+	[Test]
+	public void CatalogLayout_TitleContainsElastic()
+	{
+		var catalog = new ApiCatalogNavigationItem("/api/", []);
+		var viewModel = ApiCatalogViewModel.FromEntries(RenderContext(catalog.Index), []);
+
+		viewModel.CreateGlobalLayoutModel().Title.Should().Be("Elastic APIs");
+	}
+
+	private static ApiRenderContext Versioned(ApiRenderContext context, string version) =>
+		context with
+		{
+			Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" },
+			VersionSwitcherItems =
+			[
+				new("latest", "/api/doc/elasticsearch/", version == "latest"),
+				new("v9", "/api/doc/elasticsearch/v9/", version == "v9"),
+				new("v8", "/api/doc/elasticsearch/v8/", version == "v8")
+			]
+		};
 
 	[Test]
 	public void Excerpt_StripsLinksAndEmphasis()
