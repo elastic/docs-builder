@@ -1,7 +1,7 @@
 ---
 type: api
 title: Fixture API
-description: A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges and auth prerequisites.
+description: "A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges and auth prerequisites."
 url: /api/doc/elasticsearch
 resource: /api/doc/elasticsearch
 products:
