@@ -19,11 +19,17 @@ public record ApiOperation(
 	string Route,
 	IOpenApiPathItem Path,
 	string ApiName
-) : IApiModel<OperationPageModel>, IHttpMethodNavigationModel
+) : IApiModel<OperationPageModel>, IApiOperationNavigationModel
 {
 	// The page header leads with the dominant method, which can come from the description's method listing
 	// rather than the spec; the sidebar badge must agree with it.
-	string IHttpMethodNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
+	string IApiOperationNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
+
+	/// <summary>
+	/// The one deprecation fact the page title badge, the overview rows, the sidebar row and the search index all read.
+	/// Collapsed siblings always agree on it, because operations that differ in lifecycle are never collapsed onto one page.
+	/// </summary>
+	public bool Deprecated => Operation.Deprecated;
 
 	/// <summary>The title shown for the operation; an operationId used as the grouping key is shown as readable words.</summary>
 	public string DisplayName =>

@@ -21,6 +21,7 @@ export interface SearchResult {
     title: string
     description: string
     parents: Array<{ url: string; title: string }>
+    deprecated?: boolean
 }
 
 const debounceMs = 300
@@ -96,6 +97,12 @@ export function drawResults(
             item.querySelector<HTMLElement>(
                 '[data-search-title]'
             )!.textContent = result.title
+            if (result.deprecated) {
+                item.setAttribute('data-deprecated', '')
+                item.querySelector<HTMLElement>(
+                    '[data-search-deprecated]'
+                )?.removeAttribute('hidden')
+            }
             appendExcerpt(
                 item.querySelector<HTMLElement>('[data-search-excerpt]')!,
                 result.description ?? ''

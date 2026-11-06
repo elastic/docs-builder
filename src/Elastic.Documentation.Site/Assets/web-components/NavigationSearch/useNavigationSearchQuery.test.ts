@@ -20,6 +20,7 @@ describe('SearchResponse', () => {
                     title: 'Bulk API',
                     description: 'Index multiple documents',
                     score: 0.9,
+                    deprecated: true,
                     parents: [
                         { url: '/docs/api', title: 'API Reference' },
                         {
@@ -36,5 +37,9 @@ describe('SearchResponse', () => {
         })
 
         expect(parsed.results.map((item) => item.type)).toEqual(['docs', 'api'])
+        expect(parsed.results.map((item) => item.deprecated)).toEqual([
+            undefined,
+            true,
+        ])
     })
 })
