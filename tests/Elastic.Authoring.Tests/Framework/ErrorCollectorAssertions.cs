@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -22,6 +23,10 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 internal static class ErrorCollectorAssertions
 {
+	[DebuggerStepThrough]
+	internal static void HasDiagnostics(string? expected, GeneratorResults results, CallSite site) =>
+		InlineSnapshots.Text(results.Context.Collector.Diagnostics.ToSnapshotText(), expected, nameof(Scenario.HasDiagnostics), site);
+
 	[DebuggerStepThrough]
 	internal static void HasNoErrors(GeneratorResults results)
 	{

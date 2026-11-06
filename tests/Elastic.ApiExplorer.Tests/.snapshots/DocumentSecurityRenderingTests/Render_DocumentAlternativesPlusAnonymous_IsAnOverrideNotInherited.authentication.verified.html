@@ -1,0 +1,26 @@
+<p>Authentication is optional.</p>
+<div class="api-tabs api-authentication-tabs">
+	<input class="tabs-input" id="authentication-tab-0" name="authentication-tabs" type="radio" checked="checked" tabindex="0">
+	<label class="tabs-label" for="authentication-tab-0">Api key</label>
+	<div class="tabs-content api-authorization-panel">
+		<div class="highlight-http notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-http">Authorization: &lt;value&gt;</code>
+				</pre>
+			</div>
+		</div>
+		<p>Send the encoded key with the ApiKey prefix.</p>
+	</div>
+	<input class="tabs-input" id="authentication-tab-1" name="authentication-tabs" type="radio" tabindex="0">
+	<label class="tabs-label" for="authentication-tab-1">Basic</label>
+	<div class="tabs-content api-authorization-panel">
+		<div class="highlight-http notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-http">Authorization: Basic &lt;credentials&gt;</code>
+				</pre>
+			</div>
+		</div>
+	</div>
+</div>

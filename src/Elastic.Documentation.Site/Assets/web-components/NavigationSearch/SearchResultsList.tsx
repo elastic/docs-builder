@@ -1,11 +1,11 @@
 import { config } from '../../config'
-import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { RouteLine } from './RouteLine'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import {
     GO_TO_LABELS,
+    fieldSearchTerms,
     primaryRoute,
     type ApiPropertyResult,
     type ResultGroup,
@@ -24,7 +24,9 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import htmx from 'htmx.org'
 import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
+import type { Instance } from 'tippy.js'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
@@ -62,6 +64,10 @@ export const navigationSearchBreadcrumbs = (
     return ['Docs', ...parents.slice(1).map((parent) => parent.title)]
 }
 
+/** A modified or non-primary click opens the link in a new tab or window, so the search stays where it was. */
+const opensElsewhere = (event: React.MouseEvent) =>
+    event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0
+
 export const emptyStateCopy = (typeFilter: TypeFilter) =>
     typeFilter === 'api'
         ? "We couldn't find an API that matches your search"
@@ -72,7 +78,7 @@ export interface SearchResultsListProps {
     isLoading: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
-    onResultClick: () => void
+    onResultClick: (opensElsewhere: boolean) => void
     typeFilter?: TypeFilter
 }
 
@@ -90,6 +96,10 @@ export const SearchResultsList = ({
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
     const { trackResultClicked } = useNavigationSearchTelemetry(typeFilter)
+    const propertySearch = useMemo(
+        () => fieldSearchTerms(searchTerm),
+        [searchTerm]
+    )
 
     const isInitialLoading = isLoading && results.length === 0
 
@@ -99,6 +109,23 @@ export const SearchResultsList = ({
             containerRef.current.scrollTop = 0
         }
     }, [searchTerm])
+
+    // React renders the rows after htmx's own pass over the page, so they need their own to inherit hx-boost.
+    useEffect(() => {
+        if (containerRef.current) htmx.process(containerRef.current)
+    }, [results])
+
+    // The page's tippy delegate mounts tooltips on the body and only drops them on an htmx swap, so a tooltip shown
+    // over a row would outlive it. Captured now: by cleanup time React has already detached the rows it removed.
+    useEffect(() => {
+        const tooltipped = Array.from(
+            containerRef.current?.querySelectorAll('[data-tippy-content]') ?? []
+        )
+        return () =>
+            tooltipped.forEach((el) =>
+                (el as Element & { _tippy?: Instance })._tippy?.destroy()
+            )
+    }, [results])
 
     const containerStyles = css`
         max-height: ${RESULTS_MAX_HEIGHT}px;
@@ -150,6 +177,7 @@ export const SearchResultsList = ({
     }
 
     const handleResultClick = (
+        event: React.MouseEvent,
         result: SearchResultItem,
         rank: number,
         property?: ApiPropertyResult
@@ -161,7 +189,7 @@ export const SearchResultsList = ({
             score: result.score,
             anchor: property?.anchor,
         })
-        onResultClick()
+        onResultClick(opensElsewhere(event))
     }
 
     return (
@@ -183,34 +211,29 @@ export const SearchResultsList = ({
                         isKeyboardNavigating={isKeyboardNavigating.current}
                         onMouseEnter={() => handleMouseEnter(index)}
                         onMouseMove={() => handleItemMouseMove(index)}
-                        onClick={() => handleResultClick(result, rank)}
+                        onClick={(event) =>
+                            handleResultClick(event, result, rank)
+                        }
                         typeFilter={typeFilter}
                         searchTerm={searchTerm}
                     />
-                    {properties.map(
-                        ({ property, index: propertyIndex, showLocation }) => (
-                            <PropertyResultRow
-                                key={property.url}
-                                index={propertyIndex}
-                                property={property}
-                                searchTerm={searchTerm}
-                                showLocation={showLocation}
-                                isSelected={propertyIndex === selectedIndex}
-                                isKeyboardNavigating={
-                                    isKeyboardNavigating.current
-                                }
-                                onMouseEnter={() =>
-                                    handleMouseEnter(propertyIndex)
-                                }
-                                onMouseMove={() =>
-                                    handleItemMouseMove(propertyIndex)
-                                }
-                                onClick={() =>
-                                    handleResultClick(result, rank, property)
-                                }
-                            />
-                        )
-                    )}
+                    {properties.map(({ property, index: propertyIndex }) => (
+                        <PropertyResultRow
+                            key={property.url}
+                            index={propertyIndex}
+                            property={property}
+                            propertySearch={propertySearch}
+                            isSelected={propertyIndex === selectedIndex}
+                            isKeyboardNavigating={isKeyboardNavigating.current}
+                            onMouseEnter={() => handleMouseEnter(propertyIndex)}
+                            onMouseMove={() =>
+                                handleItemMouseMove(propertyIndex)
+                            }
+                            onClick={(event) =>
+                                handleResultClick(event, result, rank, property)
+                            }
+                        />
+                    ))}
                 </div>
             ))}
         </div>
@@ -224,7 +247,7 @@ interface SearchResultRowProps {
     isKeyboardNavigating: boolean
     onMouseEnter: () => void
     onMouseMove: () => void
-    onClick: () => void
+    onClick: (event: React.MouseEvent) => void
     typeFilter: TypeFilter
     searchTerm: string
 }
@@ -242,7 +265,6 @@ const SearchResultRow = ({
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const { ref, href } = useHtmxLink(result.url)
     const { route, tokens } = primaryRoute(result.routes ?? [], searchTerm)
     const breadcrumbItems = useMemo(
         () =>
@@ -256,8 +278,7 @@ const SearchResultRow = ({
 
     return (
         <a
-            ref={ref}
-            href={href}
+            href={result.url}
             data-search-result-index={index}
             onClick={onClick}
             onMouseEnter={onMouseEnter}

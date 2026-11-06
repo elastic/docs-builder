@@ -81,7 +81,9 @@ public class OperationDeprecatedProjectionTests(ApiExplorerFixture fixture)
 				}
 			}
 		};
-		var documents = new OpenApiDocumentExporter(versions).ConvertToDocuments(fixture.Document, "fixture").ToArray();
+		var documents = new OpenApiDocumentExporter(versions)
+			.ConvertToDocuments(new IndexedTree("fixture", "fixture", "main", fixture.Document))
+			.ToArray();
 
 		documents.Single(d => d.Api!.OperationId == "docs-get-source").Api!.Deprecated.Should().BeTrue();
 		documents.Single(d => d.Api!.OperationId == "docs-get").Api!.Deprecated.Should().BeFalse();

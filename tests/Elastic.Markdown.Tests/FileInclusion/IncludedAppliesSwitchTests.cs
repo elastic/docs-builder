@@ -4,8 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
@@ -47,18 +49,9 @@ Content for Serverless
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void EachIncludeHasUniqueIds()
-	{
-		// First include at line 2: (2 * 1000) + 0 = 2000
-		// Second include at line 7: (7 * 1000) + 0 = 7000
-		Html.Should().Contain("applies-switch-item-2000-0");
-		Html.Should().Contain("applies-switch-item-2000-1");
-		Html.Should().Contain("applies-switch-set-2000");
-
-		Html.Should().Contain("applies-switch-item-7000-0");
-		Html.Should().Contain("applies-switch-item-7000-1");
-		Html.Should().Contain("applies-switch-set-7000");
-	}
+	// First include at line 2: (2 * 1000) + 0 = 2000
+	// Second include at line 7: (7 * 1000) + 0 = 7000
+	public void EachIncludeHasUniqueIds() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -96,11 +89,35 @@ Second switch - Serverless
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void EachAppliesSwitchHasUniqueIds()
-	{
-		// Include at line 2, first applies-switch at line 0: (2 * 1000) + 0 = 2000
-		// Include at line 2, second applies-switch at line 8: (2 * 1000) + 8 = 2008
-		Html.Should().Contain("applies-switch-set-2000");
-		Html.Should().Contain("applies-switch-set-2008");
-	}
+	// Include at line 2, first applies-switch at line 0: (2 * 1000) + 0 = 2000
+	// Include at line 2, second applies-switch at line 8: (2 * 1000) + 8 = 2008
+	public void EachAppliesSwitchHasUniqueIds() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<div class="applies-switch">
+			<input class="applies-switch-input" checked="checked" id="applies-switch-item-2000-0" name="applies-switch-set-2000" type="radio" tabindex="0">
+			<label class="applies-switch-label" data-sync-id="applies-B70B4596" data-sync-group="applies-switches" for="applies-switch-item-2000-0">
+				<span class="applies applies-item">
+					<applies-to-popover badge-key="Stack" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="" show-popover="false" is-inline="true"></applies-to-popover>
+				</span>
+			</label>
+			<div class="applies-switch-content" tabindex="0">
+				<p>First switch - Stack</p>
+			</div>
+		</div>
+		<p>Some content between.</p>
+		<div class="applies-switch">
+			<input class="applies-switch-input" checked="checked" id="applies-switch-item-2008-0" name="applies-switch-set-2008" type="radio" tabindex="0">
+			<label class="applies-switch-label" data-sync-id="applies-E100A717" data-sync-group="applies-switches" for="applies-switch-item-2008-0">
+				<span class="applies applies-item">
+					<span class="applies-switch-fallback">serverless:</span>
+				</span>
+			</label>
+			<div class="applies-switch-content" tabindex="0">
+				<p>Second switch - Serverless</p>
+			</div>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 }

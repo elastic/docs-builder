@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -104,7 +106,11 @@ public class BundleDescriptionInputTests() : ChangelogTestBase()
 		var result = await ResolveAsync(descriptionFile: "   ");
 
 		result.Success.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description-file requires a path"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error  --description-file requires a path, or - to read from standard input.");
 	}
 
 	[Test]
@@ -113,7 +119,11 @@ public class BundleDescriptionInputTests() : ChangelogTestBase()
 		var result = await ResolveAsync(string.Empty, string.Empty);
 
 		result.Success.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("mutually exclusive"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error  --description, --description-file, and --clear-description are mutually exclusive.");
 	}
 
 	[Test]
@@ -132,8 +142,13 @@ public class BundleDescriptionInputTests() : ChangelogTestBase()
 		var result = await ResolveAsync(descriptionFile: path);
 
 		result.Success.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("NUL byte"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/desc.md The description read from {repo}/Guid_1/desc.md is not UTF-8 text because it contains a NUL byte. Save the source as UTF-8 and run the command again."
+			);
 	}
 
 	[Test]
@@ -144,6 +159,12 @@ public class BundleDescriptionInputTests() : ChangelogTestBase()
 		var result = await ResolveAsync(descriptionFile: BundleDescriptionInput.StdinPath, stdin: stdin);
 
 		result.Success.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("standard input"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  The description read from standard input is not UTF-8 text because it contains a NUL byte. Save the source as UTF-8 and run the command again."
+			);
 	}
 }

@@ -7,6 +7,8 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -60,13 +62,28 @@ public class DescriptionVisibilityTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexMarkdown = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexMarkdown).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elasticsearch-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elasticsearch-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elasticsearch-release-notes-9.2.0]
+			### Features and enhancements [elasticsearch-9.2.0-features-enhancements]
+			* Test feature with description. [#100](https://github.com/elastic/elasticsearch/pull/100)
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexMarkdown, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("Test feature with description");
-		indexContent.Should().Contain("This is a detailed description of the test feature that should be visible by default.");
-		indexContent.Should().Contain("[#100](https://github.com/elastic/elasticsearch/pull/100)");
+			  This is a detailed description of the test feature that should be visible by default.
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elasticsearch-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -117,17 +134,26 @@ public class DescriptionVisibilityTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexMarkdown = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexMarkdown).Should().BeTrue();
-
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexMarkdown, TestContext.Current!.Execution.CancellationToken);
-
-		// Title and links should still be present
-		indexContent.Should().Contain("Test feature with hidden description");
-		indexContent.Should().Contain("[#200](https://github.com/elastic/elasticsearch/pull/200)");
-
-		// Description should be hidden
-		indexContent.Should().NotContain("This description should be hidden when --no-descriptions flag is used.");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elasticsearch-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elasticsearch-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elasticsearch-release-notes-9.2.0]
+			### Features and enhancements [elasticsearch-9.2.0-features-enhancements]
+			* Test feature with hidden description. [#200](https://github.com/elastic/elasticsearch/pull/200)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elasticsearch-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -181,14 +207,22 @@ public class DescriptionVisibilityTests() : RenderChangelogTestBase()
 		var asciidocFiles = FileSystem.Directory.GetFiles(outputDir, "*.asciidoc", SearchOption.AllDirectories);
 		asciidocFiles.Should().HaveCount(1);
 
-		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFiles[0], TestContext.Current!.Execution.CancellationToken);
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0.asciidoc ===
+			[[release-notes-9.2.0]]
+			== 9.2.0
 
-		// Title and links should still be present
-		asciidocContent.Should().Contain("Test feature for asciidoc");
-		asciidocContent.Should().Contain("{es-pull}300[#300]");
+			[[features-enhancements-9.2.0]]
+			[float]
+			=== New features and enhancements
 
-		// Description should be hidden
-		asciidocContent.Should().NotContain("This description should be hidden in asciidoc format when --no-descriptions is used.");
+			* Test feature for asciidoc. {es-pull}300[#300] 
+			"""
+			);
 	}
 
 	[Test]
@@ -242,24 +276,32 @@ public class DescriptionVisibilityTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var breakingChangesMarkdown = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
-		FileSystem.File.Exists(breakingChangesMarkdown).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elasticsearch-9.2.0-breaking-changes]
 
-		var breakingChangesContent = await FileSystem.File.ReadAllTextAsync(
-			breakingChangesMarkdown,
-			TestContext.Current!.Execution.CancellationToken
-		);
+			* Breaking change test.
+			  For more information, check [#400](https://github.com/elastic/elasticsearch/pull/400).
 
-		// Title and links should be present
-		breakingChangesContent.Should().Contain("Breaking change test");
-		breakingChangesContent.Should().Contain("[#400](https://github.com/elastic/elasticsearch/pull/400)");
+			  **Impact:** This is the impact section that should always be visible.
 
-		// Description should be hidden
-		breakingChangesContent.Should().NotContain("This description should be hidden but Impact and Action should remain.");
+			  **Action:** This is the action section that should always be visible.
 
-		// Impact and Action should still be visible
-		breakingChangesContent.Should().Contain("**Impact:** This is the impact section that should always be visible.");
-		breakingChangesContent.Should().Contain("**Action:** This is the action section that should always be visible.");
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elasticsearch-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elasticsearch-release-notes-9.2.0]
+			_There are no new features, enhancements, or fixes associated with this release._
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elasticsearch-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -313,28 +355,33 @@ public class DescriptionVisibilityTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var breakingChangesMarkdown = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
-		FileSystem.File.Exists(breakingChangesMarkdown).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elasticsearch-9.2.0-breaking-changes]
 
-		var breakingChangesContent = await FileSystem.File.ReadAllTextAsync(
-			breakingChangesMarkdown,
-			TestContext.Current!.Execution.CancellationToken
-		);
+			::::{dropdown} Breaking change for dropdown test.
 
-		// Should have dropdown structure
-		breakingChangesContent.Should().Contain("::::{dropdown} Breaking change for dropdown test");
-		breakingChangesContent.Should().Contain("::::");
+			For more information, check [#500](https://github.com/elastic/elasticsearch/pull/500).
 
-		// Links should be present
-		breakingChangesContent.Should().Contain("[#500](https://github.com/elastic/elasticsearch/pull/500)");
+			**Impact**<br>Impact visible in dropdown mode.
 
-		// Description should be hidden (no placeholder text either)
-		breakingChangesContent.Should().NotContain("This description should be hidden in dropdown mode.");
-		breakingChangesContent.Should().NotContain("% Describe the functionality that changed");
-
-		// Impact and Action should still be visible
-		breakingChangesContent.Should().Contain("**Impact**<br>Impact visible in dropdown mode.");
-		breakingChangesContent.Should().Contain("**Action**<br>Action visible in dropdown mode.");
+			**Action**<br>Action visible in dropdown mode.
+			::::
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elasticsearch-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elasticsearch-release-notes-9.2.0]
+			_There are no new features, enhancements, or fixes associated with this release._
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elasticsearch-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -387,19 +434,28 @@ public class DescriptionVisibilityTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexMarkdown = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexMarkdown).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elasticsearch-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elasticsearch-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elasticsearch-release-notes-9.2.0]
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexMarkdown, TestContext.Current!.Execution.CancellationToken);
-
-		// Bundle description should be visible
-		indexContent.Should().Contain("This is the bundle-level description that should always be visible");
-		indexContent.Should().Contain("regardless of the --no-descriptions flag.");
-
-		// Entry title should be present
-		indexContent.Should().Contain("Test feature");
-
-		// Entry description should be hidden
-		indexContent.Should().NotContain("This entry description should be hidden.");
+			This is the bundle-level description that should always be visible
+			regardless of the --no-descriptions flag.
+			### Features and enhancements [elasticsearch-9.2.0-features-enhancements]
+			* Test feature.
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elasticsearch-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 }

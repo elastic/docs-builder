@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -49,14 +50,8 @@ public class PropertyItemRenderingTests
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain(
-			"""href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Matcher.html" target="_blank" rel="noopener">"""
-		);
-		html.Should().Contain(
-			"""href="https://www.elastic.co/docs/explore-analyze/elastic-inference/inference-api">""",
-			"an elastic.co link stays in the tab"
-		);
-		html.Should().NotContain("&quot;_blank&quot;");
+		// The elastic.co link stays in the tab, the external one opens a new one.
+		html.Should().MatchHtmlSnapshot();
 		var row = html[html.IndexOf("<dt id=\"chunking\">", StringComparison.Ordinal)..];
 
 		int At(string marker) => row.IndexOf(marker, StringComparison.Ordinal);
@@ -64,5 +59,25 @@ public class PropertyItemRenderingTests
 		At("How the input is chunked.").Should().BeLessThan(At("reference-link-row"), "the link follows the description");
 		At("reference-link-row").Should().BeLessThan(At("expand-toggle-row"), "and sits right above show properties");
 		row[..At("</dt>")].Should().NotContain(">Reference</a>", "the name line stays short");
+	}
+
+	[Test]
+	public async Task Render_LongObjectDefault_ShowsADefaultRowWithTheFullValue()
+	{
+		var json = WithSchemas(
+			"""
+			{ "Holder": { "type": "object", "properties": {
+			    "options": { "type": "object", "default": { "auto_apply_filters": true, "use_margins": true, "sync_cursor": true } } } } }
+			"""
+		);
+		var document = await LoadSpecAsync(json);
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		html = string.Join(' ', html.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+		html.Should().Contain("""<dd class="example-value"> <span class="values-label">Default:</span> <code>""");
+		html.Should().Contain("&quot;sync_cursor&quot;:true}</code>", "the whole value is listed, not cut");
+		html.Should().NotContain("type-constraint", "no chip carries it");
 	}
 }

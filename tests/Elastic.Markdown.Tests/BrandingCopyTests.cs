@@ -40,7 +40,10 @@ branding:
 
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fs), configurationContext);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fs), configurationContext)
+		{
+			SkipStaticAssetExtraction = true
+		};
 
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);

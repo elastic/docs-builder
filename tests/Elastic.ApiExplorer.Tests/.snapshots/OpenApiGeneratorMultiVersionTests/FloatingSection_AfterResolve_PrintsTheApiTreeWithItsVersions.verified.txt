@@ -1,0 +1,10 @@
+/api/doc/elasticsearch
+  /api/doc/elasticsearch
+    /api/doc/elasticsearch/group/endpoint-core
+      /api/doc/elasticsearch/operation/operation-ping
+  /api/doc/elasticsearch/v9 [hidden]
+    /api/doc/elasticsearch/v9/group/endpoint-core
+      /api/doc/elasticsearch/v9/operation/operation-ping
+  /api/doc/elasticsearch/v8 [hidden]
+    /api/doc/elasticsearch/v8/group/endpoint-core
+      /api/doc/elasticsearch/v8/operation/operation-ping

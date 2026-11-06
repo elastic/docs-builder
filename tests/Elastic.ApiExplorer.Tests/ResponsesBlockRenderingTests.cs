@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Operations._Partials;
 using Elastic.Markdown.Myst;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -24,26 +25,9 @@ public class ResponsesBlockRenderingTests
 			Response("400", "error", "Bad request", "text/plain")
 		);
 
-		html.Should().Contain("Responses");
-		html.Should().Contain("response-status-toggle");
-		html.Should().Contain("response-status-chip status-success");
-		html.Should().Contain("response-status-chip status-error");
-		html.Should().Contain("Successful response");
-		html.Should().Contain("Bad request");
-		html.Should().Contain("application/json");
-		html.Should().Contain("text/plain");
-		html.Should().Contain("aria-controls=\"response-200-fields\"");
-		html.Should().Contain("aria-controls=\"response-400-fields\"");
-		html.Should().Contain("aria-expanded=\"false\"");
-		html.Should().Contain("response-panel collapsed");
-		html.Should().Contain("id=\"response-200-fields\"");
-		html.Should().Contain("id=\"response-400-fields\"");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
-		html.Should().NotContain("api-responses-select");
-		html.Should().NotContain("show fields");
-		html.Should().NotContain("response-fields-toggle");
-		html.Should().NotContain("hidden=\"hidden\"");
+		html.Should().MatchHtmlSnapshot();
+		html.Should().NotContain("<select", "the statuses are clickable pills, not a dropdown");
+		html.Should().NotContain("id=\"response-200-fields\" hidden", "the body has no hidden attribute, so it shows on load");
 	}
 
 	[Test]
@@ -51,9 +35,7 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
 
-		html.Should().Contain(">Response</a>");
-		html.Should().NotContain(">Responses</a>");
-		html.Should().Contain("aria-controls=\"response-200-fields\"");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -85,10 +67,7 @@ public class ResponsesBlockRenderingTests
 			Headers = []
 		});
 
-		html.Should().Contain("PlatformErrorResponse");
-		html.Should().Contain("SiemErrorResponse");
-		html.Should().Contain("union-variant-item");
-		html.Should().NotContain("Response Type:");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -127,8 +106,7 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "Disabled by the `alerting:v2:enabled` setting."));
 
-		html.Should().Contain("<code>alerting:v2:enabled</code>");
-		html.Should().NotContain("`alerting:v2:enabled`");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -138,19 +116,7 @@ public class ResponsesBlockRenderingTests
 			Response("200", "success", "A JSON object containing pipelines statistics.\n\n- queue depth\n- worker utilization")
 		);
 
-		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
-		button.Should().Contain("response-status-chip");
-		button.Should().NotContain("application/json");
-		button.Should().NotContain("queue depth");
-		button.Should().NotContain("<ul>");
-		html.Should().Contain("<li>queue depth</li>");
-		var status = html.IndexOf("</button>", StringComparison.Ordinal);
-		var description = html.IndexOf("response-description", StringComparison.Ordinal);
-		var mediaType = html.IndexOf("content-type-tag", StringComparison.Ordinal);
-		var icon = html.IndexOf("response-toggle-icon", StringComparison.Ordinal);
-		description.Should().BeGreaterThan(status);
-		mediaType.Should().BeGreaterThan(description);
-		icon.Should().BeGreaterThan(mediaType);
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -158,13 +124,8 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "See the [guide](https://www.elastic.co/guide)."));
 
-		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
-		button.Should().NotContain("<a ");
-		html.Should().Contain("href=\"https://www.elastic.co/guide\"");
-		html
-			.IndexOf("href=\"https://www.elastic.co/guide\"", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+		// The anchor sits outside the toggle button: a link inside a button is not valid.
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -175,14 +136,8 @@ public class ResponsesBlockRenderingTests
 			Contents = [new ApiMediaContent { ContentType = "application/json", Type = null, Properties = null }]
 		});
 
-		html.Should().Contain("response-panel--static");
-		html.Should().Contain("response-status-row");
-		html.Should().Contain("Indicates a successful response");
-		html.Should().Contain("application/json");
-		html.Should().NotContain("response-status-toggle");
-		html.Should().NotContain("response-toggle-icon");
-		html.Should().NotContain("response-panel-body");
-		html.Should().NotContain("response-200-fields");
+		html.Should().MatchHtmlSnapshot();
+		html.Should().NotContain("response-panel-body", "a response with nothing to show has no body to expand");
 	}
 
 	[Test]
@@ -198,15 +153,7 @@ public class ResponsesBlockRenderingTests
 
 		var html = await RenderHtml(response with { Contents = [.. response.Contents, binary] });
 
-		html.Should().Contain(
-			"<span class=\"content-type-tag\" data-content-type-current=\"response-200-content\">application/json</span>"
-		);
-		html.Should().Contain("<label for=\"response-200-content-select\">Content type</label>");
-		html.Should().Contain("<option value=\"response-200-content-0\" selected=\"selected\">application/json</option>");
-		html.Should().Contain("<option value=\"response-200-content-1\">application/zip</option>");
-		html.Should().Contain("role=\"group\" aria-label=\"200 response content types\"");
-		html.Should().Contain("id=\"response-200-content-1\" hidden=\"until-found\"");
-		html.Should().Contain("string(binary)");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -214,9 +161,7 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "OK"));
 
-		html.Should().Contain("<span class=\"content-type-tag\">application/json</span>");
-		html.Should().NotContain("data-content-type-current");
-		html.Should().NotContain("data-content-type-select");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)

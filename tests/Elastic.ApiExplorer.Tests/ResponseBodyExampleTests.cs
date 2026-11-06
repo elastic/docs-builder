@@ -6,11 +6,16 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Json;
+using Nullean.Snapshots.Trees;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class ResponseBodyExampleTests
 {
+	/// <summary>The old assertions compared the JSON text, so key order and number spelling stay significant.</summary>
+	private static readonly TreeDiffOptions Exact = new() { MapOrder = MapOrder.Significant, StrictNumbers = true };
+
 	[Test]
 	[Arguments("""{"type":"object","properties":{"state":{"type":"string","enum":["trial","active"]}}}""", """{"state":"trial"}""")]
 	[Arguments("""{"type":"object","properties":{"id":{"type":"integer","readOnly":true},"secret":{"type":"string","writeOnly":true},"note":{"type":"null"}}}""", """{"id":0,"note":null}""")]
@@ -39,7 +44,7 @@ public class ResponseBodyExampleTests
 			"""
 		);
 
-		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"state":"trial","count":0}""");
+		JsonNode.Parse(body!)!.ToJsonString().Should().MatchInlineJsonSnapshot("""{"state":"trial","count":0}""", Exact);
 	}
 
 	[Test]
@@ -61,7 +66,7 @@ public class ResponseBodyExampleTests
 			"""
 		);
 
-		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"kind":"cat","meows":true,"id":0}""");
+		JsonNode.Parse(body!)!.ToJsonString().Should().MatchInlineJsonSnapshot("""{"kind":"cat","meows":true,"id":0}""", Exact);
 	}
 
 	[Test]
@@ -77,7 +82,7 @@ public class ResponseBodyExampleTests
 		);
 
 		body.Should().NotBeNull();
-		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"id":0}""");
+		JsonNode.Parse(body!)!.ToJsonString().Should().MatchInlineJsonSnapshot("""{"id":0}""", Exact);
 	}
 
 	[Test]

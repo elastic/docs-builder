@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Markdown.Myst;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -20,8 +21,13 @@ public class ApiDescriptionHtmlRenderingTests
 		var markdown = "Some text.<br>\n\nNext paragraph.";
 		var html = Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline);
 
-		html.Should().Contain("<br>");
-		html.Should().NotContain("&lt;br&gt;");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>Some text.<br>
+			</p>
+			<p>Next paragraph.</p>
+			"""
+		);
 	}
 
 	[Test]
@@ -30,8 +36,13 @@ public class ApiDescriptionHtmlRenderingTests
 		var markdown = """See <a href="https://example.com" class="reference">the docs</a> for more.""";
 		var html = Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline);
 
-		html.Should().Contain("<a href=\"https://example.com\"");
-		html.Should().NotContain("&lt;a href");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>See
+				<a href="https://example.com" class="reference">the docs</a>
+				for more.</p>
+			"""
+		);
 	}
 
 	[Test]
@@ -49,11 +60,20 @@ public class ApiDescriptionHtmlRenderingTests
 			""";
 		var html = ApiHtmlSanitizer.Sanitize(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline));
 
-		html.Should().Contain("Spaces method and path for this operation:");
-		html.Should().Contain("operation-path");
-		html.Should().Contain("/s/{space_id}/api/spaces/space");
-		html.Should().Contain("Get a space by its identifier.");
-		html.Should().Contain("manage-spaces");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>
+				<strong>Spaces method and path for this operation:</strong>
+			</p>
+			<div>
+				<span class="operation-verb get">get</span><span class="operation-path">/s/{space_id}/api/spaces/space</span>
+			</div>
+			<p>Refer to
+				<a href="https://www.elastic.co/docs/deploy-manage/manage-spaces">Spaces</a>
+				for more information.</p>
+			<p>Get a space by its identifier.</p>
+			"""
+		);
 	}
 
 	[Test]
@@ -63,6 +83,12 @@ public class ApiDescriptionHtmlRenderingTests
 		var markdown = "<div class=\"custom\">\n\nSome text.\n\n</div>";
 		var html = Markdig.Markdown.ToHtml(markdown, MarkdownParser.Pipeline);
 
-		html.Should().NotContain("<div");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>&lt;div class="custom"&gt;</p>
+			<p>Some text.</p>
+			<p>&lt;/div&gt;</p>
+			"""
+		);
 	}
 }

@@ -8,6 +8,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Floating;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -22,6 +23,7 @@ using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -303,6 +305,213 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task FloatingSection_AfterResolve_MountsEveryVersionAndHidesTheOlderOnes()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(generator);
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+
+		var root = section.CreateRoot(null);
+		root.Url.Should().Be("/api/doc/elasticsearch");
+		root.NavigationItems.Should().BeEmpty("the root exists before the specs are fetched");
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var versions = root.NavigationItems.Should().AllBeOfType<LandingNavigationItem>().Subject.ToArray();
+		versions
+			.Select(v => v.Url)
+			.Should()
+			.BeEquivalentTo(["/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8"]);
+		versions.Where(v => !v.Hidden).Select(v => v.Url).Should().Equal("/api/doc/elasticsearch");
+
+		// the generator renders from the trees the section mounted, so the build never builds a tree twice
+		var trees = await generator.TreesFor(
+			"elasticsearch",
+			context.Configuration.ApiConfigurations!["elasticsearch"],
+			TestContext.Current!.Execution.CancellationToken
+		);
+		trees.Navigations.Should().Equal(versions);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task FloatingSection_AfterResolve_PrintsTheApiTreeWithItsVersions()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(CreateGenerator(context, versionIndexClient, reader));
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var root = section.CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		NavigationTreePrinter.Print(root, maxDepth: 3).Should().MatchSnapshot();
+	}
+
+	[Test]
+	public async Task FloatingSection_ToLinkSection_PublishesEachPageOnceWithItsVersions()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(CreateGenerator(context, versionIndexClient, reader));
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		_ = section.CreateRoot(null);
+		section.ToLinkSection().Should().BeNull("nothing is resolved yet");
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+		var links = section.ToLinkSection()!;
+
+		links.Versions.Select(v => v.Name).Should().BeEquivalentTo(["main", "9", "8"]);
+		links
+			.Versions
+			.ToDictionary(v => v.Name, v => v.Root)
+			.Should()
+			.BeEquivalentTo(
+				new Dictionary<string, string>
+				{
+					["main"] = "api/doc/elasticsearch",
+					["9"] = "api/doc/elasticsearch/v9",
+					["8"] = "api/doc/elasticsearch/v8"
+				},
+				"the API Explorer states where each version lives"
+			);
+		links.Versions.Where(v => !v.Hidden).Select(v => v.Name).Should().Equal("main");
+		links.Versions.Where(v => v.Current).Select(v => v.Name).Should().Equal("main");
+		var all = (1UL << links.Versions.Length) - 1;
+		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("", all), "every version has a landing page");
+		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("operation/operation-ping", all), "one entry, not one per version");
+		links.TryResolvePage("8", "operation/operation-ping", out var path).Should().BeTrue();
+		path.Should().Be("api/doc/elasticsearch/v8/operation/operation-ping");
+		links.TryResolvePage(null, "operation/operation-ping", out var currentPath).Should().BeTrue();
+		currentPath.Should().Be("api/doc/elasticsearch/operation/operation-ping");
+		links.TryResolvePage("main", "operation/operation-missing", out _).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task FloatingSection_WithoutAGenerator_StaysEmptyAndHidden()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		var provider = new ApiFloatingSectionProvider(context);
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var root = section.CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		root.Hidden.Should().BeTrue("a build that skips the API Explorer has no pages to show");
+		root.NavigationItems.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task FloatingSection_WithoutAMainDocument_IsHidden()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			missingVersionsAreUnreadable: true,
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(generator);
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var root = section.CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var trees = await generator.TreesFor(
+			"elasticsearch",
+			context.Configuration.ApiConfigurations!["elasticsearch"],
+			TestContext.Current!.Execution.CancellationToken
+		);
+		trees.Resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
+		root.Hidden.Should().BeTrue("no main document renders no page at the unversioned URL");
+	}
+
+	[Test]
+	public void FloatingSection_OffersOneSectionPerDeclaredApiAndMountsImplicitly()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		var provider = new ApiFloatingSectionProvider(context);
+
+		provider.GetSections().Select(s => s.Key).Should().Equal("elasticsearch");
+		provider.MountsImplicitly.Should().BeTrue("a docset that declares an API has it in its tree without a toc entry");
+		provider.HubPath.Should().Be("api");
+	}
+
+	[Test]
+	public async Task FloatingSection_HiddenRoot_StaysHiddenAfterItIsFilled()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(CreateGenerator(context, versionIndexClient, reader));
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var hidden = section.CreateRoot(null, hidden: true);
+		var visible = provider.GetSections().Single().CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		hidden.NavigationItems.Should().NotBeEmpty("a hidden root is still filled, so its pages are in links.json");
+		hidden.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
+		visible.Hidden.Should().BeFalse();
+	}
+
+	[Test]
 	public async Task Generate_WritesDistinctOutputTreesForMainAndReleasedMajors()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -545,16 +754,22 @@ public class OpenApiGeneratorMultiVersionTests
 	) => new(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient, reader);
 
 	/// <summary>Returns the document whose version segment (<c>main</c>, <c>9.4</c>, <c>8.19</c>) is in the fetched spec path.</summary>
-	private static IOpenApiSpecificationReader CreateVersionedReader(params (string Version, OpenApiDocument Document)[] documents)
+	private static IOpenApiSpecificationReader CreateVersionedReader(params (string Version, OpenApiDocument Document)[] documents) =>
+		CreateVersionedReader(false, documents);
+
+	/// <param name="missingVersionsAreUnreadable">Return no document for a version that has none, instead of throwing.</param>
+	private static IOpenApiSpecificationReader CreateVersionedReader(
+		bool missingVersionsAreUnreadable,
+		params (string Version, OpenApiDocument Document)[] documents
+	)
 	{
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(call =>
 		{
 			using var body = new StreamReader(call.GetArgument<Stream>(0)!);
 			var path = body.ReadToEnd();
-			return Task.FromResult<OpenApiDocument?>(
-				documents.Single(d => path.Contains($"/{d.Version}/", StringComparison.Ordinal)).Document
-			);
+			var matches = documents.Where(d => path.Contains($"/{d.Version}/", StringComparison.Ordinal)).ToArray();
+			return Task.FromResult(missingVersionsAreUnreadable && matches.Length == 0 ? null : matches.Single().Document);
 		});
 		return reader;
 	}

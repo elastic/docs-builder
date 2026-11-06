@@ -97,8 +97,8 @@ public static class Paths
 		{
 			// *.slnx is the primary anchor: always adopt it at any depth.
 			// This covers both the local developer case (running from the IDE output directory
-			// such as bin/Debug/net10.0/) and CI (Aspire starts the binary from the project
-			// directory, which is several levels below the solution root).
+			// such as bin/Debug/net10.0/) and a process started from a project
+			// directory, which is several levels below the solution root.
 			if (directory.GetFiles("*.slnx").Length > 0)
 				return directory;
 			var hasGit = directory.GetDirectories(".git").Length > 0 || directory.GetFiles(".git").Length > 0;

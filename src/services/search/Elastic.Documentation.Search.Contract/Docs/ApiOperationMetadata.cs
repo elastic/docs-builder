@@ -13,6 +13,19 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public record ApiOperationMetadata
 {
+	/// <summary>Key the explorer publishes the API under, e.g. <c>elasticsearch</c> in <c>/docs/api/doc/elasticsearch</c>.</summary>
+	[Keyword]
+	[JsonPropertyName("key")]
+	public string Key { get; init; } = "";
+
+	/// <summary>
+	/// Every version tree whose page shows this content, the one <see cref="SearchDocumentBase.Path"/> points into first.
+	/// A document whose trees leave out the API's default tree is <see cref="SearchDocumentBase.Hidden"/>.
+	/// </summary>
+	[Object]
+	[JsonPropertyName("trees")]
+	public ApiTreeEntry[] Trees { get; init; } = [];
+
 	[Nested]
 	[JsonPropertyName("properties")]
 	public ApiPropertyEntry[] Properties { get; init; } = [];
@@ -25,11 +38,19 @@ public record ApiOperationMetadata
 	/// <summary>
 	/// Lowercased endpoint paths without the leading <c>/</c>, with and without leading and trailing
 	/// parameters, each parameter stored as <c>*</c>, e.g. <c>*/_search</c> and <c>_search</c>.
-	/// Plain keyword so the typed term matches exactly.
+	/// Plain keyword so the typed term matches exactly. The root route is stored as <c>/</c>.
 	/// </summary>
 	[Keyword]
 	[JsonPropertyName("endpoints")]
 	public required string[] Endpoints { get; init; }
+
+	/// <summary>
+	/// The keys of <see cref="Endpoints"/> without the underscore starting each segment, e.g. <c>search</c> for
+	/// <c>_search</c>, so a typed <c>/search</c> finds the system route.
+	/// </summary>
+	[Keyword]
+	[JsonPropertyName("endpoints_bare")]
+	public string[] EndpointsBare { get; init; } = [];
 
 	/// <summary>HTTP method of the operation, e.g. <c>POST</c>.</summary>
 	[Keyword]
@@ -45,6 +66,28 @@ public record ApiOperationMetadata
 	[Keyword]
 	[JsonPropertyName("operation_id")]
 	public required string OperationId { get; init; }
+
+	/// <summary>
+	/// Plain lowercase words of the operation id and its literal path segments, e.g. <c>cluster health</c>.
+	/// A typed <c>cluster</c> or <c>esql</c> names an operation by these words, which otherwise live only
+	/// concatenated into <c>search_title</c>.
+	/// </summary>
+	[Text]
+	[JsonPropertyName("words")]
+	public string[] Words { get; init; } = [];
+
+	/// <summary>Title of the operation's group as the explorer shows it, e.g. <c>ES|QL</c>. Empty without a group.</summary>
+	[Text]
+	[JsonPropertyName("group")]
+	public string Group { get; init; } = "";
+
+	/// <summary>
+	/// Number of words in the operation id alone, e.g. 2 for <c>cluster.health</c>. Mapped as
+	/// <c>rank_feature</c> with negative score impact. Fewer id words is a more specific operation,
+	/// so ties break toward <c>esql-query</c> over <c>esql-async-query-stop</c>.
+	/// </summary>
+	[JsonPropertyName("id_words")]
+	public int IdWords { get; init; }
 
 	/// <summary>Whether the spec marks the operation deprecated.</summary>
 	[Boolean]

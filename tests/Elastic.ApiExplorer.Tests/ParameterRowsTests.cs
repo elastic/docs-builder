@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -83,9 +84,10 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync(DocsGet);
 
-		html.Should().Contain("id=\"header-params-list\"");
-		html.Should().Contain("<dt id=\"header-X-Opaque-Id\">");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#header-params-list"));
 		html.Should().Contain("href=\"#header-params\"");
+		html.Should().Contain("href=\"#header-params\" data-toc-link>Headers</a>", "the quick link names the section in the plural");
+		html.Should().Contain("data-toc-link>Path</a>").And.Contain("data-toc-link>Query</a>");
 	}
 
 	[Test]
@@ -145,8 +147,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 			.Should()
 			.Equal(("path-index", false, "/_search"), ("path-id", true, null));
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
-		html.Should().Contain("<span class=\"optional type-status\">optional</span>");
-		html.Should().Contain("<p class=\"api-path-param-optional-hint\">Leave it out to use <code>/_search</code>.</p>");
+		html.Should().MatchHtmlSnapshot();
 		RequiredStatusRegex().Matches(html).Should().ContainSingle("only the parameter every route needs reads required");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
@@ -206,10 +207,9 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync(DocsGet);
 
-		html.Should().Contain("id=\"path-params-list\"");
-		html.Should().Contain("<dt id=\"path-index\">");
+		// Path parameters are property rows now: no "path-param" class.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#path-params-list"));
 		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
-		html.Should().NotContain("class=\"path-param", "path parameters are property rows now");
 	}
 
 	[Test]
@@ -259,12 +259,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync(DocsGet);
 
-		var start = html.IndexOf("id=\"query-params-list\"", StringComparison.Ordinal);
-		var end = html.IndexOf("id=\"responses\"", start, StringComparison.Ordinal);
-		var section = html[start..end];
-		section.Should().Contain("<dt id=\"query-tags\">");
-		section.Should().Contain("<dt id=\"query-tags-string\">");
-		section.Should().Contain("&lt;string&gt;");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#query-params-list"));
 	}
 
 	[Test]
@@ -319,8 +314,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
-		html.Should().Contain("<span class=\"optional");
-		html.Should().NotContain("api-path-param-optional-hint");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	private ApiRenderContext RenderContext(INavigationItem current) =>

@@ -1,0 +1,13 @@
+---
+type: api
+title: Elastic APIs
+description: Reference documentation for Elastic REST APIs, including Elasticsearch, Kibana and Elastic Cloud.
+url: /api
+resource: /api
+---
+
+# Elastic APIs
+
+- [Fixture API](/api/doc/elasticsearch) (`elasticsearch`)
+  A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges...
+  [Markdown](/api/doc/elasticsearch.md) · [JSON](/api/doc/elasticsearch.json) · [YAML](/api/doc/elasticsearch.yaml)

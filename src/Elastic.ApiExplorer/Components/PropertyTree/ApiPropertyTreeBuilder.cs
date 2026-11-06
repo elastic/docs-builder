@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -39,7 +41,7 @@ public sealed record PropertyTreeScope
 	public ISet<string>? RequiredProperties { get; init; }
 
 	/// <summary>The scope of an array's items: the path gains <c>[]</c>.</summary>
-	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : $"{JsonPath}[]" };
+	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : JsonPath + ApiPropertyPath.ItemsMarker };
 }
 
 /// <summary>A parameter to list as a row, with the description to show.</summary>
@@ -196,15 +198,31 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>Validation constraint labels for a schema, then its default; empty when it declares none.</summary>
-	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema)
-	{
-		var constraints = BuildLimits(schema);
-		var defaultValue = schema.Default?.ToString();
-		if (!string.IsNullOrEmpty(defaultValue))
-			constraints.Add(new ConstraintDisplay($"default: {defaultValue}"));
+	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema) =>
+		DefaultConstraint(schema) is { } defaultChip ? [.. BuildLimits(schema), defaultChip] : BuildLimits(schema);
 
-		return constraints;
+	/// <summary>
+	/// The constraints a property row shows in its type. A default too long for a chip has a row of its own
+	/// (<see cref="LongDefault"/>), so it stays out of them. Every other place that describes a type keeps it as a chip.
+	/// </summary>
+	private static IReadOnlyList<ConstraintDisplay> BuildRowConstraints(IOpenApiSchema schema) =>
+		LongDefault(schema) is null ? BuildConstraints(schema) : BuildLimits(schema);
+
+	private static ConstraintDisplay? DefaultConstraint(IOpenApiSchema schema)
+	{
+		var text = CompactDefault(schema) ?? schema.Default?.ToString();
+		return string.IsNullOrEmpty(text) ? null : new ConstraintDisplay($"default: {text}");
 	}
+
+	/// <summary>An object or array default as one compact line; null for any other default.</summary>
+	private static string? CompactDefault(IOpenApiSchema schema) =>
+		schema.Default is JsonObject or JsonArray ? schema.Default.ToJsonString() : null;
+
+	/// <summary>
+	/// An object or array default longer than a chip holds. It reads as one line, so the row wraps it where a chip would cut it.
+	/// </summary>
+	public static string? LongDefault(IOpenApiSchema schema) =>
+		CompactDefault(schema) is { } compact && compact.Length > MaxInlineConstraintLength ? compact : null;
 
 	/// <summary>The format and validation limits of a schema: what a value must look like, unlike its default.</summary>
 	private static List<ConstraintDisplay> BuildLimits(IOpenApiSchema schema)
@@ -307,7 +325,7 @@ public partial class ApiPropertyTreeBuilder(
 			IsRecursive = isRecursive,
 			IsRequest = scope.IsRequest,
 			Type = WithTypeLink(
-				WithConstraints(BuildAnnotation(typeInfo, HasActualProperties(propSchema)), BuildConstraints(propSchema)),
+				WithConstraints(BuildAnnotation(typeInfo, HasActualProperties(propSchema)), BuildRowConstraints(propSchema)),
 				typeLink
 			),
 			DescriptionHtml = descriptionHtml,
@@ -317,7 +335,7 @@ public partial class ApiPropertyTreeBuilder(
 				? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration, designSystem: options.DesignSystem)
 				: null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
-			Constraints = BuildConstraints(propSchema),
+			Constraints = BuildRowConstraints(propSchema),
 			// A union that mixes literals with objects lists the literals in its "One of:" row instead.
 			EnumValues = MixesLiteralsWithObjects(typeInfo, expansion) ? [] : typeInfo.EnumValues ?? [],
 			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.
@@ -330,6 +348,7 @@ public partial class ApiPropertyTreeBuilder(
 			OptionalRoute = row.OptionalRoute,
 			IsOptionalPath = row.IsOptionalPath,
 			Example = row.Example,
+			DefaultValue = LongDefault(propSchema),
 			// The wrapper's own required sets win; otherwise those of the union it points to.
 			Requires = DescribeRequiredAlternatives(propSchema) ?? DescribeRequiredAlternatives(row.Shape),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
@@ -350,8 +369,8 @@ public partial class ApiPropertyTreeBuilder(
 			)
 			: null;
 
-	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
-	private static bool ComputeDefaultExpanded() => false;
+	// Object rows start expanded and stay foldable. The request body root is the property list, so its fields are always visible.
+	private static bool ComputeDefaultExpanded() => true;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{
@@ -511,6 +530,7 @@ public partial class ApiPropertyTreeBuilder(
 		var keyPath = AppendPath(row.JsonPath, DictionaryKeyName);
 		var dictIsCollapsible = expansion.NestedCount > 0;
 		var dictDefaultExpanded = ComputeDefaultExpanded();
+		var valueScope = childScope with { Prefix = keyAnchorId, JsonPath = keyPath, Depth = childScope.Depth + 1 };
 		return new ApiPropertyChildren
 		{
 			Kind = ChildKind.Dictionary,
@@ -526,14 +546,17 @@ public partial class ApiPropertyTreeBuilder(
 				UseHidden = options.UseHiddenUntilFound && dictIsCollapsible && !dictDefaultExpanded,
 				ValueType = Describe(row.TypeInfo.DictValueSchema),
 				EnumValues = _analyzer.GetEnumValues(row.TypeInfo.DictValueSchema),
-				Properties = BuildPropertyList(
-					row.TypeInfo.DictValueSchema,
-					childScope with { Prefix = keyAnchorId, JsonPath = keyPath, Depth = childScope.Depth + 1 }
-				)
-					?? new ApiPropertyList([])
+				Properties = BuildPropertyList(row.TypeInfo.DictValueSchema, valueScope) ?? new ApiPropertyList([]),
+				Variants = BuildMapValueVariants(row.TypeInfo.DictValueSchema, valueScope)
 			}
 		};
 	}
+
+	/// <summary>The variants of a map whose values are a union (<c>field_settings</c>), labelled like a row's own; null for any other value.</summary>
+	private ApiUnionVariants? BuildMapValueVariants(IOpenApiSchema? value, PropertyTreeScope valueScope) =>
+		MapValueUnion(value, valueScope.Depth) is { } union
+			? BuildLabelledVariants(union.Keyword, union.Options, valueScope, _analyzer.GetUnionDiscriminator(value))
+			: null;
 
 	/// <summary>The ancestors below a row: these plus the type the row expands, the item or map value type for a collection.</summary>
 	private static IReadOnlySet<string> AugmentAncestors(TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
