@@ -14,7 +14,7 @@ content-type: text/event-stream
 >       "name": "docs-mcp",
 >       "version": "{server-version}"
 >     },
->     "instructions": "Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later.\n\n<triggers>\nUse the server when the user:\n- Wants to find, read, or verify Elastic documentation pages.\n- Needs to check whether a topic is already covered in Elastic documentation.\n- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.\n- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.\n</triggers>\n\n<tool_guidance>\n- Prefer search_docs over a general web search when looking up Elastic documentation content.\n- Use find_related_docs when exploring what documentation exists around a topic.\n- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.\n- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.\n</tool_guidance>"
+>     "instructions": "Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.\n\n<triggers>\nUse the server when the user:\n- Wants to find, read, or verify Elastic documentation pages.\n- Needs to check whether a topic is already covered in Elastic documentation.\n- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.\n- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.\n</triggers>\n\n<tool_guidance>\n- Prefer search_docs over a general web search when looking up Elastic documentation content.\n- Use find_related_docs when exploring what documentation exists around a topic.\n- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.\n- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.\n</tool_guidance>"
 >   },
 >   "id": 1,
 >   "jsonrpc": "2.0"
@@ -182,7 +182,7 @@ content-type: text/event-stream
 >               "default": 10
 >             },
 >             "productFilter": {
->               "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana')",
+>               "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')",
 >               "type": [
 >                 "string",
 >                 "null"
@@ -190,7 +190,7 @@ content-type: text/event-stream
 >               "default": null
 >             },
 >             "sectionFilter": {
->               "description": "Filter by navigation section (e.g., 'reference', 'getting-started')",
+>               "description": "Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)",
 >               "type": [
 >                 "string",
 >                 "null"
