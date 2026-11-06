@@ -181,9 +181,9 @@
 	opacity: 0.7;
 }
 
+/* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
 .nav-tree__link--deprecated .method {
-	--badge-tone: var(--color-text-muted);
-	--badge-surface: var(--color-surface-sunken);
+	filter: saturate(0.4);
 }
 
 .nav-tree__separator {

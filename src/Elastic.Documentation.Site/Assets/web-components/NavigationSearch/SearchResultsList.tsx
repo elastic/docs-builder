@@ -336,7 +336,7 @@ const SearchResultRow = ({
 
                 ${
                     result.deprecated
-                        ? `.route-line .api-method { background-color: var(--color-grey-20); border-color: var(--color-grey-30); color: var(--color-grey-100); }`
+                        ? `.route-line .api-method { filter: saturate(0.4); }`
                         : ''
                 }
             `}

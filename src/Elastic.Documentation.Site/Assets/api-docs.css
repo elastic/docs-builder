@@ -999,18 +999,9 @@
 	opacity: 0.7;
 }
 
+/* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
 #pages-nav a.nav-link--deprecated .nav-v2-api-method {
-	background-color: var(--color-grey-20);
-	border-color: var(--color-grey-30);
-	color: var(--color-grey-100);
-}
-
-#pages-nav a.nav-link--deprecated:hover .nav-v2-api-method {
-	border-color: var(--color-grey-60);
-}
-
-#pages-nav a.nav-link--deprecated.current .nav-v2-api-method {
-	border-color: var(--color-grey-100);
+	filter: saturate(0.4);
 }
 
 .api-url {
