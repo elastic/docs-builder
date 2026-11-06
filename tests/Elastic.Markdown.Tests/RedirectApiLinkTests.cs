@@ -14,7 +14,7 @@ namespace Elastic.Markdown.Tests;
 public class RedirectApiLinkTests
 {
 	[Test]
-	public void RedirectToMissingApiPage_WarnsAtTheRedirectsFile()
+	public void RedirectToMissingApiPage_HintsAtTheRedirectsFile()
 	{
 		var collector = BuildDocSet(
 			"""
@@ -25,8 +25,8 @@ public class RedirectApiLinkTests
 			"""
 		);
 
-		collector.HasOneApiWarning("operation-gone");
-		collector.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Warning && d.File.EndsWith("redirects.yml"));
+		collector.HasOneApiHint("operation-gone");
+		collector.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Hint && d.File.EndsWith("redirects.yml"));
 		collector.Errors.Should().Be(0);
 	}
 

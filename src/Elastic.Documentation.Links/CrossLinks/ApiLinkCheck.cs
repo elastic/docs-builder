@@ -10,12 +10,15 @@ namespace Elastic.Documentation.Links.CrossLinks;
 public static class ApiLinkCheck
 {
 	/// <summary>
-	/// Returns a warning when <paramref name="url"/> targets an API page that the resolver knows does not exist, and
-	/// <c>null</c> for any other link, and for an API it holds no section for. A link to a root with no pages at all always warns. Old bump.sh URLs are checked at the
+	/// Returns a hint when <paramref name="url"/> targets an API page that the resolver knows does not exist, and
+	/// <c>null</c> for any other link, and for an API it holds no section for. A link to a root with no pages at all always hints. Old bump.sh URLs are checked at the
 	/// page the edge redirects them to.
 	/// </summary>
-	public static string? GetWarning(ICrossLinkResolver resolver, string? url, string? urlPathPrefix)
+	public static string? GetHint(ICrossLinkResolver resolver, string? url, string? urlPathPrefix, HashSet<HintType>? suppressions)
 	{
+		if (suppressions.ShouldSuppress(HintType.ApiLinkMissingPage))
+			return null;
+
 		if (
 			!ApiLinkMatcher.TryCanonicalize(url, urlPathPrefix, out var canonical) || !ApiLinkMatcher.TryGetApiPath(canonical, out var path)
 		)

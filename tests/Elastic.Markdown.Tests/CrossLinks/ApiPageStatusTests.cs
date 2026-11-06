@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using AwesomeAssertions;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
@@ -93,6 +94,18 @@ public class ApiPageStatusTests
 	[Arguments("https://www.elastic.co/docs/api/doc/observability-serverless/operation/operation-x", true)]
 	// Spec downloads are files, not pages of a section.
 	[Arguments("https://www.elastic.co/docs/api/doc/elasticsearch.yaml", false)]
-	public void GetWarning_Link_WarnsOnlyForAKnownMissingApiPage(string url, bool warns) =>
-		(ApiLinkCheck.GetWarning(Resolver(), url, "/docs") is not null).Should().Be(warns);
+	public void GetHint_Link_HintsOnlyForAKnownMissingApiPage(string url, bool hints) =>
+		(ApiLinkCheck.GetHint(Resolver(), url, "/docs", null) is not null).Should().Be(hints);
+
+	[Test]
+	public void GetHint_SuppressedHint_IsNull() =>
+		ApiLinkCheck
+			.GetHint(
+				Resolver(),
+				"https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-gone",
+				"/docs",
+				[HintType.ApiLinkMissingPage]
+			)
+			.Should()
+			.BeNull();
 }

@@ -115,7 +115,7 @@ External links display an arrow indicator next to the link text.
 
 ### Links to API reference pages
 
-Prefer an [API cross-link](../data/openapi/api-explorer.md#api-cross-links) to an API page, because the build fails when the page is missing. A hard-coded `https://www.elastic.co/docs/api/doc/...` link still works, and the build warns when it points at a page that no longer exists in the API pages of the link index. The warning covers inline links, bare URLs, directive links, `redirects.yml` targets and the links between API pages in OpenAPI descriptions, which you fix in the spec.
+Prefer an [API cross-link](../data/openapi/api-explorer.md#api-cross-links) to an API page, because the build fails when the page is missing. A hard-coded `https://www.elastic.co/docs/api/doc/...` link still works, and the build shows a hint when it points at a page that no longer exists in the API pages of the link index. The hint doesn't fail a `--strict` build, and you can silence it with `ApiLinkMissingPage` under [`suppress`](../documentation/isolated/configure/index.md#suppress). It covers inline links, bare URLs, directive links, `redirects.yml` targets and the links between API pages in OpenAPI descriptions, which you fix in the spec.
 
 ```markdown
 [Search API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search)

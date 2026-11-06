@@ -12,7 +12,7 @@ Placeholder.
 """)
 {
 	[Test]
-	public void RenderApiDescription_LinksToMissingApiPages_WarnAtTheDescription()
+	public void RenderApiDescription_LinksToMissingApiPages_HintAtTheDescription()
 	{
 		var writer = new HtmlWriter(Set, FileSystem, new DescriptionGenerator());
 		var source = FileSystem.FileInfo.New("docs/api/doc/kibana/operation/operation-x/description.md");
@@ -26,11 +26,11 @@ Placeholder.
 		// The same description renders again on another page, which must not warn a second time.
 		_ = writer.RenderApiDescription(markdown, FileSystem.FileInfo.New("docs/api/doc/kibana/operation/operation-y/description.md"));
 
-		var warnings = Collector.Diagnostics.Where(d => d.Severity == Severity.Warning && d.Message.Contains("API link")).ToArray();
+		var warnings = Collector.Diagnostics.Where(d => d.Severity == Severity.Hint && d.Message.Contains("API link")).ToArray();
 		warnings.Should().HaveCount(2);
 		warnings.Should().OnlyContain(d => d.File.EndsWith("description.md"));
-		Collector.HasApiWarning("https://www.elastic.co/docs/api/doc/kibana/operation/operation-gone");
-		Collector.HasApiWarning("endpoint-gone");
-		Collector.HasNoApiWarningFor("operation-exists");
+		Collector.HasApiHint("https://www.elastic.co/docs/api/doc/kibana/operation/operation-gone");
+		Collector.HasApiHint("endpoint-gone");
+		Collector.HasNoApiHintFor("operation-exists");
 	}
 }

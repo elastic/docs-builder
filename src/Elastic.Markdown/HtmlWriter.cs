@@ -87,12 +87,17 @@ public class HtmlWriter(
 		var context = DocumentationSet.Context;
 		foreach (var url in OutboundLinkExtractor.Extract(parsed) ?? [])
 		{
-			// A shared description renders on every page that shows it, so each broken link warns once.
+			// A shared description renders on every page that shows it, so each broken link is hinted once.
 			if (
-				ApiLinkCheck.GetWarning(DocumentationSet.CrossLinkResolver, url, context.UrlPathPrefix) is { } warning
-				&& _warnedApiLinks.TryAdd(warning, 0)
+				ApiLinkCheck.GetHint(
+					DocumentationSet.CrossLinkResolver,
+					url,
+					context.UrlPathPrefix,
+					context.Configuration.SuppressDiagnostics
+				) is { } hint
+				&& _warnedApiLinks.TryAdd(hint, 0)
 			)
-				context.Collector.EmitWarning(source.FullName, warning);
+				context.Collector.EmitHint(source.FullName, hint);
 		}
 	}
 

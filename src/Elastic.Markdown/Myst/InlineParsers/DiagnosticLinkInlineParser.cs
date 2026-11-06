@@ -167,7 +167,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		if (
 			context.SkipValidation
-			|| ApiLinkCheck.GetWarning(context.CrossLinkResolver, url, context.Build.UrlPathPrefix) is not { } warning
+			|| ApiLinkCheck.GetHint(
+				context.CrossLinkResolver,
+				url,
+				context.Build.UrlPathPrefix,
+				context.Build.Configuration.SuppressDiagnostics
+			) is not { } hint
 		)
 			return;
 
@@ -176,13 +181,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			.Collector
 			.Write(new Diagnostic
 			{
-				Severity = Severity.Warning,
+				Severity = Severity.Hint,
 				File = context.MarkdownSourcePath.FullName,
 				OriginalSourceFile = context.OriginalSourcePath?.FullName,
 				Line = zeroBasedLine + 1,
 				Column = Math.Max(column, 1),
 				Length = url!.Length,
-				Message = warning
+				Message = hint
 			});
 	}
 

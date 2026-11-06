@@ -12,22 +12,22 @@ namespace Elastic.Markdown.Tests.Inline;
 // The fake link index of TestCrossLinkResolver has one API section, kibana, with the page operation/operation-exists.
 public static class ApiLinkAssertions
 {
-	public static void HasOneApiWarning(this TestDiagnosticsCollector collector, string url) =>
+	public static void HasOneApiHint(this TestDiagnosticsCollector collector, string url) =>
 		collector
 			.Diagnostics
 			.Should()
-			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains("API link") && d.Message.Contains(url));
+			.ContainSingle(d => d.Severity == Severity.Hint && d.Message.Contains("API link") && d.Message.Contains(url));
 
-	public static void HasApiWarning(this TestDiagnosticsCollector collector, string url) =>
+	public static void HasApiHint(this TestDiagnosticsCollector collector, string url) =>
 		collector
 			.Diagnostics
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("API link") && d.Message.Contains(url));
+			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("API link") && d.Message.Contains(url));
 
-	public static void HasNoApiWarningFor(this TestDiagnosticsCollector collector, string url) =>
+	public static void HasNoApiHintFor(this TestDiagnosticsCollector collector, string url) =>
 		collector.Diagnostics.Should().NotContain(d => d.Message.Contains("API link") && d.Message.Contains(url));
 
-	public static void HasNoApiWarning(this TestDiagnosticsCollector collector) =>
+	public static void HasNoApiHint(this TestDiagnosticsCollector collector) =>
 		collector.Diagnostics.Should().NotContain(d => d.Message.Contains("API link"));
 }
 
@@ -38,10 +38,10 @@ public class ApiInlineLinkMissingTests() : InlineTest(
 )
 {
 	[Test]
-	public void WarnsAtTheLink() => Collector.HasOneApiWarning("operation-missing");
+	public void HintsAtTheLink() => Collector.HasOneApiHint("operation-missing");
 
 	[Test]
-	public void WarnsWithoutFailingTheBuild() => Collector.Errors.Should().Be(0);
+	public void HintsWithoutFailingTheBuild() => Collector.Errors.Should().Be(0);
 }
 
 public class ApiInlineLinkExistsTests() : InlineTest(
@@ -51,7 +51,7 @@ public class ApiInlineLinkExistsTests() : InlineTest(
 )
 {
 	[Test]
-	public void DoesNotWarn() => Collector.HasNoApiWarning();
+	public void DoesNotHint() => Collector.HasNoApiHint();
 }
 
 public class ApiInlineLinkVersionMissingTests() : InlineTest(
@@ -61,7 +61,7 @@ public class ApiInlineLinkVersionMissingTests() : InlineTest(
 )
 {
 	[Test]
-	public void WarnsWhenThePageIsOnlyInAnotherVersion() => Collector.HasOneApiWarning("operation-only-in-8");
+	public void HintsWhenThePageIsOnlyInAnotherVersion() => Collector.HasOneApiHint("operation-only-in-8");
 }
 
 public class ApiLinkWithoutASectionTests() : InlineTest(
@@ -71,7 +71,7 @@ public class ApiLinkWithoutASectionTests() : InlineTest(
 )
 {
 	[Test]
-	public void DoesNotWarnWhenTheLinkIndexHasNoSectionForTheApi() => Collector.HasNoApiWarning();
+	public void DoesNotHintWhenTheLinkIndexHasNoSectionForTheApi() => Collector.HasNoApiHint();
 }
 
 public class ApiBareAutoLinkMissingTests() : InlineTest(
@@ -81,7 +81,7 @@ See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for d
 )
 {
 	[Test]
-	public void WarnsAtTheBareUrl() => Collector.HasOneApiWarning("operation-missing");
+	public void HintsAtTheBareUrl() => Collector.HasOneApiHint("operation-missing");
 }
 
 public class ApiLinksInCommentsTests() : InlineTest(
@@ -94,7 +94,7 @@ Text.
 )
 {
 	[Test]
-	public void DoNotWarn() => Collector.HasNoApiWarning();
+	public void DoNotHint() => Collector.HasNoApiHint();
 }
 
 public class ApiRedirectedPageTests() : InlineTest(
@@ -106,7 +106,7 @@ public class ApiRedirectedPageTests() : InlineTest(
 	[Test]
 	public void ChecksTheTargetOfAnEdgeRedirect() =>
 		// topic-kibana-spaces redirects to kibana-api-overview, which the fake section does not hold, so that one warns.
-		Collector.HasOneApiWarning("topic-kibana-spaces");
+		Collector.HasOneApiHint("topic-kibana-spaces");
 }
 
 public class ApiLinkCheckPipelineTests

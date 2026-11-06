@@ -93,8 +93,15 @@ internal static class DirectiveLinkValidator
 
 		if (IsExternal(trimmed))
 		{
-			if (ApiLinkCheck.GetWarning(context.CrossLinkResolver, trimmed, context.Build.UrlPathPrefix) is { } warning)
-				block.EmitWarning(warning);
+			if (
+				ApiLinkCheck.GetHint(
+					context.CrossLinkResolver,
+					trimmed,
+					context.Build.UrlPathPrefix,
+					context.Build.Configuration.SuppressDiagnostics
+				) is { } hint
+			)
+				block.EmitHint(hint);
 			return url;
 		}
 

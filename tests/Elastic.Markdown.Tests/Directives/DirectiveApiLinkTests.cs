@@ -21,17 +21,17 @@ public class HeroApiLinkTests() : DirectiveTest<HeroBlock>(
 )
 {
 	[Test]
-	public void WarnsForMissingApiPagesInTheDescriptionAndActions()
+	public void HintsForMissingApiPagesInTheDescriptionAndActions()
 	{
-		Collector.HasApiWarning("operation-missing-description");
-		Collector.HasApiWarning("operation-missing-action");
+		Collector.HasApiHint("operation-missing-description");
+		Collector.HasApiHint("operation-missing-action");
 	}
 
 	[Test]
-	public void DoesNotWarnForExistingOrOtherLinks()
+	public void DoesNotHintForExistingOrOtherLinks()
 	{
-		Collector.HasNoApiWarningFor("operation-exists");
-		Collector.HasNoApiWarningFor("downloads");
+		Collector.HasNoApiHintFor("operation-exists");
+		Collector.HasNoApiHintFor("downloads");
 	}
 }
 
@@ -49,8 +49,8 @@ public class LinkCardApiLinkTests() : DirectiveTest<LinkCardBlock>(
 )
 {
 	[Test]
-	public void WarnsForTheMissingTarget() => Collector.HasApiWarning("operation-missing-card");
+	public void HintsForTheMissingTarget() => Collector.HasApiHint("operation-missing-card");
 
 	[Test]
-	public void DoesNotWarnForTheExistingTarget() => Collector.HasNoApiWarningFor("operation-exists");
+	public void DoesNotHintForTheExistingTarget() => Collector.HasNoApiHintFor("operation-exists");
 }
