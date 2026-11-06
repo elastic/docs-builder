@@ -32,11 +32,24 @@ internal static class ApiPageTitle
 		return null;
 	}
 
+	/// <summary>
+	/// The product display name, unless the spec title names something else. Several APIs can bind to one product
+	/// (Cloud Billing and Cloud Hosted both map to Elastic Cloud Hosted), and a title that does not mention the
+	/// display name carries the API's own identity.
+	/// </summary>
 	internal static string ProductName(string? displayName, string? specTitle)
 	{
-		if (!string.IsNullOrWhiteSpace(displayName))
-			return displayName.Trim();
+		var fromSpec = FromSpecTitle(specTitle);
+		if (string.IsNullOrWhiteSpace(displayName))
+			return fromSpec;
 
+		var product = displayName.Trim();
+		var specNamesOtherApi = fromSpec != "API" && !fromSpec.Contains(product, StringComparison.OrdinalIgnoreCase);
+		return specNamesOtherApi ? fromSpec : product;
+	}
+
+	private static string FromSpecTitle(string? specTitle)
+	{
 		if (string.IsNullOrWhiteSpace(specTitle))
 			return "API";
 

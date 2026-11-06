@@ -51,13 +51,13 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	[Arguments("v8", "Run a search | Elasticsearch API documentation (v8)")]
-	[Arguments("v9", "Run a search | Elasticsearch API documentation (v9)")]
-	[Arguments("latest", "Run a search | Elasticsearch API documentation")]
+	[Arguments("v8", "Run a search | Fixture API documentation (v8)")]
+	[Arguments("v9", "Run a search | Fixture API documentation (v9)")]
+	[Arguments("latest", "Run a search | Fixture API documentation")]
 	public void OperationLayout_Version_TitleSuffix(string version, string expected)
 	{
 		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
-		var context = Versioned(RenderContext(item), version);
+		var context = Versioned(RenderContext(item), version, "Fixture");
 		var viewModel = new OperationViewModel(context) { Operation = item.Model, Page = OperationPageModel.Create(item.Model, context) };
 
 		viewModel.CreateGlobalLayoutModel().Title.Should().Be(expected);
@@ -91,6 +91,15 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	[Arguments("Elastic Cloud Hosted", "Elastic Cloud Billing API", "Elastic Cloud Billing")]
+	[Arguments("Elastic Cloud Hosted", "Elastic Cloud Connected API", "Elastic Cloud Connected")]
+	[Arguments("Elastic Cloud Hosted", "Elastic Cloud Hosted API", "Elastic Cloud Hosted")]
+	[Arguments("Elasticsearch", "Elasticsearch Request & Response Specification", "Elasticsearch")]
+	[Arguments(null, "Kibana APIs", "Kibana")]
+	public void ProductName_SpecTitleNamingAnotherApi_KeepsSpecTitle(string? displayName, string specTitle, string expected) =>
+		ApiPageTitle.ProductName(displayName, specTitle).Should().Be(expected);
+
+	[Test]
 	public void CatalogLayout_TitleContainsElastic()
 	{
 		var catalog = new ApiCatalogNavigationItem("/api/", []);
@@ -99,10 +108,10 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		viewModel.CreateGlobalLayoutModel().Title.Should().Be("Elastic APIs");
 	}
 
-	private static ApiRenderContext Versioned(ApiRenderContext context, string version) =>
+	private static ApiRenderContext Versioned(ApiRenderContext context, string version, string displayName = "Elasticsearch") =>
 		context with
 		{
-			Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" },
+			Product = new Product { Id = "elasticsearch", DisplayName = displayName },
 			VersionSwitcherItems = ApiVersionSwitcher.Build(
 				"/api/doc",
 				"elasticsearch",
