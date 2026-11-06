@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -155,6 +156,44 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			- `https://fixture.example.com` (Fixture server)
 			"""
 		);
+	}
+
+	[Test]
+	public void AuthenticationLayout_DescribesThePageWithTheFirstSchemeDescription()
+	{
+		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
+
+		var layout = StructuralViewModel.Create(item.Model, RenderContext(item)).CreateGlobalLayoutModel();
+
+		layout.Description.Should().Be("Send the encoded key with the ApiKey prefix.");
+	}
+
+	[Test]
+	public void AuthenticationDescription_Intro_WinsOverSchemeDescriptions()
+	{
+		AuthRequirement[] requirements = [new([new AuthScheme("apiKey", "Api key", null, "Send the key.")])];
+
+		var description = StructuralViewModel.AuthenticationDescription("## Overview\n\nUse an API key for every request.", requirements);
+
+		ApiSeoDescription.Excerpt(description).Should().Be("Use an API key for every request.");
+	}
+
+	[Test]
+	public void AuthenticationDescription_NoIntroOrSchemeText_ReturnsNull()
+	{
+		AuthRequirement[] requirements = [new([new AuthScheme("basicAuth", "Basic", null, null)])];
+
+		StructuralViewModel.AuthenticationDescription(null, requirements).Should().BeNull();
+	}
+
+	[Test]
+	public void ServersLayout_HasNoDescription()
+	{
+		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Servers);
+
+		var layout = StructuralViewModel.Create(item.Model, RenderContext(item)).CreateGlobalLayoutModel();
+
+		layout.Description.Should().BeEmpty();
 	}
 
 	[Test]

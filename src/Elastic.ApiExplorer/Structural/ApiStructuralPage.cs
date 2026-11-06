@@ -121,6 +121,18 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageTitle => Page.Title;
 
+	// Server descriptions are labels like "Public", so the Servers page is left without one rather than given made-up copy.
+	protected override string? LayoutPageDescription =>
+		Page.Kind == ApiStructuralKind.Authentication ? AuthenticationDescription(Page.Intro, Requirements) : null;
+
+	internal static string? AuthenticationDescription(string? intro, IReadOnlyList<AuthRequirement> requirements) =>
+		!string.IsNullOrWhiteSpace(intro)
+			? intro
+			: requirements
+				.SelectMany(requirement => requirement.Schemes)
+				.Select(scheme => scheme.DescriptionMarkdown)
+				.FirstOrDefault(description => !string.IsNullOrWhiteSpace(description));
+
 	protected override IReadOnlyList<TocItem> GetTocItems() => Page.Kind == ApiStructuralKind.Authentication ? IntroHeadings : [];
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
