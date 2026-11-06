@@ -193,7 +193,7 @@ public class DocumentationSet : INavigationTraversable
 				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
 					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
 				else if (ApiLinkCheck.GetWarning(CrossLinkResolver, to, Context.UrlPathPrefix) is { } warning)
-					Context.Collector.EmitWarning(Configuration.SourceFile.FullName, warning);
+					Context.Collector.EmitWarning((Configuration.RedirectsSource ?? Configuration.SourceFile).FullName, warning);
 
 				return;
 			}
