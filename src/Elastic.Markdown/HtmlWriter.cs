@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Inference;
@@ -40,6 +41,8 @@ public class HtmlWriter(
 ) : IMarkdownStringRenderer
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
+
+	private readonly ConcurrentDictionary<string, byte> _warnedApiLinks = [];
 
 	private INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter
 		?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Navigation);
@@ -84,7 +87,11 @@ public class HtmlWriter(
 		var context = DocumentationSet.Context;
 		foreach (var url in OutboundLinkExtractor.Extract(parsed) ?? [])
 		{
-			if (ApiLinkCheck.GetWarning(DocumentationSet.CrossLinkResolver, url, context.UrlPathPrefix) is { } warning)
+			// A shared description renders on every page that shows it, so each broken link warns once.
+			if (
+				ApiLinkCheck.GetWarning(DocumentationSet.CrossLinkResolver, url, context.UrlPathPrefix) is { } warning
+				&& _warnedApiLinks.TryAdd(warning, 0)
+			)
 				context.Collector.EmitWarning(source.FullName, warning);
 		}
 	}

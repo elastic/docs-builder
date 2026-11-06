@@ -4,6 +4,8 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Markdown.Myst.InlineParsers;
+using Markdig;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -82,20 +84,9 @@ See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for d
 	public void WarnsAtTheBareUrl() => Collector.HasOneApiWarning("operation-missing");
 }
 
-public class ApiAngleBracketAutoLinkMissingTests() : InlineTest(
-	"""
-See <https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing> for details.
-"""
-)
-{
-	[Test]
-	public void WarnsAtTheAngleBracketLink() => Collector.HasOneApiWarning("operation-missing");
-}
-
 public class ApiLinksInCommentsTests() : InlineTest(
 	"""
 % https://www.elastic.co/docs/api/doc/kibana/operation/old-bare
-% <https://www.elastic.co/docs/api/doc/kibana/operation/old-angle>
 % [old](https://www.elastic.co/docs/api/doc/kibana/operation/old-inline)
 
 Text.
@@ -116,4 +107,25 @@ public class ApiRedirectedPageTests() : InlineTest(
 	public void ChecksTheTargetOfAnEdgeRedirect() =>
 		// topic-kibana-spaces redirects to kibana-api-overview, which the fake section does not hold, so that one warns.
 		Collector.HasOneApiWarning("topic-kibana-spaces");
+}
+
+public class ApiLinkCheckPipelineTests
+{
+	[Test]
+	public void UseAutoLinks_WithoutApiLinkCheck_BuildsAParserThatDoesNotCheck()
+	{
+		var builder = new MarkdownPipelineBuilder().UseAutoLinks(checkApiLinks: false);
+		_ = builder.Build();
+
+		builder.InlineParsers.Find<AutoLinkInlineParser>()!.CheckApiLinks.Should().BeFalse();
+	}
+
+	[Test]
+	public void UseAutoLinks_ByDefault_BuildsAParserThatChecks()
+	{
+		var builder = new MarkdownPipelineBuilder().UseAutoLinks();
+		_ = builder.Build();
+
+		builder.InlineParsers.Find<AutoLinkInlineParser>()!.CheckApiLinks.Should().BeTrue();
+	}
 }

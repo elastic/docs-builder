@@ -11,7 +11,7 @@ public static class ApiLinkCheck
 {
 	/// <summary>
 	/// Returns a warning when <paramref name="url"/> targets an API page that the resolver knows does not exist, and
-	/// <c>null</c> for any other link, and for an API it holds no section for. Old bump.sh URLs are checked at the
+	/// <c>null</c> for any other link, and for an API it holds no section for. A link to a root with no pages at all always warns. Old bump.sh URLs are checked at the
 	/// page the edge redirects them to.
 	/// </summary>
 	public static string? GetWarning(ICrossLinkResolver resolver, string? url, string? urlPathPrefix)
@@ -25,7 +25,7 @@ public static class ApiLinkCheck
 		if (Path.GetExtension(path) is ".json" or ".yaml")
 			return null;
 
-		return resolver.CheckApiPage(ApiLegacyRedirects.Resolve(path)) == ApiPageStatus.Missing
+		return ApiLegacyRedirects.IsGone(path) || resolver.CheckApiPage(ApiLegacyRedirects.Resolve(path)) == ApiPageStatus.Missing
 			? $"API link '{canonical}' does not resolve to a page of that API. Link to a page that exists, such as one in a versioned tree like "
 				+ "/docs/api/doc/<product>/v8/..., or confirm the endpoint was removed intentionally. Links in API descriptions are fixed in the OpenAPI spec."
 			: null;

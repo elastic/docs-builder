@@ -16,20 +16,21 @@ namespace Elastic.Markdown.Myst.InlineParsers;
 
 public static class AutoLinkBuilderExtensions
 {
-	public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline)
+	public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline) => pipeline.UseAutoLinks(checkApiLinks: true);
+
+	/// <summary><paramref name="checkApiLinks"/> is off for text that is not authored in docs, such as changelog entries.</summary>
+	public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline, bool checkApiLinks)
 	{
-		pipeline.Extensions.AddIfNotAlready<AutoLinkBuilderExtension>();
+		if (pipeline.Extensions.Find<AutoLinkBuilderExtension>() is null)
+			pipeline.Extensions.Add(new AutoLinkBuilderExtension(checkApiLinks));
 		return pipeline;
 	}
 }
 
-public class AutoLinkBuilderExtension : IMarkdownExtension
+public class AutoLinkBuilderExtension(bool checkApiLinks) : IMarkdownExtension
 {
-	public void Setup(MarkdownPipelineBuilder pipeline)
-	{
-		_ = pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AutoLinkInlineParser());
-		_ = pipeline.InlineParsers.InsertBefore<AutolinkInlineParser>(new AngleBracketApiLinkChecker());
-	}
+	public void Setup(MarkdownPipelineBuilder pipeline) =>
+		pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AutoLinkInlineParser(checkApiLinks));
 
 	public void Setup(MarkdownPipeline pipeline, Markdig.Renderers.IMarkdownRenderer renderer)
 	{
@@ -47,7 +48,13 @@ public class AutoLinkInlineParser : InlineParser
 	// Domains that should never be autolinked (example/placeholder domains)
 	private static readonly string[] ExcludedDomains = ["localhost", "127.0.0.1", "example.com", "example.org", "example.net"];
 
-	public AutoLinkInlineParser() => OpeningCharacters = ['h'];
+	public bool CheckApiLinks { get; }
+
+	public AutoLinkInlineParser(bool checkApiLinks = true)
+	{
+		OpeningCharacters = ['h'];
+		CheckApiLinks = checkApiLinks;
+	}
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
@@ -90,7 +97,7 @@ public class AutoLinkInlineParser : InlineParser
 
 		processor.Inline = linkInline;
 
-		if (processor.Block is not CommentBlock)
+		if (CheckApiLinks && processor.Block is not CommentBlock)
 			DiagnosticLinkInlineParser.CheckApiLink(context, url, line, column);
 
 		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
@@ -231,36 +238,5 @@ public class AutoLinkInlineParser : InlineParser
 				return false;
 		}
 		return true;
-	}
-}
-
-/// <summary>
-/// Checks <c>&lt;https://...&gt;</c> links that point at API reference pages. It never consumes input, so Markdig's own
-/// autolink parser still creates the link.
-/// </summary>
-public class AngleBracketApiLinkChecker : InlineParser
-{
-	public AngleBracketApiLinkChecker() => OpeningCharacters = ['<'];
-
-	public override bool Match(InlineProcessor processor, ref StringSlice slice)
-	{
-		if (processor.Block is CommentBlock)
-			return false;
-
-		var span = slice.AsSpan();
-		if (!span.StartsWith("<http", StringComparison.OrdinalIgnoreCase))
-			return false;
-
-		var end = span.IndexOf('>');
-		if (end < 0)
-			return false;
-
-		var url = span[1..end].ToString();
-		if (url.AsSpan().ContainsAny(' ', '<', '\n'))
-			return false;
-
-		_ = processor.GetSourcePosition(slice.Start, out var line, out var column);
-		DiagnosticLinkInlineParser.CheckApiLink(processor.GetContext(), url, line, column);
-		return false;
 	}
 }

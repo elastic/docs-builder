@@ -55,8 +55,6 @@ public record ConfigurationFile
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 
-	public IFileInfo? RedirectsSource { get; }
-
 	public HashSet<Product> Products { get; private set; } = [];
 
 	private readonly Dictionary<string, string> _substitutions = [with(StringComparer.OrdinalIgnoreCase)];
@@ -140,7 +138,6 @@ public record ConfigurationFile
 
 		var redirectFile = new RedirectFile(_context);
 		Redirects = redirectFile.Redirects;
-		RedirectsSource = redirectFile.Source;
 
 		try
 		{

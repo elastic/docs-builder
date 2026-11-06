@@ -90,6 +90,7 @@ public class ApiPageStatusTests
 	// The edge redirects the old serverless root to kibana-serverless, so the page is checked there.
 	[Arguments("https://www.elastic.co/docs/api/doc/serverless/operation/operation-live", false)]
 	[Arguments("https://www.elastic.co/docs/api/doc/serverless/operation/operation-removed", true)]
+	[Arguments("https://www.elastic.co/docs/api/doc/observability-serverless/operation/operation-x", true)]
 	// Spec downloads are files, not pages of a section.
 	[Arguments("https://www.elastic.co/docs/api/doc/elasticsearch.yaml", false)]
 	public void GetWarning_Link_WarnsOnlyForAKnownMissingApiPage(string url, bool warns) =>
