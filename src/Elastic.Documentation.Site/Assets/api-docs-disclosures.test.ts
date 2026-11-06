@@ -135,6 +135,25 @@ describe('disclosure clicks on API pages', () => {
         expect(button.textContent).toBe('Expand all')
     })
 
+    it('hides the page control on a page with nothing to fold', () => {
+        document.body.innerHTML = `
+            <article id="elastic-api-v3">
+                <div class="api-expand-standalone"><button data-api-expand-all>Collapse all</button></div>
+            </article>`
+
+        initApiDocs()
+
+        const button = document.querySelector<HTMLElement>(
+            '[data-api-expand-all]'
+        )!
+        expect(button.hidden).toBe(true)
+        expect(
+            document
+                .querySelector('.api-expand-standalone')!
+                .hasAttribute('hidden')
+        ).toBe(true)
+    })
+
     it('toggles a union variant, not the property around it', () => {
         byId('variant-toggle').click()
         expect(isExpanded('variant')).toBe(true)

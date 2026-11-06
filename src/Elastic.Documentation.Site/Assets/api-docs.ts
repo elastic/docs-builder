@@ -455,16 +455,21 @@ export function setAllExpanded(root: HTMLElement, expanded: boolean): void {
     syncExpandAll()
 }
 
-/** The page control offers whichever of the two the page is not in already. */
+/** The page control offers whichever of the two the page is not in already, and is absent where nothing can fold. */
 function syncExpandAll(): void {
     document
         .querySelectorAll<HTMLElement>('[data-api-expand-all]')
         .forEach((button) => {
             const root = button.closest<HTMLElement>(API_ROOTS)
-            if (root)
-                button.textContent = isAllExpanded(root)
-                    ? 'Collapse all'
-                    : 'Expand all'
+            if (!root) return
+            const nothingToFold = foldables(root).length === 0
+            button.hidden = nothingToFold
+            button
+                .closest('.api-expand-standalone')
+                ?.toggleAttribute('hidden', nothingToFold)
+            button.textContent = isAllExpanded(root)
+                ? 'Collapse all'
+                : 'Expand all'
         })
 }
 

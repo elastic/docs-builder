@@ -4324,3 +4324,7 @@ html:has(.api-page-shell) {
 	display: flex;
 	margin: 16px 0 0;
 }
+
+.api-expand-standalone[hidden] {
+	display: none;
+}
