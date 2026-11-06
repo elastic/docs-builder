@@ -5,6 +5,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using ModelContextProtocol.Protocol;
 
 namespace Mcp.Remote.IntegrationTests;
 
@@ -24,12 +25,14 @@ public class SearchToolsIntegrationTests : McpToolsIntegrationTestsBase
 		Skip.Unless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await searchTools.SemanticSearch(
+		var result = await searchTools.SemanticSearch(
 			"elasticsearch getting started",
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert
+		result.IsError.Should().BeFalse("SemanticSearch should not return an error result");
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
 
@@ -81,13 +84,15 @@ public class SearchToolsIntegrationTests : McpToolsIntegrationTestsBase
 		Skip.Unless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await searchTools.SemanticSearch(
+		var result = await searchTools.SemanticSearch(
 			"getting started",
 			productFilter: "elasticsearch",
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert
+		result.IsError.Should().BeFalse("SemanticSearch with product filter should not return an error result");
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
 
@@ -110,13 +115,15 @@ public class SearchToolsIntegrationTests : McpToolsIntegrationTestsBase
 		Skip.Unless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await searchTools.FindRelatedDocs(
+		var result = await searchTools.FindRelatedDocs(
 			"data streams",
 			limit: 5,
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert
+		result.IsError.Should().BeFalse("FindRelatedDocs should not return an error result");
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.RelatedDocsResponse);
 
