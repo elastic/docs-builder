@@ -1,4 +1,4 @@
-import { initApiDocs } from './api-docs'
+import { initApiDocs, revealCollapsedAncestors } from './api-docs'
 import { initSmoothScroll } from './smooth-scroll'
 
 /** One of each collapsible on an operation page, nested the way the property tree nests them. */
@@ -133,6 +133,17 @@ describe('disclosure clicks on API pages', () => {
             expect(isExpanded(id)).toBe(false)
         expect(label('prop-toggle')).toBe('Show 6 properties')
         expect(button.textContent).toBe('Expand all')
+    })
+
+    it('the page control follows rows that a link or find-in-page opens', () => {
+        const button = document.createElement('button')
+        button.dataset.apiExpandAll = ''
+        button.textContent = 'Expand all'
+        byId('section').append(button)
+
+        revealCollapsedAncestors(byId('deep'))
+
+        expect(button.textContent).toBe('Collapse all')
     })
 
     it('hides the page control on a page with nothing to fold', () => {

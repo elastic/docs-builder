@@ -174,6 +174,7 @@ export function revealCollapsedAncestors(target: HTMLElement): boolean {
         setDisclosureExpanded(el, d, true)
         revealed = true
     }
+    if (revealed) syncExpandAll()
     return revealed
 }
 
