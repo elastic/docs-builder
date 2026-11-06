@@ -34,17 +34,17 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_FirstResponseOpens_WhateverItsStatus()
+	public async Task Render_FirstResponseByRailOrderOpens_WhateverItsStatus()
 	{
 		var html = await RenderHtml(
+			Response("400", "error", "Bad request"),
 			Response("201", "success", "Created"),
-			Response("200", "success", "Already there"),
-			Response("400", "error", "Bad request")
+			Response("202", "success", "Accepted")
 		);
 
-		html.Should().Contain("response-panel expanded\" data-status=\"201\"");
-		html.Should().Contain("response-panel collapsed\" data-status=\"200\"", "200 is not special, only the first response is open");
-		html.Should().Contain("response-panel collapsed\" data-status=\"400\"");
+		html.Should().Contain("response-panel expanded\" data-status=\"201\"", "successes come first, as the examples rail orders them");
+		html.Should().Contain("response-panel collapsed\" data-status=\"202\"");
+		html.Should().Contain("response-panel collapsed\" data-status=\"400\"", "the spec lists it first, but it is an error");
 	}
 
 	[Test]

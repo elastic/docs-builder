@@ -372,7 +372,8 @@ public partial record OperationPageModel
 		return list.OrderBy(r => StatusSortKey(r.StatusCode)).ThenBy(r => r.StatusCode, StringComparer.Ordinal).ToArray();
 	}
 
-	private static int StatusSortKey(string statusCode) =>
+	/// <summary>The order the examples rail lists statuses in: successes first. The first open response follows it, so the two start on the same status.</summary>
+	internal static int StatusSortKey(string statusCode) =>
 		statusCode.Length > 0 && statusCode[0] == '2'
 			? 0
 			: statusCode.Length > 0 && statusCode[0] == '3'

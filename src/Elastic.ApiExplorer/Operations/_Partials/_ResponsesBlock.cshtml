@@ -3,8 +3,12 @@
 @{
 	var responses = Model.Responses;
 	var title = responses.Count == 1 ? "Response" : "Responses";
-	// The first response with a body opens, as the examples rail opens on its first status.
-	var firstOpen = responses.FirstOrDefault(static r => r.HasDetails);
+	// The response that opens is the one the examples rail starts on: the first by its status order, not the spec's.
+	var firstOpen = responses
+		.Where(static r => r.HasDetails)
+		.OrderBy(static r => OperationPageModel.StatusSortKey(r.StatusCode))
+		.ThenBy(static r => r.StatusCode, StringComparer.Ordinal)
+		.FirstOrDefault();
 }
 <div class="responses-block" data-api-responses>
 	<h2 class="section-header responses-header" id="responses" data-section="responses">
