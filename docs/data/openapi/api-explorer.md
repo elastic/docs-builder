@@ -597,6 +597,8 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 
 The default sidebar matches bump.sh. The product overview and the **Topics** heading sit in one group, and the Topics heading starts expanded on every page. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag. A second divider sets the **Types** heading apart after the tag folders. Like Topics, Types is a heading with no page of its own.
 
+Within a tag, operations are sorted by path, not by their order in the spec. Operations on the same path follow the resource lifecycle: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `TRACE`, `CONNECT`. The sidebar, the product and tag landing pages, and their Markdown exports all use this order. A merged page sorts by the path and method its endpoint block shows first.
+
 Operations that share `x-namespace` and `x-api-name` render as **one page** when they are the same call (same parameters, request body and responses), built around the dominant method on the longest path. A sibling with a different contract keeps its own page. Specs without those extensions group by operation summary instead. The page URL uses the operation id without its numeric suffix: `search`, `search-1`, `search-2` and `search-3` become `operation-search`. The former per-operation URLs, such as `operation-search-2`, become redirect pages to the merged page, and they keep any query string and `#fragment`. Code samples carried by any of the merged operations show the dominant method of the path they call.
 
 Sidebar grouping:
