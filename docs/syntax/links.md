@@ -115,13 +115,13 @@ External links display an arrow indicator next to the link text.
 
 ### Links to API reference pages
 
-Links to `https://www.elastic.co/docs/api/doc/...` pages, including `redirects.yml` targets, are checked when the assembler builds with the API Explorer enabled. Each link is compared with the API pages that build generates. A link that doesn't match produces a warning, and the assembler writes the full list to `api-link-report.json` next to `redirects.json`.
+Prefer an [API cross-link](../data/openapi/api-explorer.md#api-cross-links) to an API page, because the build fails when the page is missing. A hard-coded `https://www.elastic.co/docs/api/doc/...` link still works, and the build warns when it points at a page that no longer exists in the API pages of the link index. The warning covers inline links, bare and `<...>` URLs, directive links, `redirects.yml` targets and the links between API pages in OpenAPI descriptions, which you fix in the spec.
 
 ```markdown
 [Search API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search)
 ```
 
-If an endpoint no longer exists in the current API docs, point the link at the versioned tree that still has it, for example `https://www.elastic.co/docs/api/doc/kibana/v8/...`. The links between API pages that come from the OpenAPI spec descriptions are checked the same way; fix those in the spec. Only the page is checked, not the `#anchor`. Old bump.sh URLs that resolve only through edge redirects are also reported, so link to the canonical URL.
+If an endpoint no longer exists in the current API docs, point the link at the versioned tree that still has it, for example `https://www.elastic.co/docs/api/doc/kibana/v8/...`. Only the page is checked, not the `#anchor`, and an API the link index holds no pages for is not checked. Old bump.sh URLs are checked at the page the edge redirects them to.
 
 ### Linked images
 
