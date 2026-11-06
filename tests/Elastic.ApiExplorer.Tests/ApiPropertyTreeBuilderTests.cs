@@ -783,6 +783,50 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		row.Children.Properties!.Items.Single(p => p.Name == "inner").DefaultExpanded.Should().BeTrue("the row above it is showing");
 	}
 
+	[Test]
+	public void BuildPropertyList_RequiredObjectInAVariantUnderAFoldedRow_StaysFolded()
+	{
+		var builder = CreateBuilder();
+
+		OpenApiSchema Variant(string field) =>
+			new()
+			{
+				Type = JsonSchemaType.Object,
+				Required = new HashSet<string> { "needed" },
+				Properties = new Dictionary<string, IOpenApiSchema> { ["needed"] = StringFields("one", "two"), [field] = StringFields("x") }
+			};
+
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>
+			{
+				["optional_parent"] = new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema>
+					{
+						["choice"] = new OpenApiSchema { OneOf = [Variant("a"), Variant("b")] },
+						["other"] = StringFields("one")
+					}
+				}
+			}
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var parent = list!.Items.Single();
+		parent.DefaultExpanded.Should().BeFalse("it is optional");
+		var choice = parent.Children.Properties!.Items.Single(p => p.Name == "choice");
+		var variants = choice.Children.Variants!.Variants;
+		variants.Should().NotBeEmpty();
+		variants
+			.SelectMany(v => v.Properties!.Items)
+			.Where(p => p.Name == "needed")
+			.Should()
+			.OnlyContain(p => !p.DefaultExpanded, "the optional parent above it is folded");
+	}
+
 	private static OpenApiSchema ObjectsAtTwoDepths() =>
 		new()
 		{

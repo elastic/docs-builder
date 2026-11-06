@@ -72,8 +72,7 @@ public partial class ApiPropertyTreeBuilder
 				Depth = scope.Depth + 1,
 				AncestorRefs = newAncestors,
 				RequiredProperties = null,
-				Owner = VariantDisplayName(variant),
-				ParentExpanded = true
+				Owner = VariantDisplayName(variant)
 			};
 			var nested = variant.PageUrl is null ? NestedUnion(variant.Schema, newAncestors, scope.Depth) : null;
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null || nested is not null;
