@@ -1,0 +1,88 @@
+<aside id="api-examples-panel">
+	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
+		<div class="api-examples" data-api-examples="">
+			<p class="api-examples-heading" id="api-examples-heading" role="heading" aria-level="2">Examples</p>
+			<div class="api-example-chips-row" data-example-chips="">
+				<div class="api-example-chips" role="tablist" aria-labelledby="api-examples-heading">
+					<button type="button" role="tab" class="api-example-chip is-active" data-scenario="term" aria-selected="true">
+						<span class="api-example-chip-title">A simple term search</span>
+						<span class="api-example-chip-count" data-tippy-content="4 languages">
+							<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+								<use href="#icon-code"></use>
+							</svg>4<span class="sr-only">
+								languages</span>
+						</span>
+					</button>
+					<button type="button" role="tab" class="api-example-chip" data-scenario="slicing" aria-selected="false">
+						<span class="api-example-chip-title">Search slicing</span>
+						<span class="api-example-chip-count" data-tippy-content="2 languages">
+							<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+								<use href="#icon-code"></use>
+							</svg>2<span class="sr-only">
+								languages</span>
+						</span>
+					</button>
+				</div>
+				<button type="button" class="api-example-more" data-example-more="" aria-haspopup="menu" aria-expanded="false" aria-controls="api-example-menu" popovertarget="api-example-menu" hidden="">
+					<span data-example-more-label=""></span>
+					<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+						<use href="#icon-chevron-down"></use>
+					</svg>
+				</button>
+				<div id="api-example-menu" class="api-example-menu simple-scrollbar" popover="auto" data-example-menu="">
+					<div role="menu" aria-label="More examples">
+						<button type="button" role="menuitem" class="api-example-menu-item" data-scenario="term" hidden="">
+							<span class="api-example-menu-item-title">A simple term search</span>
+							<span class="api-example-chip-count">4</span>
+						</button>
+						<button type="button" role="menuitem" class="api-example-menu-item" data-scenario="slicing" hidden="">
+							<span class="api-example-menu-item-title">Search slicing</span>
+							<span class="api-example-chip-count">2</span>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="api-examples-scenario-panel api-examples-body" data-scenario="term">
+				<div class="api-rail-request" data-rail-request="">
+					
+				</div>
+				<div class="api-rail-response">
+					<div class="api-code-carousel-head">
+						<span class="api-rail-label">Response</span>
+					</div>
+					<div class="api-code-card example-block example-block--response" data-api-response-samples="" data-code-card="">
+						<div class="example-block-header">
+							<div class="example-response-tabs" role="tablist" aria-label="Response status">
+								<button type="button" role="tab" class="example-response-tab is-active" data-status="200" aria-selected="true" tabindex="0" data-tippy-content="">
+									<span class="example-response-tab-label">200</span>
+								</button>
+							</div>
+							<div class="example-block-actions" data-code-actions=""></div>
+						</div>
+						<div class="example-block-body">
+							<div class="example-response-panel" data-status="200" data-code-panel="200" role="tabpanel">
+								<div class="example-media-body">
+									<div class="highlight-json notranslate" data-line-numbers="">
+										<div class="highlight">
+											<div class="code-lines">
+												<div class="code-line-gutter" aria-hidden="true">1</div>
+												<pre>
+													<code class="language-json">{}</code>
+												</pre>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="api-examples-scenario-panel api-examples-body" data-scenario="slicing" hidden="until-found">
+				<div class="api-rail-request" data-rail-request="">
+					
+				</div>
+			</div>
+		</div>
+	</nav>
+</aside>

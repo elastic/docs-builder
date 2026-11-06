@@ -6,7 +6,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -38,8 +40,20 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 		FileSystem.Path.GetFileName(files[0]).Should().StartWith("note-");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Slow rollover fix");
-		content.Should().Contain("bug-fix");
+		content
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Slow rollover fix
+			"""
+			);
 	}
 
 	[Test]
@@ -61,8 +75,11 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("version"));
+			.MatchInlineSnapshot(
+				"error  Product 'elasticsearch' must have at least one specific version for 'changelog note'. Use --products 'product version[|version2...] [lifecycle]' with a concrete version (for example, 'elasticsearch 9.3.0|9.4.0 ga' or 'cloud-serverless 2026-05-15')."
+			);
 	}
 
 	[Test]
@@ -84,8 +101,11 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("version"));
+			.MatchInlineSnapshot(
+				"error  Product 'elasticsearch' must have at least one specific version for 'changelog note'. Use --products 'product version[|version2...] [lifecycle]' with a concrete version (for example, 'elasticsearch 9.3.0|9.4.0 ga' or 'cloud-serverless 2026-05-15')."
+			);
 	}
 
 	[Test]
@@ -159,8 +179,9 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+			.MatchInlineSnapshot("error  When --prs is specified as just a number, both --owner and --repo must be provided");
 	}
 
 	[Test]
@@ -183,8 +204,9 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+			.MatchInlineSnapshot("error  When --issues is specified as just a number, both --owner and --repo must be provided");
 	}
 
 	[Test]
@@ -214,7 +236,22 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 		FileSystem.Path.GetFileName(files[0]).Should().Be("note-known-limitation.yml");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("pull/12345");
+		content
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: known-issue
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.3.0
+			    lifecycle: ga
+			title: Known limitation
+			"""
+			);
 	}
 
 	[Test]
@@ -237,8 +274,9 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+			.MatchInlineSnapshot("error  When --prs contains any bare number, both --owner and --repo must be provided");
 	}
 
 	[Test]
@@ -261,8 +299,9 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+			.MatchInlineSnapshot("error  When --issues contains any bare number, both --owner and --repo must be provided");
 	}
 
 	[Test]
@@ -317,6 +356,19 @@ public class NoteCreationTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		content.Should().NotContain("CI injected description that should be suppressed");
+		content
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			type: known-issue
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Known memory leak
+			"""
+			);
 	}
 }

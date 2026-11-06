@@ -2,7 +2,7 @@
 
 Create a changelog YAML for content that is not tied to a pull request.
 Typical uses are known issues and security advisories.
-For details and examples, go to [](/data/release-notes/create.md).
+For details and examples, go to [](/data/release-notes/index.md).
 
 Files are named `note-{slug}.yml`. Each product lists `products[].versions` — the release versions the change applies to.
 

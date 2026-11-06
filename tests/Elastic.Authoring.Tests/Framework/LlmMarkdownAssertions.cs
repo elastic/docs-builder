@@ -75,58 +75,17 @@ internal static class LlmMarkdownAssertions
 	}
 
 	[DebuggerStepThrough]
-	internal static void ConvertsToNewLlm([LanguageInjection("markdown")] string expected, GeneratorResults results)
-	{
-		var defaultFile = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
-			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
-
-		var actual = ToLlmMarkdown(defaultFile);
-		var expectedTrimmed = expected.Trim();
-		var difference = HtmlAssertions.Diff(expectedTrimmed, actual);
-
-		if (string.IsNullOrEmpty(difference))
-			return;
-
-		throw new AwesomeAssertions.Execution.AssertionFailedException(
-			$"""
-LLM text was not equal
--- DIFF --
-{difference}
-
--- EXPECTED --
-{expectedTrimmed}
-
--- ACTUAL --
-{actual}
-"""
-		);
-	}
+	internal static void ConvertsToNewLlm([LanguageInjection("markdown")] string? expected, GeneratorResults results, CallSite site) =>
+		InlineSnapshots.Text(ToLlmMarkdown(FindIndexMd(results)), expected, nameof(Scenario.ConvertsToNewLlm), site);
 
 	[DebuggerStepThrough]
-	internal static void ConvertsToLlmWithMetadata([LanguageInjection("markdown")] string expected, GeneratorResults results)
-	{
-		var defaultFile = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
+	internal static void ConvertsToLlmWithMetadata(
+		[LanguageInjection("markdown")] string? expected,
+		GeneratorResults results,
+		CallSite site
+	) => InlineSnapshots.Text(ToLlmMarkdownWithMetadata(FindIndexMd(results)), expected, nameof(Scenario.ConvertsToLlmWithMetadata), site);
+
+	private static MarkdownResult FindIndexMd(GeneratorResults results) =>
+		results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
 			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
-
-		var actual = ToLlmMarkdownWithMetadata(defaultFile);
-		var expectedTrimmed = expected.Trim();
-		var difference = HtmlAssertions.Diff(expectedTrimmed, actual);
-
-		if (string.IsNullOrEmpty(difference))
-			return;
-
-		throw new AwesomeAssertions.Execution.AssertionFailedException(
-			$"""
-LLM metadata output was not equal
--- DIFF --
-{difference}
-
--- EXPECTED --
-{expectedTrimmed}
-
--- ACTUAL --
-{actual}
-"""
-		);
-	}
 }

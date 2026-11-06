@@ -21,5 +21,8 @@ public record HighlightOptions
 	/// <summary>Whether the typed path's children are listed after their parent row.</summary>
 	public bool ListChildren { get; init; }
 
+	/// <summary>Whether the hit comes from <see cref="ApiLookupQueryBuilder"/>, whose field rows are named per typed word.</summary>
+	public bool ApiLookup { get; init; }
+
 	public static HighlightOptions Default => new();
 }

@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation;
+using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -19,35 +21,32 @@ public class FootnotesBasicTests() : InlineTest(
 )
 {
 	[Test]
-	public void ContainsFootnoteReferences()
-	{
-		Html.Should().Contain("footnote-ref");
-		Html.Should().Contain("href=\"#fn:1\"");
-		Html.Should().Contain("href=\"#fn:2\"");
-	}
-
-	[Test]
-	public void ContainsFootnoteContainer() => Html.Should().Contain("class=\"footnotes\"");
-
-	[Test]
-	public void ContainsFootnoteDefinitions()
-	{
-		Html.Should().Contain("id=\"fn:1\"");
-		Html.Should().Contain("id=\"fn:2\"");
-		Html.Should().Contain("This is the first footnote.");
-		Html.Should().Contain("This is the second footnote.");
-	}
-
-	[Test]
-	public void ContainsBackReferences()
-	{
-		Html.Should().Contain("footnote-back-ref");
-		Html.Should().Contain("href=\"#fnref:1\"");
-		Html.Should().Contain("href=\"#fnref:2\"");
-	}
-
-	[Test]
-	public void RendersFootnotesHeading() => Html.Should().Contain("<h4>Footnotes</h4>");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Here's a simple footnote<a id="fnref:1" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>
+			and another<a id="fnref:2" href="#fn:2" class="footnote-ref">
+				<sup>2</sup>
+			</a>.</p>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>This is the first footnote.<a href="#fnref:1" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+				<li id="fn:2">
+					<p>This is the second footnote.<a href="#fnref:2" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void FootnotesHeadingPrecedesFootnoteContainer()
@@ -84,12 +83,30 @@ public partial class FootnotesMultipleReferencesTests() : InlineTest(
 	}
 
 	[Test]
-	public void ContainsMultipleBackReferences()
-	{
-		// Should have references back to both instances
-		Html.Should().Contain("href=\"#fnref:1\"");
-		Html.Should().Contain("href=\"#fnref:2\"");
-	}
+	// Should have references back to both instances
+	public void ContainsMultipleBackReferences() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>First reference<a id="fnref:1" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>
+			and second reference<a id="fnref:2" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>.</p>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>This footnote is referenced twice.<a href="#fnref:1" class="footnote-back-ref">↩</a>
+						<a href="#fnref:2" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 
 	[System.Text.RegularExpressions.GeneratedRegex("href=\"#fn:1\"", System
 		.Text
@@ -116,26 +133,35 @@ public class FootnotesComplexContentTests() : InlineTest(
 )
 {
 	[Test]
-	public void ContainsComplexFootnoteStructure()
-	{
-		Html.Should().Contain("href=\"#fn:1\"");
-		Html.Should().Contain("This footnote has multiple elements.");
-		Html.Should().Contain("It has multiple paragraphs.");
-	}
-
-	[Test]
-	public void ContainsBlockquoteInFootnote()
-	{
-		Html.Should().Contain("blockquote");
-		Html.Should().Contain("And even a blockquote.");
-	}
-
-	[Test]
-	public void ContainsListInFootnote()
-	{
-		Html.Should().Contain("List item 1");
-		Html.Should().Contain("List item 2");
-	}
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Here's a complex footnote<a id="fnref:1" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>.</p>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>This footnote has multiple elements.</p>
+					<p>It has multiple paragraphs.</p>
+					<blockquote>
+						<p>And even a blockquote.</p>
+					</blockquote>
+					<ul>
+						<li>List item 1</li>
+						<li>List item 2</li>
+					</ul>
+					<p>
+						<a href="#fnref:1" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public class FootnotesWithCodeTests() : InlineTest(
@@ -153,11 +179,35 @@ public class FootnotesWithCodeTests() : InlineTest(
 )
 {
 	[Test]
-	public void ContainsCodeBlockInFootnote()
-	{
-		Html.Should().Contain("Example code:");
-		Html.Should().Contain("hello");
-	}
+	public void ContainsCodeBlockInFootnote() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>See the code example<a id="fnref:1" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>.</p>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>Example code:</p>
+					<div class="highlight-python notranslate">
+						<div class="highlight">
+							<pre>
+								<code class="language-python">def hello():     print("Hello, world!")
+								</code>
+							</pre>
+						</div>
+					</div>
+					<p>
+						<a href="#fnref:1" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public class FootnotesConsecutiveDefinitionsTests() : InlineTest(
@@ -172,20 +222,7 @@ public class FootnotesConsecutiveDefinitionsTests() : InlineTest(
 )
 {
 	[Test]
-	public void HandlesConsecutiveFootnoteDefinitions()
-	{
-		Html.Should().Contain("First footnote.");
-		Html.Should().Contain("Second footnote.");
-		Html.Should().Contain("Third footnote.");
-	}
-
-	[Test]
-	public void AllFootnoteReferencesAreLinked()
-	{
-		Html.Should().Contain("href=\"#fn:1\"");
-		Html.Should().Contain("href=\"#fn:2\"");
-		Html.Should().Contain("href=\"#fn:3\"");
-	}
+	public void GeneratesHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 public class FootnotesInListTests() : InlineTest(
@@ -199,11 +236,29 @@ public class FootnotesInListTests() : InlineTest(
 )
 {
 	[Test]
-	public void FootnoteWorksInListItem()
-	{
-		Html.Should().Contain("href=\"#fn:1\"");
-		Html.Should().Contain("Footnote from list item.");
-	}
+	public void FootnoteWorksInListItem() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<ul>
+			<li>Item one</li>
+			<li>Item two with footnote<a id="fnref:1" href="#fn:1" class="footnote-ref">
+					<sup>1</sup>
+				</a>
+			</li>
+		</ul>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>Footnote from list item.<a href="#fnref:1" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public class FootnotesWithNamedReferencesTests() : InlineTest(
@@ -216,11 +271,25 @@ public class FootnotesWithNamedReferencesTests() : InlineTest(
 )
 {
 	[Test]
-	public void HandlesNamedFootnoteIdentifiers()
-	{
-		Html.Should().Contain("footnote-ref");
-		Html.Should().Contain("This uses a named identifier.");
-	}
+	public void HandlesNamedFootnoteIdentifiers() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Named reference<a id="fnref:1" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>.</p>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>This uses a named identifier.<a href="#fnref:1" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 }
 
 public partial class FootnotesInlineCodeNotParsedTests() : InlineTest(
@@ -233,11 +302,28 @@ public partial class FootnotesInlineCodeNotParsedTests() : InlineTest(
 )
 {
 	[Test]
-	public void InlineCodeFootnoteSyntaxNotParsed()
-	{
-		// The inline code `[^1]` should render as code, not as a footnote reference
-		Html.Should().Contain("<code>[^1]</code>");
-	}
+	// The inline code `[^1]` should render as code, not as a footnote reference
+	public void InlineCodeFootnoteSyntaxNotParsed() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Real reference<a id="fnref:1" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>. Inline code example:
+			<code>[^1]</code>
+			should not be parsed.</p>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>This is the footnote.<a href="#fnref:1" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void OnlyOneBackReference()
@@ -269,7 +355,33 @@ public partial class FootnotesCodeBlockNotParsedTests() : InlineTest(
 )
 {
 	[Test]
-	public void CodeBlockRendered() => Html.Should().Contain("language-markdown");
+	public void CodeBlockRendered() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Real reference<a id="fnref:1" href="#fn:1" class="footnote-ref">
+				<sup>1</sup>
+			</a>.</p>
+		<div class="highlight-markdown notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-markdown">Code block with [^1] reference.
+					</code>
+				</pre>
+			</div>
+		</div>
+		<div class="footnotes">
+			<hr>
+			<h4>Footnotes</h4>
+			<ol>
+				<li id="fn:1">
+					<p>This is the footnote.<a href="#fnref:1" class="footnote-back-ref">↩</a>
+					</p>
+				</li>
+			</ol>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void OnlyOneBackReference()
@@ -317,7 +429,7 @@ public partial class FootnotesCodeBlockInDirectiveTests() : InlineTest(
 )
 {
 	[Test]
-	public void CodeBlockRendered() => Html.Should().Contain("language-markdown");
+	public void CodeBlockRendered() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void CorrectBackReferenceCount()
@@ -364,26 +476,8 @@ public class FootnotesInsideDirectiveTests() : InlineTest(
 )
 {
 	[Test]
-	public void OtherInlineElementsWorkInsideDirectives()
-	{
-		// Do other inline elements work?
-		Html.Should().Contain("<strong>bold</strong>");
-		Html.Should().Contain("href=\"https://example.com\"");
-	}
-
-	[Test]
-	public void FootnoteReferencesWorkInsideDirectives()
-	{
-		// Footnote REFERENCES work inside directives
-		Html.Should().Contain("footnote-ref");
-		Html.Should().Contain("href=\"#fn:1\"");
-	}
-
-	[Test]
-	public void FootnoteDefinitionsAreAtDocumentLevel()
-	{
-		// Footnote DEFINITIONS are rendered at the document level
-		Html.Should().Contain("<div class=\"footnotes\">");
-		Html.Should().Contain("Footnote definitions must be at the document level");
-	}
+	// Do other inline elements work?
+	// Footnote REFERENCES work inside directives
+	// Footnote DEFINITIONS are rendered at the document level
+	public void GeneratesHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

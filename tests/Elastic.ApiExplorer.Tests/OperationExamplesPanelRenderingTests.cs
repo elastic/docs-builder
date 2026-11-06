@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -63,38 +64,20 @@ public partial class OperationExamplesPanelRenderingTests
 			]
 		});
 
-		html.Should().Contain("Generated from the API spec</span>");
-		html.Should().Contain("Unions use the first variant");
-		System.Net.WebUtility.HtmlDecode(html).Should().Contain("application/json").And.Contain("application/problem+json");
+		html.Should().MatchHtmlSnapshot();
 		CodeCardRegex().Count(html).Should().Be(3);
 		CodeActionsRegex().Count(html).Should().Be(3);
 		Status200Regex().Count(html).Should().Be(2);
 	}
 
 	[Test]
-	public async Task Render_MultipleScenarios_ShowsChipsAndKeepsOthersFindable()
+	public async Task Render_MultipleScenarios_ShowsChipsHeadingAndMoreMenuAndKeepsOthersFindable()
 	{
 		var html = await RenderPanel(TermSearch, Slicing);
 
-		html.Should().Contain("api-example-chips");
-		html.Should().Contain("data-scenario=\"term\"");
-		html.Should().Contain(">Search slicing</span>");
-		// The chip shows just the number; the words are a tooltip and screen-reader text.
-		html.Should().Contain("data-tippy-content=\"4 languages\"");
-		html.Should().Contain("<span class=\"sr-only\"> languages</span>");
-		html.Should().Contain("hidden=\"until-found\"");
-		html.Should().NotContain("api-select");
-	}
-
-	[Test]
-	public async Task Render_MultipleScenarios_ListsEveryScenarioInTheMoreMenu()
-	{
-		var html = await RenderPanel(TermSearch, Slicing);
-
-		html.Should().Contain("data-example-more");
-		html.Should().Contain("popover=\"auto\"");
-		html.Should().Contain("class=\"api-example-menu-item\" data-scenario=\"slicing\"");
-		html.Should().NotContain("data-example-filter");
+		// The chip shows just the number; the words are a tooltip and screen-reader text. The heading labels the chips,
+		// every scenario is listed in the more menu, and the other scenarios stay findable (hidden=until-found).
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Remove(".api-code-carousel"));
 	}
 
 	[Test]
@@ -140,8 +123,9 @@ public partial class OperationExamplesPanelRenderingTests
 	{
 		var html = await RenderScenario(TermSearch with { HttpMethod = "post", Route = "/_search" });
 
-		html.Should().Contain("api-code-carousel-card-client\">Elasticsearch Java Client</span>");
-		html.Should().Contain("api-code-carousel-card-client\">Kibana Dev Tools</span>");
+		html.Should().MatchHtmlSnapshot(
+			new HtmlSnapshotOptions().Select(".api-code-carousel-strip").Remove(".api-code-carousel-card-body")
+		);
 		html.Should().NotContain("api-method-post");
 	}
 
@@ -217,10 +201,8 @@ public partial class OperationExamplesPanelRenderingTests
 			RequestDescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Splits the search into slices.</p>")
 		});
 
-		html.Should().Contain("data-example-description");
-		html.Should().Contain("Splits the search into slices.");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Remove(".api-code-carousel-strip"));
 		html.Should().MatchRegex("data-description-toggle[^>]*\\shidden>");
-		html.Should().NotContain("api-example-description");
 		var caption = html.IndexOf("Splits the search into slices.", StringComparison.Ordinal);
 		caption.Should().BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
 		caption.Should().BeLessThan(html.IndexOf("api-code-carousel-strip", StringComparison.Ordinal));
@@ -237,12 +219,7 @@ public partial class OperationExamplesPanelRenderingTests
 			RequestExternalValue = "https://example.test/request.json"
 		});
 
-		html.Should().Contain("Posted from a file.");
-		html.Should().Contain("https://example.test/request.json");
-		html
-			.IndexOf("Posted from a file.", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -267,12 +244,7 @@ public partial class OperationExamplesPanelRenderingTests
 			]
 		});
 
-		var found = html.IndexOf("Found it.", StringComparison.Ordinal);
-		found.Should().BeGreaterThan(html.IndexOf(">Response</span>", StringComparison.Ordinal));
-		found.Should().BeLessThan(html.IndexOf("data-api-response-samples", StringComparison.Ordinal));
-		html.Should().Contain("<div data-caption-status=\"200\">");
-		html.Should().Contain("<div data-caption-status=\"404\" hidden=\"hidden\">");
-		html.Should().NotContain(">Request</span>");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -298,19 +270,6 @@ public partial class OperationExamplesPanelRenderingTests
 		html.Should().Contain("data-status=\"200\"");
 		UnauthorizedTooltipRegex().Matches(html).Should().ContainSingle();
 		EmptyTooltipOn404Regex().Matches(html).Should().ContainSingle();
-	}
-
-	[Test]
-	public async Task Render_Panel_LabelsTheChipsWithAnExamplesHeading()
-	{
-		var html = await RenderPanel(TermSearch, Slicing);
-
-		html.Should().Contain("id=\"api-examples-heading\" role=\"heading\" aria-level=\"2\">Examples</p>");
-		html.Should().Contain("aria-labelledby=\"api-examples-heading\"");
-		html
-			.IndexOf("id=\"api-examples-heading\"", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("api-example-chips", StringComparison.Ordinal));
 	}
 
 	[Test]
@@ -343,10 +302,7 @@ public partial class OperationExamplesPanelRenderingTests
 			]
 		});
 
-		html.Should().Contain("data-code-card");
-		html.Should().Contain("data-code-actions");
-		html.Should().Contain("data-code-panel=\"200\"");
-		html.Should().Contain("data-code-panel=\"404\"");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -361,9 +317,7 @@ public partial class OperationExamplesPanelRenderingTests
 			RequestJson = /*lang=json,strict*/ """{"query":{}}"""
 		});
 
-		html.Should().Contain("api-method-post");
-		html.Should().Contain("class=\"api-url\">/_search</span>");
-		html.Should().NotContain("data-api-carousel");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -377,11 +331,7 @@ public partial class OperationExamplesPanelRenderingTests
 			CodeSamples = [Sample("curl", "curl -X POST")]
 		});
 
-		html.Should().Contain(">Request example</span>");
-		html
-			.IndexOf("created-agent-id", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf("curl -X POST", StringComparison.Ordinal));
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -396,7 +346,7 @@ public partial class OperationExamplesPanelRenderingTests
 			CodeSamplesIncludeRequest = true
 		});
 
-		html.Should().NotContain("api-code-sample-heading");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]

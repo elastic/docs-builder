@@ -1,0 +1,8 @@
+## valid feedback is stored: PUT /docs/_api/v1/page-feedback/{{$guid}}
+status: 204 No Content
+
+## a thumbs down needs a reason: PUT /docs/_api/v1/page-feedback/{{$guid}}
+status: 400 Bad Request
+
+## feedback is deleted: DELETE /docs/_api/v1/page-feedback/{{$guid}}
+status: 204 No Content

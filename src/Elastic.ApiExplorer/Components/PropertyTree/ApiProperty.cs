@@ -133,6 +133,9 @@ public record DictionaryChildDisplay
 	/// <summary>The literals a map value can take, as a "Values:" row under the key.</summary>
 	public IReadOnlyList<string> EnumValues { get; init; } = [];
 	public required ApiPropertyList Properties { get; init; }
+
+	/// <summary>The variants of a map whose values are a union, listed after the value's own properties.</summary>
+	public ApiUnionVariants? Variants { get; init; }
 }
 
 /// <summary>The precomputed children of a property, discriminated by <see cref="Kind"/>.</summary>
@@ -148,6 +151,17 @@ public record ApiPropertyChildren
 	public ApiPropertyList? Properties { get; init; }
 	public ApiUnionVariants? Variants { get; init; }
 	public DictionaryChildDisplay? Dictionary { get; init; }
+
+	/// <summary>
+	/// Every row nested directly under the property, in page order: its fields, its map values' fields, then the fields of each
+	/// listed variant, nested variants included. Walkers that visit rows (the search index, row counts) read this, so a new
+	/// kind of child needs one change here.
+	/// </summary>
+	public IEnumerable<ApiProperty> NestedRows =>
+		(Properties?.Items ?? [])
+			.Concat(Dictionary?.Properties.Items ?? [])
+			.Concat(Dictionary?.Variants?.Rows ?? [])
+			.Concat(Variants?.Rows ?? []);
 }
 
 /// <summary>
@@ -204,6 +218,9 @@ public record ApiProperty
 
 	/// <summary>An example that tells the reader more than the type does, as it should read; null when the row has none worth showing.</summary>
 	public string? Example { get; init; }
+
+	/// <summary>An object or array default too long for a chip, as one compact line; shown in a "Default:" row that wraps.</summary>
+	public string? DefaultValue { get; init; }
 	public UnionDisplay? Union { get; init; }
 
 	/// <summary>Item type name for primitive arrays, rendered as an "Array of:" row.</summary>

@@ -1,0 +1,32 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "published_date": "2024-01-08T00:00:00+00:00",
+  "modified_date": "2024-01-10T11:00:00+00:00",
+  "og": {},
+  "twitter": {},
+  "http": {},
+  "title": "Tracking a novel loader: PIPEDANCE",
+  "search_title": "Tracking a novel loader: PIPEDANCE",
+  "content_type": "site",
+  "path": "/security-labs/threat-command/tracking-a-novel-loader-pipedance",
+  "url": "/security-labs/threat-command/tracking-a-novel-loader-pipedance",
+  "hash": "b4c258bda492ff4e",
+  "last_updated": "2024-01-10T11:00:00+00:00",
+  "description": "An analysis of the PIPEDANCE loader observed in recent intrusions.",
+  "headings": [
+    "Key takeaways",
+    "Analysis",
+    "API resolution"
+  ],
+  "body": "Key takeaways PIPEDANCE is a novel loader used to stage secondary payloads. It uses process injection to evade detection. Analysis The loader begins by resolving kernel32.dll exports via a custom PEB walk. API resolution Once resolved, the loader calls VirtualAlloc to stage the payload in memory.",
+  "summary": "An analysis of the PIPEDANCE loader observed in recent intrusions.",
+  "parents": [],
+  "translated": true,
+  "section": "security-labs",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 4,
+    "table_of_contents": 100
+  }
+}

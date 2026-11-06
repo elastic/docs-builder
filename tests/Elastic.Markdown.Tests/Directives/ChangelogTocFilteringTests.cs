@@ -4,7 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -119,12 +122,7 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 	}
 
 	[Test]
-	public void HtmlContainsAllSections()
-	{
-		Html.Should().Contain("Documentation");
-		Html.Should().Contain("Other changes");
-		Html.Should().Contain("Features and enhancements");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -211,13 +209,27 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 	}
 
 	[Test]
-	public void HtmlMatchesTocFiltering()
-	{
-		Html.Should().NotContain("Other changes");
-		Html.Should().NotContain("Hidden other change");
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Visible feature");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Visible feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -278,11 +290,27 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 	}
 
 	[Test]
-	public void HtmlShowsVisibleEntryOnly()
-	{
-		Html.Should().Contain("Visible other change");
-		Html.Should().NotContain("Hidden other change");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-other">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-other">Other changes</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Visible other change.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -383,15 +411,7 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 	}
 
 	[Test]
-	public void HtmlMatchesTocAndAnchors()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Visible feature");
-		Html.Should().Contain("Documentation");
-		Html.Should().Contain("Docs entry blocked by type");
-		Html.Should().NotContain(">Fixes<");
-		Html.Should().NotContain("Bug fix hidden by feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -549,7 +569,11 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void OmitsVersionFromRenderedOutput() => Html.Should().NotContain("9.3.0");
+	public void OmitsVersionFromRenderedOutput()
+	{
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	}
 
 	[Test]
 	public void NoAnchorsGenerated()

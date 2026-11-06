@@ -60,10 +60,13 @@ public static class SectionTopNavBuilder
 				{
 					// All pages within the section have NavigationRoot = sectionNav,
 					// so a single SectionId match is sufficient for active-tab detection.
-					var tabUrl = sectionNav
-						.NavigationItems
-						.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
-						.FirstOrDefault()?.Index.Url;
+					// A floating hub has its own landing URL; the first child is just one of the sections it lists.
+					var tabUrl = section.FloatingKind is not null
+						? sectionNav.Url
+						: sectionNav
+							.NavigationItems
+							.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+							.FirstOrDefault()?.Index.Url;
 
 					if (tabUrl is not null)
 					{

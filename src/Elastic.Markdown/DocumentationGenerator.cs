@@ -504,6 +504,12 @@ public partial class DocumentationGenerator
 			return CompilationMode.Full;
 		}
 
+		if (Context.SkipOpenApi != generationState.SkipOpenApi)
+		{
+			_logger.LogInformation("Full compilation: --skip-api differs from the previous build, so the API navigation links change");
+			return CompilationMode.Full;
+		}
+
 		if (offendingFiles.Count > 0)
 		{
 			_logger.LogInformation("Incremental compilation. since: {LastWrite}", DocumentationSet.LastWrite);
@@ -555,6 +561,7 @@ public partial class DocumentationGenerator
 			LastSeenChanges = DocumentationSet.LastWrite,
 			InvalidFiles = badFiles,
 			Git = Context.Git,
+			SkipOpenApi = Context.SkipOpenApi,
 			Exporter = _documentationFileExporter.Name
 		};
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.GenerationState);

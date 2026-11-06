@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -67,21 +69,32 @@ public class PrivateLinkBugTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.3.0", "deprecations.md");
-		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.3.0/breaking-changes.md ===
+			## 9.3.0 [elasticsearch-9.3.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.3.0/deprecations.md ===
+			## 9.3.0 [elasticsearch-9.3.0-deprecations]
 
-		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current!.Execution.CancellationToken);
+			* The v1 Costs API has been deprecated. Customers should migrate to the v2 Costs API.
+			  This API will be removed in a future version.
 
-		// Should not contain the incomplete sentence
-		content.Should().NotContain("For more information, check.");
-		content.Should().NotContain("check .");
-		content.Should().NotContain("check.");
+			  **Impact:** Users must update their integration.
 
-		// Should still contain the entry content
-		content.Should().Contain("The v1 Costs API has been deprecated");
-		content.Should().Contain("This API will be removed");
-		content.Should().Contain("Users must update");
-		content.Should().Contain("Follow the migration guide");
+			  **Action:** Follow the migration guide.
+
+			=== 9.3.0/index.md ===
+			## 9.3.0 [elasticsearch-release-notes-9.3.0]
+			_There are no new features, enhancements, or fixes associated with this release._
+			=== 9.3.0/known-issues.md ===
+			## 9.3.0 [elasticsearch-9.3.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -140,20 +153,6 @@ public class PrivateLinkBugTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var breakingChangesFile = FileSystem.Path.Join(outputDir, "9.3.0", "breaking-changes.md");
-		FileSystem.File.Exists(breakingChangesFile).Should().BeTrue();
-
-		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current!.Execution.CancellationToken);
-
-		// Should contain proper "For more information" with only public links
-		content.Should().Contain("For more information, check");
-		content.Should().Contain("#123456");
-		content.Should().Contain("#654321");
-
-		// Should not contain incomplete sentence
-		content.Should().NotContain("For more information, check.");
-
-		// Should end properly after the links
-		content.Should().Contain("654321](https://github.com/elastic/elasticsearch/issues/654321).");
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 	}
 }

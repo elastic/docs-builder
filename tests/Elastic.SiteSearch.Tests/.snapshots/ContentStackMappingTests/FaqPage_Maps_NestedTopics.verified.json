@@ -1,0 +1,31 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "modified_date": "2024-05-20T16:00:00+00:00",
+  "og": {
+    "title": "What is Cloud Security? | Elastic",
+    "description": "Learn about cloud security fundamentals and best practices.",
+    "image": "https://images.contentstack.io/v3/assets/sample/cloud-security.png"
+  },
+  "twitter": {},
+  "http": {},
+  "title": "What is Cloud Security?",
+  "search_title": "What is: What is Cloud Security?",
+  "content_type": "site",
+  "path": "/what-is/cloud-security",
+  "url": "/what-is/cloud-security",
+  "hash": "ffa05ad64187f8b4",
+  "last_updated": "2024-05-20T16:00:00+00:00",
+  "description": "Learn about cloud security fundamentals and best practices.",
+  "headings": [],
+  "body": "Cloud security encompasses the technologies, policies, and controls used to protect data, applications, and infrastructure in cloud computing environments. As organizations migrate workloads to the cloud, ensuring the security of cloud resources becomes critical to protecting sensitive data and maintaining compliance.",
+  "summary": "Learn about cloud security fundamentals and best practices.",
+  "parents": [],
+  "translated": true,
+  "section": "concept",
+  "content_tier": "primary",
+  "navigation": {
+    "depth": 3,
+    "table_of_contents": 100
+  }
+}

@@ -8,6 +8,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -78,17 +79,29 @@ public class AddReportOptionTests() : CreateChangelogTestBase()
 		var outputDir = input.Output!;
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2);
-		Array.Sort(files, StringComparer.Ordinal);
-		Path.GetFileName(files[0]).Should().Be("7001.yaml");
-		Path.GetFileName(files[1]).Should().Be("7002.yaml");
-
-		var yaml1 = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yaml1.Should().Contain("title: First from report");
-		yaml1.Should().Contain("https://github.com/elastic/elasticsearch/pull/7001");
-
-		var yaml2 = await FileSystem.File.ReadAllTextAsync(files[1], TestContext.Current!.Execution.CancellationToken);
-		yaml2.Should().Contain("title: Second from report");
-		yaml2.Should().Contain("https://github.com/elastic/elasticsearch/pull/7002");
+		ChangelogEntryYaml
+			.DumpEntries(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 7001.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/7001"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: First from report
+			=== 7002.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/7002"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Second from report
+			"""
+			);
 	}
 
 	[Test]

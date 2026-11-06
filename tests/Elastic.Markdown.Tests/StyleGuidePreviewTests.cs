@@ -18,6 +18,10 @@ namespace Elastic.Markdown.Tests;
 
 public partial class StyleGuidePreviewTests
 {
+	// The template only lends its configuration to the sample documentation sets, so one instance serves every test. Building one
+	// per test also left a temporary configuration directory behind for each of them.
+	private static readonly Lazy<BuildContext> SharedTemplate = new(Template);
+
 	private static BuildContext Template()
 	{
 		var realFs = new FileSystem();
@@ -31,7 +35,7 @@ public partial class StyleGuidePreviewTests
 
 	private static async Task<string?> RenderAsync(string id)
 	{
-		var template = Template();
+		var template = SharedTemplate.Value;
 		using var provider = new EmbeddedOrPhysicalFileProvider(template);
 		var ct = TestContext.Current!.Execution.CancellationToken;
 		return await StyleGuidePreviews.RenderAsync(id, template, ct)

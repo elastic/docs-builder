@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -44,10 +46,27 @@ public class ChangelogReleaseDatesOptionDefaultOffTests : DirectiveTest<Changelo
 	public void ReleaseDatesDisabledByDefault() => Block!.ReleaseDatesEnabled.Should().BeFalse();
 
 	[Test]
-	public void OmitsReleasedLineWhenFlagOmitted() => Html.Should().NotContain("Released:");
-
-	[Test]
-	public void StillRendersEntries() => Html.Should().Contain("Add tracing improvements");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.34.0">
+			<h2>
+				<a class="headerlink" href="#1.34.0">1.34.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="apm-agent-dotnet-1.34.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#apm-agent-dotnet-1.34.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Add tracing improvements.
+				<a href="https://github.com/elastic/apm-agent-dotnet/pull/500">#500</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -86,7 +105,30 @@ public class ChangelogReleaseDatesOptionEnabledTests : DirectiveTest<ChangelogBl
 	public void ReleaseDatesEnabledWhenFlagPresent() => Block!.ReleaseDatesEnabled.Should().BeTrue();
 
 	[Test]
-	public void RendersReleasedLineWhenBundleHasReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.34.0">
+			<h2>
+				<a class="headerlink" href="#1.34.0">1.34.0</a>
+			</h2>
+		</div>
+		<p>
+			<em>Released: April 9, 2026</em>
+		</p>
+		<div class="heading-wrapper" id="apm-agent-dotnet-1.34.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#apm-agent-dotnet-1.34.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Add tracing improvements.
+				<a href="https://github.com/elastic/apm-agent-dotnet/pull/500">#500</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -121,7 +163,27 @@ public class ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests : Directiv
 		);
 
 	[Test]
-	public void OmitsReleasedLineWhenBundleHasNoReleaseDate() => Html.Should().NotContain("Released:");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>New feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/100">#100</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -158,8 +220,26 @@ public class ChangelogReleaseDatesOptionDescriptionStillRendersTests : Directive
 		);
 
 	[Test]
-	public void OmitsReleasedLineWhenFlagOmitted() => Html.Should().NotContain("Released:");
-
-	[Test]
-	public void RendersBundleDescription() => Html.Should().Contain("This release includes tracing improvements and bug fixes.");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.34.0">
+			<h2>
+				<a class="headerlink" href="#1.34.0">1.34.0</a>
+			</h2>
+		</div>
+		<p>This release includes tracing improvements and bug fixes.</p>
+		<div class="heading-wrapper" id="apm-agent-dotnet-1.34.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#apm-agent-dotnet-1.34.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Add tracing improvements.
+				<a href="https://github.com/elastic/apm-agent-dotnet/pull/500">#500</a>
+			</li>
+		</ul>
+		"""
+		);
 }

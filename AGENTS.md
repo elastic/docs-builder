@@ -65,13 +65,19 @@ Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
 - **C#**: TUnit · AwesomeAssertions · FakeItEasy across all test projects. All test projects (unit and integration) use TUnit (wired centrally via `tests/Directory.Build.props` and `tests-integration/Directory.Build.props`; no per-project flag needed). Write new tests using TUnit APIs: `[Test]`, `[Arguments(...)]`, `[MethodDataSource(nameof(X))]`.
 - **TypeScript**: Vitest
+- **Snapshots** (`Nullean.Snapshots`, wired for every test project in `tests/Directory.Build.props`; helpers in `tests-shared/Elastic.Documentation.Testing`): expected output lives in snapshots, not in chains of `Contain` assertions.
+  - Small values go inline: `x.Should().MatchInlineSnapshot("""...""")`, `MatchInlineHtmlSnapshot`, `MatchInlineJsonSnapshot`. Leave the argument out to write a new one. Large values go to a verified file: `MatchSnapshot()`, `MatchHtmlSnapshot()`, `MatchJsonSnapshot()`, `MatchYamlSnapshot()`.
+  - Diagnostics: `collector.Diagnostics.ToSnapshotText()` (`DiagnosticsSnapshot`). A clean run is the empty snapshot.
+  - Navigation trees and generated files: `NavigationDump.ToText(...)`, `MockFileSystemDump.ToText(fs, dir)`. Rendered docs HTML: `DocsHtml.Section()` (the page content, no fixture H1, no htmx attributes) or `DocsHtml.Body()`.
+  - Accept with the `snap` tool (`dotnet snap status`, `dotnet snap review`, `dotnet snap accept <key>`), or `SNAPSHOT_ACCEPT=1`. Read the diff of the changed `.verified.*` files and inline literals before committing. Nothing is accepted in CI. When a CI test run fails, download the `received-snapshots-*` artifact into `.artifacts/.snapshots/received/` and run `dotnet snap review`.
+  - Changing a snapshot test's output is a behaviour change. Mutate the code once and confirm the test fails before you commit.
 - **HTML snapshots** (`Nullean.Snapshots.Html`, used in `Elastic.ApiExplorer.Tests`): when a test would check one rendered block with many `Contain` assertions, compare it to a verified snapshot instead and keep one assertion that states the intent.
   - Write `html.Should().MatchHtmlSnapshot()`. Narrow it with `new HtmlSnapshotOptions().Select("#some-id")` or `.RemoveAttributes(...)` so unrelated markup and volatile values (bundle names, CI git info) stay out.
   - Snapshot a partial or one section, not a whole page. Whole-page snapshots break on unrelated changes.
   - Verified files live in `{TestProject}/.snapshots/{Class}/{Method}.verified.html`. Use one named test per snapshot rather than `[Arguments]`, which puts a hash in the file name.
   - Create or update them with `SNAPSHOT_ACCEPT=1 dotnet test --project tests/Elastic.ApiExplorer.Tests --treenode-filter "/*/*/MyTests/*"`, then review the diff of the `.verified.html` files. The variable is ignored when `CI=true`.
   - Before committing, change the markup in the partial and confirm the test fails, then revert.
-- **Integration**: clones real repos, runs full assembler — only run when integration files change
+- **Integration** (`tests-integration/`): needs real Elasticsearch credentials in the `docs-builder` user-secrets store, or Docker. Not run in CI; run with `mise run integrate` when you change search, MCP or content-date enrichment code.
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
 

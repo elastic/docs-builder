@@ -76,7 +76,7 @@ public partial class ApiPropertyTreeBuilder
 	private ChildPlan? PlanChildren(IOpenApiSchema propSchema, TypeInfo typeInfo, bool hasUnionOptions, PropertyTreeScope scope)
 	{
 		if (typeInfo is { IsDictionary: true, HasLink: false, DictValueSchema: { } value } && ListsMapValue(value, scope))
-			return new ChildPlan.Dictionary(PropertyCount(value, scope));
+			return new ChildPlan.Dictionary(PropertyCount(value, scope) + MapValueVariantCount(value, scope));
 
 		var variantCount = hasUnionOptions ? typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties) : 0;
 		var listsOwnProperties = typeInfo is { IsObject: true, HasLink: false }
@@ -111,7 +111,24 @@ public partial class ApiPropertyTreeBuilder
 	/// <c>map string to X</c> type does not show. A default alone does not say what a value may be.
 	/// </summary>
 	private bool ListsMapValue(IOpenApiSchema value, PropertyTreeScope scope) =>
-		PropertyCount(value, scope) > 0 || BuildLimits(value).Count > 0 || _analyzer.GetEnumValues(value).Count > 0;
+		PropertyCount(value, scope) > 0
+			|| MapValueVariantCount(value, scope) > 0
+			|| BuildLimits(value).Count > 0
+			|| _analyzer.GetEnumValues(value).Count > 0;
+
+	/// <summary>
+	/// The union a map's values are, when its variants fit under the depth limit. The row's count and the listing both read
+	/// this, so the key row never claims nested rows it does not list.
+	/// </summary>
+	private (UnionKeyword Keyword, List<UnionOption> Options)? MapValueUnion(IOpenApiSchema? value, int valueDepth) =>
+		valueDepth < options.MaxDepth ? _analyzer.GetListedUnion(value) : null;
+
+	/// <summary>How many variants of a map's union value list fields; 0 when the value is no union or they lie beyond the depth limit.</summary>
+	private int MapValueVariantCount(IOpenApiSchema value, PropertyTreeScope rowScope) =>
+		MapValueUnion(value, MapValueDepth(rowScope.Depth))?.Options.Count(_analyzer.UnionOptionHasProperties) ?? 0;
+
+	/// <summary>The depth of a map's values: the key row sits one level below the map row, and its values one more.</summary>
+	private static int MapValueDepth(int rowDepth) => rowDepth + 2;
 
 	/// <summary>The base name of an <c>X | X[]</c> union, or null for any other type.</summary>
 	private static string? DetectSimpleArrayUnion(TypeInfo typeInfo)
@@ -171,7 +188,14 @@ public partial class ApiPropertyTreeBuilder
 					UseHidden = useHidden,
 					Properties = BuildPropertyList(properties.Schema, properties.OfItems ? childScope.IntoItems() : childScope)
 						?? new ApiPropertyList([]),
-					Variants = properties.UnionVariants is { } variants ? BuildLabelledVariants(row, childScope, variants) : null
+					Variants = properties.UnionVariants is { } variants
+						? BuildLabelledVariants(
+							row.TypeInfo.UnionKeyword,
+							variants,
+							childScope,
+							_analyzer.GetUnionDiscriminator(row.Schema)
+						)
+						: null
 				},
 			ChildPlan.Variants variants =>
 				new ApiPropertyChildren
@@ -183,12 +207,6 @@ public partial class ApiPropertyTreeBuilder
 			_ => ApiPropertyChildren.None
 		};
 	}
-
-	/// <summary>Variants listed below the union's own properties, labelled so they read apart from those properties.</summary>
-	private ApiUnionVariants? BuildLabelledVariants(PropertyRow row, PropertyTreeScope childScope, List<UnionOption> variants) =>
-		BuildUnionVariants(variants, childScope, _analyzer.GetUnionDiscriminator(row.Schema)) is { } built
-			? built with { Label = SchemaHelpers.UnionLabel(row.TypeInfo.UnionKeyword) }
-			: null;
 
 	private ApiUnionVariants BuildVariantChildren(PropertyRow row, PropertyTreeScope childScope, ChildPlan.Variants plan)
 	{

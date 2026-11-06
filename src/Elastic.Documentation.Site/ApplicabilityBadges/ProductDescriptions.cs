@@ -166,6 +166,11 @@ public static class ProductDescriptions
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
+		[VersioningSystemId.EdotReactNative] = new ProductInfo(
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) React Native SDK</strong> collects performance metrics, traces, and logs from React Native applications in OpenTelemetry format, and sends them to Elastic Observability.",
+			AdditionalAvailabilityInfo: null,
+			IncludeVersionNote: true
+		),
 		[VersioningSystemId.EdotPhp] = new ProductInfo(
 			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) PHP SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,

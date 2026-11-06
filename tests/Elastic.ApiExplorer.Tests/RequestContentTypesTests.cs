@@ -10,6 +10,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -93,15 +94,9 @@ public class RequestContentTypesTests(ApiExplorerFixture fixture)
 		);
 		var body = await _MediaContents.Create(contents).RenderAsync(cancellationToken: token);
 
-		heading.Should().Contain("aria-label=\"Request body\"", "the heading's name is its title, not the controls in it");
-		heading.Should().NotContain("content-type-tag", "the heading is a plain disclosure");
-		body.Should().Contain("<label for=\"request-body-content-select\">Content type</label>");
-		body.Should().Contain("<option value=\"request-body-content-0\" selected=\"selected\">application/gzip; application/zip</option>");
-		body.Should().Contain("<option value=\"request-body-content-1\">application/gzip</option>");
-		body.Should().Contain("aria-controls=\"request-body-content\"");
-		body.Should().Contain("role=\"group\" aria-label=\"Request body content types\"");
-		body.Should().Contain("id=\"request-body-content-1\" hidden=\"until-found\"");
-		body.Should().Contain("No schema is declared for this content type.");
+		// The heading's name is its title, not the controls in it, and it is a plain disclosure.
+		heading.Should().MatchHtmlSnapshot(name: "heading");
+		body.Should().MatchHtmlSnapshot(name: "body");
 	}
 
 	private async Task<(OperationPageModel Page, OperationNavigationItem Operation, ApiRenderContext Context)> Build()
