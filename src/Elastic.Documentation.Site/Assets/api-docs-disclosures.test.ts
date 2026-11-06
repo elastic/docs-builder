@@ -17,8 +17,8 @@ function markup(): string {
                     <div class="property-item collapsed" id="prop">
                         <dt>rule</dt>
                         <dd class="expand-toggle-row">
-                            <button class="expand-toggle" id="prop-toggle" aria-expanded="false">
-                                <span class="toggle-icon">+</span><span class="toggle-label">show properties</span>
+                            <button class="expand-toggle" id="prop-toggle" aria-expanded="false" data-count="6">
+                                <span class="toggle-icon">+</span><span class="toggle-label">Show 6 properties</span>
                             </button>
                         </dd>
                         <div class="nested-properties" hidden="until-found">
@@ -26,8 +26,8 @@ function markup(): string {
                                 <div class="union-variants">
                                     <div class="union-variant-item collapsed" id="variant">
                                         <div class="expand-toggle-row union-expand-toggle">
-                                            <button class="expand-toggle" id="variant-toggle" aria-expanded="false">
-                                                <span class="toggle-label">show properties</span>
+                                            <button class="expand-toggle" id="variant-toggle" aria-expanded="false" data-count="1">
+                                                <span class="toggle-label">Show 1 property</span>
                                             </button>
                                         </div>
                                         <div class="nested-properties" id="variant-body" hidden="until-found"><dt id="deep">x</dt></div>
@@ -108,7 +108,7 @@ describe('disclosure clicks on API pages', () => {
     it('toggles a property and relabels its button', () => {
         byId('prop-toggle').click()
         expect(isExpanded('prop')).toBe(true)
-        expect(label('prop-toggle')).toBe('hide properties')
+        expect(label('prop-toggle')).toBe('Hide 6 properties')
         expect(
             byId('prop')
                 .querySelector('.nested-properties')!
@@ -116,10 +116,29 @@ describe('disclosure clicks on API pages', () => {
         ).toBe(false)
     })
 
+    it('the page control opens everything, then folds it again, and relabels itself', () => {
+        const button = document.createElement('button')
+        button.dataset.apiExpandAll = ''
+        button.textContent = 'Expand all'
+        byId('section').append(button)
+
+        button.click()
+        for (const id of ['section', 'prop', 'variant'])
+            expect(isExpanded(id)).toBe(true)
+        expect(label('prop-toggle')).toBe('Hide 6 properties')
+        expect(button.textContent).toBe('Collapse all')
+
+        button.click()
+        for (const id of ['section', 'prop', 'variant'])
+            expect(isExpanded(id)).toBe(false)
+        expect(label('prop-toggle')).toBe('Show 6 properties')
+        expect(button.textContent).toBe('Expand all')
+    })
+
     it('toggles a union variant, not the property around it', () => {
         byId('variant-toggle').click()
         expect(isExpanded('variant')).toBe(true)
-        expect(label('variant-toggle')).toBe('hide properties')
+        expect(label('variant-toggle')).toBe('Hide 1 property')
         expect(isExpanded('prop')).toBe(false)
     })
 

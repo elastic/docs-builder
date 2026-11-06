@@ -27,7 +27,24 @@ public class ResponsesBlockRenderingTests
 
 		html.Should().MatchHtmlSnapshot();
 		html.Should().NotContain("<select", "the statuses are clickable pills, not a dropdown");
-		html.Should().NotContain("id=\"response-200-fields\" hidden", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"response-200-fields\" hidden", "the first response body shows on load");
+		html.Should().Contain("response-panel expanded\" data-status=\"200\"");
+		html.Should().Contain("response-panel collapsed\" data-status=\"400\"", "only the first response starts open");
+		html.Should().Contain("id=\"response-400-fields\" hidden=\"until-found\"");
+	}
+
+	[Test]
+	public async Task Render_FirstResponseOpens_WhateverItsStatus()
+	{
+		var html = await RenderHtml(
+			Response("201", "success", "Created"),
+			Response("200", "success", "Already there"),
+			Response("400", "error", "Bad request")
+		);
+
+		html.Should().Contain("response-panel expanded\" data-status=\"201\"");
+		html.Should().Contain("response-panel collapsed\" data-status=\"200\"", "200 is not special, only the first response is open");
+		html.Should().Contain("response-panel collapsed\" data-status=\"400\"");
 	}
 
 	[Test]

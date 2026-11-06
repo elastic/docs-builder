@@ -72,7 +72,8 @@ public partial class ApiPropertyTreeBuilder
 				Depth = scope.Depth + 1,
 				AncestorRefs = newAncestors,
 				RequiredProperties = null,
-				Owner = VariantDisplayName(variant)
+				Owner = VariantDisplayName(variant),
+				ParentExpanded = true
 			};
 			var nested = variant.PageUrl is null ? NestedUnion(variant.Schema, newAncestors, scope.Depth) : null;
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null || nested is not null;
@@ -83,7 +84,8 @@ public partial class ApiPropertyTreeBuilder
 				+ (dictionaryValue is null ? 0 : 1)
 				+ (nested?.Options.Count(_analyzer.UnionOptionHasProperties) ?? 0);
 			var isCollapsible = showProperties && nestedCount > 0;
-			var defaultExpanded = ComputeDefaultExpanded();
+			// The variants of a union are what the reader picks from, so they open on load whatever the row's own state.
+			const bool defaultExpanded = true;
 
 			var description = FirstParagraph(variant.Schema?.Description);
 

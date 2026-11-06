@@ -80,6 +80,7 @@
 
 	@if (pageModel.Properties is not null)
 	{
+		@(await RenderPartialAsync(_ExpandAllControl.Create(true)))
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Properties", "properties")))
 		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.Properties))
 	}

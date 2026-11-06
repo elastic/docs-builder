@@ -46,7 +46,13 @@ public partial class ApiPropertyTreeBuilder
 		public int NestedCount => Plan.Count;
 	}
 
-	private Expansion ComputeExpansion(IOpenApiSchema propSchema, TypeInfo typeInfo, PropertyTreeScope scope, bool isRecursive)
+	private Expansion ComputeExpansion(
+		IOpenApiSchema propSchema,
+		TypeInfo typeInfo,
+		PropertyTreeScope scope,
+		bool isRecursive,
+		bool isRequired
+	)
 	{
 		var withinDepth = scope.Depth < options.MaxDepth;
 		var arrayUnionBase = DetectSimpleArrayUnion(typeInfo);
@@ -65,7 +71,8 @@ public partial class ApiPropertyTreeBuilder
 			hasUnionOptions,
 			arrayUnionBase is null ? null : new ArrayUnion(arrayUnionBase, arrayUnionPlan is not ChildPlan.None),
 			isCollapsible,
-			ComputeDefaultExpanded()
+			// One rule, no size heuristic: a row opens only when the spec requires it and every row above it is open.
+			isRequired && scope.ParentExpanded
 		);
 	}
 
@@ -174,7 +181,8 @@ public partial class ApiPropertyTreeBuilder
 			Depth = scope.Depth + 1,
 			AncestorRefs = AugmentAncestors(row.TypeInfo, scope.AncestorRefs),
 			RequiredProperties = null,
-			Owner = row.Name
+			Owner = row.Name,
+			ParentExpanded = expansion.DefaultExpanded
 		};
 		var useHidden = options.UseHiddenUntilFound && expansion.IsCollapsible && !expansion.DefaultExpanded;
 

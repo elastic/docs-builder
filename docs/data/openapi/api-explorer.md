@@ -353,7 +353,7 @@ A request or response body that declares more than one content type shows a **Co
 
 A bar of quick links sits above the parameter, body and response sections of an operation page: **Path**, **Query**, **Headers**, **Body** and **Responses**, for the sections the operation has. **Required privileges** comes before the bar and is not one of its links. The bar stays under the page header while you scroll, a link jumps to its section, and the link of the section in view is underlined.
 
-Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Each status code under **Responses** works the same way, and opening one leaves the others as they are. The **hide properties** toggle on an object field is open on load too, so nested fields show without a click; select it to fold them. Its summary punctuation says what the names are:
+Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Under **Responses** only the first response starts open. The responses work as an accordion: opening one closes the others and switches the examples rail to the same status code, and choosing a status in the rail opens its response. An object field starts open only when the spec marks it required and every field above it is open too, so a required field inside an optional object stays folded with it. Every other object field starts folded, and its toggle says how many properties it hides, such as **Show 6 properties**. Select it to open them, or **Hide 6 properties** to fold them again. One button in the bar of section links, on the right, opens every section and field at once, and then reads **Collapse all** to fold them again. It leaves the responses to their accordion. It doesn't remember its state, so a page always loads the way the build rendered it. A page without that bar shows the button on a row of its own. Its summary punctuation says what the names are:
 
 | Summary | Meaning |
 |---|---|
@@ -362,7 +362,7 @@ Each section is a collapsible heading, expanded when the page loads. A reader ca
 | `A + B` | Needed together, such as the privileges in **Required privileges** |
 | `a, b` | Anything else, such as parameters or the fields of a form |
 
-The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the section, which opens if a reader has folded it. Sections start expanded, so find-in-page reaches them on first load. Reaching a section a reader has folded relies on `hidden="until-found"`: in a browser without it, a folded section can't be searched.
+The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the section, which opens if a reader has folded it. Sections and required fields start expanded, so find-in-page reaches them on first load. Select **Expand all** to reach every other section and field in a browser without `hidden="until-found"`. Reaching a section or field a reader has folded relies on `hidden="until-found"`: in a browser without it, a folded section can't be searched.
 
 Path, query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
 
