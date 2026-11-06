@@ -103,12 +103,12 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		context with
 		{
 			Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" },
-			VersionSwitcherItems =
-			[
-				new("latest", "/api/doc/elasticsearch/", version == "latest"),
-				new("v9", "/api/doc/elasticsearch/v9/", version == "v9"),
-				new("v8", "/api/doc/elasticsearch/v8/", version == "v8")
-			]
+			VersionSwitcherItems = ApiVersionSwitcher.Build(
+				"/api/doc",
+				"elasticsearch",
+				["main", "9", "8"],
+				version == "latest" ? "main" : version.TrimStart('v')
+			)
 		};
 
 	[Test]

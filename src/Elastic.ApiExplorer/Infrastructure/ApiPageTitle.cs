@@ -24,8 +24,9 @@ internal static class ApiPageTitle
 	{
 		foreach (var item in items)
 		{
-			if (item.Selected && IsReleasedLabel(item.Label))
-				return item.Label;
+			var label = item.ShortLabel ?? item.Label;
+			if (item.Selected && IsReleasedLabel(label))
+				return label;
 		}
 
 		return null;
