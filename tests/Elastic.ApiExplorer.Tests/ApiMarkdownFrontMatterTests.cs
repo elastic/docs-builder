@@ -28,7 +28,7 @@ public class ApiMarkdownFrontMatterTests
 			---
 			type: api
 			title: Run a search
-			description: Returns hits that match the query
+			description: "Returns hits that match the query"
 			url: https://cdn.example/api/doc/elasticsearch/operation/operation-search
 			resource: https://cdn.example/api/doc/elasticsearch/operation/operation-search
 			products:
@@ -38,6 +38,29 @@ public class ApiMarkdownFrontMatterTests
 			# Run a search
 
 			Returns hits.
+			"""
+		);
+	}
+
+	[Test]
+	public void Write_QuotesDescriptionWithColonAndQuote()
+	{
+		var markdown = ApiMarkdownFrontMatter.Write(
+			"# X\n",
+			new ApiPageFrontMatter("X", "Send a header like Authorization: \"ApiKey abc\" to authenticate.", "/api", null)
+		);
+
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			---
+			type: api
+			title: X
+			description: "Send a header like Authorization: \"ApiKey abc\" to authenticate."
+			url: /api
+			resource: /api
+			---
+
+			# X
 			"""
 		);
 	}
