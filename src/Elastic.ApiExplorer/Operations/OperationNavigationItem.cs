@@ -93,4 +93,7 @@ public class OperationNavigationItem(
 
 	/// <summary>Former per-operation URLs of <see cref="Siblings"/> that now redirect to <see cref="Url"/>.</summary>
 	public IReadOnlyList<string> AliasUrls { get; init; } = [];
+
+	/// <summary>The routes and methods this page lists, its own and its <see cref="Siblings"/>'.</summary>
+	public OperationEndpoint Endpoint => field ??= OperationEndpoint.Build(Model, Model.Operation.Description, Siblings);
 }

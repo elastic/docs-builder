@@ -229,7 +229,7 @@ public static class ApiOverviewBuilder
 		{
 			Kind = OverviewRowKind.Operation,
 			Title = operation.NavigationTitle,
-			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
+			Endpoint = operation.Endpoint,
 			Url = operation.Url,
 			Availability = AvailabilityBadge.FromOperation(
 				operation.Model.Operation,
