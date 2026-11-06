@@ -84,10 +84,10 @@ narrowed reconciliation to the bundle tree):
   events. Authors cannot issue those deletes through docs-builder today: `changelog upload`
   does not delete objects, and `changelog remove` is local-only. For the author-facing
   add and exclude path, see [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
-- **Notes index** — `changelog/{org}/{repo}/notes-{product}-{version}.json` (product-scoped) plus a dual-written
-  legacy `changelog/{org}/{repo}/notes-{version}.json` (version union), **public bucket only**, produced by
-  the scrubber Lambda's `NotesIndexReconciler`. See
-  [Notes-index format](#notes-index-format) below.
+- **Notes index** — `changelog/{org}/{repo}/notes-{product}-{version}.json`, **public bucket
+  only**, produced by the scrubber Lambda's `NotesIndexReconciler`. Refer to
+  [Notes-index format](#notes-index-format). `{changelog}` `:cdn:` does not read
+  these keys; it loads `bundle/{product}/registry.json` and the YAML files that manifest lists.
 - **Changelog-entry index** — `changelog/{org}/{repo}/{branch}/registry.json`, a **legacy
   client-authored pass-through**: the current `changelog upload` never writes one, but manifests
   written by older CLI versions are still mirrored verbatim from the private bucket, because
@@ -133,15 +133,12 @@ zero-bundle state. The reconciler deliberately restores the former.
 ## Notes-index format [notes-index-format]
 
 For each product and release version that has at least one note, the scrubber Lambda writes a
-product-scoped notes index at `changelog/{org}/{repo}/notes-{product}-{version}.json`. It also
-dual-writes a legacy version-union index at `changelog/{org}/{repo}/notes-{version}.json` so
-older `changelog bundle` clients that still GET the version-only key keep working. The product
-and version segments are concatenated into the new filename; consumers must not parse that slug
-apart.
+product-scoped notes index at `changelog/{org}/{repo}/notes-{product}-{version}.json`. The product
+and version segments are concatenated into the filename; consumers must not parse that slug apart.
 
-`changelog bundle` GETs the product-scoped key first and falls back to the version-only key
-only on HTTP 404. An empty product-scoped index does not fall back. `{changelog}` does not read
-these indexes; it loads bundle YAML from the product registry.
+`changelog bundle` GETs this key. A 404 means no notes for that product and version.
+`{changelog}` does not read these indexes. It loads bundle YAML from the product registry
+(`bundle/{product}/registry.json` and the listed parent plus amend files).
 
 Product-scoped schema (`schema_version: 1`):
 
@@ -157,27 +154,24 @@ Product-scoped schema (`schema_version: 1`):
 }
 ```
 
-The legacy `notes-{version}.json` body omits `product` and `version` and lists the union of note
-paths for that version across products.
-
 | Field | Meaning |
 |---|---|
 | `schema_version` | Schema version. Currently `1`. |
-| `product` / `version` | Set on product-scoped indexes; omitted from the legacy version-union body. |
+| `product` / `version` | Product id and release version this index belongs to. |
 | `notes[].path` | Pool-relative path of the note within `changelog/{org}/{repo}/`. The leading segment before the first `/` is the branch. |
 | `notes[].bundle_seq` | Derived reporting field: `0` = no bundle published for this version yet, `1` = note shipped in the original bundle, `2` = note carried by the Lambda-generated `.amend-notes` sidecar. |
 
 `bundle_seq` is derived — it is never authored and never a latch. The Lambda recomputes it on every
 reconcile by comparing the notes index against the set of entries in the published bundle and its
-amend sidecars. Do not hand-edit `notes-{version}.json` or `.amend-notes` sidecars. Authors cannot
+amend sidecars. Do not hand-edit product-scoped notes indexes or `.amend-notes` sidecars. Authors cannot
 delete pool objects through docs-builder today.
 
-A 404 on both the product-scoped index and the legacy version-union index means "no notes
-published for this product and version". An empty `notes` array is not the durable form of a
-successfully reconciled index: after sidecar work and a successful product registry rebuild,
-the empty product-scoped index is deleted rather than rewritten empty, following the same
-[absent ≠ empty](#absent-empty) rule as the bundle registry. Until older clients stop reading
-`notes-{version}.json`, the Lambda keeps that key while any note still declares the version.
+A 404 on the product-scoped index means "no notes published for this product and version". An
+empty `notes` array is not the durable form of a successfully reconciled index: after sidecar
+work and a successful product registry rebuild, the empty product-scoped index is deleted
+rather than rewritten empty, following the same [absent ≠ empty](#absent-empty) rule as the
+bundle registry. Leftover version-only `notes-{version}.json` keys are deleted on the next
+notes reconcile.
 
 ## Shallow per-tree change maps [shallow-maps]
 
@@ -328,10 +322,8 @@ ship silently). `CdnChangelogEntryFetcher` reuses a shared `HttpClient` in produ
 owned client only when a test injects a handler, mirroring `CdnChangelogFetcher`.
 
 When CDN sourcing is on, the same fetcher also merges changelog notes for each concrete
-`--output-products` pair: it GETs `changelog/{org}/{repo}/notes-{product}-{version}.json` first
-and falls back to `notes-{version}.json` only on HTTP 404. See
-[Notes-index format](#notes-index-format). Checksum dedup keeps a single copy if two products at
-the same version still share the legacy index.
+`--output-products` pair: it GETs `changelog/{org}/{repo}/notes-{product}-{version}.json`. See
+[Notes-index format](#notes-index-format). `{changelog}` `:cdn:` does not use this path.
 
 ## Consumer: `{changelog}` directive `cdn:` mode (implemented)
 
@@ -388,6 +380,7 @@ notes use `NoopReleaseNotesResolver`.
 2. Parse it; for each `bundles[].file`, `GET {cdnBase}/bundle/{product}/{file}`.
 3. Feed the downloaded YAML into the existing `BundleLoader` → `MergeBundlesByTarget` →
    render pipeline. **Rendering is unchanged**; only the source of the bundle bytes differs.
+   Notes-index objects under `changelog/{org}/{repo}/notes-*.json` are never fetched here.
 
 Implemented by `CdnChangelogFetcher` (a stateless async fetch engine in
 `Elastic.Documentation.Configuration`) and `BundleLoader.LoadBundlesFromContent`. Because public

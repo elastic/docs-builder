@@ -41,8 +41,7 @@ public sealed record NoteIndexEntry
 }
 
 /// <summary>
-/// Notes index published at <c>changelog/{org}/{repo}/notes-{product}-{version}.json</c>
-/// (and dual-written to the legacy <c>notes-{version}.json</c> key).
+/// Notes index published at <c>changelog/{org}/{repo}/notes-{product}-{version}.json</c>.
 /// Lists all <c>note-*.yml</c> fragments for one product and release version,
 /// across every branch of the repo.
 /// </summary>
@@ -50,8 +49,7 @@ public sealed record NoteIndexEntry
 /// Contents are paths, not bodies — the note files remain the single source of truth.
 /// A stale index can only omit or over-list, never serve stale prose. Bundling a version
 /// is therefore 1 GET for the index + one GET per listed note.
-/// <see cref="Product"/> and <see cref="Version"/> are set on product-scoped writes and
-/// omitted from legacy version-union bodies so older deserializers keep working.
+/// <see cref="Product"/> and <see cref="Version"/> are set on every write.
 /// </remarks>
 public sealed record NotesIndex
 {
@@ -62,14 +60,12 @@ public sealed record NotesIndex
 	public const int CurrentSchemaVersion = 1;
 
 	/// <summary>
-	/// Bundle product id this index belongs to. Present on product-scoped keys; omitted on
-	/// the legacy version-union body.
+	/// Bundle product id this index belongs to.
 	/// </summary>
 	public string? Product { get; init; }
 
 	/// <summary>
-	/// Release version this index belongs to. Present on product-scoped keys; omitted on
-	/// the legacy version-union body.
+	/// Release version this index belongs to.
 	/// </summary>
 	public string? Version { get; init; }
 

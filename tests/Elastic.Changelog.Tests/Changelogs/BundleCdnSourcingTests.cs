@@ -750,7 +750,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	[Test]
 	public async Task BackportCollision_MainBranchWins_WarnAndKeepMain()
 	{
-		// notes-9.3.0.json lists both main/note-known-issue.yml and 9.4/note-known-issue.yml.
+		// notes-elasticsearch-9.3.0.json lists both main/note-known-issue.yml and 9.4/note-known-issue.yml.
 		// The fetcher requests note-known-issue.yml twice (same leaf URL), returning main content first
 		// and 9.4-branch content second. The backport rule must keep the main copy and warn about the 9.4 copy.
 		var callCount = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -759,7 +759,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(RegistryJson);
-			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+			if (path.EndsWith("notes-elasticsearch-9.3.0.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/
 					"""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}"""
 				);
@@ -831,7 +831,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(RegistryJson);
-			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+			if (path.EndsWith("notes-elasticsearch-9.3.0.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/
 					"""{"schema_version":1,"notes":[{"path":"9.4/note-known-issue.yml","bundle_seq":0},{"path":"feature/note-known-issue.yml","bundle_seq":0}]}"""
 				);
@@ -902,7 +902,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(RegistryJson);
-			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+			if (path.EndsWith("notes-elasticsearch-9.3.0.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/
 					"""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}"""
 				);
