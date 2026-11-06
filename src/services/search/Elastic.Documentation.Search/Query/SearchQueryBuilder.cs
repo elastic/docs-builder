@@ -49,6 +49,11 @@ public static class SearchQueryBuilder
 	);
 	private static readonly string[] ApiPropertySourceIncludes = [$"{QueryFieldNames.ApiProperties}.*"];
 	private static readonly PropertyLookup DocsWideLookup = new(AllowPrefix: false, ExpandChildren: false);
+	// One edit from four letters on: two edits let `unrated` match `updated`, and a typo in a shorter word names too many fields.
+	private static readonly Fuzziness WordFuzziness = new("AUTO:4,100");
+
+	// A one- or two-letter word starts the words of most field names, so it matches a whole word only, such as `id` in `scroll_id`.
+	private const int MinFieldWordPrefixLength = 3;
 
 	/// <summary>
 	/// Rank-feature and term boosts applied as <c>should</c> clauses on top of the base query.
@@ -235,8 +240,12 @@ public static class SearchQueryBuilder
 		public static readonly ApiPropertyReadings None = new([], EndpointRequired: false);
 	}
 
-	/// <summary>Only an API-filtered lookup matches by prefix, and only one ending in a dot lists the typed path's children.</summary>
-	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren);
+	/// <summary>
+	/// Only an API-filtered lookup matches by prefix and by the words of a field name, and only one ending in a dot lists the
+	/// typed path's children. <paramref name="OtherWords"/> are the words of the lookup's other plain words, so a row that also
+	/// names one of them scores as a name match.
+	/// </summary>
+	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren, IReadOnlyList<string>? OtherWords = null);
 
 	internal static Query BuildNestedPropertyQuery(
 		string property,
@@ -310,8 +319,55 @@ public static class SearchQueryBuilder
 			Boost = PrefixNameMatchBoost,
 			QueryName = ApiNameHits
 		};
-		return new DisMaxQuery { Queries = [exact, prefix] };
+		Query?[] options = [exact, prefix, BuildPropertyWordOption(name, lookup.OtherWords ?? [])];
+		return new DisMaxQuery { Queries = options.OfType<Query>().ToList() };
 	}
+
+	/// <summary>
+	/// The words of the typed name, each typed in full, in part or with a typo, so <c>unreated docs</c> finds <c>unrated_docs</c>
+	/// and <c>_uri</c> finds <c>last_uri</c>. A row that also names another typed word scores as a name match, which lists it above
+	/// rows naming only one. A dotted path is matched by its segments instead, so it has no word option.
+	/// </summary>
+	private static Query? BuildPropertyWordOption(string name, IReadOnlyList<string> otherWords)
+	{
+		var parts = ApiPropertyPath.IdentifierWords(name);
+		if (parts.Length == 0 || name.Contains('.'))
+			return null;
+
+		var last = parts.Length - 1;
+		var wordMatch = new ConstantScoreQuery
+		{
+			// The last word of a compound such as `unrated_do` is still being typed, so it completes even when short.
+			Filter = new BoolQuery
+			{
+				Must = parts.Select(
+					(part, i) => NameWordQuery(part, completes: part.Length >= MinFieldWordPrefixLength || (i > 0 && i == last))
+				).ToList()
+			},
+			Boost = ApiLookupWeights.FieldWord
+		};
+		// The typed name's own words are already the word match, so only the other typed words lift the row.
+		List<Query>? namesSeveral = otherWords.Count == 0
+			? null
+			: [new ConstantScoreQuery { Filter = NameWordsMatch(string.Join(' ', otherWords)), Boost = ApiLookupWeights.FieldSeveralWords }];
+		return new BoolQuery { Must = [wordMatch], Should = namesSeveral, QueryName = ApiNameHits };
+	}
+
+	/// <summary><see cref="ApiPropertyPath.IdentifierWords"/> lowercases <paramref name="word"/>, as the analyzer does the index, so the prefix is case-sensitive.</summary>
+	private static Query NameWordQuery(string word, bool completes)
+	{
+		var whole = NameWordsMatch(word);
+		if (!completes)
+			return whole;
+		return new BoolQuery
+		{
+			Should = [whole, new PrefixQuery { Field = QueryFieldNames.ApiPropertiesNameWords, Value = word }],
+			MinimumShouldMatch = 1
+		};
+	}
+
+	private static MatchQuery NameWordsMatch(string query) =>
+		new() { Field = QueryFieldNames.ApiPropertiesNameWords, Query = query, Fuzziness = WordFuzziness, PrefixLength = 1 };
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{

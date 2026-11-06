@@ -32,6 +32,17 @@ internal sealed record ResolvedProductDocuments(IReadOnlyList<VersionedOpenApiDo
 	public IReadOnlyList<string> UnresolvedMonikers { get; init; } = [];
 }
 
+/// <summary>
+/// The version trees of one API, built once from the resolved specs. The floating section reads them for
+/// navigation and <see cref="OpenApiGenerator"/> renders pages from them, so the build never builds a tree twice.
+/// </summary>
+internal sealed record ApiProductTrees(
+	ResolvedProductDocuments Resolved,
+	IReadOnlyList<LandingNavigationItem> Navigations,
+	int? HighestMajor,
+	IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>> PageNames
+);
+
 internal sealed record ApiProductGeneration(
 	OpenApiDocument Document,
 	ResolvedApiConfiguration? ApiConfig,
@@ -71,6 +82,7 @@ public class OpenApiGenerator(
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
 	private readonly ConcurrentDictionary<string, Task<ResolvedProductDocuments>> _documents = new(StringComparer.OrdinalIgnoreCase);
+	private readonly ConcurrentDictionary<string, Task<ApiProductTrees>> _trees = new(StringComparer.OrdinalIgnoreCase);
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -211,33 +223,16 @@ public class OpenApiGenerator(
 		Cancel ctx
 	)
 	{
-		var resolved = await DocumentsFor(prefix, apiConfig, ctx).ConfigureAwait(false);
+		var trees = await TreesFor(prefix, apiConfig, ctx).ConfigureAwait(false);
+		var resolved = trees.Resolved;
 		if (resolved.Documents.Count == 0)
 			return null;
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
-		var highestMajor = monikers.Max(ApiVersions.TryParseMajor);
-
-		// Each version's tree is built before any page renders, so every picker can link to the same
-		// page in the other versions. The trees were already alive together while versions rendered in parallel.
-		var navigations = await Task.WhenAll(
-			versionedDocuments.Select(
-				v => Task.Run(
-					() => CreateNavigation(
-						ApiUrlBuilder.ProductSuffix(prefix, v.Version.Moniker),
-						v.Document,
-						apiConfig,
-						SupplementalMajor(v.Version.Moniker, highestMajor)
-					),
-					ctx
-				)
-			)
-		).ConfigureAwait(false);
-		var pageNames = versionedDocuments.Zip(navigations, (v, nav) => (v.Version.Moniker, Names: PageNames(nav))).ToDictionary(
-			x => x.Moniker,
-			x => x.Names
-		);
+		var highestMajor = trees.HighestMajor;
+		var navigations = trees.Navigations;
+		var pageNames = trees.PageNames;
 
 		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
 		// writer, so there is no shared mutable state between concurrent versions. The outer loop in
@@ -267,7 +262,44 @@ public class OpenApiGenerator(
 		return CatalogEntry(prefix, apiConfig, resolved);
 	}
 
-	private List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender()
+	/// <summary>
+	/// Builds, once per API key, the navigation tree of every resolved version. Each version's tree is built before
+	/// any page renders, so every picker can link to the same page in the other versions.
+	/// </summary>
+	internal Task<ApiProductTrees> TreesFor(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx) =>
+		_trees.GetOrAdd(apiKey, _ => BuildTrees(apiKey, apiConfig, ctx));
+
+	private async Task<ApiProductTrees> BuildTrees(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	{
+		var resolved = await DocumentsFor(apiKey, apiConfig, ctx).ConfigureAwait(false);
+		if (resolved.Documents.Count == 0)
+			return new(resolved, [], null, new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>());
+
+		var highestMajor = resolved.Documents.Select(v => v.Version.Moniker).Max(ApiVersions.TryParseMajor);
+		var navigations = await Task.WhenAll(
+			resolved.Documents.Select(
+				v => Task.Run(
+					() => CreateNavigation(
+						ApiUrlBuilder.ProductSuffix(apiKey, v.Version.Moniker),
+						v.Document,
+						apiConfig,
+						SupplementalMajor(v.Version.Moniker, highestMajor)
+					),
+					ctx
+				)
+			)
+		).ConfigureAwait(false);
+		var pageNames = resolved
+			.Documents
+			.Zip(navigations, (v, nav) => (v.Version.Moniker, Names: PageNames(nav)))
+			.ToDictionary(x => x.Moniker, x => x.Names);
+		return new(resolved, navigations, highestMajor, pageNames);
+	}
+
+	private List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender() => ApiConfigsToRender(context);
+
+	/// <summary>The APIs a build renders, keyed by the key their URL uses.</summary>
+	internal static List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender(BuildContext context)
 	{
 		if (context.Configuration.ApiConfigurations is null)
 			return [];

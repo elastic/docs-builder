@@ -23,6 +23,9 @@ namespace Elastic.Documentation.Search;
 /// <item><see cref="EndpointCompletion"/> beats <see cref="NamespaceCompletion"/>, so <c>/_sear</c> keeps <c>search</c> (8.97) above <c>scroll</c> (8.47).
 /// Both sit below <see cref="EndpointKey"/>: a key typed in full beats one typed in part.</item>
 /// <item>The bare keys score <c>/search</c> the same as <c>/_search</c>, and <c>/cluster health</c> finds <c>cluster-health</c> (11.07).</item>
+/// <item><see cref="FieldWord"/> sits between <see cref="FieldNamePrefix"/> and <see cref="ChildOption"/>, so a typed identifier beats its words
+/// and a row named by a word beats a listed child. With <see cref="FieldSeveralWords"/> it adds up to <see cref="FieldName"/>, so
+/// <c>unrated docs</c> finds <c>unrated_docs</c> as surely as the identifier does.</item>
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// </list>
 /// </summary>
@@ -37,6 +40,8 @@ public static class ApiLookupWeights
 	public const float TitleWord = 1.0f;
 	public const float FieldName = 1.0f;
 	public const float FieldNamePrefix = 0.6f;
+	public const float FieldWord = 0.5f;
+	public const float FieldSeveralWords = FieldName - FieldWord;
 	public const float ChildOption = 0.4f;
 	public const float Method = 0.5f;
 	public const float BodyWord = 0.1f;

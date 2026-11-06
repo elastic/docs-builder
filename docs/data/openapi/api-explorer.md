@@ -301,6 +301,37 @@ toc:
     crosslink: elasticsearch://api/elasticsearch/
 ```
 
+## APIs in the navigation tree [api-navigation]
+
+A docset that declares an API in its `api:` block has that API in its navigation tree. The `toc.yml` or `docset.yml` table of contents needs no entry for it, and the API pages still render at the same URLs.
+
+Each API is an island at the end of the table of contents, with its own sidebar. Every version of the API is part of it, and only the current version is visible. The sidebar of your pages does not show the API for now, so a docset's sidebar does not change because it declares one.
+
+The API in the tree is what the rest of the build reads:
+
+- `links.json` lists the pages of the API, so other docsets can [link to them](#api-cross-links).
+- The assembler lists every declared API under the `APIs` section of the site navigation, which the sitemap and `llms.txt` read. Refer to [`navigation.yml`](../../documentation/assembler/navigation.md#navigation-floating).
+
+An isolated build and an assembler build put the APIs in the tree when they render the API Explorer. A build run with `--skip-api` leaves them out. The `serve` and Codex builds do not put them in the tree yet.
+
+:::{note}
+A toc entry such as `- api: elasticsearch` is not valid. Declare the API in the `api:` block, and the docset has it.
+:::
+
+### Link to an API page from Markdown [api-cross-links]
+
+A docset that declares an API in its `api:` block publishes the pages of that API in its `links.json`. Other docsets can then use a cross-link to any page of it, and the build checks that the page exists:
+
+```markdown
+[Search API](elasticsearch://api/elasticsearch/operation/operation-search)
+[Search API in 8.x](elasticsearch://api/elasticsearch/8/operation/operation-search)
+[Elasticsearch API](elasticsearch://api/elasticsearch)
+```
+
+The scheme is the repository of the docset that declares the API. The path is `api/<key>`, then an optional version, then the path of the page under the API. The version is the exact name of an API version, such as `8` or `main`, and not a URL segment. Without a version, the link reaches the current version. The published page keeps whatever URL that version has. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them, in the versions that list them. A `#fragment` stays on the resolved URL, but the build does not check that the anchor exists.
+
+An assembler build links to the page on the site it builds. An isolated build links to the published page on `https://www.elastic.co/docs/`.
+
 ## What the API Explorer renders
 
 The API Explorer generates the following types of pages from your OpenAPI spec:

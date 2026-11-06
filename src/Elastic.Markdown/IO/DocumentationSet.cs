@@ -308,8 +308,21 @@ public class DocumentationSet : INavigationTraversable
 			UrlPathPrefix = Context.UrlPathPrefix,
 			Origin = Context.Git,
 			Links = links,
-			CrossLinks = crossLinks
+			CrossLinks = crossLinks,
+			Floating = CreateFloatingLinkSections()
 		};
+	}
+
+	private Dictionary<string, FloatingLinkSection>? CreateFloatingLinkSections()
+	{
+		Dictionary<string, FloatingLinkSection>? sections = null;
+		foreach (var section in Navigation.FloatingSections)
+		{
+			if (section.ToLinkSection() is { } linkSection)
+				(sections ??= [])[$"{section.Kind}/{section.Key}"] = linkSection;
+		}
+
+		return sections;
 	}
 
 	public void ClearOutputDirectory()

@@ -26,6 +26,7 @@ internal static class ApiPropertyIndex
 				Name = property.Name,
 				Path = path,
 				PathWords = string.Join(' ', ApiPropertyPath.Words(path)),
+				NameWords = string.Join(' ', ApiPropertyPath.IdentifierWords(property.Name)),
 				Type = property.Type.Text,
 				Location = location,
 				Anchor = property.AnchorId,

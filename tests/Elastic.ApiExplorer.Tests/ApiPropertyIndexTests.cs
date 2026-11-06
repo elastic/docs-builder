@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Versions;
+using Nullean.Snapshots;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -72,6 +73,32 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 		);
 		foreach (var entry in entries)
 			html.Should().Contain($"id=\"{entry.Anchor}\"");
+	}
+
+	[Test]
+	public async Task Export_FieldNames_IndexTheirWords()
+	{
+		var (_, entries) = await IndexRequestBody(
+			"""
+			"unrated_docs":{"type":"integer"},
+			"indexPattern":{"type":"string"},
+			"min-score":{"type":"number"},
+			"hits":{"type":"array","items":{"type":"object","properties":{"total_hits":{"type":"integer"}}}}
+			"""
+		);
+
+		string
+			.Join('\n', entries.Select(p => $"{p.Path} -> {p.NameWords}"))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			unrated_docs -> unrated docs
+			indexPattern -> index pattern
+			min-score -> min score
+			hits -> hits
+			hits[].total_hits -> total hits
+			"""
+			);
 	}
 
 	[Test]

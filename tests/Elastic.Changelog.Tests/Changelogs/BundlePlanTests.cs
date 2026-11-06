@@ -167,13 +167,7 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
-		Collector
-			.Diagnostics
-			.ToSnapshotText()
-			.Should()
-			.MatchInlineSnapshot(
-				"warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other."
-			);
+		Collector.Diagnostics.WithoutAmbient().ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 
 	[Test]

@@ -418,6 +418,15 @@
                 }
               }
             },
+            "name_words": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
             "type": {
               "type": "keyword"
             },

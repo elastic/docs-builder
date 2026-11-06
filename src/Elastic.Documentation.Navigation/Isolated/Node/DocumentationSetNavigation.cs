@@ -67,6 +67,9 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 				items.Add(navItem);
 		}
 
+		if (items.Count > 0)
+			MountImplicitFloatingSections(items);
+
 		// Handle empty TOC - emit errors and create a minimal structure
 		if (items.Count == 0)
 		{
@@ -179,7 +182,6 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
 		CliReferenceRef cliRef => CreateCliReferenceNavigation(cliRef, index, context, parent, homeAccessor),
 		ListingRef listingRef => CreateListingNavigation(listingRef, index, context, parent, homeAccessor),
-		FloatingSectionRef floatingRef => CreateFloatingSectionNavigation(floatingRef, index, context, parent),
 		_ => null
 	};
 
@@ -380,29 +382,21 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		return folderNavigation;
 	}
 
-	private INavigationItem? CreateFloatingSectionNavigation(
-		FloatingSectionRef floatingRef,
-		int index,
-		IDocumentationSetContext context,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent
-	)
+	/// <summary>
+	/// Mounts the floating sections that the docset declares, such as its APIs, after the toc entries. They stay out of the
+	/// sidebar, so a docset needs no toc entry and no sidebar changes, and its <c>links.json</c> still lists their pages.
+	/// </summary>
+	private void MountImplicitFloatingSections(List<INavigationItem> items)
 	{
-		if (!_floatingSections.TryGetSection(floatingRef.Kind, floatingRef.Key, out var section))
+		foreach (var section in _floatingSections.GetImplicitSections())
 		{
-			context.Collector.EmitError(
-				floatingRef.Context,
-				$"'{floatingRef.Kind}: {floatingRef.Key}' in the table of contents does not match a section this build can resolve."
-			);
-			return null;
+			var root = section.CreateRoot(this, hidden: true);
+			root.Parent = this;
+			if (root is IAssignableIslandNavigation island)
+				island.IsIsland = true;
+			_mountedFloatingSections.Add(section);
+			items.Add(root);
 		}
-
-		var root = section.CreateRoot(parent);
-		_mountedFloatingSections.Add(section);
-		root.NavigationIndex = index;
-		root.Parent = parent;
-		if (root is IAssignableIslandNavigation island)
-			island.IsIsland = true;
-		return root;
 	}
 
 	private INavigationItem? CreateTocNavigation(

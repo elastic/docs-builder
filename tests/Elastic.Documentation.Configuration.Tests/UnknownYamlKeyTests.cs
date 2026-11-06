@@ -89,7 +89,7 @@ public class UnknownYamlKeyTests
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"error /config/navigation.yml:3 Unknown key 'colour_scheme' in $.toc[0]. Valid keys: children, dropdown, external, island, navigation_title, path_prefix, section, toc."
+				"error /config/navigation.yml:3 Unknown key 'colour_scheme' in $.toc[0]. Valid keys: children, dropdown, external, floating, island, navigation_title, path_prefix, section, toc."
 			);
 	}
 

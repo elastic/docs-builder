@@ -203,11 +203,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		// PR 400 is reported, not silently dropped.
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			warning  No checked-in changelog entry was found for PR https://github.com/elastic/widget/pull/400 and its metadata could not be fetched from GitHub. The bundle will not include an entry for this PR.
 			"""
 			);
@@ -369,13 +369,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		result.Should().BeTrue();
 		lines.Should().Contain("entries: pool #100 #200 · inferred (PR body) #300 · inferred (title) #301");
 		lines.Should().Contain("notes: first paragraph only #300 · no release note #301");
-		Collector
-			.Diagnostics
-			.ToSnapshotText()
-			.Should()
-			.MatchInlineSnapshot(
-				"warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead."
-			);
+		Collector.Diagnostics.WithoutAmbient().ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 
 	private sealed class LineLogger(List<string> lines) : Microsoft.Extensions.Logging.ILogger
@@ -742,11 +736,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		);
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			warning https://github.com/elastic/widget/pull/999 Could not derive a changelog type from the labels of PR #999; defaulting to 'other'. Configure pivot.types in changelog.yml to map labels to types.
 			"""
 			);
@@ -895,11 +889,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			hint  Applied rules - excluded_disjoint: 1 entries
 			error  No changelog entries remained after applying rules.bundle filter
 			"""
@@ -920,11 +914,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
 			"""
 			);
@@ -943,11 +937,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
 			"""
 			);
@@ -967,11 +961,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
 			"""
 			);
@@ -1100,11 +1094,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			error https://github.com/elastic/widget/pull/300 No matching area label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: :Search.
 			"""
 			);
@@ -1138,11 +1132,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.promotion.output_products is deprecated. Use 'product: <id>' instead.
 			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
 			"""
 			);

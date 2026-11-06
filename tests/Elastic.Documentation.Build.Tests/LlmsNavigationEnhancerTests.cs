@@ -31,20 +31,6 @@ public class LlmsNavigationEnhancerTests
 	}
 
 	[Test]
-	public void GenerateApiSection_StartsWithApisHeadingAndSameLinks()
-	{
-		var text = new LlmsNavigationEnhancer().GenerateApiSection(Catalog, CanonicalBaseUrl);
-
-		text.Should().StartWith("## APIs");
-		text.Should().Contain("* [Elasticsearch](https://www.elastic.co/docs/api/doc/elasticsearch.md)");
-		text.Should().Contain("* [Kibana](https://www.elastic.co/docs/api/doc/kibana.md)");
-	}
-
-	[Test]
 	public void GenerateApiHubIndex_EmptyCatalog_ReturnsEmpty() =>
 		new LlmsNavigationEnhancer().GenerateApiHubIndex([], CanonicalBaseUrl).Should().BeEmpty();
-
-	[Test]
-	public void GenerateApiSection_EmptyCatalog_ReturnsEmpty() =>
-		new LlmsNavigationEnhancer().GenerateApiSection([], CanonicalBaseUrl).Should().BeEmpty();
 }

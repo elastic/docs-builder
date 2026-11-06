@@ -57,7 +57,7 @@ public class McpServerInstructionTests
 
 		instructions.Should().MatchInlineSnapshot(
 			"""
-			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later.
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.
 
 			<triggers>
 			Use the server when the user:

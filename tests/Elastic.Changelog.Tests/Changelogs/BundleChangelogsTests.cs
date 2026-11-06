@@ -3853,12 +3853,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output_products is deprecated. Use 'product: <id>' instead.
-			warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other.
 			error  Profile 'es-release': bundle.output_products could not be parsed: Each product entry must have at most three space-separated fields (product, target, lifecycle). Too many values in segment: 'elasticsearch 9.2.0 ga extra-token'.
 			"""
 			);
@@ -8026,11 +8025,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other.
 			error  When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. Remove the CLI description, or remove the description from changelog.yml.
 			"""
 			);
@@ -8070,11 +8069,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other.
 			error  When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. Remove the CLI description, or remove the description from changelog.yml.
 			"""
 			);

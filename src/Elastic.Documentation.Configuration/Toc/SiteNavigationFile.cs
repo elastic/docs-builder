@@ -29,7 +29,8 @@ public record SiteSectionRef(
 	string Title,
 	string? ExternalUrl,
 	IReadOnlyCollection<SiteTableOfContentsRef> Children,
-	IReadOnlyCollection<SiteDropdownLinkRef> DropdownLinks
+	IReadOnlyCollection<SiteDropdownLinkRef> DropdownLinks,
+	string? FloatingKind = null
 ) : ISiteNavigationEntry
 {
 	public bool IsExternal => ExternalUrl is not null;
@@ -187,6 +188,7 @@ public class SiteTableOfContentsCollectionYamlConverter(
 	[
 		"section",
 		"external",
+		"floating",
 		"children",
 		"dropdown",
 		"toc",
@@ -319,7 +321,12 @@ public class SiteTableOfContentsCollectionYamlConverter(
 				&& childrenObj is List<SiteTableOfContentsRef> refs ? refs : [];
 			IReadOnlyCollection<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj)
 				&& dropdownObj is List<SiteDropdownLinkRef> dLinks ? dLinks : [];
-			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks);
+			// floating: <kind> mounts the floating sections of that kind (for example every API) as the section's children
+			// when the build has any. Without them the section keeps its other behaviour, such as an external link.
+			var floatingKind = dictionary.TryGetValue("floating", out var floatingVal)
+				&& floatingVal is string f
+				&& !string.IsNullOrEmpty(f) ? f : null;
+			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks, floatingKind);
 		}
 
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)

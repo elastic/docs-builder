@@ -298,6 +298,17 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		// 18,419 field names start with s on the live index, more than the 50 terms a phrase prefix expands to on a plain text field.
 		yield return ("retriever.s", "operation-search", "standard", "request");
 		yield return ("search retriever.sta", "operation-search", "standard", "request");
+		yield return ("unrated docs", "operation-rank-eval", "unrated_docs", "response");
+		yield return ("docs unrated", "operation-rank-eval", "unrated_docs", "response");
+		yield return ("unreated docs", "operation-rank-eval", "unrated_docs", "response");
+		yield return ("_uri", "operation-cluster-info", "last_uri", "response");
+	}
+
+	/// <summary>A typed word that names a field shared with other rows, as <c>search</c> in <c>search_type</c>, next to one that singles it out.</summary>
+	public static IEnumerable<(string, string, string)> ApiSearchFieldOrderTestCases()
+	{
+		yield return ("search after", "operation-search", "search_after");
+		yield return ("scroll id", "operation-scroll", "scroll_id");
 	}
 
 	[Test]
@@ -343,6 +354,26 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var operations = results.Where(r => r.Url.EndsWith($"/operation/{expectedOperation}", StringComparison.Ordinal)).ToList();
 		operations.Should().NotBeEmpty($"'{query}' should find {expectedOperation}");
 		operations.Should().AllSatisfy(r => r.Properties.Should().Contain(p => p.Name == field && p.Location == location));
+	}
+
+	[Test]
+	[MethodDataSource(nameof(ApiSearchFieldOrderTestCases))]
+	public async Task ApiSearchListsTheRowNamingEveryTypedWordFirst(string query, string expectedOperation, string field)
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		results.Should().NotBeEmpty($"API search for '{query}' should return results");
+		results[0].Url.Should().EndWith($"/operation/{expectedOperation}");
+		results[0].Properties.Should().NotBeEmpty().And.Subject.First().Name.Should().Be(field, $"'{query}' names every word of {field}");
 	}
 
 	[Test]

@@ -106,8 +106,6 @@ public class DocumentationSetFile : TableOfContentsFile
 			return [];
 		if (item is CliReferenceRef cliRef2)
 			return cliRef2.Children.SelectMany(GetFileRefs).ToArray();
-		if (item is FloatingSectionRef)
-			return [];
 		throw new Exception($"Unexpected item type {item.GetType().Name}");
 	}
 
@@ -264,7 +262,6 @@ public class DocumentationSetFile : TableOfContentsFile
 					),
 				CrossLinkRef crossLink =>
 					ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
-				FloatingSectionRef floatingSection => ResolveFloatingSection(collector, floatingSection, context),
 				_ => null
 			};
 
@@ -1025,20 +1022,6 @@ public class DocumentationSetFile : TableOfContentsFile
 					CollectExcluded(children, result);
 			}
 		}
-	}
-
-	private static FloatingSectionRef ResolveFloatingSection(
-		IDiagnosticsCollector collector,
-		FloatingSectionRef floatingSection,
-		string context
-	)
-	{
-		if (floatingSection.ExtraKeys is { Count: > 0 } extraKeys)
-			collector.EmitError(
-				context,
-				$"'{floatingSection.Kind}: {floatingSection.Key}' takes no other keys, but found {string.Join(", ", extraKeys.Select(k => $"'{k}'"))}."
-			);
-		return floatingSection with { Context = context };
 	}
 
 	/// <summary>
