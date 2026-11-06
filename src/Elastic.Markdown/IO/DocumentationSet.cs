@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -191,6 +192,8 @@ public class DocumentationSet : INavigationTraversable
 			{
 				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
 					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+				else if (ApiLinkCheck.GetHint(CrossLinkResolver, to, Context.UrlPathPrefix, Configuration.SuppressDiagnostics) is { } hint)
+					Context.Collector.EmitHint((Configuration.RedirectsSource ?? Configuration.SourceFile).FullName, hint);
 
 				return;
 			}

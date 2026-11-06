@@ -24,5 +24,10 @@ public enum HintType
 	/// <summary>
 	/// Hint about autolinks pointing to elastic.co/docs that should use crosslinks or relative links instead.
 	/// </summary>
-	AutolinkElasticCoDocs
+	AutolinkElasticCoDocs,
+
+	/// <summary>
+	/// Hint about a link to an API reference page that does not exist in the API pages of the link index.
+	/// </summary>
+	ApiLinkMissingPage
 }

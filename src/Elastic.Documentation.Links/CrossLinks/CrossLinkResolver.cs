@@ -20,6 +20,21 @@ public interface ICrossLinkResolver
 	/// protocol links and pass through without cross-link validation.
 	/// </summary>
 	bool IsDeclaredCrossLinkScheme(string scheme);
+
+	/// <summary>
+	/// Whether the API page at <paramref name="sitePath"/>, a path from the site root such as
+	/// <c>/docs/api/doc/elasticsearch/operation/operation-search</c>, exists in the API sections of the link index.
+	/// A resolver that holds no section for that API cannot tell, and answers <see cref="ApiPageStatus.Unknown"/>.
+	/// </summary>
+	ApiPageStatus CheckApiPage(string sitePath) => ApiPageStatus.Unknown;
+}
+
+public enum ApiPageStatus
+{
+	/// <summary>No API section covers the path, so the page cannot be judged.</summary>
+	Unknown,
+	Exists,
+	Missing
 }
 
 public class NoopCrossLinkResolver : ICrossLinkResolver
@@ -52,6 +67,25 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 
 	/// <inheritdoc />
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
+
+	/// <inheritdoc />
+	public ApiPageStatus CheckApiPage(string sitePath)
+	{
+		// API keys are unique across a build, so the key in the path names the one section that can hold the page.
+		var path = sitePath.Trim('/');
+		var rest = path.StartsWith("docs/", StringComparison.Ordinal) ? path["docs/".Length..] : path;
+		if (!rest.StartsWith("api/doc/", StringComparison.Ordinal))
+			return ApiPageStatus.Unknown;
+
+		var key = rest["api/doc/".Length..].Split('/', 2)[0];
+		foreach (var links in _crossLinks.LinkReferences.Values)
+		{
+			if (links.Floating is { Count: > 0 } floating && floating.TryGetValue($"api/{key}", out var section))
+				return section.ContainsSitePath(rest) ? ApiPageStatus.Exists : ApiPageStatus.Missing;
+		}
+
+		return ApiPageStatus.Unknown;
+	}
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
 	{
