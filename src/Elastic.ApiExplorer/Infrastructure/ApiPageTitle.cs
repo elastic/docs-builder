@@ -23,8 +23,7 @@ internal static class ApiPageTitle
 	internal static string Heading(string? title, string? versionLabel)
 	{
 		var heading = title ?? "";
-		_ = versionLabel;
-		return heading;
+		return versionLabel is null ? heading : $"{heading} ({versionLabel})";
 	}
 
 	/// <summary>Selected switcher label for a released major (<c>v8</c>, <c>v9</c>). Latest stays unlabeled.</summary>
