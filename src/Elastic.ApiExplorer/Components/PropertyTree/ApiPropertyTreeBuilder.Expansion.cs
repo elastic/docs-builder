@@ -182,7 +182,8 @@ public partial class ApiPropertyTreeBuilder
 			AncestorRefs = AugmentAncestors(row.TypeInfo, scope.AncestorRefs),
 			RequiredProperties = null,
 			Owner = row.Name,
-			ParentExpanded = expansion.DefaultExpanded
+			// A row that cannot fold lists its fields whenever the row itself shows, so it passes its own state on.
+			ParentExpanded = expansion.IsCollapsible ? expansion.DefaultExpanded : scope.ParentExpanded
 		};
 		var useHidden = options.UseHiddenUntilFound && expansion.IsCollapsible && !expansion.DefaultExpanded;
 

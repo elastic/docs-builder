@@ -746,6 +746,43 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		children.Single(p => p.Name == "extra").DefaultExpanded.Should().BeFalse();
 	}
 
+	[Test]
+	public void BuildPropertyList_RequiredObjectUnderAUnionRowThatCannotFold_OpensWithTheRow()
+	{
+		var builder = CreateBuilder();
+		var union = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Required = new HashSet<string> { "inner" },
+			Properties = new Dictionary<string, IOpenApiSchema> { ["inner"] = StringFields("one", "two") },
+			OneOf =
+			[
+				new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema> { ["a"] = StringFields("x") }
+				},
+				new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema> { ["b"] = StringFields("y") }
+				}
+			]
+		};
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema> { ["u"] = union }
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var row = list!.Items.Single();
+		row.IsCollapsible.Should().BeFalse("a union row lists its shared fields without a toggle");
+		row.DefaultExpanded.Should().BeFalse("it is optional");
+		row.Children.Properties!.Items.Single(p => p.Name == "inner").DefaultExpanded.Should().BeTrue("the row above it is showing");
+	}
+
 	private static OpenApiSchema ObjectsAtTwoDepths() =>
 		new()
 		{
