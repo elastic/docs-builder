@@ -158,6 +158,7 @@ describe('TOC navigation', () => {
             '.toc-progress-indicator'
         ) as HTMLElement
         expect(tocLink).toHaveClass('toc-current')
+        expect(tocItem).toHaveClass('toc-current')
         expect(indicator).toHaveStyle({
             top: '0px',
             height: '24px',
@@ -319,7 +320,7 @@ describe('TOC navigation', () => {
                 (calls, mock) => calls + mock.mock.calls.length,
                 0
             )
-        ).toBeGreaterThan(0)
+        ).toBe(0)
     })
 
     it('does not rewrite classes when the current heading is unchanged', () => {
@@ -340,7 +341,7 @@ describe('TOC navigation', () => {
         expect(addSpies.every((spy) => spy.mock.calls.length === 0)).toBe(true)
     })
 
-    it('only reads nearby heading geometry during steady scrolling', () => {
+    it('does not read heading geometry during steady scrolling', () => {
         const fixture = createTocFixture(
             Array.from({ length: 50 }, (_, index) => 100 + index * 200)
         )
@@ -353,7 +354,7 @@ describe('TOC navigation', () => {
             (calls, mock) => calls + mock.mock.calls.length,
             0
         )
-        expect(geometryReads).toBeLessThanOrEqual(3)
+        expect(geometryReads).toBe(0)
     })
 
     it('removes listeners from the previous initialization', () => {
