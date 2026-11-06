@@ -60,19 +60,25 @@
 				<ul class="nav-tree__children">
 					<li class="nav-tree__item">
 						<a class="nav-tree__link" href="#" hx-boost="false">
-							<span class="nav-tree__text">Search documents</span>
+							<span class="nav-tree__text">Search documents
+								<code class="nav-tree__path">/{index}/_search</code>
+							</span>
 							<span class="badge badge--success method method--sm">POST</span>
 						</a>
 					</li>
 					<li class="nav-tree__item">
 						<a class="nav-tree__link" href="#" hx-boost="false">
-							<span class="nav-tree__text">Get document</span>
+							<span class="nav-tree__text">Get document
+								<code class="nav-tree__path">/{index}/_doc/{id}</code>
+							</span>
 							<span class="badge badge--info method method--sm">GET</span>
 						</a>
 					</li>
 					<li class="nav-tree__item">
 						<a class="nav-tree__link" href="#" hx-boost="false">
-							<span class="nav-tree__text">Delete document</span>
+							<span class="nav-tree__text">Delete document
+								<code class="nav-tree__path">/{index}/_doc/{id}</code>
+							</span>
 							<span class="badge badge--danger method method--sm">DEL</span>
 						</a>
 					</li>

@@ -1,6 +1,6 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationRenderNode>
 @using Elastic.Documentation.Site.Components.Navigation.NavTree
-<span class="nav-tree__text">@Model.NavigationTitle</span>
+<span class="nav-tree__text">@Model.NavigationTitle@if (Model.HttpPath is { } httpPath) { <code class="nav-tree__path">@httpPath</code> }</span>
 @if (Model.Badge is { } badge)
 {
 	@await RenderPartialAsync(_Badge.Create(new BadgeModel { Text = badge, Tone = Tone.Info }))
