@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ExternalCommands;
 using Elastic.Documentation.FileSystems;
@@ -32,11 +33,16 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;
+	private readonly IEnvironmentVariables _environmentVariables;
 	private readonly bool _skipFetch;
 	private readonly SemaphoreSlim _cloneLock = new(1, 1);
 	private bool _ensuredClone;
 
-	public GitLinkIndexReader(string environment, ApplicationDataFileSystem? fileSystem = null, bool skipFetch = false)
+	public GitLinkIndexReader(
+		string environment,
+		ApplicationDataFileSystem? fileSystem = null,
+		bool skipFetch = false,
+		IEnvironmentVariables? environmentVariables = null)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
 			throw new ArgumentException(
@@ -47,6 +53,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		_environment = environment;
 		_fileSystem = fileSystem ?? new ApplicationDataFileSystem();
 		_skipFetch = skipFetch;
+		_environmentVariables = environmentVariables ?? SystemEnvironmentVariables.Instance;
 	}
 
 	/// <inheritdoc />
@@ -137,11 +144,11 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		}
 	}
 
-	private static string GetCodexLinkIndexGitUrl()
+	private string GetCodexLinkIndexGitUrl()
 	{
-		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+		if (_environmentVariables.IsRunningOnCI)
 		{
-			var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+			var token = _environmentVariables.GetEnvironmentVariable("GITHUB_TOKEN");
 			return !string.IsNullOrEmpty(token)
 				? $"https://oauth2:{token}@github.com/{LinkIndexOrigin}.git"
 				: $"https://github.com/{LinkIndexOrigin}.git";
@@ -170,17 +177,25 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		});
 
 		if (failure is not null)
-			throw new InvalidOperationException($"Git command failed after {policy.MaxAttempts} attempts (last: {failure.Value}).");
+			throw new InvalidOperationException(DescribeGitFailure(
+				$"Git command failed after {policy.MaxAttempts} attempts (last: {failure.Value}).",
+				_environmentVariables.IsRunningOnCI,
+				!string.IsNullOrEmpty(_environmentVariables.GetEnvironmentVariable("GITHUB_TOKEN"))
+			));
 	}
 
 	/// <summary>
 	/// Runs a single git command with no retry. Throws <see cref="InvalidOperationException"/> on failure.
 	/// </summary>
-	private static void RunGit(string workingDirectory, params string[] args)
+	private void RunGit(string workingDirectory, params string[] args)
 	{
 		var exitCode = ExecGit(workingDirectory, args, timeout: null);
 		if (exitCode != 0)
-			throw new InvalidOperationException($"Git command failed (exit {exitCode}): git {string.Join(" ", args)}");
+			throw new InvalidOperationException(DescribeGitFailure(
+				$"Git command failed (exit {exitCode}): git {string.Join(" ", args)}",
+				_environmentVariables.IsRunningOnCI,
+				!string.IsNullOrEmpty(_environmentVariables.GetEnvironmentVariable("GITHUB_TOKEN"))
+			));
 	}
 
 	private static int ExecGit(string workingDirectory, string[] args, TimeSpan? timeout)
@@ -192,5 +207,18 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			Timeout = timeout
 		};
 		return Proc.Exec(arguments);
+	}
+
+	private static string DescribeGitFailure(string message, bool onActions, bool hasToken)
+	{
+		if (onActions && !hasToken)
+			return $"{message}{Environment.NewLine}{Environment.NewLine}"
+				+ "GitHub Actions did not provide GITHUB_TOKEN for the private Elastic Internal Docs link index."
+				+ $"{Environment.NewLine}Fork pull_request jobs do not receive the OIDC token needed to fetch this token. Push fork branches to the upstream repository."
+				+ $"{Environment.NewLine}For same-repository jobs, confirm permissions.id-token: write and the catalog-info token policy.";
+
+		return !onActions
+			? $"{message}{Environment.NewLine}{Environment.NewLine}Run 'docs-builder codex clone' first, or ensure SSH access to github.com works for git@github.com:elastic/codex-link-index.git."
+			: message;
 	}
 }
