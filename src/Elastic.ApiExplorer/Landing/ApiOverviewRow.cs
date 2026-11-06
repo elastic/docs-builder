@@ -41,6 +41,12 @@ public record ApiOverviewRow
 	/// <summary>True when the design system look is on, which picks the markup of the row's badges.</summary>
 	public bool DesignSystem { get; init; }
 
+	/// <summary>The lead sentence of a group, shown under its heading. Null when the group has no text of its own.</summary>
+	public string? Description { get; init; }
+
+	/// <summary>The spec's operation id of an operation row, which the configured popular list refers to.</summary>
+	public string? OperationId { get; init; }
+
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
 }
@@ -51,19 +57,35 @@ public record ApiOverviewSection(ApiOverviewRow? Heading, IReadOnlyList<ApiOverv
 /// <summary>The product landing page: topic pages to read, and the sections the grouped index shows.</summary>
 public record ApiOverviewIndex(IReadOnlyList<ApiOverviewRow> Topics, IReadOnlyList<ApiOverviewSection> Groups);
 
+/// <summary>How the product rows are built: badge look and where a group's lead sentence comes from.</summary>
+public sealed record ApiOverviewOptions(
+	VersionsConfiguration? VersionsConfig,
+	bool DesignSystem = false,
+	Func<ApiTag, string?>? DescribeTag = null
+);
+
 /// <summary>Flattens the navigation tree into overview rows so the landing views only iterate and print.</summary>
 public static class ApiOverviewBuilder
 {
 	/// <summary>Rows for the product landing page: the full navigation tree.</summary>
-	public static IReadOnlyList<ApiOverviewRow> Build(
-		INavigationItem root,
-		VersionsConfiguration? versionsConfig,
-		bool designSystem = false
-	)
+	public static IReadOnlyList<ApiOverviewRow> Build(INavigationItem root, ApiOverviewOptions options)
 	{
 		var rows = new List<ApiOverviewRow>();
-		AddProductRows(root, rows, versionsConfig, designSystem);
+		AddProductRows(root, rows, options);
 		return rows;
+	}
+
+	/// <summary>
+	/// The operation rows the configured ids name, in the configured order. An id the spec does not have is skipped,
+	/// and an operation listed twice shows once.
+	/// </summary>
+	public static IReadOnlyList<ApiOverviewRow> Popular(IReadOnlyList<ApiOverviewRow> rows, IReadOnlyList<string> operationIds)
+	{
+		var byId = new Dictionary<string, ApiOverviewRow>(StringComparer.Ordinal);
+		foreach (var row in rows.Where(static r => r is { Kind: OverviewRowKind.Operation, OperationId.Length: > 0 }))
+			_ = byId.TryAdd(row.OperationId!, row);
+
+		return [.. operationIds.Distinct(StringComparer.Ordinal).Select(id => byId.GetValueOrDefault(id)).OfType<ApiOverviewRow>()];
 	}
 
 	/// <summary>Groups the flat rows into sections: each heading row starts one, item rows join the current one.</summary>
@@ -132,12 +154,7 @@ public static class ApiOverviewBuilder
 		return rows;
 	}
 
-	private static void AddProductRows(
-		INavigationItem item,
-		List<ApiOverviewRow> rows,
-		VersionsConfiguration? versionsConfig,
-		bool designSystem
-	)
+	private static void AddProductRows(INavigationItem item, List<ApiOverviewRow> rows, ApiOverviewOptions options)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
@@ -148,22 +165,28 @@ public static class ApiOverviewBuilder
 			{
 				case ClassificationNavigationItem classification:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.ClassificationHeading, Title = classification.NavigationTitle });
-					AddProductRows(classification, rows, versionsConfig, designSystem);
+					AddProductRows(classification, rows, options);
 					break;
 				case TagNavigationItem tag:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
-					AddProductRows(tag, rows, versionsConfig, designSystem);
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.TagHeading,
+						Title = tag.NavigationTitle,
+						Url = tag.Url,
+						Description = options.DescribeTag?.Invoke(tag.Index.Model)
+					});
+					AddProductRows(tag, rows, options);
 					break;
 				case OperationNavigationItem operation:
-					rows.Add(OperationRow(operation, versionsConfig, designSystem));
+					rows.Add(OperationRow(operation, options.VersionsConfig, options.DesignSystem));
 					break;
 				case TypesNavigationItem types:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = types.NavigationTitle });
-					AddProductRows(types, rows, versionsConfig, designSystem);
+					AddProductRows(types, rows, options);
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
-					AddProductRows(schemaCategory, rows, versionsConfig, designSystem);
+					AddProductRows(schemaCategory, rows, options);
 					break;
 				case SchemaNavigationItem schemaItem:
 					rows.Add(new ApiOverviewRow
@@ -176,7 +199,7 @@ public static class ApiOverviewBuilder
 					break;
 				// The landing page lists topics in its own block, so the Topics heading adds no row.
 				case TopicsNavigationItem topics:
-					AddProductRows(topics, rows, versionsConfig, designSystem);
+					AddProductRows(topics, rows, options);
 					break;
 				case TopicNavigationItem or SimpleMarkdownNavigationItem or StructuralNavigationItem:
 					rows.Add(new ApiOverviewRow
@@ -229,6 +252,7 @@ public static class ApiOverviewBuilder
 		{
 			Kind = OverviewRowKind.Operation,
 			Title = operation.NavigationTitle,
+			OperationId = operation.Model.Operation.OperationId,
 			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
 			Url = operation.Url,
 			Availability = AvailabilityBadge.FromOperation(

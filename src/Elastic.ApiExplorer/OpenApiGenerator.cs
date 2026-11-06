@@ -544,7 +544,9 @@ public class OpenApiGenerator(
 			CurrentApiKey = generation.CurrentApiKey,
 			OperationSupplemental = operations,
 			TagSupplemental = tags,
-			Product = generation.ApiConfig?.Product
+			Product = generation.ApiConfig?.Product,
+			PopularOperationIds = generation.ApiConfig?.PopularOperations ?? [],
+			LandingUsage = generation.ApiConfig?.Usage
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);

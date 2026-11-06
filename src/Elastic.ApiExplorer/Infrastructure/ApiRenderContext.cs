@@ -61,6 +61,18 @@ public record ApiRenderContext(
 			? Model.Info.Description
 			: CatalogEntries.FirstOrDefault(entry => entry.Key == CurrentApiKey)?.Description;
 
+	/// <summary>Operation ids the product landing lists first, from the docset's <c>popular:</c> list.</summary>
+	public IReadOnlyList<string> PopularOperationIds { get; init; } = [];
+
+	/// <summary>Markdown for the how-to-use sentence on the product landing, from the docset's <c>usage:</c> value.</summary>
+	public string? LandingUsage { get; init; }
+
+	internal string? TagDescriptionMarkdown(ApiTag tag) =>
+		TagSupplemental.TryGetValue(tag.Name, out var doc) ? doc.DescriptionOr(tag.Description) : tag.Description;
+
+	/// <summary>A group's opening sentence, from the text its group page shows.</summary>
+	internal string? GroupLeadSentence(ApiTag tag) => ApiSeoDescription.Excerpt(TagDescriptionMarkdown(tag));
+
 	/// <summary>Product bound to this API key, or <see langword="null"/> on the combined catalog.</summary>
 	public Product? Product { get; init; }
 

@@ -140,7 +140,7 @@ public class UnknownYamlKeyTests
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"error docset.yml:3 Unknown key 'prodcut_id' in $[0]. Valid keys: catalog, children, product, repository, spec."
+				"error docset.yml:3 Unknown key 'prodcut_id' in $[0]. Valid keys: catalog, children, popular, product, repository, spec, usage."
 			);
 	}
 
@@ -182,7 +182,7 @@ public class UnknownYamlKeyTests
 			.MatchInlineSnapshot(
 				"""
 			hint toc.yml:3 'old_key' is deprecated.
-			error toc.yml:5 Unknown key 'other' in $[0]. Valid keys: catalog, children, product, repository, spec.
+			error toc.yml:5 Unknown key 'other' in $[0]. Valid keys: catalog, children, popular, product, repository, spec, usage.
 			"""
 			);
 	}

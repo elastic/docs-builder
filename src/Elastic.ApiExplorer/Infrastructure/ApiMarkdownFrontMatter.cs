@@ -139,7 +139,7 @@ internal static class ApiMarkdownFrontMatter
 		{
 			ApiCatalog => ApiCatalog.PageDescription,
 			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
-			ApiTag tag => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
+			ApiTag tag => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(context.TagDescriptionMarkdown(tag), apiBaseUrl)),
 			ApiOperation operation =>
 				FirstLine(
 					ApiMarkdown.Prepare(
@@ -157,9 +157,6 @@ internal static class ApiMarkdownFrontMatter
 			_ => null
 		};
 	}
-
-	private static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
-		context.TagSupplemental.TryGetValue(tag.Name, out var doc) ? doc.DescriptionOr(tag.Description) : tag.Description;
 
 	private static string? OperationDescription(ApiOperation operation, ApiRenderContext context)
 	{

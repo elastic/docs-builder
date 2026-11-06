@@ -382,7 +382,7 @@ public partial class TopicPageTests
 		);
 
 		var index = ApiOverviewBuilder.SplitTopics(
-			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.VersionsConfiguration))
+			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, new ApiOverviewOptions(context.VersionsConfiguration)))
 		);
 
 		index.Topics.Select(row => row.Url).Should().Equal("/api/doc/cloud/authentication", "/api/doc/cloud/topic/topic-principles");

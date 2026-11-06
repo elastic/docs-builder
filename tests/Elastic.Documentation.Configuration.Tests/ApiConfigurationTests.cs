@@ -258,6 +258,23 @@ public class ApiConfigurationConverterTests
 	}
 
 	[Test]
+	public void AcceptsPopularOperationsAndUsage()
+	{
+		const string yaml =
+			"""
+			- spec: api.json
+			  product: elasticsearch
+			  usage: Refer to the [REST APIs](https://example.com/rest).
+			  popular: [reindex, bulk]
+			""";
+
+		var entry = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!.SingleEntry!;
+
+		entry.Popular.Should().Equal("reindex", "bulk");
+		entry.Usage.Should().Be("Refer to the [REST APIs](https://example.com/rest).");
+	}
+
+	[Test]
 	public void Catalog_IsOptional()
 	{
 		const string yaml = """

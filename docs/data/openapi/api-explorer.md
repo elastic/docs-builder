@@ -30,7 +30,7 @@ This feature is still under development and the functionality described on this 
 
 Add the `api` key to your `docset.yml` file to enable the API Explorer. Each product key takes a
 single-entry sequence with a required `spec:` and `product:`, and optional `repository:`,
-`children:`, and `catalog:`:
+`children:`, `catalog:`, `popular:`, and `usage:`:
 
 ```yaml
 api:
@@ -156,6 +156,22 @@ api:
 - `serverless` → Serverless
 
 Unknown values fail the build.
+
+### `popular:` and `usage:` (optional)
+
+These shape the top of the product landing page. `popular:` lists operation ids in the order the landing shows them, in a **Popular operations** block above the groups. An id the spec does not have is skipped without a warning, so one list can serve every version of the API. `usage:` is one Markdown sentence shown under the landing intro, usually linking a page about request conventions. Each group on the landing also shows its opening sentence under its name.
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+      usage: For request conventions, refer to [Elasticsearch REST APIs](https://www.elastic.co/docs/reference/elasticsearch/rest-apis).
+      popular:
+        - reindex
+        - bulk
+        - search
+```
 
 ### One spec per product
 
