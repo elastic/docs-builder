@@ -29,7 +29,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		var layout = viewModel.CreateGlobalLayoutModel();
 
-		layout.Title.Should().Be("Run a search | Fixture API documentation");
+		layout.Title.Should().Be("Run a search | Fixture API docs");
 		layout.Description.Should().Be("Returns hits that match the query defined in the request.");
 		layout.Breadcrumbs.Take(2).Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
 		layout.Breadcrumbs[1].Url.Should().Be("/api");
@@ -46,14 +46,14 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		var layout = viewModel.CreateGlobalLayoutModel();
 
-		layout.Title.Should().Be("Query | Fixture API documentation");
+		layout.Title.Should().Be("Query | Fixture API docs");
 		layout.Description.Should().StartWith("A container for a single query variant");
 	}
 
 	[Test]
-	[Arguments("v8", "Run a search | Fixture API documentation (v8)")]
-	[Arguments("v9", "Run a search | Fixture API documentation (v9)")]
-	[Arguments("latest", "Run a search | Fixture API documentation")]
+	[Arguments("v8", "Run a search | Fixture API docs (v8)")]
+	[Arguments("v9", "Run a search | Fixture API docs (v9)")]
+	[Arguments("latest", "Run a search | Fixture API docs")]
 	public void OperationLayout_Version_TitleSuffix(string version, string expected)
 	{
 		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
@@ -64,8 +64,8 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	[Arguments("v8", "Elasticsearch API documentation (v8)")]
-	[Arguments("v9", "Elasticsearch API documentation (v9)")]
+	[Arguments("v8", "Elasticsearch API docs (v8)")]
+	[Arguments("v9", "Elasticsearch API docs (v9)")]
 	public void VersionLanding_Title_UsesProductNameNotSpecTitle(string version, string expected)
 	{
 		var document = new OpenApiDocument

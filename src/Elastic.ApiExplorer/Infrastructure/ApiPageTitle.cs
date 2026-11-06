@@ -11,7 +11,7 @@ internal static class ApiPageTitle
 {
 	internal static string Format(string? pageLabel, string? displayName, string? specTitle, string? versionLabel)
 	{
-		var product = $"{ProductName(displayName, specTitle)} API documentation";
+		var product = $"{ProductName(displayName, specTitle)} API docs";
 		if (versionLabel is not null)
 			product = $"{product} ({versionLabel})";
 
