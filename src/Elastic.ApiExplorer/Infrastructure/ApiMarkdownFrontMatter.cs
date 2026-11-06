@@ -138,8 +138,8 @@ internal static class ApiMarkdownFrontMatter
 		return page switch
 		{
 			ApiCatalog => ApiCatalog.PageDescription,
-			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.Model.Info?.Description, apiBaseUrl)),
-			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
+			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
+			ApiTag tag => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
 			ApiOperation operation =>
 				FirstLine(
 					ApiMarkdown.Prepare(
@@ -150,6 +150,7 @@ internal static class ApiMarkdownFrontMatter
 						apiBaseUrl
 					)
 				),
+			ApiStructuralPage structural => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(structural.Intro, apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
 			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
 			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),

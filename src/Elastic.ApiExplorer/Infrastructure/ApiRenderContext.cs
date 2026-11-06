@@ -52,6 +52,15 @@ public record ApiRenderContext(
 
 	public string? CurrentApiKey { get; init; }
 
+	/// <summary>
+	/// The landing description. A versioned spec that carries none borrows the one its API's catalog entry takes from the
+	/// canonical spec, so v8 and v9 landings are not left without a meta description.
+	/// </summary>
+	internal string? LandingDescription =>
+		!string.IsNullOrWhiteSpace(Model.Info?.Description)
+			? Model.Info.Description
+			: CatalogEntries.FirstOrDefault(entry => entry.Key == CurrentApiKey)?.Description;
+
 	/// <summary>Product bound to this API key, or <see langword="null"/> on the combined catalog.</summary>
 	public Product? Product { get; init; }
 

@@ -121,6 +121,9 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageTitle => Page.Title;
 
+	/// <summary>Only the authentication page written as a topic has a sentence of its own; no copy is made up for the rest.</summary>
+	protected override string? LayoutPageDescription => Page.Intro;
+
 	protected override IReadOnlyList<TocItem> GetTocItems() => Page.Kind == ApiStructuralKind.Authentication ? IntroHeadings : [];
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
