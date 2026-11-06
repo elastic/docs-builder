@@ -135,6 +135,23 @@ describe('disclosure clicks on API pages', () => {
         expect(button.textContent).toBe('Expand all')
     })
 
+    it('Expand all scrolls to the first row it opened when none is on screen', () => {
+        const scrollIntoView = vi.fn()
+        Element.prototype.scrollIntoView = scrollIntoView
+        const button = document.createElement('button')
+        button.dataset.apiExpandAll = ''
+        byId('section').append(button)
+
+        button.click()
+
+        expect(scrollIntoView).toHaveBeenCalledTimes(1)
+        expect(scrollIntoView.mock.contexts[0]).toBe(
+            byId('section').firstElementChild
+        )
+        button.click()
+        expect(scrollIntoView).toHaveBeenCalledTimes(1)
+    })
+
     it('toggles a union variant, not the property around it', () => {
         byId('variant-toggle').click()
         expect(isExpanded('variant')).toBe(true)

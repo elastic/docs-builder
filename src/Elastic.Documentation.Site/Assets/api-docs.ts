@@ -449,10 +449,38 @@ function isAllExpanded(root: HTMLElement): boolean {
 
 /** Expand all and Collapse all share one button. */
 export function setAllExpanded(root: HTMLElement, expanded: boolean): void {
-    foldables(root).forEach(([container, d]) =>
-        setDisclosureExpanded(container, d, expanded)
-    )
+    const changed = foldables(root)
+        .filter(
+            ([container]) =>
+                container.classList.contains('expanded') !== expanded
+        )
+        .map(([container, d]) => {
+            setDisclosureExpanded(container, d, expanded)
+            return container
+        })
     syncExpandAll()
+    if (expanded) showFirstOpened(changed)
+}
+
+/**
+ * The fields an expand opens are usually further down than the button, so without this the page looks
+ * unchanged. When none of them is on screen, scroll to the first one.
+ */
+function showFirstOpened(opened: HTMLElement[]): void {
+    // A row that just opened is as tall as its fields, so aim at its own first line.
+    const headers = opened.map((el) => el.firstElementChild ?? el)
+    const onScreen = headers.some((el) => {
+        const { top, height } = el.getBoundingClientRect()
+        return height > 0 && top >= 0 && top < window.innerHeight
+    })
+    if (headers.length === 0 || onScreen) return
+    const first = headers.reduce((a, b) =>
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? a : b
+    )
+    first.scrollIntoView?.({
+        block: 'center',
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    })
 }
 
 /** The page control offers whichever of the two the page is not in already. */
