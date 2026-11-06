@@ -17,6 +17,7 @@ public class DocumentUrlNormalizerTests
 	[Arguments("/docs/deploy-manage/api-keys", "/docs/deploy-manage/api-keys")]
 	[Arguments("deploy-manage/api-keys", "/deploy-manage/api-keys")]
 	[Arguments("https://www.elastic.co/docs/deploy-manage/api-keys", "/docs/deploy-manage/api-keys")]
+	[Arguments("https://www.elastic.co/docs/api/doc/logstash/operation/operation-nodestats?x=1#y", "/docs/api/doc/logstash/operation/operation-nodestats")]
 	[Arguments("https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/api-keys", "/elastic/docs-content/tree/main/deploy-manage/api-keys")]
 	[Arguments("/docs/deploy-manage/api-keys/", "/docs/deploy-manage/api-keys")]
 	[Arguments("https://www.elastic.co/docs/deploy-manage/api-keys?ref=nav", "/docs/deploy-manage/api-keys")]
