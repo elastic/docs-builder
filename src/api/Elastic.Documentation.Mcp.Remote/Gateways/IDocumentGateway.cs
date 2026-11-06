@@ -52,6 +52,7 @@ public record DocumentApi
 {
 	public required string Method { get; init; }
 	public required string Path { get; init; }
+	/// <summary>Callable routes as <c>METHOD /spec/path</c>, taken verbatim from the spec.</summary>
 	public required string[] Endpoints { get; init; }
 	public required string OperationId { get; init; }
 	public bool Deprecated { get; init; }

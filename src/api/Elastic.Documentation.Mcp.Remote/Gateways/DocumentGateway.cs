@@ -90,7 +90,7 @@ public class DocumentGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 					{
 						Method = api.Method,
 						Path = api.Path,
-						Endpoints = api.Endpoints,
+						Endpoints = [.. api.Routes.SelectMany(r => r.Methods.Select(m => $"{m} {r.Path}"))],
 						OperationId = api.OperationId,
 						Deprecated = api.Deprecated
 					}
