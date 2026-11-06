@@ -34,7 +34,9 @@ internal static class ApiConfigurationShapeGuidance
 		+ "      children:          # optional\n"
 		+ "        - file: getting-started.md\n"
 		+ "      catalog:           # optional; deployment tags on the API catalog\n"
-		+ "        categories: [self, ece, ess, serverless]";
+		+ "        categories: [self, ece, ess, serverless]\n"
+		+ "      popular: [reindex, bulk] # optional; operation ids shown first on the product landing\n"
+		+ "      usage: <markdown>        # optional; one sentence on how to use the API, under the landing intro";
 }
 
 public class ApiProductSequenceConverter(ApiProductEntryConverter entryConverter) : YamlConverter<ApiProductSequence>
@@ -68,7 +70,7 @@ public class ApiProductSequenceConverter(ApiProductEntryConverter entryConverter
 
 public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 {
-	private static readonly string[] KnownEntryKeys = ["spec", "product", "repository", "children", "catalog"];
+	private static readonly string[] KnownEntryKeys = ["spec", "product", "repository", "children", "catalog", "popular", "usage"];
 	private static readonly string[] KnownCatalogKeys = ["categories"];
 	private static readonly string[] KnownChildKeys = ["file"];
 
@@ -123,6 +125,13 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 					break;
 				case "catalog":
 					entry.Catalog = ReadCatalog(reader);
+					break;
+				case "popular":
+					entry.Popular = ReadStringSequence(reader);
+					break;
+				case "usage":
+					ReadLocatedString(reader, out var usageValue, out _, out _);
+					entry.Usage = usageValue;
 					break;
 				case "file":
 					throw new YamlException(

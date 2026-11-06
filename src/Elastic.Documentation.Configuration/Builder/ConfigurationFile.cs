@@ -634,7 +634,9 @@ public record ConfigurationFile
 			Repository = repository,
 			Children = children,
 			ApiContentDirectory = apiContentDirectory,
-			CatalogCategories = ResolveCatalogCategories(productKey, entry, context)
+			CatalogCategories = ResolveCatalogCategories(productKey, entry, context),
+			PopularOperations = [.. entry.Popular.Where(static id => !string.IsNullOrWhiteSpace(id)).Select(static id => id.Trim())],
+			Usage = string.IsNullOrWhiteSpace(entry.Usage) ? null : entry.Usage.Trim()
 		};
 	}
 

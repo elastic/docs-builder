@@ -39,6 +39,16 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public HtmlString? DescriptionRemainder => DescriptionParts.Remainder is { } rest ? new HtmlString(rest) : null;
 
+	/// <summary>The configured popular operations that exist in this spec, shown above the grouped index.</summary>
+	public ApiOverviewSection? PopularSection =>
+		field ??= ApiOverviewBuilder.Popular(OverviewRows, RenderContext.PopularOperationIds) is { Count: > 0 } rows
+			? new ApiOverviewSection(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = "Popular operations" }, rows)
+			: null;
+
+	/// <summary>The configured how-to-use sentence, or null when the product has none.</summary>
+	public HtmlString? UsageHtml =>
+		string.IsNullOrWhiteSpace(RenderContext.LandingUsage) ? null : RenderMarkdown(RenderContext.LandingUsage);
+
 	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
 
 	public bool HasFacts => Servers.Count > 0 || Version is not null;

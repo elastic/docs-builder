@@ -587,7 +587,8 @@
 	margin: 0 0 32px;
 }
 
-.api-index .api-index-group-title {
+.api-index .api-index-group-title,
+.api-popular .api-index-group-title {
 	display: flex;
 	align-items: baseline;
 	justify-content: space-between;
@@ -616,6 +617,23 @@
 	color: var(--color-subdued, #516381);
 	font-size: 14px;
 	font-weight: 400;
+}
+
+.api-index .api-index-group-description {
+	margin: 0;
+	padding: 6px 0 4px;
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+/* Popular operations: the same rows as the index, set in columns above it. */
+.api-popular {
+	margin: 24px 0 8px;
+}
+
+.api-popular .api-index-group {
+	margin-bottom: 0;
 }
 
 #markdown-content .api-index-list {
@@ -682,6 +700,17 @@
 @container api-group (min-width: 84rem) {
 	.api-index {
 		column-count: 3;
+	}
+}
+
+@container api-group (min-width: 44rem) {
+	.api-popular .api-index-list {
+		column-count: 2;
+		column-gap: 40px;
+	}
+
+	.api-popular .api-index-list > li {
+		break-inside: avoid;
 	}
 }
 

@@ -821,9 +821,43 @@ public class TagMetadataTests
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
+	[Test]
+	public async Task ProductLanding_Render_ShowsPopularOperationsAndGroupLeadSentences()
+	{
+		var openApiJson = new MinimalSpec(
+			[new("/_bulk", "bulk", ["document"]), new("/_search", "search", ["search"]), new("/_reindex", "reindex", ["document"])],
+			[
+				new(
+					"document",
+					DisplayName: "Document",
+					Description: "The document APIs enable you to create and manage documents.\n\nA second paragraph stays out."
+				),
+				new("search", DisplayName: "Search")
+			]
+		)
+		{ Title = "Elasticsearch", Version = "1.0", ResponseDescription = "ok" }.ToJson();
+
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var navigation = generator.CreateNavigation("elasticsearch", document);
+
+		var html = await RenderIndexAsync(
+			navigation.Index,
+			navigation,
+			popular: ["reindex", "missing-operation", "search", "reindex"],
+			usage: "Read the [REST APIs](/docs/reference/elasticsearch/rest-apis)."
+		);
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
+	}
+
 	private static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
 
-	private static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
+	private static async Task<string> RenderIndexAsync(
+		ILeafNavigationItem<IApiModel> index,
+		INavigationItem current,
+		IReadOnlyList<string>? popular = null,
+		string? usage = null
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var context = TestHelpers.CreateBuildContext(collector);
@@ -832,7 +866,13 @@ public class TagMetadataTests
 			new OpenApiDocument(),
 			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
 		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+		{
+			NavigationHtml = string.Empty,
+			CurrentNavigation = current,
+			MarkdownRenderer = PassthroughMarkdownRenderer.Instance,
+			PopularOperationIds = popular ?? [],
+			LandingUsage = usage
+		};
 
 		var fs = new MockFileSystem();
 		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))

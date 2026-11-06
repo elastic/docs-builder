@@ -28,6 +28,12 @@
 	<div class="docs-measure">
 		<p>@Model.DescriptionLead</p>
 	</div>
+	@if (Model.UsageHtml is { } usage)
+	{
+		<div class="docs-measure api-landing-usage">
+			@usage
+		</div>
+	}
 	@if (Model.HasFacts)
 	{
 		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "inline")))
@@ -36,6 +42,12 @@
 	{
 		<div class="docs-measure">
 			@remainder
+		</div>
+	}
+	@if (Model.PopularSection is { } popular)
+	{
+		<div class="api-popular">
+			@(await RenderPartialAsync<_ApiIndexGroup, ApiIndexGroupModel>(new ApiIndexGroupModel(popular, apiHxAttrs)))
 		</div>
 	}
 	<div class="api-overview">

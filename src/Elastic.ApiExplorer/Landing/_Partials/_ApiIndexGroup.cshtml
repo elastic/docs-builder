@@ -17,6 +17,10 @@
 			}
 			<span class="api-index-count">@Model.Group.Items.Count</span>
 		</h3>
+		@if (heading.Description is { } description)
+		{
+			<p class="api-index-group-description">@description</p>
+		}
 	}
 	@* Every row stays in the page: the browser's find-in-page only matches what is rendered. *@
 	<ul class="api-index-list">

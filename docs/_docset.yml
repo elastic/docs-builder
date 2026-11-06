@@ -52,6 +52,19 @@ api:
     - spec: elasticsearch.json
       product: elasticsearch
       repository: elastic/elasticsearch-specification
+      usage: Send requests over HTTP with an API key in the `Authorization` header. For request conventions such as common options, response filtering and error handling, refer to [Elasticsearch REST APIs](https://www.elastic.co/docs/reference/elasticsearch/rest-apis).
+      popular:
+        - reindex
+        - bulk
+        - search
+        - cat-indices
+        - cluster-health
+        - indices-create
+        - indices-delete
+        - delete-by-query
+        - update
+        - scroll
+        - security-create-api-key
       catalog:
         categories:
           - self
