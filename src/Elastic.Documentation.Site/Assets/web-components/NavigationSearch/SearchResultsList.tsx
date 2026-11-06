@@ -1,4 +1,5 @@
 import { config } from '../../config'
+import { DeprecatedBadge, deprecatedTitleText } from './DeprecatedBadge'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { RouteLine } from './RouteLine'
@@ -333,6 +334,12 @@ const SearchResultRow = ({
                         }
                     }
                 }
+
+                ${
+                    result.deprecated
+                        ? `.route-line .api-method { filter: saturate(0.4); }`
+                        : ''
+                }
             `}
         >
             <div
@@ -343,7 +350,7 @@ const SearchResultRow = ({
                 `}
             >
                 <Breadcrumb items={breadcrumbItems} />
-                <Title text={result.title} />
+                <Title text={result.title} deprecated={result.deprecated} />
                 {route ? (
                     <RouteLine route={route} tokens={tokens} />
                 ) : (
@@ -436,7 +443,13 @@ const Breadcrumb = ({ items }: { items: string[] }) => {
     )
 }
 
-const Title = ({ text }: { text: string }) => {
+const Title = ({
+    text,
+    deprecated,
+}: {
+    text: string
+    deprecated?: boolean
+}) => {
     const { euiTheme } = useEuiTheme()
 
     return (
@@ -454,9 +467,12 @@ const Title = ({ text }: { text: string }) => {
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
+
+                ${deprecated ? deprecatedTitleText : ''}
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />
+            {deprecated && <DeprecatedBadge />}
         </div>
     )
 }

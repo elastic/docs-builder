@@ -49,7 +49,9 @@ public partial class DefaultSearchService<TDocument>(
 		"api.routes",
 		// the navigation search points a hit into the reader's version tree
 		"api.key",
-		"api.trees"
+		"api.trees",
+		// optional, so the required-member test cannot catch its absence; without it every hit reads as current
+		"api.deprecated"
 	];
 
 	private static readonly string[] SearchSourceIncludes =

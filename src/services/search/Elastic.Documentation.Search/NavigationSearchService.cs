@@ -72,6 +72,7 @@ public partial class NavigationSearchService(
 			Title = item.Title,
 			Description = item.Description,
 			Routes = item.Document.Api?.Routes ?? [],
+			Deprecated = item.Document.Api?.Deprecated ?? false,
 			Properties = item.Properties.Select(property => ToNavigationSearchProperty(property, url)).ToArray(),
 			Parents = (item.Document.Parents ?? []).Select(
 				p => new NavigationSearchResultItemParent { Title = p.Title, Url = rebase?.Apply(p.Path) ?? p.Path }

@@ -176,6 +176,16 @@
 	color: var(--color-text-muted);
 }
 
+.nav-tree__link--deprecated .nav-tree__text {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+/* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
+.nav-tree__link--deprecated .method {
+	filter: saturate(0.4);
+}
+
 .nav-tree__separator {
 	height: var(--border-width);
 	margin: var(--space-2) var(--space-3);

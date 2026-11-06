@@ -5,10 +5,13 @@
 namespace Elastic.Documentation.Navigation;
 
 /// <summary>
-/// Navigation model for an API operation leaf that exposes its HTTP method for sidebar chrome.
+/// Navigation model for an API operation leaf that exposes its HTTP method and deprecation for sidebar chrome.
 /// </summary>
-public interface IHttpMethodNavigationModel : INavigationModel
+public interface IApiOperationNavigationModel : INavigationModel
 {
 	/// <summary>Lowercase HTTP method name (e.g. <c>get</c>, <c>post</c>).</summary>
 	string HttpMethod { get; }
+
+	/// <summary>True when the spec marks the operation deprecated.</summary>
+	bool Deprecated { get; }
 }
