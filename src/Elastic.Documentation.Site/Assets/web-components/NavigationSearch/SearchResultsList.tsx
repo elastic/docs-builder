@@ -1,4 +1,5 @@
 import { config } from '../../config'
+import { DeprecatedBadge, deprecatedTitleText } from './DeprecatedBadge'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { RouteLine } from './RouteLine'
@@ -467,53 +468,11 @@ const Title = ({
                     color: ${euiTheme.colors.textParagraph};
                 }
 
-                ${
-                    deprecated
-                        ? `& > span:first-child { text-decoration: line-through; opacity: 0.7; }`
-                        : ''
-                }
+                ${deprecated ? deprecatedTitleText : ''}
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />
-            {deprecated && (
-                <span
-                    className="api-title-badges"
-                    css={css`
-                        /* An atomic inline, so the row's hover underline stops at the title text. Middle alignment lands 1px low beside the bold title. */
-                        display: inline-flex;
-                        align-items: center;
-                        position: relative;
-                        top: -1px;
-                        margin-left: ${euiTheme.size.s};
-                        vertical-align: middle;
-                        line-height: 1;
-                        font-weight: ${euiTheme.font.weight.regular};
-                        .applies {
-                            display: inline-flex;
-                            margin-right: 0;
-                        }
-                        .applicable-info {
-                            display: inline-flex;
-                            align-items: center;
-                            height: calc(
-                                ${euiTheme.size.base} + ${euiTheme.size.xxs}
-                            );
-                            padding: 0 ${euiTheme.size.s};
-                            line-height: 1;
-                        }
-                        .applicable-name {
-                            font-size: 10px;
-                            line-height: 1;
-                        }
-                    `}
-                >
-                    <span className="applies applies-inline">
-                        <span className="applicable-info api-badge--danger">
-                            <span className="applicable-name">Deprecated</span>
-                        </span>
-                    </span>
-                </span>
-            )}
+            {deprecated && <DeprecatedBadge />}
         </div>
     )
 }
