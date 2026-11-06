@@ -50,17 +50,30 @@
 									{
 										<p class="get-started__option-desc">@(new HtmlString(option.DescriptionHtml))</p>
 									}
-									@if (!string.IsNullOrWhiteSpace(option.Code))
+									@if (option.HasCode)
 									{
-										<div class="get-started__code">
-											<span class="get-started__prompt" aria-hidden="true">$</span>
-											<pre><code class="language-@(string.IsNullOrWhiteSpace(option.Language) ? "text" : option.Language)">@option.Code</code></pre>
-											<button class="get-started__copy" type="button" data-copy-text="@option.Code" hidden>Copy</button>
+										var language = string.IsNullOrWhiteSpace(option.Language) ? "text" : option.Language;
+										IReadOnlyList<Elastic.Markdown.Myst.Directives.Hub.GetStartedCommandViewModel> commands = string.IsNullOrWhiteSpace(option.Code)
+											? option.Commands
+											: [new() { Label = null, Code = option.Code }];
+										<div class="get-started__commands">
+											@foreach (var command in commands)
+											{
+												@if (!string.IsNullOrWhiteSpace(command.Label))
+												{
+													<span class="get-started__command-label">@command.Label</span>
+												}
+												<div class="get-started__code">
+													<span class="get-started__prompt" aria-hidden="true">$</span>
+													<pre><code class="language-@language">@command.Code</code></pre>
+													<button class="get-started__copy" type="button" data-copy-text="@command.Code" hidden>Copy</button>
+												</div>
+											}
 										</div>
 									}
 									@if (!string.IsNullOrWhiteSpace(option.Url))
 									{
-										<a class="@(string.IsNullOrWhiteSpace(option.Code) ? "btn btn--primary btn--sm" : "get-started__link")" @Model.LinkAttributes(option.Url)>@(string.IsNullOrWhiteSpace(option.UrlLabel) ? (string.IsNullOrWhiteSpace(option.Code) ? "Get started" : "Learn more") : option.UrlLabel)</a>
+										<a class="@(option.HasCode ? "get-started__link" : "btn btn--primary btn--sm")" @Model.LinkAttributes(option.Url)>@(string.IsNullOrWhiteSpace(option.UrlLabel) ? (option.HasCode ? "Learn more" : "Get started") : option.UrlLabel)</a>
 									}
 								</div>
 							}

@@ -384,8 +384,35 @@
 		line-height: 1.45;
 	}
 	.hub-get-started .hub-get-started-option .hub-get-started-install,
+	.hub-get-started .hub-get-started-option .hub-get-started-commands,
 	.hub-get-started .hub-get-started-option-btn {
 		margin-top: auto;
+	}
+	/* Labeled variants of one command, stacked, each in its own copyable chip. */
+	.hub-get-started .hub-get-started-commands {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	/* Stacked chips share one width, so their edges line up. */
+	.hub-get-started .hub-get-started-commands .hub-get-started-install {
+		width: 100%;
+		margin-top: 0;
+	}
+	.hub-get-started .hub-get-started-command-label {
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--color-ink-light, #4c4c4c);
+	}
+	.hub-get-started .hub-get-started-command-label:not(:first-child) {
+		margin-top: 8px;
+	}
+	/* A command stack is taller than a button, so a button beside one stays under its own
+	   text instead of dropping to the bottom of the row. */
+	.hub-get-started
+		.hub-get-started-fork:has(.hub-get-started-commands)
+		.hub-get-started-option-btn {
+		margin-top: 0;
 	}
 	/* Same height as the command chip, and smaller than the body type. */
 	.hub-get-started .hub-get-started-option-btn {

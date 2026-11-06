@@ -98,6 +98,21 @@ A step takes one of three shapes.
       url-label: How to publish
 ```
 
+When an option offers variants of one command, use `commands` instead of `code`. Each command takes a short `label` and gets its own code block, so each copy button copies exactly one command. All commands use the option's `language`.
+
+```yaml
+- label: Run locally
+  description: Spin up Elasticsearch on your machine for development with `start-local`.
+  commands:
+    - label: Elasticsearch only
+      code: curl -fsSL https://elastic.co/start-local | sh -s -- --esonly
+    - label: Elasticsearch and Kibana
+      code: curl -fsSL https://elastic.co/start-local | sh
+  language: sh
+```
+
+An option takes either `code` or `commands`, not both.
+
 Steps are numbered automatically, in source order. Each number sits to the left of its title.
 
 ## Links
