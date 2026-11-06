@@ -120,6 +120,11 @@
 	font-size: 0.625rem;
 }
 
+/* .badge sets its own display, which would override the hidden attribute. */
+.search-result__deprecated[hidden] {
+	display: none;
+}
+
 .search-result__excerpt {
 	color: var(--color-text-muted);
 	font-size: var(--text-sm);
