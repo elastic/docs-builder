@@ -82,7 +82,7 @@ internal static class ApiMarkdownFrontMatter
 		_ = markdown.AppendLine("type: api");
 		_ = markdown.AppendLine($"title: {meta.Title}");
 		if (!string.IsNullOrWhiteSpace(meta.Description))
-			_ = markdown.AppendLine($"description: {meta.Description}");
+			_ = markdown.AppendLine($"description: {YamlScalar(meta.Description)}");
 
 		_ = markdown.AppendLine($"url: {meta.Url}");
 		_ = markdown.AppendLine($"resource: {meta.Url}");
