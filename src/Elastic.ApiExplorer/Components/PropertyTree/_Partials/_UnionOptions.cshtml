@@ -110,9 +110,9 @@
 				if (collapsible)
 				{
 					<div class="expand-toggle-row union-expand-toggle">
-						<button class="expand-toggle">
+						<button class="expand-toggle" data-count="@variant.NestedCount">
 							<span class="toggle-icon">@(expanded ? "−" : "+")</span>
-							<span class="toggle-label">@(expanded ? "hide" : "show") properties</span>
+							<span class="toggle-label">@PropertyToggle.Label(expanded, variant.NestedCount)</span>
 						</button>
 					</div>
 				}
