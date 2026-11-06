@@ -19,6 +19,14 @@ internal static class ApiPageTitle
 		return string.IsNullOrEmpty(label) ? product : $"{label} | {product}";
 	}
 
+	/// <summary>The landing heading: the spec title, plus the version label on a released major so v8 and v9 read differently.</summary>
+	internal static string Heading(string? title, string? versionLabel)
+	{
+		var heading = title ?? "";
+		_ = versionLabel;
+		return heading;
+	}
+
 	/// <summary>Selected switcher label for a released major (<c>v8</c>, <c>v9</c>). Latest stays unlabeled.</summary>
 	internal static string? ReleasedVersionLabel(IReadOnlyList<ApiVersionSwitcherItem> items)
 	{

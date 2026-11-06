@@ -64,6 +64,35 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	[Arguments("v8", "Elasticsearch API (v8)")]
+	[Arguments("v9", "Elasticsearch API (v9)")]
+	[Arguments("latest", "Elasticsearch API")]
+	public void VersionLanding_Heading_CarriesReleasedVersion(string version, string expected)
+	{
+		var document = new OpenApiDocument { Info = new OpenApiInfo { Title = "Elasticsearch API", Version = version } };
+		var context = Versioned(
+			new ApiRenderContext(
+				fixture.Context,
+				document,
+				new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
+			)
+			{
+				NavigationHtml = string.Empty,
+				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
+			},
+			version
+		);
+		var viewModel = new LandingViewModel(context) { Landing = new ApiLanding(), ApiInfo = document.Info, OverviewRows = [] };
+
+		viewModel.Heading.Should().Be(expected);
+		LandingCommonMark
+			.Product(document.Info, [], "/api/doc/elasticsearch", ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems))
+			.Should()
+			.StartWith($"# {expected}");
+	}
+
+	[Test]
 	[Arguments("v8", "Elasticsearch API docs (v8)")]
 	[Arguments("v9", "Elasticsearch API docs (v9)")]
 	public void VersionLanding_Title_UsesProductNameNotSpecTitle(string version, string expected)
