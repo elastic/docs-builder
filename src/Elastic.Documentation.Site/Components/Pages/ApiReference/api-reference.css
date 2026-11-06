@@ -664,6 +664,28 @@
 	overflow-wrap: anywhere;
 }
 
+/* The path sits under the title, so a familiar endpoint is easy to spot. The chip lines up with the title line. */
+#markdown-content a.api-index-item:has(.api-index-item-path) {
+	align-items: flex-start;
+}
+
+.api-index-item-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+#markdown-content .api-index-item-path {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-text-muted);
+	font-family: var(--font-mono);
+	font-size: 12px;
+	line-height: 16px;
+	overflow-wrap: anywhere;
+}
+
 #markdown-content a.api-index-item:hover,
 #markdown-content a.api-index-item:focus-visible {
 	background: var(--color-surface-sunken);
