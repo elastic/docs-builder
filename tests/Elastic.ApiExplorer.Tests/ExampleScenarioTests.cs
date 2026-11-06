@@ -59,6 +59,25 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_LabelledSampleBecomesItsOwnExampleSharingTheResponses()
+	{
+		var response = new ExampleDisplay("Listing", null, /*lang=json,strict*/ """{"results":[]}""", null);
+		CodeSample[] samples =
+		[
+			new("Console", "GET kbn://api/x?page=1", "language-console"),
+			new("curl", "curl \"$URL/x?page=1\"", "language-curl"),
+			new("curl", "curl \"$URL/x?pinned=true\"", "language-curl") { ExampleTitle = "Filter to pinned conversations" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [response], samples);
+
+		scenarios.Select(s => s.Title).Should().Equal("Listing", "Filter to pinned conversations");
+		scenarios[0].CodeSamples.Select(c => c.Language).Should().Equal("Console", "curl");
+		scenarios[1].CodeSamples.Should().ContainSingle().Which.Source.Should().Contain("pinned=true");
+		scenarios[1].Responses.Should().HaveCount(scenarios[0].Responses.Count);
+	}
+
+	[Test]
 	public void BuildExampleScenarios_SuffixMatchesTheHumanizedKeyOfAnExampleWithoutSummary()
 	{
 		var first = new ExampleDisplay("First", null, /*lang=json,strict*/ """{"a":1}""", null);
