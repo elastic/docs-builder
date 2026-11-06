@@ -9,6 +9,12 @@ namespace Elastic.Documentation.Links.CrossLinks;
 public interface IUriEnvironmentResolver
 {
 	Uri Resolve(Uri crossLinkUri, string path);
+
+	/// <summary>
+	/// Resolves a page of a floating section, such as an API page. These pages own a URL root at the site root,
+	/// so the repository mappings that <see cref="Resolve"/> applies do not apply to them.
+	/// </summary>
+	Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => Resolve(crossLinkUri, sitePath);
 }
 
 public class IsolatedBuildEnvironmentUriResolver : IUriEnvironmentResolver
@@ -17,6 +23,11 @@ public class IsolatedBuildEnvironmentUriResolver : IUriEnvironmentResolver
 
 	public Uri Resolve(Uri crossLinkUri, string path) =>
 		new(BaseUri, $"elastic/{crossLinkUri.Scheme}/tree/{GetBranch(crossLinkUri)}/{path}");
+
+	// Floating sections are not part of a repository's source tree, so an isolated build links to the published page.
+	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => new(PublishedBaseUri, $"docs/{sitePath}");
+
+	private static Uri PublishedBaseUri { get; } = new("https://www.elastic.co");
 
 	public static string GetBranch(Uri crossLinkUri) => crossLinkUri.Scheme switch
 	{
@@ -41,4 +52,6 @@ public class CodexAwareUriResolver(FrozenSet<string> codexRepositories, bool use
 				? new Uri($"/r/{crossLinkUri.Scheme}/{path}", UriKind.Relative)
 				: new Uri(CodexBaseUri, $"r/{crossLinkUri.Scheme}/{path}")
 			: PublicResolver.Resolve(crossLinkUri, path);
+
+	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => PublicResolver.ResolveSitePath(crossLinkUri, sitePath);
 }

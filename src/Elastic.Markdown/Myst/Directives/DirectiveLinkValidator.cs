@@ -5,6 +5,7 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
 using Markdig.Syntax;
@@ -92,19 +93,8 @@ internal static class DirectiveLinkValidator
 
 		if (IsExternal(trimmed))
 		{
-			if (ApiLinkMatcher.TryGetApiPath(trimmed, out _))
-				context
-					.Build
-					.Collector
-					.EmitApiLink(
-						new ApiLinkReference(
-							trimmed,
-							block.CurrentFile.FullName,
-							block.Line + 1,
-							System.Math.Max(block.Column, 1),
-							trimmed.Length
-						)
-					);
+			if (ApiLinkCheck.GetWarning(context.CrossLinkResolver, trimmed, context.Build.UrlPathPrefix) is { } warning)
+				block.EmitWarning(warning);
 			return url;
 		}
 

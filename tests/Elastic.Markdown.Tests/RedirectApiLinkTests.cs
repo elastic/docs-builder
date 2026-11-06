@@ -5,26 +5,28 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests;
 
 public class RedirectApiLinkTests
 {
 	[Test]
-	public void RedirectToApiPage_RecordsApiLinkAtTheRedirectsFile()
+	public void RedirectToMissingApiPage_WarnsAtTheRedirectsFile()
 	{
 		var collector = BuildDocSet(
 			"""
 			redirects:
-			  'old-api.md': 'https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-upgrade'
+			  'old-api.md': 'https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-gone'
+			  'old-ok.md': 'https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists'
 			  'old-other.md': 'https://www.elastic.co/docs/solutions/search'
 			"""
 		);
 
-		var link = collector.ApiLinks.Should().ContainSingle().Subject;
-		link.Url.Should().Be("https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-upgrade");
-		link.File.Should().EndWith("redirects.yml");
+		collector.HasOneApiWarning("operation-gone");
+		collector.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Warning && d.File.EndsWith("redirects.yml"));
 		collector.Errors.Should().Be(0);
 	}
 

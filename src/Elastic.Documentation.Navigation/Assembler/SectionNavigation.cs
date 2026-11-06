@@ -20,6 +20,12 @@ public class SectionNavigation(string title) : IRootNavigationItem<IDocumentatio
 
 	public string Title { get; } = title;
 
+	/// <summary>
+	/// True for the section that lists the floating sections of one kind, such as the APIs. It is not part of the reading
+	/// order of the docs, so the previous and next links skip it and its sections.
+	/// </summary>
+	public bool IsFloatingHub { get; init; }
+
 	/// Set by <c>SiteNavigation</c> after children are resolved to the first child's index URL.
 	public string Url { get; internal set; } = "/";
 

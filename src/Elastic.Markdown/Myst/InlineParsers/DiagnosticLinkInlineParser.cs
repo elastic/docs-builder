@@ -10,6 +10,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
@@ -155,24 +156,34 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (ValidateExternalUri(link, processor, uri))
 		{
-			RecordApiLink(context, url, link.Line, link.Column);
+			CheckApiLink(context, url, link.Line, link.Column);
 			return;
 		}
 
 		ProcessInternalLink(link, processor, context);
 	}
 
-	internal static void RecordApiLink(ParserContext context, string? url, int zeroBasedLine, int column)
+	internal static void CheckApiLink(ParserContext context, string? url, int zeroBasedLine, int column)
 	{
-		if (context.SkipValidation || !ApiLinkMatcher.TryGetApiPath(url, out _))
+		if (
+			context.SkipValidation
+			|| ApiLinkCheck.GetWarning(context.CrossLinkResolver, url, context.Build.UrlPathPrefix) is not { } warning
+		)
 			return;
 
 		context
 			.Build
 			.Collector
-			.EmitApiLink(
-				new ApiLinkReference(url!, context.MarkdownSourcePath.FullName, zeroBasedLine + 1, Math.Max(column, 1), url!.Length)
-			);
+			.Write(new Diagnostic
+			{
+				Severity = Severity.Warning,
+				File = context.MarkdownSourcePath.FullName,
+				OriginalSourceFile = context.OriginalSourcePath?.FullName,
+				Line = zeroBasedLine + 1,
+				Column = Math.Max(column, 1),
+				Length = url!.Length,
+				Message = warning
+			});
 	}
 
 	private static bool ValidateBasicUrl(LinkInline link, InlineProcessor processor, string? url)

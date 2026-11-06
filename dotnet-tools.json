@@ -44,10 +44,10 @@
       ],
       "rollForward": false
     },
-    "aspire.cli": {
-      "version": "13.5.3",
+    "nullean.snapshots.cli": {
+      "version": "0.4.0",
       "commands": [
-        "aspire"
+        "snap"
       ],
       "rollForward": false
     }

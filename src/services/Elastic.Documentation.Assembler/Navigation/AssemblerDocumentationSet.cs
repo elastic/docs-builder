@@ -3,13 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Floating;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
@@ -24,6 +27,12 @@ public record AssemblerDocumentationSet
 	public BuildContext BuildContext { get; }
 
 	public DocumentationSet DocumentationSet { get; }
+
+	/// <summary>
+	/// Offers the APIs this docset declares, so its navigation tree and <c>links.json</c> have them. It is only set when
+	/// the build renders the API Explorer.
+	/// </summary>
+	internal ApiFloatingSectionProvider? ApiSections { get; }
 
 	public AssemblerDocumentationSet(
 		ILoggerFactory logFactory,
@@ -77,6 +86,15 @@ public record AssemblerDocumentationSet
 		};
 		BuildContext = buildContext;
 
-		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, releaseNotesResolver);
+		if (AssemblerApiSections.IsEnabled(context) && availableExporters.Contains(Exporter.Html))
+			ApiSections = new ApiFloatingSectionProvider(buildContext);
+
+		DocumentationSet = new DocumentationSet(
+			buildContext,
+			logFactory,
+			crossLinkResolver,
+			releaseNotesResolver,
+			ApiSections is null ? null : new FloatingSectionRegistry([ApiSections])
+		);
 	}
 }

@@ -29,25 +29,18 @@ public class SiteNavigationFileTests
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
 
-		siteNav.Should().NotBeNull();
-		siteNav.Phantoms.Should().HaveCount(2);
-		siteNav.Phantoms.ElementAt(0).Source.Should().Be("elasticsearch://reference");
-		siteNav.Phantoms.ElementAt(1).Source.Should().Be("docs-content://");
-
-		siteNav.TableOfContents.Should().HaveCount(3);
-
-		var observability = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		observability.Source.ToString().Should().Be("docs-content://serverless/observability");
-		observability.PathPrefix.Should().Be("/serverless/observability");
-		observability.Children.Should().BeEmpty();
-
-		var search = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		search.Source.ToString().Should().Be("docs-content://serverless/search");
-		search.PathPrefix.Should().Be("/serverless/search");
-
-		var security = siteNav.TableOfContents.ElementAt(2).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		security.Source.ToString().Should().Be("docs-content://serverless/security");
-		security.PathPrefix.Should().Be("/serverless/security");
+		SiteNavDump
+			.ToText(siteNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			phantom  elasticsearch://reference
+			phantom  docs-content://
+			toc  docs-content://serverless/observability  path_prefix="/serverless/observability"
+			toc  docs-content://serverless/search  path_prefix="/serverless/search"
+			toc  docs-content://serverless/security  path_prefix="/serverless/security"
+			"""
+			);
 	}
 
 	[Test]
@@ -68,20 +61,16 @@ public class SiteNavigationFileTests
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
 
-		siteNav.TableOfContents.Should().HaveCount(1);
-
-		var platform = siteNav.TableOfContents.First().Should().BeOfType<SiteTableOfContentsRef>().Which;
-		platform.Source.ToString().Should().Be("docs-content://platform/");
-		platform.PathPrefix.Should().Be("/platform");
-		platform.Children.Should().HaveCount(2);
-
-		var deployment = platform.Children.ElementAt(0);
-		deployment.Source.ToString().Should().Be("docs-content://platform/deployment-guide");
-		deployment.PathPrefix.Should().Be("/platform/deployment");
-
-		var cloud = platform.Children.ElementAt(1);
-		cloud.Source.ToString().Should().Be("docs-content://platform/cloud-guide");
-		cloud.PathPrefix.Should().Be("/platform/cloud");
+		SiteNavDump
+			.ToText(siteNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			toc  docs-content://platform/  path_prefix="/platform"
+			  toc  docs-content://platform/deployment-guide  path_prefix="/platform/deployment"
+			  toc  docs-content://platform/cloud-guide  path_prefix="/platform/cloud"
+			"""
+			);
 	}
 
 	[Test]
@@ -95,10 +84,7 @@ public class SiteNavigationFileTests
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
 
-		siteNav.TableOfContents.Should().HaveCount(1);
-		var ref1 = siteNav.TableOfContents.First().Should().BeOfType<SiteTableOfContentsRef>().Which;
-		ref1.Source.ToString().Should().Be("docs-content://elasticsearch/reference");
-		ref1.PathPrefix.Should().BeEmpty();
+		SiteNavDump.ToText(siteNav).Should().MatchInlineSnapshot("toc  docs-content://elasticsearch/reference  path_prefix=\"\"");
 	}
 
 	[Test]
@@ -115,16 +101,16 @@ public class SiteNavigationFileTests
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
 
-		siteNav.TableOfContents.Should().HaveCount(3);
-
-		var elasticsearch = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		elasticsearch.Source.ToString().Should().Be("elasticsearch://reference/current");
-
-		var kibana = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		kibana.Source.ToString().Should().Be("kibana://reference/8.0");
-
-		var serverless = siteNav.TableOfContents.ElementAt(2).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		serverless.Source.ToString().Should().Be("docs-content://serverless/observability");
+		SiteNavDump
+			.ToText(siteNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			toc  elasticsearch://reference/current  path_prefix=""
+			toc  kibana://reference/8.0  path_prefix=""
+			toc  docs-content://serverless/observability  path_prefix=""
+			"""
+			);
 	}
 
 	[Test]
@@ -143,13 +129,15 @@ public class SiteNavigationFileTests
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
 
-		siteNav.TableOfContents.Should().HaveCount(2);
-
-		var observability = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		observability.Island.Should().BeTrue("island: true must be captured on the SiteTableOfContentsRef");
-
-		var security = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		security.Island.Should().BeFalse("island defaults to false when omitted");
+		SiteNavDump
+			.ToText(siteNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			toc  observability:///  path_prefix="observability" [island]
+			toc  security:///  path_prefix="security"
+			"""
+			);
 	}
 
 	[Test]
@@ -202,18 +190,17 @@ public class SiteNavigationFileTests
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
 
-		siteNav.TableOfContents.Should().HaveCount(2);
-
-		var guides = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteSectionRef>().Which;
-		guides.Title.Should().Be("Guides");
-		guides.IsExternal.Should().BeFalse();
-		guides.ExternalUrl.Should().BeNull();
-		guides.Children.Should().HaveCount(2);
-		guides.Children.ElementAt(0).Source.ToString().Should().Be("docs-content://get-started/");
-		guides.Children.ElementAt(1).Source.ToString().Should().Be("docs-content://solutions/");
-
-		var reference = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
-		reference.Source.ToString().Should().Be("docs-content://reference/");
+		SiteNavDump
+			.ToText(siteNav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			section  "Guides"
+			  toc  docs-content://get-started/  path_prefix=""
+			  toc  docs-content://solutions/  path_prefix=""
+			toc  docs-content://reference/  path_prefix="reference"
+			"""
+			);
 	}
 
 	[Test]
@@ -229,13 +216,7 @@ public class SiteNavigationFileTests
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
 
-		siteNav.TableOfContents.Should().HaveCount(1);
-
-		var apis = siteNav.TableOfContents.First().Should().BeOfType<SiteSectionRef>().Which;
-		apis.Title.Should().Be("APIs");
-		apis.IsExternal.Should().BeTrue();
-		apis.ExternalUrl.Should().Be("https://www.elastic.co/docs/api/");
-		apis.Children.Should().BeEmpty();
+		SiteNavDump.ToText(siteNav).Should().MatchInlineSnapshot("section  \"APIs\" external=https://www.elastic.co/docs/api/");
 	}
 
 	/// <summary>

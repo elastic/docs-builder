@@ -5,7 +5,11 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Markdig.Syntax;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -140,20 +144,29 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersPrLinksForPublicRepo()
-	{
-		// elasticsearch is a public repo, so PR link should be visible in the output
-		Html.Should().Contain("123456");
-		Html.Should().Contain("github.com");
-	}
-
-	[Test]
-	public void RendersIssueLinksForPublicRepo()
-	{
-		// elasticsearch is public, so issue links should be visible
-		Html.Should().Contain("78901");
-		Html.Should().Contain("78902");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature with PR and issues.
+				<a href="https://github.com/elastic/elasticsearch/pull/123456">#123456</a>
+				<a href="https://github.com/elastic/elasticsearch/issues/78901">#78901</a>
+				<a href="https://github.com/elastic/elasticsearch/issues/78902">#78902</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -193,11 +206,11 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Simulate that 'elasticsearch' is a private repository
-		Block!.PrivateRepositories.Add("elasticsearch");
+		block.PrivateRepositories.Add("elasticsearch");
 	}
 
 	[Test]
@@ -280,11 +293,11 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Simulate that 'elasticsearch' is a private repository
-		Block!.PrivateRepositories.Add("elasticsearch");
+		block.PrivateRepositories.Add("elasticsearch");
 	}
 
 	[Test]
@@ -355,11 +368,11 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Configure a different repo as private - not elasticsearch
-		Block!.PrivateRepositories.Add("private-internal-repo");
+		block.PrivateRepositories.Add("private-internal-repo");
 	}
 
 	[Test]
@@ -431,11 +444,11 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 		);
 	}
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Kibana is a private repo
-		Block!.PrivateRepositories.Add("kibana");
+		block.PrivateRepositories.Add("kibana");
 	}
 
 	[Test]
@@ -526,11 +539,11 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 		);
 	}
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Only unrelated repos are private - elasticsearch and kibana are public
-		Block!.PrivateRepositories.Add("some-other-private-repo");
+		block.PrivateRepositories.Add("some-other-private-repo");
 	}
 
 	[Test]
@@ -582,10 +595,10 @@ public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
-		Block!.PrivateRepositories.Add("elasticsearch");
+		var block = document.Descendants<ChangelogBlock>().First();
+		block.PrivateRepositories.Add("elasticsearch");
 	}
 
 	[Test]
@@ -771,7 +784,14 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 	public void LinkVisibilityFallsBackToAuto() => Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
 
 	[Test]
-	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
+	public void EmitsWarning() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :link-visibility: value 'banana'. Valid values are: auto, keep-links, hide-links. Using auto."
+			);
 }
 
 /// <summary>
@@ -830,11 +850,11 @@ public class ChangelogCdnLinkVisibilityAutoTests() : DirectiveTest<ChangelogBloc
 				""")
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
-		Block!.PrivateRepositories.Add("cloud");
-		Block!.PrivateRepositories.Add("kibana");
+		var block = document.Descendants<ChangelogBlock>().First();
+		block.PrivateRepositories.Add("cloud");
+		block.PrivateRepositories.Add("kibana");
 	}
 
 	[Test]

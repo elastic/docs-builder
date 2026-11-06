@@ -28,7 +28,7 @@ public class AutoLinkBuilderExtension : IMarkdownExtension
 	public void Setup(MarkdownPipelineBuilder pipeline)
 	{
 		_ = pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AutoLinkInlineParser());
-		_ = pipeline.InlineParsers.InsertBefore<AutolinkInlineParser>(new AngleBracketApiLinkRecorder());
+		_ = pipeline.InlineParsers.InsertBefore<AutolinkInlineParser>(new AngleBracketApiLinkChecker());
 	}
 
 	public void Setup(MarkdownPipeline pipeline, Markdig.Renderers.IMarkdownRenderer renderer)
@@ -91,7 +91,7 @@ public class AutoLinkInlineParser : InlineParser
 		processor.Inline = linkInline;
 
 		if (processor.Block is not CommentBlock)
-			DiagnosticLinkInlineParser.RecordApiLink(context, url, line, column);
+			DiagnosticLinkInlineParser.CheckApiLink(context, url, line, column);
 
 		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
 		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))
@@ -235,12 +235,12 @@ public class AutoLinkInlineParser : InlineParser
 }
 
 /// <summary>
-/// Records <c>&lt;https://...&gt;</c> links that point at API reference pages. It never consumes input, so Markdig's own
+/// Checks <c>&lt;https://...&gt;</c> links that point at API reference pages. It never consumes input, so Markdig's own
 /// autolink parser still creates the link.
 /// </summary>
-public class AngleBracketApiLinkRecorder : InlineParser
+public class AngleBracketApiLinkChecker : InlineParser
 {
-	public AngleBracketApiLinkRecorder() => OpeningCharacters = ['<'];
+	public AngleBracketApiLinkChecker() => OpeningCharacters = ['<'];
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
@@ -260,7 +260,7 @@ public class AngleBracketApiLinkRecorder : InlineParser
 			return false;
 
 		_ = processor.GetSourcePosition(slice.Start, out var line, out var column);
-		DiagnosticLinkInlineParser.RecordApiLink(processor.GetContext(), url, line, column);
+		DiagnosticLinkInlineParser.CheckApiLink(processor.GetContext(), url, line, column);
 		return false;
 	}
 }

@@ -7,6 +7,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -64,8 +66,16 @@ public class DuplicateHandlingTests() : RenderChangelogTestBase()
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  Changelog file '1755268130-duplicate.yaml' appears in multiple bundles: {repo}/Guid_1/bundle1.yaml, {repo}/Guid_1/bundle2.yaml
+			warning  PR '100' appears in multiple bundles: {repo}/Guid_1/bundle1.yaml, {repo}/Guid_1/bundle2.yaml
+			"""
+			);
 	}
 
 	[Test]
@@ -110,13 +120,12 @@ public class DuplicateHandlingTests() : RenderChangelogTestBase()
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains("appears multiple times in the same bundle") && d.File ==
-					bundleFile
+			.MatchInlineSnapshot(
+				"warning {repo}/Guid_1/bundle.yaml Changelog file '1755268130-test-feature.yaml' appears multiple times in the same bundle"
 			);
 	}
 
@@ -181,7 +190,10 @@ public class DuplicateHandlingTests() : RenderChangelogTestBase()
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("warning  PR '100' appears in multiple bundles: {repo}/Guid_1/bundle1.yaml, {repo}/Guid_1/bundle2.yaml");
 	}
 }

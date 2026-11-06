@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Versions;
+using Nullean.Snapshots;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -75,6 +76,32 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Export_FieldNames_IndexTheirWords()
+	{
+		var (_, entries) = await IndexRequestBody(
+			"""
+			"unrated_docs":{"type":"integer"},
+			"indexPattern":{"type":"string"},
+			"min-score":{"type":"number"},
+			"hits":{"type":"array","items":{"type":"object","properties":{"total_hits":{"type":"integer"}}}}
+			"""
+		);
+
+		string
+			.Join('\n', entries.Select(p => $"{p.Path} -> {p.NameWords}"))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			unrated_docs -> unrated docs
+			indexPattern -> index pattern
+			min-score -> min score
+			hits -> hits
+			hits[].total_hits -> total hits
+			"""
+			);
+	}
+
+	[Test]
 	public async Task Export_NestedDictionaryAndUnion_IndexesEachRowsParent()
 	{
 		var (_, entries) = await IndexRequestBody(NestedDictionaryAndUnionProperties);
@@ -87,6 +114,16 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 		entries.Single(p => p.Path == "rescore[].query").Parent.Should().Be("rescore");
 		entries.Single(p => p.Path == "pets[].owner").Parent.Should().Be("pets");
 		entries.Single(p => p.Path == "pets[].owner.name").Parent.Should().Be("pets.owner");
+	}
+
+	[Test]
+	public async Task Export_MarkedPaths_IndexesPathWordsWithoutMarkers()
+	{
+		var (_, entries) = await IndexRequestBody(NestedDictionaryAndUnionProperties);
+
+		entries.Single(p => p.Path == "labels.<string>.value").PathWords.Should().Be("labels value");
+		entries.Single(p => p.Path == "pets[].owner.name").PathWords.Should().Be("pets owner name");
+		entries.Single(p => p.Path == "flight").PathWords.Should().Be("flight");
 	}
 
 	[Test]
@@ -119,7 +156,9 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 				}
 			}
 		};
-		var documents = new OpenApiDocumentExporter(versions).ConvertToDocuments(fixture.Document, "fixture").ToArray();
+		var documents = new OpenApiDocumentExporter(versions)
+			.ConvertToDocuments(new IndexedTree("fixture", "fixture", "main", fixture.Document))
+			.ToArray();
 		var propertyCount = 0;
 		foreach (var document in documents)
 		{

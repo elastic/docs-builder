@@ -17,6 +17,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -136,12 +137,14 @@ public class AssemblerBuildService(
 		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
+		using var apiSections = AssemblerApiSections.For(assembleContext, assembleSources, exporters);
 		var navigation = new SiteNavigation(
 			siteNavigationFile,
 			assembleContext,
 			documentationSets,
 			assembleContext.Environment.PathPrefix,
-			navigationPreviewEnabled
+			navigationPreviewEnabled,
+			new FloatingSectionRegistry([apiSections])
 		);
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
@@ -151,6 +154,13 @@ public class AssemblerBuildService(
 			|| assembleContext.Collector.Errors > 0
 		)
 			return false;
+
+		// AssembleAsync has already resolved the docsets' trees, before any generator existed, so their API sections
+		// stayed empty. Attach the generators, then resolve the floating sections again.
+		_ = apiSections.EnsureGenerators(logFactory, assembleContext, navigation.TopNav);
+		await Task.WhenAll(
+			documentationSets.Select(n => n.FloatingSections.Select(section => section.ResolveAsync(ctx))).SelectMany(t => t)
+		);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
@@ -172,30 +182,12 @@ public class AssemblerBuildService(
 		if (assembleContext.WriteFileSystem.File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
-		IReadOnlyList<ApiCatalogEntry> catalogEntries = [];
 		if (exporters.Contains(Exporter.Html))
 		{
 			var openApiStopwatch = Stopwatch.StartNew();
-			var openApiResult = await AssemblerOpenApiBuildStep.BuildAsync(
-				logFactory,
-				assembleContext,
-				assembleSources,
-				navigation.TopNav,
-				ctx
-			);
-			catalogEntries = openApiResult.CatalogEntries;
+			_ = await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, apiSections, navigation.TopNav, ctx);
 			openApiStopwatch.Stop();
 			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
-
-			var apiLinkReportPath = await ApiLinkValidator.ValidateAsync(
-				collector,
-				openApiResult.GeneratedUrls,
-				assembleContext.WriteFileSystem,
-				assembleContext.OutputDirectory.FullName,
-				ctx
-			);
-			if (apiLinkReportPath is not null)
-				await githubActionsService.SetOutputAsync("api-link-report-path", apiLinkReportPath);
 
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
 			// Production sitemap with correct content_last_updated dates is generated via
@@ -227,7 +219,7 @@ public class AssemblerBuildService(
 		{
 			_logger.LogInformation("Enhancing llms.txt with navigation structure");
 			var llmsEnhancer = new LlmsNavigationEnhancer();
-			await EnhanceLlmsTxtFile(assembleContext, navigation, llmsEnhancer, catalogEntries, ctx);
+			await EnhanceLlmsTxtFile(assembleContext, navigation, llmsEnhancer, ctx);
 		}
 
 		await collector.StopAsync(ctx);
@@ -262,7 +254,6 @@ public class AssemblerBuildService(
 		AssembleContext context,
 		SiteNavigation navigation,
 		LlmsNavigationEnhancer enhancer,
-		IReadOnlyList<ApiCatalogEntry> catalogEntries,
 		Cancel ctx
 	)
 	{
@@ -276,10 +267,9 @@ public class AssemblerBuildService(
 		// Assembler always uses the production URL as canonical base URL
 		var canonicalBaseUrl = new Uri(context.Environment.Uri);
 		var navigationSections = enhancer.GenerateNavigationSections(navigation, canonicalBaseUrl);
-		var apiSection = enhancer.GenerateApiSection(catalogEntries, canonicalBaseUrl);
 
 		// Append the navigation sections to the existing boilerplate
-		var enhancedContent = existingContent + Environment.NewLine + navigationSections + apiSection;
+		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
 
 		await context.WriteFileSystem.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
 	}

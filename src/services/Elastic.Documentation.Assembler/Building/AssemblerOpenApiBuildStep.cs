@@ -24,49 +24,33 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public static class AssemblerOpenApiBuildStep
 {
-	public static async Task<AssemblerOpenApiResult> BuildAsync(
+	public static async Task<IReadOnlyList<ApiCatalogEntry>> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
-		AssembleSources assembleSources,
+		AssemblerApiSections apiSections,
 		TopNavRenderModel? siteTopNav,
-		Cancel ctx
+		Cancel ctx,
+		VersionIndexClient? versionIndexClient = null
 	)
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
-		var env = assembleContext.Environment;
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in env.FeatureFlags)
-			features.Set(key, value);
-
-		if (!features.AssemblerApiExplorerEnabled)
-		{
-			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return AssemblerOpenApiResult.Empty;
-		}
-
-		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
+		var owners = apiSections.Owners;
 		if (owners.Count == 0)
 		{
-			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
-			return AssemblerOpenApiResult.Empty;
+			logger.LogInformation(
+				"Skipping OpenAPI generation: the assembler-api-explorer feature flag is disabled or no API declarations were found in assembled docsets"
+			);
+			return [];
 		}
 
 		var stopwatch = Stopwatch.StartNew();
 		var catalogEntries = new List<ApiCatalogEntry>();
-		using var versionIndexClient = new VersionIndexClient();
 
-		var planned = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(owners.Count);
-		foreach (var owner in owners)
-		{
-			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
-			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
-			planned.Add(
-				(owner, new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient)
-				{
-					SiteTopNav = siteTopNav
-				})
-			);
-		}
+		// The build service creates the generators before the docsets resolve their trees. A standalone call creates them here.
+		var planned = apiSections.EnsureGenerators(logFactory, assembleContext, siteTopNav, versionIndexClient);
+
+		// The roots of the site navigation exist already. This fills their children from the trees the pages render from below.
+		await apiSections.ResolveAsync(ctx).ConfigureAwait(false);
 
 		var hubEntries = new List<ApiCatalogEntry>();
 		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -92,7 +76,7 @@ public static class AssemblerOpenApiBuildStep
 				logFactory,
 				catalogContext,
 				new DocumentationGenerator(owners[0].Set.DocumentationSet, logFactory).MarkdownStringRenderer,
-				versionIndexClient
+				apiSections.VersionIndexClient
 			)
 			{ SiteTopNav = siteTopNav };
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
@@ -105,8 +89,7 @@ public static class AssemblerOpenApiBuildStep
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
 			stopwatch.ElapsedMilliseconds
 		);
-		var generatedUrls = planned.SelectMany(p => p.Generator.GeneratedUrls).ToHashSet(StringComparer.Ordinal);
-		return new AssemblerOpenApiResult(catalogEntries, generatedUrls);
+		return catalogEntries;
 	}
 
 	private static async Task WriteApiLlmsTxt(AssembleContext assembleContext, IReadOnlyList<ApiCatalogEntry> catalogEntries, Cancel ctx)
@@ -157,17 +140,6 @@ public static class AssemblerOpenApiBuildStep
 
 		return owners;
 	}
-
-	private static void ApplyFeatureFlags(AssemblerDocumentationSet set, IReadOnlyDictionary<string, bool> featureFlags)
-	{
-		foreach (var (key, value) in featureFlags)
-			set.BuildContext.Configuration.Features.Set(key, value);
-	}
 }
 
 internal sealed record AssemblerApiOwner(AssemblerDocumentationSet Set);
-
-public sealed record AssemblerOpenApiResult(IReadOnlyList<ApiCatalogEntry> CatalogEntries, IReadOnlySet<string> GeneratedUrls)
-{
-	public static AssemblerOpenApiResult Empty { get; } = new([], new HashSet<string>());
-}

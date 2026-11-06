@@ -14,7 +14,7 @@ namespace Elastic.Authoring.Tests.Framework;
 /// Port of <c>Setup.GenerateDocSetYaml</c> and <c>RedirectMockTargets</c> from
 /// <c>tests/authoring/Framework/Setup.fs</c>.
 ///
-/// IMPORTANT: This generator reads real repo state from disk:
+/// IMPORTANT: With <see cref="SetupOptions.IncludeRedirectFixtures"/> this generator reads real repo state from disk (once per process):
 /// <list type="bullet">
 ///   <item><description><c>docs/_redirects.yml</c> — production redirect rules</description></item>
 ///   <item><description><c>docs-tests/redirects.yml</c> — test-specific complex redirect entries</description></item>
@@ -38,16 +38,105 @@ public static class DocSetYamlGenerator
 		# Stub
 		""";
 
+	// The redirect fixtures only depend on files in the repository, so they are read and merged once per process.
+	private static readonly Lazy<RedirectFixture> Redirects = new(LoadRedirectFixture);
+
+	private sealed record RedirectFixture(
+		string MergedRedirectYaml,
+		IReadOnlyList<string> StubTargets,
+		IReadOnlyList<(string Relative, string Contents)> TestingPages
+	);
+
 	/// <summary>
-	/// Generates the <c>docset.yml</c> / <c>_docset.yml</c> and redirect files in the mock file system.
-	/// Called once per test class, from inside <see cref="AuthoringGenerator.GenerateAsync"/>.
+	/// Generates the <c>docset.yml</c> / <c>_docset.yml</c> in the mock file system, from every Markdown file already in it.
+	/// With <paramref name="includeRedirectFixtures"/> it also adds the redirect rules and the pages they point at, see
+	/// <see cref="SetupOptions.IncludeRedirectFixtures"/>. Called once per test class, from inside <see cref="AuthoringGenerator.GenerateAsync"/>.
 	/// </summary>
-	public static void Generate(MockFileSystem fileSystem, IReadOnlyCollection<string>? docsetProducts)
+	public static void Generate(
+		MockFileSystem fileSystem,
+		IReadOnlyCollection<string>? docsetProducts,
+		bool includeRedirectFixtures = false
+	)
 	{
 		var repoRoot = Paths.WorkingDirectoryRoot.FullName;
 		var mockDocsRoot = fileSystem.DirectoryInfo.New(Path.Join(repoRoot, "docs"));
+		var redirects = includeRedirectFixtures ? Redirects.Value : null;
 
-		var realRedirectsPath = Path.Join(mockDocsRoot.FullName, "_redirects.yml");
+		if (redirects is not null)
+		{
+			// Write both _redirects.yml and redirects.yml so the correct one is found regardless
+			// of whether the randomised config name is _docset.yml or docset.yml.
+			fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, "_redirects.yml"), new MockFileData(redirects.MergedRedirectYaml));
+			fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, "redirects.yml"), new MockFileData(redirects.MergedRedirectYaml));
+
+			// Stub out every local redirect target that exists under the real docs/ tree so that
+			// redirect-validation passes without copying production page content.
+			foreach (var target in redirects.StubTargets)
+			{
+				var destPath = Path.Join(mockDocsRoot.FullName, target);
+				// Tests supply their own minimal pages; do not replace them with production stubs.
+				if (!fileSystem.File.Exists(destPath))
+					fileSystem.AddFile(destPath, new MockFileData(StubMarkdown));
+			}
+		}
+
+		// Build the docset YAML from every *.md present in the mock filesystem.
+		var yaml = new StringWriter();
+		yaml.WriteLine("cross_links:");
+		yaml.WriteLine("  - docs-content");
+		yaml.WriteLine("  - elasticsearch");
+		yaml.WriteLine("  - kibana");
+		yaml.WriteLine("exclude:");
+		yaml.WriteLine("  - '_*.md'");
+
+		if (docsetProducts is { Count: > 0 })
+		{
+			yaml.WriteLine("products:");
+			foreach (var p in docsetProducts)
+				yaml.WriteLine($"  - id: {p}");
+		}
+
+		yaml.WriteLine("toc:");
+		foreach (var markdownFile in fileSystem.Directory.EnumerateFiles(mockDocsRoot.FullName, "*.md", SearchOption.AllDirectories))
+		{
+			var relative = fileSystem.Path.GetRelativePath(mockDocsRoot.FullName, markdownFile);
+			// Skip files whose path contains a segment starting with '_' (matches F# exclusion logic)
+			var segments = relative.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
+			if (segments.Any(s => s.StartsWith('_')))
+				continue;
+			yaml.WriteLine($" - file: {relative}");
+		}
+
+		// Add the docs-tests redirect target pages.
+		if (redirects is not null)
+		{
+			foreach (var (relative, contents) in redirects.TestingPages)
+			{
+				yaml.WriteLine($" - file: {relative}");
+				fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, relative), new MockFileData(contents));
+			}
+		}
+
+		// Randomise the config filename to cover both _docset.yml and docset.yml paths.
+		// If you see a flaky failure, this is the first suspect — see XML doc on this class.
+		var configName = Random.Shared.Next(0, 10) % 2 == 0 ? "_docset.yml" : "docset.yml";
+		fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, configName), new MockFileData(yaml.ToString()));
+
+		// Keep redirects consistent with the config name.
+		if (redirects is not null)
+		{
+			var redirectsName = configName.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
+			fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, redirectsName), new MockFileData(redirects.MergedRedirectYaml));
+		}
+
+		// Log chosen name so flakes are diagnosable.
+		TestContext.Current?.Output.WriteLine($"[DocSetYamlGenerator] Using config file: {configName}");
+	}
+
+	private static RedirectFixture LoadRedirectFixture()
+	{
+		var repoRoot = Paths.WorkingDirectoryRoot.FullName;
+		var realRedirectsPath = Path.Join(repoRoot, "docs", "_redirects.yml");
 		var redirectYaml = File.ReadAllText(realRedirectsPath);
 
 		// Merge the complex test-specific redirect entries from docs-tests/redirects.yml.
@@ -78,88 +167,11 @@ public static class DocSetYamlGenerator
 
 		var mergedRedirectYaml = filtered.TrimEnd() + "\n" + testEntries;
 
-		// Write both _redirects.yml and redirects.yml so the correct one is found regardless
-		// of whether the randomised config name is _docset.yml or docset.yml.
-		fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, "_redirects.yml"), new MockFileData(mergedRedirectYaml));
-		fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, "redirects.yml"), new MockFileData(mergedRedirectYaml));
-
-		// Stub out every local redirect target that exists under the real docs/ tree so that
-		// redirect-validation passes without copying production page content.
-		CopyRedirectTargetsFromRealDocsIntoMock(fileSystem, mergedRedirectYaml, mockDocsRoot.FullName);
-
-		// Build the docset YAML from every *.md present in the mock filesystem.
-		var yaml = new StringWriter();
-		yaml.WriteLine("cross_links:");
-		yaml.WriteLine("  - docs-content");
-		yaml.WriteLine("  - elasticsearch");
-		yaml.WriteLine("  - kibana");
-		yaml.WriteLine("exclude:");
-		yaml.WriteLine("  - '_*.md'");
-
-		if (docsetProducts is { Count: > 0 })
-		{
-			yaml.WriteLine("products:");
-			foreach (var p in docsetProducts)
-				yaml.WriteLine($"  - id: {p}");
-		}
-
-		yaml.WriteLine("toc:");
-		foreach (var markdownFile in fileSystem.Directory.EnumerateFiles(mockDocsRoot.FullName, "*.md", SearchOption.AllDirectories))
-		{
-			var relative = fileSystem.Path.GetRelativePath(mockDocsRoot.FullName, markdownFile);
-			// Skip files whose path contains a segment starting with '_' (matches F# exclusion logic)
-			var segments = relative.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-			if (segments.Any(s => s.StartsWith('_')))
-				continue;
-			yaml.WriteLine($" - file: {relative}");
-		}
-
-		// Add the docs-tests redirect target pages.
-		var docsTestsRoot = Path.Join(repoRoot, "docs-tests");
-		var redirectFiles = new[] { "5th-page", "second-page", "third-page", "first-page" };
-		foreach (var file in redirectFiles)
-		{
-			var relative = $"testing/redirects/{file}.md";
-			yaml.WriteLine($" - file: {relative}");
-			var mockPath = Path.Join(mockDocsRoot.FullName, relative);
-			var realPath = Path.Join(docsTestsRoot, $"redirects/{file}.md");
-			var contents = File.ReadAllText(realPath);
-			fileSystem.AddFile(mockPath, new MockFileData(contents));
-		}
-
-		// Randomise the config filename to cover both _docset.yml and docset.yml paths.
-		// If you see a flaky failure, this is the first suspect — see XML doc on this class.
-		var configName = Random.Shared.Next(0, 10) % 2 == 0 ? "_docset.yml" : "docset.yml";
-		fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, configName), new MockFileData(yaml.ToString()));
-
-		// Keep redirects consistent with the config name.
-		var redirectsName = configName.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, redirectsName), new MockFileData(mergedRedirectYaml));
-
-		// Log chosen name so flakes are diagnosable.
-		TestContext.Current?.Output.WriteLine($"[DocSetYamlGenerator] Using config file: {configName}");
-	}
-
-	/// <summary>
-	/// For each local redirect target in the merged redirects YAML, if the target path exists
-	/// under the real <c>docs/</c> tree, stubs it in the mock filesystem.
-	/// Content is a minimal stub — not a copy — so redirect validation passes without requiring
-	/// production page content.
-	/// </summary>
-	private static void CopyRedirectTargetsFromRealDocsIntoMock(MockFileSystem fileSystem, string redirectYaml, string mockDocsRoot)
-	{
-		var targets = CollectRedirectTargetPaths(redirectYaml);
-		var repoRoot = Paths.WorkingDirectoryRoot.FullName;
-
-		foreach (var rel in targets)
+		// Only the redirect targets that exist under the real docs/ (or docs-tests/) tree get a stub.
+		var stubTargets = new List<string>();
+		foreach (var rel in CollectRedirectTargetPaths(mergedRedirectYaml))
 		{
 			var normalized = rel.Replace('/', Path.DirectorySeparatorChar);
-			var destPath = Path.Join(mockDocsRoot, normalized);
-
-			// Tests supply their own minimal pages; do not replace them with production stubs.
-			if (fileSystem.File.Exists(destPath))
-				continue;
-
 			var sourcePath = Path.Join(repoRoot, "docs", normalized);
 
 			// For testing/* paths also check docs-tests/ (strip the testing/ prefix).
@@ -168,8 +180,15 @@ public static class DocSetYamlGenerator
 				: string.Empty;
 
 			if (File.Exists(sourcePath) || (altSourcePath.Length > 0 && File.Exists(altSourcePath)))
-				fileSystem.AddFile(destPath, new MockFileData(StubMarkdown));
+				stubTargets.Add(normalized);
 		}
+
+		var docsTestsRoot = Path.Join(repoRoot, "docs-tests");
+		var testingPages = new[] { "5th-page", "second-page", "third-page", "first-page" }.Select(
+			file => ($"testing/redirects/{file}.md", File.ReadAllText(Path.Join(docsTestsRoot, $"redirects/{file}.md")))
+		).ToArray();
+
+		return new RedirectFixture(mergedRedirectYaml, stubTargets, testingPages);
 	}
 
 	/// <summary>

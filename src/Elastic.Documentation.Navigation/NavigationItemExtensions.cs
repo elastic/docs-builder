@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 
@@ -105,6 +106,12 @@ public static class NavigationItemExtensions
 				var fileIndex = Interlocked.Increment(ref navigationIndex);
 				leaf.NavigationIndex = fileIndex;
 				break;
+			case IFloatingSectionRoot floatingRoot:
+				// the children of a floating section keep their own numbering
+				var floatingIndex = Interlocked.Increment(ref navigationIndex);
+				floatingRoot.NavigationIndex = floatingIndex;
+				floatingRoot.Index.NavigationIndex = floatingIndex;
+				break;
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:
 				var groupIndex = Interlocked.Increment(ref navigationIndex);
 				node.NavigationIndex = groupIndex;
@@ -151,6 +158,9 @@ public static class NavigationItemExtensions
 			// CrossLinkNavigationLeaf is not added to NavigationDocumentationFileLookup or NavigationIndexedByOrder
 			case CrossLinkNavigationLeaf:
 			case ISidebarSeparatorNavigationItem:
+				break;
+			case IFloatingSectionRoot floatingRoot:
+				_ = navigationByOrder.TryAdd(floatingRoot.NavigationIndex, floatingRoot);
 				break;
 			case ILeafNavigationItem<IDocumentationFile> documentationFileLeaf:
 				_ = navigationDocumentationFileLookup.TryAdd(documentationFileLeaf.Model, documentationFileLeaf);

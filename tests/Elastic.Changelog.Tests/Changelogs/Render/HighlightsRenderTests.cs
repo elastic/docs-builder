@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -62,20 +64,7 @@ public class HighlightsRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var highlightsFile = FileSystem.Path.Join(outputDir, "9.3.0", "highlights.md");
-		FileSystem.File.Exists(highlightsFile).Should().BeTrue("highlights.md should be created when entries have highlight: true");
-
-		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
-		highlightsContent.Should().Contain("## 9.3.0");
-		highlightsContent.Should().Contain("New Cloud Connect UI");
-		highlightsContent.Should().Contain("Adds Cloud Connect functionality");
-
-		// Verify the entry also appears in index.md
-		var indexFile = FileSystem.Path.Join(outputDir, "9.3.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("New Cloud Connect UI");
-		// Note: Cross-file links like "[Highlights]" have been removed from index.md
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -181,14 +170,33 @@ public class HighlightsRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var asciidocFile = FileSystem.Path.Join(outputDir, "9.3.0.asciidoc");
-		FileSystem.File.Exists(asciidocFile).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.3.0.asciidoc ===
+			[[release-notes-9.3.0]]
+			== 9.3.0
 
-		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current!.Execution.CancellationToken);
-		asciidocContent.Should().Contain("[[highlights-9.3.0]]");
-		asciidocContent.Should().Contain("=== Highlights");
-		asciidocContent.Should().Contain("Highlighted enhancement");
-		asciidocContent.Should().Contain("This is a highlighted enhancement");
+			[[highlights-9.3.0]]
+			[float]
+			=== Highlights
+
+			* Highlighted enhancement. {elastic-pull}200[#200] 
+			+
+			This is a highlighted enhancement
+
+
+			[[features-enhancements-9.3.0]]
+			[float]
+			=== New features and enhancements
+
+			* Highlighted enhancement. {elastic-pull}200[#200] 
+			+
+			This is a highlighted enhancement
+			"""
+			);
 	}
 
 	[Test]
@@ -259,13 +267,6 @@ public class HighlightsRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var highlightsFile = FileSystem.Path.Join(outputDir, "9.3.0", "highlights.md");
-		FileSystem.File.Exists(highlightsFile).Should().BeTrue();
-
-		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
-		highlightsContent.Should().Contain("Search highlight");
-		highlightsContent.Should().Contain("Indexing highlight");
-		highlightsContent.Should().Contain("**Search**");
-		highlightsContent.Should().Contain("**Indexing**");
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 	}
 }

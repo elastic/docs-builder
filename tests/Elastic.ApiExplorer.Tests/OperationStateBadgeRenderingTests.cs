@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -24,12 +25,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 		var html = await fixture.RenderAsync(nav);
 
 		Slice(html, "<h1>", "</h1>").Should().Be("<h1>Run a search");
-		var badges = Slice(html, "<span class=\"api-title-badges\">", "</applies-to-popover>");
-		badges.Should().Contain("<span class=\"applies applies-inline\">");
-		badges.Should().Contain("badge-key=\"Stack\"");
-		badges.Should().Contain("badge-version=\"7.7&#x2B;\"");
-		badges.Should().Contain("show-popover=\"true\"");
-		badges.Should().Contain("Generally available since 7.7");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-title-badges"));
 		html.Should().NotContain("api-state-badge");
 	}
 

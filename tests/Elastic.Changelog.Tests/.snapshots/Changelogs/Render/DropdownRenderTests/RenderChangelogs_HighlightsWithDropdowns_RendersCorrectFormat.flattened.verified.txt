@@ -1,0 +1,23 @@
+=== 9.2.0/breaking-changes.md ===
+## 9.2.0 [elastic-9.2.0-breaking-changes]
+_There are no breaking changes associated with this release._
+=== 9.2.0/deprecations.md ===
+## 9.2.0 [elastic-9.2.0-deprecations]
+_There are no deprecations associated with this release._
+=== 9.2.0/highlights.md ===
+## 9.2.0 [elastic-9.2.0-highlights]
+
+* Amazing new feature.
+  This feature revolutionizes how you work with data
+
+  For more information, check [#555](https://github.com/elastic/elastic/pull/555).
+
+=== 9.2.0/index.md ===
+## 9.2.0 [elastic-release-notes-9.2.0]
+### Features and enhancements [elastic-9.2.0-features-enhancements]
+* Amazing new feature. [#555](https://github.com/elastic/elastic/pull/555)
+
+  This feature revolutionizes how you work with data
+=== 9.2.0/known-issues.md ===
+## 9.2.0 [elastic-9.2.0-known-issues]
+_There are no known issues associated with this release._

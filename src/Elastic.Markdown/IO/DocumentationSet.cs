@@ -17,6 +17,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
@@ -65,7 +66,8 @@ public class DocumentationSet : INavigationTraversable
 		BuildContext context,
 		ILoggerFactory logFactory,
 		ICrossLinkResolver linkResolver,
-		IReleaseNotesResolver? releaseNotesResolver = null
+		IReleaseNotesResolver? releaseNotesResolver = null,
+		FloatingSectionRegistry? floatingSections = null
 	)
 	{
 		_logger = logFactory.CreateLogger<DocumentationSet>();
@@ -95,7 +97,8 @@ public class DocumentationSet : INavigationTraversable
 			null,
 			null,
 			context.UrlPathPrefix,
-			CrossLinkResolver
+			CrossLinkResolver,
+			floatingSections
 		);
 		VisitNavigation(Navigation);
 
@@ -133,6 +136,13 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
+
+	/// <summary>
+	/// Fills the children of every mounted floating section. <see cref="ResolveDirectoryTree"/> runs it,
+	/// so <c>links.json</c> and the exporters see the pages of each section.
+	/// </summary>
+	private Task ResolveFloatingSectionsAsync(Cancel ctx) =>
+		Task.WhenAll(Navigation.FloatingSections.Select(section => section.ResolveAsync(ctx)));
 
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
@@ -182,10 +192,8 @@ public class DocumentationSet : INavigationTraversable
 			{
 				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
 					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
-				else if (ApiLinkMatcher.TryGetApiPath(to, out _))
-					Context.Collector.EmitApiLink(
-						new ApiLinkReference(to, (Configuration.RedirectsSource ?? Configuration.SourceFile).FullName, 1, 1, to.Length)
-					);
+				else if (ApiLinkCheck.GetWarning(CrossLinkResolver, to, Context.UrlPathPrefix) is { } warning)
+					Context.Collector.EmitWarning((Configuration.RedirectsSource ?? Configuration.SourceFile).FullName, warning);
 
 				return;
 			}
@@ -259,6 +267,7 @@ public class DocumentationSet : INavigationTraversable
 			options,
 			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token)
 		);
+		await ResolveFloatingSectionsAsync(ctx);
 
 		_resolved = true;
 	}
@@ -273,7 +282,11 @@ public class DocumentationSet : INavigationTraversable
 
 		var markdownInNavigation = leafs
 			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
-			.Concat(nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)))
+			.Concat(
+				nodes.Where(g => g.Index.Model is MarkdownFile).Select(
+					g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)
+				)
+			)
 			.ToList();
 
 		var links = markdownInNavigation
@@ -298,8 +311,21 @@ public class DocumentationSet : INavigationTraversable
 			UrlPathPrefix = Context.UrlPathPrefix,
 			Origin = Context.Git,
 			Links = links,
-			CrossLinks = crossLinks
+			CrossLinks = crossLinks,
+			Floating = CreateFloatingLinkSections()
 		};
+	}
+
+	private Dictionary<string, FloatingLinkSection>? CreateFloatingLinkSections()
+	{
+		Dictionary<string, FloatingLinkSection>? sections = null;
+		foreach (var section in Navigation.FloatingSections)
+		{
+			if (section.ToLinkSection() is { } linkSection)
+				(sections ??= [])[$"{section.Kind}/{section.Key}"] = linkSection;
+		}
+
+		return sections;
 	}
 
 	public void ClearOutputDirectory()

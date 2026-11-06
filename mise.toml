@@ -77,10 +77,6 @@ run = "dotnet run --project src/tooling/docs-builder -- serve"
 description = "dotnet watch: rebuild code, templates and web assets on the fly"
 run = "dotnet run --project build -c release -- watch"
 
-[tasks."watch:all"]
-description = "dotnet watch on the Aspire AppHost: the fully assembled site"
-run = "dotnet run --project build -c release -- watch-all"
-
 # ---- frontend (src/Elastic.Documentation.Site) ----
 
 [tasks."site:install"]

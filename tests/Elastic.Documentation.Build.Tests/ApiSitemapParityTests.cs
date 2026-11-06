@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Xml.Linq;
-using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Build.Tests;
 

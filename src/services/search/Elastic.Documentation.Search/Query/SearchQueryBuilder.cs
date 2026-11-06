@@ -29,10 +29,13 @@ public static class SearchQueryBuilder
 	private const int ApiInnerHitsSize = 20;
 
 	// A child row must score below every name match, exact or prefix, and the lift only breaks ties between operations.
-	private const float NameMatchBoost = 1;
-	private const float PrefixNameMatchBoost = 0.6f;
-	private const float ListsFieldsUnderTypedPathBoost = 0.5f;
-	private const float ChildOptionBoost = 0.4f;
+	private const float NameMatchBoost = ApiLookupWeights.FieldName;
+	private const float PrefixNameMatchBoost = ApiLookupWeights.FieldNamePrefix;
+	private const float ListsFieldsUnderTypedPathBoost = ApiLookupWeights.ListsChildren;
+	private const float ChildOptionBoost = ApiLookupWeights.ChildOption;
+
+	/// <summary>The docs-wide search weighs an endpoint match a little lower than the API lookup does.</summary>
+	private const float EndpointBoost = 5.0f;
 
 	/// <summary>Elasticsearch needs one inner-hits name per nested query, so each reading of a query gets its own.</summary>
 	public static bool IsApiPropertyHits(string innerHitsName) =>
@@ -45,6 +48,12 @@ public static class SearchQueryBuilder
 		StringComparer.OrdinalIgnoreCase
 	);
 	private static readonly string[] ApiPropertySourceIncludes = [$"{QueryFieldNames.ApiProperties}.*"];
+	private static readonly PropertyLookup DocsWideLookup = new(AllowPrefix: false, ExpandChildren: false);
+	// One edit from four letters on: two edits let `unrated` match `updated`, and a typo in a shorter word names too many fields.
+	private static readonly Fuzziness WordFuzziness = new("AUTO:4,100");
+
+	// A one- or two-letter word starts the words of most field names, so it matches a whole word only, such as `id` in `scroll_id`.
+	private const int MinFieldWordPrefixLength = 3;
 
 	/// <summary>
 	/// Rank-feature and term boosts applied as <c>should</c> clauses on top of the base query.
@@ -57,51 +66,85 @@ public static class SearchQueryBuilder
 		new TermQuery { Field = QueryFieldNames.Section, Value = "getting-started", Boost = 0.1f }
 	];
 
-	/// <summary>Excludes hidden documents and bare root-URL placeholders.</summary>
-	public static Query DocumentFilter { get; } = new BoolQuery
+	private static readonly Query RootUrlPlaceholders = new TermsQuery(
+		QueryFieldNames.PathKeyword,
+		new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])
+	);
+
+	internal static readonly Query HiddenDocuments = new TermQuery { Field = QueryFieldNames.Hidden, Value = true };
+
+	private static readonly Query UnscopedDocumentFilter = new BoolQuery { MustNot = [RootUrlPlaceholders, HiddenDocuments] };
+
+	/// <summary>
+	/// Excludes bare root-URL placeholders and hidden documents. A reader in one version tree of an API instead gets
+	/// that API's documents for the tree, hidden or not, and every other document that is not hidden.
+	/// </summary>
+	public static Query DocumentFilterFor(ApiPageContext? page)
 	{
-		MustNot =
-		[
-			new TermsQuery(QueryFieldNames.PathKeyword, new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])),
-			new TermQuery { Field = QueryFieldNames.Hidden, Value = true }
-		]
-	};
+		if (page is not { Tree: { } tree })
+			return UnscopedDocumentFilter;
+
+		var scopedApi = new TermQuery { Field = QueryFieldNames.ApiKey, Value = page.Key };
+		return new BoolQuery
+		{
+			MustNot = [RootUrlPlaceholders],
+			Should =
+			[
+				new BoolQuery { MustNot = [HiddenDocuments, scopedApi] },
+				new BoolQuery { Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = tree }] }
+			],
+			MinimumShouldMatch = 1
+		};
+	}
+
+	/// <summary>Restricts <paramref name="query"/> to the documents <see cref="DocumentFilterFor"/> lets through, without scoring the filter.</summary>
+	public static Query FilterDocuments(Query query, ApiPageContext? page) =>
+		new BoolQuery { Must = [query], Filter = [DocumentFilterFor(page)] };
+
+	/// <summary>
+	/// Adds <see cref="ApiLookupWeights.SameApi"/> to the hits of API <paramref name="apiKey"/>. The lift is unnamed, so the
+	/// named query scores that pick each word's role and inner hits stay as they were.
+	/// </summary>
+	public static Query LiftApi(Query query, string? apiKey) =>
+		apiKey is null
+			? query
+			: new BoolQuery
+			{
+				Must = [query],
+				Should =
+				[
+					new ConstantScoreQuery
+					{
+						Filter = new TermQuery { Field = QueryFieldNames.ApiKey, Value = apiKey },
+						Boost = ApiLookupWeights.SameApi
+					}
+				]
+			};
 
 	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
-		ParseApiPropertyQuery(searchQuery, typeFilter) is { Readings: [var first, ..] } parsed
-			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, Lookup(parsed, typeFilter))
+		ParseApiPropertyQuery(searchQuery, typeFilter) is { Readings: [var first, ..] }
+			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, DocsWideLookup)
 			: null;
-
-	/// <summary>A trailing dot on an API-filtered field, as in <c>retriever.</c>, asks for its children.</summary>
-	public static bool ExpandsChildren(string searchQuery, string? typeFilter) =>
-		Lookup(ParseApiPropertyQuery(searchQuery, typeFilter), typeFilter).ExpandChildren;
-
-	private static bool IsApiLookup(string? typeFilter) => typeFilter == "api";
 
 	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
 	{
 		var parsed = ParseApiPropertyQuery(searchQuery, typeFilter);
 		var branches = parsed
 			.Readings
-			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired, Lookup(parsed, typeFilter)))
+			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired))
 			.OfType<Query>()
 			.ToList();
 		if (branches.Count == 0)
 			return query;
 
 		var properties = branches.Count == 1 ? branches[0] : new BoolQuery { Should = branches, MinimumShouldMatch = 1 };
-		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
+		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1 };
 	}
 
-	private static Query? BuildReadingQuery(
-		(string Operation, string Property) reading,
-		string innerHitsName,
-		bool endpointRequired,
-		PropertyLookup lookup
-	)
+	private static Query? BuildReadingQuery((string Operation, string Property) reading, string innerHitsName, bool endpointRequired)
 	{
-		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, lookup);
+		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, DocsWideLookup);
 		var endpoint = reading.Operation.Length == 0 ? null : BuildEndpointHalfQuery(reading.Operation);
 		if (endpoint is null && endpointRequired)
 			return null;
@@ -110,17 +153,15 @@ public static class SearchQueryBuilder
 		// branch alone matched carries no name. The name sits on the whole reading, as Elasticsearch reports a named
 		// clause that matched even when its parent did not.
 		List<Query> must = endpoint is not null && endpointRequired ? [properties, endpoint] : [properties];
-		List<Query> should = endpoint is not null && !endpointRequired ? [endpoint] : [];
-		if (lookup.AllowPrefix)
-			should.Add(BuildListsFieldsUnderTypedPathBoost(reading.Property));
-		return new BoolQuery { Must = must, Should = should.Count == 0 ? null : should, QueryName = innerHitsName };
+		List<Query>? should = endpoint is not null && !endpointRequired ? [endpoint] : null;
+		return new BoolQuery { Must = must, Should = should, QueryName = innerHitsName };
 	}
 
 	/// <summary>
 	/// Exact name matches all score alike, so Elasticsearch breaks their ties arbitrarily; a reader typing a path wants
 	/// the operation that lists what comes next.
 	/// </summary>
-	private static Query BuildListsFieldsUnderTypedPathBoost(string property) =>
+	internal static Query BuildListsFieldsUnderTypedPathBoost(string property) =>
 		new NestedQuery
 		{
 			Path = QueryFieldNames.ApiProperties,
@@ -157,15 +198,13 @@ public static class SearchQueryBuilder
 	private static ApiPropertyReadings ParseApiPropertyQuery(string searchQuery, string? typeFilter)
 	{
 		var input = searchQuery.Trim();
-		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
+		if (input.Length == 0 || typeFilter is not (null or "" or "all"))
 			return ApiPropertyReadings.None;
 		var parsed = WithoutTrailingDots(ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)));
 		// The docs-wide search only tries a field word that looks like an identifier; a plain word would lift every
 		// API operation that happens to have a field of that name above the pages about it. Dropping a reading
 		// leaves the others as demanding as the query made them.
-		return IsApiLookup(typeFilter)
-			? parsed
-			: parsed with { Readings = parsed.Readings.Where(r => r.Property.Contains('.') || r.Property.Contains('_')).ToArray() };
+		return parsed with { Readings = parsed.Readings.Where(r => r.Property.Contains('.') || r.Property.Contains('_')).ToArray() };
 	}
 
 	private static ApiPropertyReadings ParseReadings(string[] words)
@@ -192,30 +231,31 @@ public static class SearchQueryBuilder
 			.Select(r => r with { Property = r.Property.TrimEnd('.') })
 			.Where(r => r.Property.Length > 0)
 			.ToArray();
-		return readings.Length == 0
-			? ApiPropertyReadings.None
-			: parsed with { Readings = readings, ExpandsChildren = parsed.Readings.Any(r => r.Property.EndsWith('.')) };
+		return readings.Length == 0 ? ApiPropertyReadings.None : parsed with { Readings = readings };
 	}
 
 	/// <summary>The readings of a query, and whether each must match its endpoint rather than only be lifted by it.</summary>
 	private sealed record ApiPropertyReadings(IReadOnlyList<(string Operation, string Property)> Readings, bool EndpointRequired)
 	{
 		public static readonly ApiPropertyReadings None = new([], EndpointRequired: false);
-
-		public bool ExpandsChildren { get; init; }
 	}
 
-	/// <summary>Only an API-filtered lookup matches by prefix, and only one ending in a dot lists the typed path's children.</summary>
-	private sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren);
+	/// <summary>
+	/// Only an API-filtered lookup matches by prefix and by the words of a field name, and only one ending in a dot lists the
+	/// typed path's children. <paramref name="OtherWords"/> are the words of the lookup's other plain words, so a row that also
+	/// names one of them scores as a name match.
+	/// </summary>
+	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren, IReadOnlyList<string>? OtherWords = null);
 
-	private static PropertyLookup Lookup(ApiPropertyReadings parsed, string? typeFilter) =>
-		IsApiLookup(typeFilter)
-			? new(AllowPrefix: true, ExpandChildren: parsed.ExpandsChildren)
-			: new(AllowPrefix: false, ExpandChildren: false);
-
-	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, PropertyLookup lookup) =>
+	internal static Query BuildNestedPropertyQuery(
+		string property,
+		string innerHitsName,
+		PropertyLookup lookup,
+		string? queryName = null
+	) =>
 		new NestedQuery
 		{
+			QueryName = queryName,
 			Path = QueryFieldNames.ApiProperties,
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
@@ -239,21 +279,20 @@ public static class SearchQueryBuilder
 	/// </summary>
 	private static Query BuildPropertyMatchQuery(string input, PropertyLookup lookup)
 	{
-		var separator = input.LastIndexOf('.');
-		var path = separator < 0
+		var words = ApiPropertyPath.Words(input);
+		var path = words.Length < 2
 			? null
 			: (Query)new BoolQuery
 			{
-				Must = [BuildPropertyNameOptions(input[(separator + 1)..], lookup)],
-				Filter =
-				[
-					new MatchBoolPrefixQuery { Field = QueryFieldNames.ApiPropertiesPathMatch, Query = input, Operator = Operator.And }
-				]
+				Must = [BuildPropertyNameOptions(words[^1], lookup)],
+				Filter = [new MatchPhrasePrefixQuery { Field = QueryFieldNames.ApiPropertiesPathWords, Query = string.Join(' ', words) }]
 			};
 		var children = lookup.ExpandChildren
 			? (Query)new ConstantScoreQuery { Filter = BuildParentTermQuery(input), Boost = ChildOptionBoost, QueryName = ApiChildrenHits }
 			: null;
-		Query?[] options = [BuildPropertyNameOptions(input, lookup), path, children];
+		// A qualified path keeps its raw text here so a field whose own name holds dots still matches it exactly.
+		var name = words.Length == 1 ? words[0] : input;
+		Query?[] options = [BuildPropertyNameOptions(name, lookup), path, children];
 		return new DisMaxQuery { Queries = options.OfType<Query>().ToList() };
 	}
 
@@ -280,8 +319,55 @@ public static class SearchQueryBuilder
 			Boost = PrefixNameMatchBoost,
 			QueryName = ApiNameHits
 		};
-		return new DisMaxQuery { Queries = [exact, prefix] };
+		Query?[] options = [exact, prefix, BuildPropertyWordOption(name, lookup.OtherWords ?? [])];
+		return new DisMaxQuery { Queries = options.OfType<Query>().ToList() };
 	}
+
+	/// <summary>
+	/// The words of the typed name, each typed in full, in part or with a typo, so <c>unreated docs</c> finds <c>unrated_docs</c>
+	/// and <c>_uri</c> finds <c>last_uri</c>. A row that also names another typed word scores as a name match, which lists it above
+	/// rows naming only one. A dotted path is matched by its segments instead, so it has no word option.
+	/// </summary>
+	private static Query? BuildPropertyWordOption(string name, IReadOnlyList<string> otherWords)
+	{
+		var parts = ApiPropertyPath.IdentifierWords(name);
+		if (parts.Length == 0 || name.Contains('.'))
+			return null;
+
+		var last = parts.Length - 1;
+		var wordMatch = new ConstantScoreQuery
+		{
+			// The last word of a compound such as `unrated_do` is still being typed, so it completes even when short.
+			Filter = new BoolQuery
+			{
+				Must = parts.Select(
+					(part, i) => NameWordQuery(part, completes: part.Length >= MinFieldWordPrefixLength || (i > 0 && i == last))
+				).ToList()
+			},
+			Boost = ApiLookupWeights.FieldWord
+		};
+		// The typed name's own words are already the word match, so only the other typed words lift the row.
+		List<Query>? namesSeveral = otherWords.Count == 0
+			? null
+			: [new ConstantScoreQuery { Filter = NameWordsMatch(string.Join(' ', otherWords)), Boost = ApiLookupWeights.FieldSeveralWords }];
+		return new BoolQuery { Must = [wordMatch], Should = namesSeveral, QueryName = ApiNameHits };
+	}
+
+	/// <summary><see cref="ApiPropertyPath.IdentifierWords"/> lowercases <paramref name="word"/>, as the analyzer does the index, so the prefix is case-sensitive.</summary>
+	private static Query NameWordQuery(string word, bool completes)
+	{
+		var whole = NameWordsMatch(word);
+		if (!completes)
+			return whole;
+		return new BoolQuery
+		{
+			Should = [whole, new PrefixQuery { Field = QueryFieldNames.ApiPropertiesNameWords, Value = word }],
+			MinimumShouldMatch = 1
+		};
+	}
+
+	private static MatchQuery NameWordsMatch(string query) =>
+		new() { Field = QueryFieldNames.ApiPropertiesNameWords, Query = query, Fuzziness = WordFuzziness, PrefixLength = 1 };
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{
@@ -335,10 +421,10 @@ public static class SearchQueryBuilder
 	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>,
 	/// <c>my-index/_search</c>) ranks that operation above every other API whose search title merely starts
 	/// with the same token. A typed value matches the <c>*</c> of a parameter in any position. One <c>terms</c>
-	/// clause per number of literal segments kept, weighted <c>5 * (1 + literals) / (1 + total)</c>, and
+	/// clause per number of literal segments kept, weighted <c>weight * (1 + literals) / (1 + total)</c>, and
 	/// <c>dis_max</c> keeps the best.
 	/// </summary>
-	public static Query? BuildApiEndpointQuery(string searchQuery)
+	public static Query? BuildApiEndpointQuery(string searchQuery, float weight = EndpointBoost, Field? field = null)
 	{
 		var groups = ApiEndpointPath.QueryCandidates(ApiEndpointPath.NormalizeQuery(searchQuery));
 		if (groups.Count == 0)
@@ -352,10 +438,10 @@ public static class SearchQueryBuilder
 					(Query)new ConstantScoreQuery
 					{
 						Filter = new TermsQuery(
-							QueryFieldNames.ApiEndpoints,
+							field ?? QueryFieldNames.ApiEndpoints,
 							new TermsQueryField(g.Terms.Select(t => (FieldValue)t).ToArray())
 						),
-						Boost = 5.0f * (1 + g.LiteralSegments) / (1 + total)
+						Boost = weight * (1 + g.LiteralSegments) / (1 + total)
 					}
 			).ToList()
 		};
@@ -366,57 +452,17 @@ public static class SearchQueryBuilder
 	/// <c>search</c> is scored as the endpoint <c>_search</c> too. Only meant for API-filtered lookups: in the
 	/// unfiltered docs search it would put <c>/_aliases</c> above the "Aliases" docs page.
 	/// </summary>
-	public static Query? BuildBareWordEndpointQuery(string searchQuery)
+	public static Query? BuildBareWordEndpointQuery(string searchQuery, float weight = EndpointBoost) =>
+		!searchQuery.Trim().StartsWith('_') && EndpointName(searchQuery) is { } name ? BuildApiEndpointQuery(name, weight) : null;
+
+	/// <summary>The endpoint name a single word stands for: <c>search</c> and <c>_search</c> both name <c>_search</c>.</summary>
+	public static string? EndpointName(string searchQuery)
 	{
-		var word = searchQuery.Trim();
-		if (word.Length == 0 || word.StartsWith('_') || word.Any(c => c is '/' or ' ' or '{'))
+		var word = searchQuery.Trim().ToLowerInvariant();
+		if (word.Length == 0 || word.Any(c => c is '/' or ' ' or '{'))
 			return null;
 
-		return BuildApiEndpointQuery("_" + word);
-	}
-
-	/// <summary>
-	/// Partial-match fallback for API lookups. The strict lexical query needs every typed word, so
-	/// <c>create deployment cloud</c> finds only operations that contain all three. From three words on, this
-	/// clause also matches operations that contain 75% of them, at a lower weight than a full match.
-	/// </summary>
-	public static Query? BuildLoosePartialMatchQuery(string searchQuery)
-	{
-		if (searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length < 3)
-			return null;
-
-		return new BoolQuery
-		{
-			Must =
-			[
-				new MultiMatchQuery
-				{
-					Query = searchQuery,
-					Operator = Operator.Or,
-					MinimumShouldMatch = "75%",
-					Type = TextQueryType.BestFields,
-					Analyzer = "synonyms_analyzer",
-					Boost = 0.5f,
-					Fields = new[] { QueryFieldNames.SearchTitle, QueryFieldNames.Body }
-				}
-			],
-			Filter = [DocumentFilter]
-		};
-	}
-
-	/// <summary>
-	/// API-filtered lookups only: widens the match set with <see cref="BuildLoosePartialMatchQuery"/> and lifts the
-	/// endpoint of a bare word. Both are no-ops for queries they don't apply to.
-	/// </summary>
-	public static Query ApplyApiRanking(Query lexicalQuery, string searchQuery)
-	{
-		var query = BuildLoosePartialMatchQuery(searchQuery) is { } loose
-			? new BoolQuery { Should = [lexicalQuery, loose], MinimumShouldMatch = 1 }
-			: lexicalQuery;
-
-		return BuildBareWordEndpointQuery(searchQuery) is { } bareWordEndpoint
-			? new BoolQuery { Must = [query], Should = [bareWordEndpoint] }
-			: query;
+		return word.StartsWith('_') ? word : "_" + word;
 	}
 
 	public static Query BuildSemanticQuery(string searchQuery) =>
@@ -464,8 +510,8 @@ public static class SearchQueryBuilder
 	/// <summary>
 	/// Builds the lexical search query: prefix completion on <c>search_title.completion</c> +
 	/// best-fields on <c>stripped_body</c>, OR'ed with title-keyword, title-starts-with,
-	/// URL match (single-token), and phrase match (multi-token). Wrapped with the document
-	/// filter, scoring rank-features, optional diminish-boost, and optional rule query.
+	/// URL match (single-token), and phrase match (multi-token). Wrapped with scoring rank-features,
+	/// optional diminish-boost, and optional rule query. Callers apply <see cref="DocumentFilterFor"/> around the result.
 	/// </summary>
 	public static Query BuildLexicalQuery(
 		string searchQuery,
@@ -521,7 +567,7 @@ public static class SearchQueryBuilder
 		if (tokens.Length > 2)
 			query |= BuildPhraseMatchQuery(searchQuery);
 
-		var positiveQuery = new BoolQuery { Must = [query], Filter = [DocumentFilter], Should = ScoringQueries };
+		var positiveQuery = new BoolQuery { Must = [query], Should = ScoringQueries };
 
 		var diminishQuery = BuildDiminishQuery(diminishTerms);
 		var baseQuery = ApplyDiminishBoost(positiveQuery, diminishQuery);

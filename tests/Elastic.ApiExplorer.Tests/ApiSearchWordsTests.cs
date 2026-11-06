@@ -17,4 +17,11 @@ public class ApiSearchWordsTests
 	[Arguments("_bulk", "/_bulk", "bulk")]
 	public void Of_OperationIdAndPath_ReturnsLowercaseDistinctWords(string operationId, string path, string words) =>
 		string.Join(' ', ApiSearchWords.Of(operationId, path)).Should().Be(words);
+
+	[Test]
+	[Arguments("cluster.health", "cluster health")]
+	[Arguments("esql-async-query-stop", "esql async query stop")]
+	[Arguments("_bulk", "bulk")]
+	public void OfOperationId_OperationId_ReturnsIdWordsOnly(string operationId, string words) =>
+		string.Join(' ', ApiSearchWords.OfOperationId(operationId)).Should().Be(words);
 }

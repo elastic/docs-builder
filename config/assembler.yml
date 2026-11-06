@@ -35,7 +35,7 @@ environments:
     feature_flags:
       ASSEMBLER_API_EXPLORER: true
       PAGE_FEEDBACK: true
-      # NAVIGATION_PREVIEW: true
+      NAVIGATION_PREVIEW: false
     waf_integration_url: https://33d8ddf078ac.edge.captcha-sdk.awswaf.com/33d8ddf078ac/jsapi.js
   # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
   # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step

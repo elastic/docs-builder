@@ -21,9 +21,7 @@ public class NavSideRenderingTests
 	{
 		var html = await RenderAsync(NavSideExamples.Navigation);
 
-		html.Should().Contain("class=\"nav-side__back\"");
-		html.Should().Contain("nav-side__heading nav-side__heading--island");
-		html.Should().Contain("nav-tree__link--island");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -31,8 +29,7 @@ public class NavSideRenderingTests
 	{
 		var html = await RenderAsync(NavSideExamples.Navigation with { BackLinks = [] });
 
-		html.Should().Contain("class=\"nav-side__heading\"");
-		html.Should().NotContain("nav-side__heading--island");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -47,6 +44,6 @@ public class NavSideRenderingTests
 		};
 		var html = await RenderAsync(NavSideExamples.Navigation with { Tree = [external] });
 
-		html.Should().Contain("nav-tree__link--external").And.Contain("target=\"_blank\"").And.Contain("rel=\"noopener\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 }

@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -15,34 +16,28 @@ public class ApiMarkdownSanitizationTests
 	public void SanitizeHtml_ScriptTag_IsRemovedWithContent()
 	{
 		var result = ApiHtmlSanitizer.Sanitize("<p>Hello</p><script>alert(1)</script><p>World</p>");
-		result.Should().NotContain("<script");
-		result.Should().NotContain("alert(1)");
-		result.Should().Contain("Hello");
-		result.Should().Contain("World");
+		result.Should().MatchInlineSnapshot("<p>Hello</p><p>World</p>");
 	}
 
 	[Test]
 	public void SanitizeHtml_OnErrorAttribute_IsStripped()
 	{
 		var result = ApiHtmlSanitizer.Sanitize("<img src=\"x\" onerror=\"alert(1)\">");
-		result.Should().NotContain("onerror");
-		result.Should().NotContain("alert(1)");
-		result.Should().Contain("<img");
+		result.Should().MatchInlineSnapshot("<img src=\"x\">");
 	}
 
 	[Test]
 	public void SanitizeHtml_JavascriptHref_IsRemoved()
 	{
 		var result = ApiHtmlSanitizer.Sanitize("<a href=\"javascript:alert(1)\">click</a>");
-		result.Should().NotContain("javascript:");
-		result.Should().Contain("click");
+		result.Should().MatchInlineSnapshot("<a>click</a>");
 	}
 
 	[Test]
 	public void SanitizeHtml_DataUriInSrc_IsRemoved()
 	{
 		var result = ApiHtmlSanitizer.Sanitize("<img src=\"data:text/html,payload\">");
-		result.Should().NotContain("data:");
+		result.Should().MatchInlineSnapshot("<img>");
 	}
 
 	[Test]
@@ -98,9 +93,7 @@ public class ApiMarkdownSanitizationTests
 	public void SanitizeHtml_IframeTag_IsRemovedWithContent()
 	{
 		var result = ApiHtmlSanitizer.Sanitize("<p>Before</p><iframe src=\"evil.com\"></iframe><p>After</p>");
-		result.Should().NotContain("<iframe");
-		result.Should().Contain("Before");
-		result.Should().Contain("After");
+		result.Should().MatchInlineSnapshot("<p>Before</p><p>After</p>");
 	}
 
 	// ── StripHtml ─────────────────────────────────────────────────────────────
@@ -116,19 +109,15 @@ public class ApiMarkdownSanitizationTests
 	public void StripHtml_ParagraphTag_InsertsSpaceBetweenParagraphs()
 	{
 		var result = ApiMarkdown.StripHtml("<p>First</p><p>Second</p>");
-		result.Should().Contain("First");
-		result.Should().Contain("Second");
-		result.Should().NotContain("<p>");
-		result.Should().NotContain("FirstSecond", "words must not merge");
+		// The words must not merge.
+		result.Should().MatchInlineSnapshot("First Second");
 	}
 
 	[Test]
 	public void StripHtml_SpanAndDivTags_AreRemoved()
 	{
 		var result = ApiMarkdown.StripHtml("<div><span class=\"operation-verb get\">GET</span></div>");
-		result.Should().NotContain("<div>");
-		result.Should().NotContain("<span");
-		result.Should().Contain("GET");
+		result.Should().MatchInlineSnapshot("GET");
 	}
 
 	[Test]
@@ -137,8 +126,8 @@ public class ApiMarkdownSanitizationTests
 		// AngleSharp parses <index> as an unknown HTML element. The tag name itself is not a
 		// text node (same as any HTML parser), but the text nodes around it are preserved.
 		var result = ApiMarkdown.StripHtml("Use <index> pattern to query.");
-		result.Should().NotContain("<index>", "angle brackets should be removed");
-		result.Should().Contain("pattern to query", "text after the unknown element is kept");
+		// The angle brackets are removed and the text after the unknown element is kept.
+		result.Should().MatchInlineSnapshot("Use pattern to query.");
 	}
 
 	[Test]

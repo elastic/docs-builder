@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
 using JetBrains.Annotations;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
@@ -50,7 +52,7 @@ GET /mydocuments/_search
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -101,7 +103,7 @@ POST /mydocuments/_doc
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -135,7 +137,7 @@ DELETE /api/users/123
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -169,7 +171,7 @@ POST /mydocuments/_doc
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -198,7 +200,7 @@ POST /api/test
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -224,7 +226,7 @@ DELETE /api/cleanup
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -282,7 +284,7 @@ POST /api/users <2>
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -348,7 +350,7 @@ GET my-index-000001/_mapping <3>
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -424,5 +426,5 @@ POST /auth/login
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }

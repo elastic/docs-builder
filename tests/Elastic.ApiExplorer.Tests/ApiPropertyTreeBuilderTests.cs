@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
@@ -511,6 +512,49 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		ApiPropertyTreeBuilder.BuildConstraints(schema).Select(c => c.Text).Should().Equal("format: date-time", "default: now");
 		CreateBuilder().Describe(schema).Text.Should().Be("string · format: date-time · default: now");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_LongObjectDefault_ListsItInAWrappingRowNotAChip()
+	{
+		var document = await LoadSpecAsync(
+			WithSchemas(
+				"""
+				{ "Holder": { "type": "object", "properties": {
+				    "options": { "type": "object", "default": { "auto_apply_filters": true, "use_margins": true, "sync_cursor": true } },
+				    "small": { "type": "object", "default": { "a": 1 } } } } }
+				"""
+			)
+		);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var options = list.Items.Single(p => p.Name == "options");
+		options.DefaultValue.Should().Be("""{"auto_apply_filters":true,"use_margins":true,"sync_cursor":true}""");
+		options.Type.Text.Should().NotContain("default", "a chip would cut it");
+		var small = list.Items.Single(p => p.Name == "small");
+		small.DefaultValue.Should().BeNull();
+		small.Type.Text.Should().EndWith("""default: {"a":1}""");
+	}
+
+	[Test]
+	public void Describe_LongObjectDefault_KeepsItAsAChipWhereARowHasNoDefaultRow()
+	{
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Default = new JsonObject { ["auto_apply_filters"] = true, ["use_margins"] = true, ["sync_cursor"] = true }
+		};
+
+		CreateBuilder().Describe(schema).Text.Should().Contain("""default: {"auto_apply_filters":true""");
+		ApiPropertyTreeBuilder.BuildConstraints(schema).Single().Text.Should().NotContain("\n", "one line, as a chip reads it");
+	}
+
+	[Test]
+	public void BuildConstraints_EmptyObjectAndScalarDefaults_StayInTheChip()
+	{
+		ApiPropertyTreeBuilder.BuildConstraints(new OpenApiSchema { Default = new JsonObject() }).Single().Text.Should().Be("default: {}");
+		ApiPropertyTreeBuilder.BuildConstraints(new OpenApiSchema { Default = 5 }).Single().Text.Should().Be("default: 5");
 	}
 
 	[Test]

@@ -17,7 +17,6 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 
 	DiagnosticsChannel Channel { get; }
 	ConcurrentBag<string> CrossLinks { get; }
-	ConcurrentBag<ApiLinkReference> ApiLinks { get; }
 	ConcurrentDictionary<string, bool> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
 
@@ -50,7 +49,6 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 	void Write(Diagnostic diagnostic);
 	void CollectUsedSubstitutionKey(ReadOnlySpan<char> key);
 	void EmitCrossLink(string link);
-	void EmitApiLink(ApiLinkReference link);
 
 	void EmitError(IFileInfo file, string message, Exception? e = null) => EmitError(file.FullName, message, e);
 

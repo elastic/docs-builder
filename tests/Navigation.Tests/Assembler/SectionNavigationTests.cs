@@ -10,6 +10,7 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -77,11 +78,36 @@ public class SectionNavigationTests()
 		var (nav, _, _) = BuildTwoChildSection(yaml);
 
 		// Top-level should have exactly one item: the SectionNavigation
-		nav.NavigationItems.Should().HaveCount(1);
-		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
-
-		section.Title.Should().Be("Guides");
-		section.NavigationItems.Should().HaveCount(2);
+		NavigationDump
+			.ToText(nav)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /docs  "Docs"
+			  index: SectionIndexLeaf  /docs/observability  "Guides"
+			  SectionNavigation  /docs/observability  "Guides" [island]
+			    index: SectionIndexLeaf  /docs/observability  "Guides"
+			    DocumentationSetNavigation  /docs/observability  "Serverless Observability"
+			      index: FileNavigationLeaf  /docs/observability  "Serverless Observability"
+			      FolderNavigation  /docs/observability/getting-started/quick-start  "Quick Start"
+			        index: FileNavigationLeaf  /docs/observability/getting-started/quick-start  "Quick Start"
+			        FileNavigationLeaf  /docs/observability/getting-started/installation  "Installation"
+			      FolderNavigation  /docs/observability/monitoring  "Monitoring"
+			        index: FileNavigationLeaf  /docs/observability/monitoring  "Monitoring"
+			        FileNavigationLeaf  /docs/observability/monitoring/logs  "Logs"
+			        FileNavigationLeaf  /docs/observability/monitoring/metrics  "Metrics"
+			        FileNavigationLeaf  /docs/observability/monitoring/traces  "Traces"
+			    DocumentationSetNavigation  /docs/search  "Serverless Search"
+			      index: FileNavigationLeaf  /docs/search  "Serverless Search"
+			      FolderNavigation  /docs/search/indexing  "Indexing"
+			        index: FileNavigationLeaf  /docs/search/indexing  "Indexing"
+			        FileNavigationLeaf  /docs/search/indexing/documents  "Documents"
+			        FileNavigationLeaf  /docs/search/indexing/bulk-api  "Bulk API"
+			      FolderNavigation  /docs/search/searching  "Searching"
+			        index: FileNavigationLeaf  /docs/search/searching  "Searching"
+			        FileNavigationLeaf  /docs/search/searching/query-dsl  "Query DSL"
+			"""
+			);
 	}
 
 	[Test]

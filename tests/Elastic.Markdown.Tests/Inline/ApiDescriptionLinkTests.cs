@@ -3,36 +3,33 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-[InheritsTests]
 public class ApiDescriptionLinkTests() : InlineTest("""
 Placeholder.
 """)
 {
 	[Test]
-	public void RenderApiDescription_LinksBetweenApiPages_AreRecordedWithTheirCanonicalUrl()
+	public void RenderApiDescription_LinksToMissingApiPages_WarnAtTheDescription()
 	{
 		var writer = new HtmlWriter(Set, FileSystem, new DescriptionGenerator());
 		var source = FileSystem.FileInfo.New("docs/api/doc/kibana/operation/operation-x/description.md");
 
 		_ = writer.RenderApiDescription(
 			"""
-			See [the rule](/docs/api/doc/kibana/operation/operation-find-rules), [groups](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-a)
-			and [the guide](https://www.elastic.co/docs/solutions/search) or [elsewhere](https://example.com).
+			See [gone](/docs/api/doc/kibana/operation/operation-gone), [here](/docs/api/doc/kibana/operation/operation-exists),
+			[groups](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-gone) and [elsewhere](https://example.com).
 			""",
 			source
 		);
 
-		Collector
-			.ApiLinks
-			.Select(l => l.Url)
-			.Should()
-			.BeEquivalentTo([
-				"https://www.elastic.co/docs/api/doc/kibana/operation/operation-find-rules",
-				"https://www.elastic.co/docs/api/doc/kibana/group/endpoint-a"
-			]);
-		Collector.ApiLinks.Should().OnlyContain(l => l.File.EndsWith("description.md"));
+		var warnings = Collector.Diagnostics.Where(d => d.Severity == Severity.Warning && d.Message.Contains("API link")).ToArray();
+		warnings.Should().HaveCount(2);
+		warnings.Should().OnlyContain(d => d.File.EndsWith("description.md"));
+		Collector.HasApiWarning("https://www.elastic.co/docs/api/doc/kibana/operation/operation-gone");
+		Collector.HasApiWarning("endpoint-gone");
+		Collector.HasNoApiWarningFor("operation-exists");
 	}
 }

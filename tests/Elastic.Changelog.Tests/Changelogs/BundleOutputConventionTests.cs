@@ -7,6 +7,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -77,11 +79,13 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 		);
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains("output is deprecated") && d.Message.Contains(
-					"{repo}-{product}-{version}.yaml"
-				)
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output is deprecated. Bundle output names are derived by convention as {repo}-{product}-{version}.yaml. Remove this field.
+			"""
 			);
 		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
@@ -111,8 +115,14 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 		);
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("bundle.profiles.legacy.output is deprecated"));
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.legacy.output is deprecated. Bundle output names are derived by convention as {repo}-{product}-{version}.yaml. Remove this field.
+			"""
+			);
 		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
 
@@ -140,11 +150,13 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("'es-all', 'es-ga'") && d.Message.Contains(
-					"{repo}-elasticsearch-{version}.yaml"
-				)
+			.MatchInlineSnapshot(
+				"""
+			error  Profiles 'es-all', 'es-ga' all resolve to the same '{repo}-elasticsearch-{version}.yaml' bundle target for any given version. Bundle names are derived by convention from the authoring repo and the profile's primary output product, so each profile must target a distinct product.
+			"""
 			);
 	}
 
@@ -174,10 +186,49 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "elasticsearch-9.3.0.yaml"))
 			.Should()
 			.BeTrue("when no authoring repo resolves, names fall back to the unprefixed product-version.yaml convention");
+		// The one test that snapshots the unresolved-repository warning in full.
 		Collector
 			.Diagnostics
+			.WithoutAmbient(AmbientDiagnostic.OutputProductsDeprecation)
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a repository name"));
+			.MatchInlineSnapshot(
+				"""
+			warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other.
+			"""
+			);
+	}
+
+	[Test]
+	public async Task ProfileWithOutputProducts_WarnsItIsDeprecated()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: elasticsearch
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "elasticsearch {version}"
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		// The one test that snapshots the deprecated output_products warning in full. Other bundle tests drop it with WithoutAmbient().
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output_products is deprecated. Use 'product: <id>' instead."
+			);
 	}
 
 	[Test]
@@ -400,7 +451,16 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 
 		plan.Should().NotBeNull();
 		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("elasticsearch-9.3.0.yaml");
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("output is deprecated"));
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output is deprecated. Bundle output names are derived by convention as {repo}-{product}-{version}.yaml. Remove this field.
+			"""
+			);
 	}
 
 	[Test]
@@ -521,8 +581,11 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.BeTrue("option mode without a concrete product and version keeps the legacy fallback file name");
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a product and version"));
+			.MatchInlineSnapshot(
+				"warning  Could not resolve a product and version for the bundle file (pass --output-products or --input-products with a concrete target). Using 'changelog-bundle.yaml'."
+			);
 	}
 
 	[Test]
@@ -670,11 +733,13 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("'output_directory' must be a directory") && d.Message.Contains(
-					"{repo}-{product}-{version}.yaml"
-				)
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}.
+			error  Profile 'es-release': 'output_directory' must be a directory, not a file path. The bundle file name is derived by convention as '{repo}-{product}-{version}.yaml'. To choose a folder, set output_directory the same way option-mode --output does when it is a directory.
+			"""
 			);
 	}
 

@@ -41,8 +41,6 @@ public class DiagnosticsCollector(
 
 	public ConcurrentBag<string> CrossLinks { get; } = [];
 
-	public ConcurrentBag<ApiLinkReference> ApiLinks { get; } = [];
-
 	public bool NoHints { get; set; }
 
 	public bool IsStarted => _readerStarted;
@@ -141,8 +139,6 @@ public class DiagnosticsCollector(
 	}
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
-
-	public void EmitApiLink(ApiLinkReference link) => ApiLinks.Add(link);
 
 	public virtual void Write(Diagnostic diagnostic)
 	{
