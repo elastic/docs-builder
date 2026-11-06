@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
@@ -740,6 +741,30 @@ public partial class OpenApiGeneratorMultiVersionTests
 		pages["/api/doc/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
 		pages["/api/doc/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
 		pages["/api/doc/elasticsearch/v9/authentication"].Should().Be("Topic text.");
+
+		var markdown = ReadMarkdownDescriptions(context.WriteFileSystem, outputRoot);
+		markdown["/api/doc/elasticsearch"].Should().Be("Search and analyze data.");
+		markdown["/api/doc/elasticsearch/v8"].Should().Be("Search and analyze data.");
+		markdown["/api/doc/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
+		markdown["/api/doc/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
+		markdown["/api/doc/elasticsearch/v9/authentication"].Should().Be("Topic text.");
+		markdown["/api/doc/elasticsearch/authentication"].Should().BeEmpty();
+		foreach (var (url, description) in markdown.Where(page => pages.ContainsKey(page.Key)))
+			description.Should().Be(pages[url], $"the Markdown of {url} carries the same description as its HTML");
+	}
+
+	/// <summary>Front matter description per page URL, read from every generated Markdown file. A page without one reads as empty.</summary>
+	private static IReadOnlyDictionary<string, string> ReadMarkdownDescriptions(IFileSystem fileSystem, string outputRoot)
+	{
+		var pages = new SortedDictionary<string, string>(StringComparer.Ordinal);
+		foreach (var file in fileSystem.Directory.EnumerateFiles(outputRoot, "*.md", SearchOption.AllDirectories))
+		{
+			var line = fileSystem.File.ReadLines(file).FirstOrDefault(l => l.StartsWith("description: ", StringComparison.Ordinal));
+			var url = "/" + fileSystem.Path.GetRelativePath(outputRoot, file).Replace('\\', '/')[..^".md".Length];
+			pages[url] = line is null ? "" : JsonSerializer.Deserialize<string>(line["description: ".Length..]) ?? "";
+		}
+
+		return pages;
 	}
 
 	[GeneratedRegex("<meta name=\"description\" content=\"([^\"]*)\"")]
