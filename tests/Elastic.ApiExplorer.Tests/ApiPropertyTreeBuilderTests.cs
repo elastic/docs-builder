@@ -857,6 +857,36 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Should().OnlyContain(v => v.Properties!.Items.Count == 2);
 	}
 
+	[Test]
+	public void BuildPropertyList_RequiredObjectInAnOptionalMapValue_StaysFoldedWithTheKeyRow()
+	{
+		var builder = CreateBuilder();
+		var value = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Required = new HashSet<string> { "needed" },
+			Properties = new Dictionary<string, IOpenApiSchema> { ["needed"] = StringFields("one", "two"), ["extra"] = StringFields("x") }
+		};
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>
+			{
+				["settings"] = new OpenApiSchema { Type = JsonSchemaType.Object, AdditionalProperties = value }
+			}
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var map = list!.Items.Single();
+		map.DefaultExpanded.Should().BeFalse("it is optional");
+		var dictionary = map.Children.Dictionary!;
+		dictionary.DefaultExpanded.Should().BeFalse("the key row folds with the map");
+		var needed = dictionary.Properties.Items.Single(p => p.Name == "needed");
+		needed.IsRequired.Should().BeTrue();
+		needed.DefaultExpanded.Should().BeFalse("the key row above it is folded");
+	}
+
 	private static OpenApiSchema ObjectsAtTwoDepths() =>
 		new()
 		{

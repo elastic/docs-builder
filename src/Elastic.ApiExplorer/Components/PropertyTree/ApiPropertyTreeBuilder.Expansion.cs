@@ -183,7 +183,10 @@ public partial class ApiPropertyTreeBuilder
 			RequiredProperties = null,
 			Owner = row.Name,
 			// A row that cannot fold lists its fields whenever the row itself shows, so it passes its own state on.
-			ParentExpanded = expansion.IsCollapsible ? expansion.DefaultExpanded : scope.ParentExpanded
+			// A map is the exception: its <string> key row folds, by the map row's own state.
+			ParentExpanded = expansion.IsCollapsible || expansion.Plan is ChildPlan.Dictionary
+				? expansion.DefaultExpanded
+				: scope.ParentExpanded
 		};
 		var useHidden = options.UseHiddenUntilFound && expansion.IsCollapsible && !expansion.DefaultExpanded;
 
