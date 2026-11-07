@@ -6,6 +6,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentPrompt;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Contributors;
@@ -293,6 +294,9 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			case LinkCardBlock:
 			case GetStartedBlock:
 			case WhatsNewBlock:
+				return;
+
+			case AgentPromptBlock:
 				return;
 
 			case AgentSkillBlock agentSkillBlock:

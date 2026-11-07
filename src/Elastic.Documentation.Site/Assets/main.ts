@@ -1,3 +1,4 @@
+import { initAgentPrompt, initAgentPromptImpressions } from './agent-prompt'
 import { initAgentSkillCopy } from './agent-skill'
 import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
@@ -65,6 +66,8 @@ document.addEventListener('htmx:load', function () {
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
+        ['initAgentPrompt', initAgentPrompt],
+        ['initAgentPromptImpressions', initAgentPromptImpressions],
         ['initAgentSkillCopy', initAgentSkillCopy],
         ['initTabs', initTabs],
         ['initAppliesSwitch', initAppliesSwitch],

@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentPrompt;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
@@ -159,6 +160,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{on-this-page}") > 0)
 			return new OnThisPageBlock(this, context);
+
+		if (info.IndexOf("{agent-prompt}") > 0)
+			return new AgentPromptBlock(this, context);
 
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);

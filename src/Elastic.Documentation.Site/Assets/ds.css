@@ -81,6 +81,8 @@
 	layer(ds.components);
 @import '../Components/Chrome/DiagnosticsPanel/diagnostics-panel.css'
 	layer(ds.components);
+@import '../Components/Markdown/AgentPrompt/agent-prompt.css'
+	layer(ds.components);
 @import '../Components/Markdown/AgentSkill/agent-skill.css' layer(ds.components);
 @import '../Components/Markdown/Contributors/contributors.css'
 	layer(ds.components);
