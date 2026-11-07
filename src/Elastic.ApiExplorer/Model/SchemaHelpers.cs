@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -58,7 +59,7 @@ public static partial class SchemaHelpers
 		return JsonNumber().IsMatch(text) ? JsonNode.Parse(text) : JsonValue.Create(text);
 	}
 
-	[GeneratedRegex(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex JsonNumber();
 
 	/// <summary>

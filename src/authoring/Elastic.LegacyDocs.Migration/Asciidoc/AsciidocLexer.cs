@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.LegacyDocs.Migration.Asciidoc;
 
@@ -78,70 +79,70 @@ public static partial class AsciidocLexer
 	private static readonly Regex ThematicBreakRegex = GetThematicBreakRegex();
 	private static readonly Regex BlankRegex = GetBlankRegex();
 
-	[GeneratedRegex(@"^(={1,6})\s+(.+)$")]
+	[GeneratedRegex(@"^(={1,6})\s+(.+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetSectionRegex();
 
-	[GeneratedRegex(@"^:([^!:][^:]*?):\s*(.*)$")]
+	[GeneratedRegex(@"^:([^!:][^:]*?):\s*(.*)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetAttributeEntryRegex();
 
-	[GeneratedRegex(@"^:!([^:]+):$")]
+	[GeneratedRegex(@"^:!([^:]+):$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetAttributeUnsetRegex();
 
-	[GeneratedRegex(@"^\[\[([^\]]+)\]\]$")]
+	[GeneratedRegex(@"^\[\[([^\]]+)\]\]$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetBlockAnchorRegex();
 
-	[GeneratedRegex(@"^\.(\S.*)$")]
+	[GeneratedRegex(@"^\.(\S.*)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetBlockTitleRegex();
 
-	[GeneratedRegex(@"^\[(.+)\]\s*$")]
+	[GeneratedRegex(@"^\[(.+)\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetBlockAttributeRegex();
 
-	[GeneratedRegex(@"^(-{4,}|\.{4,}|={4,}|\*{4,}|\+{4,}|/{4,}|-{2})\s*$")]
+	[GeneratedRegex(@"^(-{4,}|\.{4,}|={4,}|\*{4,}|\+{4,}|/{4,}|-{2})\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetBlockDelimiterRegex();
 
-	[GeneratedRegex(@"^(\*{1,5})\s+(.+)$")]
+	[GeneratedRegex(@"^(\*{1,5})\s+(.+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetUnorderedListRegex();
 
-	[GeneratedRegex(@"^(\.{1,5})\s+(.+)$")]
+	[GeneratedRegex(@"^(\.{1,5})\s+(.+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetOrderedListRegex();
 
-	[GeneratedRegex(@"^\+\s*$")]
+	[GeneratedRegex(@"^\+\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetListContinuationRegex();
 
-	[GeneratedRegex(@"^(.+?)(:{2,4})\s*(.*)$")]
+	[GeneratedRegex(@"^(.+?)(:{2,4})\s*(.*)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetDescriptionListRegex();
 
-	[GeneratedRegex(@"^\|={3,}\s*$")]
+	[GeneratedRegex(@"^\|={3,}\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetTableDelimiterRegex();
 
-	[GeneratedRegex(@"^include::(.+?)\[(.*?)?\]$")]
+	[GeneratedRegex(@"^include::(.+?)\[(.*?)?\]$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetIncludeRegex();
 
-	[GeneratedRegex(@"^(ifdef|ifndef|ifeval)::(.*?)\[(.*?)?\]$")]
+	[GeneratedRegex(@"^(ifdef|ifndef|ifeval)::(.*?)\[(.*?)?\]$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetConditionalStartRegex();
 
-	[GeneratedRegex(@"^endif::(.*?)?\[(.*?)?\]$")]
+	[GeneratedRegex(@"^endif::(.*?)?\[(.*?)?\]$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetConditionalEndRegex();
 
-	[GeneratedRegex(@"^image::(.+?)\[(.*?)?\]$")]
+	[GeneratedRegex(@"^image::(.+?)\[(.*?)?\]$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetImageBlockRegex();
 
-	[GeneratedRegex(@"^(NOTE|TIP|WARNING|IMPORTANT|CAUTION):\s+(.+)$")]
+	[GeneratedRegex(@"^(NOTE|TIP|WARNING|IMPORTANT|CAUTION):\s+(.+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetAdmonitionRegex();
 
-	[GeneratedRegex(@"^/{4,}$")]
+	[GeneratedRegex(@"^/{4,}$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetCommentBlockDelimRegex();
 
-	[GeneratedRegex(@"^//\s*(.*)$")]
+	[GeneratedRegex(@"^//\s*(.*)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetCommentRegex();
 
-	[GeneratedRegex(@"^<<<\s*$")]
+	[GeneratedRegex(@"^<<<\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetPageBreakRegex();
 
-	[GeneratedRegex(@"^'{3,}\s*$")]
+	[GeneratedRegex(@"^'{3,}\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetThematicBreakRegex();
 
-	[GeneratedRegex(@"^\s*$")]
+	[GeneratedRegex(@"^\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GetBlankRegex();
 
 	public static IReadOnlyList<Token> Tokenize(string content)

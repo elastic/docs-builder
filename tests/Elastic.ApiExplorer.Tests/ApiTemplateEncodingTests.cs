@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -47,9 +48,9 @@ public partial class ApiTemplateEncodingTests
 		return withoutComments.Split('\n').Select(static (text, i) => (i + 1, text));
 	}
 
-	[GeneratedRegex(@"@\*.*?\*@", RegexOptions.Singleline)]
+	[GeneratedRegex(@"@\*.*?\*@", RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex RazorComment();
 
-	[GeneratedRegex(@"[^\x00-\x7F]")]
+	[GeneratedRegex(@"[^\x00-\x7F]", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex NonAscii();
 }

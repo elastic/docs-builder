@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -58,10 +59,10 @@ internal record ListFileResult(string[]? Prs, string[]? Issues, string[]? Files)
 
 public static partial class ProfileFilterResolver
 {
-	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubPrUrlRegex();
 
-	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/issues/\d+/?$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/issues/\d+/?$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubIssueUrlRegex();
 
 	/// <summary>

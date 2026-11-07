@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -31,10 +32,10 @@ internal static partial class CodeFences
 	public static bool IsFenceLine(string line) => FenceLine().IsMatch(line);
 
 	// A fence may sit inside a blockquote, so a `> info` line within that quoted code is still literal.
-	[GeneratedRegex(@"^(?<quote>\s{0,3}>\s?)?\s{0,3}(?<fence>`{3,}|~{3,})(?<rest>.*)$")]
+	[GeneratedRegex(@"^(?<quote>\s{0,3}>\s?)?\s{0,3}(?<fence>`{3,}|~{3,})(?<rest>.*)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FenceLine();
 
-	[GeneratedRegex(@"^\s{0,3}>")]
+	[GeneratedRegex(@"^\s{0,3}>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex QuoteLine();
 
 	public readonly record struct Fence(string Delimiter, bool Quoted)

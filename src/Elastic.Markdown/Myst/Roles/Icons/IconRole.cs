@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Svg;
 using Elastic.Markdown.Diagnostics;
 using Markdig.Parsers;
@@ -30,7 +31,7 @@ public class IconsRole : RoleLeaf
 
 public partial class IconParser : RoleParser<IconsRole>
 {
-	[GeneratedRegex(@"\{icon\}`([^`]+)`", RegexOptions.Compiled)]
+	[GeneratedRegex(@"\{icon\}`([^`]+)`", RegexOptions.Compiled, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex IconRegex();
 
 	protected override IconsRole CreateRole(string role, string content, InlineProcessor parserContext) =>

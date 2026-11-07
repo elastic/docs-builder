@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog;
@@ -33,7 +34,7 @@ public sealed partial class DecisionLog(
 	public const int DefaultMaxItems = 50;
 	public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(4);
 
-	[GeneratedRegex(@"/(?:pull|issues)/(\d+)")]
+	[GeneratedRegex(@"/(?:pull|issues)/(\d+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PullRequestUrlRegex();
 
 	private readonly int _maxItems = Math.Max(1, maxItems);

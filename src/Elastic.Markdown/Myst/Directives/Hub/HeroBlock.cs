@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.Icons;
 using Elastic.Markdown.Diagnostics;
 
@@ -70,6 +71,6 @@ public partial class HeroBlock(DirectiveBlockParser parser, ParserContext contex
 		return (match.Groups["label"].Value.Trim(), url);
 	}
 
-	[GeneratedRegex(@"^\[(?<label>[^\]]+)\]\((?<url>[^)]+)\)$")]
+	[GeneratedRegex(@"^\[(?<label>[^\]]+)\]\((?<url>[^)]+)\)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownLink();
 }

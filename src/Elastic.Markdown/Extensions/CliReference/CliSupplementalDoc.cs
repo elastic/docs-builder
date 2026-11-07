@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Markdown.Extensions.CliReference;
 
@@ -133,9 +134,9 @@ internal sealed partial record CliSupplementalDoc(
 	}
 
 	// Matches: `: `--flag`` or `: --flag` or `: <name>`
-	[GeneratedRegex(@"^:\s+(`[^`]+`|--[\w-]+|<[\w-]+>)")]
+	[GeneratedRegex(@"^:\s+(`[^`]+`|--[\w-]+|<[\w-]+>)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TermLineRegex();
 
-	[GeneratedRegex(@"\A---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)")]
+	[GeneratedRegex(@"\A---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FrontMatterRegex();
 }

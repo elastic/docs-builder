@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.LegacyDocs.Migration.Asciidoc;
 
@@ -148,9 +149,9 @@ public static partial class ConditionalProcessor
 		return value;
 	}
 
-	[GeneratedRegex(@"\{([a-zA-Z0-9_-]+)\}")]
+	[GeneratedRegex(@"\{([a-zA-Z0-9_-]+)\}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AttrRefRegex();
 
-	[GeneratedRegex(@"(.+?)\s*(==|!=|<=|>=|<|>)\s*(.+)")]
+	[GeneratedRegex(@"(.+?)\s*(==|!=|<=|>=|<|>)\s*(.+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex IfevalRegex();
 }

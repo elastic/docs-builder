@@ -2,7 +2,7 @@
 @using System.Text.RegularExpressions
 @{
 	var item = Model.Item;
-	var titleId = "api-catalog-title-" + Regex.Replace(item.Key, "[^a-zA-Z0-9_-]", "-");
+	var titleId = "api-catalog-title-" + Regex.Replace(item.Key, "[^a-zA-Z0-9_-]", "-", RegexOptions.None, Elastic.Documentation.RegexTimeouts.MatchTimeout);
 	var compact = Model.Kind == ApiCatalogCardKind.Compact;
 	// The classes are the ones on the cards of the elastic.co/docs landing page ("Solutions and use cases"): the
 	// icon, top-aligned, beside one column holding a bold text-xl title and a mt-2 description. The compact card is a

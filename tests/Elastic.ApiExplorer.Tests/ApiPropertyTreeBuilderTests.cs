@@ -701,7 +701,12 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Text
 			.RegularExpressions
 			.Regex
-			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties");
+			.Match(
+				html,
+				$"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties",
+				System.Text.RegularExpressions.RegexOptions.None,
+				Elastic.Documentation.RegexTimeouts.MatchTimeout
+			);
 		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
 		match.Groups[2].Value.Should().Be("true", $"{anchorId} starts expanded");
 		match.Groups[4].Value.Should().Be("hide", $"{anchorId} offers hide properties");

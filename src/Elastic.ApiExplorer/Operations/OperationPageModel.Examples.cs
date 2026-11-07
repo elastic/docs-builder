@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -601,6 +602,6 @@ public partial record OperationPageModel
 		return text.Length == 0 ? key : text;
 	}
 
-	[GeneratedRegex(@"(?<=[a-z0-9])(?=[A-Z])|\s+", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"(?<=[a-z0-9])(?=[A-Z])|\s+", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CamelCaseBoundary();
 }

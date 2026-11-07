@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Markdown.Helpers;
 using Microsoft.AspNetCore.Html;
 
@@ -84,7 +85,7 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 			: html[..wrapperIndex] + "<div class=\"table-wrapper table-matrix\">" + html[(wrapperIndex + wrapperOpenTag.Length)..];
 	}
 
-	[GeneratedRegex(@"\sstyle\s*=\s*""([^""]*)""", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\sstyle\s*=\s*""([^""]*)""", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex StyleAttributeRegex();
 
 	/// <summary>

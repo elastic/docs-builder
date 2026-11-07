@@ -367,7 +367,10 @@ public partial class OperationExamplesPanelRenderingTests
 	[GeneratedRegex("data-status=\"200\"")]
 	private static partial Regex Status200Regex();
 
-	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline)]
+	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
 	private static partial Regex CarouselCardRegex();
 
 	[GeneratedRegex("data-tippy-content=\"Unauthorized\"")]

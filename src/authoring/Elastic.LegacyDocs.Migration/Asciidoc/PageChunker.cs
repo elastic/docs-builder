@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.LegacyDocs.Migration.Asciidoc.Ast;
 
 namespace Elastic.LegacyDocs.Migration.Asciidoc;
@@ -12,10 +13,10 @@ public record PageOutput(string Slug, string Title, string? NavigationTitle, str
 
 public static partial class PageChunker
 {
-	[GeneratedRegex(@"^<titleabbrev>(.*)</titleabbrev>\s*$", RegexOptions.Singleline)]
+	[GeneratedRegex(@"^<titleabbrev>(.*)</titleabbrev>\s*$", RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TitleAbbrevRegex();
 
-	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]
+	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SlugNonAlphanumericRegex();
 
 	/// <summary>

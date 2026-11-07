@@ -27,34 +27,34 @@ public sealed record MigratedRelease
 /// </summary>
 public static partial class ReleaseNotesPageParser
 {
-	[GeneratedRegex(@"^##\s+(?<version>\S+)(?:\s+\[[^\]]*\])?\s*$")]
+	[GeneratedRegex(@"^##\s+(?<version>\S+)(?:\s+\[[^\]]*\])?\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex VersionHeadingRegex();
 
-	[GeneratedRegex(@"^###\s+(?<title>.+?)(?:\s*\[[^\]]*\])?\s*$")]
+	[GeneratedRegex(@"^###\s+(?<title>.+?)(?:\s*\[[^\]]*\])?\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SubsectionHeadingRegex();
 
-	[GeneratedRegex(@"^####\s+(?<area>.+?)(?:\s*\[[^\]]*\])?\s*$")]
+	[GeneratedRegex(@"^####\s+(?<area>.+?)(?:\s*\[[^\]]*\])?\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AreaHeadingRegex();
 
-	[GeneratedRegex(@"^\*\*(?<area>[^*]+)\*\*:\s*")]
+	[GeneratedRegex(@"^\*\*(?<area>[^*]+)\*\*:\s*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BoldAreaPrefixRegex();
 
-	[GeneratedRegex(@"^(?<area>[A-Z][A-Za-z0-9\- ]{1,55}/[A-Za-z0-9\-/ ]{1,30}):\s+")]
+	[GeneratedRegex(@"^(?<area>[A-Z][A-Za-z0-9\- ]{1,55}/[A-Za-z0-9\-/ ]{1,30}):\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SlashAreaPrefixRegex();
 
-	[GeneratedRegex(@"^\*\*Release date:?\*\*:?\s*(?<date>.+?)\s*$")]
+	[GeneratedRegex(@"^\*\*Release date:?\*\*:?\s*(?<date>.+?)\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ReleaseDateRegex();
 
-	[GeneratedRegex(@"\[#?\d+\]\((?<url>https://github\.com/[^\s)]+/pull/\d+)\)")]
+	[GeneratedRegex(@"\[#?\d+\]\((?<url>https://github\.com/[^\s)]+/pull/\d+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PrLinkRegex();
 
-	[GeneratedRegex(@"(?<=^|[\s(])#(?<number>\d+)\b")]
+	[GeneratedRegex(@"(?<=^|[\s(])#(?<number>\d+)\b", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BarePrRefRegex();
 
-	[GeneratedRegex(@"^For the Elastic .+ release", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^For the Elastic .+ release", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CrossReferenceRegex();
 
-	[GeneratedRegex(@"\{applies_to\}|<applies-to>|\*\*Applies to:\*\*", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\{applies_to\}|<applies-to>|\*\*Applies to:\*\*", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AppliesToLineRegex();
 
 	/// <summary>
