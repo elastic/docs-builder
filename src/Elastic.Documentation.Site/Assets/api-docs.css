@@ -4299,3 +4299,13 @@ html:has(.api-page-shell) {
 #elastic-api-v3 .responses-header {
 	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
 }
+
+/* Sample containment stopped at 767px. From 768–1023 the rail is still one
+   column, and overflow:visible on a max-content line widens the page. */
+@media (max-width: 1023px) {
+	#api-examples-panel .api-code-card,
+	.api-page-main .markdown-content pre {
+		max-width: 100%;
+		overflow-x: auto;
+	}
+}
