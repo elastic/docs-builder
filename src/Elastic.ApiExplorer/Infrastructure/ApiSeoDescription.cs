@@ -22,6 +22,70 @@ internal static partial class ApiSeoDescription
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
 	}
 
+	/// <summary>
+	/// The operation's own text for a meta description. Drops the leading "all methods and paths" block (a bold
+	/// sentence ending in a colon, the method and path lines, an optional "Refer to ..." line), then falls back to the summary.
+	/// </summary>
+	internal static string? OperationText(string? description, string? summary)
+	{
+		var own = SkipPathPreamble(description);
+		if (!string.IsNullOrWhiteSpace(own))
+			return own;
+
+		return string.IsNullOrWhiteSpace(summary) ? null : summary.Trim();
+	}
+
+	internal static string? SkipPathPreamble(string? markdown)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return null;
+
+		var paragraphs = markdown.Split(["\r\n\r\n", "\n\n"], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+		var index = 0;
+		var sawListing = false;
+		while (index < paragraphs.Length)
+		{
+			var paragraph = paragraphs[index];
+			var isIntro = index == 0 && IsPathIntro(paragraph);
+			var isListing = IsMethodPathListing(paragraph);
+			var isReference = sawListing && IsReferenceLine(paragraph);
+			if (!isIntro && !isListing && !isReference)
+				break;
+
+			sawListing |= isListing;
+			index++;
+		}
+
+		return index == 0 ? markdown : string.Join("\n\n", paragraphs.Skip(index));
+	}
+
+	private static bool IsPathIntro(string paragraph) =>
+		paragraph.StartsWith("**", StringComparison.Ordinal)
+			&& paragraph.EndsWith(":**", StringComparison.Ordinal)
+			&& PathWordPattern().IsMatch(paragraph);
+
+	private static bool IsReferenceLine(string paragraph) =>
+		paragraph.StartsWith("Refer to ", StringComparison.OrdinalIgnoreCase)
+			&& paragraph.EndsWith("for more information.", StringComparison.OrdinalIgnoreCase);
+
+	private static bool IsMethodPathListing(string paragraph)
+	{
+		if (!paragraph.Contains('/'))
+			return false;
+
+		var tokens = ApiMarkdown.StripHtml(paragraph).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+		if (tokens.Length == 0 || tokens.Length % 2 != 0)
+			return false;
+
+		for (var i = 0; i < tokens.Length; i += 2)
+		{
+			if (!HttpMethodPattern().IsMatch(tokens[i]) || !tokens[i + 1].StartsWith('/'))
+				return false;
+		}
+
+		return true;
+	}
+
 	internal static string? FirstParagraph(string markdown)
 	{
 		using var reader = new StringReader(markdown);
@@ -73,6 +137,12 @@ internal static partial class ApiSeoDescription
 			endIndex = MaxLength;
 		return string.Concat(text.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 	}
+
+	[GeneratedRegex(@"\bpaths?\b", RegexOptions.IgnoreCase)]
+	private static partial Regex PathWordPattern();
+
+	[GeneratedRegex(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)$", RegexOptions.IgnoreCase)]
+	private static partial Regex HttpMethodPattern();
 
 	[GeneratedRegex(@"!\[([^\]]*)\]\([^)]+\)")]
 	private static partial Regex ImagePattern();
