@@ -1,0 +1,207 @@
+# Sample config for the {wizard} directive: "Which Serverless project type is right for your use case?". See wizard.md for the schema.
+#
+# Design: start from the reader's data, which they know, not from our product names. Two short follow-ups confirm the
+# fuzzy boundaries (logs vs security, Elasticsearch vs Vector Database). "I'm not sure" falls back to a goal question,
+# and a second "I'm not sure" lands on Elasticsearch, the most general-purpose type, so there is never a dead end.
+#
+# Source of truth for every fact below (keep this file in sync when these pages change):
+#   - Project types ........ deploy-manage/deploy/elastic-cloud/serverless.md#choose-a-project-type
+#   - Vector DB vs ES ...... solutions/vector-database.md ("When to use this project type")
+#   - Type can't be changed  deploy-manage/deploy/elastic-cloud/create-serverless-project.md
+#
+#   data? ─┬─ logs, metrics, traces ─┐
+#          ├─ security events ───────┴─► purpose? ─┬─ monitor / troubleshoot ─► Observability
+#          │                                       ├─ detect / investigate ───► Security
+#          │                                       └─ not sure ───────────────► what the data suggested
+#          ├─ documents, app data ───┐
+#          ├─ embeddings, AI content ┴─► find? ────┬─ keyword, filters ───────► Elasticsearch
+#          │                                       ├─ semantic, similarity ───► Vector Database
+#          │                                       ├─ both ───────────────────► Elasticsearch
+#          │                                       └─ not sure ───────────────► what the data suggested
+#          └─ not sure ─► goal? ─┬─ add search ──────► Elasticsearch
+#                                ├─ AI or RAG app ───► Vector Database
+#                                ├─ monitor systems ─► Observability
+#                                ├─ detect threats ──► Security
+#                                └─ not sure ────────► Elasticsearch (general purpose, with a note)
+#
+# Answers this file uses
+#   project     elasticsearch | vectordb | observability | security
+#   first_step  what to do first. Every path sets one.
+#
+# A follow-up's "not sure" sets nothing, so the answer from the data question stays. Answers set later overwrite earlier ones.
+
+meta:
+  title: Which Serverless project type is right for you?
+  intro: >-
+    Tell us what you want to do with your data, and we'll match you to the right Serverless project type.
+  start_button: Let's go
+  start: data
+  progress_label: Your progress
+
+screens:
+
+  # ------------------------------------------------------------------ Q1: what kind of data?
+  data:
+    type: question
+    progress: 20
+    question: What kind of data are you working with?
+    why: >-
+      The data you work with shapes what you'll do with it. Logs help you troubleshoot, security events help you catch threats, and documents or embeddings power search and AI.
+    options:
+      - label: Documents, website content, product catalogs, or other app data
+        set: { project: elasticsearch, first_step: fulltext }
+        next: find
+      - label: Logs, metrics, or traces from apps, services, or infrastructure
+        set: { project: observability, first_step: logs }
+        next: purpose
+      - label: Security events, like endpoint, network, or cloud audit data
+        set: { project: security, first_step: siem }
+        next: purpose
+      - label: Vector embeddings, or content for an AI or semantic search app
+        set: { project: vectordb, first_step: semantic }
+        next: find
+      - label: I'm not sure
+        hint: No problem. Tell us what you're trying to achieve instead, and we'll work out the data side for you.
+        next: goal
+
+  # ------------------------------------------------------------------ Follow-up: logs vs security
+  purpose:
+    type: question
+    progress: 60
+    question: What do you want to do with this data?
+    why: Logs and events can belong in either project type, so this confirms which one fits.
+    options:
+      - label: Monitor performance and troubleshoot issues
+        set: { project: observability, first_step: logs }
+        next: done
+      - label: Detect and investigate threats
+        set: { project: security, first_step: siem }
+        next: done
+      - label: I'm not sure
+        hint: We'll go with what your data suggests.
+        next: done
+
+  # ------------------------------------------------------------------ Follow-up: Elasticsearch vs Vector Database
+  find:
+    type: question
+    progress: 60
+    question: How do you want people or apps to find results?
+    why: Elasticsearch projects also support vector search, so this is what decides between the two.
+    options:
+      - label: Keyword and full-text search, filters, and facets
+        set: { project: elasticsearch, first_step: fulltext }
+        next: done
+      - label: Semantic or similarity search for AI and RAG apps
+        set: { project: vectordb, first_step: semantic }
+        next: done
+      - label: Both
+        hint: Elasticsearch handles keyword and semantic search together.
+        set: { project: elasticsearch, first_step: hybrid }
+        next: done
+      - label: I'm not sure
+        hint: We'll go with what your data suggests.
+        next: done
+
+  # ------------------------------------------------------------------ Fallback when Q1 is "I'm not sure"
+  goal:
+    type: question
+    progress: 60
+    question: What are you trying to do?
+    why: Pick the closest match.
+    options:
+      - label: Add search to a website or app
+        set: { project: elasticsearch, first_step: fulltext }
+        next: done
+      - label: Build an AI or RAG application
+        set: { project: vectordb, first_step: rag }
+        next: done
+      - label: Monitor and troubleshoot my systems
+        set: { project: observability, first_step: logs }
+        next: done
+      - label: Detect and respond to security threats
+        set: { project: security, first_step: siem }
+        next: done
+      - label: I'm not sure
+        hint: We'll start you with Elasticsearch, the most general-purpose project type and the safest place to explore.
+        set: { project: elasticsearch, first_step: explore }
+        flag: not_sure
+        next: done
+
+  # ------------------------------------------------------------------ Result
+  done:
+    type: result
+
+results:
+  heading: "{project} is the right project type for you"
+  answers_heading: Your answers
+  change_label: Change
+  start_over_label: Start over
+  back_label: Back
+
+  variables:
+    project:
+      answer: project
+      items:
+        elasticsearch:
+          name: Elasticsearch
+          blurb: >-
+            General-purpose search and analytics. You define your own mappings, index settings and queries, and get tools like the Query Rules UI and Agent Builder.
+          docs: { title: Elasticsearch project overview, href: https://www.elastic.co/docs/solutions/elasticsearch-solution-project }
+        vectordb:
+          name: Elasticsearch Vector Database
+          blurb: >-
+            Vector-tuned defaults, built-in inference access and pricing that follows storage and reserved search capacity, for embedding-driven workloads.
+          docs: { title: Vector Database project overview, href: https://www.elastic.co/docs/solutions/vector-database }
+        observability:
+          name: Observability
+          blurb: >-
+            Logs, metrics, traces and APM data with prebuilt dashboards and alerting. You'll choose a feature tier, Logs Essentials or Complete, when you create the project.
+          docs: { title: Observability overview, href: https://www.elastic.co/docs/solutions/observability }
+        security:
+          name: Security
+          blurb: >-
+            SIEM with prebuilt and custom detection rules, dashboards and investigation tools. You'll choose a feature tier when you create the project, and endpoint and cloud protection are optional add-ons.
+          docs: { title: Security overview, href: https://www.elastic.co/docs/solutions/security }
+
+    first_step:
+      answer: first_step
+      items:
+        explore:
+          name: Compare the project types
+          blurb: Review the project type comparison before you commit, or create one of each to try them side by side.
+          docs: { title: Compare project types, href: https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/serverless#choose-a-project-type }
+        fulltext:
+          name: Full-text search
+          blurb: Start by indexing your content and running your first keyword search.
+          docs: { title: Full-text search, href: https://www.elastic.co/docs/solutions/search/full-text }
+        hybrid:
+          name: Hybrid search
+          blurb: Combine keyword matching with semantic similarity in a single query.
+          docs: { title: Hybrid search, href: https://www.elastic.co/docs/solutions/search/hybrid-search }
+        semantic:
+          name: Semantic search
+          blurb: Start by generating embeddings and searching by meaning.
+          docs: { title: Semantic search, href: https://www.elastic.co/docs/solutions/search/semantic-search }
+        rag:
+          name: Retrieval augmented generation (RAG)
+          blurb: Ground an LLM in your own data.
+          docs: { title: Build a RAG application, href: https://www.elastic.co/docs/solutions/search/rag }
+        logs:
+          name: Logs
+          blurb: Start by sending your logs to your project.
+          docs: { title: Get started with logs, href: https://www.elastic.co/docs/solutions/observability/logs }
+        siem:
+          name: Get started with Security
+          blurb: Start by connecting data sources and turning on detection rules.
+          docs: { title: Get started with Security, href: https://www.elastic.co/docs/solutions/security/get-started }
+  cta:
+    - label: Create your {project} project
+      href: https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/create-serverless-project
+
+  extra_docs:
+    - when: { key: project, in: [elasticsearch, vectordb, observability, security] }
+      title: Understand how your project is billed
+      href: https://www.elastic.co/docs/deploy-manage/cloud-organization/billing/serverless-project-billing-dimensions
+
+  flag_notes:
+    not_sure: "Good to know: you can create as many projects as you like, so try one of each type side by side and delete the ones you don't keep."
