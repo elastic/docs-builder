@@ -56,6 +56,9 @@ public record NavigationSearchResultItem
 
 	/// <summary>The operation's routes with their methods; empty for a docs page.</summary>
 	public ApiRouteEntry[] Routes { get; init; } = [];
+
+	/// <summary>True when the result is an API operation the spec marks deprecated; false for a docs page.</summary>
+	public bool Deprecated { get; init; }
 	public required string Type { get; init; }
 	public required string Url { get; init; }
 	public required string Title { get; init; }
