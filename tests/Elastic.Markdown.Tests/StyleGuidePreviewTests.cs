@@ -16,8 +16,12 @@ using Elastic.Markdown.StyleGuide;
 
 namespace Elastic.Markdown.Tests;
 
-public class StyleGuidePreviewTests
+public partial class StyleGuidePreviewTests
 {
+	// The template only lends its configuration to the sample documentation sets, so one instance serves every test. Building one
+	// per test also left a temporary configuration directory behind for each of them.
+	private static readonly Lazy<BuildContext> SharedTemplate = new(Template);
+
 	private static BuildContext Template()
 	{
 		var realFs = new FileSystem();
@@ -31,7 +35,7 @@ public class StyleGuidePreviewTests
 
 	private static async Task<string?> RenderAsync(string id)
 	{
-		var template = Template();
+		var template = SharedTemplate.Value;
 		using var provider = new EmbeddedOrPhysicalFileProvider(template);
 		var ct = TestContext.Current!.Execution.CancellationToken;
 		return await StyleGuidePreviews.RenderAsync(id, template, ct)
@@ -116,8 +120,11 @@ public class StyleGuidePreviewTests
 		Crumbs(grouped).Should().Be(Crumbs(ungrouped) + 1, "the group adds one step to the trail");
 	}
 
-	private static int Crumbs(string? html) => System.Text.RegularExpressions.Regex.Count(html ?? string.Empty, "breadcrumb__item");
+	private static int Crumbs(string? html) => BreadcrumbItemRegex().Count(html ?? string.Empty);
 
 	[Test]
 	public async Task UnknownPreview_IsNull() => (await RenderAsync("nope")).Should().BeNull();
+
+	[System.Text.RegularExpressions.GeneratedRegex("breadcrumb__item")]
+	private static partial System.Text.RegularExpressions.Regex BreadcrumbItemRegex();
 }

@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -22,8 +23,7 @@ public class SyntheticCodeSamplesTests
 		samples[0].Language.Should().Be("Console");
 		samples[0].Source.Should().Be("DELETE /api/dashboards/ID");
 		samples[1].Language.Should().Be("curl");
-		samples[1].Source.Should().Contain("DELETE");
-		samples[1].Source.Should().Contain("/api/dashboards/${ID}");
+		samples[1].Source.Should().MatchInlineSnapshot("curl -X DELETE \"${API_URL}/api/dashboards/${ID}\"");
 	}
 
 	[Test]
@@ -58,9 +58,15 @@ public class SyntheticCodeSamplesTests
 		});
 
 		samples[0].Source.Should().Be("DELETE /api/cases?ids=IDS");
-		samples[1].Source.Should().Contain("${KIBANA_URL}/api/cases?ids=${IDS}");
-		samples[1].Source.Should().Contain("kbn-xsrf: true");
-		samples[1].Source.Should().NotContain("optional");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			curl -X DELETE "${KIBANA_URL}/api/cases?ids=${IDS}" \
+			  -H "kbn-xsrf: true"
+			"""
+			);
 	}
 
 	[Test]
@@ -85,7 +91,7 @@ public class SyntheticCodeSamplesTests
 		);
 
 		samples[0].Source.Should().Be("GET /organizations/198583657190/subscription");
-		samples[1].Source.Should().Contain("/organizations/198583657190/subscription");
+		samples[1].Source.Should().MatchInlineSnapshot("curl -X GET \"${API_URL}/organizations/198583657190/subscription\"");
 	}
 
 	[Test]
@@ -107,7 +113,15 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/apm/agent_keys", operation));
 
-		samples[1].Source.Should().Contain("-H \"elastic-api-version: 2023-10-31\"");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			curl -X POST "${API_URL}/api/apm/agent_keys" \
+			  -H "elastic-api-version: 2023-10-31"
+			"""
+			);
 	}
 
 	[Test]
@@ -466,7 +480,15 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", operation));
 
-		samples[1].Source.Should().Contain("-H \"X-Note: say \\\"hi\\\" to \\$HOME, \\`whoami\\` and C:\\\\dir next\"");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			curl -X GET "${API_URL}/api/x" \
+			  -H "X-Note: say \"hi\" to \$HOME, \`whoami\` and C:\\dir next"
+			"""
+			);
 	}
 
 	[Test]
@@ -493,10 +515,20 @@ public class SyntheticCodeSamplesTests
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost())
 		{
-			Body = /*lang=json,strict*/  """{"name":"it's"}"""
+			Body = /*lang=json,strict*/ """{"name":"it's"}"""
 		});
 
-		samples[1].Source.Should().Contain("it'\\''s");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			curl -X POST "${API_URL}/api/foo" \
+			  -H "kbn-xsrf: true" \
+			  -H "Content-Type: application/json" \
+			  -d '{"name":"it'\''s"}'
+			"""
+			);
 	}
 
 	[Test]
@@ -505,7 +537,13 @@ public class SyntheticCodeSamplesTests
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost()) { Body = "  " });
 
 		samples[0].Source.Should().Be("POST /api/foo");
-		samples[1].Source.Should().NotContain("-d ");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot("""
+			curl -X POST "${API_URL}/api/foo" \
+			  -H "kbn-xsrf: true"
+			""");
 	}
 
 	[Test]
@@ -513,7 +551,13 @@ public class SyntheticCodeSamplesTests
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost()));
 
-		samples[1].Source.Should().NotContain("Content-Type").And.NotContain("-d ");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot("""
+			curl -X POST "${API_URL}/api/foo" \
+			  -H "kbn-xsrf: true"
+			""");
 	}
 
 	[Test]
@@ -526,7 +570,15 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-H \"Authorization: ApiKey ${API_KEY}\"");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			curl -X GET "${API_URL}/api/x" \
+			  -H "Authorization: ApiKey ${API_KEY}"
+			"""
+			);
 		samples[0].Source.Should().Be("GET /api/x");
 	}
 
@@ -540,7 +592,13 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-H \"X-Api-Key: ${API_KEY}\"").And.NotContain("ApiKey ${API_KEY}");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot("""
+			curl -X GET "${API_URL}/api/x" \
+			  -H "X-Api-Key: ${API_KEY}"
+			""");
 	}
 
 	[Test]
@@ -604,7 +662,7 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("\"${API_URL}/api/x?key=${API_KEY}\"");
+		samples[1].Source.Should().MatchInlineSnapshot("curl -X GET \"${API_URL}/api/x?key=${API_KEY}\"");
 		samples[0].Source.Should().Be("GET /api/x");
 	}
 
@@ -618,7 +676,13 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-u \"${USERNAME}:${PASSWORD}\"");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot("""
+			curl -X GET "${API_URL}/api/x" \
+			  -u "${USERNAME}:${PASSWORD}"
+			""");
 	}
 
 	[Test]
@@ -631,7 +695,15 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("--digest -u \"${USERNAME}:${PASSWORD}\"").And.NotContain("TOKEN");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			curl -X GET "${API_URL}/api/x" \
+			  --digest -u "${USERNAME}:${PASSWORD}"
+			"""
+			);
 	}
 
 	[Test]
@@ -644,7 +716,7 @@ public class SyntheticCodeSamplesTests
 		{
 			Security = [scheme]
 		});
-		samples[1].Source.Should().NotContain("Authorization").And.NotContain("-u ");
+		samples[1].Source.Should().MatchInlineSnapshot("curl -X GET \"${API_URL}/api/x\"");
 	}
 
 	[Test]
@@ -683,7 +755,13 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", operation) { Security = [scheme] });
 
-		samples[1].Source.Should().Contain("Authorization: ApiKey abc").And.NotContain("${API_KEY}");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot("""
+			curl -X GET "${API_URL}/api/x" \
+			  -H "Authorization: ApiKey abc"
+			""");
 	}
 
 	[Test]
@@ -697,7 +775,13 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", operation) { Security = [scheme] });
 
-		samples[1].Source.Should().Contain("-H \"X-Api-Key: ${API_KEY}\"").And.NotContain("X-Api-Key: string");
+		samples[1]
+			.Source
+			.Should()
+			.MatchInlineSnapshot("""
+			curl -X GET "${API_URL}/api/x" \
+			  -H "X-Api-Key: ${API_KEY}"
+			""");
 	}
 
 	[Test]
@@ -725,7 +809,7 @@ public class SyntheticCodeSamplesTests
 	[Test]
 	public void BuildExampleScenarios_SyntheticSamplesWithTheExampleBody_CarryTheRequest()
 	{
-		const string body = /*lang=json,strict*/  """{"schema":{"foo":"bar"}}""";
+		const string body = /*lang=json,strict*/ """{"schema":{"foo":"bar"}}""";
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost()) { Body = body });
 		var request = new ExampleDisplay("Example", null, body, null);
 

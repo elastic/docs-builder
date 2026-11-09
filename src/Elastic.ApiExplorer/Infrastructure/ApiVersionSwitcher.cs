@@ -21,7 +21,7 @@ public static class ApiVersionSwitcher
 
 		var latest = ApiVersions.LatestMajor(monikers);
 		return monikers
-			.OrderByDescending(m => m == "main" ? int.MaxValue : ApiVersions.TryParseMajor(m) ?? 0)
+			.OrderByDescending(ApiVersions.Recency)
 			.Select(
 				m => new ApiVersionSwitcherItem(
 					Label: LabelFor(m, latest),

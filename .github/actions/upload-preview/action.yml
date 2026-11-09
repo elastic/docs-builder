@@ -1,0 +1,51 @@
+name: Upload preview
+description: |
+  Syncs a built site to the preview bucket and invalidates its CloudFront paths.
+  Run after `aws-auth`.
+
+inputs:
+  source:
+    description: 'Directory holding the built site'
+    required: true
+  path-prefix:
+    description: 'URL path the site is served under, with a leading slash'
+    required: true
+  compress:
+    description: |
+      'true' gzips every non-zip file in `source` in place before the sync and uploads them with
+      `content-encoding: gzip`. Zip files are uploaded unchanged. Use it for very large sites.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Sync to S3 and invalidate CloudFront
+      shell: bash
+      env:
+        AWS_RETRY_MODE: standard
+        AWS_MAX_ATTEMPTS: 6
+        SOURCE: ${{ inputs.source }}
+        PATH_PREFIX: ${{ inputs.path-prefix }}
+        COMPRESS: ${{ inputs.compress }}
+      run: |
+        if [ "${COMPRESS}" = "true" ]; then
+          # Pre-compress all non-zip files so aws s3 sync ships ~120 MB instead of ~2 GiB.
+          # Zip bundles (llm.zip, okf.zip) are already compressed; syncing them with
+          # content-encoding:gzip would prevent clients from decoding them correctly.
+          # The inner sh -c script is intentionally single-quoted so it expands per file, not here.
+          # shellcheck disable=SC2016
+          find "${SOURCE}" -type f ! -name "*.zip" -print0 \
+            | xargs -0 -P "$(nproc)" -I{} sh -c 'tmp=$(mktemp "$1.tmp.XXXXXX") && gzip -9 -n -c "$1" > "$tmp" && mv -f "$tmp" "$1"' _ {}
+
+          # Sync compressed files with gzip content-encoding; sync zip downloads separately.
+          aws s3 sync "${SOURCE}" "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" \
+            --delete --no-follow-symlinks --content-encoding gzip --exclude "*.zip"
+          aws s3 sync "${SOURCE}" "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" \
+            --delete --no-follow-symlinks --exclude "*" --include "*.zip"
+        else
+          aws s3 sync "${SOURCE}" "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
+        fi
+        aws cloudfront create-invalidation \
+          --distribution-id EKT7LT5PM8RKS \
+          --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"

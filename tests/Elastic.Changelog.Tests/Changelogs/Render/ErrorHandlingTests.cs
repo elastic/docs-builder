@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -28,8 +30,11 @@ public class ErrorHandlingTests() : RenderChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Bundle file does not exist"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/Guid_1/nonexistent.yaml Bundle file does not exist");
 	}
 
 	[Test]
@@ -65,14 +70,12 @@ public class ErrorHandlingTests() : RenderChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"Entry '1755268130-feature.yaml' in bundle has no inline content: title and type are required"
-				) && d.Message.Contains("Re-create the bundle with 'changelog bundle'")
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/bundle.yaml Entry '1755268130-feature.yaml' in bundle has no inline content: title and type are required. Re-create the bundle with 'changelog bundle'."
 			);
 	}
 
@@ -101,11 +104,12 @@ public class ErrorHandlingTests() : RenderChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Message.Contains("No changelog entries to render") || d.Message.Contains("Failed to deserialize"));
+		// The message carries the parser's stack trace, so a snapshot would pin source line numbers: check the parts that matter
+		Collector.Errors.Should().Be(1);
+		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Which;
+		diagnostic.Severity.Should().Be(Severity.Error);
+		diagnostic.Message.Should().StartWith("Failed to deserialize bundle file");
+		diagnostic.Message.Should().Contain("Unknown key 'invalid_field'");
 	}
 
 	[Test]
@@ -139,14 +143,12 @@ public class ErrorHandlingTests() : RenderChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"Entry 'Feature without products' in bundle is missing required field: products"
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/bundle.yaml Entry 'Feature without products' in bundle is missing required field: products"
 			);
 	}
 
@@ -191,11 +193,26 @@ public class ErrorHandlingTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("Resolved feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* Resolved feature. [#100](https://github.com/elastic/elastic/pull/100)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -237,14 +254,12 @@ public class ErrorHandlingTests() : RenderChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("Unknown type feature") && d.Message.Contains(
-					"has no inline content: title and type are required"
-				)
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/bundle.yaml Entry 'Unknown type feature' in bundle has no inline content: title and type are required. Re-create the bundle with 'changelog bundle'."
 			);
 	}
 }

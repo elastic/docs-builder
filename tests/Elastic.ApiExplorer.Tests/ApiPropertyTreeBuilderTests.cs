@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
@@ -255,7 +256,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Should().HaveCount(2);
+		variants.Variants.Should().HaveCount(2);
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 	}
@@ -274,7 +275,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
+		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
 		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 	}
@@ -289,6 +290,79 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var mode = list!.Items.Single(p => p.Name == "mode");
 		mode.EnumValues.Should().BeEquivalentTo(["fast", "accurate"]);
 		mode.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfUnionRef_ReadsLikeTheUnionReferencedDirectly()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(Schema("fixture.AllOfUnionBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
+
+		var direct = list!.Items.Single(p => p.Name == "direct");
+		var wrapped = list.Items.Single(p => p.Name == "text");
+		wrapped.Union.Should().NotBeNull("the One of: row names the union's options");
+		wrapped.Type.Spans.Select(s => s.Text).Should().Equal(direct.Type.Spans.Select(s => s.Text));
+		wrapped.Union.Should().BeEquivalentTo(direct.Union);
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrappedRecursiveUnion_Terminates()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		list!.Items.Single(p => p.Name == "nested").Union.Should().NotBeNull();
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnDiscriminator_KeepsIt()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var selected = list!.Items.Single(p => p.Name == "selected");
+		selected.Union!.DiscriminatorProperty.Should().Be("kind");
+		selected.Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: a", "kind: b");
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnRequiredSets_KeepsThem()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var needs = list!.Items.Single(p => p.Name == "needs");
+		needs.Requires.Should().BeEquivalentTo(new RequiredAlternatives("Requires exactly one of:", ["a", "b"]));
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrappedUnionWithSharedFields_ListsThemLikeTheDirectRef()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var direct = list!.Items.Single(p => p.Name == "sharedDirect");
+		var wrapped = list.Items.Single(p => p.Name == "shared");
+		direct.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
+		wrapped.Children.Kind.Should().Be(direct.Children.Kind);
+		wrapped.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
 	}
 
 	[Test]
@@ -441,6 +515,49 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task BuildPropertyList_LongObjectDefault_ListsItInAWrappingRowNotAChip()
+	{
+		var document = await LoadSpecAsync(
+			WithSchemas(
+				"""
+				{ "Holder": { "type": "object", "properties": {
+				    "options": { "type": "object", "default": { "auto_apply_filters": true, "use_margins": true, "sync_cursor": true } },
+				    "small": { "type": "object", "default": { "a": 1 } } } } }
+				"""
+			)
+		);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var options = list.Items.Single(p => p.Name == "options");
+		options.DefaultValue.Should().Be("""{"auto_apply_filters":true,"use_margins":true,"sync_cursor":true}""");
+		options.Type.Text.Should().NotContain("default", "a chip would cut it");
+		var small = list.Items.Single(p => p.Name == "small");
+		small.DefaultValue.Should().BeNull();
+		small.Type.Text.Should().EndWith("""default: {"a":1}""");
+	}
+
+	[Test]
+	public void Describe_LongObjectDefault_KeepsItAsAChipWhereARowHasNoDefaultRow()
+	{
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Default = new JsonObject { ["auto_apply_filters"] = true, ["use_margins"] = true, ["sync_cursor"] = true }
+		};
+
+		CreateBuilder().Describe(schema).Text.Should().Contain("""default: {"auto_apply_filters":true""");
+		ApiPropertyTreeBuilder.BuildConstraints(schema).Single().Text.Should().NotContain("\n", "one line, as a chip reads it");
+	}
+
+	[Test]
+	public void BuildConstraints_EmptyObjectAndScalarDefaults_StayInTheChip()
+	{
+		ApiPropertyTreeBuilder.BuildConstraints(new OpenApiSchema { Default = new JsonObject() }).Single().Text.Should().Be("default: {}");
+		ApiPropertyTreeBuilder.BuildConstraints(new OpenApiSchema { Default = 5 }).Single().Text.Should().Be("default: 5");
+	}
+
+	[Test]
 	public void BuildConstraints_ArrayWithFormattedItems_TakesTheItemsFormat()
 	{
 		var schema = new OpenApiSchema
@@ -537,7 +654,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public async Task BuildPropertyList_ObjectsAtSameDepth_StartCollapsed(bool isRequest)
+	public async Task BuildPropertyList_ObjectRows_ExpandOnlyWhenRequired(bool isRequest)
 	{
 		var builder = CreateBuilder();
 		var list = builder.BuildPropertyList(ObjectsAtTwoDepths(), new PropertyTreeScope { Prefix = "body", IsRequest = isRequest });
@@ -545,12 +662,10 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		list.Should().NotBeNull();
 		var html = await _PropertyList.Create(list!).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		AssertCollapsedPair(list.Items, "small", "large", html);
-		AssertStartsCollapsed(html, list.Items.Single(p => p.Name == "only").AnchorId);
+		AssertExpansion(list.Items, html);
 		var group = list.Items.Single(p => p.Name == "group");
 		group.Children.Properties.Should().NotBeNull();
-		AssertCollapsedPair(group.Children.Properties!.Items, "small", "large", html);
-		AssertStartsCollapsed(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
+		AssertExpansion(group.Children.Properties!.Items, html);
 	}
 
 	[Test]
@@ -567,34 +682,216 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		html.Should().MatchRegex("</a>\\s*<code[^>]*>only</code>");
 	}
 
-	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
+	private static void AssertExpansion(IReadOnlyList<ApiProperty> items, string html)
 	{
-		var small = items.Single(p => p.Name == smallName);
-		var large = items.Single(p => p.Name == largeName);
-		small.Depth.Should().Be(large.Depth);
-		small.IsCollapsible.Should().BeTrue();
-		large.IsCollapsible.Should().BeTrue();
-		AssertStartsCollapsed(html, small.AnchorId);
-		AssertStartsCollapsed(html, large.AnchorId);
+		AssertToggle(html, items.Single(p => p.Name == "small"), expanded: true);
+		AssertToggle(html, items.Single(p => p.Name == "large"), expanded: false);
+		AssertToggle(html, items.Single(p => p.Name == "only"), expanded: false);
 	}
 
-	private static void AssertStartsCollapsed(string html, string anchorId)
+	private static void AssertToggle(string html, ApiProperty property, bool expanded)
 	{
+		property.IsCollapsible.Should().BeTrue();
+		property.DefaultExpanded.Should().Be(expanded, $"{property.Name} is {(property.IsRequired ? "" : "not ")}required");
 		var match = System
 			.Text
 			.RegularExpressions
 			.Regex
-			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties");
-		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
-		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
-		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
-		html.Should().Contain($"id=\"{anchorId}--children\"");
+			.Match(html, $"id=\"{property.AnchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(Show|Hide) \\d+ propert");
+		match.Success.Should().BeTrue($"property {property.AnchorId} renders an expand control");
+		match.Groups[2].Value.Should().Be(expanded ? "true" : "false");
+		var count = property.NestedCount;
+		html.Should().Contain($"{(expanded ? "Hide" : "Show")} {count} {(count == 1 ? "property" : "properties")}");
+		match.Groups[4].Value.Should().Be(expanded ? "Hide" : "Show");
+		html.Should().Contain($"id=\"{property.AnchorId}--children\"");
+		html.Should().Contain(
+			expanded ? $"id=\"{property.AnchorId}--children\">" : $"id=\"{property.AnchorId}--children\" hidden=\"until-found\""
+		);
+	}
+
+	[Test]
+	public void BuildPropertyList_RequiredObjectInsideAnOptionalOne_StaysFolded()
+	{
+		var builder = CreateBuilder();
+		var optionalMid = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Required = new HashSet<string> { "needed" },
+			Properties = new Dictionary<string, IOpenApiSchema> { ["needed"] = StringFields("one"), ["extra"] = StringFields("one") }
+		};
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Required = new HashSet<string> { "top" },
+			Properties = new Dictionary<string, IOpenApiSchema>
+			{
+				["top"] = new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema> { ["optional_mid"] = optionalMid }
+				}
+			}
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var mid = list!.Items.Single().Children.Properties!.Items.Single();
+		mid.DefaultExpanded.Should().BeFalse("it is optional, so the page leaves it folded");
+		var children = mid.Children.Properties!.Items;
+		children
+			.Single(p => p.Name == "needed")
+			.DefaultExpanded
+			.Should()
+			.BeFalse("it is only required inside an optional object, so the chain is not required");
+		children.Single(p => p.Name == "extra").DefaultExpanded.Should().BeFalse();
+	}
+
+	[Test]
+	public void BuildPropertyList_RequiredObjectUnderAUnionRowThatCannotFold_OpensWithTheRow()
+	{
+		var builder = CreateBuilder();
+		var union = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Required = new HashSet<string> { "inner" },
+			Properties = new Dictionary<string, IOpenApiSchema> { ["inner"] = StringFields("one", "two") },
+			OneOf =
+			[
+				new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema> { ["a"] = StringFields("x") }
+				},
+				new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema> { ["b"] = StringFields("y") }
+				}
+			]
+		};
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema> { ["u"] = union }
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var row = list!.Items.Single();
+		row.IsCollapsible.Should().BeFalse("a union row lists its shared fields without a toggle");
+		row.DefaultExpanded.Should().BeFalse("it is optional");
+		row.Children.Properties!.Items.Single(p => p.Name == "inner").DefaultExpanded.Should().BeTrue("the row above it is showing");
+	}
+
+	[Test]
+	public void BuildPropertyList_RequiredObjectInAVariantUnderAFoldedRow_StaysFolded()
+	{
+		var builder = CreateBuilder();
+
+		OpenApiSchema Variant(string field) =>
+			new()
+			{
+				Type = JsonSchemaType.Object,
+				Required = new HashSet<string> { "needed" },
+				Properties = new Dictionary<string, IOpenApiSchema> { ["needed"] = StringFields("one", "two"), [field] = StringFields("x") }
+			};
+
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>
+			{
+				["optional_parent"] = new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema>
+					{
+						["choice"] = new OpenApiSchema { OneOf = [Variant("a"), Variant("b")] },
+						["other"] = StringFields("one")
+					}
+				}
+			}
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var parent = list!.Items.Single();
+		parent.DefaultExpanded.Should().BeFalse("it is optional");
+		var choice = parent.Children.Properties!.Items.Single(p => p.Name == "choice");
+		var variants = choice.Children.Variants!.Variants;
+		variants.Should().NotBeEmpty();
+		variants
+			.SelectMany(v => v.Properties!.Items)
+			.Where(p => p.Name == "needed")
+			.Should()
+			.OnlyContain(p => !p.DefaultExpanded, "the optional parent above it is folded");
+	}
+
+	[Test]
+	public void BuildPropertyList_VariantToggleCount_LeavesOutFieldsTheRequestDoesNotList()
+	{
+		var builder = CreateBuilder();
+
+		OpenApiSchema Variant(string extra) =>
+			new()
+			{
+				Type = JsonSchemaType.Object,
+				Properties = new Dictionary<string, IOpenApiSchema>
+				{
+					["id"] = new OpenApiSchema { Type = JsonSchemaType.String, ReadOnly = true },
+					["name"] = new OpenApiSchema { Type = JsonSchemaType.String },
+					[extra] = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			};
+
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema> { ["choice"] = new OpenApiSchema { OneOf = [Variant("a"), Variant("b")] } }
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var variants = list!.Items.Single().Children.Variants!.Variants;
+		variants.Should().OnlyContain(v => v.NestedCount == 2, "id is readOnly, so a request lists name and one more");
+		variants.Should().OnlyContain(v => v.Properties!.Items.Count == 2);
+	}
+
+	[Test]
+	public void BuildPropertyList_RequiredObjectInAnOptionalMapValue_StaysFoldedWithTheKeyRow()
+	{
+		var builder = CreateBuilder();
+		var value = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Required = new HashSet<string> { "needed" },
+			Properties = new Dictionary<string, IOpenApiSchema> { ["needed"] = StringFields("one", "two"), ["extra"] = StringFields("x") }
+		};
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>
+			{
+				["settings"] = new OpenApiSchema { Type = JsonSchemaType.Object, AdditionalProperties = value }
+			}
+		};
+
+		var list = builder.BuildPropertyList(schema, new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		var map = list!.Items.Single();
+		map.DefaultExpanded.Should().BeFalse("it is optional");
+		var dictionary = map.Children.Dictionary!;
+		dictionary.DefaultExpanded.Should().BeFalse("the key row folds with the map");
+		var needed = dictionary.Properties.Items.Single(p => p.Name == "needed");
+		needed.IsRequired.Should().BeTrue();
+		needed.DefaultExpanded.Should().BeFalse("the key row above it is folded");
 	}
 
 	private static OpenApiSchema ObjectsAtTwoDepths() =>
 		new()
 		{
 			Type = JsonSchemaType.Object,
+			Required = new HashSet<string> { "small", "group" },
 			Properties = new Dictionary<string, IOpenApiSchema>
 			{
 				["only"] = StringFields("one"),
@@ -603,6 +900,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				["group"] = new OpenApiSchema
 				{
 					Type = JsonSchemaType.Object,
+					Required = new HashSet<string> { "small" },
 					Properties = new Dictionary<string, IOpenApiSchema>
 					{
 						["only"] = StringFields("one"),

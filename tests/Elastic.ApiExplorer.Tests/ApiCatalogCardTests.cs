@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -53,8 +54,12 @@ public class ApiCatalogCardTests
 	}
 
 	[Test]
-	public async Task Render_RegularCard_ShowsTheDeploymentPills() =>
-		(await Render(Item(pills: ["Self-managed", "Serverless"]))).Should().Contain("api-catalog-tag").And.Contain("Serverless");
+	public async Task Render_RegularCard_ShowsTheDeploymentPills()
+	{
+		var html = await Render(Item(pills: ["Self-managed", "Serverless"]));
+
+		html.Should().MatchHtmlSnapshot();
+	}
 
 	[Test]
 	[Arguments(ApiCatalogCardKind.Featured)]
@@ -65,6 +70,14 @@ public class ApiCatalogCardTests
 
 		html.Should().NotContain("api-catalog-tag");
 		html.Should().Contain("Elasticsearch provides REST APIs.");
+	}
+
+	[Test]
+	public async Task Render_FeaturedCard_HasNoPillsAndIsParentOnlyWithAVariant()
+	{
+		var html = await Render(Item(pills: ["Self-managed", "Serverless"]), ApiCatalogCardKind.Featured, hasVariant: true);
+
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -81,8 +94,7 @@ public class ApiCatalogCardTests
 	{
 		var html = await Render(Item(), ApiCatalogCardKind.Compact, column: 2);
 
-		html.Should().Contain("api-catalog-card-attached");
-		html.Should().Contain("--api-catalog-column: 2");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -90,7 +102,7 @@ public class ApiCatalogCardTests
 	{
 		var html = await Render(Item(), ApiCatalogCardKind.Featured, column: 2);
 
-		html.Should().Contain("api-catalog-cell").And.Contain("--api-catalog-column: 2");
+		html.Should().MatchHtmlSnapshot();
 		html.Should().NotContain("api-catalog-card-attached").And.NotContain("api-catalog-cell-variant");
 	}
 

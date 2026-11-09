@@ -19,7 +19,7 @@ internal static class OperationCommonMark
 		var operation = apiOperation.Operation;
 		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
 		ApiCommonMark.Heading(markdown, 1, title);
-		WriteBadges(markdown, operation, page);
+		WriteBadges(markdown, apiOperation.Deprecated, page);
 		WriteServers(markdown, page);
 		WritePaths(markdown, page);
 		WritePathParameters(markdown, page, apiBaseUrl);
@@ -40,10 +40,12 @@ internal static class OperationCommonMark
 		return markdown.ToString();
 	}
 
-	private static void WriteBadges(StringBuilder markdown, OpenApiOperation operation, OperationPageModel page)
+	private static void WriteBadges(StringBuilder markdown, bool deprecated, OperationPageModel page)
 	{
-		if (operation.Deprecated)
+		if (deprecated)
 			ApiCommonMark.Paragraph(markdown, "deprecated");
+		if (page.AuthBadge is { } auth)
+			ApiCommonMark.Paragraph(markdown, $"Authentication: {auth.Summary}");
 		if (page.Availability is null)
 			return;
 
@@ -117,7 +119,7 @@ internal static class OperationCommonMark
 	{
 		if (page.RequiredPrivileges.Count > 0)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Required authorization");
+			ApiCommonMark.Heading(markdown, 2, "Required privileges");
 			foreach (var row in page.RequiredPrivileges)
 			{
 				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(ApiCommonMark.CodeSpan));
@@ -133,7 +135,23 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Authentication");
-		foreach (var requirement in page.AuthRequirements)
+		WriteAuthentication(markdown, page.AuthRequirements, page.AuthBadge?.Kind == AuthBadgeKind.Optional, apiBaseUrl);
+	}
+
+	/// <summary>The alternatives under an Authentication heading, on endpoint, Authentication and child pages alike.</summary>
+	internal static void WriteAuthentication(
+		StringBuilder markdown,
+		IReadOnlyList<AuthRequirement> requirements,
+		bool optional,
+		string apiBaseUrl
+	)
+	{
+		if (requirements.Count == 0)
+			return;
+
+		if (optional)
+			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
+		foreach (var requirement in requirements)
 			WriteRequirement(markdown, requirement, apiBaseUrl);
 
 		_ = markdown.AppendLine();

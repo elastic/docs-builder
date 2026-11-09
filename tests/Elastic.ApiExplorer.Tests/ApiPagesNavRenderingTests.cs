@@ -11,11 +11,10 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -37,21 +36,9 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"api-hub-switcher\"");
-		html.Should().Contain("id=\"api-version-switcher\"");
-		// One popover, placed by api-menu.ts, opened by one button: API and version are a single choice.
-		html.Should().Contain("popovertarget=\"api-hub-menu\"").And.Contain("id=\"api-hub-menu\"");
-		html.Should().NotContain("api-version-menu");
-		// Only the selected product and the selected version are marked current.
-		CountOccurrences(html, "aria-current=\"true\"").Should().Be(2);
-		html.Should().NotContain("aria-current=\"false\"");
-		html.Should().NotContain("<details").And.NotContain("<summary");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
-		html
-			.IndexOf("id=\"api-version-switcher\"", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("<nav>tree</nav>", StringComparison.Ordinal));
+		// One popover, placed by api-menu.ts, opened by one button: API and version are a single choice,
+		// and only the selected product and the selected version are marked current.
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -61,10 +48,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().NotContain("api-version-switcher");
-		html.Should().Contain("href=\"/api/doc/kibana/\"");
-		html.Should().Contain("href=\"/api/\"");
-		CountOccurrences(html, "secondary-nav-dropdown-link--selected").Should().Be(1);
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -82,11 +66,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"api-hub-switcher\"").And.Contain("id=\"api-version-switcher\"").And.NotContain("<select");
-		html
-			.IndexOf("api-hub-switcher", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -100,8 +80,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"pages-nav\"");
-		html.Should().Contain("hx-preserve");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -111,8 +90,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
-		CountOccurrences(html, "border-b").Should().Be(1);
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -127,8 +105,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
-		html.Should().Contain("hx-preserve");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -138,7 +115,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().NotContain("navigation-search");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -240,6 +217,39 @@ public partial class ApiPagesNavRenderingTests
 		link.Should().NotContain("aria-label");
 		link.Should().NotContain("icon-api-arrow");
 		link.Should().NotContain("icon-api-x");
+		link.Should().NotContain("deprecated");
+	}
+
+	[Test]
+	public async Task Render_DeprecatedOperationRow_MarksTheLinkAndNamesItForScreenReaders()
+	{
+		NavigationRenderNode[] nodes =
+		[
+			new()
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Get a document source",
+				Url = "/api/doc/elasticsearch/operation/operation-get-source",
+				HttpMethod = "get",
+				Deprecated = true
+			}
+		];
+		var ct = TestContext.Current!.Execution.CancellationToken;
+
+		foreach (var html in new[]
+		{
+			await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct),
+			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct)
+		})
+		{
+			var link = OperationLink(html);
+			link.Should().MatchRegex("class=\"sidebar-link nav-link( nav-v2-link)? nav-link--deprecated\"");
+			var hidden = link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
+			hidden.Should().BeGreaterThan(link.IndexOf("Get a document source", StringComparison.Ordinal));
+			hidden.Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
+			link.Should().NotContain("aria-label");
+		}
 	}
 
 	[Test]
@@ -286,11 +296,7 @@ public partial class ApiPagesNavRenderingTests
 	)
 	{
 		var fs = new FileSystem();
-		var context = new BuildContext(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs)
-		);
+		var context = TestHelpers.CreateBuildContext();
 		return new()
 		{
 			DocSetName = "Api Explorer",

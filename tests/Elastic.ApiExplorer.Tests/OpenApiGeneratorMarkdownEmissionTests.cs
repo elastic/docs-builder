@@ -21,6 +21,7 @@ using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -89,42 +90,9 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			.File
 			.ReadAllTextAsync(Path.Join(outputRoot, "api.md"), TestContext.Current!.Execution.CancellationToken);
 
-		landing.Should().StartWith("---");
-		landing.Should().Contain("type: api");
-		landing.Should().Contain("title: Fixture API");
-		landing.Should().Contain("url: /api/doc/elasticsearch");
-		landing.Should().Contain("resource: /api/doc/elasticsearch");
-		landing.Should().Contain("  - elasticsearch");
-		landing.Should().NotContain("applies_to:");
-		landing.Should().Contain("# Fixture API");
-		landing.Should().Contain("Search APIs");
-		landing.Should().NotContain("<!DOCTYPE");
-		landing.Should().NotContain("<html");
-
-		operation.Should().Contain("type: api");
-		operation.Should().Contain("title: Run a search");
-		operation.Should().Contain("# Run a search");
-		operation.Should().Contain("`POST`");
-		operation.Should().Contain("`/{index}/_search`");
-		operation.Should().Contain("## Description");
-		operation.Should().Contain("Returns hits that match the query");
-		operation.Should().Contain("Supports pagination through `size` and `from`.");
-		operation.Should().Contain("#### `200`");
-		operation.Should().Contain("Search results");
-		operation.Should().NotContain("#### `200` Search results");
-		operation.Should().Contain("`application/json`");
-		operation.Should().NotContain("<!DOCTYPE");
-		operation.Should().NotContain("<html");
-
-		catalog.Should().Contain("type: api");
-		catalog.Should().Contain("title: Elastic APIs");
-		catalog.Should().Contain("description: Reference documentation for Elastic REST APIs");
-		catalog.Should().Contain("# Elastic APIs");
-		catalog.Should().Contain("Fixture API");
-		catalog.Should().Contain("`elasticsearch`");
-		catalog.Should().Contain("[Markdown](/api/doc/elasticsearch.md)");
-		catalog.Should().Contain("[JSON](/api/doc/elasticsearch.json)");
-		catalog.Should().Contain("[YAML](/api/doc/elasticsearch.yaml)");
+		landing.Should().MatchSnapshot(name: "landing");
+		operation.Should().MatchSnapshot(name: "operation");
+		catalog.Should().MatchSnapshot(name: "catalog");
 	}
 
 	[Test]
@@ -197,13 +165,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 
 		var wrapped = ApiMarkdownFrontMatter.Wrap(markdown!, item, renderContext, item);
 
-		wrapped.Should().StartWith("---");
-		wrapped.Should().Contain("type: api");
-		wrapped.Should().Contain("title: Kibana spaces");
-		wrapped.Should().NotContain("navigation_title:");
-		wrapped.Should().Contain("description: Spaces enable you to organize");
-		wrapped.Should().Contain("# Kibana spaces");
-		wrapped.Should().NotContain("<!DOCTYPE");
+		wrapped.Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -217,7 +179,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			context,
 			PassthroughMarkdownRenderer.Instance,
 			versionIndexClient,
-			CreateSequentialReader(await LoadSpec(SearchVariantsSpec))
+			CreateSequentialReader(await TestSpecs.LoadSpecAsync(SearchVariantsSpec))
 		);
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
@@ -247,16 +209,6 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		  "tags": [ { "name": "search" } ]
 		}
 		""";
-
-	private static async Task<OpenApiDocument> LoadSpec(string json)
-	{
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
-		var result = await OpenApiDocument.LoadAsync(
-			stream,
-			settings: new Microsoft.OpenApi.Reader.OpenApiReaderSettings { LeaveStreamOpen = false }
-		);
-		return result.Document!;
-	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)
 	{
@@ -350,10 +302,4 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 				)
 			};
 		});
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(responder(request));
-	}
 }

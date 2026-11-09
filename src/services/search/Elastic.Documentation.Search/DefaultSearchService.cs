@@ -32,7 +32,7 @@ public partial class DefaultSearchService<TDocument>(
 	private const string PreTag = "<mark>";
 	private const string PostTag = "</mark>";
 
-	private static readonly string[] AutocompleteSourceIncludes =
+	internal static readonly string[] AutocompleteSourceIncludes =
 	[
 		"content_type",
 		"title",
@@ -40,7 +40,18 @@ public partial class DefaultSearchService<TDocument>(
 		"path",
 		"description",
 		"parents",
-		"headings"
+		"headings",
+		// every required member of ApiOperationMetadata, or the hit fails to deserialize; properties arrive as inner hits
+		"api.endpoints",
+		"api.method",
+		"api.path",
+		"api.operation_id",
+		"api.routes",
+		// the navigation search points a hit into the reader's version tree
+		"api.key",
+		"api.trees",
+		// optional, so the required-member test cannot catch its absence; without it every hit reads as current
+		"api.deprecated"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
@@ -103,18 +114,18 @@ public partial class DefaultSearchService<TDocument>(
 
 	public async Task<AutocompleteResponse<TDocument>> AutocompleteAsync(AutocompleteRequest request, CancellationToken ct = default)
 	{
-		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
-			request.Query,
-			searchConfig.SynonymBiDirectional,
-			searchConfig.DiminishTerms,
-			searchConfig.RulesetName
-		);
-
 		Query? postFilter = null;
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
-		var query = request.TypeFilter == ApiContentType ? SearchQueryBuilder.ApplyApiRanking(lexicalQuery, request.Query) : lexicalQuery;
+		var apiLookup = request.TypeFilter == ApiContentType;
+		var query = SearchQueryBuilder.LiftApi(
+			SearchQueryBuilder.FilterDocuments(
+				apiLookup ? ApiLookupQueryBuilder.Build(request.Query) : BuildDocsWideAutocompleteQuery(request),
+				request.ApiPage
+			),
+			request.ApiPage?.Key
+		);
 
 		var response = await client.SearchAsync<TDocument>(
 			s =>
@@ -150,6 +161,9 @@ public partial class DefaultSearchService<TDocument>(
 
 				if (postFilter is not null)
 					_ = s.PostFilter(postFilter);
+				// The result processor reads each word's winning role from the named query scores.
+				if (apiLookup)
+					_ = s.IncludeNamedQueriesScore(true);
 			},
 			ct
 		);
@@ -157,9 +171,14 @@ public partial class DefaultSearchService<TDocument>(
 		if (!response.IsValidResponse)
 			LogInvalidResponse(response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 
+		var options = new HighlightOptions
+		{
+			ApiLookup = apiLookup,
+			ListChildren = apiLookup && ApiLookupQueryBuilder.ExpandsChildren(request.Query)
+		};
 		var results = response
 			.Hits
-			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional))
+			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional, options))
 			.ToList();
 
 		var typeAgg = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response, "type");
@@ -175,6 +194,17 @@ public partial class DefaultSearchService<TDocument>(
 			PageSize = request.PageSize,
 			Aggregations = new AutocompleteAggregations { Type = typeAgg }
 		};
+	}
+
+	private Query BuildDocsWideAutocompleteQuery(AutocompleteRequest request)
+	{
+		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
+			request.Query,
+			searchConfig.SynonymBiDirectional,
+			searchConfig.DiminishTerms,
+			searchConfig.RulesetName
+		);
+		return SearchQueryBuilder.ApplyApiPropertyQuery(lexicalQuery, request.Query, request.TypeFilter);
 	}
 
 	// NOTE: probe-mode SearchAsync branch (request.Components bitmask path) uses SearchQueryComponents,
@@ -296,7 +326,8 @@ public partial class DefaultSearchService<TDocument>(
 
 	private static Query ApplyFilters(Query baseQuery, SearchRequest request)
 	{
-		var filters = new List<Query>();
+		// The semantic branch is a sibling of the lexical one, so the document filter has to wrap both.
+		var filters = new List<Query> { SearchQueryBuilder.DocumentFilterFor(null) };
 
 		if (request.TypeFilter is { Length: > 0 })
 		{
@@ -320,9 +351,6 @@ public partial class DefaultSearchService<TDocument>(
 		}
 
 		// TODO: applies_to nested filters for DeploymentFilter / VersionFilter.
-
-		if (filters.Count == 0)
-			return baseQuery;
 
 		return new BoolQuery { Must = [baseQuery], Filter = filters };
 	}

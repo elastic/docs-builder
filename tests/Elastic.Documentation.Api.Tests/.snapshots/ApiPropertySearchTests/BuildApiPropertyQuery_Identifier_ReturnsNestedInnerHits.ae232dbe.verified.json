@@ -1,0 +1,33 @@
+{
+  "nested": {
+    "ignore_unmapped": true,
+    "inner_hits": {
+      "name": "api_properties",
+      "size": 5,
+      "_source": {
+        "includes": "api.properties.*"
+      }
+    },
+    "path": "api.properties",
+    "query": {
+      "dis_max": {
+        "queries": [
+          {
+            "constant_score": {
+              "boost": 1,
+              "filter": {
+                "term": {
+                  "api.properties.name": {
+                    "case_insensitive": true,
+                    "value": "knn_field"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "score_mode": "max"
+  }
+}

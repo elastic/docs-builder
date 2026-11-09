@@ -183,7 +183,7 @@ public class ParsesServerlessProjects : AuthoringTest
 		});
 }
 
-public class ParsesStack : AuthoringTest
+public class ParsesStackApplicability : AuthoringTest
 {
 	protected override Scenario Scenario => FrontMatter.WithYaml("""
 			applies_to:
@@ -304,8 +304,11 @@ public class BothEssAndEchDefinedUsesEchValueAndWarns : AuthoringTest
 	public async Task EchValueWins() =>
 		await Docs.AppliesTo(new ApplicableTo { Deployment = new DeploymentApplicability { Ess = Applies("beta") } });
 
-	[Test, DisplayName("emits warning about both being defined")]
-	public async Task EmitsWarning() => await Docs.HasWarning("Both 'ess' and 'ech' are defined");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"warning {repo}/docs/index.md Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss."
+		);
 }
 
 public class ParsesEchAtTopLevel : AuthoringTest
@@ -333,8 +336,9 @@ public class ParsesProductComingDeprecated : AuthoringTest
 			   product: coming 9.5
 			""");
 
-	[Test, DisplayName("should warn of deprecated lifecycle state")]
-	public async Task WarnOfDeprecatedLifecycle() => await Docs.HasHint("The 'coming' lifecycle is deprecated and will be removed");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("hint {repo}/docs/index.md The 'coming' lifecycle is deprecated and will be removed in a future release.");
 }
 
 public class ParsesProductPlanned : AuthoringTest
@@ -345,8 +349,11 @@ public class ParsesProductPlanned : AuthoringTest
 			   product: planned 9.5
 			""");
 
-	[Test, DisplayName("should warn of deprecated lifecycle state")]
-	public async Task WarnOfDeprecatedLifecycle() => await Docs.HasHint("The 'planned' lifecycle is deprecated and will be removed");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"hint {repo}/docs/index.md The 'planned' lifecycle is deprecated and will be removed in a future release."
+		);
 }
 
 public class ParsesProductRemoved : AuthoringTest
@@ -600,8 +607,11 @@ public class ServerlessStringWithVersionEmitsError : AuthoringTest
 			   serverless: ga 9.5
 			""");
 
-	[Test, DisplayName("emits error for versioned serverless")]
-	public async Task EmitsErrorForVersionedServerless() => await Docs.HasError("Can't specify a version for 'serverless'");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'serverless' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
 }
 
 public class ServerlessProjectWithVersionEmitsError : AuthoringTest
@@ -613,8 +623,11 @@ public class ServerlessProjectWithVersionEmitsError : AuthoringTest
 			      elasticsearch: ga 9.5
 			""");
 
-	[Test, DisplayName("emits error for versioned elasticsearch project")]
-	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'elasticsearch'");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'elasticsearch' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
 }
 
 public class ServerlessVectorDatabaseWithVersionEmitsError : AuthoringTest
@@ -626,8 +639,11 @@ public class ServerlessVectorDatabaseWithVersionEmitsError : AuthoringTest
 			      vectordb: ga 9.5
 			""");
 
-	[Test, DisplayName("emits error for versioned vector database project")]
-	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'vectordb'");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'vectordb' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
 }
 
 public class DeploymentEssWithVersionEmitsError : AuthoringTest
@@ -639,8 +655,11 @@ public class DeploymentEssWithVersionEmitsError : AuthoringTest
 			      ess: ga 9.5
 			""");
 
-	[Test, DisplayName("emits error for versioned ess")]
-	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ess'");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
 }
 
 public class DeploymentEchWithVersionEmitsError : AuthoringTest
@@ -652,8 +671,11 @@ public class DeploymentEchWithVersionEmitsError : AuthoringTest
 			      ech: preview 9.5
 			""");
 
-	[Test, DisplayName("emits error for versioned ech")]
-	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ech'");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'ech' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
 }
 
 public class TopLevelEchWithVersionEmitsError : AuthoringTest
@@ -665,8 +687,11 @@ public class TopLevelEchWithVersionEmitsError : AuthoringTest
 			   stack: ga 9.1
 			""");
 
-	[Test, DisplayName("emits error for versioned top level ech")]
-	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ech'");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'ech' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
 }
 
 public class DeploymentStringShorthandWithVersionEmitsErrorForEss : AuthoringTest
@@ -677,6 +702,9 @@ public class DeploymentStringShorthandWithVersionEmitsErrorForEss : AuthoringTes
 			   deployment: ga 9.0.0
 			""");
 
-	[Test, DisplayName("emits error because ess does not support versions")]
-	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ess'");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
 }

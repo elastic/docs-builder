@@ -12,12 +12,11 @@ describe('PageFeedback', () => {
     beforeEach(() => {
         sessionStorage.clear()
         vi.spyOn(crypto, 'randomUUID').mockReturnValue(feedbackId)
-        global.fetch = vi.fn().mockResolvedValue(successfulResponse)
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(successfulResponse))
     })
 
     afterEach(() => {
         sessionStorage.clear()
-        vi.restoreAllMocks()
     })
 
     it('records a positive reaction after the debounce and shows positive reasons', async () => {

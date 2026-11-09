@@ -17,7 +17,16 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
+  # Decides which slow work a PR needs, see changes.yml
+  changes:
+    uses: $/.github/workflows/changes.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
   validate-assembler:
+    needs: [changes]
+    if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -36,51 +45,6 @@ jobs:
       - name: Validate Content Sources
         run: dotnet run --project src/tooling/docs-builder -c release --no-build -- assembler content-source validate
 
-  # Decides which slow work a PR needs. Pushes to main always do everything.
-  # - link-index-lambda / openapi-index-lambda: the lambda's transitive project references or shared build inputs changed
-  # - dotnet: .NET code, build inputs or test fixtures changed, so Windows and macOS run the unit tests
-  #   (Linux runs them on every PR)
-  # - frontend-toolchain: npm dependencies or the Vite/Tailwind config changed, so Windows and macOS build the
-  #   frontend natively instead of reusing the `frontend` job's output. Native npm packages (esbuild, rolldown,
-  #   lightningcss, tailwind oxide) can break on one OS only.
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      link-index-lambda: ${{ steps.filter.outputs.link-index-lambda }}
-      openapi-index-lambda: ${{ steps.filter.outputs.openapi-index-lambda }}
-      dotnet: ${{ steps.filter.outputs.dotnet }}
-      frontend-toolchain: ${{ steps.filter.outputs.frontend-toolchain }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          # pull_request checks out the merge commit: HEAD^1 is the base branch tip
-          fetch-depth: 2
-
-      - id: filter
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          outputs='link-index-lambda openapi-index-lambda dotnet frontend-toolchain'
-          if [ "$EVENT_NAME" != "pull_request" ]; then
-            for output in $outputs; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
-            exit 0
-          fi
-          git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
-          cat changed.txt
-          shared='^(global\.json|Directory\.(Build|Packages)\.props|src/Directory\.Build\.props|\.dockerignore|\.github/workflows/ci\.yml)$'
-          link_index='^(src/infra/docs-lambda-index-publisher/|src/Elastic\.Documentation/|src/Elastic\.Documentation\.(Configuration|LinkIndex|Tooling)/|src/services/search/Elastic\.Documentation\.Search\.Contract/|config/|\.github/workflows/build-link-index-updater-lambda\.yml$)'
-          openapi_index='^(src/infra/docs-lambda-openapi-index/|src/Elastic\.Documentation\.OpenApiIndex/|\.github/workflows/build-openapi-index-lambda\.yml$)'
-          dotnet='(\.(cs|fs|fsx|csproj|fsproj|props|targets|cshtml|razor|resx|slnx)$|^(global\.json|dotnet-tools\.json|tests/|build/|\.github/workflows/ci\.yml$|\.github/actions/bootstrap/))'
-          frontend_toolchain='^(\.nvmrc|src/Elastic\.Documentation\.Site/(package(-lock)?\.json|vite\.config\.ts|tailwind\.config\.js))$'
-          matches() { grep -Eq "$@" changed.txt && echo true || echo false; }
-          {
-            echo "link-index-lambda=$(matches -e "$shared" -e "$link_index")"
-            echo "openapi-index-lambda=$(matches -e "$shared" -e "$openapi_index")"
-            echo "dotnet=$(matches -e "$dotnet")"
-            echo "frontend-toolchain=$(matches -e "$frontend_toolchain")"
-          } | tee -a "$GITHUB_OUTPUT"
-
   build-link-index-updater-lambda:
     needs: [changes]
     if: ${{ needs.changes.outputs.link-index-lambda == 'true' }}
@@ -93,6 +57,8 @@ jobs:
 
   # Frontend checks. The Vite production build itself runs in the `frontend` job.
   npm:
+    needs: [changes]
+    if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -135,15 +101,17 @@ jobs:
         with:
           persist-credentials: false
 
+      # The nullean/curb action always runs the moving `edge` image, so call the release image by digest instead.
       - name: Lint
-        uses: nullean/curb@747187f178444c46e0098a9e50241b523bf7b9f8 # 0.8.1
+        uses: docker://ghcr.io/nullean/curb@sha256:fd955b3a58d7ba79f5d03f425166d137ef333dea6226a651b23f894dfac8e370 # 0.9.0
         with:
-          command: check
-          path: .
+          args: check .
 
   # Builds the frontend assets once for the `build` jobs. `npm ci` takes about 6 minutes on
   # Windows runners, and the Vite output is identical on every OS.
   frontend:
+    needs: [changes]
+    if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -167,69 +135,101 @@ jobs:
 
   build:
     needs: [changes, frontend]
-    runs-on: ${{ matrix.os }}
+    # `frontend` is skipped for metadata-only PRs. The matrix still has to expand so the required
+    # `build (<os>)` checks report, so gate the steps instead of the job.
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    # The job name is fixed to `build (<os>)` because branch protection requires those exact check names.
+    # `os` is that label; `runner` is where the job runs, so a runner pin never renames the required check.
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-         - ubuntu-latest
-         - macos-latest
-         - windows-latest
+        include:
+          # Native AOT links against the host glibc; keep ubuntu in sync with the noble-chiseled base image (build/Targets.fs).
+          - os: ubuntu-latest
+            runner: ubuntu-24.04
+          - os: macos-latest
+            runner: macos-latest
+          - os: windows-latest
+            runner: windows-latest
     steps:
       - uses: actions/checkout@v7
+        if: ${{ needs.changes.outputs.code == 'true' }}
         with:
           persist-credentials: false
 
       - name: Bootstrap Action Workspace
+        if: ${{ needs.changes.outputs.code == 'true' }}
         uses: $/.github/actions/bootstrap
 
       # Linux always reuses the `frontend` job's output, which is itself a native Linux build.
       # Windows and macOS reuse it unless the frontend toolchain changed (always the case on pushes to main).
       - name: Download frontend assets
         id: frontend
-        if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.frontend-toolchain != 'true' }}
+        if: ${{ needs.changes.outputs.code == 'true' && (matrix.os == 'ubuntu-latest' || needs.changes.outputs.frontend-toolchain != 'true') }}
         uses: actions/download-artifact@v8
         with:
           name: frontend-static
           path: src/Elastic.Documentation.Site/_static
 
       - name: Skip the npm build
-        if: ${{ steps.frontend.outcome == 'success' }}
+        if: ${{ needs.changes.outputs.code == 'true' && (steps.frontend.outcome == 'success') }}
         shell: bash
         run: echo "SkipNpmBuild=true" >> "$GITHUB_ENV"
 
       - name: Compile
+        if: ${{ needs.changes.outputs.code == 'true' }}
+        # The `lint` job already runs `curb check` on the whole repo; skip the per-project copy.
+        # The trim and AOT analyzers (IsAotCompatible) and the IDE code-style analyzers report the same warnings on every OS
+        # and take most of the analyzer time of the larger projects, so only ubuntu runs them. Empty leaves the project defaults alone.
+        env:
+          Curb_Bypass: true
+          EnforceCodeStyleInBuild: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableTrimAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableAotAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableSingleFileAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ needs.changes.outputs.code == 'true' && (matrix.os == 'ubuntu-latest') }}
         run: |
           dotnet run --project src/tooling/docs-builder -c release --no-build -- __schema > docs/cli-schema.json.tmp
           diff <(jq 'del(.version)' docs/cli-schema.json) <(jq 'del(.version)' docs/cli-schema.json.tmp) || (echo "docs/cli-schema.json is out of date — run: dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json" && exit 1)
           rm docs/cli-schema.json.tmp
 
       - name: Test
-        if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.dotnet == 'true' }}
+        if: ${{ needs.changes.outputs.code == 'true' && (matrix.os == 'ubuntu-latest' || needs.changes.outputs.dotnet == 'true') }}
         # --single-target skips the compile dependency; the Compile step above already built everything
         run: dotnet run --project build -c release -- unit-test --single-target
 
+      - name: Upload received snapshots
+        # A failed snapshot test leaves its received file here. Download it into .artifacts/.snapshots/received/ and run `dotnet snap review`.
+        if: ${{ failure() && needs.changes.outputs.code == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: received-snapshots-${{ matrix.os }}
+          path: .artifacts/.snapshots/received/
+          if-no-files-found: ignore
+
       - name: Publish AOT
-        if: ${{ github.event_name == 'push' && matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
+        if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os != 'ubuntu-latest') }} # publish containers already validates AOT build
         run: dotnet run --project build -c release -- publishbinaries
 
       - name: Publish Containers
-        if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os == 'ubuntu-latest') }}
         env:
           DOCKER_NO_PUBLISH: true
         run: dotnet run --project build -c release -- publishcontainers
 
       - name: Run Container
-        if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os == 'ubuntu-latest') }}
         run: dotnet run --project build -c release -- runlocalcontainer
 
   integration:
     # TODO temporarily disabled: credentials now actually reach the tests (Parameters:-prefixed
-    # secrets) which surfaced failures — re-enabling is tracked in a dedicated PR.
+    # secrets) which surfaced failures — re-enabling is tracked in a dedicated PR. Only the
+    # credential-based and Testcontainers projects remain here; the Aspire-hosted end-to-end tests are gone.
     if: false
     runs-on: docs-builder-latest-16
     environment: integration-tests
@@ -257,9 +257,9 @@ jobs:
           ES_KEY=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-api-key --with-decryption --query Parameter.Value --output text)
           echo "::add-mask::$ES_URL"
           echo "::add-mask::$ES_KEY"
-          dotnet tool restore
-          dotnet aspire secret set ElasticsearchUrl "$ES_URL"
-          dotnet aspire secret set ElasticsearchApiKey "$ES_KEY"
+          # The tests read these from the `docs-builder` user-secrets store, the same one essc uses.
+          dotnet user-secrets set --id docs-builder "Parameters:ElasticsearchUrl" "$ES_URL"
+          dotnet user-secrets set --id docs-builder "Parameters:ElasticsearchApiKey" "$ES_KEY"
 
       - name: Integration Tests
         env:

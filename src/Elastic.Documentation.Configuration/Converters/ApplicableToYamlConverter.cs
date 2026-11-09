@@ -18,8 +18,10 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	// resolved product keys) via YamlSerializerOptions.Converters, which the generator consults first.
 	public ApplicableToYamlConverter() : this([]) { }
 
-	private readonly string[] _knownKeys =
-	[
+	// The product keys overlap the fixed ones (e.g. elasticsearch), so de-duplicate to keep the
+	// "Valid keys" hint from listing a key twice.
+	private readonly string[] _knownKeys = new[]
+	{
 		ApplicabilityKeys.Stack,
 		ApplicabilityKeys.Deployment,
 		ApplicabilityKeys.Serverless,
@@ -32,9 +34,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		ApplicabilityKeys.Elasticsearch,
 		ApplicabilityKeys.Observability,
 		ApplicabilityKeys.Security,
-		ApplicabilityKeys.VectorDb,
-		.. productKeys
-	];
+		ApplicabilityKeys.VectorDb
+	}.Concat(productKeys).Distinct(StringComparer.Ordinal).ToArray();
 
 	// Reads the current node as an untyped value (string, List<object?>, or Dictionary<string, object?>).
 	// This resolves to SharpYaml's reflection-free built-in `object` converter, so it stays AOT-safe.
@@ -371,6 +372,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{ "edot_java", a => productAvailability.EdotJava = a },
 			{ "edot_node", a => productAvailability.EdotNode = a },
 			{ "edot_browser", a => productAvailability.EdotBrowser = a },
+			{ "edot_react_native", a => productAvailability.EdotReactNative = a },
 			{ "edot_php", a => productAvailability.EdotPhp = a },
 			{ "edot_python", a => productAvailability.EdotPython = a },
 			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a },
@@ -452,7 +454,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.")
+				$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.")
 			);
 		}
 
@@ -465,7 +467,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.")
+				$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.")
 			);
 		}
 
@@ -482,7 +484,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			);
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.")
+				$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.")
 			);
 		}
 
@@ -503,7 +505,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.")
+				$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.")
 			);
 		}
 	}

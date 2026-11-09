@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
@@ -16,6 +17,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
@@ -33,8 +35,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>
-	/// Converts the <c>main</c> spec of every API the generators render. When two generators declare the same
-	/// API key, the first one wins.
+	/// Converts every version tree of every API the generators render, one document per operation and distinct rendering
+	/// (<see cref="ApiTreeCollapse"/>). When two generators declare the same API key, the first one owns all its trees.
 	/// </summary>
 	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
 		IEnumerable<OpenApiGenerator> generators,
@@ -44,28 +46,32 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var generator in generators)
 		{
-			foreach (var (apiKey, productId, spec) in await generator.ResolveCanonicalDocuments(ctx).ConfigureAwait(false))
+			var trees = await generator.ResolveIndexedTrees(ctx).ConfigureAwait(false);
+			foreach (var api in trees.GroupBy(static t => t.ApiKey, StringComparer.OrdinalIgnoreCase))
 			{
-				if (!seenKeys.Add(apiKey))
+				if (!seenKeys.Add(api.Key))
 					continue;
 
-				foreach (var doc in ConvertToDocuments(spec, apiKey, productId))
+				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker))!;
+				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToDocuments), defaultTree))
 					yield return doc;
 			}
 		}
 	}
 
 	/// <summary>
-	/// Converts an OpenAPI document to DocumentationDocument instances.
-	/// <paramref name="product"/> is the API key the explorer publishes the spec under. It builds URLs and labels.
-	/// <paramref name="productId"/> is the <c>products.yml</c> id the key binds to. It drives product metadata and defaults to the key.
+	/// Converts one version tree of an API to one document per operation, with URLs into that tree. The API key builds
+	/// URLs and labels; the product id drives product metadata.
 	/// </summary>
-	public IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product, string? productId = null)
+	public IEnumerable<DocumentationDocument> ConvertToDocuments(IndexedTree tree)
 	{
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
+		var (product, productId, moniker, openApiDocument) = tree;
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(product, moniker));
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
+		var tagMetadata = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
 
+		var plainDescriptions = new Dictionary<string, string>();
 		foreach (var path in openApiDocument.Paths)
 		{
 			if (path.Value.Operations == null)
@@ -89,7 +95,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var summary = operation.Value.Summary?.Trim();
 				var title = string.IsNullOrEmpty(summary) ? operationId : summary;
 				var method = operation.Key.ToString().ToUpperInvariant();
-				var searchTitle = BuildSearchTitle(title, productLabel, operationId, $"{method} {path.Key}");
 				var description = IndexedHitText(summary, operation.Value.Description, operationId);
 
 				// Build body content from operation details
@@ -117,37 +122,76 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				}
 
 				var body = bodyBuilder.ToString();
+				var apiOperation = new ApiOperation(operation.Key, operation.Value, path.Key, path.Value, product);
+				var builder = new ApiPropertyTreeBuilder(
+					openApiDocument,
+					new PropertyDisplayOptions
+					{
+						// Listing identity keys on the markdown and the index stores plain text, so nothing here needs the HTML.
+						RenderMarkdown = _ => HtmlString.Empty,
+						ApiRootUrl = productUrl,
+						VersionsConfiguration = versionsConfiguration
+					}
+				);
+				var endpoint = OperationEndpoint.Build(apiOperation, operation.Value.Description, []);
+				var trees = OperationPageModel.BuildPropertyTrees(
+					apiOperation,
+					new SchemaAnalyzer(openApiDocument),
+					new ParameterRowSource(builder, null, endpoint)
+				);
 
-				// Extract tags as headings
-				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
-					?? [];
+				var headings = operation.Value.Tags?.Select(OpenApiExtensionReader.TagName).OfType<string>().ToArray() ?? [];
 
 				// Infer product and repository metadata
-				var inference = documentInferrer?.InferForOpenApi(productId ?? product);
+				var inference = documentInferrer?.InferForOpenApi(productId);
+
+				var groupParent = GroupParent(headings, tagMetadata, productUrl);
+				ParentDocument[] parents =
+				[
+					new ParentDocument { Title = "API", Path = "/docs/api" },
+					new ParentDocument { Title = productLabel, Path = productUrl }
+				];
+
+				var endpointKeys = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]);
+				var api = new ApiOperationMetadata
+				{
+					Key = product,
+					Trees = [new ApiTreeEntry { Tree = moniker, Root = productUrl }],
+					Properties = trees.IndexEntries(plainDescriptions),
+					Routes = endpoint
+						.Rows
+						.Select(
+							row => new ApiRouteEntry
+							{
+								Path = row.Route,
+								Methods = [row.Method.ToUpperInvariant(), .. row.AlsoMethods.Select(m => m.ToUpperInvariant())]
+							}
+						)
+						.ToArray(),
+					Endpoints = endpointKeys,
+					EndpointsBare = ApiEndpointPath.BareKeys(endpointKeys),
+					Method = method,
+					Path = path.Key,
+					OperationId = operationId,
+					Deprecated = apiOperation.Deprecated,
+					Words = ApiSearchWords.Of(operationId, path.Key),
+					Group = groupParent?.Title ?? "",
+					IdWords = ApiSearchWords.OfOperationId(operationId).Length
+				};
 
 				yield return new DocumentationDocument
 				{
 					ContentType = "api",
 					Path = url,
 					Title = title,
-					SearchTitle = searchTitle,
+					SearchTitle = BuildSearchTitle(title, productLabel, groupParent?.Title, api),
 					Description = description,
 					Body = body,
 					Headings = headings,
 					Links = [],
 					Applies = applies?.ToAppliesTo(),
-					Parents =
-					[
-						new ParentDocument { Title = "API", Path = "/docs/api" },
-						new ParentDocument { Title = productLabel, Path = productUrl }
-					],
-					Api = new ApiOperationMetadata
-					{
-						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
-						Method = method,
-						Path = path.Key,
-						OperationId = operationId
-					},
+					Parents = groupParent is null ? parents : [.. parents, groupParent],
+					Api = api,
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
 						? inference
@@ -161,22 +205,43 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	}
 
 	/// <summary>
+	/// The breadcrumb entry for the operation's first tag, matching the group page the operation page links to;
+	/// null when untagged.
+	/// </summary>
+	private static ParentDocument? GroupParent(
+		string[] tags,
+		IReadOnlyDictionary<string, OpenApiTagMetadata> tagMetadata,
+		string productUrl
+	) =>
+		tags is [var tag, ..]
+			? new ParentDocument
+			{
+				Title = OpenApiExtensionReader.TagMetadataFor(tag, tagMetadata).DisplayName,
+				Path = $"{productUrl}/group/{ApiUrlBuilder.TagMoniker(tag)}"
+			}
+			: null;
+
+	/// <summary>
 	/// Display label for the product crumb, e.g. <c>elasticsearch</c> → <c>Elasticsearch API</c>.
 	/// </summary>
 	internal static string ProductApiLabel(string product) =>
 		$"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product.Replace('-', ' '))} API";
 
 	/// <summary>
-	/// Search tokens users type for an operation: the product label, the raw operation id
-	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), and the HTTP method plus path
-	/// (e.g. <c>PUT /_bulk</c>). Keep ids and paths verbatim — no case or punctuation
-	/// rewriting — because that is what people paste. The product label lives here rather
-	/// than in <c>Title</c>, so result rows do not repeat "Elasticsearch API" on every hit.
+	/// Search tokens users type for an operation: the title, the product label, the raw operation id
+	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), the HTTP method plus path (e.g. <c>PUT /_bulk</c>),
+	/// the group, and the plain words of the id and path (<see cref="ApiSearchWords"/>). The raw id
+	/// and path stay verbatim because that is what people paste; the words serve people who type
+	/// <c>ml flush</c>. The product label lives here rather than in <c>Title</c>, so result rows do
+	/// not repeat "Elasticsearch API" on every hit.
 	/// </summary>
-	internal static string BuildSearchTitle(string title, string productLabel, string operationId, string methodAndPath)
+	internal static string BuildSearchTitle(string title, string productLabel, string? group, ApiOperationMetadata api)
 	{
-		var searchTitle = $"{title} - {productLabel} - {operationId} - {methodAndPath}";
-		return operationId.Contains('.', StringComparison.Ordinal) ? $"{searchTitle} - {operationId.Replace('.', ' ')}" : searchTitle;
+		var searchTitle = $"{title} - {productLabel} - {api.OperationId} - {api.Method} {api.Path}";
+		if (!string.IsNullOrWhiteSpace(group))
+			searchTitle += $" - {group}";
+		var words = ApiSearchWords.Of(api.OperationId, api.Path);
+		return words.Length == 0 ? searchTitle : $"{searchTitle} - {string.Join(' ', words)}";
 	}
 
 	/// <summary>

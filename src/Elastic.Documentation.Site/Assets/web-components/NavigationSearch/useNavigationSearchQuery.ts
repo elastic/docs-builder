@@ -15,6 +15,8 @@ import {
     isRateLimitError,
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
+import { useApiPageSearchParams } from '../useApiPageSearchParams'
+import { ApiPropertyResult, ApiRoute } from './apiPropertyResults'
 import { usePageNumber, useSearchTerm } from './navigationSearch.store'
 import {
     useIsNavigationSearchAwaitingNewInput,
@@ -42,6 +44,9 @@ const SearchResultItem = z.object({
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
+    properties: z.array(ApiPropertyResult).optional(),
+    routes: z.array(ApiRoute).optional(),
+    deprecated: z.boolean().optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
@@ -89,6 +94,8 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
         !isCooldownActive &&
         !awaitingNewInput
 
+    const apiPage = useApiPageSearchParams()
+
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'navigation-search',
@@ -96,6 +103,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
                 typeFilter,
+                apiPage,
             },
         ],
         queryFn: async ({ signal }) => {
@@ -118,6 +126,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 const params = new URLSearchParams({
                     q: debouncedSearchTerm,
                     page: pageNumber.toString(),
+                    ...apiPage,
                 })
 
                 // Only add type filter if not 'all'
@@ -179,10 +188,11 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
                     typeFilter,
+                    apiPage,
                 },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter])
+    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter, apiPage])
 
     // Track errors for observability
     useEffect(() => {

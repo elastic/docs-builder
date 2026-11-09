@@ -1,27 +1,33 @@
 import { config } from '../../config'
-import { useHtmxLink } from '../shared/htmx/useHtmxLink'
+import { DeprecatedBadge, deprecatedTitleText } from './DeprecatedBadge'
+import { JumpToIndicator } from './JumpToIndicator'
+import { PropertyResultRow } from './PropertyResultRow'
+import { RouteLine } from './RouteLine'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
+import {
+    GO_TO_LABELS,
+    fieldSearchTerms,
+    primaryRoute,
+    type ApiPropertyResult,
+    type ResultGroup,
+} from './apiPropertyResults'
 import {
     useSelectedIndex,
     useSearchActions,
     useSearchTerm,
 } from './navigationSearch.store'
-import {
-    useNavigationSearchQuery,
-    SearchResultItem,
-    type TypeFilter,
-} from './useNavigationSearchQuery'
+import { SearchResultItem, type TypeFilter } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
-    EuiBadge,
-    EuiIcon,
     EuiLoadingSpinner,
     useEuiTheme,
     useEuiOverflowScroll,
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import htmx from 'htmx.org'
 import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
+import type { Instance } from 'tippy.js'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
@@ -44,11 +50,11 @@ export const navigationSearchBreadcrumbs = (
     buildType: string
 ) => {
     if (typeFilter === 'api') {
+        const [, product, ...rest] = parents
         return [
             'API',
-            ...parents
-                .slice(1)
-                .map((parent) => formatApiProductCrumb(parent.title)),
+            ...(product ? [formatApiProductCrumb(product.title)] : []),
+            ...rest.map((parent) => parent.title),
         ]
     }
 
@@ -59,19 +65,27 @@ export const navigationSearchBreadcrumbs = (
     return ['Docs', ...parents.slice(1).map((parent) => parent.title)]
 }
 
+/** A modified or non-primary click opens the link in a new tab or window, so the search stays where it was. */
+const opensElsewhere = (event: React.MouseEvent) =>
+    event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0
+
 export const emptyStateCopy = (typeFilter: TypeFilter) =>
     typeFilter === 'api'
         ? "We couldn't find an API that matches your search"
         : "We couldn't find a page that matches your search"
 
 export interface SearchResultsListProps {
+    results: ResultGroup[]
+    isLoading: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
-    onResultClick: () => void
+    onResultClick: (opensElsewhere: boolean) => void
     typeFilter?: TypeFilter
 }
 
 export const SearchResultsList = ({
+    results,
+    isLoading,
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
@@ -80,13 +94,15 @@ export const SearchResultsList = ({
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
-    const { isLoading, data } = useNavigationSearchQuery(typeFilter)
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
     const { trackResultClicked } = useNavigationSearchTelemetry(typeFilter)
+    const propertySearch = useMemo(
+        () => fieldSearchTerms(searchTerm),
+        [searchTerm]
+    )
 
-    const results = data?.results ?? []
-    const isInitialLoading = isLoading && !data
+    const isInitialLoading = isLoading && results.length === 0
 
     // Scroll to top when search term changes
     useEffect(() => {
@@ -94,6 +110,23 @@ export const SearchResultsList = ({
             containerRef.current.scrollTop = 0
         }
     }, [searchTerm])
+
+    // React renders the rows after htmx's own pass over the page, so they need their own to inherit hx-boost.
+    useEffect(() => {
+        if (containerRef.current) htmx.process(containerRef.current)
+    }, [results])
+
+    // The page's tippy delegate mounts tooltips on the body and only drops them on an htmx swap, so a tooltip shown
+    // over a row would outlive it. Captured now: by cleanup time React has already detached the rows it removed.
+    useEffect(() => {
+        const tooltipped = Array.from(
+            containerRef.current?.querySelectorAll('[data-tippy-content]') ?? []
+        )
+        return () =>
+            tooltipped.forEach((el) =>
+                (el as Element & { _tippy?: Instance })._tippy?.destroy()
+            )
+    }, [results])
 
     const containerStyles = css`
         max-height: ${RESULTS_MAX_HEIGHT}px;
@@ -144,30 +177,65 @@ export const SearchResultsList = ({
         }
     }
 
-    const handleResultClick = (result: SearchResultItem, index: number) => {
+    const handleResultClick = (
+        event: React.MouseEvent,
+        result: SearchResultItem,
+        rank: number,
+        property?: ApiPropertyResult
+    ) => {
         trackResultClicked({
             query: searchTerm,
-            position: index,
-            url: result.url,
+            position: rank,
+            url: property?.url ?? result.url,
             score: result.score,
+            anchor: property?.anchor,
         })
-        onResultClick()
+        onResultClick(opensElsewhere(event))
     }
 
     return (
         <div ref={containerRef} css={containerStyles}>
-            {results.map((result, index) => (
-                <SearchResultRow
+            {results.map(({ result, index, rank, properties }) => (
+                <div
                     key={result.url}
-                    index={index}
-                    result={result}
-                    isSelected={index === selectedIndex}
-                    isKeyboardNavigating={isKeyboardNavigating.current}
-                    onMouseEnter={() => handleMouseEnter(index)}
-                    onMouseMove={() => handleItemMouseMove(index)}
-                    onClick={() => handleResultClick(result, index)}
-                    typeFilter={typeFilter}
-                />
+                    css={css`
+                        margin: ${euiTheme.size.s};
+                        border: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                        border-radius: ${euiTheme.size.s};
+                        overflow: hidden;
+                    `}
+                >
+                    <SearchResultRow
+                        index={index}
+                        result={result}
+                        isSelected={index === selectedIndex}
+                        isKeyboardNavigating={isKeyboardNavigating.current}
+                        onMouseEnter={() => handleMouseEnter(index)}
+                        onMouseMove={() => handleItemMouseMove(index)}
+                        onClick={(event) =>
+                            handleResultClick(event, result, rank)
+                        }
+                        typeFilter={typeFilter}
+                        searchTerm={searchTerm}
+                    />
+                    {properties.map(({ property, index: propertyIndex }) => (
+                        <PropertyResultRow
+                            key={property.url}
+                            index={propertyIndex}
+                            property={property}
+                            propertySearch={propertySearch}
+                            isSelected={propertyIndex === selectedIndex}
+                            isKeyboardNavigating={isKeyboardNavigating.current}
+                            onMouseEnter={() => handleMouseEnter(propertyIndex)}
+                            onMouseMove={() =>
+                                handleItemMouseMove(propertyIndex)
+                            }
+                            onClick={(event) =>
+                                handleResultClick(event, result, rank, property)
+                            }
+                        />
+                    ))}
+                </div>
             ))}
         </div>
     )
@@ -180,8 +248,9 @@ interface SearchResultRowProps {
     isKeyboardNavigating: boolean
     onMouseEnter: () => void
     onMouseMove: () => void
-    onClick: () => void
+    onClick: (event: React.MouseEvent) => void
     typeFilter: TypeFilter
+    searchTerm: string
 }
 
 const SearchResultRow = ({
@@ -193,10 +262,11 @@ const SearchResultRow = ({
     onMouseMove,
     onClick,
     typeFilter,
+    searchTerm,
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const { ref, href } = useHtmxLink(result.url)
+    const { route, tokens } = primaryRoute(result.routes ?? [], searchTerm)
     const breadcrumbItems = useMemo(
         () =>
             navigationSearchBreadcrumbs(
@@ -209,8 +279,7 @@ const SearchResultRow = ({
 
     return (
         <a
-            ref={ref}
-            href={href}
+            href={result.url}
             data-search-result-index={index}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
@@ -252,10 +321,6 @@ const SearchResultRow = ({
                             text-decoration: underline;
                         }
                     }
-
-                    .jump-to-indicator {
-                        visibility: visible;
-                    }
                 }
 
                 &[data-selected='true'] {
@@ -268,10 +333,12 @@ const SearchResultRow = ({
                             text-decoration: underline;
                         }
                     }
+                }
 
-                    .jump-to-indicator {
-                        visibility: visible;
-                    }
+                ${
+                    result.deprecated
+                        ? `.route-line .api-method { filter: saturate(0.4); }`
+                        : ''
                 }
             `}
         >
@@ -283,14 +350,22 @@ const SearchResultRow = ({
                 `}
             >
                 <Breadcrumb items={breadcrumbItems} />
-                <Title text={result.title} />
-                {result.description && (
-                    <Description text={result.description} />
+                <Title text={result.title} deprecated={result.deprecated} />
+                {route ? (
+                    <RouteLine route={route} tokens={tokens} />
+                ) : (
+                    result.description && (
+                        <Description text={result.description} />
+                    )
                 )}
             </div>
             {!isMobile && (
                 <JumpToIndicator
-                    label={typeFilter === 'api' ? 'Jump to API' : 'Jump to'}
+                    label={
+                        result.type === 'api'
+                            ? GO_TO_LABELS.operation
+                            : GO_TO_LABELS.page
+                    }
                 />
             )}
         </a>
@@ -368,7 +443,13 @@ const Breadcrumb = ({ items }: { items: string[] }) => {
     )
 }
 
-const Title = ({ text }: { text: string }) => {
+const Title = ({
+    text,
+    deprecated,
+}: {
+    text: string
+    deprecated?: boolean
+}) => {
     const { euiTheme } = useEuiTheme()
 
     return (
@@ -382,13 +463,16 @@ const Title = ({ text }: { text: string }) => {
                 margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
+
+                ${deprecated ? deprecatedTitleText : ''}
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />
+            {deprecated && <DeprecatedBadge />}
         </div>
     )
 }
@@ -407,32 +491,12 @@ const Description = ({ text }: { text: string }) => {
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}
         >
             <SanitizedHtmlContent htmlContent={text} ellipsis />
-        </div>
-    )
-}
-
-const JumpToIndicator = ({ label }: { label: string }) => {
-    const { euiTheme } = useEuiTheme()
-
-    return (
-        <div
-            className="jump-to-indicator"
-            css={css`
-                flex-shrink: 0;
-                color: ${euiTheme.colors.textSubdued};
-                margin-left: ${euiTheme.size.xxxxl};
-                visibility: hidden;
-            `}
-        >
-            <EuiBadge color="hollow">
-                {label} <EuiIcon type="returnKey" size="s" />
-            </EuiBadge>
         </div>
     )
 }

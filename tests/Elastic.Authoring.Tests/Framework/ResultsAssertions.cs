@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
-using System.Text.Json;
 using JetBrains.Annotations;
 
 namespace Elastic.Authoring.Tests.Framework;
@@ -22,10 +21,8 @@ internal static class ResultsAssertions
 	internal static MarkdownResult Finds(string path, GeneratorResults results)
 	{
 		var normalized = path.Replace('/', Path.DirectorySeparatorChar);
-		var result = results.MarkdownResults.FirstOrDefault(m => m.File.RelativePath == normalized);
-
-		if (result is null)
-			throw new AwesomeAssertions.Execution.AssertionFailedException($"{path} not part of the markdown results");
+		var result = results.MarkdownResults.FirstOrDefault(m => m.File.RelativePath == normalized)
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException($"{path} not part of the markdown results");
 
 		return result;
 	}
@@ -36,22 +33,18 @@ internal static class ResultsAssertions
 	/// Port of F# <c>convertsToJson</c>.
 	/// </summary>
 	[DebuggerStepThrough]
-	internal static void ConvertsToJson(string artifactPath, [LanguageInjection("json")] string expected, GeneratorResults results)
+	internal static void ConvertsToJson(
+		string artifactPath,
+		[LanguageInjection("json")] string? expected,
+		GeneratorResults results,
+		CallSite site
+	)
 	{
 		var fs = results.Context.ReadFileSystem;
 		var fi = fs.FileInfo.New(artifactPath);
 		if (!fi.Exists)
 			throw new AwesomeAssertions.Execution.AssertionFailedException($"{artifactPath} is not part of the output");
 
-		var actualRaw = fs.File.ReadAllText(fi.FullName);
-		using var actualDoc = JsonDocument.Parse(actualRaw);
-		var actualPretty = JsonSerializer.Serialize(actualDoc, new JsonSerializerOptions { WriteIndented = true });
-
-		using var expectedDoc = JsonDocument.Parse(expected);
-		var expectedPretty = JsonSerializer.Serialize(expectedDoc, new JsonSerializerOptions { WriteIndented = true });
-
-		var diff = HtmlAssertions.Diff(expectedPretty, actualPretty);
-		if (!string.IsNullOrEmpty(diff))
-			throw new AwesomeAssertions.Execution.AssertionFailedException($"JSON was not equal\n-- DIFF --\n{diff}");
+		InlineSnapshots.Json(fs.File.ReadAllText(fi.FullName), expected, nameof(Scenario.ConvertsToJson), site);
 	}
 }

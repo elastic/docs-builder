@@ -113,7 +113,8 @@ public static partial class ReleaseNotesExtractor
 
 	/// <summary>
 	/// Finds the "Impact" section of a PR description: a heading such as <c>## Impact</c> or a label such as <c>Impact: ...</c>.
-	/// Heading sections run until the next heading of the same or a higher level; label sections end at the first blank line
+	/// Heading sections run until the next heading of any level, so the template sections that follow an author's
+	/// <c>## Action</c> (such as <c>### Checklist</c>) never become part of it; label sections end at the first blank line
 	/// after their content or at the next heading. HTML comments are stripped first.
 	/// </summary>
 	public static string? FindImpact(string? markdown) => FindSection(markdown, ImpactStartRegex());
@@ -217,8 +218,9 @@ public static partial class ReleaseNotesExtractor
 					|| IsSectionStart(ActionStartRegex().Match(line), out _, out _)
 				)
 					break;
-				var heading = HeadingRegex().Match(line);
-				if (heading.Success && (!isHeading || heading.Groups[1].Value.Length <= hashes))
+				// Any heading ends the section, whatever its level. The Kibana PR template puts `### Checklist` and
+				// `### Identify risks` after the author's sections, so a deeper heading is the next section, not a child.
+				if (HeadingRegex().IsMatch(line))
 					break;
 				// Label sections stop at the first blank line once they have content.
 				if (!isHeading && string.IsNullOrWhiteSpace(line) && content.Count > 0)

@@ -151,7 +151,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			var slice = Code.Create(new CodeViewModel
 			{
 				CrossReferenceName = string.Empty,// block.CrossReferenceName,
-
 				Language = block.Language,
 				Caption = block.Caption,
 				ApiSegments = block.ApiSegments,
@@ -321,21 +320,13 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private static readonly IReadOnlyList<DiagramClass> MermaidAllowedClasses =
 	[
 		new DiagramClass { Name = "note", Fill = "#e8f1ff", Stroke = "#a3cbff", Color = "#154399" }, // blue-elastic ramp-10/40/120
-
 		new DiagramClass { Name = "tip", Fill = "#e2f9f7", Stroke = "#77e5e0", Color = "#065b58" }, // teal ramp-10/40/120
-
 		new DiagramClass { Name = "warning", Fill = "#fdf3d8", Stroke = "#facb3d", Color = "#6a4906" }, // yellow ramp-10/40/110
-
 		new DiagramClass { Name = "important", Fill = "#f3ecfe", Stroke = "#d1bafc", Color = "#52357e" }, // purple ramp-10/40/110
-
 		new DiagramClass { Name = "caution", Fill = "#ffefe9", Stroke = "#ffc1aa", Color = "#8a3825" }, // poppy ramp-10/40/120
-
 		new DiagramClass { Name = "error", Fill = "#ffe8e5", Stroke = "#ffb5ad", Color = "#7f1f27" }, // red ramp-10/40/120
-
 		new DiagramClass { Name = "success", Fill = "#e2f8f0", Stroke = "#88e3c3", Color = "#0c5a3f" }, // green ramp-10/40/110
-
 		new DiagramClass { Name = "plain", Fill = "#f6f9fc", Stroke = "#bdc2ca", Color = "#464c56" }, // grey ramp-10/40/110
-
 		new DiagramClass
 		{
 			Name = "highlight",
@@ -343,30 +334,20 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			Stroke = "#3788ff",
 			Color = "#123778"
 		}, // blue-elastic ramp-20/70/130 — active/selected
-
 	];
 
 	// Categorical data palette for pie/sankey/timeline etc. One vivid, distinct step per theme.css hue.
 	private static readonly string[] MermaidDataPalette =
 	[
 		"#3788ff", // blue-elastic-70
-
 		"#ee4c48", // red-70
-
 		"#04ae7e", // green-70
-
 		"#a36def", // purple-70
-
 		"#eaae01", // yellow-60
-
 		"#16c5c0", // teal-60
-
 		"#e54a91", // pink-70
-
 		"#ff8659", // poppy-70
-
 		"#36b9ff", // blue-sky
-
 	];
 
 	/// <summary>Renders a Mermaid code block as an external SVG file referenced via an img element.</summary>

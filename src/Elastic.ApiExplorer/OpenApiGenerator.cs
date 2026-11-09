@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -25,7 +26,22 @@ namespace Elastic.ApiExplorer;
 
 internal sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, OpenApiDocument Document);
 
-internal sealed record ResolvedProductDocuments(IReadOnlyList<VersionedOpenApiDocument> Documents, string? UnmatchedBaseFilesMoniker);
+internal sealed record ResolvedProductDocuments(IReadOnlyList<VersionedOpenApiDocument> Documents, string? UnmatchedBaseFilesMoniker)
+{
+	/// <summary>Trees the version index declares whose spec could not be fetched or parsed.</summary>
+	public IReadOnlyList<string> UnresolvedMonikers { get; init; } = [];
+}
+
+/// <summary>
+/// The version trees of one API, built once from the resolved specs. The floating section reads them for
+/// navigation and <see cref="OpenApiGenerator"/> renders pages from them, so the build never builds a tree twice.
+/// </summary>
+internal sealed record ApiProductTrees(
+	ResolvedProductDocuments Resolved,
+	IReadOnlyList<LandingNavigationItem> Navigations,
+	int? HighestMajor,
+	IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>> PageNames
+);
 
 internal sealed record ApiProductGeneration(
 	OpenApiDocument Document,
@@ -66,6 +82,7 @@ public class OpenApiGenerator(
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
 	private readonly ConcurrentDictionary<string, Task<ResolvedProductDocuments>> _documents = new(StringComparer.OrdinalIgnoreCase);
+	private readonly ConcurrentDictionary<string, Task<ApiProductTrees>> _trees = new(StringComparer.OrdinalIgnoreCase);
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -161,23 +178,35 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
-	/// The <c>main</c> document of every configured API, keyed by the same API key the explorer publishes
-	/// under <c>/api/doc/{key}/</c>. An API with no <c>main</c> document has no page at that path, so it is left out.
+	/// Every version tree the explorer renders for every configured API, for the search index. A tree the version index
+	/// declares that did not load, or a version index that could not be fetched, fails the export: indexing without
+	/// those trees would delete their documents. Page rendering keeps its warning and its local-spec fallback.
 	/// </summary>
-	public async Task<IReadOnlyList<(string ApiKey, string ProductId, OpenApiDocument Document)>> ResolveCanonicalDocuments(
-		Cancel ctx = default
-	)
+	public async Task<IReadOnlyList<IndexedTree>> ResolveIndexedTrees(Cancel ctx = default)
 	{
 		var configs = ApiConfigsToRender();
 		var resolved = await Task.WhenAll(configs.Select(c => DocumentsFor(c.Key, c.Value, ctx))).ConfigureAwait(false);
+		var apis = configs.Zip(resolved, static (c, r) => (c.Key, c.Value.Product.Id, Resolved: r)).ToList();
+
+		List<string> missing =
+		[
+			.. apis.SelectMany(
+				static a => a
+					.Resolved
+					.UnresolvedMonikers
+					.Select(m => $"API '{a.Key}': version '{m}' is declared in the version index but could not be loaded")
+			)
+		];
+		if (_versionIndexClient.RootIndexFetchError is { } fetchError)
+			missing.Add($"The API version index could not be fetched ({fetchError}), so the declared version trees are unknown");
+
+		foreach (var problem in missing)
+			context.Collector.EmitGlobalError($"{problem}, so the search export stops.");
+		if (missing.Count > 0)
+			throw new InvalidOperationException($"The API search export stops: {string.Join("; ", missing)}.");
+
 		return [
-			.. configs
-				.Zip(
-					resolved,
-					(c, r) => (c.Key, c.Value.Product.Id, r.Documents.FirstOrDefault(v => v.Version.Moniker == "main")?.Document)
-				)
-				.Where(x => x.Document is not null)
-				.Select(x => (ApiKey: x.Key, ProductId: x.Id, x.Document!))
+			.. apis.SelectMany(static a => a.Resolved.Documents.Select(v => new IndexedTree(a.Key, a.Id, v.Version.Moniker, v.Document)))
 		];
 	}
 
@@ -194,33 +223,16 @@ public class OpenApiGenerator(
 		Cancel ctx
 	)
 	{
-		var resolved = await DocumentsFor(prefix, apiConfig, ctx).ConfigureAwait(false);
+		var trees = await TreesFor(prefix, apiConfig, ctx).ConfigureAwait(false);
+		var resolved = trees.Resolved;
 		if (resolved.Documents.Count == 0)
 			return null;
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
-		var highestMajor = monikers.Max(ApiVersions.TryParseMajor);
-
-		// Each version's tree is built before any page renders, so every picker can link to the same
-		// page in the other versions. The trees were already alive together while versions rendered in parallel.
-		var navigations = await Task.WhenAll(
-			versionedDocuments.Select(
-				v => Task.Run(
-					() => CreateNavigation(
-						ApiUrlBuilder.ProductSuffix(prefix, v.Version.Moniker),
-						v.Document,
-						apiConfig,
-						SupplementalMajor(v.Version.Moniker, highestMajor)
-					),
-					ctx
-				)
-			)
-		).ConfigureAwait(false);
-		var pageNames = versionedDocuments.Zip(navigations, (v, nav) => (v.Version.Moniker, Names: PageNames(nav))).ToDictionary(
-			x => x.Moniker,
-			x => x.Names
-		);
+		var highestMajor = trees.HighestMajor;
+		var navigations = trees.Navigations;
+		var pageNames = trees.PageNames;
 
 		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
 		// writer, so there is no shared mutable state between concurrent versions. The outer loop in
@@ -250,7 +262,44 @@ public class OpenApiGenerator(
 		return CatalogEntry(prefix, apiConfig, resolved);
 	}
 
-	private List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender()
+	/// <summary>
+	/// Builds, once per API key, the navigation tree of every resolved version. Each version's tree is built before
+	/// any page renders, so every picker can link to the same page in the other versions.
+	/// </summary>
+	internal Task<ApiProductTrees> TreesFor(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx) =>
+		_trees.GetOrAdd(apiKey, _ => BuildTrees(apiKey, apiConfig, ctx));
+
+	private async Task<ApiProductTrees> BuildTrees(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	{
+		var resolved = await DocumentsFor(apiKey, apiConfig, ctx).ConfigureAwait(false);
+		if (resolved.Documents.Count == 0)
+			return new(resolved, [], null, new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>());
+
+		var highestMajor = resolved.Documents.Select(v => v.Version.Moniker).Max(ApiVersions.TryParseMajor);
+		var navigations = await Task.WhenAll(
+			resolved.Documents.Select(
+				v => Task.Run(
+					() => CreateNavigation(
+						ApiUrlBuilder.ProductSuffix(apiKey, v.Version.Moniker),
+						v.Document,
+						apiConfig,
+						SupplementalMajor(v.Version.Moniker, highestMajor)
+					),
+					ctx
+				)
+			)
+		).ConfigureAwait(false);
+		var pageNames = resolved
+			.Documents
+			.Zip(navigations, (v, nav) => (v.Version.Moniker, Names: PageNames(nav)))
+			.ToDictionary(x => x.Moniker, x => x.Names);
+		return new(resolved, navigations, highestMajor, pageNames);
+	}
+
+	private List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender() => ApiConfigsToRender(context);
+
+	/// <summary>The APIs a build renders, keyed by the key their URL uses.</summary>
+	internal static List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender(BuildContext context)
 	{
 		if (context.Configuration.ApiConfigurations is null)
 			return [];
@@ -300,7 +349,9 @@ public class OpenApiGenerator(
 	}
 
 	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
-		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? (resolved.Documents.Count > 0 ? resolved.Documents[0] : null);
+		ApiVersions.DefaultTree(resolved.Documents.Select(static v => v.Version.Moniker)) is { } tree
+			? resolved.Documents.First(v => v.Version.Moniker == tree)
+			: null;
 
 	internal ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{
@@ -354,7 +405,7 @@ public class OpenApiGenerator(
 			);
 		}
 
-		var latestDeclared = versionsToRender.Any(v => v.Moniker == "main") ? "main" : versionsToRender[0].Moniker;
+		var latestDeclared = ApiVersions.DefaultTree(versionsToRender.Select(static v => v.Moniker))!;
 
 		// Download and parse every version at once; results keep the declared version order.
 		var documents = await Task.WhenAll(
@@ -364,8 +415,9 @@ public class OpenApiGenerator(
 			.Zip(documents, static (version, document) => document is null ? null : new VersionedOpenApiDocument(version, document))
 			.OfType<VersionedOpenApiDocument>()
 			.ToList();
+		var unresolved = versionsToRender.Zip(documents).Where(static x => x.Second is null).Select(static x => x.First.Moniker).ToArray();
 
-		return ToResolvedProductDocuments(results, latestDeclared);
+		return ToResolvedProductDocuments(results, latestDeclared) with { UnresolvedMonikers = unresolved };
 	}
 
 	private async Task<ResolvedProductDocuments> ResolveLocalMainOnly(IFileInfo localFile)
@@ -616,9 +668,9 @@ public class OpenApiGenerator(
 
 	/// <summary>
 	/// Every name of every page in one version's tree, relative to its product root. A collapsed operation is reachable by its
-	/// canonical path and its former per-operation paths. Each name maps to all names of that page, canonical first.
+	/// canonical path and its former per-operation paths, and a <c>children:</c> page also answers to the topic URLs it replaces. Each name maps to all names of that page, canonical first.
 	/// </summary>
-	private static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
+	internal static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
 	{
 		var pages = new List<(INavigationItem Item, IApiModel Model)>();
 		CollectPages(navigation, pages);
@@ -636,7 +688,12 @@ public class OpenApiGenerator(
 
 	private static string[] RelativeNames(INavigationItem item, string root)
 	{
-		var urls = item is OperationNavigationItem collapsed ? collapsed.AliasUrls.Prepend(item.Url) : [item.Url];
+		var urls = item switch
+		{
+			OperationNavigationItem collapsed => collapsed.AliasUrls.Prepend(item.Url),
+			SimpleMarkdownNavigationItem child => child.ReplacedTopicUrls.Prepend(item.Url),
+			_ => [item.Url]
+		};
 		return [
 			.. urls
 				.Select(static url => url.TrimEnd('/'))
@@ -653,7 +710,8 @@ public class OpenApiGenerator(
 
 		if (item is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			if (item is not ClassificationNavigationItem)
+			// Sidebar headings group pages but have no page of their own.
+			if (item is not ISidebarHeadingNavigationItem)
 				pages.Add((node, node.Index.Model));
 			foreach (var child in node.NavigationItems)
 				CollectPages(child, pages);

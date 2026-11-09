@@ -667,3 +667,11 @@ toc:
   # CONTRIBUTE 2 DOCS #
   #############
   - toc: contribute-docs
+
+  ########
+  # APIs #
+  ########
+  # Every API that a content repository declares, when the build renders the API Explorer (the
+  # assembler-api-explorer feature flag). Without those APIs this entry adds nothing.
+  - section: APIs
+    floating: api

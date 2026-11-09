@@ -3,6 +3,7 @@ import {
     groupResults,
     initSearch,
     bindSearchShortcut,
+    querySearch,
 } from './search'
 import type { Mock } from 'vitest'
 
@@ -26,7 +27,7 @@ const markup = `
   <p data-search-status role="status">Type to search.</p>
   <ol data-search-results role="listbox"></ol>
   <template data-search-result>
-    <li role="option"><a href="#"><span data-search-path></span><span data-search-title></span><span data-search-excerpt></span></a></li>
+    <li role="option"><a href="#"><span data-search-path></span><span data-search-title></span><span data-search-deprecated hidden>Deprecated</span><span data-search-excerpt></span></a></li>
   </template>
 </dialog>`
 
@@ -43,6 +44,7 @@ const results = {
             title: 'Beta',
             description: 'plain text',
             parents: [],
+            deprecated: true,
         },
     ],
 }
@@ -157,6 +159,16 @@ describe('search dialog', () => {
         expect(items[0].querySelector('a')!.getAttribute('href')).toBe(
             '/docs/a'
         )
+        expect(items[0].hasAttribute('data-deprecated')).toBe(false)
+        expect(
+            items[0].querySelector<HTMLElement>('[data-search-deprecated]')!
+                .hidden
+        ).toBe(true)
+        expect(items[1].hasAttribute('data-deprecated')).toBe(true)
+        expect(
+            items[1].querySelector<HTMLElement>('[data-search-deprecated]')!
+                .hidden
+        ).toBe(false)
         expect(
             document.querySelector('[data-search-status]')!.textContent
         ).toBe('2 results.')
@@ -239,5 +251,47 @@ describe('groupResults', () => {
             'Results',
         ])
         expect(groups[0].results.map((r) => r.title)).toEqual(['a', 'c'])
+    })
+})
+
+describe('querySearch scope', () => {
+    let fetchMock: Mock
+
+    beforeEach(() => {
+        fetchMock = vi.fn(async () => ({
+            ok: true,
+            json: async () => results,
+        }))
+        global.fetch = fetchMock as unknown as typeof fetch
+    })
+
+    const urlOn = async (path: string) => {
+        history.pushState(null, '', path)
+        await querySearch('alpha')
+        return fetchMock.mock.calls[0][0]
+    }
+
+    it('sends the api key and version tree on a versioned API path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/v8/operation/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=8'
+        )
+    })
+
+    it('sends the main tree on a main path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/main/group/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=main'
+        )
+    })
+
+    it('sends the api key alone on the unversioned API path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/operation/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch'
+        )
+    })
+
+    it('sends no scope on a markdown page', async () => {
+        expect(await urlOn('/docs/get-started')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1'
+        )
     })
 })

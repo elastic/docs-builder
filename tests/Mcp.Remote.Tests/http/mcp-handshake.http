@@ -1,0 +1,24 @@
+### initialize
+# The client deliberately asks for an older protocol version than the one the server pins to. If the pinning
+# regresses, the SDK echoes the client's version and the snapshot shows it.
+POST /docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": { "name": "test-client", "version": "1.0.0" }
+  }
+}
+
+### tools/list
+POST /docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }

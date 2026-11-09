@@ -50,7 +50,7 @@ public class GlobalNavigationHtmlWriter(
 	private NavigationRenderModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group) =>
 		NavigationRenderModel.Create(
 			tree: group,
-			topLevelItems: globalNavigation.TopLevelItems,
+			topLevelItems: [.. globalNavigation.TopLevelItems.Where(item => !item.Hidden)],
 			// The top nav (navigation-preview) replaces the sidebar dropdown.
 			// Flag off → dropdown on (matches main); flag on → dropdown off, top nav takes over.
 			isUsingNavigationDropdown: globalNavigation.TopNav is null,

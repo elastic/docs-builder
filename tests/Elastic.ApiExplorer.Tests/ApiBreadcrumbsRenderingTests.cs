@@ -12,6 +12,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Layout;
 using FakeItEasy;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -23,15 +24,7 @@ public class ApiBreadcrumbsRenderingTests
 	{
 		var html = await Render([Crumb("/api/", "APIs"), Crumb("/api/es/", "[cmd]search")], BuildType.Assembler);
 
-		html.Should().Contain("id=\"breadcrumbs\"");
-		html.Should().Contain("href=\"/api/\"");
-		html.Should().Contain("hx-disable=true");
-		html.Should().Contain("href=\"/api/es/\"");
-		html.Should().Contain(">APIs<");
-		html.Should().Contain(">search<");
-		html.Should().NotContain("[cmd]");
-		html.Should().NotContain("aria-current");
-		html.Should().NotContain("api-breadcrumbs");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -49,8 +42,7 @@ public class ApiBreadcrumbsRenderingTests
 			new BreadcrumbsView([Crumb("/api/", "APIs")], BuildType.Isolated, ShowSingle: true)
 		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"breadcrumbs\"");
-		html.Should().Contain("href=\"/api/\"");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]

@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Search.Contract;
+
 namespace Elastic.Documentation.Search;
 
 public interface INavigationSearchService
@@ -15,6 +17,9 @@ public record NavigationSearchRequest
 	public int PageNumber { get; init; } = 1;
 	public int PageSize { get; init; } = 20;
 	public string? TypeFilter { get; init; }
+
+	/// <summary>The API page the reader is on; <c>null</c> lifts no API and shows every API's default rendering.</summary>
+	public ApiPageContext? ApiPage { get; init; }
 }
 
 public record NavigationSearchResponse
@@ -47,10 +52,28 @@ public record NavigationSearchResultItemParent
 
 public record NavigationSearchResultItem
 {
+	public NavigationSearchProperty[] Properties { get; init; } = [];
+
+	/// <summary>The operation's routes with their methods; empty for a docs page.</summary>
+	public ApiRouteEntry[] Routes { get; init; } = [];
+
+	/// <summary>True when the result is an API operation the spec marks deprecated; false for a docs page.</summary>
+	public bool Deprecated { get; init; }
 	public required string Type { get; init; }
 	public required string Url { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }
 	public required NavigationSearchResultItemParent[] Parents { get; init; }
 	public float Score { get; init; }
+}
+
+public record NavigationSearchProperty
+{
+	public required string Name { get; init; }
+	public required string Path { get; init; }
+	public required string Type { get; init; }
+	public required string Description { get; init; }
+	public required string Anchor { get; init; }
+	public required string Location { get; init; }
+	public required string Url { get; init; }
 }

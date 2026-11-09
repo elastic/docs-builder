@@ -91,6 +91,13 @@
 			<code>@example</code>
 		</dd>
 	}
+	@if (Model.DefaultValue is { } defaultValue)
+	{
+		<dd class="example-value">
+			<span class="values-label">Default:</span>
+			<code>@defaultValue</code>
+		</dd>
+	}
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)
@@ -153,9 +160,9 @@
 	@if (Model.IsCollapsible)
 	{
 		<dd class="expand-toggle-row">
-			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId">
+			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId" data-count="@Model.NestedCount">
 				<span class="toggle-icon">@(Model.DefaultExpanded ? "−" : "+")</span>
-				<span class="toggle-label">@(Model.DefaultExpanded ? "hide" : "show") properties</span>
+				<span class="toggle-label">@PropertyToggle.Label(Model.DefaultExpanded, Model.NestedCount)</span>
 			</button>
 		</dd>
 	}
@@ -180,9 +187,9 @@
 						@if (dict.IsCollapsible)
 						{
 							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId">
+								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId" data-count="@dict.NestedCount">
 									<span class="toggle-icon">@(dict.DefaultExpanded ? "−" : "+")</span>
-									<span class="toggle-label">@(dict.DefaultExpanded ? "hide" : "show") properties</span>
+									<span class="toggle-label">@PropertyToggle.Label(dict.DefaultExpanded, dict.NestedCount)</span>
 								</button>
 							</dd>
 						}
@@ -190,12 +197,14 @@
 						{
 							<div class="nested-properties" id="@dict.ChildrenId" hidden="until-found">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 						else
 						{
 							<div class="nested-properties" id="@dict.ChildrenId">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 					</div>

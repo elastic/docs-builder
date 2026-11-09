@@ -40,8 +40,6 @@ let private format _ =
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
-let private watchAll _ = exec { run "dotnet" "watch" "--project" "aspire" "--configuration" "debug" }
-
 let private lint _ =
     match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
     | 0 -> printfn "No formatting violations found."
@@ -103,6 +101,23 @@ let private runLocalContainer _ =
     let esscImage = $"elastic/website-search-essc:%s{tag}"
     exec { run "docker" ["docker"; "run"; esscImage; "--help"] }
 
+let private runDotnetWithRegistryPushRetry (args: string list) =
+    let maxAttempts = 3
+    let rec attempt number =
+        let exitCode =
+            exec {
+                validExitCode (fun _ -> true)
+                exit_code_of "dotnet" args
+            }
+        match exitCode with
+        | 0 -> ()
+        | _ when number < maxAttempts ->
+            printfn "Container registry push failed (attempt %d/%d); retrying..." number maxAttempts
+            attempt (number + 1)
+        | code ->
+            failwithf "Container registry push failed after %d attempts (last exit code %d)" maxAttempts code
+    attempt 1
+
 let private publishContainers _ =
 
     let createImage projectPath containerName =
@@ -128,7 +143,10 @@ let private publishContainers _ =
                     "-p"; "ContainerUser=1001:1001";
                 ]
             | _ -> []
-        exec { run "dotnet" (args @ registry) }
+        let dotnetArgs = args @ registry
+        match registry with
+        | [] -> exec { run "dotnet" dotnetArgs }
+        | _ -> runDotnetWithRegistryPushRetry dotnetArgs
     createImage "src/tooling/docs-builder/docs-builder.csproj" "docs-builder"
     createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
@@ -187,6 +205,12 @@ let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
         |> Array.toList
     if not (List.isEmpty failures) then
         failwithf "Test projects failed:\n%s" (String.concat "\n" failures)
+
+    // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.
+    if testSuite <> Integration then
+        match exec { exit_code_of "dotnet" "snap" "orphans" } with
+        | 0 -> ()
+        | _ -> failwith "Orphaned snapshots found. Delete them with `dotnet snap orphans --delete` and commit the removal."
     
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 
@@ -290,7 +314,6 @@ let Setup (parsed:ParseResults<Build>) =
 
         | Format -> Build.Step format
         | Watch -> Build.Step watch
-        | Watch_All -> Build.Step watchAll
 
         // steps
         | Lint -> Build.Step lint

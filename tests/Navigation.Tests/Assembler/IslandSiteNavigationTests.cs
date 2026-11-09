@@ -2,12 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Floating;
+using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
@@ -275,5 +278,77 @@ public class IslandSiteNavigationTests()
 		// It has no island: true in navigation.yml and no island: true in its docset.yml.
 		searchNav.IsIsland.Should().BeFalse("nested toc: children without island: true are not implicit islands");
 		searchNav.RendersAsIsland().Should().BeFalse("nested child is not an island");
+	}
+
+	[Test]
+	public void FloatingSectionOfADocset_SurvivesSiteAssembly()
+	{
+		// language=yaml
+		var siteNavYaml =
+			"""
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: observability
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		const string docsetPath = "/checkouts/current/observability/docs/docset.yml";
+
+		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsContext.Collector,
+			fileSystem.FileInfo.New(docsetPath),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(
+			obsDocset,
+			obsContext,
+			GenericDocumentationFileFactory.Instance,
+			floatingSections: new FloatingSectionRegistry([new DemoProvider()])
+		);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+
+		var navigation = new SiteNavigation(siteNavFile, siteContext, [obsNav], sitePrefix: null);
+
+		var obsNode = navigation.NavigationItems.ElementAt(0).Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+		obsNode.NavigationItems.OfType<DemoRoot>().Should().ContainSingle();
+		siteContext.Diagnostics.Should().NotContain(d => d.Message.Contains("does not explicitly declare"));
+	}
+
+	[Test]
+	public void FloatingSectionOfTheNarrativeRoot_SurvivesSiteAssembly()
+	{
+		// language=yaml
+		var siteNavYaml =
+			"""
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: observability
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		const string narrativeDir = "/checkouts/current/docs-content";
+		const string docsetPath = $"{narrativeDir}/docs/docset.yml";
+		fileSystem.AddDirectory($"{narrativeDir}/.git");
+		fileSystem.AddFile(docsetPath, new MockFileData("project: docs-content\ntoc:\n  - file: index.md\n"));
+		fileSystem.AddFile($"{narrativeDir}/docs/index.md", new MockFileData("# Docs\n"));
+
+		var narrativeContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, narrativeDir);
+		var narrativeDocset = DocumentationSetFile.LoadAndResolve(
+			narrativeContext.Collector,
+			fileSystem.FileInfo.New(docsetPath),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var narrativeNav = new DocumentationSetNavigation<IDocumentationFile>(
+			narrativeDocset,
+			narrativeContext,
+			GenericDocumentationFileFactory.Instance,
+			floatingSections: new FloatingSectionRegistry([new DemoProvider()])
+		);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, narrativeDir);
+
+		var navigation = new SiteNavigation(siteNavFile, siteContext, [narrativeNav], sitePrefix: null);
+
+		navigation.NavigationItems.OfType<DemoRoot>().Should().ContainSingle();
 	}
 }

@@ -6,12 +6,16 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
+using Nullean.Snapshots.Json;
+using Nullean.Snapshots.Trees;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class RequestBodyExampleTests
 {
+	/// <summary>The old assertions compared the JSON text, so key order and number spelling stay significant.</summary>
+	private static readonly TreeDiffOptions Exact = new() { MapOrder = MapOrder.Significant, StrictNumbers = true };
+
 	[Test]
 	public async Task Build_HoldsTheRequiredPropertiesOnly()
 	{
@@ -24,7 +28,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"name":"string","count":0,"enabled":false}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"name":"string","count":0,"enabled":false}""", Exact);
 	}
 
 	[Test]
@@ -43,7 +47,10 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"id":"ext-1","mode":"fast","size":3,"kind":"extension","tag":"a"}""");
+		Parse(body)
+			.ToJsonString()
+			.Should()
+			.MatchInlineJsonSnapshot("""{"id":"ext-1","mode":"fast","size":3,"kind":"extension","tag":"a"}""", Exact);
 	}
 
 	[Test]
@@ -55,7 +62,7 @@ public class RequestBodyExampleTests
 			openApi: "3.0.3"
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"id":"ext-1"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"id":"ext-1"}""", Exact);
 	}
 
 	[Test]
@@ -71,7 +78,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"owner":{"id":"string"},"ids":[0]}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"owner":{"id":"string"},"ids":[0]}""", Exact);
 	}
 
 	[Test]
@@ -85,7 +92,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"name":"string"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"name":"string"}""", Exact);
 	}
 
 	[Test]
@@ -101,7 +108,7 @@ public class RequestBodyExampleTests
 			""" "Id": { "type": "string" } """
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"name":"string"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"name":"string"}""", Exact);
 	}
 
 	[Test]
@@ -117,7 +124,7 @@ public class RequestBodyExampleTests
 			""" "Base": { "type": "object", "required": ["version"], "properties": { "version": { "type": "integer" } } } """
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"version":0,"name":"string"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"version":0,"name":"string"}""", Exact);
 	}
 
 	[Test]
@@ -132,7 +139,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"a":"string"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"a":"string"}""", Exact);
 	}
 
 	[Test]
@@ -148,7 +155,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"a":0,"kind":"a"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"a":0,"kind":"a"}""", Exact);
 	}
 
 	[Test]
@@ -159,7 +166,7 @@ public class RequestBodyExampleTests
 			"""{ "type": "object", "properties": { "name": { "type": "string" } } }"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("{}");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("{}", Exact);
 	}
 
 	[Test]
@@ -174,14 +181,14 @@ public class RequestBodyExampleTests
 
 		body.Should().NotBeNull().And.NotContain("null");
 		// Objects at depth 0 to 5 are built; the one at depth 6 is cut and its property left out.
-		Parse(body).ToJsonString().Should().Be("""{"next":{"next":{"next":{"next":{"next":{}}}}}}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"next":{"next":{"next":{"next":{"next":{}}}}}}""", Exact);
 	}
 
 	[Test]
 	public async Task Build_BelowTheDepthLimit_StillGivesScalarsTheirValue()
 	{
 		// Seven required objects deep: the innermost object is cut, but the scalar beside it keeps its example.
-		var nested = /*lang=json,strict*/  """{ "type": "object", "required": ["leaf"], "properties": { "leaf": { "type": "string" } } }""";
+		var nested = /*lang=json,strict*/ """{ "type": "object", "required": ["leaf"], "properties": { "leaf": { "type": "string" } } }""";
 		for (var i = 0; i < 6; i++)
 		{
 			nested =
@@ -216,7 +223,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"name":"string","ids":[0]}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"name":"string","ids":[0]}""", Exact);
 	}
 
 	[Test]
@@ -234,7 +241,7 @@ public class RequestBodyExampleTests
 			""" "IndexName": { "type": "string" }, "Status": { "type": "string", "enum": ["created", "needs_configuration"] } """
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"index":"string","status":"created"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"index":"string","status":"created"}""", Exact);
 	}
 
 	[Test]
@@ -252,7 +259,7 @@ public class RequestBodyExampleTests
 		);
 
 		body.Should().NotContain("sentinel");
-		Parse(body).ToJsonString().Should().Be("""{"a":"string","b":"x","c":"y"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"a":"string","b":"x","c":"y"}""", Exact);
 	}
 
 	[Test]
@@ -267,7 +274,7 @@ public class RequestBodyExampleTests
 		);
 
 		body.Should().NotContain("sentinel");
-		Parse(body).ToJsonString().Should().Be("""{"settings":{"refresh_interval":null,"list":[null,1]}}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"settings":{"refresh_interval":null,"list":[null,1]}}""", Exact);
 	}
 
 	[Test]
@@ -282,7 +289,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"name":"string","correlation_id":"string"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"name":"string","correlation_id":"string"}""", Exact);
 	}
 
 	[Test]
@@ -298,7 +305,10 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"version":5,"flag":true,"word":"true","kind":"extension","digits":"7"}""");
+		Parse(body)
+			.ToJsonString()
+			.Should()
+			.MatchInlineJsonSnapshot("""{"version":5,"flag":true,"word":"true","kind":"extension","digits":"7"}""", Exact);
 	}
 
 	[Test]
@@ -328,7 +338,7 @@ public class RequestBodyExampleTests
 			"""{ "type": "object", "required": ["digits"], "properties": { "digits": { "const": "7" } } }"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"digits":7}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"digits":7}""", Exact);
 	}
 
 	[Test]
@@ -343,7 +353,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"externalId":"string"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"externalId":"string"}""", Exact);
 	}
 
 	[Test]
@@ -357,7 +367,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"version":5,"kind":"7"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"version":5,"kind":"7"}""", Exact);
 	}
 
 	[Test]
@@ -371,7 +381,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"data":"string"}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"data":"string"}""", Exact);
 	}
 
 	[Test]
@@ -382,7 +392,7 @@ public class RequestBodyExampleTests
 			"""{ "type": "object", "required": ["value"], "properties": { "value": { "type": "null" } } }"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"value":null}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"value":null}""", Exact);
 	}
 
 	[Test]
@@ -396,7 +406,7 @@ public class RequestBodyExampleTests
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"value":0}""");
+		Parse(body).ToJsonString().Should().MatchInlineJsonSnapshot("""{"value":0}""", Exact);
 	}
 
 	[Test]
@@ -433,23 +443,8 @@ public class RequestBodyExampleTests
 			    "responses": { "200": { "description": "ok" } } } } },
 			  "components": { "schemas": { {{(extraSchemas.Length == 0 ? "\"Unused\": { \"type\": \"string\" }" : extraSchemas)}} } } }
 			""";
-		var jsonPath = Path.Join(Path.GetTempPath(), $"request-body-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var media = document.Paths!["/a"].Operations![HttpMethod.Post]!.RequestBody!.Content!["application/json"];
-			return RequestBodyExample.Build(new SchemaAnalyzer(document), "application/json", media.Schema);
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var media = document.Paths!["/a"].Operations![HttpMethod.Post]!.RequestBody!.Content!["application/json"];
+		return RequestBodyExample.Build(new SchemaAnalyzer(document), "application/json", media.Schema);
 	}
 }

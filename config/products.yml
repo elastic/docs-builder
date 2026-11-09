@@ -151,6 +151,9 @@ products:
   edot-browser:
     display: 'Elastic Distribution of OpenTelemetry Browser (RUM)'
     repository: 'elastic-otel-rum-js'
+  edot-react-native:
+    display: 'Elastic Distribution of OpenTelemetry React Native'
+    repository: 'elastic-otel-react-native'
   edot-php:
     display: 'Elastic Distribution of OpenTelemetry PHP'
     repository: 'elastic-otel-php'

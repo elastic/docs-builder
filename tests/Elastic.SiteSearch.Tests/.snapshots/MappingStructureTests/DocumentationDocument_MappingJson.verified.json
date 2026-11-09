@@ -1,0 +1,498 @@
+{
+  "properties": {
+    "api": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "keyword"
+        },
+        "trees": {
+          "type": "object",
+          "properties": {
+            "tree": {
+              "type": "keyword"
+            },
+            "root": {
+              "type": "keyword",
+              "index": false
+            }
+          }
+        },
+        "properties": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "path": {
+              "type": "keyword",
+              "fields": {
+                "match": {
+                  "type": "text"
+                }
+              }
+            },
+            "path_words": {
+              "type": "search_as_you_type",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "name_words": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "location": {
+              "type": "keyword"
+            },
+            "anchor": {
+              "type": "keyword"
+            },
+            "description": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "parent": {
+              "type": "keyword"
+            }
+          }
+        },
+        "routes": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "keyword",
+              "index": false
+            },
+            "methods": {
+              "type": "keyword",
+              "index": false
+            }
+          }
+        },
+        "endpoints": {
+          "type": "keyword"
+        },
+        "endpoints_bare": {
+          "type": "keyword"
+        },
+        "method": {
+          "type": "keyword"
+        },
+        "path": {
+          "type": "keyword"
+        },
+        "operation_id": {
+          "type": "keyword"
+        },
+        "words": {
+          "type": "text",
+          "fields": {
+            "completion": {
+              "type": "search_as_you_type",
+              "analyzer": "synonyms_fixed_analyzer",
+              "search_analyzer": "synonyms_analyzer"
+            }
+          },
+          "analyzer": "synonyms_fixed_analyzer",
+          "search_analyzer": "synonyms_analyzer"
+        },
+        "group": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          },
+          "analyzer": "synonyms_fixed_analyzer",
+          "search_analyzer": "synonyms_analyzer"
+        },
+        "id_words": {
+          "type": "rank_feature",
+          "positive_score_impact": false
+        },
+        "deprecated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "product": {
+      "type": "keyword",
+      "normalizer": "keyword_normalizer"
+    },
+    "related_products": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "keyword",
+          "normalizer": "keyword_normalizer"
+        },
+        "repository": {
+          "type": "keyword",
+          "normalizer": "keyword_normalizer"
+        }
+      }
+    },
+    "applies_to": {
+      "type": "nested",
+      "properties": {
+        "type": {
+          "type": "keyword",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          },
+          "normalizer": "keyword_normalizer"
+        },
+        "sub_type": {
+          "type": "keyword",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          },
+          "normalizer": "keyword_normalizer"
+        },
+        "lifecycle": {
+          "type": "keyword",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          },
+          "normalizer": "keyword_normalizer"
+        },
+        "version": {
+          "type": "version",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "content_hash": {
+      "type": "keyword"
+    },
+    "content_last_updated": {
+      "type": "date"
+    },
+    "source_url": {
+      "type": "keyword"
+    },
+    "title": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "normalizer": "keyword_normalizer"
+        },
+        "starts_with": {
+          "type": "text",
+          "analyzer": "starts_with_analyzer",
+          "search_analyzer": "starts_with_analyzer_search"
+        },
+        "completion": {
+          "type": "search_as_you_type",
+          "search_analyzer": "synonyms_analyzer"
+        }
+      },
+      "search_analyzer": "synonyms_analyzer"
+    },
+    "search_title": {
+      "type": "text",
+      "fields": {
+        "completion": {
+          "type": "search_as_you_type",
+          "analyzer": "synonyms_fixed_analyzer",
+          "search_analyzer": "synonyms_analyzer",
+          "index_options": "offsets"
+        }
+      },
+      "analyzer": "synonyms_fixed_analyzer",
+      "search_analyzer": "synonyms_analyzer"
+    },
+    "content_type": {
+      "type": "keyword",
+      "copy_to": "tags"
+    },
+    "path": {
+      "type": "keyword",
+      "fields": {
+        "match": {
+          "type": "text"
+        },
+        "prefix": {
+          "type": "text",
+          "analyzer": "hierarchy_analyzer"
+        }
+      }
+    },
+    "url": {
+      "type": "keyword"
+    },
+    "hash": {
+      "type": "keyword"
+    },
+    "batch_index_date": {
+      "type": "date"
+    },
+    "last_updated": {
+      "type": "date"
+    },
+    "description": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "headings": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      },
+      "analyzer": "synonyms_fixed_analyzer",
+      "search_analyzer": "synonyms_analyzer"
+    },
+    "body": {
+      "type": "text",
+      "fields": {
+        "en": {
+          "type": "text",
+          "analyzer": "english"
+        },
+        "de": {
+          "type": "text",
+          "analyzer": "german"
+        },
+        "fr": {
+          "type": "text",
+          "analyzer": "french"
+        },
+        "ja": {
+          "type": "text",
+          "analyzer": "cjk"
+        },
+        "ko": {
+          "type": "text",
+          "analyzer": "cjk"
+        },
+        "zh": {
+          "type": "text",
+          "analyzer": "cjk"
+        },
+        "es": {
+          "type": "text",
+          "analyzer": "spanish"
+        },
+        "pt": {
+          "type": "text",
+          "analyzer": "portuguese"
+        }
+      },
+      "analyzer": "synonyms_fixed_analyzer",
+      "search_analyzer": "synonyms_analyzer",
+      "term_vector": "with_positions_offsets"
+    },
+    "summary": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      },
+      "analyzer": "synonyms_fixed_analyzer",
+      "search_analyzer": "synonyms_analyzer"
+    },
+    "parents": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          },
+          "search_analyzer": "synonyms_analyzer"
+        },
+        "path": {
+          "type": "keyword",
+          "fields": {
+            "match": {
+              "type": "text"
+            },
+            "prefix": {
+              "type": "text",
+              "analyzer": "hierarchy_analyzer"
+            }
+          }
+        },
+        "url": {
+          "type": "alias",
+          "path": "parents.path"
+        }
+      }
+    },
+    "hidden": {
+      "type": "boolean"
+    },
+    "translated": {
+      "type": "boolean"
+    },
+    "ai_rag_optimized_summary": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      },
+      "analyzer": "synonyms_fixed_analyzer",
+      "search_analyzer": "synonyms_analyzer"
+    },
+    "ai_short_summary": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "ai_search_query": {
+      "type": "keyword",
+      "fields": {
+        "completion": {
+          "type": "search_as_you_type"
+        }
+      }
+    },
+    "ai_questions": {
+      "type": "text",
+      "fields": {
+        "completion": {
+          "type": "search_as_you_type",
+          "analyzer": "synonyms_fixed_analyzer",
+          "search_analyzer": "synonyms_analyzer",
+          "index_options": "offsets"
+        }
+      },
+      "analyzer": "synonyms_fixed_analyzer",
+      "search_analyzer": "synonyms_analyzer"
+    },
+    "ai_use_cases": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "section": {
+      "type": "keyword",
+      "normalizer": "keyword_normalizer",
+      "copy_to": "tags"
+    },
+    "content_tier": {
+      "type": "keyword"
+    },
+    "navigation": {
+      "type": "object",
+      "properties": {
+        "depth": {
+          "type": "rank_feature",
+          "positive_score_impact": false
+        },
+        "table_of_contents": {
+          "type": "rank_feature",
+          "positive_score_impact": false
+        }
+      }
+    },
+    "ai_autocomplete_questions": {
+      "type": "text",
+      "fields": {
+        "completion": {
+          "type": "search_as_you_type",
+          "analyzer": "synonyms_fixed_analyzer",
+          "search_analyzer": "synonyms_analyzer",
+          "index_options": "offsets"
+        },
+        "suggest": {
+          "type": "completion"
+        }
+      },
+      "analyzer": "synonyms_fixed_analyzer",
+      "search_analyzer": "synonyms_analyzer"
+    },
+    "tags": {
+      "type": "text",
+      "analyzer": "content_tags_analyzer"
+    },
+    "abstract": {
+      "type": "alias",
+      "path": "summary"
+    },
+    "navigation_section": {
+      "type": "alias",
+      "path": "section"
+    },
+    "content_tags": {
+      "type": "alias",
+      "path": "tags"
+    },
+    "stripped_body": {
+      "type": "alias",
+      "path": "body"
+    },
+    "navigation_depth": {
+      "type": "alias",
+      "path": "navigation.depth"
+    },
+    "navigation_table_of_contents": {
+      "type": "alias",
+      "path": "navigation.table_of_contents"
+    }
+  }
+}

@@ -2,13 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
-using Elastic.ApiExplorer.Supplemental;
+using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -29,6 +28,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	private const string UnknownTagGroupName = "unknown";
 
 	private readonly ILogger _logger = logger;
+	private readonly ApiTopicsNavigationBuilder _topics = new(logger, context);
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -51,7 +51,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			{
 				var op = pair.Operation;
 				var (ns, api) = OpenApiExtensionReader.GetNamespaceAndApiName(op.Value);
-				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
+				var tag = op.Value.Tags?.FirstOrDefault() is { } firstTag ? OpenApiExtensionReader.TagName(firstTag) : null;
 				var tagClassification = ResolveTagClassification(tag, xTagGroups, orphanTagsLogged);
 
 				// Fall back to the operationId, then a deterministic route:method key; Guid.NewGuid() made grouping keys
@@ -103,8 +103,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					apis.Add(apiEndpoint);
 				}
 				var tagName = tagGroup.Key ?? "unknown";
-				if (!tagMetadataByName.TryGetValue(tagName, out var tagMeta))
-					tagMeta = new OpenApiTagMetadata(tagName.CapitalizeFirstLetter(), string.Empty, null);
+				var tagMeta = OpenApiExtensionReader.TagMetadataFor(tagName, tagMetadataByName);
 				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
 					throw new InvalidOperationException($"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
 
@@ -150,69 +149,50 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					topLevelNavigationItems
 				);
 		}
-		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
+		var typesNavigation = CreateTypesNavigation(apiUrlSuffix, openApiDocument, rootNavigation);
 
-		// Add explicit children declared via 'children:' below the landing page and before the
-		// generated OpenAPI groups, in declared order.
 		var finalNavigationItems = new List<INavigationItem>();
-		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var (topicsNavigation, listsAuthentication) = _topics.Create(
+			apiUrlSuffix,
+			openApiDocument,
+			ApiTopicsNavigationBuilder.ChildFiles(apiConfig, versionMajor),
+			rootNavigation
+		);
+		if (topicsNavigation.NavigationItems.Count > 0)
+			finalNavigationItems.Add(topicsNavigation);
 
-		if (apiConfig?.Children.Count > 0)
-		{
-			foreach (var childFile in apiConfig.Children)
-			{
-				if (ApiSupplementalName.TryParseVersionSuffix(childFile.Name, out _, out var fileMajor) && fileMajor != versionMajor)
-					continue;
-
-				var childNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, childFile, rootNavigation, rootNavigation, markdownSlugs);
-				finalNavigationItems.Add(childNavItem);
-			}
-		}
-
+		// The Topics heading lists the Authentication page itself, unless a children: page stands for it. The generated page then stays hidden for old links.
 		finalNavigationItems.AddRange(
-			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument)
+			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
+				item => !(listsAuthentication && item.Model.Kind == ApiStructuralKind.Authentication)
+			)
 		);
 
 		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
 			? topLevelNavigationItems
 			: rootNavigation.NavigationItems.Count > 0 ? rootNavigation.NavigationItems.ToArray() : [];
-		if (finalNavigationItems.Count > 0 && endpointItems.Count > 0)
-			finalNavigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
-		if (endpointItems.Count > 0)
-			finalNavigationItems.AddRange(endpointItems);
+		AddSection(finalNavigationItems, endpointItems, rootNavigation);
+		// Types are reference material, not endpoints, so a divider sets them apart as it does the topics.
+		AddSection(finalNavigationItems, typesNavigation is null ? [] : [typesNavigation], rootNavigation);
 
 		rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
 	}
 
-	private SimpleMarkdownNavigationItem CreateMarkdownNavigationItem(
-		string apiUrlSuffix,
-		IFileInfo markdownFile,
-		LandingNavigationItem rootNavigation,
-		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		HashSet<string> markdownSlugs
+	/// <summary>Adds one block of the sidebar, with a divider from whatever comes before it. An empty block adds nothing.</summary>
+	private static void AddSection(
+		List<INavigationItem> navigationItems,
+		IReadOnlyList<INavigationItem> section,
+		LandingNavigationItem rootNavigation
 	)
 	{
-		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(markdownFile);
+		if (section.Count == 0)
+			return;
 
-		// Check for duplicate markdown slugs
-		if (!markdownSlugs.Add(slug))
-		{
-			throw new InvalidOperationException(
-				$"Duplicate markdown slug '{slug}' found in API product '{apiUrlSuffix}'. " + $"File: {markdownFile.FullName}"
-			);
-		}
-
-		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
-
-		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix)}/{slug}/";
-		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
-
-		// Create simple navigation item - will be handled by regular documentation system
-		var navItem = new SimpleMarkdownNavigationItem(url, title, markdownFile, rootNavigation) { Parent = parent };
-
-		return navItem;
+		if (navigationItems.Count > 0)
+			navigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
+		navigationItems.AddRange(section);
 	}
 
 	private void CreateTagNavigationItems(
@@ -226,11 +206,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	{
 		foreach (var tag in classification.Tags)
 		{
-			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
 			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
-			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
-			tagNavigationItem.NavigationItems = endpointNavigationItems;
+			tagNavigationItem.NavigationItems = CreateEndpointNavigationItems(
+				apiUrlSuffix,
+				rootNavigation,
+				tag,
+				tagNavigationItem,
+				takenMonikers
+			);
 			tagNavigationItem.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
 				markdownRenderer,
 				tag.Description,
@@ -240,15 +224,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		}
 	}
 
-	private void CreateEndpointNavigationItems(
+	private List<IEndpointOrOperationNavigationItem> CreateEndpointNavigationItems(
 		string apiUrlSuffix,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
-		HashSet<string> takenMonikers,
-		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
+		HashSet<string> takenMonikers
 	)
 	{
+		var operationItems = new List<OperationNavigationItem>();
 		foreach (var endpoint in tag.Endpoints)
 		{
 			// One page can only stand in for several operations when they are the same call; a sibling with
@@ -256,7 +240,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			var differences = endpoint.Operations.Count > 1 ? OperationEndpoint.Differences(endpoint.Operations) : [];
 			if (endpoint.Operations.Count > 1 && differences.Count == 0)
 			{
-				endpointNavigationItems.Add(
+				operationItems.Add(
 					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, takenMonikers)
 				);
 			}
@@ -281,10 +265,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 						rootNavigation,
 						parentNavigationItem
 					);
-					endpointNavigationItems.Add(operationNavigationItem);
+					operationItems.Add(operationNavigationItem);
 				}
 			}
 		}
+		// Spec order looks arbitrary in a long group; readers scan by the route and method each row shows.
+		return [.. operationItems.InListOrder(static item => item.Endpoint.Rows[0])];
 	}
 
 	/// <summary>
@@ -332,19 +318,18 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		};
 	}
 
-	private void CreateSchemaNavigationItems(
+	/// <summary>The Types folder of shared schema pages, or null when the spec has none of the listed types.</summary>
+	private TypesNavigationItem? CreateTypesNavigation(
 		string apiUrlSuffix,
 		OpenApiDocument openApiDocument,
-		LandingNavigationItem rootNavigation,
-		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> topLevelNavigationItems
+		LandingNavigationItem rootNavigation
 	)
 	{
 		var schemas = openApiDocument.Components?.Schemas;
 		if (schemas is null || schemas.Count == 0)
-			return;
+			return null;
 
-		var typesCategory = new SchemaCategory("Types", "Shared type definitions");
-		var typesCategoryNav = new SchemaCategoryNavigationItem(typesCategory, rootNavigation, rootNavigation);
+		var typesCategoryNav = new TypesNavigationItem(rootNavigation);
 		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
 		// One category per group of type pages (Query DSL, Aggregations, Ingest), in the order TypePages lists them.
@@ -374,11 +359,11 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			categoryNavigationItems.Add(categoryNav);
 		}
 
-		if (categoryNavigationItems.Count > 0)
-		{
-			typesCategoryNav.NavigationItems = categoryNavigationItems;
-			topLevelNavigationItems.Add(typesCategoryNav);
-		}
+		if (categoryNavigationItems.Count == 0)
+			return null;
+
+		typesCategoryNav.NavigationItems = categoryNavigationItems;
+		return typesCategoryNav;
 	}
 	private string ResolveTagClassification(string? tag, XTagGroups? xTagGroups, HashSet<string> orphanTagsLogged)
 	{

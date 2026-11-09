@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -47,7 +49,7 @@ This feature has been removed from Elastic Cloud Enterprise.
 	}
 
 	[Test]
-	public void FirstItemRendersChecked() => Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void ParsesAppliesToDefinitions()
@@ -99,7 +101,7 @@ Content B
 	}
 
 	[Test]
-	public void FirstItemRendersChecked() => Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -244,11 +246,8 @@ Content for removed version
 		var testCases = new[]
 		{
 			("stack: ga 9.1", "stack: ga 9.1"), // Same format should produce same key
-
 			("{ ece: all, ess: all }", "deployment: { ece: all, ess: all }"), // YAML object vs deployment object
-
 			("{ stack: ga 9.1 }", "stack: ga 9.1"), // YAML object vs simple syntax
-
 			("{ deployment: { ece: ga 9.0, ess: ga 9.1 } }", "deployment: { ece: ga 9.0, ess: ga 9.1 }"), // Nested YAML objects
 		};
 

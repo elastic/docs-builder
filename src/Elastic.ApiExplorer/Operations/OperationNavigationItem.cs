@@ -19,11 +19,17 @@ public record ApiOperation(
 	string Route,
 	IOpenApiPathItem Path,
 	string ApiName
-) : IApiModel<OperationPageModel>, IHttpMethodNavigationModel
+) : IApiModel<OperationPageModel>, IApiOperationNavigationModel
 {
 	// The page header leads with the dominant method, which can come from the description's method listing
 	// rather than the spec; the sidebar badge must agree with it.
-	string IHttpMethodNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
+	string IApiOperationNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
+
+	/// <summary>
+	/// The one deprecation fact the page title badge, the overview rows, the sidebar row and the search index all read.
+	/// Collapsed siblings always agree on it, because operations that differ in lifecycle are never collapsed onto one page.
+	/// </summary>
+	public bool Deprecated => Operation.Deprecated;
 
 	/// <summary>The title shown for the operation; an operationId used as the grouping key is shown as readable words.</summary>
 	public string DisplayName =>
@@ -63,45 +69,31 @@ public record ApiOperation(
 	}
 }
 
-public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
+public class OperationNavigationItem(
+	string? urlPathPrefix,
+	string apiUrlSuffix,
+	ApiOperation apiOperation,
+	IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
+	IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
+	string? moniker = null
+) : ApiPageNavigationItem<ApiOperation>(
+	ApiUrlBuilder.OperationUrl(
+		urlPathPrefix,
+		apiUrlSuffix,
+		moniker ?? ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route)
+	),
+	apiOperation.DisplayName,
+	apiOperation,
+	root,
+	parent
+), IEndpointOrOperationNavigationItem
 {
-	public OperationNavigationItem(
-		string? urlPathPrefix,
-		string apiUrlSuffix,
-		ApiOperation apiOperation,
-		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
-		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
-		string? moniker = null
-	)
-	{
-		NavigationRoot = root;
-		Model = apiOperation;
-		NavigationTitle = apiOperation.DisplayName;
-		Parent = parent;
-		Url = ApiUrlBuilder.OperationUrl(
-			urlPathPrefix,
-			apiUrlSuffix,
-			moniker ?? ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route)
-		);
-		Id = ShortId.Create(Url);
-	}
-
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-	//TODO enum to string
-	public string Id { get; }
-	public ApiOperation Model { get; }
-	public string Url { get; }
-	public bool Hidden { get; set; }
-
 	/// <summary>Other operations of the same API collapsed onto this page (other methods and routes).</summary>
 	public IReadOnlyList<ApiOperation> Siblings { get; init; } = [];
 
 	/// <summary>Former per-operation URLs of <see cref="Siblings"/> that now redirect to <see cref="Url"/>.</summary>
 	public IReadOnlyList<string> AliasUrls { get; init; } = [];
 
-	public string NavigationTitle { get; }
-
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	public int NavigationIndex { get; set; }
+	/// <summary>The routes and methods this page lists, its own and its <see cref="Siblings"/>'.</summary>
+	public OperationEndpoint Endpoint => field ??= OperationEndpoint.Build(Model, Model.Operation.Description, Siblings);
 }

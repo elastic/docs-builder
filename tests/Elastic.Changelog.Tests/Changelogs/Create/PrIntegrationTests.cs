@@ -7,6 +7,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -76,10 +77,20 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().Contain("type: feature");
-		yamlContent.Should().Contain("prs:");
-		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			"""
+			);
 	}
 
 	[Test]
@@ -142,9 +153,20 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		fileName.Should().Be("140034.yaml", "the filename should be the PR number when UsePrNumber is true");
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("type: bug-fix");
-		yamlContent.Should().Contain("prs:");
-		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/140034");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/140034"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Fix memory leak in search
+			"""
+			);
 	}
 
 	[Test]
@@ -330,13 +352,29 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2);
 
-		var yamlContents = new List<string>();
-		foreach (var file in files)
-			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken));
-
-		// Verify both PRs were processed
-		yamlContents.Should().Contain(c => c.Contains("title: First PR feature"));
-		yamlContents.Should().Contain(c => c.Contains("title: Second PR bug fix"));
+		ChangelogEntryYaml
+			.DumpEntries(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 1234.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/1234"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: First PR feature
+			=== 5678.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/5678"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Second PR bug fix
+			"""
+			);
 	}
 
 	[Test]
@@ -397,7 +435,6 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		var input = new CreateChangelogArguments
 		{
 			Prs = parsedPrs, // PRs read from file
-
 			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -416,14 +453,37 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(3); // One file per PR
 
-		var yamlContents = new List<string>();
-		foreach (var file in files)
-			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken));
-
-		// Verify all PRs were processed
-		yamlContents.Should().Contain(c => c.Contains("title: First PR from file"));
-		yamlContents.Should().Contain(c => c.Contains("title: Second PR from file"));
-		yamlContents.Should().Contain(c => c.Contains("title: Third PR from file"));
+		ChangelogEntryYaml
+			.DumpEntries(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 1111.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/1111"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: First PR from file
+			=== 2222.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/2222"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Second PR from file
+			=== 3333.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/3333"
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Third PR from file
+			"""
+			);
 	}
 
 	[Test]
@@ -485,7 +545,6 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		var input = new CreateChangelogArguments
 		{
 			Prs = allPrs.ToArray(), // Mixed PRs from comma-separated and file
-
 			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -504,18 +563,29 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2); // One file per PR
 
-		var yamlContents = new List<string>();
-		foreach (var file in files)
-		{
-			var content = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken);
-			yamlContents.Add(content);
-		}
-
-		// Verify both PRs were processed
-		yamlContents.Should().Contain(c => c.Contains("title: PR from comma-separated"));
-		yamlContents.Should().Contain(c => c.Contains("title: PR from file"));
-		yamlContents.Should().Contain(c => c.Contains("prs:") && c.Contains("https://github.com/elastic/elasticsearch/pull/1111"));
-		yamlContents.Should().Contain(c => c.Contains("prs:") && c.Contains("https://github.com/elastic/elasticsearch/pull/2222"));
+		ChangelogEntryYaml
+			.DumpEntries(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 1111.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/1111"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: PR from comma-separated
+			=== 2222.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/2222"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: PR from file
+			"""
+			);
 	}
 
 	[Test]
@@ -568,9 +638,19 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("prs:");
-		yamlContent.Should().Contain("https://github.com/elastic/cloud/pull/155500");
-		yamlContent.Should().NotMatch("*prs:*\n- '155500'*");
-		yamlContent.Should().NotMatch("*prs:*\n- 155500*");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/cloud/pull/155500"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: "Fix upload failures for extensions with >5GiB"
+			"""
+			);
 	}
 }

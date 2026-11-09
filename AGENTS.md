@@ -21,21 +21,26 @@ Elastic's documentation build toolchain. Processes Markdown from multiple repos 
 
 ## Essential Commands
 
+[mise](https://mise.jdx.dev) is the entry point. `mise install` provisions the .NET SDK (from `global.json`) and Node (from `.nvmrc`), restores the local dotnet tools and installs the git hooks. `mise tasks` lists every task. `build.sh` and `dev.sh` still work; the tasks call them and the F# build project.
+
 ```bash
-dotnet build                                    # verify compilation
-dotnet run --project src/tooling/docs-builder   # run CLI locally
-./build.sh unit-test                            # all unit tests (fast, ~1 min)
-./build.sh integrate                            # integration tests (slow — needs cloned repos)
-./build.sh lint                                 # C# format check (read-only)
-./build.sh clean                                # remove .artifacts/
-dotnet curb format .                            # auto-fix C# formatting
+mise trust                                      # once per clone, in the root git folder; its worktrees are trusted too
+mise install                                    # SDK, Node, dotnet tools, git hooks
+mise run build                                  # verify compilation
+mise run serve                                  # run the CLI locally: serve docs/ with live reload
+mise run test                                   # all unit tests (fast, ~1 min)
+mise run integrate                              # integration tests (slow — needs cloned repos)
+mise run lint                                   # C# format check (read-only)
+mise run fmt                                    # auto-fix C# formatting
+mise run clean                                  # remove .artifacts/
 dotnet test tests/Elastic.Markdown.Tests/       # single test project
+./dev.sh <command>                                  # Docker route, no local installs (see CONTRIBUTING.md)
 ```
 
 **CLI changes:** after editing `src/tooling/docs-builder/Commands/`, regenerate `docs/cli-schema.json`:
 
 ```bash
-dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+mise run schema
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplemental CLI docs under `docs/schema-support/cli-schema/`.
@@ -43,15 +48,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplementa
 ### TypeScript frontend
 
 ```bash
-cd src/Elastic.Documentation.Site
-npm ci
-npm run build           # production build
-npm run watch           # dev with live reload
-npm run test            # Vitest
-npm run lint            # ESLint
-npm run fmt:write       # Prettier auto-fix
-npm run compile:check   # TypeScript type check only
+mise run site:install   # npm ci (skipped when package-lock.json is unchanged; the other site: tasks run it first)
+mise run site:build     # production build
+mise run site:watch     # dev with live reload
+mise run site:test      # Vitest
+mise run site:lint      # ESLint
+mise run site:fmt       # Prettier auto-fix
+mise run site:check     # TypeScript type check only
 ```
+
+The same scripts run with `npm run <script>` from `src/Elastic.Documentation.Site`.
 
 ## Testing
 
@@ -59,23 +65,35 @@ Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
 - **C#**: TUnit · AwesomeAssertions · FakeItEasy across all test projects. All test projects (unit and integration) use TUnit (wired centrally via `tests/Directory.Build.props` and `tests-integration/Directory.Build.props`; no per-project flag needed). Write new tests using TUnit APIs: `[Test]`, `[Arguments(...)]`, `[MethodDataSource(nameof(X))]`.
 - **TypeScript**: Vitest
-- **Integration**: clones real repos, runs full assembler — only run when integration files change
+- **Snapshots** (`Nullean.Snapshots`, wired for every test project in `tests/Directory.Build.props`; helpers in `tests-shared/Elastic.Documentation.Testing`): expected output lives in snapshots, not in chains of `Contain` assertions.
+  - Small values go inline: `x.Should().MatchInlineSnapshot("""...""")`, `MatchInlineHtmlSnapshot`, `MatchInlineJsonSnapshot`. Leave the argument out to write a new one. Large values go to a verified file: `MatchSnapshot()`, `MatchHtmlSnapshot()`, `MatchJsonSnapshot()`, `MatchYamlSnapshot()`.
+  - Diagnostics: `collector.Diagnostics.ToSnapshotText()` (`DiagnosticsSnapshot`). A clean run is the empty snapshot.
+  - Navigation trees and generated files: `NavigationDump.ToText(...)`, `MockFileSystemDump.ToText(fs, dir)`. Rendered docs HTML: `DocsHtml.Section()` (the page content, no fixture H1, no htmx attributes) or `DocsHtml.Body()`.
+  - Accept with the `snap` tool (`dotnet snap status`, `dotnet snap review`, `dotnet snap accept <key>`), or `SNAPSHOT_ACCEPT=1`. Read the diff of the changed `.verified.*` files and inline literals before committing. Nothing is accepted in CI. When a CI test run fails, download the `received-snapshots-*` artifact into `.artifacts/.snapshots/received/` and run `dotnet snap review`.
+  - Changing a snapshot test's output is a behaviour change. Mutate the code once and confirm the test fails before you commit.
+- **HTML snapshots** (`Nullean.Snapshots.Html`, used in `Elastic.ApiExplorer.Tests`): when a test would check one rendered block with many `Contain` assertions, compare it to a verified snapshot instead and keep one assertion that states the intent.
+  - Write `html.Should().MatchHtmlSnapshot()`. Narrow it with `new HtmlSnapshotOptions().Select("#some-id")` or `.RemoveAttributes(...)` so unrelated markup and volatile values (bundle names, CI git info) stay out.
+  - Snapshot a partial or one section, not a whole page. Whole-page snapshots break on unrelated changes.
+  - Verified files live in `{TestProject}/.snapshots/{Class}/{Method}.verified.html`. Use one named test per snapshot rather than `[Arguments]`, which puts a hash in the file name.
+  - Create or update them with `SNAPSHOT_ACCEPT=1 dotnet test --project tests/Elastic.ApiExplorer.Tests --treenode-filter "/*/*/MyTests/*"`, then review the diff of the `.verified.html` files. The variable is ignored when `CI=true`.
+  - Before committing, change the markup in the partial and confirm the test fails, then revert.
+- **Integration** (`tests-integration/`): needs real Elasticsearch credentials in the `docs-builder` user-secrets store, or Docker. Not run in CI; run with `mise run integrate` when you change search, MCP or content-date enrichment code.
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
 
 | Changed path | Test project / command |
 |---|---|
-| `src/Elastic.Markdown/` | `./build.sh unit-test` (targets `Elastic.Markdown.Tests` and `Elastic.Authoring.Tests`) |
-| `src/Elastic.Documentation.Configuration/` | `./build.sh unit-test` (targets `Elastic.Documentation.Configuration.Tests`) |
-| `src/Elastic.Documentation.Navigation/` | `./build.sh unit-test` (targets `Navigation.Tests`) |
-| `src/Elastic.Documentation.Indexing/` | `./build.sh unit-test` (targets `Elastic.Documentation.Indexing.Tests`) |
-| `src/authoring/Elastic.LegacyDocs.Migration/` | `./build.sh unit-test` (targets `Elastic.LegacyDocs.Migration.Tests`) |
-| `src/tooling/essc/` | `./build.sh unit-test` (targets `Elastic.SiteSearch.Tests`) |
-| `src/Elastic.ApiExplorer/` | `./build.sh unit-test` (targets `Elastic.ApiExplorer.Tests`) |
-| `src/services/Elastic.Documentation.Deploying/` | `./build.sh unit-test` (targets `Elastic.Documentation.Deploying.Tests`) |
-| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test`; design-system, style-guide and `_Head` changes also run `./build.sh unit-test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
-| `tests-integration/` | `./build.sh integrate` |
-| Multiple / uncertain | `./build.sh unit-test` |
+| `src/Elastic.Markdown/` | `mise run test` (targets `Elastic.Markdown.Tests` and `Elastic.Authoring.Tests`) |
+| `src/Elastic.Documentation.Configuration/` | `mise run test` (targets `Elastic.Documentation.Configuration.Tests`) |
+| `src/Elastic.Documentation.Navigation/` | `mise run test` (targets `Navigation.Tests`) |
+| `src/Elastic.Documentation.Indexing/` | `mise run test` (targets `Elastic.Documentation.Indexing.Tests`) |
+| `src/authoring/Elastic.LegacyDocs.Migration/` | `mise run test` (targets `Elastic.LegacyDocs.Migration.Tests`) |
+| `src/tooling/essc/` | `mise run test` (targets `Elastic.SiteSearch.Tests`) |
+| `src/Elastic.ApiExplorer/` | `mise run test` (targets `Elastic.ApiExplorer.Tests`) |
+| `src/services/Elastic.Documentation.Deploying/` | `mise run test` (targets `Elastic.Documentation.Deploying.Tests`) |
+| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `tests-integration/` | `mise run integrate` |
+| Multiple / uncertain | `mise run test` |
 
 ## Key Locations
 
