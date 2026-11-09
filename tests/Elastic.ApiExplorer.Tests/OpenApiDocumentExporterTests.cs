@@ -665,7 +665,7 @@ public class OpenApiDocumentExporterTests
 	public void ConvertToLandingDocument_Tree_IndexesTheApiRootAsALandingPage()
 	{
 		var spec = TreeSpec();
-		spec.Info = new OpenApiInfo { Title = "Elasticsearch", Description = "Run searches, manage indices.\n\nMore detail." };
+		spec.Info = new OpenApiInfo { Title = "Elastic Cloud API", Description = "Run searches, manage indices.\n\nMore detail." };
 
 		var doc = TestHelpers.CurrentStackExporter().ConvertToLandingDocument(TestHelpers.EsTree("9", spec));
 
@@ -699,8 +699,8 @@ public class OpenApiDocumentExporterTests
 			  "links": [],
 			  "content_hash": "",
 			  "content_last_updated": "0001-01-01T00:00:00+00:00",
-			  "title": "Elasticsearch API",
-			  "search_title": "Elasticsearch API",
+			  "title": "Elastic Cloud API",
+			  "search_title": "Elastic Cloud API",
 			  "content_type": "api",
 			  "path": "/docs/api/doc/elasticsearch/v9",
 			  "url": "/docs/api/doc/elasticsearch/v9",
@@ -724,6 +724,15 @@ public class OpenApiDocumentExporterTests
 			}
 			"""
 			);
+	}
+
+	[Test]
+	public void ConvertToLandingDocument_SpecWithoutTitle_FallsBackToTheProductLabel()
+	{
+		var doc = TestHelpers.CurrentStackExporter().ConvertToLandingDocument(TestHelpers.EsTree("main", TreeSpec()));
+
+		doc.Title.Should().Be("Elasticsearch API");
+		doc.SearchTitle.Should().Be("Elasticsearch API");
 	}
 
 	[Test]

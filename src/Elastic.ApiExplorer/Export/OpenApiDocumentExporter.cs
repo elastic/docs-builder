@@ -216,7 +216,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	{
 		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(tree.ApiKey, tree.Moniker));
 		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
-		var label = ProductApiLabel(tree.ApiKey);
+		// The title the landing page renders as its heading, so a reader who types the name on the page finds it.
+		var label = tree.Document.Info?.Title is { Length: > 0 } specTitle ? specTitle.Trim() : ProductApiLabel(tree.ApiKey);
 		var description = ApiSeoDescription.Excerpt(tree.Document.Info?.Description) ?? "";
 		return new DocumentationDocument
 		{
