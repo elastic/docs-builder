@@ -27,6 +27,10 @@ namespace Elastic.Documentation.Search;
 /// and a row named by a word beats a listed child. With <see cref="FieldSeveralWords"/> it adds up to <see cref="FieldName"/>, so
 /// <c>unrated docs</c> finds <c>unrated_docs</c> as surely as the identifier does.</item>
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
+/// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
+/// explain the typed words equally well. <c>isolate endpoint</c> lists <c>/api/endpoint/action/isolate</c> (8.08) above its deprecated
+/// predecessor <c>/api/endpoint/isolate</c> (7.88). It lifts operations without the flag, since the index writes <c>api.deprecated</c>
+/// only when true.</item>
 /// </list>
 /// </summary>
 public static class ApiLookupWeights

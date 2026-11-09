@@ -24,6 +24,7 @@ public static class ApiLookupQueryBuilder
 	private const string FieldHitsPrefix = SearchQueryBuilder.ApiPropertyHits + "_";
 	private const string WholeTitleQueryName = "title_all";
 	private const string LandingNameQueryName = "landing_name";
+	private const string NotDeprecatedQueryName = "not_deprecated";
 
 	// Up to two words every word must be explained; from three on, most of them.
 	private const string TokensMinimumShouldMatch = "2<75%";
@@ -302,7 +303,14 @@ public static class ApiLookupQueryBuilder
 		lifts.AddRange(SearchQueryBuilder.ScoringQueries);
 		// An operation id of fewer words is more specific, so `esql query` prefers `esql-query` over `esql-async-query-stop`.
 		lifts.Add(new RankFeatureQuery { Field = QueryFieldNames.ApiIdWords, Boost = ApiLookupWeights.Specificity });
-		lifts.Add(new TermQuery { Field = QueryFieldNames.ApiDeprecated, Value = false, Boost = ApiLookupWeights.NotDeprecated });
+		// The index writes api.deprecated only on deprecated operations, so a current one is one without the flag.
+		lifts.Add(
+			Constant(
+				new BoolQuery { MustNot = [new ExistsQuery { Field = QueryFieldNames.ApiDeprecated }] },
+				ApiLookupWeights.NotDeprecated,
+				NotDeprecatedQueryName
+			)
+		);
 		return lifts;
 	}
 
