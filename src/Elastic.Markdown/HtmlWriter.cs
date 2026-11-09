@@ -2,17 +2,21 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
@@ -37,6 +41,8 @@ public class HtmlWriter(
 ) : IMarkdownStringRenderer
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
+
+	private readonly ConcurrentDictionary<string, byte> _warnedApiLinks = [];
 
 	private INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter
 		?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Navigation);
@@ -71,7 +77,28 @@ public class HtmlWriter(
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);
+		CheckApiLinks(parsed, source);
 		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: true, MarkdownParser.ApiDescriptionPipeline);
+	}
+
+	// Descriptions parse without link validation, so the links they hold between API pages are checked here.
+	private void CheckApiLinks(MarkdownDocument parsed, IFileInfo source)
+	{
+		var context = DocumentationSet.Context;
+		foreach (var url in OutboundLinkExtractor.Extract(parsed) ?? [])
+		{
+			// A shared description renders on every page that shows it, so each broken link is hinted once.
+			if (
+				ApiLinkCheck.GetHint(
+					DocumentationSet.CrossLinkResolver,
+					url,
+					context.UrlPathPrefix,
+					context.Configuration.SuppressDiagnostics
+				) is { } hint
+				&& _warnedApiLinks.TryAdd(hint, 0)
+			)
+				context.Collector.EmitHint(source.FullName, hint);
+		}
 	}
 
 	/// <inheritdoc />
