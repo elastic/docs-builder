@@ -197,12 +197,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Parents = groupParent is null ? parents : [.. parents, groupParent],
 					Api = api,
 					Product = inference?.Product?.Id,
-					RelatedProducts = inference?.RelatedProducts.Count > 0
-						? inference
-							.RelatedProducts
-							.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
-							.ToArray()
-						: null
+					RelatedProducts = IndexedRelatedProducts(inference)
 				};
 			}
 		}
@@ -241,9 +236,19 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				Landing = true
 			},
 			Product = inference?.Product?.Id,
-			RelatedProducts = null
+			RelatedProducts = IndexedRelatedProducts(inference)
 		};
 	}
+
+	/// <summary>The products a document is filed under, so a product filter keeps an API's landing page with its operations.</summary>
+	private static IndexedProduct[]? IndexedRelatedProducts(DocumentInferenceResult? inference) =>
+		inference?.RelatedProducts.Count > 0
+			? [
+				.. inference.RelatedProducts.Select(
+					p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository }
+				)
+			]
+			: null;
 
 	/// <summary>
 	/// The breadcrumb entry for the operation's first tag, matching the group page the operation page links to;

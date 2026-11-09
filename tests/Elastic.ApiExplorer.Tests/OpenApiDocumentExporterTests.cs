@@ -13,6 +13,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
@@ -732,6 +733,28 @@ public class OpenApiDocumentExporterTests
 
 		doc.Title.Should().Be("Elasticsearch API");
 		doc.SearchTitle.Should().Be("Elasticsearch API");
+	}
+
+	[Test]
+	public void ConvertToLandingDocument_InferredProducts_FilesTheLandingPageWithItsOperations()
+	{
+		var kibana = new Product { Id = "kibana", DisplayName = "Kibana", Repository = "kibana" };
+		var inferrer = A.Fake<IDocumentInferrerService>();
+		A.CallTo(() => inferrer.InferForOpenApi(A<string>._)).Returns(new DocumentInferenceResult
+		{
+			Product = kibana,
+			Repository = "kibana",
+			RelatedProducts = [kibana]
+		});
+		var exporter = new OpenApiDocumentExporter(StackVersions(), inferrer);
+		var tree = TestHelpers.EsTree("main", TreeSpec());
+
+		var landing = exporter.ConvertToLandingDocument(tree);
+		var operation = exporter.ConvertToDocuments(tree).First();
+
+		landing.Product.Should().Be("kibana");
+		landing.RelatedProducts.Should().Equal(operation.RelatedProducts!);
+		landing.RelatedProducts.Should().ContainSingle().Which.Should().Be(new IndexedProduct { Id = "kibana", Repository = "kibana" });
 	}
 
 	[Test]
