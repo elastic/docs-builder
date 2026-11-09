@@ -33,6 +33,10 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
                 'deployment.environment': detectEnvironment(),
                 'service.language.name': 'javascript',
             },
+            // Resource timing logs one record per script, font and stylesheet, about 50 per page
+            // load. All assets come from the docs origin, so the volume is not worth its cost, and
+            // the batches grow past what the WAF accepts without a 403.
+            disableInstrumentations: ['resource-timing'],
             // The SDK always ignores its own export URLs. This is the API availability
             // check the search feature polls, which would otherwise be traced.
             ignoreFetchUrls: [/_api\/v1\/?$/],
