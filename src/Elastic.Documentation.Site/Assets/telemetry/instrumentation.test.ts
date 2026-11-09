@@ -1,4 +1,14 @@
-const startBrowserSdk = vi.hoisted(() => vi.fn(() => ({ shutdown: vi.fn() })))
+type StartBrowserSdk =
+    typeof import('@elastic/opentelemetry-browser').startBrowserSdk
+
+const startBrowserSdk = vi.hoisted(() =>
+    vi.fn<StartBrowserSdk>(
+        () =>
+            ({
+                shutdown: () => Promise.resolve(),
+            }) as ReturnType<StartBrowserSdk>
+    )
+)
 
 vi.mock('@elastic/opentelemetry-browser', () => ({ startBrowserSdk }))
 
@@ -22,12 +32,21 @@ describe('initializeOtel', () => {
         expect(startBrowserSdk).not.toHaveBeenCalled()
     })
 
-    it('does not read document.cookie during initialization', () => {
+    it('does not read document.cookie while the real SDK starts', async () => {
         mockUserAgent('Mozilla/5.0 Chrome/120.0.0.0')
+        // Run the real SDK, with its instrumentations and session handling, so a cookie
+        // read added by EDOT is caught. The module-wide mock would hide it.
+        const actual = await vi.importActual<
+            typeof import('@elastic/opentelemetry-browser')
+        >('@elastic/opentelemetry-browser')
+        startBrowserSdk.mockImplementationOnce(actual.startBrowserSdk)
+        const fetchBefore = window.fetch
         const cookieSpy = vi.spyOn(document, 'cookie', 'get')
 
-        initializeOtel()
+        expect(initializeOtel()).toBe(true)
 
+        // The real fetch instrumentation wraps fetch, so this was not a stub.
+        expect(window.fetch).not.toBe(fetchBefore)
         expect(cookieSpy).not.toHaveBeenCalled()
     })
 
