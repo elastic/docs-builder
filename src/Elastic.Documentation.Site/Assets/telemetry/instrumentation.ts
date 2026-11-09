@@ -1,6 +1,6 @@
 /**
  * Elastic EDOT browser SDK initialisation.
- * Sends traces and logs to the backend OTLP endpoints (/v1/traces, /v1/logs).
+ * Sends traces, logs and metrics to the backend OTLP endpoints (/v1/o/t, /v1/o/l, /v1/o/m).
  *
  * This module should be imported once at application startup.
  * All web components will automatically be instrumented once initialised.
@@ -26,26 +26,16 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
             serviceVersion: options.serviceVersion ?? '1.0.0',
             logLevel: options.debug ? 'debug' : 'warn',
             exportConfig: {
-                url: otlpBaseUrl(),
+                ...otlpSignalUrls(),
                 headers: { 'X-Docs-Session': 'active' },
             },
             resourceAttributes: {
                 'deployment.environment': detectEnvironment(),
                 'service.language.name': 'javascript',
             },
-            instrumentations: {
-                fetch: {
-                    propagateTraceHeaderCorsUrls: [
-                        new RegExp(`${window.location.origin}/.*`),
-                    ],
-                    // Avoid recursive telemetry: ignore the OTLP endpoints and
-                    // the root API availability check used by the search feature.
-                    ignoreUrls: [
-                        /\/v1\/(traces|logs|metrics)$/,
-                        /_api\/v1\/?$/,
-                    ],
-                },
-            },
+            // The SDK always ignores its own export URLs. This is the API availability
+            // check the search feature polls, which would otherwise be traced.
+            ignoreFetchUrls: [/_api\/v1\/?$/],
         })
         return true
     } catch (error) {
@@ -55,11 +45,21 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
     }
 }
 
-// EDOT validates this with new URL() and appends v1/traces, v1/logs and v1/metrics by plain
-// concatenation, so the path needs a trailing slash: /docs/_api/ gives /docs/_api/v1/traces.
-function otlpBaseUrl(): string {
+// The ALB routes the browser's OTLP paths to the collector, so each signal gets its own
+// absolute URL instead of the SDK's default /v1/{traces,logs,metrics}. EDOT validates them with new URL().
+function otlpSignalUrls(): {
+    tracesUrl: string
+    logsUrl: string
+    metricsUrl: string
+} {
     const basePath = docsConfig.apiBasePath.replace(/\/+$/, '')
-    return new URL(`${basePath}/`, window.location.origin).href
+    const signalUrl = (path: string) =>
+        new URL(`${basePath}/v1/o/${path}`, window.location.origin).href
+    return {
+        tracesUrl: signalUrl('t'),
+        logsUrl: signalUrl('l'),
+        metricsUrl: signalUrl('m'),
+    }
 }
 
 // The backend excludes synthetic traffic via the X-Docs-Synthetic-Monitor header (see
