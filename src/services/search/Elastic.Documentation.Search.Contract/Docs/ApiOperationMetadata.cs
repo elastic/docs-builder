@@ -8,7 +8,7 @@ using Elastic.Mapping;
 namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
-/// Attributes of an OpenAPI operation page. Nested under <see cref="DocumentationDocument.Api"/>
+/// Attributes of an OpenAPI operation page, or of an API's landing page when <see cref="Landing"/> is set. Nested under <see cref="DocumentationDocument.Api"/>
 /// (JSON <c>api.*</c>) and null on Markdown pages.
 /// </summary>
 public record ApiOperationMetadata
@@ -84,10 +84,21 @@ public record ApiOperationMetadata
 	/// <summary>
 	/// Number of words in the operation id alone, e.g. 2 for <c>cluster.health</c>. Mapped as
 	/// <c>rank_feature</c> with negative score impact. Fewer id words is a more specific operation,
-	/// so ties break toward <c>esql-query</c> over <c>esql-async-query-stop</c>.
+	/// so ties break toward <c>esql-query</c> over <c>esql-async-query-stop</c>. A <c>rank_feature</c> only takes positive
+	/// values, so the field is left out when zero, as on a landing page.
 	/// </summary>
 	[JsonPropertyName("id_words")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public int IdWords { get; init; }
+
+	/// <summary>
+	/// True on the API's own landing page, which has no operation of its own: its method, path, operation id and
+	/// endpoints are empty. Left out of the document when false, so operation documents keep their hash.
+	/// </summary>
+	[Boolean]
+	[JsonPropertyName("landing")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool Landing { get; init; }
 
 	/// <summary>Whether the spec marks the operation deprecated.</summary>
 	[Boolean]

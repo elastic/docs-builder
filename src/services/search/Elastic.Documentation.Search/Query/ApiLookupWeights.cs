@@ -51,6 +51,13 @@ public static class ApiLookupWeights
 	public const float NotDeprecated = 0.2f;
 
 	/// <summary>
+	/// Pins an API's landing page above every operation when the reader typed only words of its name, as in <c>kibana api</c>.
+	/// Far above the best an operation reaches (an endpoint key plus a whole title is about 12), so the landing page leads
+	/// whatever the words also mean to an operation.
+	/// </summary>
+	public const float LandingName = 50.0f;
+
+	/// <summary>
 	/// Lifts the hits of the API the reader is on, which breaks ties between identical operations of sibling APIs. It sits
 	/// below <see cref="WholeTitle"/> and <see cref="EndpointKey"/>, so a better match from another API still wins.
 	/// </summary>
