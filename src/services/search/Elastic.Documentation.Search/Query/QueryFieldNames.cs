@@ -28,6 +28,7 @@ public static class QueryFieldNames
 	public static string ApiGroup { get; } = $"{Doc.Fields.Api}.group";
 	public static string ApiIdWords { get; } = $"{Doc.Fields.Api}.id_words";
 	public static string ApiMethod { get; } = $"{Doc.Fields.Api}.method";
+	public static string ApiLanding { get; } = $"{Doc.Fields.Api}.landing";
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
 	public static string ApiKey { get; } = $"{Doc.Fields.Api}.key";
 	public static string ApiTreesTree { get; } = $"{Doc.Fields.Api}.trees.tree";

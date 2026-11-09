@@ -4,6 +4,7 @@ import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { RouteLine } from './RouteLine'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
+import { apiProductIconSvg } from './apiProductIcons'
 import {
     GO_TO_LABELS,
     fieldSearchTerms,
@@ -342,6 +343,9 @@ const SearchResultRow = ({
                 }
             `}
         >
+            {result.landing && (
+                <LandingIcon product={result.product ?? result.apiKey} />
+            )}
             <div
                 css={css`
                     flex: 1;
@@ -349,7 +353,7 @@ const SearchResultRow = ({
                     overflow: hidden;
                 `}
             >
-                <Breadcrumb items={breadcrumbItems} />
+                {!result.landing && <Breadcrumb items={breadcrumbItems} />}
                 <Title text={result.title} deprecated={result.deprecated} />
                 {route ? (
                     <RouteLine route={route} tokens={tokens} />
@@ -362,13 +366,42 @@ const SearchResultRow = ({
             {!isMobile && (
                 <JumpToIndicator
                     label={
-                        result.type === 'api'
-                            ? GO_TO_LABELS.operation
-                            : GO_TO_LABELS.page
+                        result.landing
+                            ? GO_TO_LABELS.api
+                            : result.type === 'api'
+                              ? GO_TO_LABELS.operation
+                              : GO_TO_LABELS.page
                     }
                 />
             )}
         </a>
+    )
+}
+
+/** The API's own mark, as its landing page and the catalog show it, in the gutter where an operation row has none. */
+const LandingIcon = ({ product }: { product?: string | null }) => {
+    const { euiTheme } = useEuiTheme()
+    const svg = apiProductIconSvg(product ?? undefined)
+    if (!svg) return null
+
+    return (
+        <span
+            aria-hidden="true"
+            data-api-icon={product}
+            css={css`
+                flex-shrink: 0;
+                display: inline-flex;
+                width: ${euiTheme.size.xl};
+                height: ${euiTheme.size.xl};
+                margin-right: ${euiTheme.size.xs};
+
+                svg {
+                    width: 100%;
+                    height: 100%;
+                }
+            `}
+            dangerouslySetInnerHTML={{ __html: svg }}
+        />
     )
 }
 

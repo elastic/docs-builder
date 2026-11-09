@@ -23,6 +23,7 @@ public static class ApiLookupQueryBuilder
 	private const string SynonymsAnalyzer = "synonyms_analyzer";
 	private const string FieldHitsPrefix = SearchQueryBuilder.ApiPropertyHits + "_";
 	private const string WholeTitleQueryName = "title_all";
+	private const string LandingNameQueryName = "landing_name";
 
 	// Up to two words every word must be explained; from three on, most of them.
 	private const string TokensMinimumShouldMatch = "2<75%";
@@ -63,9 +64,20 @@ public static class ApiLookupQueryBuilder
 		return new BoolQuery
 		{
 			Must = [new BoolQuery { Should = clauses, MinimumShouldMatch = TokensMinimumShouldMatch }],
+			MustNot = [LandingPageWithoutName(typed)],
 			Should = Lifts(typed, tokens)
 		};
 	}
+
+	/// <summary>
+	/// An API's landing page has no operation to explain a word, so it qualifies only when every typed word names it through
+	/// its title. Otherwise the words of its description would list it for queries about an operation.
+	/// </summary>
+	private static Query LandingPageWithoutName(string typed) => new BoolQuery { Filter = [LandingTerm()], MustNot = [TitleQuery(typed)] };
+
+	private static Query LandingNamed(string typed) => new BoolQuery { Filter = [LandingTerm(), TitleQuery(typed)] };
+
+	private static Query LandingTerm() => new TermQuery { Field = QueryFieldNames.ApiLanding, Value = true };
 
 	/// <summary>The words of every plain word but the one at <paramref name="index"/>, which a field row may name besides it.</summary>
 	private static string[] OtherWords(string[][] tokenWords, int index) => [.. tokenWords.Where((_, i) => i != index).SelectMany(w => w)];
@@ -279,6 +291,7 @@ public static class ApiLookupQueryBuilder
 		];
 		if (SearchQueryBuilder.BuildTitleStartsWithQuery(typed) is { } startsWith)
 			lifts.Add(startsWith);
+		lifts.Add(Constant(LandingNamed(typed), ApiLookupWeights.LandingName, LandingNameQueryName));
 		lifts.AddRange(
 			tokens.Where(t => t.Kind == ApiLookupTokenKind.Plain).Select(
 				t => SearchQueryBuilder.BuildListsFieldsUnderTypedPathBoost(t.Text)

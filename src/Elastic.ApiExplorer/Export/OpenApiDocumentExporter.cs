@@ -53,11 +53,15 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					continue;
 
 				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker))!;
-				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToDocuments), defaultTree))
+				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToIndexedDocuments), defaultTree))
 					yield return doc;
 			}
 		}
 	}
+
+	/// <summary>Everything one version tree adds to the index: the API's landing page, then each operation.</summary>
+	private IEnumerable<DocumentationDocument> ConvertToIndexedDocuments(IndexedTree tree) =>
+		[ConvertToLandingDocument(tree), .. ConvertToDocuments(tree)];
 
 	/// <summary>
 	/// Converts one version tree of an API to one document per operation, with URLs into that tree. The API key builds
@@ -202,6 +206,42 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				};
 			}
 		}
+	}
+
+	/// <summary>
+	/// The API's landing page as a search document, so a reader typing the API's name finds its front door. It has no
+	/// operation, so those members stay empty and <see cref="ApiOperationMetadata.Landing"/> marks it.
+	/// </summary>
+	public DocumentationDocument ConvertToLandingDocument(IndexedTree tree)
+	{
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(tree.ApiKey, tree.Moniker));
+		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
+		var label = ProductApiLabel(tree.ApiKey);
+		var description = ApiSeoDescription.Excerpt(tree.Document.Info?.Description) ?? "";
+		return new DocumentationDocument
+		{
+			ContentType = "api",
+			Path = productUrl,
+			Title = label,
+			SearchTitle = label,
+			Description = description,
+			Body = description,
+			Headings = [],
+			Links = [],
+			Parents = [new ParentDocument { Title = "API", Path = "/docs/api" }],
+			Api = new ApiOperationMetadata
+			{
+				Key = tree.ApiKey,
+				Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
+				Endpoints = [],
+				Method = "",
+				Path = "",
+				OperationId = "",
+				Landing = true
+			},
+			Product = inference?.Product?.Id,
+			RelatedProducts = null
+		};
 	}
 
 	/// <summary>

@@ -8,7 +8,7 @@ using Elastic.Mapping;
 namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
-/// Attributes of an OpenAPI operation page. Nested under <see cref="DocumentationDocument.Api"/>
+/// Attributes of an OpenAPI operation page, or of an API's landing page when <see cref="Landing"/> is set. Nested under <see cref="DocumentationDocument.Api"/>
 /// (JSON <c>api.*</c>) and null on Markdown pages.
 /// </summary>
 public record ApiOperationMetadata
@@ -88,6 +88,15 @@ public record ApiOperationMetadata
 	/// </summary>
 	[JsonPropertyName("id_words")]
 	public int IdWords { get; init; }
+
+	/// <summary>
+	/// True on the API's own landing page, which has no operation of its own: its method, path, operation id and
+	/// endpoints are empty. Left out of the document when false, so operation documents keep their hash.
+	/// </summary>
+	[Boolean]
+	[JsonPropertyName("landing")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool Landing { get; init; }
 
 	/// <summary>Whether the spec marks the operation deprecated.</summary>
 	[Boolean]
