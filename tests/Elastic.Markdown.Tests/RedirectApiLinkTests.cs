@@ -6,8 +6,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests;
 
@@ -30,12 +32,46 @@ public class RedirectApiLinkTests
 		collector.Errors.Should().Be(0);
 	}
 
-	private static TestDiagnosticsCollector BuildDocSet(string redirects)
+	[Test]
+	public void RedirectToUndeclaredCrossLinkRepository_ErrorsOnTheRedirectsFile()
 	{
+		var collector = BuildDocSet("""
+			redirects:
+			  'old.md': 'docs-release-notes://index.md'
+			""");
+
+		collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/redirects.yml Redirect old.md points to docs-release-notes://index.md but 'docs-release-notes' is not listed under 'cross_links' in docset.yml"
+			);
+	}
+
+	[Test]
+	public void RedirectToDeclaredCrossLinkRepository_HasNoErrors()
+	{
+		var collector = BuildDocSet(
+			"""
+			redirects:
+			  'old.md': 'docs-release-notes://index.md'
+			""",
+			crossLinks: "docs-release-notes"
+		);
+
+		collector.Errors.Should().Be(0);
+	}
+
+	private static TestDiagnosticsCollector BuildDocSet(string redirects, string? crossLinks = null)
+	{
+		var docSet = crossLinks is null
+			? "project: test\ntoc:\n- file: index.md\n"
+			: $"project: test\ncross_links:\n- {crossLinks}\ntoc:\n- file: index.md\n";
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
-				{ "docs/docset.yml", new MockFileData("project: test\ntoc:\n- file: index.md\n") },
+				{ "docs/docset.yml", new MockFileData(docSet) },
 				{ "docs/index.md", new MockFileData("# Index") },
 				{ "docs/redirects.yml", new MockFileData(redirects) }
 			},

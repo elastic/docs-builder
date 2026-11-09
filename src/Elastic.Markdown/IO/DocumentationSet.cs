@@ -168,6 +168,9 @@ public class DocumentationSet : INavigationTraversable
 		}
 	}
 
+	private bool IsUndeclaredCrossLink(Uri uri) =>
+		uri.Scheme is not ("http" or "https") && !Configuration.CrossLinkRepositories.Contains(uri.Scheme, StringComparer.Ordinal);
+
 	private void ValidateRedirectsExists()
 	{
 		if (Configuration.Redirects is null || Configuration.Redirects.Count == 0)
@@ -190,8 +193,13 @@ public class DocumentationSet : INavigationTraversable
 		{
 			if (to.Contains("://"))
 			{
-				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
+				if (!Uri.TryCreate(to, UriKind.Absolute, out var toUri))
 					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+				else if (IsUndeclaredCrossLink(toUri))
+					Context.EmitError(
+						Configuration.RedirectsSource ?? Configuration.SourceFile,
+						$"Redirect {from} points to {to} but '{toUri.Scheme}' is not listed under 'cross_links' in docset.yml"
+					);
 				else if (ApiLinkCheck.GetHint(CrossLinkResolver, to, Context.UrlPathPrefix, Configuration.SuppressDiagnostics) is { } hint)
 					Context.Collector.EmitHint((Configuration.RedirectsSource ?? Configuration.SourceFile).FullName, hint);
 
