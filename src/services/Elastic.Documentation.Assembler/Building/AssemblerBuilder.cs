@@ -80,7 +80,7 @@ public class AssemblerBuilder(
 			try
 			{
 				var result = await BuildAsync(set, markdownExporters.ToArray(), documentInferrer, ctx);
-				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.CrossLinkResolver);
+				CollectRedirects(redirects, result.Redirects, set);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
@@ -124,12 +124,16 @@ public class AssemblerBuilder(
 	private void CollectRedirects(
 		Dictionary<string, string> allRedirects,
 		IReadOnlyDictionary<string, LinkRedirect> redirects,
-		string repository,
-		ICrossLinkResolver linkResolver
+		AssemblerDocumentationSet set
 	)
 	{
 		if (redirects.Count == 0)
 			return;
+
+		var repository = set.Checkout.Repository.Name;
+		var linkResolver = set.DocumentationSet.CrossLinkResolver;
+		var configuration = set.DocumentationSet.Configuration;
+		var redirectsFile = (configuration.RedirectsSource ?? configuration.SourceFile).FullName;
 
 		foreach (var (k, v) in redirects)
 		{
@@ -150,7 +154,7 @@ public class AssemblerBuilder(
 			{
 				_ = linkResolver.TryResolve(
 					specificErrorMessage => context.Collector.EmitError(
-						path,
+						redirectsFile,
 						$"An error occurred while resolving cross-link {path}",
 						specificErrorMessage
 					),

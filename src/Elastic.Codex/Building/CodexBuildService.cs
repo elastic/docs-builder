@@ -108,13 +108,7 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 		{
 			var buildResult = await BuildDocumentationSet(context, buildContext, sharedExporters, ctx);
 			if (buildResult is { Success: true } && buildResult.Redirects.Count > 0)
-				CollectRedirects(
-					redirects,
-					buildResult.Redirects,
-					buildContext.Checkout.Reference.ResolvedRepoName,
-					buildContext.DocumentationSet.CrossLinkResolver,
-					context
-				);
+				CollectRedirects(redirects, buildResult.Redirects, buildContext, context);
 		}
 
 		if (effectiveExporters.Contains(Exporter.Redirects) && redirects.Count > 0)
@@ -323,13 +317,17 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 	private static void CollectRedirects(
 		Dictionary<string, string> allRedirects,
 		IReadOnlyDictionary<string, LinkRedirect> redirects,
-		string repository,
-		ICrossLinkResolver linkResolver,
+		CodexDocumentationSetBuildContext buildContext,
 		CodexContext context
 	)
 	{
 		if (redirects.Count == 0)
 			return;
+
+		var repository = buildContext.Checkout.Reference.ResolvedRepoName;
+		var linkResolver = buildContext.DocumentationSet.CrossLinkResolver;
+		var configuration = buildContext.DocumentationSet.Configuration;
+		var redirectsFile = (configuration.RedirectsSource ?? configuration.SourceFile).FullName;
 
 		foreach (var (k, v) in redirects)
 		{
@@ -350,7 +348,7 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			{
 				_ = linkResolver.TryResolve(
 					specificErrorMessage => context.Collector.EmitError(
-						context.ConfigurationPath.FullName,
+						redirectsFile,
 						$"An error occurred while resolving cross-link {path}",
 						specificErrorMessage
 					),
