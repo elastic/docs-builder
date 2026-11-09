@@ -30,6 +30,9 @@ runs:
         COMPRESS: ${{ inputs.compress }}
       run: |
         if [ "${COMPRESS}" = "true" ]; then
+          # A failing `find` must stop the upload: without pipefail the pipeline status comes from
+          # `xargs`, so some files could stay uncompressed and still be uploaded as gzip.
+          set -o pipefail
           # Pre-compress all non-zip files so aws s3 sync ships ~120 MB instead of ~2 GiB.
           # Zip bundles (llm.zip, okf.zip) are already compressed; syncing them with
           # content-encoding:gzip would prevent clients from decoding them correctly.
