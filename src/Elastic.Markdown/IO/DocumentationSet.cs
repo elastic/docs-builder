@@ -168,8 +168,11 @@ public class DocumentationSet : INavigationTraversable
 		}
 	}
 
+	// The assembler resolves redirects against the full link index, so declared cross_links only matter for isolated and codex builds
 	private bool IsUndeclaredCrossLink(Uri uri) =>
-		uri.Scheme is not ("http" or "https") && !Configuration.CrossLinkRepositories.Contains(uri.Scheme, StringComparer.Ordinal);
+		Context.BuildType is not BuildType.Assembler
+			&& uri.Scheme is not ("http" or "https")
+			&& !Configuration.CrossLinkRepositories.Contains(uri.Scheme, StringComparer.Ordinal);
 
 	private void ValidateRedirectsExists()
 	{

@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
@@ -88,6 +89,21 @@ public class RedirectApiLinkTests
 	}
 
 	[Test]
+	public void RedirectToUndeclaredCrossLinkRepository_InAssemblerBuild_HasNoErrors()
+	{
+		var (collector, _) = Build(
+			"""
+			redirects:
+			  'old.md': 'integration-docs://index.md'
+			""",
+			crossLinks: null,
+			BuildType.Assembler
+		);
+
+		collector.Errors.Should().Be(0);
+	}
+
+	[Test]
 	public void RedirectWithDefaultTargetAndManyTarget_DoesNotRegisterManyAnchorRemaps()
 	{
 		var (collector, docSet) = Build(
@@ -110,7 +126,11 @@ public class RedirectApiLinkTests
 	private static TestDiagnosticsCollector BuildDocSet(string redirects, string? crossLinks = null) =>
 		Build(redirects, crossLinks).Collector;
 
-	private static (TestDiagnosticsCollector Collector, DocumentationSet DocSet) Build(string redirects, string? crossLinks)
+	private static (TestDiagnosticsCollector Collector, DocumentationSet DocSet) Build(
+		string redirects,
+		string? crossLinks,
+		BuildType buildType = BuildType.Isolated
+	)
 	{
 		var docSet = crossLinks is null
 			? "project: test\ntoc:\n- file: index.md\n"
@@ -127,7 +147,10 @@ public class RedirectApiLinkTests
 		var collector = new TestDiagnosticsCollector();
 		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
+		{
+			BuildType = buildType
+		};
 		var documentationSet = new DocumentationSet(context, new TestLoggerFactory(), new TestCrossLinkResolver());
 		return (collector, documentationSet);
 	}
