@@ -106,6 +106,7 @@ jobs:
         with:
           source: .artifacts/assembly/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
           path-prefix: /${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
+          compress: 'true'
 
       - name: Install frontend dependencies
         working-directory: src/Elastic.Documentation.Site
