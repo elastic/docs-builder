@@ -336,6 +336,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 							Label = option.Label,
 							DescriptionHtml = RenderInlineMarkdown(option.Description),
 							Code = option.Code,
+							Commands =
+							[
+								.. option
+									.Commands
+									.Where(command => !string.IsNullOrWhiteSpace(command.Code))
+									.Select(command => new GetStartedCommandViewModel { Label = command.Label, Code = command.Code! })
+							],
 							Language = option.Language,
 							Url = option.Url,
 							UrlLabel = option.UrlLabel

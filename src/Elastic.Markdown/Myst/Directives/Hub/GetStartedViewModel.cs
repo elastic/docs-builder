@@ -53,7 +53,16 @@ public sealed record GetStartedOptionViewModel
 	public required string? Label { get; init; }
 	public required string? DescriptionHtml { get; init; }
 	public required string? Code { get; init; }
+	public required IReadOnlyList<GetStartedCommandViewModel> Commands { get; init; }
 	public required string? Language { get; init; }
 	public required string? Url { get; init; }
 	public required string? UrlLabel { get; init; }
+
+	public bool HasCode => !string.IsNullOrWhiteSpace(Code) || Commands.Count > 0;
+}
+
+public sealed record GetStartedCommandViewModel
+{
+	public required string? Label { get; init; }
+	public required string Code { get; init; }
 }
