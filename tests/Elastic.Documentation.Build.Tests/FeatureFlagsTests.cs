@@ -58,6 +58,9 @@ public class FeatureFlagsTests
 	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
 
 	[Test]
+	public void DemoEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("demo");
+
+	[Test]
 	public void AirGappedEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("air-gapped");
 
 	[Test]
@@ -74,6 +77,22 @@ public class FeatureFlagsTests
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_DoesNotAllowIndexing()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].AllowIndexing.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_EnablesNavigationPreview()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeTrue();
 	}
 
 	[Test]
