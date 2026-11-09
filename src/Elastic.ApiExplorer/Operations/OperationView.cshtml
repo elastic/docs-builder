@@ -83,6 +83,10 @@
 	{
 		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(sectionLinks))
 	}
+	else
+	{
+		@(await RenderPartialAsync(_ExpandAllControl.Create(true)))
+	}
 	@foreach (var section in pageModel.ParameterSections)
 	{
 		@(await RenderPartialAsync<_ParameterListSection, ParameterListSection>(section))
