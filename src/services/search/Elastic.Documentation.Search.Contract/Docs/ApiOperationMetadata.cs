@@ -84,9 +84,11 @@ public record ApiOperationMetadata
 	/// <summary>
 	/// Number of words in the operation id alone, e.g. 2 for <c>cluster.health</c>. Mapped as
 	/// <c>rank_feature</c> with negative score impact. Fewer id words is a more specific operation,
-	/// so ties break toward <c>esql-query</c> over <c>esql-async-query-stop</c>.
+	/// so ties break toward <c>esql-query</c> over <c>esql-async-query-stop</c>. A <c>rank_feature</c> only takes positive
+	/// values, so the field is left out when zero, as on a landing page.
 	/// </summary>
 	[JsonPropertyName("id_words")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public int IdWords { get; init; }
 
 	/// <summary>

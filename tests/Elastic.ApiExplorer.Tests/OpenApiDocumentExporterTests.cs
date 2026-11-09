@@ -692,7 +692,6 @@ public class OpenApiDocumentExporterTests
 			    "operation_id": "",
 			    "words": [],
 			    "group": "",
-			    "id_words": 0,
 			    "landing": true,
 			    "deprecated": false
 			  },
