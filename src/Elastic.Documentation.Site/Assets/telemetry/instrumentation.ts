@@ -6,6 +6,7 @@
  * All web components will automatically be instrumented once initialised.
  */
 import { config as docsConfig } from '../config'
+import { detectEnvironment } from './environment'
 import { startBrowserSdk } from '@elastic/opentelemetry-browser'
 
 let isInitialized = false
@@ -72,35 +73,6 @@ function otlpSignalUrls(): {
 // UA instead (unless a custom userAgent is configured), so we sniff that for the same effect.
 function isSyntheticMonitor(): boolean {
     return navigator.userAgent.includes('Elastic/Synthetics')
-}
-
-/**
- * Detects the deployment environment from the hostname at runtime.
- *
- * Since the JavaScript is pre-built and bundled into docs-builder CLI,
- * we detect the environment purely from the runtime hostname in the browser.
- */
-function detectEnvironment(): string {
-    const hostname = window.location.hostname
-
-    switch (hostname) {
-        case 'www.elastic.co':
-        case 'elastic.co':
-            return 'prod'
-
-        case 'staging-website.elastic.co':
-            return 'staging'
-
-        case 'd34ipnu52o64md.cloudfront.net':
-            return 'edge'
-
-        case 'localhost':
-        case '127.0.0.1':
-            return 'local'
-
-        default:
-            return 'unknown'
-    }
 }
 
 export interface OtelConfigOptions {
