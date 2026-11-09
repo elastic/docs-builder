@@ -82,6 +82,25 @@ public record ConfigurationFile
 	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
 
 	/// <summary>
+	/// Markdown paths (relative to <paramref name="documentationSourceDirectoryFullName"/>, <c>/</c> separated) that the
+	/// API pipeline owns: <c>children:</c> pages and <c>op-*.md</c> / <c>tag-*.md</c> supplemental files.
+	/// </summary>
+	public HashSet<string> GetApiMarkdownExcludePaths(string documentationSourceDirectoryFullName)
+	{
+		var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (ApiConfigurations is null)
+			return set;
+
+		foreach (var apiConfig in ApiConfigurations.Values)
+		{
+			foreach (var path in apiConfig.GetMarkdownPathsToExclude(documentationSourceDirectoryFullName))
+				_ = set.Add(path);
+		}
+
+		return set;
+	}
+
+	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
 	public HashSet<HintType> SuppressDiagnostics { get; } = [];
