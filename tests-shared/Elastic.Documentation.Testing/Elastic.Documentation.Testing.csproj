@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Elastic.Documentation.Testing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Compiled into each test project instead (see tests/Directory.Build.props): a module initializer in this library
+         would only run once a test touched the assembly. -->
+    <Compile Remove="Linked/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Nullean.Snapshots" />
+    <PackageReference Include="Nullean.Snapshots.AwesomeAssertions" />
+    <PackageReference Include="Nullean.Snapshots.Html" />
+    <PackageReference Include="Nullean.Snapshots.TUnit" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+  </ItemGroup>
+
+</Project>

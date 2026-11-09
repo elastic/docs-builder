@@ -20,6 +20,7 @@ import {
     isRateLimitError,
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
+import { useApiPageSearchParams } from '../useApiPageSearchParams'
 import { usePageNumber, useSearchTerm } from './modalSearch.store'
 import { searchPagefind } from './pagefind'
 import {
@@ -43,6 +44,7 @@ const SearchResultItem = z.object({
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
+    deprecated: z.boolean().optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
@@ -89,6 +91,8 @@ export const useModalSearchQuery = () => {
         !awaitingNewInput &&
         true
 
+    const apiPage = useApiPageSearchParams()
+
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'modal-search',
@@ -96,6 +100,7 @@ export const useModalSearchQuery = () => {
                 buildType: config.buildType,
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
+                apiPage,
             },
         ],
         queryFn: async ({ signal }) => {
@@ -133,6 +138,7 @@ export const useModalSearchQuery = () => {
                 const params = new URLSearchParams({
                     q: debouncedSearchTerm,
                     page: pageNumber.toString(),
+                    ...apiPage,
                 })
 
                 const response = await fetch(
@@ -187,10 +193,11 @@ export const useModalSearchQuery = () => {
                     buildType: config.buildType,
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
+                    apiPage,
                 },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber])
+    }, [queryClient, debouncedSearchTerm, pageNumber, apiPage])
 
     useEffect(() => {
         if (query.error && isApiError(query.error)) {

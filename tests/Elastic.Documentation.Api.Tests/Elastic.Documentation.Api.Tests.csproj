@@ -11,6 +11,8 @@
     <PackageReference Include="Elastic.Transport.VirtualizedCluster" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Nullean.Snapshots.Http" />
+    <PackageReference Include="Nullean.Snapshots.Http.Assertions" />
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
     <PackageReference Include="WireMock.Net" />
   </ItemGroup>

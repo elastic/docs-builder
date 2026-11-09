@@ -10,6 +10,7 @@ import { navigationSearchStore } from './navigationSearch.store'
 import type { SearchResultItem, TypeFilter } from './useNavigationSearchQuery'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import htmx from 'htmx.org'
 
 vi.mock('../../telemetry/logging', async () =>
     (await import('../../test-utils/mocks')).logging()
@@ -155,9 +156,9 @@ const renderList = ({
     typeFilter?: TypeFilter
 } = {}) => {
     const onMouseMove = vi.fn()
-    const { container } = renderWithProviders(
+    const list = (results: ResultGroup[]) => (
         <SearchResultsList
-            results={groups}
+            results={results}
             isLoading={false}
             isKeyboardNavigating={{ current: isKeyboardNavigating }}
             onMouseMove={onMouseMove}
@@ -165,7 +166,13 @@ const renderList = ({
             typeFilter={typeFilter}
         />
     )
-    return { onMouseMove, container }
+    const { container, unmount, rerender } = renderWithProviders(list(groups))
+    return {
+        onMouseMove,
+        container,
+        unmount,
+        showResults: (results: ResultGroup[]) => rerender(list(results)),
+    }
 }
 
 describe('property rows', () => {
@@ -212,7 +219,7 @@ describe('property rows', () => {
         )
     })
 
-    it('keeps the description when the query names no route', () => {
+    it('shows the primary route when the query names no route', () => {
         const withRoutes: SearchResultItem = {
             ...operation,
             description: 'Returns search hits',
@@ -222,8 +229,23 @@ describe('property rows', () => {
         const { container } = renderList({
             groups: groupSearchResults([withRoutes]),
         })
+        expect(container.querySelector('.route-line')).toHaveTextContent(
+            '/_search'
+        )
+        expect(screen.queryByText('Returns search hits')).toBeNull()
+    })
+
+    it('keeps the description for a row without routes', () => {
+        navigationSearchStore.getState().actions.setSearchTerm('knn')
+        const { container } = renderList({
+            groups: groupSearchResults([{ ...operation, routes: [] }, page]),
+            typeFilter: 'all',
+        })
         expect(container.querySelector('.route-line')).toBeNull()
-        expect(screen.getByText('Returns search hits')).toBeInTheDocument()
+        expect(screen.getByText('Run a search')).toBeInTheDocument()
+        expect(
+            screen.getByText('Learn about Elasticsearch')
+        ).toBeInTheDocument()
     })
 
     it('names the Enter action after each row destination', () => {
@@ -236,25 +258,38 @@ describe('property rows', () => {
         expect(screen.getAllByText('Go to page')).toHaveLength(1)
     })
 
-    it('shows the location only when the same path appears in two locations', () => {
-        renderList()
-        const query = screen.getByRole('link', {
-            name: 'track_total_hits boolean query Count hits',
-        })
-        const request = screen.getByRole('link', {
-            name: 'track_total_hits boolean request Count hits',
-        })
-        const size = screen.getByRole('link', {
-            name: 'size boolean request Count hits',
-        })
-        expect(query.querySelector('.property-location')).toHaveTextContent(
-            'query'
-        )
-        expect(request.querySelector('.property-location')).toHaveTextContent(
-            'request'
-        )
-        expect(size.querySelector('.property-location')).toBeNull()
-        expect(size.querySelector('.sr-only')).toHaveTextContent('request')
+    it('shows the location on every property row', () => {
+        const { container } = renderList()
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-search-result-index]'),
+                (row) => row.querySelector('.property-location')?.textContent
+            )
+        ).toEqual([undefined, 'query', 'request body', 'request body'])
+    })
+
+    it('boosts the rendered rows once per render', () => {
+        vi.mocked(htmx.process).mockClear()
+        const { container } = renderList()
+        const list = container.querySelector('[data-search-result-index]')
+            ?.parentElement?.parentElement
+        expect(htmx.process).toHaveBeenCalledTimes(1)
+        expect(htmx.process).toHaveBeenCalledWith(list)
+    })
+
+    it('links each row to the URL as given', () => {
+        const { container } = renderList()
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-search-result-index]'),
+                (row) => row.getAttribute('href')
+            )
+        ).toEqual([
+            operation.url,
+            `${operation.url}#query-track_total_hits`,
+            `${operation.url}#request-track_total_hits`,
+            `${operation.url}#request-size`,
+        ])
     })
 
     it('selects the property row under the mouse', async () => {
@@ -275,5 +310,128 @@ describe('property rows', () => {
         await userEvent.hover(row)
         expect(onMouseMove).toHaveBeenCalled()
         expect(navigationSearchStore.getState().selectedIndex).toBe(3)
+    })
+})
+
+describe('deprecated operations', () => {
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('search')
+    })
+
+    it('shows a Deprecated badge beside the title of a deprecated operation', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([{ ...operation, deprecated: true }]),
+        })
+        const badges = container.querySelectorAll(
+            '.title-text .api-title-badges .applicable-info.api-badge--danger'
+        )
+        expect(badges).toHaveLength(1)
+        expect(badges[0]).toHaveTextContent('Deprecated')
+    })
+
+    it('shows no badge for an operation that is not deprecated', () => {
+        const { container } = renderList()
+        expect(container.querySelector('.api-badge--danger')).toBeNull()
+    })
+})
+
+describe('row tooltips', () => {
+    const fakeTippy = (row: Element) => {
+        const destroy = vi.fn()
+        ;(row as Element & { _tippy?: { destroy(): void } })._tippy = {
+            destroy,
+        }
+        return destroy
+    }
+
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('track_total')
+    })
+
+    it('destroys the tooltips of its rows when it unmounts', () => {
+        const { container, unmount } = renderList()
+        const destroy = fakeTippy(
+            container.querySelector('.property-path[data-tippy-content]')!
+        )
+
+        unmount()
+
+        expect(destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it('destroys the tooltips of rows the next results drop', () => {
+        const { container, showResults } = renderList()
+        const destroy = fakeTippy(
+            container.querySelector('.property-path[data-tippy-content]')!
+        )
+
+        showResults(groupSearchResults([page]))
+
+        expect(destroy).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('API landing rows', () => {
+    const landing: SearchResultItem = {
+        type: 'api',
+        url: '/docs/api/doc/kibana',
+        title: 'Kibana API',
+        description: 'Manage Kibana saved objects, alerts and more',
+        score: 60,
+        parents: [{ url: '/docs/api', title: 'API' }],
+        landing: true,
+        apiKey: 'kibana',
+        product: 'kibana',
+    }
+
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('kibana api')
+    })
+
+    it("shows the API's mark, title and description in place of a breadcrumb", () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(
+            container.querySelector('[data-api-icon="kibana"] svg')
+        ).not.toBeNull()
+        expect(container.querySelector('.title-text')).toHaveTextContent(
+            'Kibana API'
+        )
+        expect(container).toHaveTextContent(
+            'Manage Kibana saved objects, alerts and more'
+        )
+        expect(container).not.toHaveTextContent('API /')
+    })
+
+    it('names the Enter action after the API', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(container.querySelector('.jump-to-indicator')).toHaveTextContent(
+            'Go to API'
+        )
+    })
+
+    it('gives a serverless product the mark of its stack product', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, product: 'serverless-kibana' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon] svg')).not.toBeNull()
+    })
+
+    it('shows no mark for an API without one', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, apiKey: 'unknown', product: 'unknown' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon]')).toBeNull()
     })
 })

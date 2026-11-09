@@ -19,6 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="Elastic.Documentation.Testing" />
+    <Using Include="Nullean.Snapshots" />
+    <Using Include="Nullean.Snapshots.Html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AngleSharp" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Markdig" />

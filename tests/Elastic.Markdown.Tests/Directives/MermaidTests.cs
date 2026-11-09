@@ -2,11 +2,21 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Markdig.Syntax;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
+
+internal static class MermaidSnapshots
+{
+	/// <summary>The diagram file name carries a hash of the rendered SVG, which changes with the renderer, not with the markup.</summary>
+	public static SnapshotOptions Options => new SnapshotOptions().Scrub(new Regex(@"index-[0-9a-f]{8}\.svg"), "index-{hash}.svg");
+}
 
 public class MermaidFlowchartTests() : DirectiveTest("""
 ```mermaid
@@ -25,10 +35,20 @@ B --> C[End]
 	public void HasMermaidLanguage() => Block!.Language.Should().Be("mermaid");
 
 	[Test]
-	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
-
-	[Test]
-	public void RendersImgElement() => Html.Should().Contain("<img");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 
 	[Test]
 	public void EmitsExternalSvgFile() => ReadMermaidSvgs().Should().NotBeEmpty();
@@ -61,10 +81,20 @@ sequenceDiagram
 	public void ParsesSequenceDiagram() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
-
-	[Test]
-	public void RendersImgElement() => Html.Should().Contain("<img");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 
 	[Test]
 	public void SvgContainsParticipantLabels()
@@ -93,10 +123,20 @@ stateDiagram-v2
 	public void ParsesStateDiagram() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
-
-	[Test]
-	public void RendersImgElement() => Html.Should().Contain("<img");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 
 	[Test]
 	public void SvgContainsStateLabels()
@@ -125,10 +165,20 @@ classDiagram
 	public void ParsesClassDiagram() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
-
-	[Test]
-	public void RendersImgElement() => Html.Should().Contain("<img");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 
 	[Test]
 	public void SvgContainsClassLabels()
@@ -156,10 +206,20 @@ erDiagram
 	public void ParsesErDiagram() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
-
-	[Test]
-	public void RendersImgElement() => Html.Should().Contain("<img");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 
 	[Test]
 	public void SvgContainsEntityLabels()
@@ -186,13 +246,33 @@ style B fill:#0A52B3,color:#fff
 )
 {
 	[Test]
-	public void EmitsHints() => Collector.Diagnostics.Should().NotBeEmpty();
+	public void EmitsHints() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"hint {repo}/docs/index.md:3 Mermaid strict mode stripped 3 item(s): ClassDefDirective (line 3), UnknownClassReference (line 4), StyleDirective (line 5)"
+			);
 
 	[Test]
 	public void EmitsSvgFile() => ReadMermaidSvgs().Should().NotBeEmpty();
 
 	[Test]
-	public void DoesNotFallBackToRawSource() => Html.Should().NotContain("<pre class=\"mermaid-error\">");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 }
 
 // Allowlisted semantic classes render correctly with site palette colors baked into SVG.
@@ -204,13 +284,23 @@ A[Start]:::warning --> B[End]
 """)
 {
 	[Test]
-	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 
 	[Test]
-	public void RendersImgElement() => Html.Should().Contain("<img");
-
-	[Test]
-	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void SvgContainsWarningFillColor() => ReadMermaidSvgs()[0].Should().Contain("#fdf3d8");
@@ -227,10 +317,23 @@ pie
 """)
 {
 	[Test]
-	public void RendersImgElement() => Html.Should().Contain("<img");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			options: MermaidSnapshots.Options,
+			expected: """
+			<div class="mermaid-container">
+				<div class="mermaid-viewport">
+					<div class="mermaid-rendered" data-src="/index-{hash}.svg">
+						<img src="/index-{hash}.svg" alt="Mermaid diagram">
+					</div>
+				</div>
+			</div>
+			"""
+		);
 
 	[Test]
-	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void UsesThemePalette() => ReadMermaidSvgs()[0].Should().Contain("#3788ff"); // blue-elastic-70

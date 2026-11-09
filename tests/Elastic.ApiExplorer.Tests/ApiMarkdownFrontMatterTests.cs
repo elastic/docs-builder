@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -22,17 +23,23 @@ public class ApiMarkdownFrontMatterTests
 			)
 		);
 
-		markdown.Should().StartWith("---");
-		markdown.Should().Contain("type: api");
-		markdown.Should().Contain("title: Run a search");
-		markdown.Should().Contain("description: Returns hits that match the query");
-		markdown.Should().NotContain("navigation_title:");
-		markdown.Should().Contain("url: https://cdn.example/api/doc/elasticsearch/operation/operation-search");
-		markdown.Should().Contain("resource: https://cdn.example/api/doc/elasticsearch/operation/operation-search");
-		markdown.Should().Contain("products:");
-		markdown.Should().Contain("  - Elasticsearch");
-		markdown.Should().NotContain("applies_to:");
-		markdown.Should().Contain("# Run a search");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			---
+			type: api
+			title: Run a search
+			description: Returns hits that match the query
+			url: https://cdn.example/api/doc/elasticsearch/operation/operation-search
+			resource: https://cdn.example/api/doc/elasticsearch/operation/operation-search
+			products:
+			  - Elasticsearch
+			---
+
+			# Run a search
+
+			Returns hits.
+			"""
+		);
 	}
 
 	[Test]
@@ -40,14 +47,18 @@ public class ApiMarkdownFrontMatterTests
 	{
 		var markdown = ApiMarkdownFrontMatter.Write("# API Explorer\n", new ApiPageFrontMatter("API Explorer", null, "/api", null));
 
-		markdown.Should().Contain("type: api");
-		markdown.Should().Contain("title: API Explorer");
-		markdown.Should().Contain("url: /api");
-		markdown.Should().Contain("resource: /api");
-		markdown.Should().NotContain("navigation_title:");
-		markdown.Should().NotContain("description:");
-		markdown.Should().NotContain("products:");
-		markdown.Should().NotContain("applies_to:");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			---
+			type: api
+			title: API Explorer
+			url: /api
+			resource: /api
+			---
+
+			# API Explorer
+			"""
+		);
 	}
 
 	[Test]
@@ -67,10 +78,26 @@ public class ApiMarkdownFrontMatterTests
 			new ApiPageFrontMatter("Elasticsearch", null, "/api", null, facts)
 		).ReplaceLineEndings("\n");
 
-		markdown.Should().Contain("version: \"1.2\"");
-		markdown.Should().Contain("license: \"Apache 2.0: see terms\"");
-		markdown.Should().Contain("servers:\n  - \"https://api.example.com\"\n  - \"{scheme}://x\"");
-		markdown.Should().Contain("spec:\n  json: https://cdn.example/api/doc/es.json\n  yaml: https://cdn.example/api/doc/es.yaml");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			---
+			type: api
+			title: Elasticsearch
+			url: /api
+			resource: /api
+			version: "1.2"
+			license: "Apache 2.0: see terms"
+			servers:
+			  - "https://api.example.com"
+			  - "{scheme}://x"
+			spec:
+			  json: https://cdn.example/api/doc/es.json
+			  yaml: https://cdn.example/api/doc/es.yaml
+			---
+
+			# Elasticsearch
+			"""
+		);
 	}
 
 	[Test]
@@ -80,7 +107,18 @@ public class ApiMarkdownFrontMatterTests
 
 		var markdown = ApiMarkdownFrontMatter.Write("# X\n", new ApiPageFrontMatter("X", null, "/api", null, facts));
 
-		markdown.Should().NotContain("version:").And.NotContain("license:").And.NotContain("servers:").And.NotContain("spec:");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			---
+			type: api
+			title: X
+			url: /api
+			resource: /api
+			---
+
+			# X
+			"""
+		);
 	}
 
 	[Test]
@@ -98,7 +136,12 @@ public class ApiMarkdownFrontMatterTests
 
 		var stripped = ApiMarkdownFrontMatter.StripLeadingFrontMatter(source);
 
-		stripped.Should().StartWith("# Kibana spaces");
-		stripped.Should().NotContain("navigation_title:");
+		stripped.Should().MatchInlineSnapshot(
+			"""
+			# Kibana spaces
+
+			Spaces enable you to organize dashboards.
+			"""
+		);
 	}
 }

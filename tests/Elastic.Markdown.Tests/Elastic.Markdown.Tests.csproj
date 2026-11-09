@@ -4,8 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DiffPlex" />
-    <PackageReference Include="AngleSharp.Diffing" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
     <PackageReference Include="SharpYaml" />
   </ItemGroup>

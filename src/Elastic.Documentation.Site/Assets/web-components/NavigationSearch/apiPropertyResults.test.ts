@@ -1,4 +1,5 @@
 import {
+    LOCATION_LABELS,
     fieldSearchTerms,
     groupSearchResults,
     navigableRowCount,
@@ -54,19 +55,14 @@ it('numbers rows in keyboard order: each operation, then its properties', () => 
     expect(navigableRowCount(groups)).toBe(5)
 })
 
-it('shows a location only when the same path appears in two locations', () => {
-    const [group] = groupSearchResults([search])
-    expect(
-        group.properties.map((row) => [
-            row.property.path,
-            row.property.location,
-            row.showLocation,
-        ])
-    ).toEqual([
-        ['track_total_hits', 'query', true],
-        ['track_total_hits', 'request', true],
-        ['size', 'request', false],
-    ])
+it.each([
+    ['path', 'path'],
+    ['query', 'query'],
+    ['header', 'header'],
+    ['request', 'request body'],
+    ['response', 'response body'],
+] as const)('labels the %s location as %s', (location, label) => {
+    expect(LOCATION_LABELS[location]).toBe(label)
 })
 
 it('lists no properties under a docs page even when the payload carries some', () => {
@@ -85,20 +81,58 @@ const routes = [
 
 it.each([
     ['_search', ['_search'], '/_search'],
-    ['/_search', ['_search'], '/_search'],
-    ['GET /_search knn', ['_search', 'knn'], '/_search'],
+    ['/_search', ['/_search'], '/_search'],
+    ['GET /_search knn', ['/_search', 'knn'], '/_search'],
+    ['/', [], '/{index}/_search'],
     ['search', ['search'], '/{index}/_search'],
-    ['index', ['index'], undefined],
-    ['in', ['in'], undefined],
+    ['index', [], '/{index}/_search'],
+    ['in', [], '/{index}/_search'],
     ['scroll', ['scroll'], '/_search/scroll'],
-    ['knn', ['knn'], undefined],
-    ['get', ['get'], undefined],
-    ['GET /_search', ['_search'], '/_search'],
-    ['a', [], undefined],
+    ['knn', [], '/{index}/_search'],
+    ['get', [], '/{index}/_search'],
+    ['GET /_search', ['/_search'], '/_search'],
+    ['a', [], '/{index}/_search'],
 ])('picks the route for %s', (searchTerm, tokens, path) => {
     const matched = primaryRoute(routes, searchTerm)
     expect(matched.tokens).toEqual(tokens)
     expect(matched.route?.path).toBe(path)
+})
+
+it('highlights the leading slash of a typed route', () => {
+    const matched = primaryRoute(
+        [
+            { path: '/api/fleet/agents', methods: ['GET'] },
+            { path: '/api/fleet/agent_policies', methods: ['GET'] },
+        ],
+        '/api/fleet'
+    )
+    expect(matched.tokens).toEqual(['/api/fleet'])
+    expect(matched.route?.path).toBe('/api/fleet/agents')
+})
+
+it("falls back to the page's primary route when no query word names one", () => {
+    const primary = { path: '/_search', methods: ['POST', 'GET'] }
+    const matched = primaryRoute(
+        [primary, { path: '/{index}/_search', methods: ['POST', 'GET'] }],
+        'retriever'
+    )
+    expect(matched.route).toBe(primary)
+    expect(matched.tokens).toEqual([])
+})
+
+it('highlights nothing on the fallback route and the query words on a named one', () => {
+    const fallback = primaryRoute(
+        [
+            { path: '/{index}/_search', methods: ['POST'] },
+            { path: '/_search', methods: ['POST'] },
+        ],
+        'index'
+    )
+    expect(fallback).toEqual({
+        route: { path: '/{index}/_search', methods: ['POST'] },
+        tokens: [],
+    })
+    expect(primaryRoute(routes, 'scroll').tokens).toEqual(['scroll'])
 })
 
 it.each([

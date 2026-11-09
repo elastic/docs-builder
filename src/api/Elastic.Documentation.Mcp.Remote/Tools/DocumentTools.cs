@@ -75,6 +75,16 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				Headings = result.Headings.ToList(),
 				Product = result.Product != null ? new ProductDto { Id = result.Product.Id, Repository = result.Product.Repository } : null,
 				RelatedProducts = result.RelatedProducts?.Select(p => new ProductDto { Id = p.Id, Repository = p.Repository }).ToList(),
+				Api = result.Api is { } api
+					? new ApiOperationDto
+					{
+						Method = api.Method,
+						Path = api.Path,
+						Endpoints = api.Endpoints,
+						OperationId = api.OperationId,
+						Deprecated = api.Deprecated
+					}
+					: null,
 				Body = includeBody ? result.Body : null,
 				BodyLength = result.Body?.Length ?? 0,
 				BodyNote = !includeBody && result.Body is { Length: > 0 }

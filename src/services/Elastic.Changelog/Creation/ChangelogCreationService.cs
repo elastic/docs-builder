@@ -673,6 +673,9 @@ public class ChangelogCreationService(
 				"Verify GITHUB_TOKEN is set and can access the repository, then re-run."
 		);
 
+	// An env var that is declared but empty (as GitHub Actions passes unset outputs) must not serialize as `impact: ''`.
+	private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
 	private CreateChangelogArguments DropCiExtractedFieldsWhenDisabled(
 		CreateChangelogArguments input,
 		string? cliDescription,
@@ -700,8 +703,8 @@ public class ChangelogCreationService(
 		// Values that the PR's existing entry file already holds are not extracted from anywhere, so disabling extraction keeps them.
 		return input with
 		{
-			Impact = string.IsNullOrWhiteSpace(input.Impact) ? input.CiEntryImpact : input.Impact,
-			Action = string.IsNullOrWhiteSpace(input.Action) ? input.CiEntryAction : input.Action
+			Impact = string.IsNullOrWhiteSpace(input.Impact) ? NullIfBlank(input.CiEntryImpact) : input.Impact,
+			Action = string.IsNullOrWhiteSpace(input.Action) ? NullIfBlank(input.CiEntryAction) : input.Action
 		};
 	}
 

@@ -1,0 +1,21 @@
+=== 9.3.0/breaking-changes.md ===
+## 9.3.0 [elasticsearch-9.3.0-breaking-changes]
+
+* Mixed links breaking change.
+  This change breaks compatibility.
+
+  For more information, check [#123456](https://github.com/elastic/elasticsearch/pull/123456) [#654321](https://github.com/elastic/elasticsearch/issues/654321).
+
+  **Impact:** Users must update.
+
+  **Action:** Follow upgrade guide.
+
+=== 9.3.0/deprecations.md ===
+## 9.3.0 [elasticsearch-9.3.0-deprecations]
+_There are no deprecations associated with this release._
+=== 9.3.0/index.md ===
+## 9.3.0 [elasticsearch-release-notes-9.3.0]
+_There are no new features, enhancements, or fixes associated with this release._
+=== 9.3.0/known-issues.md ===
+## 9.3.0 [elasticsearch-9.3.0-known-issues]
+_There are no known issues associated with this release._

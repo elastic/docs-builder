@@ -35,6 +35,9 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		_baseUri = uri;
 	}
 
+	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) =>
+		new(_baseUri, string.IsNullOrEmpty(_pathPrefix) ? sitePath : $"{_pathPrefix}/{sitePath}");
+
 	/// <summary>
 	/// Resolves a cross-link URI to an absolute HTTP URL using navigation mappings.
 	/// </summary>

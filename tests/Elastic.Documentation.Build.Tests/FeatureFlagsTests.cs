@@ -58,6 +58,9 @@ public class FeatureFlagsTests
 	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
 
 	[Test]
+	public void DemoEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("demo");
+
+	[Test]
 	public void AirGappedEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("air-gapped");
 
 	[Test]
@@ -66,6 +69,42 @@ public class FeatureFlagsTests
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["edge"].AllowIndexing.Should().BeFalse();
+	}
+
+	[Test]
+	public void EdgeEnvironment_DisablesNavigationPreview()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_DoesNotAllowIndexing()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].AllowIndexing.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_EnablesNavigationPreview()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeTrue();
+	}
+
+	[Test]
+	[Arguments("prod")]
+	[Arguments("staging")]
+	[Arguments("dev")]
+	[Arguments("local")]
+	public void OtherEnvironments_DoNotEnableNavigationPreview(string environmentName)
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments[environmentName].FeatureFlags.GetValueOrDefault("NAVIGATION_PREVIEW").Should().BeFalse();
 	}
 
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)

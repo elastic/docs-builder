@@ -61,7 +61,7 @@ dotnet run --project src/tooling/essc -- --help
 1. CLI flags (`--endpoint`, `--api-key`)
 2. Environment variables (see table below)
 3. Dotnet user-secrets store `docs-builder` (local development) — the same store the
-   rest of this repository uses, so aspire and essc share `Parameters:ElasticsearchUrl`
+   rest of this repository uses, so the integration tests and essc share `Parameters:ElasticsearchUrl`
    and `Parameters:ElasticsearchApiKey`
 
 ### Environment variables

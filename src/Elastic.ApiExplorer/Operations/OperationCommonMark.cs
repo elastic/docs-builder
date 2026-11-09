@@ -19,7 +19,7 @@ internal static class OperationCommonMark
 		var operation = apiOperation.Operation;
 		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
 		ApiCommonMark.Heading(markdown, 1, title);
-		WriteBadges(markdown, operation, page);
+		WriteBadges(markdown, apiOperation.Deprecated, page);
 		WriteServers(markdown, page);
 		WritePaths(markdown, page);
 		WritePathParameters(markdown, page, apiBaseUrl);
@@ -40,9 +40,9 @@ internal static class OperationCommonMark
 		return markdown.ToString();
 	}
 
-	private static void WriteBadges(StringBuilder markdown, OpenApiOperation operation, OperationPageModel page)
+	private static void WriteBadges(StringBuilder markdown, bool deprecated, OperationPageModel page)
 	{
-		if (operation.Deprecated)
+		if (deprecated)
 			ApiCommonMark.Paragraph(markdown, "deprecated");
 		if (page.AuthBadge is { } auth)
 			ApiCommonMark.Paragraph(markdown, $"Authentication: {auth.Summary}");

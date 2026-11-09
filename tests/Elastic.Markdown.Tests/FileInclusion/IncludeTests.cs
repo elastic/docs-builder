@@ -5,8 +5,11 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
@@ -27,7 +30,7 @@ public class IncludeTests() : DirectiveTest<IncludeBlock>("""
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void IncludesInclusionHtml() => Html.ShouldBeHtml("<p><em>Hello world</em></p>");
+	public void IncludesInclusionHtml() => Html.Should().MatchInlineHtmlSnapshot("<p><em>Hello world</em></p>", DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -67,12 +70,12 @@ public class IncludeNotFoundTests() : DirectiveTest<IncludeBlock>("""
 	public void IncludesNothing() => Html.Should().Be("");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("notfound.md` does not exist"));
-	}
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 `{repo}/docs/_snippets/notfound.md` does not exist.");
 }
 
 [InheritsTests]
@@ -88,12 +91,8 @@ public class IncludeRequiresArgument() : DirectiveTest<IncludeBlock>("""
 	public void IncludesNothing() => Html.Should().Be("");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("include requires an argument."));
-	}
+	public void EmitsError() =>
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 include requires an argument.");
 }
 
 [InheritsTests]
@@ -116,14 +115,17 @@ public class IncludeNeedsToLiveInSpecialFolder() : DirectiveTest<IncludeBlock>("
 	public void IncludesNothing() => Html.Should().Be("");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+	public void EmitsError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("only supports including snippets from `_snippet` folders."));
-	}
+			.MatchInlineSnapshot(
+				"""
+		warning {repo}/docs/test.md Document has no title, using file name as title.
+		error {repo}/docs/index.md:3 {include} only supports including snippets from `_snippet` folders. `{repo}/docs/test.md` is not a snippet
+		"""
+			);
 }
 
 [InheritsTests]
@@ -135,14 +137,12 @@ public class IncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+	public void EmitsError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
-	}
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Include path must resolve within the documentation source directory.");
 }
 
 [InheritsTests]
@@ -168,10 +168,12 @@ public class CanNotIncludeItself() : DirectiveTest<IncludeBlock>("""
 	public void IncludesNothing() => Html.Should().Be("");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cyclical include detected"));
-	}
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/_snippets/test.md:1 {include} cyclical include detected `{repo}/docs/_snippets/test.md` points to itself"
+			);
 }

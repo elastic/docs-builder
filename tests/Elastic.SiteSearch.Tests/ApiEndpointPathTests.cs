@@ -32,6 +32,27 @@ public class ApiEndpointPathTests
 	public void IndexKeys_OnlyParameters_ReturnsEmpty() => ApiEndpointPath.IndexKeys(["/{index}/{type}"]).Should().BeEmpty();
 
 	[Test]
+	public void IndexKeys_RootRoute_ReturnsTheRootKey()
+	{
+		var keys = ApiEndpointPath.IndexKeys(["/"]);
+
+		keys.Should().Equal("/");
+		ApiEndpointPath.BareKeys(keys).Should().Equal("/");
+	}
+
+	[Test]
+	[Arguments("_cluster/health/*", "cluster/health/*")]
+	[Arguments("api/fleet/agents", "api/fleet/agents")]
+	[Arguments("_snapshot/*/*/_restore", "snapshot/*/*/restore")]
+	[Arguments("/", "/")]
+	public void StripRouteUnderscores_Route_DropsTheUnderscoreStartingEachSegment(string route, string expected) =>
+		ApiEndpointPath.StripRouteUnderscores(route).Should().Be(expected);
+
+	[Test]
+	public void BareKeys_KeysThatCollideWithoutUnderscores_ReturnsEachBareKeyOnceInFirstSeenOrder() =>
+		ApiEndpointPath.BareKeys(["*/_search", "_search", "search", "*/search"]).Should().Equal("*/search", "search");
+
+	[Test]
 	public void QueryCandidates_SingleSegment_ReturnsOneLiteralGroup()
 	{
 		var groups = ApiEndpointPath.QueryCandidates("_search");
@@ -88,11 +109,31 @@ public class ApiEndpointPathTests
 	public void QueryCandidates_Empty_ReturnsEmpty() => ApiEndpointPath.QueryCandidates("").Should().BeEmpty();
 
 	[Test]
+	public void QueryCandidates_RootRoute_ReturnsTheRootAsItsOnlyTerm()
+	{
+		var groups = ApiEndpointPath.QueryCandidates("/");
+
+		groups.Select(g => g.LiteralSegments).Should().Equal(1);
+		groups[0].Terms.Should().Equal("/");
+	}
+
+	[Test]
+	public void RegexpAlternation_Templates_EscapesTheWildcardAsALiteralStar() =>
+		ApiEndpointPath.RegexpAlternation(["_security/user/*", "*/user/alice"]).Should().Be(@"(_security/user/\*|\*/user/alice)");
+
+	[Test]
+	public void RegexpAlternation_DotAndDash_AreEscaped() =>
+		ApiEndpointPath.RegexpAlternation(["my-index.v1/_search"]).Should().Be(@"(my\-index\.v1/_search)");
+
+	[Test]
 	[Arguments("GET /_search", "_search")]
 	[Arguments("post   /{index}/_Search ", "*/_search")]
 	[Arguments("{index}/_doc/{id}", "*/_doc/*")]
 	[Arguments("GET", "")]
-	[Arguments("/", "")]
+	[Arguments("/", "/")]
+	[Arguments("GET /", "/")]
+	[Arguments("HEAD /", "/")]
+	[Arguments("/_cat/", "_cat")]
 	[Arguments("getting started", "getting started")]
 	public void NormalizeQuery_TypedQuery_StripsMethodAndLeadingSlashLowercasesAndWildcardsParameters(string input, string expected) =>
 		ApiEndpointPath.NormalizeQuery(input).Should().Be(expected);

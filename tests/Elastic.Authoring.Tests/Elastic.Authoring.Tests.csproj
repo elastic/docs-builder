@@ -4,8 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SharpYaml" />
-    <PackageReference Include="AngleSharp.Diffing" />
-    <PackageReference Include="DiffPlex" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj" />

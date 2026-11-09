@@ -90,6 +90,7 @@ StyleCopReport.xml
 *.pgc
 *.pgd
 *.rsp
+!/Directory.Build.rsp
 *.sbr
 *.tlb
 *.tli
@@ -405,3 +406,6 @@ FodyWeavers.xsd
 # Elastic synthetics
 .synthetics/
 .worktrees/
+
+# Personal mise overrides
+mise.local.toml

@@ -67,7 +67,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
-			assembleSources,
+			AssemblerApiSections.Create(context, assembleSources),
 			siteTopNav: null,
 			TestContext.Current!.Execution.CancellationToken
 		);
@@ -103,7 +103,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
-			assembleSources,
+			AssemblerApiSections.Create(context, assembleSources),
 			siteTopNav: null,
 			TestContext.Current!.Execution.CancellationToken
 		);
@@ -167,11 +167,147 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		owners.Should().ContainSingle().Which.Set.Checkout.Repository.Name.Should().Be("docs-content");
 	}
 
+	[Test]
+	public void ApiSections_FlagDisabled_AreEmpty()
+	{
+		var fileSystem = new FileSystem();
+		var collector = new DiagnosticsCollector([]);
+		var withApi = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+		var context = CreateAssembleContext(fileSystem, collector, "prod");
+		var sources = AssembleSources.ForTests(
+			context,
+			new Dictionary<string, AssemblerDocumentationSet> { [withApi.Checkout.Repository.Name] = withApi }.ToFrozenDictionary()
+		);
+
+		var sections = AssemblerApiSections.Create(context, sources);
+
+		sections.Should().BeSameAs(AssemblerApiSections.Empty, "a build that does not render the API Explorer keeps its navigation");
+		sections.GetSections().Should().BeEmpty();
+	}
+
+	[Test]
+	public void ApiSections_FlagEnabled_OfferOneSectionPerDeclaredApiAndNoFixtures()
+	{
+		var fileSystem = new FileSystem();
+		var collector = new DiagnosticsCollector([]);
+		var content = CreateDocumentationSet("docs-content", "kibana", collector);
+		var other = CreateDocumentationSet("elasticsearch", "elasticsearch", collector);
+		var fixtures = CreateDocumentationSet("docs-builder", "docs-builder-elasticsearch", collector);
+		var context = CreateAssembleContext(fileSystem, collector, "staging");
+		var sources = AssembleSources.ForTests(
+			context,
+			new Dictionary<string, AssemblerDocumentationSet>
+			{
+				[content.Checkout.Repository.Name] = content,
+				[other.Checkout.Repository.Name] = other,
+				[fixtures.Checkout.Repository.Name] = fixtures
+			}.ToFrozenDictionary()
+		);
+
+		var sections = AssemblerApiSections.Create(context, sources);
+
+		collector.Errors.Should().Be(0);
+		sections.HubPath.Should().Be("api");
+		sections.GetSections().Select(s => s.Key).Should().Equal("elasticsearch", "kibana");
+		sections.GetSections().Should().BeSameAs(sections.GetSections(), "the navigation and the build step must share the same sections");
+		sections.GetSections().Single(s => s.Key == "kibana").CreateRoot(null).Url.Should().EndWith("api/doc/kibana");
+		sections
+			.GetSections()
+			.Should()
+			.NotContain(
+				s => s.Key.StartsWith("docs-builder-", StringComparison.Ordinal),
+				"the fixtures of this repository are not APIs of the site"
+			);
+	}
+
+	[Test]
+	public void ApiSections_FlagEnabledWithoutHtmlExport_AreEmpty()
+	{
+		var fileSystem = new FileSystem();
+		var collector = new DiagnosticsCollector([]);
+		var content = CreateDocumentationSet("docs-content", "kibana", collector);
+		var context = CreateAssembleContext(fileSystem, collector, "staging");
+		var sources = AssembleSources.ForTests(
+			context,
+			new Dictionary<string, AssemblerDocumentationSet> { [content.Checkout.Repository.Name] = content }.ToFrozenDictionary()
+		);
+
+		var llmOnly = AssemblerApiSections.For(context, sources, new HashSet<Exporter> { Exporter.LLMText });
+		var withHtml = AssemblerApiSections.For(context, sources, new HashSet<Exporter> { Exporter.Html, Exporter.LLMText });
+
+		llmOnly.Should().BeSameAs(AssemblerApiSections.Empty, "the API pages are not generated without the HTML export");
+		llmOnly.GetSections().Should().BeEmpty();
+		withHtml.GetSections().Select(s => s.Key).Should().Equal("kibana");
+	}
+
+	[Test]
+	public void DocumentationSet_WithTheFlagEnabled_HasItsDeclaredApisInItsOwnTree()
+	{
+		var collector = new DiagnosticsCollector([]);
+
+		var set = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+
+		var section = set.DocumentationSet.Navigation.FloatingSections.Should().ContainSingle().Subject;
+		section.Key.Should().Be("elasticsearch");
+		var root = set
+			.DocumentationSet
+			.Navigation
+			.NavigationItems
+			.OfType<Elastic.Documentation.Navigation.Floating.IFloatingSectionRoot>()
+			.Should()
+			.ContainSingle()
+			.Subject;
+		root.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
+	}
+
+	[Test]
+	public void DocumentationSet_WithoutADeclaredApi_HasNoFloatingSections()
+	{
+		var collector = new DiagnosticsCollector([]);
+
+		var set = CreateDocumentationSet("kibana", apiKey: null, collector);
+
+		set.DocumentationSet.Navigation.FloatingSections.Should().BeEmpty();
+	}
+
+	[Test]
+	public void DocumentationSet_WithTheFlagDisabled_HasNoFloatingSections()
+	{
+		var collector = new DiagnosticsCollector([]);
+
+		var set = CreateDocumentationSet("docs-content", "elasticsearch", collector, environment: "prod");
+
+		set
+			.DocumentationSet
+			.Navigation
+			.FloatingSections
+			.Should()
+			.BeEmpty("a build that does not render the API Explorer keeps its navigation");
+	}
+
 	public void Dispose()
 	{
 		foreach (var directory in _tempDirectories)
 			directory.Dispose();
 		GC.SuppressFinalize(this);
+	}
+
+	private AssembleContext CreateAssembleContext(IFileSystem fileSystem, DiagnosticsCollector collector, string environment)
+	{
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
+		var tempDirectory = CreateTempDirectory(fileSystem);
+		var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
+		var assembleFs = new CheckoutsFileSystem(tempDirectory, output: fileSystem.DirectoryInfo.New(outputDirectory), inner: fileSystem);
+		return new AssembleContext(
+			assemblyConfig,
+			configurationContext,
+			environment,
+			collector,
+			assembleFs,
+			tempDirectory.FullName,
+			outputDirectory
+		);
 	}
 
 	private static void InitializeGitCheckout(IFileSystem fileSystem, string checkoutRoot)
@@ -188,7 +324,12 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		return tempDirectory.Directory;
 	}
 
-	private AssemblerDocumentationSet CreateDocumentationSet(string repositoryName, string? apiKey, DiagnosticsCollector collector)
+	private AssemblerDocumentationSet CreateDocumentationSet(
+		string repositoryName,
+		string? apiKey,
+		DiagnosticsCollector collector,
+		string environment = "staging"
+	)
 	{
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
@@ -222,7 +363,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		var context = new AssembleContext(
 			assemblyConfig,
 			configurationContext,
-			"staging",
+			environment,
 			collector,
 			assembleFs,
 			checkoutRoot.FullName,

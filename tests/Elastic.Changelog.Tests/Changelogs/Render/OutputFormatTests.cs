@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -76,12 +78,28 @@ public class OutputFormatTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* Test feature. [#100](https://github.com/elastic/elastic/pull/100)
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		// Verify changelog entry is rendered
-		indexContent.Should().Contain("* Test feature");
+			  This is a test feature
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -135,16 +153,24 @@ public class OutputFormatTests() : RenderChangelogTestBase()
 		var asciidocFiles = FileSystem.Directory.GetFiles(outputDir, "*.asciidoc", SearchOption.AllDirectories);
 		asciidocFiles.Should().HaveCount(1, "asciidoc render should create a single file");
 
-		var asciidocFile = asciidocFiles[0];
-		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current!.Execution.CancellationToken);
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0.asciidoc ===
+			[[release-notes-9.2.0]]
+			== 9.2.0
 
-		// Verify valid asciidoc format elements
-		asciidocContent.Should().Contain("[[release-notes-", "should contain anchor");
-		asciidocContent.Should().Contain("== 9.2.0", "should contain section header");
-		asciidocContent.Should().Contain("[[features-enhancements-", "should contain features section anchor");
-		asciidocContent.Should().Contain("=== New features and enhancements", "should contain features section header");
-		asciidocContent.Should().Contain("* Test feature", "should contain changelog entry");
-		asciidocContent.Should().Contain("This is a test feature", "should contain description");
+			[[features-enhancements-9.2.0]]
+			[float]
+			=== New features and enhancements
+
+			* Test feature. {elastic-pull}100[#100] 
+			+
+			This is a test feature
+			"""
+			);
 
 		// Verify no markdown files are created
 		var markdownFiles = FileSystem.Directory.GetFiles(outputDir, "*.md", SearchOption.AllDirectories);
@@ -236,37 +262,9 @@ public class OutputFormatTests() : RenderChangelogTestBase()
 		var asciidocFiles = FileSystem.Directory.GetFiles(outputDir, "*.asciidoc", SearchOption.AllDirectories);
 		asciidocFiles.Should().HaveCount(1);
 
-		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFiles[0], TestContext.Current!.Execution.CancellationToken);
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 
-		// Verify asciidoc structure
-		asciidocContent.Should().Contain("[[release-notes-9.2.0]]", "should contain main anchor");
-		asciidocContent.Should().Contain("== 9.2.0", "should contain main header");
-
-		// Verify sections are present with proper asciidoc format
-		asciidocContent.Should().Contain("[[bug-fixes-9.2.0]]", "should contain bug fixes anchor");
-		asciidocContent.Should().Contain("[float]", "should contain float attribute");
-		asciidocContent.Should().Contain("=== Bug fixes", "should contain bug fixes header");
-
-		asciidocContent.Should().Contain("[[features-enhancements-9.2.0]]", "should contain features anchor");
-		asciidocContent.Should().Contain("=== New features and enhancements", "should contain features header");
-
-		asciidocContent.Should().Contain("[[breaking-changes-9.2.0]]", "should contain breaking changes anchor");
-		asciidocContent.Should().Contain("=== Breaking changes", "should contain breaking changes header");
-
-		// Verify entries are formatted correctly
-		asciidocContent.Should().Contain("* New search feature", "should contain feature entry");
-		asciidocContent.Should().Contain("* Fixed search bug", "should contain bug fix entry");
-		asciidocContent.Should().Contain("* Breaking API change", "should contain breaking change entry");
-
-		// Verify asciidoc list format (entries should start with *)
-		var lines = asciidocContent.Split('\n');
-		var entryLines = lines.Where(
-			l => l.TrimStart().StartsWith("* ", StringComparison.Ordinal) && !l.TrimStart().StartsWith("* *", StringComparison.Ordinal)
-		).ToList();
-		entryLines.Should().HaveCountGreaterThanOrEqualTo(3, "should have at least 3 changelog entries");
-
+		// The snapshot shows the asciidoc list format: entries start with *
 		// Verify no invalid markdown syntax (like ##) is present
-		asciidocContent.Should().NotContain("##", "should not contain markdown headers");
-		asciidocContent.Should().NotContain("###", "should not contain markdown headers");
 	}
 }

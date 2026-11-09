@@ -206,11 +206,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	{
 		foreach (var tag in classification.Tags)
 		{
-			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
 			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
-			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
-			tagNavigationItem.NavigationItems = endpointNavigationItems;
+			tagNavigationItem.NavigationItems = CreateEndpointNavigationItems(
+				apiUrlSuffix,
+				rootNavigation,
+				tag,
+				tagNavigationItem,
+				takenMonikers
+			);
 			tagNavigationItem.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
 				markdownRenderer,
 				tag.Description,
@@ -220,15 +224,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		}
 	}
 
-	private void CreateEndpointNavigationItems(
+	private List<IEndpointOrOperationNavigationItem> CreateEndpointNavigationItems(
 		string apiUrlSuffix,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
-		HashSet<string> takenMonikers,
-		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
+		HashSet<string> takenMonikers
 	)
 	{
+		var operationItems = new List<OperationNavigationItem>();
 		foreach (var endpoint in tag.Endpoints)
 		{
 			// One page can only stand in for several operations when they are the same call; a sibling with
@@ -236,7 +240,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			var differences = endpoint.Operations.Count > 1 ? OperationEndpoint.Differences(endpoint.Operations) : [];
 			if (endpoint.Operations.Count > 1 && differences.Count == 0)
 			{
-				endpointNavigationItems.Add(
+				operationItems.Add(
 					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, takenMonikers)
 				);
 			}
@@ -261,10 +265,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 						rootNavigation,
 						parentNavigationItem
 					);
-					endpointNavigationItems.Add(operationNavigationItem);
+					operationItems.Add(operationNavigationItem);
 				}
 			}
 		}
+		// Spec order looks arbitrary in a long group; readers scan by the route and method each row shows.
+		return [.. operationItems.InListOrder(static item => item.Endpoint.Rows[0])];
 	}
 
 	/// <summary>

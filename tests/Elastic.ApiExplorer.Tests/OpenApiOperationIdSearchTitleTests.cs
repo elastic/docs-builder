@@ -51,7 +51,7 @@ public class OpenApiOperationIdSearchTitleTests
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateBulkSpec(), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(TestHelpers.EsTree("main", CreateBulkSpec())).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -85,8 +85,7 @@ public class OpenApiOperationIdSearchTitleTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(
-			CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"),
-			"elasticsearch"
+			TestHelpers.EsTree("main", CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"))
 		).ToArray();
 
 		docs.Should().HaveCount(1);
@@ -103,7 +102,7 @@ public class OpenApiOperationIdSearchTitleTests
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("   "), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(TestHelpers.EsTree("main", CreateSpecWithSummaryWhitespace("   "))).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -129,7 +128,7 @@ public class OpenApiOperationIdSearchTitleTests
 			}
 		};
 
-		var docs = new OpenApiDocumentExporter(VersionsConfiguration).ConvertToDocuments(spec, "elasticsearch").ToArray();
+		var docs = new OpenApiDocumentExporter(VersionsConfiguration).ConvertToDocuments(TestHelpers.EsTree("main", spec)).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -155,7 +154,7 @@ public class OpenApiOperationIdSearchTitleTests
 		);
 
 		var docs = new OpenApiDocumentExporter(VersionsConfiguration)
-			.ConvertToDocuments(spec, "elasticsearch")
+			.ConvertToDocuments(TestHelpers.EsTree("main", spec))
 			.ToDictionary(d => d.Api!.OperationId);
 
 		var flush = docs["ml-flush-job"];
@@ -182,9 +181,16 @@ public class OpenApiOperationIdSearchTitleTests
 				o => o.WithStrictOrdering()
 			);
 		flush.Api!.Deprecated.Should().BeFalse();
+		flush.Api.Words.Should().Equal("ml", "flush", "job", "anomaly", "detectors");
+		flush.Api.Group.Should().Be("Machine learning anomaly detection");
+		flush.Api.IdWords.Should().Be(3);
 		docs["ml-close-job"].Api!.Deprecated.Should().BeTrue();
 		var bulk = docs["_bulk"];
 		bulk.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk - PUT /_bulk - bulk");
+		bulk.Api!.Words.Should().Equal("bulk");
+		bulk.Api.Group.Should().Be("");
+		bulk.Api.IdWords.Should().Be(1);
+		bulk.Api.EndpointsBare.Should().Equal("bulk");
 		bulk
 			.Parents
 			.Should()

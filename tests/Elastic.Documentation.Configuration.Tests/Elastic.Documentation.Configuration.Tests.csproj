@@ -9,6 +9,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="Elastic.Documentation.Testing" />
+    <Using Include="Nullean.Snapshots" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CsCheck" />
     <PackageReference Include="SharpYaml" />
   </ItemGroup>
