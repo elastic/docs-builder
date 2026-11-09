@@ -80,4 +80,14 @@ describe('initializeOtel', () => {
         expect(logsUrl).toBe(`${origin}/docs/_api/v1/o/l`)
         expect(metricsUrl).toBe(`${origin}/docs/_api/v1/o/m`)
     })
+
+    it('turns off resource timing, which emits a log record per asset', () => {
+        mockUserAgent('Mozilla/5.0 Chrome/120.0.0.0')
+
+        initializeOtel()
+
+        expect(
+            startBrowserSdk.mock.calls[0][0]?.disableInstrumentations
+        ).toEqual(['resource-timing'])
+    })
 })
