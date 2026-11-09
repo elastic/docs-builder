@@ -87,7 +87,30 @@ public class RedirectApiLinkTests
 		collector.Errors.Should().Be(0);
 	}
 
-	private static TestDiagnosticsCollector BuildDocSet(string redirects, string? crossLinks = null)
+	[Test]
+	public void RedirectWithDefaultTargetAndManyTarget_DoesNotRegisterManyAnchorRemaps()
+	{
+		var (collector, docSet) = Build(
+			"""
+			redirects:
+			  'old.md':
+			    to: 'index.md'
+			    many:
+			      - to: 'index.md'
+			        anchors:
+			          'item-a': 'does-not-exist'
+			""",
+			crossLinks: null
+		);
+
+		collector.Errors.Should().Be(0);
+		docSet.MarkdownFiles.Single().AnchorRemapping.Should().BeNull();
+	}
+
+	private static TestDiagnosticsCollector BuildDocSet(string redirects, string? crossLinks = null) =>
+		Build(redirects, crossLinks).Collector;
+
+	private static (TestDiagnosticsCollector Collector, DocumentationSet DocSet) Build(string redirects, string? crossLinks)
 	{
 		var docSet = crossLinks is null
 			? "project: test\ntoc:\n- file: index.md\n"
@@ -105,7 +128,7 @@ public class RedirectApiLinkTests
 		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
-		_ = new DocumentationSet(context, new TestLoggerFactory(), new TestCrossLinkResolver());
-		return collector;
+		var documentationSet = new DocumentationSet(context, new TestLoggerFactory(), new TestCrossLinkResolver());
+		return (collector, documentationSet);
 	}
 }

@@ -182,10 +182,12 @@ public class DocumentationSet : INavigationTraversable
 
 			if (redirect.Value.Many is null)
 				continue;
+			// anchors of many targets are only validated when there is no default target, as before
+			var manyAnchorsValidated = redirect.Value.To is null;
 			foreach (var r in redirect.Value.Many)
 			{
 				if (r.To is not null)
-					ValidateExists(redirect.Key, r.To, r.Anchors);
+					ValidateExists(redirect.Key, r.To, manyAnchorsValidated ? r.Anchors : null);
 			}
 		}
 
