@@ -50,6 +50,30 @@ public class RedirectApiLinkTests
 	}
 
 	[Test]
+	public void RedirectWithDefaultTargetAndUndeclaredManyTarget_ErrorsOnTheRedirectsFile()
+	{
+		var collector = BuildDocSet(
+			"""
+			redirects:
+			  'old.md':
+			    to: 'index.md'
+			    many:
+			      - to: 'docs-release-notes://index.md'
+			        anchors:
+			          'item-a': 'yy'
+			"""
+		);
+
+		collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/redirects.yml Redirect old.md points to docs-release-notes://index.md but 'docs-release-notes' is not listed under 'cross_links' in docset.yml"
+			);
+	}
+
+	[Test]
 	public void RedirectToDeclaredCrossLinkRepository_HasNoErrors()
 	{
 		var collector = BuildDocSet(

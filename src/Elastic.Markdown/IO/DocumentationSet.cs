@@ -179,13 +179,13 @@ public class DocumentationSet : INavigationTraversable
 		{
 			if (redirect.Value.To is not null)
 				ValidateExists(redirect.Key, redirect.Value.To, redirect.Value.Anchors);
-			else if (redirect.Value.Many is not null)
+
+			if (redirect.Value.Many is null)
+				continue;
+			foreach (var r in redirect.Value.Many)
 			{
-				foreach (var r in redirect.Value.Many)
-				{
-					if (r.To is not null)
-						ValidateExists(redirect.Key, r.To, r.Anchors);
-				}
+				if (r.To is not null)
+					ValidateExists(redirect.Key, r.To, r.Anchors);
 			}
 		}
 
