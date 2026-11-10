@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Browser;
 using TUnit.Core.Interfaces;
 
@@ -34,15 +35,26 @@ public sealed partial class JourneyTarget : IAsyncInitializer, IAsyncDisposable
 	public JourneySnapshotOptions Options => new() { BaseUrl = BaseUrl };
 
 	/// <summary>
-	/// The journeys open <c>/syntax/...</c> and assert the isolated header and titles, which only the isolated site has
-	/// (assembler content lives under <c>/docs/...</c>, Codex under <c>/r/&lt;repo&gt;/...</c>). Other targets skip them
-	/// until they get journeys of their own.
+	/// The options for one of the isolated-site journeys, which open <c>/syntax/...</c> and assert the isolated header and
+	/// titles (assembler content lives under <c>/docs/...</c>, Codex under <c>/r/&lt;repo&gt;/...</c>). The test is skipped
+	/// on the other targets, and when the journey's <c># @requires</c> does not hold for the site that is running, such as
+	/// a feature the site was built without.
 	/// </summary>
-	public Task<JourneySnapshotOptions> OptionsForIsolatedJourneysAsync(string? variant = null)
+	public JourneySnapshotOptions OptionsFor(SnapshotFile journey, string? variant = null)
 	{
 		if (Name != "isolated")
 			Skip.Test($"These journeys target the isolated site; none are written for '{Name}' yet.");
-		return Task.FromResult(new JourneySnapshotOptions { BaseUrl = BaseUrl, Variant = variant });
+		var options = new JourneySnapshotOptions
+		{
+			BaseUrl = BaseUrl,
+			Variant = variant,
+			Features = Features,
+			BuildType = BuildType,
+			Env = "local"
+		};
+		if (JourneyTest.SkipReason(journey, options) is { } reason)
+			Skip.Test(reason);
+		return options;
 	}
 
 	public async Task InitializeAsync()

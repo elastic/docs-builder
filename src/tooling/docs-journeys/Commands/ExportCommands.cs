@@ -74,7 +74,7 @@ internal sealed class ExportCommands
 
 		var projectId = project ?? SyntheticsPlan.DefaultProject(site.Env);
 		var context = new ExportContext(site.Env, site.BuildType, site.Features);
-		var arguments = SyntheticsPlan.ExportArguments(journeys, @out, context, paging, baseUrl);
+		var arguments = SyntheticsPlan.ExportArguments(journeys, @out, context, paging, SiteContext.JourneyBase(baseUrl, site.BuildType));
 		var config = SyntheticsPlan.Config(projectId, kibanaUrl, space, site.Env, baseUrl);
 
 		if (dryRun)

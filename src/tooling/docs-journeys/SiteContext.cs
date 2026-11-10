@@ -44,6 +44,13 @@ internal sealed partial class SiteContext
 	public static string? EnvFromHost(Uri url) => KnownHosts.TryGetValue(url.Host, out var env) ? env : null;
 
 	/// <summary>
+	/// What journeys open relative paths against. An assembler site serves the documentation under <c>/docs/</c>, so a
+	/// site given as an origin gets that path; any other site, or a URL that already names a path, is used as given.
+	/// </summary>
+	public static Uri JourneyBase(Uri url, string? buildType) =>
+		buildType == "assembler" && url.AbsolutePath == "/" ? new Uri(url, "/docs/") : url;
+
+	/// <summary>
 	/// Builds the context: an explicit <paramref name="env"/>, <paramref name="buildType"/> or <paramref name="features"/>
 	/// wins; the rest comes from the site's own <c>docs:build-type</c> and <c>docs:features</c> meta tags on
 	/// <paramref name="probePath"/>. A page that does not answer leaves them unknown, and unknown conditions are not matched. A page
@@ -68,17 +75,33 @@ internal sealed partial class SiteContext
 			else
 			{
 				var metaBuildType = BuildTypeMeta().Match(html) is { Success: true } b ? b.Groups["content"].Value : null;
-				var classBuildType = BuildTypeClass().Match(html) is { Success: true } c ? c.Groups["type"].Value : null;
 				var metaFeatures = FeaturesMeta().Match(html) is { Success: true } f ? Split(f.Groups["content"].Value) : null;
-				if (metaBuildType is null && metaFeatures is null)
-					notes.Add($"{probed} has no docs:build-type or docs:features tags");
-				// Isolated and Codex sites render the build-type body class, so only a deployed assembler site that predates
-				// both can lack it.
-				var siteBuildType = metaBuildType ?? classBuildType;
-				if (siteBuildType is null && buildType is null)
-					notes.Add($"{probed} predates docs:build-type: assuming an assembler site");
-				buildType ??= siteBuildType ?? "assembler";
-				features ??= metaFeatures;
+				// The names go to npx on export, so nothing but a known build type and plain flag names is accepted from a page.
+				if (
+					(metaBuildType is not null && !BuildTypes.Contains(metaBuildType))
+					|| (metaFeatures?.Any(n => !FlagName().IsMatch(n)) ?? false)
+				)
+				{
+					probeFailed = true;
+					notes.Add(
+						$"{probed} has a docs:build-type or docs:features tag with a value that is not a known build type or flag name"
+					);
+					metaBuildType = null;
+					metaFeatures = null;
+				}
+				else
+				{
+					if (metaBuildType is null && metaFeatures is null)
+						notes.Add($"{probed} has no docs:build-type or docs:features tags");
+					// Isolated and Codex sites render the build-type body class, so only a deployed assembler site that predates
+					// both can lack it.
+					var classBuildType = BuildTypeClass().Match(html) is { Success: true } c ? c.Groups["type"].Value : null;
+					var siteBuildType = metaBuildType ?? classBuildType;
+					if (siteBuildType is null && buildType is null)
+						notes.Add($"{probed} predates docs:build-type: assuming an assembler site");
+					buildType ??= siteBuildType ?? "assembler";
+					features ??= metaFeatures;
+				}
 			}
 		}
 
@@ -99,7 +122,9 @@ internal sealed partial class SiteContext
 			StringComparer.Ordinal
 		);
 
-	// An isolated docs-builder site serves from /, so a probe that 404s falls back to the root page.
+	// An isolated docs-builder site serves from /, so a probe path that is not found falls back to the root page, but only
+	// when that page identifies itself as a docs site. An error at the probe path, or a root page that is something else
+	// (an origin's marketing page), is a failed probe: assuming a site from it could drop deployed monitors on export.
 	private static async Task<(string? Html, string Probed, string? Error)> ProbeAsync(
 		HttpClient http,
 		Uri baseUrl,
@@ -108,10 +133,14 @@ internal sealed partial class SiteContext
 	)
 	{
 		var (html, error) = await ReadAsync(http, new Uri(baseUrl, probePath), ct).ConfigureAwait(false);
-		if (html is not null || probePath == "/")
+		if (html is not null || probePath == "/" || error != "HTTP 404")
 			return (html, probePath, error);
 		var (rootHtml, rootError) = await ReadAsync(http, new Uri(baseUrl, "/"), ct).ConfigureAwait(false);
-		return rootHtml is null ? (null, probePath, $"{error}; / failed: {rootError}") : (rootHtml, "/", null);
+		if (rootHtml is null)
+			return (null, probePath, $"{error}; / failed: {rootError}");
+		return BuildTypeMeta().IsMatch(rootHtml) || FeaturesMeta().IsMatch(rootHtml)
+			? (rootHtml, "/", null)
+			: (null, probePath, $"{error}; / is not a docs site (it has no docs:build-type or docs:features tag)");
 	}
 
 	private static async Task<(string? Html, string? Error)> ReadAsync(HttpClient http, Uri url, CancellationToken ct)
@@ -135,6 +164,11 @@ internal sealed partial class SiteContext
 
 	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""")]
 	private static partial Regex BuildTypeMeta();
+
+	[GeneratedRegex("""^[A-Za-z0-9][A-Za-z0-9._:-]*$""")]
+	private static partial Regex FlagName();
+
+	private static readonly HashSet<string> BuildTypes = new(["isolated", "assembler", "codex"], StringComparer.Ordinal);
 
 	// Every layout renders the build type as a body class, which is what isolated and Codex sites answer with.
 	[GeneratedRegex("""build-type-(?<type>isolated|assembler|codex)""")]

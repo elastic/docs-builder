@@ -50,8 +50,8 @@ jobs:
 
       # Run from source: a pull request does not pay for the native AOT publish. The tool is read-only on a live site
       # unless told otherwise, and skips a journey whose `@requires` does not hold on prod, naming the reason.
-      # It exits 1 when a journey fails, and when every journey it was given was skipped, so a changed journey that
-      # never ran on prod cannot pass unnoticed.
+      # It exits 1 when a journey fails. A change that only touches journeys that cannot apply to prod, such as the
+      # isolated-site ones (`@requires build-type:isolated`), skips them all, and --allow-all-skipped lets that pass.
       - name: Run the changed journeys against prod
         if: ${{ inputs.prod && github.event_name == 'pull_request' }}
         env:
@@ -62,7 +62,7 @@ jobs:
           set -o pipefail
           status=0
           dotnet run --project src/tooling/docs-journeys -c release -- \
-            run --url https://www.elastic.co --env prod --journeys tests/Elastic.Documentation.Journeys.Tests/journeys --changed-only "origin/${BASE_REF}" \
+            run --url https://www.elastic.co --env prod --journeys tests/Elastic.Documentation.Journeys.Tests/journeys --changed-only "origin/${BASE_REF}" --allow-all-skipped \
             2>&1 | tee prod-journeys.txt || status=$?
           {
             echo '### Journeys against https://www.elastic.co'

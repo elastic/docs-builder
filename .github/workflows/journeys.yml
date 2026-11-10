@@ -30,21 +30,21 @@ jobs:
           persist-credentials: false
           sparse-checkout: tests/Elastic.Documentation.Journeys.Tests
 
-      # Every folder under journeys/ is an area and must be in exactly the shards.json areas, or its journeys would never run.
-      - name: Check every area is in a shard
+      # Every test class in the project must be in exactly one shard, or its tests would never run in CI. A class is named
+      # in shards.json as written in the code, so a class cannot be missed because of how its area folder is spelled.
+      - name: Check every test class is in a shard
         working-directory: tests/Elastic.Documentation.Journeys.Tests
         run: |
-          folders=$(find journeys -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
-          areas=$(jq -r '.shards[].areas[]' shards.json | sort)
-          if [ "${folders}" != "${areas}" ]; then
-            echo "::error::journeys/ folders and shards.json areas differ. Folders: ${folders//$'\n'/ } Areas: ${areas//$'\n'/ }"
+          declared=$(grep -rhE '^public class [A-Za-z0-9]+' --include='*.cs' Areas ./*.cs | sed -E 's/^public class ([A-Za-z0-9]+).*/\1/' | sort)
+          listed=$(jq -r '.shards[].classes[]' shards.json | sort)
+          if [ "${declared}" != "${listed}" ]; then
+            echo "::error::The test classes and the shards.json classes differ. Classes: ${declared//$'\n'/ } Listed: ${listed//$'\n'/ }"
             exit 1
           fi
 
-      # One test class per area, named `<Area>Journeys`, so a shard's filter is the OR of its classes.
       - id: matrix
         run: |
-          matrix=$(jq -c '{include: [.shards[] | {name, filter: ("/*/*/(" + ([.areas[] | (.[0:1] | ascii_upcase) + .[1:] + "Journeys"] | join("|")) + ")/*")}]}' tests/Elastic.Documentation.Journeys.Tests/shards.json)
+          matrix=$(jq -c '{include: [.shards[] | {name, filter: ("/*/*/(" + (.classes | join("|")) + ")/*")}]}' tests/Elastic.Documentation.Journeys.Tests/shards.json)
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
           echo "${matrix}"
 
@@ -89,6 +89,7 @@ jobs:
           if-no-files-found: error
           path: |
             .artifacts/bin/docs-builder/release
+            .artifacts/bin/docs-journeys/release
             .artifacts/bin/Elastic.Documentation.Journeys.Tests/release
 
   journeys:

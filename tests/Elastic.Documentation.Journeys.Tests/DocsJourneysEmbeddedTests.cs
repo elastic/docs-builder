@@ -83,4 +83,87 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 
 		_ = run.Output.Should().Contain("build-type=unknown").And.NotContain("assuming an assembler site");
 	}
+
+	[Test]
+	public async Task Run_AssemblerSiteGivenAsAnOrigin_OpensRelativePathsUnderDocs()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("navigation/live", "# @requires build-type:assembler\nopen get-started\nopen /absolute");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "demo", "--journeys", folder.Path);
+
+		_ = run.ExitCode.Should().Be(0, run.Output);
+		lock (site.Paths)
+		{
+			_ = site.Paths.Should().Contain("/docs/get-started").And.Contain("/absolute").And.NotContain("/get-started");
+		}
+	}
+
+	[Test]
+	public async Task Run_EveryJourneySkipped_ExitsOneUnlessAllowAllSkippedIsGiven()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("a/isolated", "# @requires build-type:isolated\nopen /");
+
+		var strict = await Cli.RunAsync("run", "--url", site.Url, "--env", "demo", "--journeys", folder.Path);
+		var lenient = await Cli.RunAsync("run", "--url", site.Url, "--env", "demo", "--journeys", folder.Path, "--allow-all-skipped");
+
+		_ = strict.ExitCode.Should().Be(1, strict.Output);
+		_ = strict.Output.Should().Contain("nothing was checked");
+		_ = lenient.ExitCode.Should().Be(0, lenient.Output);
+		_ = lenient.Output.Should().Contain("none applies to this site");
+	}
+
+	[Test]
+	public async Task Run_RootPageThatIsNotADocsSite_IsNotAcceptedAsTheProbeFallback()
+	{
+		await using var site = new FakeSite(buildType: null, features: null, servedFromRoot: true);
+		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\nopen /");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--journeys", folder.Path);
+
+		_ = run
+			.Output
+			.Should()
+			.Contain("is not a docs site")
+			.And
+			.Contain("build-type=unknown")
+			.And
+			.NotContain("assuming an assembler site");
+	}
+
+	[Test]
+	public async Task Run_ProbeThatFailsWithAServerError_DoesNotFallBackToTheRoot()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
+		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\nopen /");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--probe", "/error", "--journeys", folder.Path);
+
+		_ = run.Output.Should().Contain("HTTP 500").And.Contain("build-type=unknown").And.NotContain("assuming an assembler site");
+	}
+
+	[Test]
+	public async Task Export_SiteWithAFlagNameThatIsNotPlain_FailsTheProbeInsteadOfPassingItToNpx()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback calc.exe&whoami");
+		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\n# @monitor\nopen /");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out"),
+			"--dry-run"
+		);
+
+		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		_ = run.Output.Should().Contain("not a known build type or flag name").And.NotContain("calc.exe");
+	}
 }

@@ -16,9 +16,9 @@ public class A11yJourneys(JourneyTarget target)
 	[JourneyFiles("journeys/a11y")]
 	public async Task Run(SnapshotFile journey)
 	{
-		// color-contrast depends on how the platform renders text: macOS flags the feedback buttons and Linux does not, so
-		// each platform has its own verified transcript.
-		var options = await target.OptionsForIsolatedJourneysAsync(OperatingSystem.IsMacOS() ? "macos" : "linux").ConfigureAwait(false);
+		// The page feedback buttons fail color-contrast, and the isolated site only renders them in Debug builds, so the
+		// transcript has a variant for each: CI builds Release, a developer's build is usually Debug.
+		var options = target.OptionsFor(journey, target.Features.Contains("page-feedback") ? "feedback" : "plain");
 		await JourneyTest.RunAsync(journey, options).ConfigureAwait(false);
 	}
 }

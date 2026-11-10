@@ -440,6 +440,9 @@ internal sealed class FakeSite : IAsyncDisposable
 
 	public string Url { get; }
 	public List<PageRequest> PageRequests { get; } = [];
+
+	/// <summary>The path of every GET the site answered, in order.</summary>
+	public List<string> Paths { get; } = [];
 	public int Writes => Volatile.Read(ref _writes);
 
 	private async Task ServeAsync()
@@ -457,6 +460,9 @@ internal sealed class FakeSite : IAsyncDisposable
 			}
 
 			var request = context.Request;
+			if (request.HttpMethod == "GET")
+				lock (Paths)
+					Paths.Add(request.Url!.AbsolutePath);
 			if (request.HttpMethod == "POST")
 				_ = Interlocked.Increment(ref _writes);
 			else if (request.Url!.AbsolutePath == "/page")
@@ -472,6 +478,12 @@ internal sealed class FakeSite : IAsyncDisposable
 				"/save" => "<html><head><title>Saved</title></head><body>Saved</body></html>",
 				_ => "<html><head><title>Not found</title></head></html>"
 			};
+			if (request.Url!.AbsolutePath == "/error")
+			{
+				context.Response.StatusCode = 500;
+				context.Response.Close();
+				continue;
+			}
 			if (html is null)
 			{
 				context.Response.StatusCode = 404;

@@ -48,7 +48,7 @@ internal static partial class SyntheticsPlan
 			"--root",
 			journeys,
 			"--base-url",
-			baseUrl.GetLeftPart(UriPartial.Authority)
+			baseUrl.ToString()
 		};
 		if (context.Features.Count > 0)
 			arguments.AddRange(["--features", string.Join(',', context.Features.Order(StringComparer.Ordinal))]);

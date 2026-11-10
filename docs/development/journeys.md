@@ -21,12 +21,7 @@ mise run journeys -- --treenode-filter "/*/*/NavigationJourneys/*"
 mise run journeys -- --treenode-filter "/*/*/*/Run(sidebar)"
 ```
 
-To run against a built assembler or Codex site, build it first and use the matching task:
-
-```bash
-mise run journeys:assembler   # needs .artifacts/assembly
-mise run journeys:codex       # needs .artifacts/codex/docs
-```
+The tasks `journeys:assembler` and `journeys:codex` serve a built assembler (`.artifacts/assembly`) or Codex (`.artifacts/codex/docs`) site, but every journey in this project checks the isolated site, so on those targets they all skip with a reason and a green run is not coverage of either site. To check a deployed assembler site, run the live journeys with `docs-journeys` below.
 
 The test host removes every `FEATURE_*` variable from the environment of the site it starts, so a flag exported in your shell does not change what a journey sees.
 
@@ -39,6 +34,10 @@ Each folder under `journeys/` is an area, and each area has one test class under
 | `landing` | The home page, the 404 page, a hub page and a group of page cards |
 | `navigation` | The sidebar and the table of contents |
 | `content` | Tabs, dropdowns, admonitions and the code copy button |
+| `chrome` | The isolated header (logo, search button, GitHub link, deployment info) and the footer |
+| `page-actions` | The "View as Markdown" and "Edit this page" links |
+| `feedback` | The "Was this page helpful?" buttons render with their accessible names (needs the `page-feedback` flag, which the isolated site only turns on in Debug builds) |
+| `a11y` | The accessibility check on the home page, a content page and the 404 page. The transcript has a `feedback` and a `plain` variant, because the feedback buttons fail the contrast rule |
 | `markdown-alternates` | The `<page>.md` alternate of a page (`.http` files; isolated target only) |
 | `mcp` | The remote MCP server: health, `initialize`, `tools/list` (`.http` files, in memory) |
 | `docs-api` | The docs API: health and liveness (`.http` files, in memory) |
@@ -50,11 +49,6 @@ Areas that need no browser use `.http` files in `http/<area>/`, the format Visua
 - `markdown-alternates` sends its requests to the site the target serves. It uses pages of this repository's `docs/` folder, so the assembler and Codex targets skip it with a reason.
 - `mcp` and `docs-api` start `Elastic.Documentation.Mcp.Remote` and `Elastic.Documentation.Api` in memory with `WebApplicationFactory`, whatever the target is. They only cover requests that need no credentials: a tool call that searches Elasticsearch has no file yet.
 - Page bodies are cut to their first line (`BodyScrubbers.FirstQuotedLine`) and MCP descriptions to an ellipsis (`BodyScrubbers.WithoutProse`), so a snapshot changes when behaviour changes and not when the wording does. `Mcp.Remote.Tests` still snapshots the full handshake.
-
-| `chrome` | The isolated header (logo, search button, GitHub link, deployment info) and the footer |
-| `page-actions` | The "View as Markdown" and "Edit this page" links |
-| `feedback` | The "Was this page helpful?" buttons render with their accessible names |
-| `a11y` | The accessibility check on the home page, a content page and the 404 page |
 
 The isolated site has no theme switch, no "report an issue" link and no search that works without the search API, so those have no journeys here. The feedback journey only checks that the buttons render: pressing one sends feedback to the API.
 
@@ -99,7 +93,7 @@ The run prints a `context:` line with what it settled on and where each part cam
 
 | Option | Meaning |
 |---|---|
-| `--url` | The origin to run against. A journey that opens `/docs` opens it on this origin. |
+| `--url` | The site to run against. For an assembler site given as an origin, journeys open relative paths under `/docs/` (`open get-started` is `https://host/docs/get-started`) and absolute ones from the origin; a URL that names a path is used as given. |
 | `--journeys` | A folder of journeys to run instead of the ones compiled into the binary. An empty folder is an error. Needed for `--changed-only`. |
 | `--area` | Only these areas, comma separated. An area with no journeys is an error. |
 | `--tag` | Only journeys with one of these `# @tags`, comma separated. |
@@ -111,6 +105,7 @@ The run prints a `context:` line with what it settled on and where each part cam
 | `--allow-writes` | Do not refuse requests that are not GET, HEAD or OPTIONS. |
 | `--writable` | URL globs a read-only run may write to anyway, comma separated. |
 | `--allow-mutations` | Run journeys marked `# @mutates`. |
+| `--allow-all-skipped` | Exit with 0 when every selected journey was skipped. The prod check of a pull request uses it, because a change to isolated-site journeys has nothing to run on prod. |
 | `--junit` | Write a JUnit XML report. |
 | `--artifacts` | Write screenshots and recordings here, one folder per journey. |
 

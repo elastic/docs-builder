@@ -16,7 +16,7 @@ public class PageActionsJourneys(JourneyTarget target)
 	[JourneyFiles("journeys/page-actions")]
 	public async Task Run(SnapshotFile journey)
 	{
-		var options = await target.OptionsForIsolatedJourneysAsync().ConfigureAwait(false);
+		var options = target.OptionsFor(journey);
 		await JourneyTest.RunAsync(journey, options).ConfigureAwait(false);
 	}
 }

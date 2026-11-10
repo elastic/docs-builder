@@ -38,6 +38,7 @@ internal sealed class RunCommand
 	/// <param name="allowWrites">Do not refuse requests that are not GET, HEAD or OPTIONS.</param>
 	/// <param name="writable">URL globs a read-only run may write to anyway, comma separated.</param>
 	/// <param name="allowMutations">Run journeys marked <c># @mutates</c>, which a read-only run skips.</param>
+	/// <param name="allowAllSkipped">Exit with 0 when every selected journey was skipped. For a check of the journeys a change touched, where none of them may apply to the site.</param>
 	/// <param name="junit">Write a JUnit XML report here.</param>
 	/// <param name="artifacts">Write screenshots and recordings here, one folder per journey.</param>
 	public async Task<int> Run(
@@ -56,6 +57,7 @@ internal sealed class RunCommand
 		bool allowWrites = false,
 		string? writable = null,
 		bool allowMutations = false,
+		bool allowAllSkipped = false,
 		string? junit = null,
 		string? artifacts = null,
 		Cancel ct = default
@@ -102,10 +104,11 @@ internal sealed class RunCommand
 			.Select(l => (Loaded: l, Skip: l.Journey is null ? null : selection.SkipReason(l.Journey)))
 			.ToList();
 		var hosts = DefaultAllow.Concat(SiteContext.Split(allow)).ToList();
-		var settings = new RunSettings(baseUrl, hosts, selection.Context, identity) { Artifacts = artifacts, Parallel = parallel };
+		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
+		var settings = new RunSettings(journeyBase, hosts, selection.Context, identity) { Artifacts = artifacts, Parallel = parallel };
 		var outcomes = await JourneyExecution.RunAsync(plan, settings, ct).ConfigureAwait(false);
 
-		return Report(outcomes, baseUrl, junit);
+		return Report(outcomes, journeyBase, junit, allowAllSkipped);
 	}
 
 	internal static async Task<SiteContext> ResolveSiteAsync(
@@ -124,7 +127,7 @@ internal sealed class RunCommand
 		return await SiteContext.ResolveAsync(baseUrl, options, http, ct).ConfigureAwait(false);
 	}
 
-	private static int Report(IReadOnlyList<JourneyOutcome> outcomes, Uri baseUrl, string? junit)
+	private static int Report(IReadOnlyList<JourneyOutcome> outcomes, Uri baseUrl, string? junit, bool allowAllSkipped)
 	{
 		foreach (var outcome in outcomes)
 			Console.Out.WriteLine(
@@ -140,12 +143,16 @@ internal sealed class RunCommand
 		var passed = outcomes.Count(o => o.Passed);
 		Console.Out.WriteLine($"{passed} passed, {failed} failed, {skipped} skipped, against {baseUrl}");
 		if (passed + failed == 0)
-			Console.Out.WriteLine("Every selected journey was skipped, so nothing was checked.");
+			Console.Out.WriteLine(
+				allowAllSkipped
+					? "Every selected journey was skipped; none applies to this site."
+					: "Every selected journey was skipped, so nothing was checked."
+			);
 
 		if (junit is not null)
 			JUnitReport.Write(junit, baseUrl.Host, outcomes);
 		WriteStepSummary(baseUrl, outcomes);
-		return failed > 0 || passed + failed == 0 ? 1 : 0;
+		return failed > 0 || (passed + failed == 0 && !allowAllSkipped) ? 1 : 0;
 	}
 
 	private static void WriteStepSummary(Uri baseUrl, IReadOnlyList<JourneyOutcome> outcomes)

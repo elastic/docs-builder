@@ -27,6 +27,9 @@ internal static class Npx
 		string? workingDirectory = null
 	)
 	{
+		// Some arguments come from the site that was probed, and cmd.exe would read an operator in one as syntax.
+		if (OperatingSystem.IsWindows())
+			RequireCmdSafe(arguments);
 		// npm.cmd and npx.cmd are batch files; CreateProcess cannot start them, cmd.exe can.
 		var info = new ProcessStartInfo(OperatingSystem.IsWindows() ? "cmd.exe" : command) { UseShellExecute = false };
 		if (OperatingSystem.IsWindows())
