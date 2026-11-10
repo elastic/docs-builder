@@ -27,10 +27,8 @@ public class NavigationSearchServiceTests
 			Description = "Approximate kNN"
 		};
 
-	private static async Task<NavigationSearchResponse> SearchWith(ApiPropertyEntry property)
-	{
-		var inner = A.Fake<ISearchService<DocumentationDocument>>();
-		var document = new DocumentationDocument
+	private static DocumentationDocument SearchOperation() =>
+		new()
 		{
 			Title = "Search",
 			SearchTitle = "Search",
@@ -48,22 +46,77 @@ public class NavigationSearchServiceTests
 				]
 			}
 		};
+
+	/// <summary>The default rendering of <c>search</c>, shared by main and 9, with 8 rendering it alike under its own root.</summary>
+	private static DocumentationDocument SharedSearchOperation()
+	{
+		var document = SearchOperation();
+		document.Parents =
+		[
+			new ParentDocument { Title = "API reference", Path = "/docs/api" },
+			new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/doc/elasticsearch" },
+			new ParentDocument { Title = "Search", Path = "/docs/api/doc/elasticsearch/group/endpoint-search" }
+		];
+		return document with
+		{
+			Api = document.Api! with
+			{
+				Key = "elasticsearch",
+				Trees =
+				[
+					new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/elasticsearch" },
+					new ApiTreeEntry { Tree = "8", Root = "/docs/api/doc/elasticsearch/v8" }
+				]
+			}
+		};
+	}
+
+	private static DocumentationDocument CloudOperation() =>
+		new()
+		{
+			Title = "Get deployments",
+			SearchTitle = "Get deployments",
+			Path = "/docs/api/doc/cloud/operation/operation-list-deployments",
+			Parents = [new ParentDocument { Title = "Elastic Cloud API", Path = "/docs/api/doc/cloud" }],
+			Api = new ApiOperationMetadata
+			{
+				Endpoints = ["deployments"],
+				Method = "GET",
+				Path = "/deployments",
+				OperationId = "list-deployments",
+				Key = "cloud",
+				Trees = [new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/cloud" }]
+			}
+		};
+
+	private static Task<NavigationSearchResponse> SearchWith(ApiPropertyEntry property) =>
+		Search(
+			new NavigationSearchRequest { Query = "knn", TypeFilter = "api" },
+			A.Fake<ISearchService<DocumentationDocument>>(),
+			(SearchOperation(), property)
+		);
+
+	private static async Task<NavigationSearchResponse> Search(
+		NavigationSearchRequest request,
+		ISearchService<DocumentationDocument> inner,
+		params (DocumentationDocument Document, ApiPropertyEntry Property)[] hits
+	)
+	{
 		_ = A.CallTo(
 			() => inner.AutocompleteAsync(A<AutocompleteRequest>._, A<CancellationToken>._)
 		).Returns(new AutocompleteResponse<DocumentationDocument>
 		{
-			Results =
-			[
-				new SearchResultItem<DocumentationDocument>
+			Results = hits.Select(
+				hit => new SearchResultItem<DocumentationDocument>
 				{
-					Document = document,
-					Title = "Search",
-					Description = "Run a search",
+					Document = hit.Document,
+					Title = hit.Document.Title,
+					Description = "",
 					Score = 5,
-					Properties = [property]
+					Properties = [hit.Property]
 				}
-			],
-			TotalResults = 1,
+			).ToList(),
+			TotalResults = hits.Length,
 			PageNumber = 1,
 			PageSize = 20,
 			Aggregations = new AutocompleteAggregations()
@@ -77,7 +130,7 @@ public class NavigationSearchServiceTests
 		);
 		using var service = new NavigationSearchService(inner, accessor, NullLogger<NavigationSearchService>.Instance);
 
-		return await service.NavigationSearchAsync(new NavigationSearchRequest { Query = "knn", TypeFilter = "api" });
+		return await service.NavigationSearchAsync(request);
 	}
 
 	[Test]
@@ -96,6 +149,22 @@ public class NavigationSearchServiceTests
 			.Select(r => (r.Path, string.Join(",", r.Methods)))
 			.Should()
 			.Equal(("/{index}/_search", "POST,GET"), ("/_search", "POST,GET"));
+		result.Deprecated.Should().BeFalse();
+	}
+
+	[Test]
+	public async Task NavigationSearchAsync_DeprecatedOperation_FlagsTheResult()
+	{
+		var document = SearchOperation();
+		var deprecated = document with { Api = document.Api! with { Deprecated = true } };
+
+		var response = await Search(
+			new NavigationSearchRequest { Query = "search", TypeFilter = "api" },
+			A.Fake<ISearchService<DocumentationDocument>>(),
+			(deprecated, Property())
+		);
+
+		response.Results.Single().Deprecated.Should().BeTrue();
 	}
 
 	[Test]
@@ -106,5 +175,64 @@ public class NavigationSearchServiceTests
 		var json = JsonSerializer.Serialize(response, ApiJsonContext.Default.NavigationSearchResponse);
 
 		json.Should().Contain("\"path\":\"retriever.knn\"").And.NotContain("\"parent\"");
+	}
+
+	[Test]
+	public async Task NavigationSearchAsync_ApiPage_ForwardsItToTheSearch()
+	{
+		var inner = A.Fake<ISearchService<DocumentationDocument>>();
+		var page = new ApiPageContext("elasticsearch", "8");
+
+		_ = await Search(
+			new NavigationSearchRequest { Query = "knn", TypeFilter = "api", ApiPage = page },
+			inner,
+			(SearchOperation(), Property())
+		);
+
+		_ = A.CallTo(
+			() => inner.AutocompleteAsync(
+				A<AutocompleteRequest>.That.Matches(r => r.ApiPage == page && r.Query == "knn" && r.TypeFilter == "api"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task NavigationSearchAsync_ScopeInAnotherTreeOfTheHitsApi_PointsTheHitIntoThatTree()
+	{
+		var request = new NavigationSearchRequest { Query = "knn", TypeFilter = "api", ApiPage = new ApiPageContext("elasticsearch", "8") };
+
+		var response = await Search(request, A.Fake<ISearchService<DocumentationDocument>>(), (SharedSearchOperation(), Property()));
+
+		var result = response.Results.Single();
+		result.Url.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
+		result.Properties.Single().Url.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search#req-knn");
+		result
+			.Parents
+			.Select(p => p.Url)
+			.Should()
+			.Equal("/docs/api", "/docs/api/doc/elasticsearch/v8", "/docs/api/doc/elasticsearch/v8/group/endpoint-search");
+	}
+
+	[Test]
+	public async Task NavigationSearchAsync_ScopeInElasticsearch_LeavesACloudHitAlone()
+	{
+		var request = new NavigationSearchRequest
+		{
+			Query = "deployments",
+			TypeFilter = "api",
+			ApiPage = new ApiPageContext("elasticsearch", "8")
+		};
+
+		var response = await Search(
+			request,
+			A.Fake<ISearchService<DocumentationDocument>>(),
+			(CloudOperation(), Property() with { Anchor = "req-name" })
+		);
+
+		var result = response.Results.Single();
+		result.Url.Should().Be("/docs/api/doc/cloud/operation/operation-list-deployments");
+		result.Properties.Single().Url.Should().Be("/docs/api/doc/cloud/operation/operation-list-deployments#req-name");
+		result.Parents.Select(p => p.Url).Should().Equal("/docs/api/doc/cloud");
 	}
 }

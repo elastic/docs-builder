@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Button;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -24,13 +27,17 @@ public class ButtonBlockTests() : DirectiveTest<ButtonBlock>("""
 	public void DefaultsToLeftAlign() => Block!.Align.Should().Be("left");
 
 	[Test]
-	public void RendersPrimaryButtonClass() => Html.Should().Contain("doc-button-primary");
-
-	[Test]
-	public void RendersLinkHref() => Html.Should().Contain("href=\"/get-started\"");
-
-	[Test]
-	public void RendersButtonText() => Html.Should().Contain("Get Started");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-left">
+			<p>
+				<a href="/get-started">Get Started</a>
+			</p>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -45,7 +52,17 @@ public class ButtonSecondaryTests() : DirectiveTest<ButtonBlock>("""
 	public void ParsesSecondaryType() => Block!.Type.Should().Be("secondary");
 
 	[Test]
-	public void RendersSecondaryClass() => Html.Should().Contain("doc-button-secondary");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-secondary doc-button-left">
+			<p>
+				<a href="/learn-more">Learn More</a>
+			</p>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -62,10 +79,20 @@ public class ButtonNeutralTests() : DirectiveTest<ButtonBlock>(
 	public void ParsesNeutralType() => Block!.Type.Should().Be("neutral");
 
 	[Test]
-	public void RendersNeutralClass() => Html.Should().Contain("doc-button-neutral");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-neutral doc-button-left">
+			<p>
+				<a href="https://www.elastic.co/docs" target="_blank" rel="noopener noreferrer">Browse All Docs</a>
+			</p>
+		</div>
+		"""
+		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -98,10 +125,24 @@ public class ButtonNeutralInGroupTests() : DirectiveTest<ButtonGroupBlock>(
 )
 {
 	[Test]
-	public void RendersNeutralItemInsideGroup() => Html.Should().Contain("class=\"doc-button-item doc-button-neutral\"");
-
-	[Test]
-	public void RendersPrimaryAlongsideNeutral() => Html.Should().Contain("doc-button-primary");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-group doc-button-group-left">
+			<span class="doc-button-item doc-button-primary">
+				<p>
+					<a href="/get-started">Get Started</a>
+				</p>
+			</span>
+			<span class="doc-button-item doc-button-neutral">
+				<p>
+					<a href="/whats-new">What's New</a>
+				</p>
+			</span>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -116,7 +157,17 @@ public class ButtonAlignmentTests() : DirectiveTest<ButtonBlock>("""
 	public void ParsesCenterAlign() => Block!.Align.Should().Be("center");
 
 	[Test]
-	public void RendersWrapperWithAlignClass() => Html.Should().Contain("doc-button-wrapper doc-button-primary doc-button-center");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-center">
+			<p>
+				<a href="/centered">Centered Button</a>
+			</p>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -127,10 +178,17 @@ public class ButtonExternalTests() : DirectiveTest<ButtonBlock>("""
 """)
 {
 	[Test]
-	public void RendersExternalAttributes() => Html.Should().Contain("target=\"_blank\"");
-
-	[Test]
-	public void RendersNoopenerNoreferrer() => Html.Should().Contain("rel=\"noopener noreferrer\"");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-left">
+			<p>
+				<a href="https://github.com/elastic" target="_blank" rel="noopener noreferrer">GitHub</a>
+			</p>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -145,13 +203,20 @@ public class ButtonReferenceLinkTests() : DirectiveTest<ButtonBlock>(
 )
 {
 	[Test]
-	public void RendersReferencedLinkHref() => Html.Should().Contain("href=\"https://foo.example.com\"");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-left">
+			<p>
+				<a href="https://foo.example.com" target="_blank" rel="noopener noreferrer">Open</a>
+			</p>
+		</div>
+		"""
+		);
 
 	[Test]
-	public void RendersButtonText() => Html.Should().Contain(">Open<");
-
-	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -164,7 +229,16 @@ public class ButtonInvalidTypeTests() : DirectiveTest<ButtonBlock>("""
 {
 	[Test]
 	public void EmitsWarningForInvalidType() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("Invalid button type"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		warning {repo}/docs/index.md:3 Invalid button type 'invalid'. Valid types are: primary, secondary, neutral. Defaulting to 'primary'.
+		error {repo}/docs/index.md:5 `/test` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/test`
+		"""
+			);
 
 	[Test]
 	public void FallsBackToPrimary() => Block!.Type.Should().Be("primary");
@@ -190,16 +264,24 @@ public class ButtonGroupTests() : DirectiveTest<ButtonGroupBlock>(
 	public void ParsesButtonGroup() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersButtonGroupContainer() => Html.Should().Contain("class=\"doc-button-group");
-
-	[Test]
-	public void ContainsBothButtons() => Html.Should().Contain("Primary").And.Contain("Secondary");
-
-	[Test]
-	public void RendersPrimaryButton() => Html.Should().Contain("doc-button-primary");
-
-	[Test]
-	public void RendersSecondaryButton() => Html.Should().Contain("doc-button-secondary");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-group doc-button-group-left">
+			<span class="doc-button-item doc-button-primary">
+				<p>
+					<a href="/primary">Primary</a>
+				</p>
+			</span>
+			<span class="doc-button-item doc-button-secondary">
+				<p>
+					<a href="/secondary">Secondary</a>
+				</p>
+			</span>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -218,7 +300,19 @@ public class ButtonGroupAlignmentTests() : DirectiveTest<ButtonGroupBlock>(
 	public void ParsesGroupAlignment() => Block!.Align.Should().Be("center");
 
 	[Test]
-	public void RendersGroupAlignClass() => Html.Should().Contain("doc-button-group-center");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-group doc-button-group-center">
+			<span class="doc-button-item doc-button-primary">
+				<p>
+					<a href="/centered">Centered</a>
+				</p>
+			</span>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -234,10 +328,19 @@ public class ButtonInGroupTests() : DirectiveTest<ButtonBlock>("""
 	public void DetectsButtonIsInGroup() => Block!.IsInGroup.Should().BeTrue();
 
 	[Test]
-	public void DoesNotRenderWrapperInGroup() => Html.Should().NotContain("doc-button-wrapper");
-
-	[Test]
-	public void RendersButtonItem() => Html.Should().Contain("doc-button-item");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-group doc-button-group-left">
+			<span class="doc-button-item doc-button-primary">
+				<p>
+					<a href="/in-group">In Group</a>
+				</p>
+			</span>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -251,7 +354,17 @@ public class ButtonCrossLinkTests() : DirectiveTest<ButtonBlock>("""
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersLinkHref() => Html.Should().Contain("href=\"");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-left">
+			<p>
+				<a href="kibana://api/index.md">Kibana Docs</a>
+			</p>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -267,10 +380,20 @@ public class ButtonCursorProtocolTests() : DirectiveTest<ButtonBlock>(
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersLinkHref() => Html.Should().Contain("href=\"cursor://");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-left">
+			<p>
+				<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=elastic&amp;config=eyJmb28iOiJiYXIifQ==">Install with Cursor</a>
+			</p>
+		</div>
+		"""
+		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -286,10 +409,20 @@ public class ButtonVscodeProtocolTests() : DirectiveTest<ButtonBlock>(
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersLinkHref() => Html.Should().Contain("href=\"vscode:");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-left">
+			<p>
+				<a href="vscode:extension/elastic.elasticsearch">Install with VS Code</a>
+			</p>
+		</div>
+		"""
+		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -305,10 +438,20 @@ public class ButtonVscodeInsidersProtocolTests() : DirectiveTest<ButtonBlock>(
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void RendersLinkHref() => Html.Should().Contain("href=\"vscode-insiders:");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="doc-button-wrapper doc-button-primary doc-button-left">
+			<p>
+				<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22oblt-cli%22%7D">Install with VS Code Insiders</a>
+			</p>
+		</div>
+		"""
+		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -318,7 +461,21 @@ public class ButtonEmptyTests() : DirectiveTest<ButtonBlock>("""
 """)
 {
 	[Test]
-	public void EmitsErrorForEmptyContent() => Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("requires a link"));
+	public void EmitsErrorForEmptyContent() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive requires a link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		"""
+			);
 }
 
 [InheritsTests]
@@ -330,7 +487,20 @@ Just some text without a link
 {
 	[Test]
 	public void EmitsErrorForPlainText() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive must contain only a single Markdown link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		"""
+			);
 }
 
 [InheritsTests]
@@ -342,7 +512,22 @@ public class ButtonMultipleLinksTests() : DirectiveTest<ButtonBlock>("""
 {
 	[Test]
 	public void EmitsErrorForMultipleLinks() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive must contain only a single Markdown link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		error {repo}/docs/index.md:4 `/one` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/one`
+		error {repo}/docs/index.md:4 `/two` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/two`
+		"""
+			);
 }
 
 [InheritsTests]
@@ -356,5 +541,19 @@ This is nested
 {
 	[Test]
 	public void EmitsErrorForNestedDirective() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("cannot contain nested directives"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive cannot contain nested directives or blocks. Use only a single Markdown link.
+		error {repo}/docs/index.md:3 Button directive requires a link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		"""
+			);
 }

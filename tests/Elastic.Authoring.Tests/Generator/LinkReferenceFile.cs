@@ -6,6 +6,8 @@ namespace Elastic.Authoring.Tests.Generator;
 
 public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 {
+	protected override SetupOptions Options => SetupOptions.WithRedirectFixtures;
+
 	protected override IReadOnlyCollection<TestFile> Files =>
 		[
 			Index(
@@ -76,10 +78,7 @@ public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 			    "data/openapi/api-explorer.md": {},
 			    "data/release-notes/bundle.md": {},
 			    "data/release-notes/configure-ref.md": {},
-			    "data/release-notes/configure.md": {},
-			    "data/release-notes/create.md": {},
-			    "data/release-notes/overview.md": {},
-			    "data/release-notes/publish.md": {},
+			    "data/release-notes/index.md": {},
 			    "development/ingest.md": {},
 			    "development/navigation.md": {},
 			    "documentation/assembler/add-repo.md": {},
@@ -325,22 +324,37 @@ public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 			      "to": "documentation/isolated/how-to/cumulative-docs/reference.md"
 			    },
 			    "contribute/changelog.md": {
-			      "to": "data/release-notes/overview.md"
+			      "to": "data/release-notes/index.md"
 			    },
 			    "contribute/configure-changelogs.md": {
-			      "to": "data/release-notes/configure.md"
+			      "to": "data/release-notes/configure-ref.md"
 			    },
 			    "contribute/configure-changelogs-ref.md": {
 			      "to": "data/release-notes/configure-ref.md"
 			    },
 			    "contribute/create-changelogs.md": {
-			      "to": "data/release-notes/create.md"
+			      "to": "data/release-notes/index.md"
 			    },
 			    "contribute/bundle-changelogs.md": {
 			      "to": "data/release-notes/bundle.md"
 			    },
 			    "contribute/publish-changelogs.md": {
-			      "to": "data/release-notes/publish.md"
+			      "to": "data/release-notes/index.md"
+			    },
+			    "data/release-notes/overview.md": {
+			      "to": "data/release-notes/index.md"
+			    },
+			    "data/release-notes/configure.md": {
+			      "to": "data/release-notes/configure-ref.md"
+			    },
+			    "data/release-notes/create.md": {
+			      "to": "data/release-notes/index.md"
+			    },
+			    "data/release-notes/publish.md": {
+			      "to": "data/release-notes/index.md"
+			    },
+			    "data/release-notes/explorer.md": {
+			      "to": "data/release-notes/index.md"
 			    },
 			    "schema-support/index.md": {
 			      "to": "data/index.md"

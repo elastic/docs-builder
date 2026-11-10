@@ -17,6 +17,9 @@ public record GenerationState
 	[JsonPropertyName("exporter")]
 	public required string Exporter { get; init; }
 
+	[JsonPropertyName("skip_open_api")]
+	public bool SkipOpenApi { get; init; }
+
 	[JsonPropertyName("git")]
 	public required GitCheckoutInformation Git { get; init; }
 }

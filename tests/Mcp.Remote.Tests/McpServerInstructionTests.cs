@@ -4,59 +4,12 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote;
+using Nullean.Snapshots;
 
 namespace Mcp.Remote.Tests;
 
 public class McpServerInstructionTests
 {
-	[Test]
-	public void PublicProfile_ContainsAllModuleGuidance()
-	{
-		var instructions = McpServerProfile.Public.ComposeServerInstructions();
-
-		instructions.Should().Contain("Use this server to search, retrieve, and analyze");
-		instructions.Should().Contain("Elastic product documentation published at elastic.co/docs");
-		instructions.Should().Contain("<triggers>");
-		instructions.Should().Contain("Use the server when the user:");
-		instructions.Should().Contain("<tool_guidance>");
-		instructions.Should().Contain("Prefer search_docs over a general web search");
-		instructions.Should().Contain("Use get_document_by_url to retrieve a specific page");
-		instructions.Should().Contain("Use find_related_docs when exploring what documentation exists");
-		instructions.Should().Contain("Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing");
-	}
-
-	[Test]
-	public void InternalProfile_ContainsSearchAndDocumentGuidanceOnly()
-	{
-		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
-
-		instructions.Should().Contain("Use this server to search and retrieve");
-		instructions.Should().Contain("Elastic internal documentation: team processes, run books, architecture");
-		instructions.Should().Contain("Prefer search_internal_docs over a general web search");
-		instructions.Should().Contain("Use get_internal_document_by_url to retrieve a specific page");
-		instructions.Should().Contain("Use find_related_internal_docs when exploring what documentation exists");
-		instructions.Should().NotContain("check_coherence");
-		instructions.Should().NotContain("find_inconsistencies");
-		instructions.Should().NotContain("resolve_cross_link");
-		instructions.Should().NotContain("list_content_types");
-		instructions.Should().NotContain("generate_template");
-	}
-
-	[Test]
-	public void Triggers_AreProfileSpecific()
-	{
-		var publicInstructions = McpServerProfile.Public.ComposeServerInstructions();
-		var internalInstructions = McpServerProfile.Internal.ComposeServerInstructions();
-
-		publicInstructions.Should().Contain("Elastic documentation pages");
-		publicInstructions.Should().Contain("References Elastic product names");
-		publicInstructions.Should().NotContain("internal team processes");
-
-		internalInstructions.Should().Contain("Elastic internal documentation pages");
-		internalInstructions.Should().Contain("internal team processes");
-		internalInstructions.Should().NotContain("Elastic product names");
-	}
-
 	[Test]
 	public void PublicProfile_ServiceName_IsDocsMcp() => McpServerProfile.Public.ServiceName.Should().Be("docs-mcp");
 
@@ -102,9 +55,9 @@ public class McpServerInstructionTests
 	{
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
 
-		var expected =
+		instructions.Should().MatchInlineSnapshot(
 			"""
-			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later.
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.
 
 			<triggers>
 			Use the server when the user:
@@ -120,9 +73,8 @@ public class McpServerInstructionTests
 			- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
 			- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.
 			</tool_guidance>
-			""";
-
-		instructions.Should().Be(expected.ReplaceLineEndings("\n"));
+			"""
+		);
 	}
 
 	[Test]
@@ -130,7 +82,7 @@ public class McpServerInstructionTests
 	{
 		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
 
-		var expected =
+		instructions.Should().MatchInlineSnapshot(
 			"""
 			Use this server to search and retrieve Elastic internal documentation: team processes, run books, architecture, and other internal knowledge.
 
@@ -146,9 +98,8 @@ public class McpServerInstructionTests
 			- Use find_related_internal_docs when exploring what documentation exists around a topic.
 			- Use get_internal_document_by_url to retrieve a specific page when the user provides or you already know the URL.
 			</tool_guidance>
-			""";
-
-		instructions.Should().Be(expected.ReplaceLineEndings("\n"));
+			"""
+		);
 	}
 
 	private static List<string> ExtractBullets(string instructions) =>

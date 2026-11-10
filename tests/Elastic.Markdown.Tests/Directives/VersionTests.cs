@@ -4,8 +4,10 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation;
+using Elastic.Documentation.Testing;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown.Myst.Directives.Version;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -74,7 +76,7 @@ public class SimpleVersion() : VersionValidationTests("7.17")
 	public void SetsVersion() => Block!.Version.Should().Be(new SemVersion(7, 17, 0));
 
 	[Test]
-	public void HasNoError() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoError() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -82,7 +84,7 @@ public class MajorVersionOnly() : VersionValidationTests("8")
 {
 	[Test]
 	public void HasError() =>
-		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("'8' is not a valid version"));
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 '8' is not a valid version");
 }
 
 [InheritsTests]
@@ -90,5 +92,5 @@ public class BranchVersion() : VersionValidationTests("8.x")
 {
 	[Test]
 	public void HasError() =>
-		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("'8.x' is not a valid version"));
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 '8.x' is not a valid version");
 }

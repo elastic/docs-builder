@@ -70,29 +70,34 @@ export const fieldSearchTerms = (searchTerm: string) => {
 }
 
 /**
- * The query words that can name a path, and the one route to show for them: the route whose whole
+ * The query words that can name a path, as typed so a leading slash highlights, and the one route
+ * to show for them: the route whose whole
  * path is a query word, else the first route in page order whose path contains one, else the
  * page's primary route, which no query word named and so highlights nothing. Routes arrive with
  * the page's primary route first, so that one wins among the partial matches.
  */
 export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
     const all = words(searchTerm)
-    const tokens = all
+    const pathWords = all
         .filter((_, i) => !isMethodBeforePath(all, i))
-        .map(pathKey)
-        .filter((word) => word.length > 1)
+        .map((word) => ({ word, key: pathKey(word) }))
+        .filter(({ key }) => key.length > 1)
+    const keys = pathWords.map(({ key }) => key)
     const containing = routes.filter((route) =>
-        tokens.some((token) => pathKey(route.path).includes(token))
+        keys.some((key) => pathKey(route.path).includes(key))
     )
     const named =
-        containing.find((route) => tokens.includes(pathKey(route.path))) ??
+        containing.find((route) => keys.includes(pathKey(route.path))) ??
         containing[0]
-    return named ? { tokens, route: named } : { tokens: [], route: routes[0] }
+    return named
+        ? { tokens: pathWords.map(({ word }) => word), route: named }
+        : { tokens: [], route: routes[0] }
 }
 
 export const GO_TO_LABELS = {
     page: 'Go to page',
     operation: 'Go to operation',
+    api: 'Go to API',
     property: 'Go to property',
 } as const
 

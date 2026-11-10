@@ -39,6 +39,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public HtmlString? DescriptionRemainder => DescriptionParts.Remainder is { } rest ? new HtmlString(rest) : null;
 
+	public string Heading => ApiPageTitle.Heading(ApiInfo.Title, ApiPageTitle.ReleasedVersionLabel(RenderContext.VersionSwitcherItems));
+
 	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
 
 	public bool HasFacts => Servers.Count > 0 || Version is not null;

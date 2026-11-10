@@ -40,8 +40,6 @@ let private format _ =
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
-let private watchAll _ = exec { run "dotnet" "watch" "--project" "aspire" "--configuration" "debug" }
-
 let private lint _ =
     match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
     | 0 -> printfn "No formatting violations found."
@@ -207,6 +205,12 @@ let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
         |> Array.toList
     if not (List.isEmpty failures) then
         failwithf "Test projects failed:\n%s" (String.concat "\n" failures)
+
+    // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.
+    if testSuite <> Integration then
+        match exec { exit_code_of "dotnet" "snap" "orphans" } with
+        | 0 -> ()
+        | _ -> failwith "Orphaned snapshots found. Delete them with `dotnet snap orphans --delete` and commit the removal."
     
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 
@@ -310,7 +314,6 @@ let Setup (parsed:ParseResults<Build>) =
 
         | Format -> Build.Step format
         | Watch -> Build.Step watch
-        | Watch_All -> Build.Step watchAll
 
         // steps
         | Lint -> Build.Step lint

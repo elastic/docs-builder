@@ -11,6 +11,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Navigation.Tests.Isolation;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -72,10 +73,34 @@ public class SiteNavigationTests()
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		navigation.Should().NotBeNull();
-		navigation.Url.Should().Be("/");
-		navigation.NavigationTitle.Should().Be("Docs");
-		navigation.NavigationItems.Should().HaveCount(2);
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			  DocumentationSetNavigation  /serverless/observability  "Serverless Observability" [island]
+			    index: FileNavigationLeaf  /serverless/observability  "Serverless Observability"
+			    FolderNavigation  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      index: FileNavigationLeaf  /serverless/observability/getting-started/quick-start  "Quick Start"
+			      FileNavigationLeaf  /serverless/observability/getting-started/installation  "Installation"
+			    FolderNavigation  /serverless/observability/monitoring  "Monitoring"
+			      index: FileNavigationLeaf  /serverless/observability/monitoring  "Monitoring"
+			      FileNavigationLeaf  /serverless/observability/monitoring/logs  "Logs"
+			      FileNavigationLeaf  /serverless/observability/monitoring/metrics  "Metrics"
+			      FileNavigationLeaf  /serverless/observability/monitoring/traces  "Traces"
+			  DocumentationSetNavigation  /serverless/search  "Serverless Search" [island]
+			    index: FileNavigationLeaf  /serverless/search  "Serverless Search"
+			    FolderNavigation  /serverless/search/indexing  "Indexing"
+			      index: FileNavigationLeaf  /serverless/search/indexing  "Indexing"
+			      FileNavigationLeaf  /serverless/search/indexing/documents  "Documents"
+			      FileNavigationLeaf  /serverless/search/indexing/bulk-api  "Bulk API"
+			    FolderNavigation  /serverless/search/searching  "Searching"
+			      index: FileNavigationLeaf  /serverless/search/searching  "Searching"
+			      FileNavigationLeaf  /serverless/search/searching/query-dsl  "Query DSL"
+			"""
+			);
 	}
 
 	[Test]
@@ -115,10 +140,28 @@ public class SiteNavigationTests()
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-
-		var platform = navigation.NavigationItems.First();
-		platform.Should().NotBeNull();
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			SiteNavigation  /  "Docs"
+			  index: FileNavigationLeaf  /platform  "Platform"
+			  DocumentationSetNavigation  /platform  "Platform" [island]
+			    index: FileNavigationLeaf  /platform  "Platform"
+			    TableOfContentsNavigation  /platform  "Deployment Guide"
+			      index: FileNavigationLeaf  /platform  "Deployment Guide"
+			      FolderNavigation  /platform/self-managed/installation  "Installation"
+			        index: FileNavigationLeaf  /platform/self-managed/installation  "Installation"
+			        FileNavigationLeaf  /platform/self-managed/configuration  "Configuration"
+			    TableOfContentsNavigation  /platform  "Cloud Guide"
+			      index: FileNavigationLeaf  /platform  "Cloud Guide"
+			      FolderNavigation  /platform/aws/setup  "AWS Setup"
+			        index: FileNavigationLeaf  /platform/aws/setup  "AWS Setup"
+			      FolderNavigation  /platform/azure/setup  "Azure Setup"
+			        index: FileNavigationLeaf  /platform/azure/setup  "Azure Setup"
+			"""
+			);
 	}
 
 	[Test]

@@ -181,8 +181,14 @@ jobs:
       - name: Compile
         if: ${{ needs.changes.outputs.code == 'true' }}
         # The `lint` job already runs `curb check` on the whole repo; skip the per-project copy.
+        # The trim and AOT analyzers (IsAotCompatible) and the IDE code-style analyzers report the same warnings on every OS
+        # and take most of the analyzer time of the larger projects, so only ubuntu runs them. Empty leaves the project defaults alone.
         env:
           Curb_Bypass: true
+          EnforceCodeStyleInBuild: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableTrimAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableAotAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableSingleFileAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date
@@ -196,6 +202,15 @@ jobs:
         if: ${{ needs.changes.outputs.code == 'true' && (matrix.os == 'ubuntu-latest' || needs.changes.outputs.dotnet == 'true') }}
         # --single-target skips the compile dependency; the Compile step above already built everything
         run: dotnet run --project build -c release -- unit-test --single-target
+
+      - name: Upload received snapshots
+        # A failed snapshot test leaves its received file here. Download it into .artifacts/.snapshots/received/ and run `dotnet snap review`.
+        if: ${{ failure() && needs.changes.outputs.code == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: received-snapshots-${{ matrix.os }}
+          path: .artifacts/.snapshots/received/
+          if-no-files-found: ignore
 
       - name: Publish AOT
         if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os != 'ubuntu-latest') }} # publish containers already validates AOT build
@@ -213,7 +228,8 @@ jobs:
 
   integration:
     # TODO temporarily disabled: credentials now actually reach the tests (Parameters:-prefixed
-    # secrets) which surfaced failures — re-enabling is tracked in a dedicated PR.
+    # secrets) which surfaced failures — re-enabling is tracked in a dedicated PR. Only the
+    # credential-based and Testcontainers projects remain here; the Aspire-hosted end-to-end tests are gone.
     if: false
     runs-on: docs-builder-latest-16
     environment: integration-tests
@@ -241,9 +257,9 @@ jobs:
           ES_KEY=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-api-key --with-decryption --query Parameter.Value --output text)
           echo "::add-mask::$ES_URL"
           echo "::add-mask::$ES_KEY"
-          dotnet tool restore
-          dotnet aspire secret set ElasticsearchUrl "$ES_URL"
-          dotnet aspire secret set ElasticsearchApiKey "$ES_KEY"
+          # The tests read these from the `docs-builder` user-secrets store, the same one essc uses.
+          dotnet user-secrets set --id docs-builder "Parameters:ElasticsearchUrl" "$ES_URL"
+          dotnet user-secrets set --id docs-builder "Parameters:ElasticsearchApiKey" "$ES_KEY"
 
       - name: Integration Tests
         env:

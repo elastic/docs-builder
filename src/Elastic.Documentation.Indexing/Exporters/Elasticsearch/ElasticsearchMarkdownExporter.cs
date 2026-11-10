@@ -248,8 +248,16 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			$"PUT {target}/_mapping",
 			ctx
 		).ConfigureAwait(false);
-		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			throw new InvalidOperationException($"Could not update API property mapping on '{target}': {response}");
+		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+			return;
+
+		// The in-place update only spares a rollover for additive changes. A change the live index rejects
+		// still lands, because the mapping hash differs and the orchestrator's bootstrap rolls over to the new mapping.
+		_logger.LogWarning(
+			"Live index '{Target}' rejected the in-place API property mapping update; the bootstrap rollover applies it instead. {Reason}",
+			target,
+			response.Body
+		);
 	}
 
 	/// <inheritdoc />

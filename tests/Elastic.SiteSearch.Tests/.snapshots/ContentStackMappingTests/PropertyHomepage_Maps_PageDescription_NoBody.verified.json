@@ -1,0 +1,30 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "modified_date": "2022-05-02T10:00:00+00:00",
+  "og": {
+    "title": "Elastic Security Labs",
+    "description": "Research, tools, and insights from the Elastic Security Labs team."
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Security Labs",
+  "search_title": "Security Labs",
+  "content_type": "site",
+  "path": "/security-labs",
+  "url": "/security-labs",
+  "hash": "49957c356fce64d9",
+  "last_updated": "2022-05-02T10:00:00+00:00",
+  "description": "Research, tools, and insights from the Elastic Security Labs team.",
+  "headings": [],
+  "body": "Research, tools, and insights from the Elastic Security Labs team.",
+  "summary": "Research, tools, and insights from the Elastic Security Labs team.",
+  "parents": [],
+  "translated": true,
+  "section": "security-labs",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 2,
+    "table_of_contents": 100
+  }
+}

@@ -34,7 +34,7 @@ public static class AuthoringGenerator
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
 
-		DocSetYamlGenerator.Generate(mockFileSystem, options.DocsetProducts);
+		DocSetYamlGenerator.Generate(mockFileSystem, options.DocsetProducts, options.IncludeRedirectFixtures);
 
 		var collector = new TestDiagnosticsCollector();
 		var versionsConfig = AuthoringConfiguration.CreateVersionsConfiguration();

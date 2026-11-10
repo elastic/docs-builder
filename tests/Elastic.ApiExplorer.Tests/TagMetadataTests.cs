@@ -18,6 +18,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -716,8 +717,7 @@ public class TagMetadataTests
 			.Equal(typeof(IntroHeadingNavigationItem), typeof(IntroHeadingNavigationItem), typeof(OperationNavigationItem));
 
 		var html = await RenderTagAsync(tag);
-		html.Should().Contain("class=\"api-tag-description docs-measure\"");
-		html.Should().Contain("api-overview");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
 	[Test]
@@ -799,9 +799,7 @@ public class TagMetadataTests
 		tag.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<OperationNavigationItem>();
 
 		var html = await RenderTagAsync(tag);
-		html.Should().NotContain("docs-measure");
-		html.Should().Contain("api-overview");
-		html.Should().Contain("Spaces");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
 	[Test]
@@ -818,13 +816,9 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("kibana", document);
 
 		var html = await RenderIndexAsync(navigation.Index, navigation);
-		html.Should().Contain("class=\"docs-measure\"");
-		html.Should().Contain("api-index-group");
-		// Every endpoint stays in the page so the browser's find-in-page matches it.
-		html.Should().Contain("api-index-item");
-		html.Should().Contain("Spaces");
-		// Authentication and Servers are topics, so they sit above the index, not in a group.
-		html.Should().NotContain("api-index-item\" href=\"/api/doc/kibana/authentication");
+		// Every endpoint stays in the page so the browser's find-in-page matches it. Authentication and Servers are
+		// topics, so they sit above the index, not in a group.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
 	private static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);

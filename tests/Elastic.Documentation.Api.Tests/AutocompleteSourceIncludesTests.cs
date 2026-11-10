@@ -30,4 +30,16 @@ public class AutocompleteSourceIncludesTests
 		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain(required);
 		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("api.routes");
 	}
+
+	[Test]
+	public void AutocompleteSourceIncludes_ContainTheDeprecatedFlag() =>
+		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("api.deprecated");
+
+	[Test]
+	public void AutocompleteSourceIncludes_ContainTheLandingFlag() =>
+		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("api.landing");
+
+	[Test]
+	public void AutocompleteSourceIncludes_ContainTheProduct() =>
+		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("product");
 }

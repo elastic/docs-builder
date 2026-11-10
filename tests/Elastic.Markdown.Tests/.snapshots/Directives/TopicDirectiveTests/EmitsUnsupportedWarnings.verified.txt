@@ -1,0 +1,1 @@
+warning {repo}/docs/index.md:1 Directive block 'topic' is unsupported. See https://github.com/elastic/docs-builder/issues/24 for more information.

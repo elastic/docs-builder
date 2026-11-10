@@ -9,6 +9,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -110,10 +111,18 @@ public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
-
-		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/getting-started");
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guides/getting-started  "getting-started"
+			  index: FileNavigationLeaf  /guides/getting-started  "getting-started"
+			  FolderNavigation  /guides/getting-started  "getting-started"
+			    index: FileNavigationLeaf  /guides/getting-started  "getting-started"
+			    FileNavigationLeaf  /guides/advanced  "advanced"
+			"""
+			);
 	}
 
 	[Test]
@@ -136,12 +145,18 @@ public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-
-		folder.Hidden.Should().BeFalse();
-		folder.NavigationTitle.Should().Be("getting-started");
-		folder.Url.Should().Be("/guides/getting-started");
-		folder.NavigationItems.Should().ContainSingle().Which.Hidden.Should().BeTrue();
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guides/getting-started  "getting-started"
+			  index: FileNavigationLeaf  /guides/getting-started  "getting-started"
+			  FolderNavigation  /guides/getting-started  "getting-started"
+			    index: FileNavigationLeaf  /guides/getting-started  "getting-started"
+			    FileNavigationLeaf  /guides/autopilot  "autopilot" [hidden]
+			"""
+			);
 	}
 
 	[Test]
@@ -163,11 +178,17 @@ public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-
-		folder.Hidden.Should().BeTrue();
-		folder.Index.Hidden.Should().BeTrue();
-		folder.NavigationItems.Should().BeEmpty();
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guides/autopilot  "autopilot"
+			  index: FileNavigationLeaf  /guides/autopilot  "autopilot" [hidden]
+			  FolderNavigation  /guides/autopilot  "autopilot" [hidden]
+			    index: FileNavigationLeaf  /guides/autopilot  "autopilot" [hidden]
+			"""
+			);
 	}
 
 	[Test]
@@ -191,20 +212,20 @@ public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
-
-		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/getting-started");
-
-		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
-		gettingStarted.Should().NotBeNull();
-		gettingStarted.Url.Should().Be("/guides/getting-started");
-		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
-		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/advanced");
-
-		advanced.Parent.Should().BeSameAs(gettingStarted);
-		gettingStarted.Parent.Should().BeSameAs(folder);
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guides/getting-started  "getting-started"
+			  index: FileNavigationLeaf  /guides/getting-started  "getting-started"
+			  FolderNavigation  /guides/getting-started  "getting-started"
+			    index: FileNavigationLeaf  /guides/getting-started  "getting-started"
+			    VirtualFileNavigation  /guides/getting-started  "getting-started"
+			      index: FileNavigationLeaf  /guides/getting-started  "getting-started"
+			      FileNavigationLeaf  /guides/advanced  "advanced"
+			"""
+			);
 	}
 
 	[Test]
@@ -228,20 +249,20 @@ public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
-
-		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/clients/getting-started");
-
-		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
-		gettingStarted.Should().NotBeNull();
-		gettingStarted.Url.Should().Be("/guides/clients/getting-started");
-		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
-		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/advanced");
-
-		advanced.Parent.Should().BeSameAs(gettingStarted);
-		gettingStarted.Parent.Should().BeSameAs(folder);
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guides/clients/getting-started  "getting-started"
+			  index: FileNavigationLeaf  /guides/clients/getting-started  "getting-started"
+			  FolderNavigation  /guides/clients/getting-started  "getting-started"
+			    index: FileNavigationLeaf  /guides/clients/getting-started  "getting-started"
+			    VirtualFileNavigation  /guides/clients/getting-started  "getting-started"
+			      index: FileNavigationLeaf  /guides/clients/getting-started  "getting-started"
+			      FileNavigationLeaf  /guides/advanced  "advanced"
+			"""
+			);
 	}
 
 	[Test]
@@ -265,20 +286,20 @@ public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
-
-		// Folder has no index.md, so URL should be the first child's URL
-		folder!.Url.Should().Be("/guides/clients");
-
-		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
-		gettingStarted.Should().NotBeNull();
-		gettingStarted.Url.Should().Be("/guides/clients");
-		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
-		advanced.Should().NotBeNull();
-		advanced.Url.Should().Be("/guides/advanced");
-
-		advanced.Parent.Should().BeSameAs(gettingStarted);
-		gettingStarted.Parent.Should().BeSameAs(folder);
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guides/clients  "index"
+			  index: FileNavigationLeaf  /guides/clients  "index"
+			  FolderNavigation  /guides/clients  "index"
+			    index: FileNavigationLeaf  /guides/clients  "index"
+			    VirtualFileNavigation  /guides/clients  "index"
+			      index: FileNavigationLeaf  /guides/clients  "index"
+			      FileNavigationLeaf  /guides/advanced  "advanced"
+			"""
+			);
 	}
 
 	[Test]
@@ -301,10 +322,18 @@ public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
-
-		// Folder has index.md, so URL should be the folder path
-		folder!.Url.Should().Be("/guides");
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guides  "index"
+			  index: FileNavigationLeaf  /guides  "index"
+			  FolderNavigation  /guides  "index"
+			    index: FileNavigationLeaf  /guides  "index"
+			    FileNavigationLeaf  /guides/advanced  "advanced"
+			"""
+			);
 	}
 
 	[Test]

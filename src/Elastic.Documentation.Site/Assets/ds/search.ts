@@ -1,5 +1,6 @@
 // The search dialog. A <dialog> gives focus handling, Escape and the backdrop; this module opens it, queries the right backend
 // and draws results from a server-provided <template>. Hooks are data attributes, never styling classes.
+import { apiPageSearchParams } from '../api-tree'
 import { config } from '../config'
 import { searchPagefind } from '../web-components/ModalSearch/pagefind'
 
@@ -20,6 +21,7 @@ export interface SearchResult {
     title: string
     description: string
     parents: Array<{ url: string; title: string }>
+    deprecated?: boolean
 }
 
 const debounceMs = 300
@@ -30,7 +32,11 @@ export async function querySearch(
 ): Promise<SearchResult[]> {
     if (config.buildType === 'isolated') return searchPagefind(term)
 
-    const params = new URLSearchParams({ q: term, page: '1' })
+    const params = new URLSearchParams({
+        q: term,
+        page: '1',
+        ...apiPageSearchParams(location.pathname),
+    })
     const response = await fetch(
         `${config.apiBasePath}/v1/navigation-search?${params}`,
         { signal }
@@ -91,6 +97,12 @@ export function drawResults(
             item.querySelector<HTMLElement>(
                 '[data-search-title]'
             )!.textContent = result.title
+            if (result.deprecated) {
+                item.setAttribute('data-deprecated', '')
+                item.querySelector<HTMLElement>(
+                    '[data-search-deprecated]'
+                )?.removeAttribute('hidden')
+            }
             appendExcerpt(
                 item.querySelector<HTMLElement>('[data-search-excerpt]')!,
                 result.description ?? ''
