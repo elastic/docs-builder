@@ -1,0 +1,27 @@
+# The docs version picker is visible on a versioned page, opens, and sits where the layout puts it on a phone:
+# in the right rail (legacy layout) or in the pages navigation (navigation-preview).
+# Ported from synthetics/journeys/version-dropdown.journey.ts.
+# @tags versions smoke
+# @requires build-type:assembler
+# @monitor schedule=15
+set viewport 1280 800
+open get-started
+wait --load networkidle
+expect visible find role heading --name "Elastic fundamentals"
+
+# Desktop: the picker is visible and opens.
+expect visible "[data-testid='docs-version-dropdown']"
+click "[data-testid='docs-version-dropdown'] button"
+expect attr "[data-testid='docs-version-dropdown'] button" aria-expanded true
+expect text "[data-testid='docs-version-dropdown']" Current --contains
+press Escape
+
+# Phone: the picker is visible in the container the layout puts it in.
+set viewport 375 800
+feature navigation-preview
+  click "label[for='pages-nav-hamburger']"
+  expect visible "#pages-nav [data-testid='docs-version-dropdown']"
+end
+feature !navigation-preview
+  expect visible "#toc-nav [data-testid='docs-version-dropdown']"
+end
