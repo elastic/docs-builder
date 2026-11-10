@@ -55,3 +55,11 @@ expect checked find role radio --name "Tab #2 title"
 - Find controls by role and accessible name first (`find role link click --name Admonitions --exact`). Use a CSS selector, quoted, when no role fits. `find nth` counts from zero.
 - A journey that only uses `expect` produces an empty transcript. Use `get text` or `snapshot -c -s <selector>` where you want the page content in the snapshot.
 - Accept new or changed transcripts with `SNAPSHOT_ACCEPT=1 mise run journeys`, then read the diff of the `.verified.journey` files.
+
+## In CI
+
+`journeys.yml` builds `docs-builder` and the test project once on `ubuntu-24.04`, then runs the journeys in shards with the runner's own Chrome. It runs when the site, its markup, `docs/` or the journey tests change, and on every push to `main`.
+
+`tests/Elastic.Documentation.Journeys.Tests/shards.json` maps each shard to areas. A new folder under `journeys/` must be added to a shard, or the `plan` job fails. To split a slow shard, move areas into a new entry in that file.
+
+A failed run uploads a `journeys-results-<shard>` artifact. Download it into `.artifacts/.snapshots/received/` and run `dotnet snap review`.

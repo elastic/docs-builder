@@ -1,0 +1,5 @@
+{
+  "shards": [
+    { "name": "site", "areas": ["landing", "navigation", "content"] }
+  ]
+}
