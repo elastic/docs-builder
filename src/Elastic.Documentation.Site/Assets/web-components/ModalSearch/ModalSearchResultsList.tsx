@@ -1,4 +1,8 @@
 import { config } from '../../config'
+import {
+    DeprecatedBadge,
+    deprecatedTitleText,
+} from '../NavigationSearch/DeprecatedBadge'
 import { SanitizedHtmlContent } from '../NavigationSearch/SanitizedHtmlContent'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import {
@@ -262,7 +266,7 @@ const ModalSearchResultRow = ({
                 `}
             >
                 <Breadcrumb items={breadcrumbItems} />
-                <Title text={result.title} />
+                <Title text={result.title} deprecated={result.deprecated} />
                 {result.description && (
                     <Description text={result.description} />
                 )}
@@ -337,7 +341,13 @@ const Breadcrumb = ({ items }: { items: string[] }) => {
     )
 }
 
-const Title = ({ text }: { text: string }) => {
+const Title = ({
+    text,
+    deprecated,
+}: {
+    text: string
+    deprecated?: boolean
+}) => {
     const { euiTheme } = useEuiTheme()
 
     return (
@@ -355,9 +365,12 @@ const Title = ({ text }: { text: string }) => {
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
+
+                ${deprecated ? deprecatedTitleText : ''}
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />
+            {deprecated && <DeprecatedBadge />}
         </div>
     )
 }

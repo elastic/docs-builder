@@ -53,11 +53,15 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					continue;
 
 				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker))!;
-				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToDocuments), defaultTree))
+				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToIndexedDocuments), defaultTree))
 					yield return doc;
 			}
 		}
 	}
+
+	/// <summary>Everything one version tree adds to the index: the API's landing page, then each operation.</summary>
+	private IEnumerable<DocumentationDocument> ConvertToIndexedDocuments(IndexedTree tree) =>
+		[ConvertToLandingDocument(tree), .. ConvertToDocuments(tree)];
 
 	/// <summary>
 	/// Converts one version tree of an API to one document per operation, with URLs into that tree. The API key builds
@@ -173,7 +177,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Method = method,
 					Path = path.Key,
 					OperationId = operationId,
-					Deprecated = operation.Value.Deprecated,
+					Deprecated = apiOperation.Deprecated,
 					Words = ApiSearchWords.Of(operationId, path.Key),
 					Group = groupParent?.Title ?? "",
 					IdWords = ApiSearchWords.OfOperationId(operationId).Length
@@ -193,16 +197,58 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Parents = groupParent is null ? parents : [.. parents, groupParent],
 					Api = api,
 					Product = inference?.Product?.Id,
-					RelatedProducts = inference?.RelatedProducts.Count > 0
-						? inference
-							.RelatedProducts
-							.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
-							.ToArray()
-						: null
+					RelatedProducts = IndexedRelatedProducts(inference)
 				};
 			}
 		}
 	}
+
+	/// <summary>
+	/// The API's landing page as a search document, so a reader typing the API's name finds its front door. It has no
+	/// operation, so those members stay empty and <see cref="ApiOperationMetadata.Landing"/> marks it.
+	/// </summary>
+	public DocumentationDocument ConvertToLandingDocument(IndexedTree tree)
+	{
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(tree.ApiKey, tree.Moniker));
+		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
+		// The title the landing page renders as its heading, so a reader who types the name on the page finds it.
+		var label = tree.Document.Info?.Title is { Length: > 0 } specTitle ? specTitle.Trim() : ProductApiLabel(tree.ApiKey);
+		var description = ApiSeoDescription.Excerpt(tree.Document.Info?.Description) ?? "";
+		return new DocumentationDocument
+		{
+			ContentType = "api",
+			Path = productUrl,
+			Title = label,
+			SearchTitle = label,
+			Description = description,
+			Body = description,
+			Headings = [],
+			Links = [],
+			Parents = [new ParentDocument { Title = "API", Path = "/docs/api" }],
+			Api = new ApiOperationMetadata
+			{
+				Key = tree.ApiKey,
+				Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
+				Endpoints = [],
+				Method = "",
+				Path = "",
+				OperationId = "",
+				Landing = true
+			},
+			Product = inference?.Product?.Id,
+			RelatedProducts = IndexedRelatedProducts(inference)
+		};
+	}
+
+	/// <summary>The products a document is filed under, so a product filter keeps an API's landing page with its operations.</summary>
+	private static IndexedProduct[]? IndexedRelatedProducts(DocumentInferenceResult? inference) =>
+		inference?.RelatedProducts.Count > 0
+			? [
+				.. inference.RelatedProducts.Select(
+					p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository }
+				)
+			]
+			: null;
 
 	/// <summary>
 	/// The breadcrumb entry for the operation's first tag, matching the group page the operation page links to;

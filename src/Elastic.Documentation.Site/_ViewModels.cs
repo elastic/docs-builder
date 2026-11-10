@@ -165,6 +165,12 @@ public record GlobalLayoutViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	/// <summary>Assembler environment name; null for isolated builds and production.</summary>
+	public string? EnvironmentName { get; init; }
+
+	/// <summary>The default favicon: the Elastic glyph, with a coloured label for every environment except production.</summary>
+	public string FaviconStaticPath => Static(EnvironmentFavicon.FileName(BuildType, EnvironmentName));
+
 	public string PageFeedbackSurface { get; init; } = "docs";
 
 	public bool RenderHamburgerIcon { get; init; } = true;
@@ -183,6 +189,38 @@ public record GlobalLayoutViewModel
 
 	/// <summary>Static URL of the OG image, if configured.</summary>
 	public string? BrandingOgImageStaticPath => Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
+
+	/// <summary>The origin this build is served from; null when unknown (isolated builds).</summary>
+	public Uri? PublicBaseUrl { get; init; }
+
+	/// <summary>
+	/// The default social image. Self-hosted when the build knows its origin: the serving origin for assembler builds (the
+	/// canonical origin is always production and would miss a preview's path prefix), the canonical origin for Codex. Otherwise
+	/// the absolute elastic.co image, as social crawlers need an absolute URL.
+	/// </summary>
+	public string DefaultOgImageUrl
+	{
+		get
+		{
+			const string fallback = "https://www.elastic.co/static-res/images/social_media_default.png";
+			var origin = BuildType == BuildType.Codex ? CanonicalBaseUrl : PublicBaseUrl;
+			return EnvironmentFavicon.OgImageFileName(BuildType, EnvironmentName) is { } file && origin is not null
+				? new Uri(origin, OgImagePath(file)).ToString()
+				: fallback;
+		}
+	}
+
+	// Codex publishes _static under its site prefix. Repository pages sit below it (/prefix/r/repo), but landing and group pages
+	// have the site prefix itself as their path prefix, which Static() reads as no prefix at all.
+	private string OgImagePath(string file) =>
+		BuildType != BuildType.Codex ? Static(file) : StaticFileContentHashProvider.GetUrl(file, CodexSitePrefix());
+
+	private string CodexSitePrefix()
+	{
+		var prefix = UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
+		var repositorySegment = prefix.IndexOf("/r/", StringComparison.Ordinal);
+		return repositorySegment >= 0 ? prefix[..repositorySegment] : prefix;
+	}
 
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
 	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;

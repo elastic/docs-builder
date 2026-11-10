@@ -46,6 +46,24 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 
 	public bool PageFeedbackEnabled { get => IsEnabled("page-feedback"); set => _featureFlags["page-feedback"] = value; }
 
+	/// <summary>Keys of the typed flags, in kebab-case. Keep in step with the properties above: a test enforces it.</summary>
+	public static IReadOnlyList<string> KnownKeys { get; } =
+	[
+		"air-gapped",
+		"assembler-api-explorer",
+		"diagnostics-panel",
+		"disable-github-edit-link",
+		"guide-nav",
+		"navigation-preview",
+		"page-feedback",
+		"primary-nav",
+		"staging-elastic-nav",
+		"website-search"
+	];
+
+	/// <summary>The enabled typed flags, sorted, with environment overrides applied.</summary>
+	public IReadOnlyList<string> EnabledKeys() => [.. KnownKeys.Where(IsEnabled)];
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

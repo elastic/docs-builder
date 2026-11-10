@@ -58,6 +58,9 @@ public class FeatureFlagsTests
 	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
 
 	[Test]
+	public void DemoEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("demo");
+
+	[Test]
 	public void AirGappedEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("air-gapped");
 
 	[Test]
@@ -74,6 +77,22 @@ public class FeatureFlagsTests
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_DoesNotAllowIndexing()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].AllowIndexing.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_EnablesNavigationPreview()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeTrue();
 	}
 
 	[Test]
@@ -99,6 +118,52 @@ public class FeatureFlagsTests
 		foreach (var (key, value) in environment.FeatureFlags)
 			features.Set(key, value);
 		features.AssemblerApiExplorerEnabled.Should().BeTrue();
+	}
+
+	[Test]
+	public void EnabledKeys_CoversEveryTypedFlag()
+	{
+		var flagProperties = typeof(FeatureFlags).GetProperties().Where(p => p.PropertyType == typeof(bool) && p.CanWrite).ToList();
+		flagProperties.Should().NotBeEmpty();
+
+		var seen = new List<string>();
+		foreach (var property in flagProperties)
+		{
+			var flags = new FeatureFlags([]);
+			property.SetValue(flags, true);
+
+			var enabled = flags.EnabledKeys();
+			enabled
+				.Should()
+				.ContainSingle($"{property.Name} is one flag and enables one key")
+				.Which
+				.Should()
+				.BeOneOf(FeatureFlags.KnownKeys);
+			seen.AddRange(enabled);
+		}
+
+		seen.Should().BeEquivalentTo(FeatureFlags.KnownKeys, "a typed flag missing from KnownKeys would never reach the page");
+		FeatureFlags.KnownKeys.Should().BeInAscendingOrder(StringComparer.Ordinal);
+	}
+
+	[Test]
+	public void EnabledKeys_DefaultsToNone() => new FeatureFlags([]).EnabledKeys().Should().BeEmpty();
+
+	[Test]
+	public void EnabledKeys_EnvironmentVariableOverridesYaml()
+	{
+		var previous = Environment.GetEnvironmentVariable("FEATURE_PAGE_FEEDBACK");
+		try
+		{
+			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", "false");
+			var flags = new FeatureFlags(new Dictionary<string, bool> { ["page-feedback"] = true, ["guide-nav"] = true });
+
+			flags.EnabledKeys().Should().Equal("guide-nav");
+		}
+		finally
+		{
+			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", previous);
+		}
 	}
 
 	[Test]

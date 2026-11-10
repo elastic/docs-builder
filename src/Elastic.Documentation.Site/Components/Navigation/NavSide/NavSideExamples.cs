@@ -52,6 +52,7 @@ public static class NavSideExamples
 				"#",
 				Leaf("Search documents", "#", method: "post"),
 				Leaf("Get document", "#", method: "get"),
+				Leaf("Get document source", "#", method: "get") with { Deprecated = true },
 				Leaf("Delete document", "#", method: "delete")
 			),
 			Leaf("Query DSL", "#", badge: "ns"),

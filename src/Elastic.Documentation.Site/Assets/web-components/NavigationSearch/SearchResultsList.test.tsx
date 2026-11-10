@@ -313,6 +313,28 @@ describe('property rows', () => {
     })
 })
 
+describe('deprecated operations', () => {
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('search')
+    })
+
+    it('shows a Deprecated badge beside the title of a deprecated operation', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([{ ...operation, deprecated: true }]),
+        })
+        const badges = container.querySelectorAll(
+            '.title-text .api-title-badges .applicable-info.api-badge--danger'
+        )
+        expect(badges).toHaveLength(1)
+        expect(badges[0]).toHaveTextContent('Deprecated')
+    })
+
+    it('shows no badge for an operation that is not deprecated', () => {
+        const { container } = renderList()
+        expect(container.querySelector('.api-badge--danger')).toBeNull()
+    })
+})
+
 describe('row tooltips', () => {
     const fakeTippy = (row: Element) => {
         const destroy = vi.fn()
@@ -346,5 +368,70 @@ describe('row tooltips', () => {
         showResults(groupSearchResults([page]))
 
         expect(destroy).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('API landing rows', () => {
+    const landing: SearchResultItem = {
+        type: 'api',
+        url: '/docs/api/doc/kibana',
+        title: 'Kibana API',
+        description: 'Manage Kibana saved objects, alerts and more',
+        score: 60,
+        parents: [{ url: '/docs/api', title: 'API' }],
+        landing: true,
+        apiKey: 'kibana',
+        product: 'kibana',
+    }
+
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('kibana api')
+    })
+
+    it("shows the API's mark, title and description in place of a breadcrumb", () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(
+            container.querySelector('[data-api-icon="kibana"] svg')
+        ).not.toBeNull()
+        expect(container.querySelector('.title-text')).toHaveTextContent(
+            'Kibana API'
+        )
+        expect(container).toHaveTextContent(
+            'Manage Kibana saved objects, alerts and more'
+        )
+        expect(container).not.toHaveTextContent('API /')
+    })
+
+    it('names the Enter action after the API', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(container.querySelector('.jump-to-indicator')).toHaveTextContent(
+            'Go to API'
+        )
+    })
+
+    it('gives a serverless product the mark of its stack product', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, product: 'serverless-kibana' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon] svg')).not.toBeNull()
+    })
+
+    it('shows no mark for an API without one', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, apiKey: 'unknown', product: 'unknown' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon]')).toBeNull()
     })
 })

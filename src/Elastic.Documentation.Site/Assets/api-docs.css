@@ -1012,6 +1012,16 @@
 	border-color: var(--color-grey-100);
 }
 
+#pages-nav a.nav-link--deprecated > span:first-child {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+/* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
+#pages-nav a.nav-link--deprecated .nav-v2-api-method {
+	filter: saturate(0.4);
+}
+
 .api-url {
 	margin-left: calc(var(--spacing) * 2);
 	min-width: 0;
@@ -4306,4 +4316,33 @@ html:has(.api-page-shell) {
 #elastic-api-v3 .api-param-section-header,
 #elastic-api-v3 .responses-header {
 	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
+}
+
+/* Expand all / Collapse all: in the section-links bar, pushed to its right edge, or alone on a row where there is no bar. */
+.api-expand-toggle {
+	flex: none;
+	align-self: center;
+	margin-left: auto;
+	padding: 2px 0;
+	border: 0;
+	background: none;
+	color: #0b64dd;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.api-expand-toggle:hover {
+	text-decoration: underline;
+}
+
+.api-expand-standalone {
+	display: flex;
+	margin: 16px 0 0;
+}
+
+.api-expand-standalone[hidden] {
+	display: none;
 }
