@@ -100,7 +100,10 @@ public record ApiOperationMetadata
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool Landing { get; init; }
 
-	/// <summary>Whether the spec marks the operation deprecated.</summary>
+	/// <summary>
+	/// Whether the spec marks the operation deprecated. The index may omit the flag on current operations, so a query for them
+	/// tests that the flag is not true rather than that it is <c>false</c>.
+	/// </summary>
 	[Boolean]
 	[JsonPropertyName("deprecated")]
 	public bool Deprecated { get; init; }
