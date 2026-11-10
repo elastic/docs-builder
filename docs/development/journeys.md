@@ -39,6 +39,17 @@ Each folder under `journeys/` is an area, and each area has one test class under
 | `landing` | The home page and the 404 page |
 | `navigation` | The sidebar and the table of contents |
 | `content` | Tabs, dropdowns, admonitions and the code copy button |
+| `markdown-alternates` | The `<page>.md` alternate of a page (`.http` files; isolated target only) |
+| `mcp` | The remote MCP server: health, `initialize`, `tools/list` (`.http` files, in memory) |
+| `docs-api` | The docs API: health and liveness (`.http` files, in memory) |
+
+## HTTP areas
+
+Areas that need no browser use `.http` files in `http/<area>/`, the format Visual Studio, Rider and VS Code run. Each file is one test, and its responses are in `.snapshots/http/<area>/<name>.verified.responses`.
+
+- `markdown-alternates` sends its requests to the site the target serves. It uses pages of this repository's `docs/` folder, so the assembler and Codex targets skip it with a reason.
+- `mcp` and `docs-api` start `Elastic.Documentation.Mcp.Remote` and `Elastic.Documentation.Api` in memory with `WebApplicationFactory`, whatever the target is. They only cover requests that need no credentials: a tool call that searches Elasticsearch has no file yet.
+- Page bodies are cut to their first line (`BodyScrubbers.FirstQuotedLine`) and MCP descriptions to an ellipsis (`BodyScrubbers.WithoutProse`), so a snapshot changes when behaviour changes and not when the wording does. `Mcp.Remote.Tests` still snapshots the full handshake.
 
 ## Write a journey
 
