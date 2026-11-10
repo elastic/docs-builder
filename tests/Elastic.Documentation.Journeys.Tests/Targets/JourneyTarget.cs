@@ -38,11 +38,11 @@ public sealed partial class JourneyTarget : IAsyncInitializer, IAsyncDisposable
 	/// (assembler content lives under <c>/docs/...</c>, Codex under <c>/r/&lt;repo&gt;/...</c>). Other targets skip them
 	/// until they get journeys of their own.
 	/// </summary>
-	public Task<JourneySnapshotOptions> OptionsForIsolatedJourneysAsync()
+	public Task<JourneySnapshotOptions> OptionsForIsolatedJourneysAsync(string? variant = null)
 	{
 		if (Name != "isolated")
 			Skip.Test($"These journeys target the isolated site; none are written for '{Name}' yet.");
-		return Task.FromResult(Options);
+		return Task.FromResult(new JourneySnapshotOptions { BaseUrl = BaseUrl, Variant = variant });
 	}
 
 	public async Task InitializeAsync()

@@ -62,7 +62,7 @@ jobs:
           set -o pipefail
           status=0
           dotnet run --project src/tooling/docs-journeys -c release -- \
-            run --url https://www.elastic.co --env prod --changed-only "origin/${BASE_REF}" \
+            run --url https://www.elastic.co --env prod --journeys tests/Elastic.Documentation.Journeys.Tests/journeys --changed-only "origin/${BASE_REF}" \
             2>&1 | tee prod-journeys.txt || status=$?
           {
             echo '### Journeys against https://www.elastic.co'
