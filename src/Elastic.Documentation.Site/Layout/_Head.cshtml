@@ -84,6 +84,9 @@
 		<meta name="docs:nav-active" content="@Model.NavigationActiveUrl">
 	}
 	<meta name="docs:current-section" content="@(Model.CurrentNavigationItem.NavigationRoot?.Id ?? "")">
+	@* The state of the build, for browser journeys and monitors: which flags are on and what kind of build this is. *@
+	<meta name="docs:features" content="@string.Join(' ', Model.Features.EnabledKeys())">
+	<meta name="docs:build-type" content="@Model.FrontendConfig.BuildType">
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
 	@if (!string.IsNullOrEmpty(Model.Description))
@@ -98,8 +101,12 @@
 	}
 	@if (Model.Branding is null)
 	{
-		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
+		<meta property="og:image" content="@Model.DefaultOgImageUrl"/>
+		<meta property="og:image:width" content="1601"/>
+		<meta property="og:image:height" content="838"/>
 		<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+		<meta name="twitter:card" content="summary_large_image"/>
+		<meta name="twitter:image" content="@Model.DefaultOgImageUrl"/>
 	}
 	else if (Model.BrandingOgImageStaticPath is { } ogPath)
 	{

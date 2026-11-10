@@ -85,7 +85,8 @@ public class DocumentGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 				RelatedProducts = doc.RelatedProducts?.Where(p => p.Id != null)
 					.Select(p => new DocumentProduct { Id = p.Id!, Repository = p.Repository })
 					.ToArray(),
-				Api = doc.Api is { } api
+				// An API's landing page has no operation to describe.
+				Api = doc.Api is { Landing: false } api
 					? new DocumentApi
 					{
 						Method = api.Method,

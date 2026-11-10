@@ -370,3 +370,68 @@ describe('row tooltips', () => {
         expect(destroy).toHaveBeenCalledTimes(1)
     })
 })
+
+describe('API landing rows', () => {
+    const landing: SearchResultItem = {
+        type: 'api',
+        url: '/docs/api/doc/kibana',
+        title: 'Kibana API',
+        description: 'Manage Kibana saved objects, alerts and more',
+        score: 60,
+        parents: [{ url: '/docs/api', title: 'API' }],
+        landing: true,
+        apiKey: 'kibana',
+        product: 'kibana',
+    }
+
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('kibana api')
+    })
+
+    it("shows the API's mark, title and description in place of a breadcrumb", () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(
+            container.querySelector('[data-api-icon="kibana"] svg')
+        ).not.toBeNull()
+        expect(container.querySelector('.title-text')).toHaveTextContent(
+            'Kibana API'
+        )
+        expect(container).toHaveTextContent(
+            'Manage Kibana saved objects, alerts and more'
+        )
+        expect(container).not.toHaveTextContent('API /')
+    })
+
+    it('names the Enter action after the API', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(container.querySelector('.jump-to-indicator')).toHaveTextContent(
+            'Go to API'
+        )
+    })
+
+    it('gives a serverless product the mark of its stack product', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, product: 'serverless-kibana' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon] svg')).not.toBeNull()
+    })
+
+    it('shows no mark for an API without one', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, apiKey: 'unknown', product: 'unknown' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon]')).toBeNull()
+    })
+})
