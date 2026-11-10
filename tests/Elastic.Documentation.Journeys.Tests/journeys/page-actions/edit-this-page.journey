@@ -2,6 +2,6 @@ set viewport 1280 800
 open /syntax/code
 wait --load networkidle
 expect visible find role link --name "Edit this page"
-# The branch segment follows the checkout the site is served from.
-expect attr "li.edit-this-page a" href --regex "^https://github\.com/elastic/docs-builder/edit/[^/]+/docs/syntax/code\.md$"
+# The branch segment follows the checkout the site is served from and may contain slashes.
+expect attr "li.edit-this-page a" href --regex "^https://github\.com/elastic/docs-builder/edit/.+/docs/syntax/code\.md$"
 expect attr "li.edit-this-page a" target _blank
