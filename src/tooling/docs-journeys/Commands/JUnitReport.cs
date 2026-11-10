@@ -15,12 +15,14 @@ internal static class JUnitReport
 		_ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
 		var settings = new XmlWriterSettings { Indent = true, Encoding = new UTF8Encoding(false) };
 		using var writer = XmlWriter.Create(path, settings);
-		var failures = outcomes.Count(o => !o.Passed);
+		var failures = outcomes.Count(o => o.Failed);
+		var skipped = outcomes.Count(o => o.Skipped);
 		writer.WriteStartDocument();
 		writer.WriteStartElement("testsuite");
 		writer.WriteAttributeString("name", suite);
 		writer.WriteAttributeString("tests", outcomes.Count.ToString(CultureInfo.InvariantCulture));
 		writer.WriteAttributeString("failures", failures.ToString(CultureInfo.InvariantCulture));
+		writer.WriteAttributeString("skipped", skipped.ToString(CultureInfo.InvariantCulture));
 		writer.WriteAttributeString("time", outcomes.Sum(o => o.Elapsed.TotalSeconds).ToString("0.###", CultureInfo.InvariantCulture));
 		foreach (var outcome in outcomes)
 		{
@@ -28,7 +30,13 @@ internal static class JUnitReport
 			writer.WriteAttributeString("classname", outcome.File.Area);
 			writer.WriteAttributeString("name", outcome.File.Name);
 			writer.WriteAttributeString("time", outcome.Elapsed.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture));
-			if (outcome.Error is { } error)
+			if (outcome.SkipReason is { } reason)
+			{
+				writer.WriteStartElement("skipped");
+				writer.WriteAttributeString("message", reason);
+				writer.WriteEndElement();
+			}
+			else if (outcome.Error is { } error)
 			{
 				writer.WriteStartElement("failure");
 				writer.WriteAttributeString("message", "journey did not run");
