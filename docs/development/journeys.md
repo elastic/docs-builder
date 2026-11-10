@@ -58,25 +58,58 @@ expect checked find role radio --name "Tab #2 title"
 
 ## Run the journeys against a deployed site
 
-`docs-journeys` is a native command-line tool that runs the same journey files against any URL. It is read-only: it runs the `expect` lines and reads nothing into a transcript. It uses the Chrome on the machine it runs on.
+`docs-journeys` is a native command-line tool that runs journey files against any URL. It uses the Chrome on the machine it runs on. It checks the site with the `expect` lines and compares no transcripts.
 
 ```bash
 docs-journeys list --journeys tests/Elastic.Documentation.Journeys.Tests/journeys
-docs-journeys run --url http://localhost:3000 --journeys tests/Elastic.Documentation.Journeys.Tests/journeys --area landing,content --junit junit.xml
+docs-journeys run --url https://docs-demo.elastic.dev --journeys journeys --area landing,content --junit junit.xml
 ```
+
+### What a run knows about the site
+
+Journeys say what they need in header comments (`# @requires build-type:isolated`, `# @requires navigation-preview`, `# @requires !env:prod`, `# @tags smoke`, `# @mutates`). A run decides which journeys apply from three facts, and a journey that does not apply is listed as skipped with its reason, in the console, the JUnit file and the step summary:
+
+- **The environment.** `--env <name>`, or the name of the environment whose host the URL belongs to (`www.elastic.co` is `prod`, `docs-edge.elastic.dev` and its CloudFront origin are `edge`, `docs-demo.elastic.dev` is `demo`, `localhost` is `local`). Any other host is unknown.
+- **The build type and the feature flags.** The tool reads the `docs:build-type` and `docs:features` tags from the page `--probe` names (`/docs` by default). `--build-type` and `--feature` (comma separated) override what the page says. A site that predates the tags, or a page that does not answer, leaves them unknown.
+- **Unknown is not matched.** A plain condition on something unknown fails and a negated one holds, so `# @requires !env:prod` still runs on a site whose environment is unknown.
+
+The run prints a `context:` line with what it settled on and where each part came from. When every selected journey is skipped, nothing was checked and the command exits with 1.
+
+### Options
 
 | Option | Meaning |
 |---|---|
 | `--url` | The origin to run against. A journey that opens `/docs` opens it on this origin. |
-| `--area` | Only these areas, comma separated. An area with no journeys is an error. |
 | `--journeys` | Required. The folder of journeys to run. An empty folder is an error. |
+| `--area` | Only these areas, comma separated. An area with no journeys is an error. |
+| `--tag` | Only journeys with one of these `# @tags`, comma separated. |
+| `--changed-only <ref>` | Only journeys that differ from the git ref (`origin/main`) or are new. No change exits with 0. |
+| `--env`, `--build-type`, `--feature`, `--probe` | The context, as above. |
 | `--parallel` | How many journeys run at once, in one shared browser. The default is 4. |
-| `--allow` | Extra hosts a journey may reach, on top of `*.elastic.co` and the third-party hosts the docs pages load. |
+| `--allow` | Extra hosts a journey may reach, on top of `*.elastic.co`, `*.elastic.dev`, `*.cloudfront.net` and the third-party hosts the docs pages load. |
+| `--real-user-agent` | Do not identify as a monitor. The site's telemetry then runs, and its exports are allowed as writes. |
+| `--allow-writes` | Do not refuse requests that are not GET, HEAD or OPTIONS. |
+| `--writable` | URL globs a read-only run may write to anyway, comma separated. |
+| `--allow-mutations` | Run journeys marked `# @mutates`. |
 | `--junit` | Write a JUnit XML report. |
 | `--artifacts` | Write screenshots and recordings here, one folder per journey. |
 
-The command exits with 1 when any journey fails, and writes a table to `GITHUB_STEP_SUMMARY` when that variable is set.
+### Identity and read-only by default
 
-The binary ships no journeys. The journeys under `tests/Elastic.Documentation.Journeys.Tests/journeys` check the isolated docs-builder test site (`#isolated-header`, the `/syntax/*` pages), so they do not pass against a deployed assembler site. Pass `--journeys` a folder written for the site you run against. A journey that throws, such as one that does not parse, is reported as a failed journey and the others still run.
+A run is safe against a live site unless told otherwise:
+
+- It sends the user agent `... Elastic/Synthetics docs-journeys` and the header `X-Docs-Synthetic-Monitor: true`, and starts at 1280 by 800. The docs frontend switches its telemetry SDK off for that user agent, so monitor traffic stays out of real telemetry. `--real-user-agent` turns this off.
+- It refuses every request that is not GET, HEAD or OPTIONS. A page that tries one fails the step with `Blocked POST <url>`. `--allow-writes` turns this off, and `--writable` allows single URLs.
+- It skips journeys marked `# @mutates`, which `--allow-mutations` (or `--allow-writes`) runs.
+
+### Listing
+
+`docs-journeys list` prints each journey with its tags, requirements, monitor, alerts and `mutates` flag, and `--json` prints the same as JSON. A journey that does not parse is shown as an error and the command exits with 1.
+
+### Exit codes
+
+The command exits with 1 when any journey fails, when one cannot be parsed (the others still run), or when every selected journey was skipped. It writes a table to `GITHUB_STEP_SUMMARY` when that variable is set.
+
+The binary ships no journeys. The journeys under `tests/Elastic.Documentation.Journeys.Tests/journeys` check the isolated docs-builder test site (`#isolated-header`, the `/syntax/*` pages), so they say `# @requires build-type:isolated` and a run against a deployed assembler site skips them. Pass `--journeys` a folder written for the site you run against.
 
 A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.

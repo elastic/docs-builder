@@ -1,0 +1,105 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text.RegularExpressions;
+using Nullean.Cdp.Journeys;
+
+namespace Elastic.Documentation.Journeys.Cli;
+
+/// <summary>What a run knows about the site it runs against, so journeys can say what they need.</summary>
+internal sealed partial class SiteContext
+{
+	/// <summary>
+	/// The documentation environments by the host their site answers on (<c>config/assembler.yml</c> and the
+	/// deploy workflows name them). A host not listed is an unknown environment.
+	/// </summary>
+	private static readonly Dictionary<string, string> KnownHosts = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["www.elastic.co"] = "prod",
+		["staging-website.elastic.co"] = "staging",
+		["dwnz7p9ulv07a.cloudfront.net"] = "staging",
+		["www-qa.elastic.co"] = "edge",
+		["docs-edge.elastic.dev"] = "edge",
+		["d34ipnu52o64md.cloudfront.net"] = "edge",
+		["docs-demo.elastic.dev"] = "demo",
+		["d3fvim9nkr2bzu.cloudfront.net"] = "demo",
+		["docs-v3-preview.elastic.dev"] = "preview",
+		["localhost"] = "local",
+		["127.0.0.1"] = "local"
+	};
+
+	public string? Env { get; init; }
+	public string? BuildType { get; init; }
+	public IReadOnlySet<string> Features { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
+	/// <summary>Where each part of the context came from, for the run's output.</summary>
+	public string Describe { get; init; } = "";
+
+	public JourneyContext ToJourneyContext() => new(Features, BuildType, Env);
+
+	public static string? EnvFromHost(Uri url) => KnownHosts.TryGetValue(url.Host, out var env) ? env : null;
+
+	/// <summary>
+	/// Builds the context: an explicit <paramref name="env"/>, <paramref name="buildType"/> or <paramref name="features"/>
+	/// wins; the rest comes from the site's own <c>docs:build-type</c> and <c>docs:features</c> meta tags on
+	/// <paramref name="probePath"/>. A site that predates the tags, or a page that does not answer, leaves them unknown, and
+	/// unknown conditions are not matched.
+	/// </summary>
+	public static async Task<SiteContext> ResolveAsync(Uri baseUrl, SiteContextOptions options, HttpClient http, CancellationToken ct)
+	{
+		var env = options.Env ?? EnvFromHost(baseUrl);
+		var buildType = options.BuildType;
+		var features = options.Features is { Count: > 0 } given ? new HashSet<string>(given, StringComparer.Ordinal) : null;
+		var notes = new List<string> { $"env={env ?? "unknown"}{(options.Env is null ? "" : " (--env)")}" };
+
+		if (buildType is null || features is null)
+		{
+			var (html, error) = await ReadAsync(http, new Uri(baseUrl, options.ProbePath), ct).ConfigureAwait(false);
+			if (html is null)
+				notes.Add($"probe {options.ProbePath} failed: {error}");
+			else
+			{
+				var metaBuildType = BuildTypeMeta().Match(html) is { Success: true } b ? b.Groups["content"].Value : null;
+				var metaFeatures = FeaturesMeta().Match(html) is { Success: true } f ? Split(f.Groups["content"].Value) : null;
+				if (metaBuildType is null && metaFeatures is null)
+					notes.Add($"{options.ProbePath} has no docs:build-type or docs:features tags");
+				buildType ??= metaBuildType;
+				features ??= metaFeatures;
+			}
+		}
+
+		notes.Add($"build-type={buildType ?? "unknown"}{(options.BuildType is null ? "" : " (--build-type)")}");
+		notes.Add($"features=[{string.Join(' ', (features ?? []).Order(StringComparer.Ordinal))}]");
+		return new SiteContext { Env = env, BuildType = buildType, Features = features ?? [], Describe = string.Join(", ", notes) };
+	}
+
+	public static HashSet<string> Split(string? list) =>
+		(list ?? "").Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(
+			StringComparer.Ordinal
+		);
+
+	private static async Task<(string? Html, string? Error)> ReadAsync(HttpClient http, Uri url, CancellationToken ct)
+	{
+		try
+		{
+			using var response = await http.GetAsync(url, ct).ConfigureAwait(false);
+			return response.IsSuccessStatusCode
+				? (await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false), null)
+				: (null, $"HTTP {(int)response.StatusCode}");
+		}
+		catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+		{
+			return (null, e.Message);
+		}
+	}
+
+	// An empty docs:features renders as <meta name="docs:features"> with no content attribute.
+	[GeneratedRegex("""<meta name="docs:features"(?: content="(?<content>[^"]*)")?""")]
+	private static partial Regex FeaturesMeta();
+
+	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""")]
+	private static partial Regex BuildTypeMeta();
+}
+
+internal sealed record SiteContextOptions(string? Env, string? BuildType, IReadOnlySet<string>? Features, string ProbePath);

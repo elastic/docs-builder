@@ -12,27 +12,50 @@ internal sealed class RunCommand
 	private static readonly string[] DefaultAllow =
 	[
 		"*.elastic.co",
+		"*.elastic.dev",
+		"*.cloudfront.net",
 		"*.googletagmanager.com",
 		"elastic-global-nav-assets.s3.us-west-2.amazonaws.com"
 	];
 
 	/// <summary>
-	/// Runs the journeys against a site and exits with 1 when any of them fails. Journeys only read: they validate
-	/// the site and do not compare transcripts.
+	/// Runs the journeys against a site and exits with 1 when any of them fails, when one cannot be parsed, or when every
+	/// selected journey was skipped. A run is read-only and identifies itself as a monitor unless told otherwise, and it
+	/// validates the site without comparing transcripts.
 	/// </summary>
 	/// <param name="url">-u, The origin to run against, such as <c>https://www.elastic.co</c>. Journeys <c>open</c> paths on it.</param>
 	/// <param name="journeys">-j, The folder of journeys. Required: journeys are specific to the kind of site they check.</param>
 	/// <param name="area">-a, Only these areas, comma separated.</param>
+	/// <param name="tag">-t, Only journeys with one of these <c># @tags</c>, comma separated.</param>
+	/// <param name="changedOnly">Only journeys that differ from this git ref (or are new), such as <c>origin/main</c>.</param>
+	/// <param name="env">The environment's name (<c>prod</c>, <c>edge</c>, <c>demo</c>, <c>staging</c>), for <c>env:</c> conditions. Defaults to the one the URL's host belongs to, or unknown.</param>
+	/// <param name="buildType">The site's build type, for <c>build-type:</c> conditions. Defaults to the site's <c>docs:build-type</c> tag, or unknown.</param>
+	/// <param name="feature">The feature flags that are on, comma separated, for <c>@requires</c> and <c>feature</c> blocks. Defaults to the site's <c>docs:features</c> tag, or none.</param>
+	/// <param name="probe">The page that is read for the site's <c>docs:*</c> tags. Default: /docs</param>
 	/// <param name="parallel">-p, How many journeys run at once. Default: 4</param>
 	/// <param name="allow">Extra host patterns the journeys may reach, comma separated, on top of the elastic.co defaults.</param>
+	/// <param name="realUserAgent">Do not identify as a monitor: the site's telemetry then runs, and its exports are allowed as writes.</param>
+	/// <param name="allowWrites">Do not refuse requests that are not GET, HEAD or OPTIONS.</param>
+	/// <param name="writable">URL globs a read-only run may write to anyway, comma separated.</param>
+	/// <param name="allowMutations">Run journeys marked <c># @mutates</c>, which a read-only run skips.</param>
 	/// <param name="junit">Write a JUnit XML report here.</param>
 	/// <param name="artifacts">Write screenshots and recordings here, one folder per journey.</param>
 	public async Task<int> Run(
 		string url,
 		string journeys,
 		string? area = null,
+		string? tag = null,
+		string? changedOnly = null,
+		string? env = null,
+		string? buildType = null,
+		string? feature = null,
+		string probe = "/docs",
 		int parallel = 4,
 		string? allow = null,
+		bool realUserAgent = false,
+		bool allowWrites = false,
+		string? writable = null,
+		bool allowMutations = false,
 		string? junit = null,
 		string? artifacts = null,
 		Cancel ct = default
@@ -44,26 +67,80 @@ internal sealed class RunCommand
 		var files = JourneyFile.Find(journeys, area);
 		if (files.Count == 0)
 			throw new ArgumentException($"No .journey files found in {journeys}; refusing to report an empty run as passed.");
-		var hosts = DefaultAllow.Concat(
-			(allow ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-		).ToList();
+		if (changedOnly is not null)
+		{
+			var changed = ChangedFiles.Since(journeys, changedOnly);
+			files = files.Where(f => changed.Contains(Path.GetFullPath(f.Path))).ToList();
+			if (files.Count == 0)
+			{
+				Console.Out.WriteLine($"No journeys changed since {changedOnly}.");
+				return 0;
+			}
+		}
 
-		var outcomes = await JourneyExecution.RunAsync(files, baseUrl, hosts, artifacts, parallel, ct).ConfigureAwait(false);
+		var identity = new RunIdentity(
+			!realUserAgent,
+			!allowWrites,
+			SiteContext.Split(writable).Concat(realUserAgent ? RunIdentity.TelemetryWrites : []).ToList()
+		);
+		var site = await ResolveSiteAsync(
+			baseUrl,
+			new SiteContextOptions(env, buildType, SiteContext.Split(feature), probe),
+			identity,
+			ct
+		).ConfigureAwait(false);
+		Console.Out.WriteLine($"context: {site.Describe}");
 
+		var selection = new Selection(SiteContext.Split(tag), site.ToJourneyContext(), allowMutations || allowWrites);
+		var plan = files
+			.Select(LoadedJourney.Load)
+			.Select(l => (Loaded: l, Skip: l.Journey is null ? null : selection.SkipReason(l.Journey)))
+			.ToList();
+		var hosts = DefaultAllow.Concat(SiteContext.Split(allow)).ToList();
+		var settings = new RunSettings(baseUrl, hosts, selection.Context, identity) { Artifacts = artifacts, Parallel = parallel };
+		var outcomes = await JourneyExecution.RunAsync(plan, settings, ct).ConfigureAwait(false);
+
+		return Report(outcomes, baseUrl, junit);
+	}
+
+	private static async Task<SiteContext> ResolveSiteAsync(
+		Uri baseUrl,
+		SiteContextOptions options,
+		RunIdentity identity,
+		CancellationToken ct
+	)
+	{
+		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+		if (identity.Synthetic)
+		{
+			_ = http.DefaultRequestHeaders.UserAgent.TryParseAdd(RunIdentity.UserAgent);
+			_ = http.DefaultRequestHeaders.TryAddWithoutValidation(RunIdentity.MonitorHeader, "true");
+		}
+		return await SiteContext.ResolveAsync(baseUrl, options, http, ct).ConfigureAwait(false);
+	}
+
+	private static int Report(IReadOnlyList<JourneyOutcome> outcomes, Uri baseUrl, string? junit)
+	{
 		foreach (var outcome in outcomes)
 			Console.Out.WriteLine(
-				outcome.Passed
-					? $"ok      {outcome.File.Id} ({outcome.Elapsed.TotalSeconds:0.0}s)"
-					: $"FAILED  {outcome.File.Id}\n{outcome.Describe()}"
+				outcome.Skipped
+					? $"skipped {outcome.File.Id} ({outcome.SkipReason})"
+					: outcome.Passed
+						? $"ok      {outcome.File.Id} ({outcome.Elapsed.TotalSeconds:0.0}s)"
+						: $"FAILED  {outcome.File.Id}\n{outcome.Describe()}"
 			);
 
-		var failed = outcomes.Count(o => !o.Passed);
-		Console.Out.WriteLine($"{outcomes.Count - failed} passed, {failed} failed, against {baseUrl}");
+		var failed = outcomes.Count(o => o.Failed);
+		var skipped = outcomes.Count(o => o.Skipped);
+		var passed = outcomes.Count(o => o.Passed);
+		Console.Out.WriteLine($"{passed} passed, {failed} failed, {skipped} skipped, against {baseUrl}");
+		if (passed + failed == 0)
+			Console.Out.WriteLine("Every selected journey was skipped, so nothing was checked.");
 
 		if (junit is not null)
 			JUnitReport.Write(junit, baseUrl.Host, outcomes);
 		WriteStepSummary(baseUrl, outcomes);
-		return failed > 0 ? 1 : 0;
+		return failed > 0 || passed + failed == 0 ? 1 : 0;
 	}
 
 	private static void WriteStepSummary(Uri baseUrl, IReadOnlyList<JourneyOutcome> outcomes)
@@ -76,7 +153,9 @@ internal sealed class RunCommand
 			.AppendLine("| Journey | Result |")
 			.AppendLine("|---|---|");
 		foreach (var outcome in outcomes)
-			_ = text.AppendLine($"| `{outcome.File.Id}` | {(outcome.Passed ? "passed" : "**failed**")} |");
+			_ = text.AppendLine(
+				$"| `{outcome.File.Id}` | {(outcome.Skipped ? $"skipped: {outcome.SkipReason}" : outcome.Passed ? "passed" : "**failed**")} |"
+			);
 		File.AppendAllText(path, text.ToString());
 	}
 }

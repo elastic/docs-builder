@@ -1,3 +1,4 @@
+# @requires build-type:isolated
 set viewport 1280 800
 open /syntax/tabs
 expect checked find role radio --name "Tab #1 title"
