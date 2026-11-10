@@ -42,12 +42,19 @@ describe('initializeOtel', () => {
         startBrowserSdk.mockImplementationOnce(actual.startBrowserSdk)
         const fetchBefore = window.fetch
         const cookieSpy = vi.spyOn(document, 'cookie', 'get')
+        // Under jsdom, navigation timing retries on a timer that outlives the test file and
+        // fails the run with "document is not defined". Fake timers drop it with the test.
+        vi.useFakeTimers()
 
-        expect(initializeOtel()).toBe(true)
+        try {
+            expect(initializeOtel()).toBe(true)
 
-        // The real fetch instrumentation wraps fetch, so this was not a stub.
-        expect(window.fetch).not.toBe(fetchBefore)
-        expect(cookieSpy).not.toHaveBeenCalled()
+            // The real fetch instrumentation wraps fetch, so this was not a stub.
+            expect(window.fetch).not.toBe(fetchBefore)
+            expect(cookieSpy).not.toHaveBeenCalled()
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
     it('initializes the SDK once for non-synthetic traffic', () => {
