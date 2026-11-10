@@ -14,5 +14,9 @@ public class NavigationJourneys(JourneyTarget target)
 {
 	[Test]
 	[JourneyFiles("journeys/navigation")]
-	public Task Run(SnapshotFile journey) => JourneyTest.RunAsync(journey, target.Options);
+	public async Task Run(SnapshotFile journey)
+	{
+		var options = await target.OptionsForIsolatedJourneysAsync().ConfigureAwait(false);
+		await JourneyTest.RunAsync(journey, options).ConfigureAwait(false);
+	}
 }
