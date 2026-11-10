@@ -9,12 +9,11 @@ internal sealed record JourneyFile(string Area, string Name, string Path)
 {
 	public string Id => $"{Area}/{Name}";
 
-	/// <summary>The journeys next to the binary, or in <paramref name="directory"/>; filtered to <paramref name="areas"/> when given.</summary>
-	public static IReadOnlyList<JourneyFile> Find(string? directory, string? areas)
+	/// <summary>The journeys in <paramref name="root"/>; filtered to <paramref name="areas"/> when given.</summary>
+	public static IReadOnlyList<JourneyFile> Find(string root, string? areas)
 	{
-		var root = directory ?? System.IO.Path.Combine(AppContext.BaseDirectory, "journeys");
 		if (!Directory.Exists(root))
-			throw new DirectoryNotFoundException($"No journeys folder at {root}. Pass --journeys <folder>.");
+			throw new DirectoryNotFoundException($"No journeys folder at {root}.");
 
 		var wanted = (areas ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(
 			StringComparer.OrdinalIgnoreCase

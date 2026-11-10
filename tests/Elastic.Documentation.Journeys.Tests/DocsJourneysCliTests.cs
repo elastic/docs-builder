@@ -48,6 +48,32 @@ public class DocsJourneysCliTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task Run_NoJourneyFiles_ExitsOneInsteadOfPassingVacuously()
+	{
+		using var folder = new TempJourneys("landing/home", "open /");
+		var empty = System.IO.Path.Combine(folder.Path, "empty");
+		_ = Directory.CreateDirectory(empty);
+
+		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", empty);
+
+		_ = run.ExitCode.Should().Be(1, run.Output);
+		_ = run.Output.Should().Contain("No .journey files found");
+	}
+
+	[Test]
+	public async Task Run_UnparsableJourney_FailsThatJourneyAndStillReportsTheOthers()
+	{
+		using var folder = new TempJourneys("landing/home", "open /\nexpect visible body");
+		File.WriteAllText(System.IO.Path.Combine(folder.Path, "landing", "broken.journey"), "this is not a command");
+
+		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--junit", folder.JUnit);
+
+		_ = run.ExitCode.Should().Be(1, run.Output);
+		_ = run.Output.Should().Contain("ok      landing/home").And.Contain("FAILED  landing/broken").And.Contain("1 passed, 1 failed");
+		_ = File.ReadAllText(folder.JUnit).Should().Contain("tests=\"2\"").And.Contain("failures=\"1\"");
+	}
+
+	[Test]
 	public async Task List_Journeys_PrintsAreaAndName()
 	{
 		using var folder = new TempJourneys("content/tabs", "open /");

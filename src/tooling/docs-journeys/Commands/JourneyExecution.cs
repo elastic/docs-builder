@@ -8,7 +8,12 @@ using Nullean.Cdp.Journeys;
 namespace Elastic.Documentation.Journeys.Cli.Commands;
 
 /// <summary>The outcome of one journey.</summary>
-internal sealed record JourneyOutcome(JourneyFile File, JourneyResult Result, TimeSpan Elapsed);
+internal sealed record JourneyOutcome(JourneyFile File, JourneyResult? Result, string? Error, TimeSpan Elapsed)
+{
+	public bool Passed => Error is null && Result is { Passed: true };
+
+	public string Describe() => Error is not null ? $"{File.Path}: {Error}" : Result!.Failure!.Describe(File.Path);
+}
 
 internal static class JourneyExecution
 {
@@ -27,9 +32,9 @@ internal static class JourneyExecution
 		var tasks = files.Select(async file =>
 		{
 			await gate.WaitAsync(ct).ConfigureAwait(false);
+			var started = DateTime.UtcNow;
 			try
 			{
-				var started = DateTime.UtcNow;
 				var journey = Journey.Load(file.Path);
 				var options = new JourneyOptions
 				{
@@ -38,7 +43,11 @@ internal static class JourneyExecution
 					ArtifactsDirectory = artifacts is null ? null : Path.Combine(artifacts, file.Area, file.Name)
 				};
 				var result = await JourneyRunner.RunAsync(journey, browser, options, ct).ConfigureAwait(false);
-				return new JourneyOutcome(file, result, DateTime.UtcNow - started);
+				return new JourneyOutcome(file, result, null, DateTime.UtcNow - started);
+			}
+			catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
+			{
+				return new JourneyOutcome(file, null, e.Message, DateTime.UtcNow - started);
 			}
 			finally
 			{

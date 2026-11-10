@@ -9,9 +9,9 @@ namespace Elastic.Documentation.Journeys.Cli.Commands;
 internal sealed class ListCommand
 {
 	/// <summary>Lists the journeys, one per line, as <c>area/name</c>.</summary>
-	/// <param name="journeys">-j, The folder of journeys. Defaults to the <c>journeys</c> folder next to the binary.</param>
+	/// <param name="journeys">-j, The folder of journeys. Required: journeys are specific to the kind of site they check.</param>
 	/// <param name="area">-a, Only these areas, comma separated.</param>
-	public Task List(string? journeys = null, string? area = null)
+	public Task List(string journeys, string? area = null)
 	{
 		foreach (var file in JourneyFile.Find(journeys, area))
 			Console.Out.WriteLine(file.Id);

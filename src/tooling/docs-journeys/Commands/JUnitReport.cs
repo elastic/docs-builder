@@ -15,7 +15,7 @@ internal static class JUnitReport
 		_ = Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
 		var settings = new XmlWriterSettings { Indent = true, Encoding = new UTF8Encoding(false) };
 		using var writer = XmlWriter.Create(path, settings);
-		var failures = outcomes.Count(o => !o.Result.Passed);
+		var failures = outcomes.Count(o => !o.Passed);
 		writer.WriteStartDocument();
 		writer.WriteStartElement("testsuite");
 		writer.WriteAttributeString("name", suite);
@@ -28,7 +28,14 @@ internal static class JUnitReport
 			writer.WriteAttributeString("classname", outcome.File.Area);
 			writer.WriteAttributeString("name", outcome.File.Name);
 			writer.WriteAttributeString("time", outcome.Elapsed.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture));
-			if (outcome.Result.Failure is { } failure)
+			if (outcome.Error is { } error)
+			{
+				writer.WriteStartElement("failure");
+				writer.WriteAttributeString("message", "journey did not run");
+				writer.WriteString(error);
+				writer.WriteEndElement();
+			}
+			else if (outcome.Result!.Failure is { } failure)
 			{
 				writer.WriteStartElement("failure");
 				writer.WriteAttributeString("message", failure.Command);

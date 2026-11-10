@@ -22,12 +22,4 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- The journeys travel with the binary, so they always match the docs-builder version that was built with them. -->
-    <Content Include="..\..\..\tests\Elastic.Documentation.Journeys.Tests\journeys\**\*.journey"
-             Link="journeys\%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>

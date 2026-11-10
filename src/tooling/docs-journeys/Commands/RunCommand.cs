@@ -21,7 +21,7 @@ internal sealed class RunCommand
 	/// the site and do not compare transcripts.
 	/// </summary>
 	/// <param name="url">-u, The origin to run against, such as <c>https://www.elastic.co</c>. Journeys <c>open</c> paths on it.</param>
-	/// <param name="journeys">-j, The folder of journeys. Defaults to the <c>journeys</c> folder next to the binary.</param>
+	/// <param name="journeys">-j, The folder of journeys. Required: journeys are specific to the kind of site they check.</param>
 	/// <param name="area">-a, Only these areas, comma separated.</param>
 	/// <param name="parallel">-p, How many journeys run at once. Default: 4</param>
 	/// <param name="allow">Extra host patterns the journeys may reach, comma separated, on top of the elastic.co defaults.</param>
@@ -29,7 +29,7 @@ internal sealed class RunCommand
 	/// <param name="artifacts">Write screenshots and recordings here, one folder per journey.</param>
 	public async Task<int> Run(
 		string url,
-		string? journeys = null,
+		string journeys,
 		string? area = null,
 		int parallel = 4,
 		string? allow = null,
@@ -42,6 +42,8 @@ internal sealed class RunCommand
 			? parsed
 			: throw new ArgumentException($"--url must be an http or https origin, not '{url}'.");
 		var files = JourneyFile.Find(journeys, area);
+		if (files.Count == 0)
+			throw new ArgumentException($"No .journey files found in {journeys}; refusing to report an empty run as passed.");
 		var hosts = DefaultAllow.Concat(
 			(allow ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 		).ToList();
@@ -50,12 +52,12 @@ internal sealed class RunCommand
 
 		foreach (var outcome in outcomes)
 			Console.Out.WriteLine(
-				outcome.Result.Passed
+				outcome.Passed
 					? $"ok      {outcome.File.Id} ({outcome.Elapsed.TotalSeconds:0.0}s)"
-					: $"FAILED  {outcome.File.Id}\n{outcome.Result.Failure!.Describe(outcome.File.Path)}"
+					: $"FAILED  {outcome.File.Id}\n{outcome.Describe()}"
 			);
 
-		var failed = outcomes.Count(o => !o.Result.Passed);
+		var failed = outcomes.Count(o => !o.Passed);
 		Console.Out.WriteLine($"{outcomes.Count - failed} passed, {failed} failed, against {baseUrl}");
 
 		if (junit is not null)
@@ -74,7 +76,7 @@ internal sealed class RunCommand
 			.AppendLine("| Journey | Result |")
 			.AppendLine("|---|---|");
 		foreach (var outcome in outcomes)
-			_ = text.AppendLine($"| `{outcome.File.Id}` | {(outcome.Result.Passed ? "passed" : "**failed**")} |");
+			_ = text.AppendLine($"| `{outcome.File.Id}` | {(outcome.Passed ? "passed" : "**failed**")} |");
 		File.AppendAllText(path, text.ToString());
 	}
 }

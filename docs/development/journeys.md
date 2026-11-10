@@ -61,15 +61,15 @@ expect checked find role radio --name "Tab #2 title"
 `docs-journeys` is a native command-line tool that runs the same journey files against any URL. It is read-only: it runs the `expect` lines and reads nothing into a transcript. It uses the Chrome on the machine it runs on.
 
 ```bash
-docs-journeys list
-docs-journeys run --url https://d3fvim9nkr2bzu.cloudfront.net --area landing,content --junit junit.xml
+docs-journeys list --journeys tests/Elastic.Documentation.Journeys.Tests/journeys
+docs-journeys run --url http://localhost:3000 --journeys tests/Elastic.Documentation.Journeys.Tests/journeys --area landing,content --junit junit.xml
 ```
 
 | Option | Meaning |
 |---|---|
 | `--url` | The origin to run against. A journey that opens `/docs` opens it on this origin. |
 | `--area` | Only these areas, comma separated. An area with no journeys is an error. |
-| `--journeys` | Run the journeys in this folder instead of the ones next to the binary. |
+| `--journeys` | Required. The folder of journeys to run. An empty folder is an error. |
 | `--parallel` | How many journeys run at once, in one shared browser. The default is 4. |
 | `--allow` | Extra hosts a journey may reach, on top of `*.elastic.co` and the third-party hosts the docs pages load. |
 | `--junit` | Write a JUnit XML report. |
@@ -77,11 +77,6 @@ docs-journeys run --url https://d3fvim9nkr2bzu.cloudfront.net --area landing,con
 
 The command exits with 1 when any journey fails, and writes a table to `GITHUB_STEP_SUMMARY` when that variable is set.
 
-The binary ships with the journeys that were in the repository when it was built, so the journeys always match the `docs-builder` version they were released with. Take it from the `edge` image the way workflows take `docs-builder`:
-
-```bash
-docker cp "$(docker create --name tc ghcr.io/elastic/docs-builder-journeys:edge)":/app/. ./docs-journeys && docker rm tc
-./docs-journeys/docs-journeys run --url https://d3fvim9nkr2bzu.cloudfront.net
-```
+The binary ships no journeys. The journeys under `tests/Elastic.Documentation.Journeys.Tests/journeys` check the isolated docs-builder test site (`#isolated-header`, the `/syntax/*` pages), so they do not pass against a deployed assembler site. Pass `--journeys` a folder written for the site you run against. A journey that throws, such as one that does not parse, is reported as a failed journey and the others still run.
 
 A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.
