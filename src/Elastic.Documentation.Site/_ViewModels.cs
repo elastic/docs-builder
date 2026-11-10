@@ -165,6 +165,12 @@ public record GlobalLayoutViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	/// <summary>Assembler environment name; null for isolated builds and production.</summary>
+	public string? EnvironmentName { get; init; }
+
+	/// <summary>The default favicon: the Elastic glyph, with a coloured label for every environment except production.</summary>
+	public string FaviconStaticPath => Static(EnvironmentFavicon.FileName(BuildType, EnvironmentName));
+
 	public string PageFeedbackSurface { get; init; } = "docs";
 
 	public bool RenderHamburgerIcon { get; init; } = true;

@@ -122,6 +122,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Features = BuildContext.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
+			EnvironmentName = BuildContext.EnvironmentName,
 			PageFeedbackSurface = "api",
 			TocItems = TocItems,
 			Breadcrumbs = breadcrumbs,

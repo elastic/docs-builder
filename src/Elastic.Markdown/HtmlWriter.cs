@@ -225,6 +225,7 @@ public class HtmlWriter(
 		var slice = PageViewFactory.Create(new IndexViewModel
 		{
 			BuildType = DocumentationSet.Context.BuildType,
+			EnvironmentName = DocumentationSet.Context.EnvironmentName,
 			SiteName = siteName,
 			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
