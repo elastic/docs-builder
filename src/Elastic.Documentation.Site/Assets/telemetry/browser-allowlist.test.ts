@@ -21,12 +21,15 @@ const allowlist = JSON.parse(
 const signalKeys = Object.values(allowlist.signal).flat()
 const resourceKeys = allowlist.resource
 
-// Custom constants written as `export const ATTR_X = 'key'` in semconv.ts.
+// Custom constants written as `export const ATTR_X = 'key'` in semconv.ts. Prettier moves the string to the next
+// line when the declaration is long, so whitespace is allowed around the equals sign.
+const semconvSource = readFileSync(telemetryFile('semconv.ts'), 'utf8')
 const customKeys = [
-    ...readFileSync(telemetryFile('semconv.ts'), 'utf8').matchAll(
-        /^export const ATTR_[A-Z0-9_]+ = '([^']+)'/gm
-    ),
+    ...semconvSource.matchAll(/^export const ATTR_[A-Z0-9_]+ =\s*'([^']+)'/gm),
 ].map((match) => match[1])
+const declaredConstants = [
+    ...semconvSource.matchAll(/^export const ATTR_[A-Z0-9_]+/gm),
+]
 
 describe('browser-allowlist.json', () => {
     it('lists no key twice', () => {
@@ -43,6 +46,8 @@ describe('browser-allowlist.json', () => {
     })
 
     it('has every custom semconv.ts key on the signal list', () => {
+        // A declaration the pattern does not match would skip the check, so every one must be matched.
+        expect(customKeys.length).toBe(declaredConstants.length)
         expect(customKeys.length).toBeGreaterThan(0)
         expect(customKeys.filter((k) => !signalKeys.includes(k))).toEqual([])
     })
