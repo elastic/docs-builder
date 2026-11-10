@@ -28,9 +28,10 @@ namespace Elastic.Documentation.Search;
 /// <c>unrated docs</c> finds <c>unrated_docs</c> as surely as the identifier does.</item>
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
-/// explain the typed words equally well. <c>isolate endpoint</c> lists <c>/api/endpoint/action/isolate</c> (8.08) above its deprecated
-/// predecessor <c>/api/endpoint/isolate</c> (7.88). It lifts every operation whose flag is not true, whether the index omits the
-/// flag or writes <c>false</c>.</item>
+/// explain the typed words equally well. <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
+/// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
+/// better match beats the demotion. It lifts every operation whose flag is not true, whether the index omits the flag or writes
+/// <c>false</c>.</item>
 /// </list>
 /// </summary>
 public static class ApiLookupWeights
