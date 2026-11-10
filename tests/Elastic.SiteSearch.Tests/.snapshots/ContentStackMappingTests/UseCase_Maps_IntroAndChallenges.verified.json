@@ -1,0 +1,30 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "modified_date": "2023-08-15T14:30:00+00:00",
+  "og": {
+    "title": "Acme Corp Customer Story | Elastic",
+    "description": "Learn how Acme Corp uses Elastic for real-time analytics."
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Acme Corp",
+  "search_title": "Customer Story: Acme Corp",
+  "content_type": "site",
+  "path": "/customers/acme-corp",
+  "url": "/customers/acme-corp",
+  "hash": "4f1ea839a4d6cdea",
+  "last_updated": "2023-08-15T14:30:00+00:00",
+  "description": "Acme Corp processes millions of events per day and needed a scalable solution for real-time analytics and monitoring.",
+  "headings": [],
+  "body": "Acme Corp processes millions of events per day and needed a scalable solution for real-time analytics and monitoring. The existing solution could not handle the growing data volume and lacked real-time capabilities. By deploying Elastic, Acme Corp achieved sub-second query times across petabytes of data. The engineering team integrated Elasticsearch into their data pipeline within weeks. Elastic transformed how we approach observability and analytics.",
+  "summary": "Acme Corp processes millions of events per day and needed a scalable solution for real-time analytics and monitoring.",
+  "parents": [],
+  "translated": true,
+  "section": "customer-story",
+  "content_tier": "supplementary",
+  "navigation": {
+    "depth": 3,
+    "table_of_contents": 100
+  }
+}

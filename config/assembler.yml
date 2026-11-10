@@ -27,7 +27,7 @@ environments:
       PAGE_FEEDBACK: true
     website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
-    uri: https://d34ipnu52o64md.cloudfront.net
+    uri: https://docs-edge.elastic.dev
     path_prefix: docs
     content_source: edge
     google_tag_manager:
@@ -35,7 +35,20 @@ environments:
     feature_flags:
       ASSEMBLER_API_EXPLORER: true
       PAGE_FEEDBACK: true
-      # NAVIGATION_PREVIEW: true
+      NAVIGATION_PREVIEW: false
+    waf_integration_url: https://33d8ddf078ac.edge.captcha-sdk.awswaf.com/33d8ddf078ac/jsapi.js
+  # Edge-like environment for trying feature flags without touching edge.
+  demo:
+    uri: https://docs-demo.elastic.dev
+    path_prefix: docs
+    content_source: edge
+    google_tag_manager:
+      enabled: false
+    feature_flags:
+      ASSEMBLER_API_EXPLORER: true
+      PAGE_FEEDBACK: true
+      NAVIGATION_PREVIEW: true
+    # Same AWS account as edge, so the WAF integration URL is shared.
     waf_integration_url: https://33d8ddf078ac.edge.captcha-sdk.awswaf.com/33d8ddf078ac/jsapi.js
   # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
   # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step

@@ -48,7 +48,12 @@ public class ApiLanding : IApiGroupingModel
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		return Task.FromResult<string?>(
-			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)
+			LandingCommonMark.Product(
+				context.Model.Info,
+				overviewRows,
+				context.CurrentNavigation.NavigationRoot.Url,
+				ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems)
+			)
 		);
 	}
 
@@ -76,7 +81,10 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	};
 
 	public string Url => Index.Url;
-	public bool Hidden => false;
+
+	/// <summary>True for a version tree that is not the current one, so the sitemap and first-level walks skip it.</summary>
+	public bool Hidden { get; set; }
+
 	public Uri Identifier { get; } = new Uri("todo://");
 
 	public string NavigationTitle => Index.NavigationTitle;

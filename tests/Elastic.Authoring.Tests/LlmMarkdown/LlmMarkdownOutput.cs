@@ -24,12 +24,11 @@ public class Headings : DocumentTest
 	[Test, DisplayName("converts to standard markdown headings")]
 	public async Task ConvertsToStandardMarkdownHeadings() =>
 		await Docs.ConvertsToNewLlm("""
+			## Heading 2
 
-		## Heading 2
 
-
-		### Heading 3
-		""");
+			### Heading 3
+			""");
 }
 
 public class CodeBlocks : DocumentTest
@@ -46,13 +45,14 @@ public class CodeBlocks : DocumentTest
 
 	[Test, DisplayName("renders code blocks")]
 	public async Task RendersCodeBlocks() =>
-		await Docs.ConvertsToNewLlm("""
-
-		```python
-		def hello():
-		    print("Hello, world!")
-		```
-		""");
+		await Docs.ConvertsToNewLlm(
+			"""
+			```python
+			def hello():
+			    print("Hello, world!")
+			```
+			"""
+		);
 }
 
 public class EnhancedCodeBlocks : DocumentTest
@@ -69,13 +69,14 @@ public class EnhancedCodeBlocks : DocumentTest
 
 	[Test, DisplayName("converts to code block with optional caption comment")]
 	public async Task ConvertsToCodeBlockWithOptionalCaptionComment() =>
-		await Docs.ConvertsToNewLlm("""
-
-		```python
-		def hello():
-		    print("Hello, world!")
-		```
-		""");
+		await Docs.ConvertsToNewLlm(
+			"""
+			```python
+			def hello():
+			    print("Hello, world!")
+			```
+			"""
+		);
 }
 
 public class Lists : DocumentTest
@@ -103,23 +104,22 @@ public class Lists : DocumentTest
 	public async Task ConvertsToStandardMarkdownLists() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			- Item 1
+			- Item 2
+			  - Nested item 1
+			  - Nested item 2
+			    - Nested Nested item 1
+			    - Nested Nested item 2
+			- Item 3
 
-		- Item 1
-		- Item 2
-		  - Nested item 1
-		  - Nested item 2
-		    - Nested Nested item 1
-		    - Nested Nested item 2
-		- Item 3
-
-		1. Ordered item 1
-		2. Ordered item 2
-		   1. Nested ordered item 1
-		   2. Nested ordered item 2
-		      - Nested unordered item 1
-		      - Nested unordered item 2
-		3. Ordered item 3
-		"""
+			1. Ordered item 1
+			2. Ordered item 2
+			   1. Nested ordered item 1
+			   2. Nested ordered item 2
+			      - Nested unordered item 1
+			      - Nested unordered item 2
+			3. Ordered item 3
+			"""
 		);
 }
 
@@ -137,12 +137,11 @@ public class Tables : DocumentTest
 	public async Task ConvertsToStandardMarkdownTables() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Header 1 | Header 2 |
-		|----------|----------|
-		| Cell 1   | Cell 2   |
-		| Cell 3   | Cell 4   |
-		"""
+			| Header 1 | Header 2 |
+			|----------|----------|
+			| Cell 1   | Cell 2   |
+			| Cell 3   | Cell 4   |
+			"""
 		);
 }
 
@@ -353,17 +352,16 @@ public class AppliesSwitchDirective : DocumentTest
 	public async Task RendersAppliesSwitchWithHumanReadableAppliesTo() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			<applies-switch>
+			  <applies-item title="stack: ga 7.0" applies-to="Elastic Stack: Generally available since 7.0">
+			    Content for Elastic Stack users.
+			  </applies-item>
 
-		<applies-switch>
-		  <applies-item title="stack: ga 7.0" applies-to="Elastic Stack: Generally available since 7.0">
-		    Content for Elastic Stack users.
-		  </applies-item>
-
-		  <applies-item title="serverless: ga" applies-to="Elastic Cloud Serverless: Generally available">
-		    Content for Serverless users.
-		  </applies-item>
-		</applies-switch>
-		"""
+			  <applies-item title="serverless: ga" applies-to="Elastic Cloud Serverless: Generally available">
+			    Content for Serverless users.
+			  </applies-item>
+			</applies-switch>
+			"""
 		);
 }
 
@@ -396,29 +394,28 @@ public class AdmonitionDirective : DocumentTest
 	public async Task RendersCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			<note>
+			  This is a note admonition.
+			</note>
 
-		<note>
-		  This is a note admonition.
-		</note>
+			<warning>
+			  This is a warning admonition.
+			</warning>
 
-		<warning>
-		  This is a warning admonition.
-		</warning>
+			<tip>
+			  This is a tip admonition.
+			</tip>
 
-		<tip>
-		  This is a tip admonition.
-		</tip>
+			<important>
+			  This is a tip admonition.
+			</important>
 
-		<important>
-		  This is a tip admonition.
-		</important>
-
-		<admonition title="This is my callout">
-		  It can *span* multiple lines and supports inline formatting.Here is a list:
-		  - Item 1
-		  - Item 2
-		</admonition>
-		"""
+			<admonition title="This is my callout">
+			  It can *span* multiple lines and supports inline formatting.Here is a list:
+			  - Item 1
+			  - Item 2
+			</admonition>
+			"""
 		);
 }
 
@@ -452,27 +449,26 @@ public class AdmonitionDirectiveWithAppliesTo : DocumentTest
 	public async Task RendersCorrectlyWithAppliesToInformation() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			<note applies-to="Elastic Stack: Generally available">
+			  This is a note admonition with applies_to information.
+			</note>
 
-		<note applies-to="Elastic Stack: Generally available">
-		  This is a note admonition with applies_to information.
-		</note>
+			<warning applies-to="Elastic Cloud Serverless: Generally available">
+			  This is a warning admonition with applies_to information.
+			</warning>
 
-		<warning applies-to="Elastic Cloud Serverless: Generally available">
-		  This is a warning admonition with applies_to information.
-		</warning>
+			<tip applies-to="Serverless Elasticsearch projects: Preview">
+			  This is a tip admonition with applies_to information.
+			</tip>
 
-		<tip applies-to="Serverless Elasticsearch projects: Preview">
-		  This is a tip admonition with applies_to information.
-		</tip>
+			<important applies-to="Elastic Cloud Serverless: Generally available, Elastic Stack: Generally available">
+			  This is an important admonition with applies_to information.
+			</important>
 
-		<important applies-to="Elastic Cloud Serverless: Generally available, Elastic Stack: Generally available">
-		  This is an important admonition with applies_to information.
-		</important>
-
-		<admonition title="Custom Admonition" applies-to="Serverless Elasticsearch projects: Preview, Elastic Stack: Generally available">
-		  This is a custom admonition with applies_to information.
-		</admonition>
-		"""
+			<admonition title="Custom Admonition" applies-to="Serverless Elasticsearch projects: Preview, Elastic Stack: Generally available">
+			  This is a custom admonition with applies_to information.
+			</admonition>
+			"""
 		);
 }
 
@@ -490,11 +486,10 @@ public class AdmonitionDirectiveWithMultipleLifecycles : DocumentTest
 	public async Task RendersMultipleLifecyclesWithProductNameForEach() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		<note applies-to="Elastic Stack: Generally available since 7.2, Elastic Stack: Beta from 7.0 to 7.1">
-		  This note has multiple lifecycle states.
-		</note>
-		"""
+			<note applies-to="Elastic Stack: Generally available since 7.2, Elastic Stack: Beta from 7.0 to 7.1">
+			  This note has multiple lifecycle states.
+			</note>
+			"""
 		);
 }
 
@@ -510,10 +505,7 @@ public class ImageDirective : DocumentTest
 
 	[Test, DisplayName("converts to standard markdown image")]
 	public async Task ConvertsToStandardMarkdownImage() =>
-		await Docs.ConvertsToNewLlm("""
-
-		![Alt text](https://www.elastic.co/path/to/image.png)
-		""");
+		await Docs.ConvertsToNewLlm("![Alt text](https://www.elastic.co/path/to/image.png)");
 }
 
 public class IncludeDirective : GeneratorTest
@@ -535,10 +527,9 @@ public class IncludeDirective : GeneratorTest
 	[Test, DisplayName("handles include directives appropriately")]
 	public async Task HandlesIncludeDirectivesAppropriately() =>
 		await Docs.ConvertsToNewLlm("""
-
-		- List item
-		  - Nested list item
-		""");
+			- List item
+			  - Nested list item
+			""");
 }
 
 public class MultipleElements : DocumentTest
@@ -564,21 +555,20 @@ public class MultipleElements : DocumentTest
 	public async Task ConvertsComplexDocumentToCleanMarkdown() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			This is a paragraph with **bold** and *italic* text.
+			```python
+			def hello():
+			    print("Hello, world!")
+			```
 
-		This is a paragraph with **bold** and *italic* text.
-		```python
-		def hello():
-		    print("Hello, world!")
-		```
-
-		- List item 1
-		- List item 2
+			- List item 1
+			- List item 2
 
 
-		| Header 1 | Header 2 |
-		|----------|----------|
-		| Cell 1   | Cell 2   |
-		"""
+			| Header 1 | Header 2 |
+			|----------|----------|
+			| Cell 1   | Cell 2   |
+			"""
 		);
 }
 
@@ -603,18 +593,17 @@ public class DirectiveInListShouldBeIndentedCorrectly : DocumentTest
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		- List item 1
-		  ```python
-		  def hello():
-		      print("Hello, world!")
-		  ```
-		- List item 2
-		  <tip>
-		  - Nested list item 1
-		  - Nested list item 2
-		  </tip>
-		"""
+			- List item 1
+			  ```python
+			  def hello():
+			      print("Hello, world!")
+			  ```
+			- List item 2
+			  <tip>
+			  - Nested list item 1
+			  - Nested list item 2
+			  </tip>
+			"""
 		);
 }
 
@@ -639,17 +628,16 @@ public class Tabs : DocumentTest
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			<tab-set>
+			  <tab-item title="Tab #1 title">
+			    This is where the content for tab #1 goes.
+			  </tab-item>
 
-		<tab-set>
-		  <tab-item title="Tab #1 title">
-		    This is where the content for tab #1 goes.
-		  </tab-item>
-
-		  <tab-item title="Tab #2 title">
-		    This is where the content for tab #2 goes.
-		  </tab-item>
-		</tab-set>
-		"""
+			  <tab-item title="Tab #2 title">
+			    This is where the content for tab #2 goes.
+			  </tab-item>
+			</tab-set>
+			"""
 		);
 }
 
@@ -685,11 +673,10 @@ public class Dropdown : DocumentTest
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		<dropdown title="Dropdown title">
-		  This is where the content for the dropdown goes.
-		</dropdown>
-		"""
+			<dropdown title="Dropdown title">
+			  This is where the content for the dropdown goes.
+			</dropdown>
+			"""
 		);
 }
 
@@ -707,11 +694,10 @@ public class DropdownWithAppliesTo : DocumentTest
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		<dropdown title="Dropdown title" applies-to="Elastic Stack: Generally available since 8.0">
-		  This is where the content for the dropdown goes.
-		</dropdown>
-		"""
+			<dropdown title="Dropdown title" applies-to="Elastic Stack: Generally available since 8.0">
+			  This is where the content for the dropdown goes.
+			</dropdown>
+			"""
 		);
 }
 
@@ -735,21 +721,20 @@ public class DefinitionList : DocumentTest
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		<definitions>
-		  <definition term="First Term">
-		    This is the definition of the first term.
-		    - This a list in a definition
-		    - This a list in a definition
-		  </definition>
-		  <definition term="Second Term">
-		    This is one definition of the second term.
-		    ```javascript
-		    console.log("Hello, world!");
-		    ```
-		  </definition>
-		</definitions>
-		"""
+			<definitions>
+			  <definition term="First Term">
+			    This is the definition of the first term.
+			    - This a list in a definition
+			    - This a list in a definition
+			  </definition>
+			  <definition term="Second Term">
+			    This is one definition of the second term.
+			    ```javascript
+			    console.log("Hello, world!");
+			    ```
+			  </definition>
+			</definitions>
+			"""
 		);
 }
 
@@ -763,10 +748,7 @@ public class ImageInline : DocumentTest
 	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
-			"""
-
-		![elasticsearch](https://www.elastic.co/images/64x64_Color_elasticsearch-logo-color-64px.png "elasticsearch")
-		"""
+			"![elasticsearch](https://www.elastic.co/images/64x64_Color_elasticsearch-logo-color-64px.png \"elasticsearch\")"
 		);
 }
 
@@ -777,10 +759,7 @@ public class KbdRole : DocumentTest
 		""";
 
 	[Test, DisplayName("rendered correctly")]
-	public async Task RenderedCorrectly() => await Docs.ConvertsToNewLlm("""
-
-		<kbd>Cmd</kbd> + <kbd>Enter</kbd>
-		""");
+	public async Task RenderedCorrectly() => await Docs.ConvertsToNewLlm("<kbd>Cmd</kbd> + <kbd>Enter</kbd>");
 }
 
 public class CodeblockInList : DocumentTest
@@ -804,19 +783,18 @@ public class CodeblockInList : DocumentTest
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		- List item 1
-		  ```python
-		  def hello():
-		      print("Hello, world!")
-		  ```
-		- List item 2
-		  1. Nested list item
-		     ```python
-		     def hello():
-		         print("Hello, world!")
-		     ```
-		"""
+			- List item 1
+			  ```python
+			  def hello():
+			      print("Hello, world!")
+			  ```
+			- List item 2
+			  1. Nested list item
+			     ```python
+			     def hello():
+			         print("Hello, world!")
+			     ```
+			"""
 		);
 }
 
@@ -837,10 +815,9 @@ public class Substitutions : DocumentTest
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		Hello, this is a substitution: Hello World!
-		This is not a substitution: {{not-found}}
-		"""
+			Hello, this is a substitution: Hello World!
+			This is not a substitution: {{not-found}}
+			"""
 		);
 }
 
@@ -866,15 +843,14 @@ public class SubstitutionInCodeblock : DocumentTest
 	public async Task SubstitutionInCodeblockIsOnlyReplacedWhenSubsIsTrue() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			```plaintext
+			Hello, this is a substitution: {{hello-world}}
+			```
 
-		```plaintext
-		Hello, this is a substitution: {{hello-world}}
-		```
-
-		```plaintext
-		Hello, this is a substitution: Hello World!
-		```
-		"""
+			```plaintext
+			Hello, this is a substitution: Hello World!
+			```
+			"""
 		);
 }
 
@@ -896,16 +872,15 @@ public class MermaidCodeBlock : DocumentTest
 	public async Task RendersMermaidAsCodeBlock() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		```mermaid
-		flowchart LR
-		A[Start] --> B{Decision}
-		B -->|Yes| C[Action 1]
-		B -->|No| D[Action 2]
-		C --> E[End]
-		D --> E
-		```
-		"""
+			```mermaid
+			flowchart LR
+			    A[Start] --> B{Decision}
+			    B -->|Yes| C[Action 1]
+			    B -->|No| D[Action 2]
+			    C --> E[End]
+			    D --> E
+			```
+			"""
 		);
 }
 
@@ -922,10 +897,7 @@ public class SubstitutionInHeading : DocumentTest
 		""";
 
 	[Test, DisplayName("renders correctly")]
-	public async Task RendersCorrectly() => await Docs.ConvertsToNewLlm("""
-
-		## Hello, World!
-		""");
+	public async Task RendersCorrectly() => await Docs.ConvertsToNewLlm("## Hello, World!");
 }
 
 public class SettingsDirective : GeneratorTest
@@ -971,41 +943,40 @@ public class SettingsDirective : GeneratorTest
 	public async Task RendersSettingsAsMarkdownHeadings() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			## General settings
+			<definitions>
+			  <definition term="xpack.example.setting">
+			    <stack-availability>Elastic Stack: Planned</stack-availability>
+			    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
 
-		## General settings
-		<definitions>
-		  <definition term="xpack.example.setting">
-		    <stack-availability>Elastic Stack: Planned</stack-availability>
-		    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
+			This is a test setting with **bold** text and a [link](https://example.com).
+			Datatype: `enum`
+			Default: `strict`
+			Options:
+			- `strict`
+			- `lenient`
+			  </definition>
+			  <definition term="xpack.example.setting[n].url">
+			    <stack-availability>Elastic Stack: Planned</stack-availability>
+			    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
 
-		This is a test setting with **bold** text and a [link](https://example.com).
-		Datatype: `enum`
-		Default: `strict`
-		Options:
-		- `strict`
-		- `lenient`
-		  </definition>
-		  <definition term="xpack.example.setting[n].url">
-		    <stack-availability>Elastic Stack: Planned</stack-availability>
-		    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
+			Child setting description.
+			Datatype: `string`
+			  </definition>
+			  <definition term="xpack.another.setting">
 
-		Child setting description.
-		Datatype: `string`
-		  </definition>
-		  <definition term="xpack.another.setting">
+			Another setting description.
+			  </definition>
+			</definitions>
 
-		Another setting description.
-		  </definition>
-		</definitions>
+			## Advanced settings
+			<definitions>
+			  <definition term="xpack.advanced.option">
 
-		## Advanced settings
-		<definitions>
-		  <definition term="xpack.advanced.option">
-
-		An advanced option.
-		  </definition>
-		</definitions>
-		"""
+			An advanced option.
+			  </definition>
+			</definitions>
+			"""
 		);
 
 	[Test, DisplayName("renders group headings one level deeper than preceding markdown heading")]
@@ -1038,26 +1009,25 @@ public class SettingsDirective : GeneratorTest
 		]);
 		await scenario.ConvertsToNewLlm(
 			"""
+			## Included settings file
 
-		## Included settings file
 
+			### General settings
+			<definitions>
+			  <definition term="xpack.example.setting">
 
-		### General settings
-		<definitions>
-		  <definition term="xpack.example.setting">
+			Test.
+			  </definition>
+			</definitions>
 
-		Test.
-		  </definition>
-		</definitions>
+			### Advanced settings
+			<definitions>
+			  <definition term="xpack.advanced.option">
 
-		### Advanced settings
-		<definitions>
-		  <definition term="xpack.advanced.option">
-
-		Advanced.
-		  </definition>
-		</definitions>
-		"""
+			Advanced.
+			  </definition>
+			</definitions>
+			"""
 		);
 	}
 }
@@ -1090,12 +1060,11 @@ public class LinksInTables : DocumentTest
 	public async Task RendersLinksInTableCellsWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Feature                                                                        | Availability |
-		|--------------------------------------------------------------------------------|--------------|
-		| [Security configurations](https://www.elastic.co/docs/deploy-manage/security)  | Full control |
-		| [Authentication realms](https://www.elastic.co/docs/deploy-manage/users-roles) | Available    |
-		"""
+			| Feature                                                                        | Availability |
+			|--------------------------------------------------------------------------------|--------------|
+			| [Security configurations](https://www.elastic.co/docs/deploy-manage/security)  | Full control |
+			| [Authentication realms](https://www.elastic.co/docs/deploy-manage/users-roles) | Available    |
+			"""
 		);
 }
 
@@ -1112,11 +1081,10 @@ public class MultipleLinksInTableCells : DocumentTest
 	public async Task RendersMultipleLinksInSameCellWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Feature  | Links                                                                     |
-		|----------|---------------------------------------------------------------------------|
-		| Security | [Config](https://example.com/config) and [Auth](https://example.com/auth) |
-		"""
+			| Feature  | Links                                                                     |
+			|----------|---------------------------------------------------------------------------|
+			| Security | [Config](https://example.com/config) and [Auth](https://example.com/auth) |
+			"""
 		);
 }
 
@@ -1134,12 +1102,11 @@ public class LinksWithFormattingInTables : DocumentTest
 	public async Task RendersFormattedLinksInTableCellsCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Feature                                     | Description |
-		|---------------------------------------------|-------------|
-		| [**Bold link**](https://example.com)        | Description |
-		| [*Italic link*](https://example.com/italic) | Another     |
-		"""
+			| Feature                                     | Description |
+			|---------------------------------------------|-------------|
+			| [**Bold link**](https://example.com)        | Description |
+			| [*Italic link*](https://example.com/italic) | Another     |
+			"""
 		);
 }
 
@@ -1158,13 +1125,12 @@ public class BoldAndItalicInTables : DocumentTest
 	public async Task RendersBoldAndItalicInTableCellsWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Format | Example                       |
-		|--------|-------------------------------|
-		| Bold   | This is **bold text** here    |
-		| Italic | This is *italic text* here    |
-		| Both   | This is **bold** and *italic* |
-		"""
+			| Format | Example                       |
+			|--------|-------------------------------|
+			| Bold   | This is **bold text** here    |
+			| Italic | This is *italic text* here    |
+			| Both   | This is **bold** and *italic* |
+			"""
 		);
 }
 
@@ -1182,12 +1148,11 @@ public class CodeInlineInTables : DocumentTest
 	public async Task RendersCodeInlineInTableCellsCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Command      | Description     |
-		|--------------|-----------------|
-		| `git status` | Shows status    |
-		| `git commit` | Commits changes |
-		"""
+			| Command      | Description     |
+			|--------------|-----------------|
+			| `git status` | Shows status    |
+			| `git commit` | Commits changes |
+			"""
 		);
 }
 
@@ -1204,11 +1169,10 @@ public class ImagesInTables : DocumentTest
 	public async Task RendersImagesInTableCellsWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Icon                                  | Name |
-		|---------------------------------------|------|
-		| ![logo](https://example.com/logo.png) | Logo |
-		"""
+			| Icon                                  | Name |
+			|---------------------------------------|------|
+			| ![logo](https://example.com/logo.png) | Logo |
+			"""
 		);
 }
 
@@ -1236,13 +1200,12 @@ public class CsvIncludeDirective : GeneratorTest
 	public async Task RendersCsvAsMarkdownTable() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Name        | Age | City        |
-		|-------------|-----|-------------|
-		| John Doe    | 30  | New York    |
-		| Jane Smith  | 25  | Los Angeles |
-		| Bob Johnson | 35  | Chicago     |
-		"""
+			| Name        | Age | City        |
+			|-------------|-----|-------------|
+			| John Doe    | 30  | New York    |
+			| Jane Smith  | 25  | Los Angeles |
+			| Bob Johnson | 35  | Chicago     |
+			"""
 		);
 }
 
@@ -1270,14 +1233,13 @@ public class CsvIncludeDirectiveWithCaption : GeneratorTest
 	public async Task RendersCsvWithCaptionAsBoldTitle() =>
 		await Docs.ConvertsToNewLlm(
 			"""
+			**Product List**
 
-		**Product List**
-
-		| Product | Price | Stock |
-		|---------|-------|-------|
-		| Widget  | 9.99  | 100   |
-		| Gadget  | 19.99 | 50    |
-		"""
+			| Product | Price | Stock |
+			|---------|-------|-------|
+			| Widget  | 9.99  | 100   |
+			| Gadget  | 19.99 | 50    |
+			"""
 		);
 }
 
@@ -1302,11 +1264,10 @@ public class CsvIncludeDirectiveWithCustomSeparator : GeneratorTest
 	public async Task ParsesCsvWithCustomSeparator() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-
-		| Name  | Value |
-		|-------|-------|
-		| Item1 | 100   |
-		| Item2 | 200   |
-		"""
+			| Name  | Value |
+			|-------|-------|
+			| Item1 | 100   |
+			| Item2 | 200   |
+			"""
 		);
 }

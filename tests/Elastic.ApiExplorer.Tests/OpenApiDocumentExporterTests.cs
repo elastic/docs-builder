@@ -4,13 +4,16 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
@@ -18,6 +21,7 @@ using Elastic.Documentation.Versions;
 using FakeItEasy;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
+using Nullean.Snapshots.Json;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -183,7 +187,9 @@ public class OpenApiDocumentExporterTests
 			}
 		};
 
-		var doc = new OpenApiDocumentExporter(StackVersions(), inferrer).ConvertToDocuments(spec, "cloud", "cloud-hosted").Single();
+		var doc = new OpenApiDocumentExporter(StackVersions(), inferrer)
+			.ConvertToDocuments(new IndexedTree("cloud", "cloud-hosted", "main", spec))
+			.Single();
 
 		doc.Path.Should().StartWith("/docs/api/doc/cloud/operation/");
 		A.CallTo(() => inferrer.InferForOpenApi("cloud-hosted")).MustHaveHappenedOnceExactly();
@@ -193,16 +199,16 @@ public class OpenApiDocumentExporterTests
 	private static async Task<List<DocumentationDocument>> FetchDocuments(OpenApiDocumentExporter exporter, int limitPerSource, Cancel ctx)
 	{
 		var documents = new List<DocumentationDocument>();
-		foreach (var (key, url) in new[]
+		// The object keys VersionIndexClient builds from index.json; the previous spec host was retired on 2026-11-06.
+		foreach (var (key, objectKey) in new[]
 		{
-			("elasticsearch", "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json"),
-			("kibana", "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json")
+			("elasticsearch", "elastic/elasticsearch-specification/main/elasticsearch.json"),
+			("kibana", "elastic/kibana/main/kibana.yaml")
 		})
 		{
-			await using var stream = await HttpClient.GetStreamAsync(url, ctx);
-			var settings = new OpenApiReaderSettings { RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-			var spec = (await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx)).Document!;
-			documents.AddRange(exporter.ConvertToDocuments(spec, key).Take(limitPerSource));
+			var stream = await HttpClient.GetStreamAsync(new Uri(VersionIndexClient.DefaultBaseUri, objectKey), ctx);
+			var spec = (await OpenApiReader.Instance.ReadAsync(stream, Path.GetFileName(objectKey)))!;
+			documents.AddRange(exporter.ConvertToDocuments(new IndexedTree(key, key, "main", spec)).Take(limitPerSource));
 		}
 
 		return documents;
@@ -241,7 +247,9 @@ public class OpenApiDocumentExporterTests
 			}
 		};
 
-		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
+		return new OpenApiDocumentExporter(StackVersions())
+			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", spec))
+			.Single();
 	}
 
 	[Test]
@@ -293,7 +301,9 @@ public class OpenApiDocumentExporterTests
 		"""
 		);
 
-		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "fields").Single();
+		var doc = new OpenApiDocumentExporter(StackVersions())
+			.ConvertToDocuments(new IndexedTree("fields", "fields", "main", spec))
+			.Single();
 
 		// Large enough to be shared, alike in every way but the variant descriptions: the page keeps both listings, so the index must too.
 		doc.Api!.Properties.Select(p => p.Path).Should().Contain(["choice.c1", "choice.n6", "pick.c1", "pick.n6"]);
@@ -431,7 +441,9 @@ public class OpenApiDocumentExporterTests
 			}
 		};
 
-		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").ToList();
+		return new OpenApiDocumentExporter(StackVersions())
+			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", spec))
+			.ToList();
 	}
 
 	[Test]
@@ -440,7 +452,9 @@ public class OpenApiDocumentExporterTests
 		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
 		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
 
-		var docs = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+		var docs = new OpenApiDocumentExporter(StackVersions())
+			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", spec!))
+			.ToList();
 
 		docs.Should().AllSatisfy(d => d.Headings.Should().NotBeEmpty($"{d.Api!.OperationId} is tagged"));
 		var follow = docs.Single(d => d.Api!.OperationId == "ccr-follow");
@@ -465,7 +479,9 @@ public class OpenApiDocumentExporterTests
 			"""
 		);
 
-		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
+		var doc = new OpenApiDocumentExporter(StackVersions())
+			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", spec))
+			.Single();
 
 		doc.Headings.Should().Equal("ccr");
 		doc
@@ -478,7 +494,9 @@ public class OpenApiDocumentExporterTests
 	{
 		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
 		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
-		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+		return new OpenApiDocumentExporter(StackVersions())
+			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", spec!))
+			.ToList();
 	}
 
 	private static async Task<string[]> SearchRequestChildNames(string parent)
@@ -539,4 +557,267 @@ public class OpenApiDocumentExporterTests
 				);
 		}
 	}
+
+	[Test]
+	public void ConvertToDocuments_NumericTree_PointsEveryUrlIntoTheTree()
+	{
+		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(TestHelpers.EsTree("8", TreeSpec())));
+
+		doc.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
+		doc
+			.Parents
+			.Select(p => $"{p.Title} {p.Path}")
+			.Should()
+			.Equal(
+				"API /docs/api",
+				"Elasticsearch API /docs/api/doc/elasticsearch/v8",
+				"Search /docs/api/doc/elasticsearch/v8/group/endpoint-search"
+			);
+		doc.Api!.Key.Should().Be("elasticsearch");
+		doc.Api.Trees.Should().Equal(new ApiTreeEntry { Tree = "8", Root = "/docs/api/doc/elasticsearch/v8" });
+	}
+
+	[Test]
+	public void ConvertToDocuments_MainTree_KeepsUnversionedUrls()
+	{
+		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(TestHelpers.EsTree("main", TreeSpec())));
+
+		doc.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
+		doc.Api!.Trees.Should().Equal(new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/elasticsearch" });
+	}
+
+	[Test]
+	public void Collapse_MainAndIdenticalNine_OneVisibleDocumentPerOperation()
+	{
+		var docs = ExportTrees(("main", TreeSpec()), ("9", TreeSpec()));
+
+		docs.Select(d => d.Api!.OperationId).Should().Equal("search", "count");
+		var search = SearchOperation(docs);
+		search.Api!
+			.Trees
+			.Select(t => $"{t.Tree} {t.Root}")
+			.Should()
+			.Equal("main /docs/api/doc/elasticsearch", "9 /docs/api/doc/elasticsearch/v9");
+		search.Hidden.Should().BeFalse();
+		search.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
+	}
+
+	[Test]
+	public void Collapse_EightDiffersOnSearch_AddsAHiddenEightDocument()
+	{
+		var docs = ExportTrees(("main", TreeSpec()), ("9", TreeSpec()), ("8", TreeSpec("Search the v8 way")));
+
+		docs
+			.Select(d => $"{d.Api!.OperationId} {string.Join(",", d.Api.Trees.Select(t => t.Tree))} {d.Hidden}")
+			.Should()
+			.Equal("search main,9 False", "count main,9,8 False", "search 8 True");
+		var eight = docs.Single(d => d.Api!.Trees is [{ Tree: "8" }]);
+		eight.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
+		eight.Parents[1].Path.Should().Be("/docs/api/doc/elasticsearch/v8");
+		eight.Parents[1].Title.Should().Be("Elasticsearch API");
+	}
+
+	[Test]
+	public void Collapse_OperationOnlyInEight_OneHiddenDocument()
+	{
+		var docs = ExportTrees(("main", TreeSpec()), ("8", TreeSpec(extra: ("knn-search", null))));
+
+		var knn = docs.Single(d => d.Api!.OperationId == "knn-search");
+		knn.Api!.Trees.Select(t => t.Tree).Should().Equal("8");
+		knn.Hidden.Should().BeTrue();
+		knn.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-knn-search");
+	}
+
+	[Test]
+	public void Collapse_VersionlessApi_ListsOnlyMain()
+	{
+		var search = SearchOperation(ExportTrees(("main", TreeSpec())));
+
+		search.Api!.Trees.Select(t => t.Tree).Should().Equal("main");
+		search.Hidden.Should().BeFalse();
+	}
+
+	[Test]
+	public void Collapse_OperationAddedAfterCurrentStack_IsLeftOutOfEveryTree()
+	{
+		var unreleased = TreeSpec(extra: ("new-thing", "Generally available; Added in 9.6.0"));
+
+		var docs = ExportTrees(("main", unreleased), ("9", unreleased), ("8", unreleased));
+
+		docs.Select(d => d.Api!.OperationId).Should().Equal("search", "count");
+	}
+
+	[Test]
+	public void Collapse_DefaultTreeIsNine_SharedRenderingPointsIntoNine()
+	{
+		var renderings = new[] { ("main", TreeSpec()), ("9", TreeSpec()), ("8", TreeSpec("Search the v8 way")) }.SelectMany(
+			t => TestHelpers.CurrentStackExporter().ConvertToDocuments(TestHelpers.EsTree(t.Item1, t.Item2))
+		);
+
+		var docs = ApiTreeCollapse.Collapse(renderings, defaultTree: "9").ToList();
+
+		var shared = docs.Single(d => d.Api!.OperationId == "search" && !d.Hidden);
+		shared.Api!.Trees.Select(t => t.Tree).Should().Equal("9", "main");
+		shared.Path.Should().Be("/docs/api/doc/elasticsearch/v9/operation/operation-search");
+		docs.Single(d => d.Api!.OperationId == "search" && d.Hidden).Api!.Trees.Select(t => t.Tree).Should().Equal("8");
+	}
+
+	[Test]
+	public void ConvertToLandingDocument_Tree_IndexesTheApiRootAsALandingPage()
+	{
+		var spec = TreeSpec();
+		spec.Info = new OpenApiInfo { Title = "Elastic Cloud API", Description = "Run searches, manage indices.\n\nMore detail." };
+
+		var doc = TestHelpers.CurrentStackExporter().ConvertToLandingDocument(TestHelpers.EsTree("9", spec));
+
+		JsonSerializer
+			.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument)
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+			{
+			  "api": {
+			    "key": "elasticsearch",
+			    "trees": [
+			      {
+			        "tree": "9",
+			        "root": "/docs/api/doc/elasticsearch/v9"
+			      }
+			    ],
+			    "properties": [],
+			    "routes": [],
+			    "endpoints": [],
+			    "endpoints_bare": [],
+			    "method": "",
+			    "path": "",
+			    "operation_id": "",
+			    "words": [],
+			    "group": "",
+			    "landing": true,
+			    "deprecated": false
+			  },
+			  "links": [],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Elastic Cloud API",
+			  "search_title": "Elastic Cloud API",
+			  "content_type": "api",
+			  "path": "/docs/api/doc/elasticsearch/v9",
+			  "url": "/docs/api/doc/elasticsearch/v9",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "description": "Run searches, manage indices.",
+			  "headings": [],
+			  "body": "Run searches, manage indices.",
+			  "parents": [
+			    {
+			      "title": "API",
+			      "path": "/docs/api"
+			    }
+			  ],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+			);
+	}
+
+	[Test]
+	public void ConvertToLandingDocument_SpecWithoutTitle_FallsBackToTheProductLabel()
+	{
+		var doc = TestHelpers.CurrentStackExporter().ConvertToLandingDocument(TestHelpers.EsTree("main", TreeSpec()));
+
+		doc.Title.Should().Be("Elasticsearch API");
+		doc.SearchTitle.Should().Be("Elasticsearch API");
+	}
+
+	[Test]
+	public void ConvertToLandingDocument_InferredProducts_FilesTheLandingPageWithItsOperations()
+	{
+		var kibana = new Product { Id = "kibana", DisplayName = "Kibana", Repository = "kibana" };
+		var inferrer = A.Fake<IDocumentInferrerService>();
+		A.CallTo(() => inferrer.InferForOpenApi(A<string>._)).Returns(new DocumentInferenceResult
+		{
+			Product = kibana,
+			Repository = "kibana",
+			RelatedProducts = [kibana]
+		});
+		var exporter = new OpenApiDocumentExporter(StackVersions(), inferrer);
+		var tree = TestHelpers.EsTree("main", TreeSpec());
+
+		var landing = exporter.ConvertToLandingDocument(tree);
+		var operation = exporter.ConvertToDocuments(tree).First();
+
+		landing.Product.Should().Be("kibana");
+		landing.RelatedProducts.Should().Equal(operation.RelatedProducts!);
+		landing.RelatedProducts.Should().ContainSingle().Which.Should().Be(new IndexedProduct { Id = "kibana", Repository = "kibana" });
+	}
+
+	[Test]
+	public void Collapse_LandingPageOfEveryTree_OneVisibleLandingDocumentListingTheTrees()
+	{
+		var exporter = TestHelpers.CurrentStackExporter();
+		var landings = new[] { "main", "9", "8" }.Select(t => exporter.ConvertToLandingDocument(TestHelpers.EsTree(t, TreeSpec())));
+
+		var docs = ApiTreeCollapse.Collapse(landings, defaultTree: "9").ToList();
+
+		var landing = docs.Should().ContainSingle().Subject;
+		landing.Api!
+			.Trees
+			.Select(t => $"{t.Tree} {t.Root}")
+			.Should()
+			.Equal("9 /docs/api/doc/elasticsearch/v9", "main /docs/api/doc/elasticsearch", "8 /docs/api/doc/elasticsearch/v8");
+		landing.Path.Should().Be("/docs/api/doc/elasticsearch/v9");
+		landing.Hidden.Should().BeFalse();
+	}
+
+	/// <summary>Collapses the trees under the API's real default-tree rule, with Stack current at 9.5.6 as in <c>config/versions.yml</c>.</summary>
+	private static List<DocumentationDocument> ExportTrees(params (string Moniker, OpenApiDocument Spec)[] trees)
+	{
+		var exporter = TestHelpers.CurrentStackExporter();
+		var defaultTree = ApiVersions.DefaultTree(trees.Select(t => t.Moniker))!;
+		return [
+			.. ApiTreeCollapse.Collapse(
+				trees.SelectMany(t => exporter.ConvertToDocuments(TestHelpers.EsTree(t.Moniker, t.Spec))),
+				defaultTree
+			)
+		];
+	}
+
+	private static DocumentationDocument SearchOperation(IEnumerable<DocumentationDocument> docs) =>
+		docs.Single(d => d.Api!.OperationId == "search");
+
+	/// <summary>A small spec in the shape of one Elasticsearch tree: <c>search</c> and <c>count</c> under the <c>search</c> tag, plus any extra operations.</summary>
+	private static OpenApiDocument TreeSpec(string searchSummary = "Run a search", params (string Id, string? XState)[] extra)
+	{
+		var paths = new OpenApiPaths
+		{
+			["/_search"] = TaggedGet("search", searchSummary, null),
+			["/_count"] = TaggedGet("count", "Count documents", null)
+		};
+		foreach (var (id, xState) in extra)
+			paths[$"/_{id}"] = TaggedGet(id, $"Run {id}", xState);
+		return new OpenApiDocument { Paths = paths, Tags = new HashSet<OpenApiTag> { new() { Name = "search" } } };
+	}
+
+	private static OpenApiPathItem TaggedGet(string operationId, string summary, string? xState) =>
+		new()
+		{
+			Operations = new Dictionary<HttpMethod, OpenApiOperation>
+			{
+				[HttpMethod.Get] = new()
+				{
+					OperationId = operationId,
+					Summary = summary,
+					Tags = new HashSet<OpenApiTagReference> { new("search") },
+					Extensions = xState is null
+						? null
+						: new Dictionary<string, IOpenApiExtension> { ["x-state"] = new JsonNodeExtension(JsonValue.Create(xState)) }
+				}
+			}
+		};
 }

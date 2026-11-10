@@ -73,6 +73,7 @@ jobs:
             shared: &shared
               - global.json
               - Directory.Build.props
+              - Directory.Build.rsp
               - Directory.Packages.props
               - src/Directory.Build.props
               - .dockerignore
@@ -95,6 +96,7 @@ jobs:
               - src/Elastic.Documentation.OpenApiIndex/**
             dotnet:
               - '**/*.{cs,fs,fsx,csproj,fsproj,props,targets,cshtml,razor,resx,slnx}'
+              - Directory.Build.rsp
               - global.json
               - dotnet-tools.json
               - tests/**

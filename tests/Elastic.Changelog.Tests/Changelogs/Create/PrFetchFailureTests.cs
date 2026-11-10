@@ -6,7 +6,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -43,10 +45,19 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Manual title provided");
-		yamlContent.Should().Contain("type: feature");
-		yamlContent.Should().Contain("prs:");
-		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Manual title provided
+			"""
+			);
 	}
 
 	[Test]
@@ -72,10 +83,17 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information") && d.Severity == Severity.Warning);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Title is missing") && d.Severity == Severity.Warning);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Type is missing") && d.Severity == Severity.Warning);
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/12345. Generating basic changelog with provided values.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			"""
+			);
 
 		// Verify changelog file was created with commented title/type
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
@@ -85,15 +103,20 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("# title: # TODO: Add title");
-		yamlContent.Should().Contain("# type: # TODO: Add type");
-		yamlContent.Should().Contain("prs:");
-		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
-		yamlContent.Should().Contain("products:");
-		// Should not contain uncommented title/type
-		var lines = yamlContent.Split('\n');
-		lines.Should().NotContain(l => l.Trim().StartsWith("title:", StringComparison.Ordinal) && !l.Trim().StartsWith('#'));
-		lines.Should().NotContain(l => l.Trim().StartsWith("type:", StringComparison.Ordinal) && !l.Trim().StartsWith('#'));
+		// a text snapshot: title and type are written as commented fields, and a YAML snapshot ignores comments
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			# title: # TODO: Add title
+			# type: # TODO: Add type (e.g., feature, enhancement, bug-fix, breaking-change)
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			products:
+			  - product: elasticsearch
+			"""
+			);
 	}
 
 	[Test]
@@ -138,13 +161,19 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 
 		// Verify the file contains the provided title/type and at least one PR reference
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Shared title");
-		yamlContent.Should().Contain("type: bug-fix");
-		// Should reference at least one of the PRs (when filenames collide, the last one wins)
-		yamlContent.Should().Contain("prs:");
-		yamlContent.Should().MatchRegex(
-			@"(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)"
-		);
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			title: Shared title
+			"""
+			);
 	}
 
 	[Test]
@@ -172,11 +201,20 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains("2 of 2") && d.Message.Contains(
-					"could not be fetched from GitHub"
-				)
+			.MatchInlineSnapshot(
+				"""
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/12345. Generating basic changelog with provided values.
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/12345. Generating basic changelog with provided values.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/67890. Generating basic changelog with provided values.
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/67890. Generating basic changelog with provided values.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			warning  2 of 2 pull request(s) could not be fetched from GitHub. Their changelogs were created without rules.create label filtering and may be missing title or type, which will cause 'changelog bundle' to fail. Verify GITHUB_TOKEN is set and can access the referenced repositories, then delete the generated changelog files and re-run.
+			"""
 			);
 	}
 
@@ -204,8 +242,23 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 		// Assert: under --strict-fetch the bulk fetch failure escalates to an error (non-zero exit),
 		// but the best-effort files are still written so they can be inspected.
 		result.Should().BeTrue();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not be fetched from GitHub"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/12345. Generating basic changelog with provided values.
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/12345. Generating basic changelog with provided values.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/67890. Generating basic changelog with provided values.
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/67890. Generating basic changelog with provided values.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			error  2 of 2 pull request(s) could not be fetched from GitHub. Their changelogs were created without rules.create label filtering and may be missing title or type, which will cause 'changelog bundle' to fail. Verify GITHUB_TOKEN is set and can access the referenced repositories, then delete the generated changelog files and re-run.
+			"""
+			);
 	}
 
 	[Test]
@@ -234,9 +287,24 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 		// the caller must use 'changelog note' for issue-only entries. The aggregate
 		// "changelogs were created" fetch summary is omitted because nothing was written.
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("changelog note"));
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Their changelogs were created"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  Failed to fetch issue information from GitHub for issue: https://github.com/elastic/elasticsearch/issues/12345. Generating basic changelog with provided values.
+			warning  Failed to fetch issue information from GitHub for issue: https://github.com/elastic/elasticsearch/issues/12345. Generating basic changelog with provided values.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			error  Could not derive a PR number from the provided --prs values. Changelog entries must be anchored to a PR number. For items with no PR use 'changelog note' instead.
+			warning  Failed to fetch issue information from GitHub for issue: https://github.com/elastic/elasticsearch/issues/67890. Generating basic changelog with provided values.
+			warning  Failed to fetch issue information from GitHub for issue: https://github.com/elastic/elasticsearch/issues/67890. Generating basic changelog with provided values.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			error  Could not derive a PR number from the provided --prs values. Changelog entries must be anchored to a PR number. For items with no PR use 'changelog note' instead.
+			"""
+			);
 	}
 
 	[Test]
@@ -262,8 +330,18 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 
 		// Assert
 		result.Should().BeTrue();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("--strict-fetch"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  Failed to fetch PR information from GitHub for PR: https://github.com/elastic/elasticsearch/pull/12345. Generating basic changelog with provided values.
+			error  Could not fetch pull request 'https://github.com/elastic/elasticsearch/pull/12345' from GitHub and --strict-fetch is set. Verify GITHUB_TOKEN is set and can access the repository, then re-run.
+			warning  Title is missing. The changelog will be created with title commented out. Please manually update the title field.
+			warning  Type is missing. The changelog will be created with type commented out. Please manually update the type field.
+			"""
+			);
 	}
 
 	[Test]
@@ -290,13 +368,13 @@ public class PrFetchFailureTests() : CreateChangelogTestBase()
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not require or allow product versions"));
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("could not be fetched"));
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Their changelogs were created"));
+			.MatchInlineSnapshot(
+				"error  Product 'cloud-serverless' specifies version(s) '2026-08-27'. 'changelog add' does not require or allow product versions."
+			);
 		A.CallTo(
 			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
 		).MustNotHaveHappened();

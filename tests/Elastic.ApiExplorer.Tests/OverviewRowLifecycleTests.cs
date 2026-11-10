@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Landing._Partials;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Navigation;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -39,10 +40,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 
 		var html = await RenderAsync(row);
 
-		html.Should().Contain("class=\"api-title-badges\"");
-		html.Should().Contain("<applies-to-popover");
-		html.Should().Contain("show-popover=\"false\"");
-		html.Should().Contain("api-badge--danger");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -53,9 +51,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 
 		var html = await RenderAsync(row);
 
-		html.Should().Contain("<applies-to-popover");
-		html.Should().Contain("lifecycle-name=\"Beta\"");
-		html.Should().NotContain("api-badge--danger");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -65,7 +61,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 
 		var html = await RenderAsync(row);
 
-		html.Should().NotContain("api-title-badges");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	private (ApiOverviewRow Row, IReadOnlyList<ApiOverviewRow> Siblings) RowFor(string operationId) =>

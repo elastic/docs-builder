@@ -20,6 +20,21 @@ public interface ICrossLinkResolver
 	/// protocol links and pass through without cross-link validation.
 	/// </summary>
 	bool IsDeclaredCrossLinkScheme(string scheme);
+
+	/// <summary>
+	/// Whether the API page at <paramref name="sitePath"/>, a path from the site root such as
+	/// <c>/docs/api/doc/elasticsearch/operation/operation-search</c>, exists in the API sections of the link index.
+	/// A resolver that holds no section for that API cannot tell, and answers <see cref="ApiPageStatus.Unknown"/>.
+	/// </summary>
+	ApiPageStatus CheckApiPage(string sitePath) => ApiPageStatus.Unknown;
+}
+
+public enum ApiPageStatus
+{
+	/// <summary>No API section covers the path, so the page cannot be judged.</summary>
+	Unknown,
+	Exists,
+	Missing
 }
 
 public class NoopCrossLinkResolver : ICrossLinkResolver
@@ -52,6 +67,25 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 
 	/// <inheritdoc />
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
+
+	/// <inheritdoc />
+	public ApiPageStatus CheckApiPage(string sitePath)
+	{
+		// API keys are unique across a build, so the key in the path names the one section that can hold the page.
+		var path = sitePath.Trim('/');
+		var rest = path.StartsWith("docs/", StringComparison.Ordinal) ? path["docs/".Length..] : path;
+		if (!rest.StartsWith("api/doc/", StringComparison.Ordinal))
+			return ApiPageStatus.Unknown;
+
+		var key = rest["api/doc/".Length..].Split('/', 2)[0];
+		foreach (var links in _crossLinks.LinkReferences.Values)
+		{
+			if (links.Floating is { Count: > 0 } floating && floating.TryGetValue($"api/{key}", out var section))
+				return section.ContainsSitePath(rest) ? ApiPageStatus.Exists : ApiPageStatus.Missing;
+		}
+
+		return ApiPageStatus.Unknown;
+	}
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
 	{
@@ -112,6 +146,14 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (sourceLinkReference.Links.TryGetValue(originalLookupPath, out var directLinkMetadata))
 			return ResolveDirectLink(errorEmitter, uriResolver, crossLinkUri, originalLookupPath, directLinkMetadata, out resolvedUri);
 
+		if (
+			sourceLinkReference.Floating is { Count: > 0 } floating
+			&& TryMatchFloatingSection(floating, originalLookupPath, out var sectionKey, out var section, out var version, out var page)
+		)
+		{
+			return ResolveFloatingPage(errorEmitter, uriResolver, crossLinkUri, (sectionKey, section, version, page), out resolvedUri);
+		}
+
 		var registryUrl = fetchedCrossLinks.RegistryUrlsByRepository?.GetValueOrDefault(crossLinkUri.Scheme)
 			?? "https://elastic-docs-link-index.s3.us-east-2.amazonaws.com";
 		var baseUrl = GetLinksJsonBaseUrl(registryUrl);
@@ -122,6 +164,67 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		errorEmitter($"'{originalLookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
 		resolvedUri = null;
 		return false;
+	}
+
+	/// <summary>
+	/// Splits <c>{kind}/{key}[/{version}]/{page}</c> into the section, the version and the page. The version is
+	/// optional and is the exact name of a version of that section. Without it the link reaches the current version.
+	/// These are a few hash lookups and no scan of the pages.
+	/// </summary>
+	private static bool TryMatchFloatingSection(
+		Dictionary<string, FloatingLinkSection> floating,
+		string lookupPath,
+		[NotNullWhen(true)] out string? sectionKey,
+		[NotNullWhen(true)] out FloatingLinkSection? section,
+		out string? version,
+		out string page
+	)
+	{
+		version = null;
+		page = string.Empty;
+		section = null;
+		sectionKey = null;
+
+		var segments = lookupPath.Trim('/').Split('/', 3);
+		if (segments.Length < 2)
+			return false;
+
+		sectionKey = $"{segments[0]}/{segments[1]}";
+		if (!floating.TryGetValue(sectionKey, out section))
+			return false;
+
+		var rest = segments.Length == 3 ? segments[2] : string.Empty;
+		var versionEnd = rest.IndexOf('/');
+		var first = versionEnd < 0 ? rest : rest[..versionEnd];
+		// A page of the current version wins over a version of the same name, so adding a version never retargets an existing link.
+		if (section.HasVersion(first) && !section.TryResolvePage(null, rest.Trim('/'), out _))
+		{
+			version = first;
+			rest = versionEnd < 0 ? string.Empty : rest[(versionEnd + 1)..];
+		}
+
+		page = rest.Trim('/');
+		return true;
+	}
+
+	private static bool ResolveFloatingPage(
+		Action<string> errorEmitter,
+		IUriEnvironmentResolver uriResolver,
+		Uri crossLinkUri,
+		(string SectionKey, FloatingLinkSection Section, string? Version, string Page) match,
+		[NotNullWhen(true)] out Uri? resolvedUri
+	)
+	{
+		resolvedUri = null;
+		if (!match.Section.TryResolvePage(match.Version, match.Page, out var sitePath))
+		{
+			var inVersion = match.Version is null ? "the current version" : $"version '{match.Version}'";
+			errorEmitter($"'{match.Page}' is not a page of '{match.SectionKey}' in {inVersion}.");
+			return false;
+		}
+
+		resolvedUri = uriResolver.ResolveSitePath(crossLinkUri, sitePath + crossLinkUri.Fragment);
+		return true;
 	}
 
 	private static bool ResolveDirectLink(

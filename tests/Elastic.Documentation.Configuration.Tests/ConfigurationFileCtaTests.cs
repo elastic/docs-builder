@@ -237,8 +237,11 @@ public class ConfigurationFileCtaTests
 
 		recorder
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("observability") && d.Message.Contains("security"));
+			.MatchInlineSnapshot(
+				"error /docs/section-b/toc.yml 'shared/page.md' is registered with default CTA 'observability' and 'security'. Each page can only have one default CTA."
+			);
 	}
 
 	[Test]
@@ -260,7 +263,12 @@ public class ConfigurationFileCtaTests
 
 		var (_, diagnostics) = await CreateConfigurationWithDiagnostics(docSet);
 
-		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Which.Message.Should().Contain("does-not-exist");
+		diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error /docs/docset.yml 'default_cta: does-not-exist' on page 'solutions/observability/apps/apm.md' does not match any 'cta' template in docset.yml."
+			);
 	}
 
 	[Test]

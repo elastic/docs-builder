@@ -1,0 +1,1 @@
+warning {repo}/docs/index.md:1 Directive block 'csv-table' is unsupported. See https://github.com/elastic/docs-builder/issues/33 for more information.

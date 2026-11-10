@@ -8,6 +8,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -75,8 +77,26 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: keep.yaml");
-		bundle.Should().NotContain("name: skip.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: keep.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -93,7 +113,13 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("File does not exist"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/missing.yaml File does not exist. Current directory: {repo}. Tip: Repeat --files for each file, or use comma-separated values (e.g., --files \"file1.yaml,file2.yaml\"). Paths support tilde (~) expansion and can be relative or absolute."
+			);
 	}
 
 	[Test]
@@ -113,7 +139,13 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Multiple filter options"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Multiple filter options cannot be specified together. You specified: --prs, --files. Please use only one filter option: --all, --input-products, --prs, --issues, or --files"
+			);
 	}
 
 	[Test]
@@ -135,8 +167,26 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: keep.yaml");
-		bundle.Should().NotContain("name: skip.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: keep.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -175,8 +225,26 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundle = await FileSystem.File.ReadAllTextAsync(expectedOutput, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: keep.yaml");
-		bundle.Should().NotContain("name: skip.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: keep.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -210,7 +278,13 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not a mix"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/mixed.txt File must contain only pull request URLs, only issue URLs, or only changelog YAML paths — not a mix."
+			);
 	}
 
 	[Test]
@@ -241,8 +315,26 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: feature.yaml");
-		bundle.Should().NotContain("name: bug-fix.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -273,7 +365,27 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Keep me");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: keep.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -296,8 +408,27 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
 		handler.RequestedPaths.Should().NotContain("/changelog/elastic/elasticsearch/main/registry.json");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: keep.yaml");
-		bundle.Should().NotContain("name: skip.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: keep.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -319,8 +450,11 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		// --files uses FetchNamedAsync: a 404 means "entry does not exist in the pool"
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("pool"));
+			.MatchInlineSnapshot(
+				"error  Changelog entry 'never-uploaded.yaml' for 'elastic/elasticsearch/main' could not be fetched from https://d10xozp44eyz7q.cloudfront.net/changelog/elastic/elasticsearch/main/never-uploaded.yaml: 404 Not Found — entry does not exist in the pool. Ensure the entry was uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead."
+			);
 	}
 
 	[Test]
@@ -367,8 +501,27 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			FileSystem.Path.Join(outputDir, "changelog-bundle.yaml"),
 			TestContext.Current!.Execution.CancellationToken
 		);
-		bundle.Should().Contain("name: keep.yaml");
-		bundle.Should().NotContain("name: skip.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: keep.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	private static StubHandler CdnPoolHandler() =>
@@ -440,7 +593,27 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("name: 1-local.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1-local.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Keep me
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

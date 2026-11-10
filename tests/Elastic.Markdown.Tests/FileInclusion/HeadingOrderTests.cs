@@ -4,10 +4,13 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
@@ -40,7 +43,7 @@ public class IncludeHeadingOrderTests() : DirectiveTest<IncludeBlock>(
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void IncludesSnippetAfterMainContent() => Html.Should().Contain("Two").And.Contain("Six");
+	public void IncludesSnippetAfterMainContent() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void TableOfContentsRespectsOrder()
@@ -861,11 +864,10 @@ This step should still be at the same level as First Step.
 	public void HintIsEmittedForAdjustedHeading() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.ContainSingle(
-				d => d.Severity == Documentation.Diagnostics.Severity.Hint && d.Message.Contains("h3") && d.Message.Contains(
-					"h4"
-				) && d.Message.Contains("####")
+			.MatchInlineSnapshot(
+				"hint {repo}/docs/index.md:8 Heading level h3 inside a step renders at the same or higher level as the step itself (h3). It has been adjusted to h4 — write it as '####' to avoid this hint."
 			);
 }
 
@@ -908,7 +910,7 @@ Already deeper than the step.
 	}
 
 	[Test]
-	public void NoHintEmittedForValidHeading() => Collector.Diagnostics.Should().BeEmpty();
+	public void NoHintEmittedForValidHeading() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 /// <summary>

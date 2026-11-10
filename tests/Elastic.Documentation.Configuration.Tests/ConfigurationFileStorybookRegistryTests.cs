@@ -42,7 +42,7 @@ public class ConfigurationFileStorybookRegistryTests
 	[Test]
 	public void DisallowedVariable_IsLeftLiteral_AndWarns()
 	{
-		var collector = new DiagnosticsCollector([]);
+		var collector = new CapturingDiagnosticsCollector();
 		var config = CreateConfiguration(
 			"${AWS_SECRET_ACCESS_KEY:-fallback}",
 			new MockEnvironment { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" },
@@ -51,7 +51,13 @@ public class ConfigurationFileStorybookRegistryTests
 
 		config.StorybookRegistry.Should().Be("${AWS_SECRET_ACCESS_KEY:-fallback}");
 		config.StorybookRegistry.Should().NotContain("super-secret");
-		collector.Warnings.Should().Be(1, "a disallowed interpolation variable must emit exactly one warning");
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/_docset.yml 'storybook.registry' references environment variable 'AWS_SECRET_ACCESS_KEY' which is not allow-listed for interpolation and is left literal. Allowed: KIBANA_STORYBOOK_REGISTRY."
+			);
 	}
 
 	private static ConfigurationFile CreateConfiguration(

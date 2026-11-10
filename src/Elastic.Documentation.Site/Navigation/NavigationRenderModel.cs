@@ -32,7 +32,8 @@ public sealed record NavigationRenderNode
 	public string? Badge { get; init; }
 	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
 	public string? HttpMethod { get; init; }
-	/// <summary>True when the row groups several HTTP operations under one endpoint.</summary>
+	/// <summary>True for an API operation leaf the spec marks deprecated.</summary>
+	public bool Deprecated { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
@@ -396,16 +397,15 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
-		var httpMethod = item is ILeafNavigationItem<INavigationModel> { Model: IHttpMethodNavigationModel method }
-			? method.HttpMethod
-			: null;
+		var operation = item is ILeafNavigationItem<INavigationModel> { Model: IApiOperationNavigationModel op } ? op : null;
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			HttpMethod = httpMethod,
+			HttpMethod = operation?.HttpMethod,
+			Deprecated = operation?.Deprecated ?? false,
 			Url = item.Url
 		};
 	}
@@ -469,9 +469,11 @@ public sealed record NavigationRenderModel
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);
-		// Hashed only when set, so trees without an expanded group keep the hash, and so the tree id, they had before.
+		// Flags are hashed only when set, each with its own marker, so trees without them keep the hash, and so the tree id, they had before.
 		if (node.Expanded)
 			AppendInt(hash, 1);
+		if (node.Deprecated)
+			AppendInt(hash, 2);
 		AppendNodes(hash, node.NavigationItems);
 	}
 

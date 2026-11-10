@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using ListingGroupRef = Elastic.Documentation.Configuration.Toc.ListingGroupRef;
 using ListingRef = Elastic.Documentation.Configuration.Toc.ListingRef;
@@ -34,10 +35,12 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		IRootNavigationItem<INavigationModel, INavigationItem>? parent = null,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
 		string? pathPrefix = null,
-		ICrossLinkResolver? crossLinkResolver = null
+		ICrossLinkResolver? crossLinkResolver = null,
+		FloatingSectionRegistry? floatingSections = null
 	)
 	{
 		_context = context;
+		_floatingSections = floatingSections ?? FloatingSectionRegistry.Empty;
 		_factory = factory;
 		_crossLinkResolver = crossLinkResolver ?? NoopCrossLinkResolver.Instance;
 		PathPrefix = pathPrefix ?? string.Empty;
@@ -63,6 +66,9 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 			if (navItem != null)
 				items.Add(navItem);
 		}
+
+		if (items.Count > 0)
+			MountImplicitFloatingSections(items);
 
 		// Handle empty TOC - emit errors and create a minimal structure
 		if (items.Count == 0)
@@ -104,6 +110,11 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 
 	private readonly Dictionary<Uri, IRootNavigationItem<TModel, INavigationItem>> _tableOfContentNodes = [];
 	private readonly IDocumentationSetContext _context;
+	private readonly FloatingSectionRegistry _floatingSections;
+	private readonly List<IFloatingSection> _mountedFloatingSections = [];
+
+	/// <summary>The floating sections mounted by the table of contents, in toc order.</summary>
+	public IReadOnlyList<IFloatingSection> FloatingSections => _mountedFloatingSections;
 	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes =>
 		_tableOfContentNodes.ToDictionary(kvp => kvp.Key, IRootNavigationItem<IDocumentationFile, INavigationItem> (kvp) => kvp.Value);
 
@@ -369,6 +380,23 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		}
 		folderNavigation.SetNavigationItems(children);
 		return folderNavigation;
+	}
+
+	/// <summary>
+	/// Mounts the floating sections that the docset declares, such as its APIs, after the toc entries. They stay out of the
+	/// sidebar, so a docset needs no toc entry and no sidebar changes, and its <c>links.json</c> still lists their pages.
+	/// </summary>
+	private void MountImplicitFloatingSections(List<INavigationItem> items)
+	{
+		foreach (var section in _floatingSections.GetImplicitSections())
+		{
+			var root = section.CreateRoot(this, hidden: true);
+			root.Parent = this;
+			if (root is IAssignableIslandNavigation island)
+				island.IsIsland = true;
+			_mountedFloatingSections.Add(section);
+			items.Add(root);
+		}
 	}
 
 	private INavigationItem? CreateTocNavigation(

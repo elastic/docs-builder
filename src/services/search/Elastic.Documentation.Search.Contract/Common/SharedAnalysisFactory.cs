@@ -20,7 +20,7 @@ public static class SharedAnalysisFactory
 	public static AnalysisBuilder BuildBaseAnalysis(AnalysisBuilder analysis) =>
 		analysis
 			.Normalizer(
-				"keyword_normalizer",
+				SharedMappingConfig.KeywordNormalizer,
 				n => n.Custom().CharFilter("strip_non_word_chars").Filters("lowercase", "asciifolding", "trim")
 			)
 			.Analyzer("starts_with_analyzer", a => a.Custom().Tokenizer("starts_with_tokenizer").Filter("lowercase"))

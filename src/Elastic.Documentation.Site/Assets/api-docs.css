@@ -655,6 +655,24 @@
 	overflow-wrap: anywhere;
 }
 
+/* The path sits under the title, so a familiar endpoint is easy to spot. The chip stays centered on the two lines. */
+.api-index-item-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+#markdown-content .api-index-item-path {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-subdued, #516381);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 12px;
+	line-height: 16px;
+	overflow-wrap: anywhere;
+}
+
 #markdown-content a.api-index-item:hover,
 #markdown-content a.api-index-item:focus-visible {
 	background: var(--color-grey-10);
@@ -992,6 +1010,16 @@
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-options {
 	border-color: var(--color-grey-100);
+}
+
+#pages-nav a.nav-link--deprecated > span:first-child {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+/* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
+#pages-nav a.nav-link--deprecated .nav-v2-api-method {
+	filter: saturate(0.4);
 }
 
 .api-url {
@@ -2046,6 +2074,11 @@ a.docs-reference-btn::after {
 	@apply text-grey-60 ml-2 text-xs;
 }
 
+/* On its own (the chips already name the variant), it starts at the label's edge, like the description under it. */
+.union-variant-label > .discriminator-value:first-child {
+	margin-left: 0;
+}
+
 /* One-line summary under a union variant's label */
 .union-variant-description {
 	@apply text-grey-70 mt-1 text-sm;
@@ -2210,6 +2243,14 @@ a.docs-reference-btn::after {
 	@apply mt-1;
 	padding-left: calc(var(--spacing) * 2);
 	position: relative;
+}
+
+/* Below a box's own fields (a variant's, a map value's or a row's), the label and the chips take the fields' inset (the
+   `.property-item.depth-N` padding), so they line up with the field names above them. A list with no fields above it
+   (a row that is only a union) keeps the box's edge. */
+.nested-properties > .property-list ~ .union-variants-label,
+.nested-properties > .property-list ~ .union-variants-container {
+	margin-left: 1.25rem;
 }
 
 /* Two or more variants: the examples rail's chips pick the one shown (_UnionOptions.cshtml, api-union-chips.ts). */
@@ -4287,4 +4328,33 @@ html:has(.api-page-shell) {
 #elastic-api-v3 .api-param-section-header,
 #elastic-api-v3 .responses-header {
 	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
+}
+
+/* Expand all / Collapse all: in the section-links bar, pushed to its right edge, or alone on a row where there is no bar. */
+.api-expand-toggle {
+	flex: none;
+	align-self: center;
+	margin-left: auto;
+	padding: 2px 0;
+	border: 0;
+	background: none;
+	color: #0b64dd;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.api-expand-toggle:hover {
+	text-decoration: underline;
+}
+
+.api-expand-standalone {
+	display: flex;
+	margin: 16px 0 0;
+}
+
+.api-expand-standalone[hidden] {
+	display: none;
 }

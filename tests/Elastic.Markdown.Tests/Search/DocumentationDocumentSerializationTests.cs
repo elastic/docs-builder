@@ -10,6 +10,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Markdown.Tests.Search;
 
@@ -30,22 +31,37 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		// Verify applies_to existing
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		appliesTo.ValueKind.Should().Be(JsonValueKind.Array);
-
-		// Verify structure
-		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(1);
-
-		var stackEntry = appliesArray[0];
-		stackEntry.GetProperty("type").GetString().Should().Be("stack");
-		stackEntry.GetProperty("sub_type").GetString().Should().Be("stack");
-		stackEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		stackEntry.GetProperty("version").GetString().Should().Be("all");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [
+			    {
+			      "type": "stack",
+			      "sub_type": "stack",
+			      "lifecycle": "ga",
+			      "version": "all"
+			    }
+			  ],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Test Page",
+			  "search_title": "Test Page",
+			  "content_type": "doc",
+			  "path": "/test/page",
+			  "url": "/test/page",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -68,26 +84,43 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(2);
-
-		// Verify ESS entry
-		var essEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "ess");
-		essEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
-		essEntry.GetProperty("type").GetString().Should().Be("deployment");
-		essEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		essEntry.GetProperty("version").GetString().Should().Be("all");
-
-		// Verify ECE entry
-		var eceEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "ece");
-		eceEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
-		eceEntry.GetProperty("type").GetString().Should().Be("deployment");
-		eceEntry.GetProperty("lifecycle").GetString().Should().Be("beta");
-		eceEntry.GetProperty("version").GetString().Should().Be("3.5+");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [
+			    {
+			      "type": "deployment",
+			      "sub_type": "ece",
+			      "lifecycle": "beta",
+			      "version": "3.5+"
+			    },
+			    {
+			      "type": "deployment",
+			      "sub_type": "ess",
+			      "lifecycle": "ga",
+			      "version": "all"
+			    }
+			  ],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Deployment Test",
+			  "search_title": "Deployment Test",
+			  "content_type": "doc",
+			  "path": "/test/deployment",
+			  "url": "/test/deployment",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -115,33 +148,49 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(3);
-
-		// Verify elasticsearch entry
-		var esEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "elasticsearch");
-		esEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
-		esEntry.GetProperty("type").GetString().Should().Be("serverless");
-		esEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		esEntry.GetProperty("version").GetString().Should().Be("8.0+");
-
-		// Verify security entry
-		var secEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "security");
-		secEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
-		secEntry.GetProperty("type").GetString().Should().Be("serverless");
-		secEntry.GetProperty("lifecycle").GetString().Should().Be("preview");
-		secEntry.GetProperty("version").GetString().Should().Be("1.0+");
-
-		// Verify Vector Database entry
-		var vectorDatabaseEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "vectordb");
-		vectorDatabaseEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
-		vectorDatabaseEntry.GetProperty("type").GetString().Should().Be("serverless");
-		vectorDatabaseEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		vectorDatabaseEntry.GetProperty("version").GetString().Should().Be("all");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [
+			    {
+			      "type": "serverless",
+			      "sub_type": "elasticsearch",
+			      "lifecycle": "ga",
+			      "version": "8.0+"
+			    },
+			    {
+			      "type": "serverless",
+			      "sub_type": "security",
+			      "lifecycle": "preview",
+			      "version": "1.0+"
+			    },
+			    {
+			      "type": "serverless",
+			      "sub_type": "vectordb",
+			      "lifecycle": "ga",
+			      "version": "all"
+			    }
+			  ],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Serverless Test",
+			  "search_title": "Serverless Test",
+			  "content_type": "doc",
+			  "path": "/test/serverless",
+			  "url": "/test/serverless",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -160,18 +209,37 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(1);
-
-		var productEntry = appliesArray[0];
-		productEntry.GetProperty("type").GetString().Should().Be("product");
-		productEntry.GetProperty("sub_type").GetString().Should().Be("product");
-		productEntry.GetProperty("lifecycle").GetString().Should().Be("beta");
-		productEntry.GetProperty("version").GetString().Should().Be("2.0+");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [
+			    {
+			      "type": "product",
+			      "sub_type": "product",
+			      "lifecycle": "beta",
+			      "version": "2.0+"
+			    }
+			  ],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Product Test",
+			  "search_title": "Product Test",
+			  "content_type": "doc",
+			  "path": "/test/product",
+			  "url": "/test/product",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -198,26 +266,43 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(2);
-
-		// Verify apm-agent-dotnet entry
-		var dotnetEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "apm-agent-dotnet");
-		dotnetEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
-		dotnetEntry.GetProperty("type").GetString().Should().Be("product");
-		dotnetEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		dotnetEntry.GetProperty("version").GetString().Should().Be("1.5+");
-
-		// Verify apm-agent-node entry
-		var nodeEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "apm-agent-node");
-		nodeEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
-		nodeEntry.GetProperty("type").GetString().Should().Be("product");
-		nodeEntry.GetProperty("lifecycle").GetString().Should().Be("deprecated");
-		nodeEntry.GetProperty("version").GetString().Should().Be("2.0+");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [
+			    {
+			      "type": "product",
+			      "sub_type": "apm-agent-dotnet",
+			      "lifecycle": "ga",
+			      "version": "1.5+"
+			    },
+			    {
+			      "type": "product",
+			      "sub_type": "apm-agent-node",
+			      "lifecycle": "deprecated",
+			      "version": "2.0+"
+			    }
+			  ],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "APM Test",
+			  "search_title": "APM Test",
+			  "content_type": "doc",
+			  "path": "/test/apm",
+			  "url": "/test/apm",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -240,17 +325,49 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(3);
-
-		// Verify we have all three types
-		appliesArray.Should().Contain(e => e.GetProperty("type").GetString() == "stack");
-		appliesArray.Should().Contain(e => e.GetProperty("type").GetString() == "deployment");
-		appliesArray.Should().Contain(e => e.GetProperty("type").GetString() == "serverless");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [
+			    {
+			      "type": "stack",
+			      "sub_type": "stack",
+			      "lifecycle": "ga",
+			      "version": "8.0+"
+			    },
+			    {
+			      "type": "deployment",
+			      "sub_type": "ess",
+			      "lifecycle": "ga",
+			      "version": "all"
+			    },
+			    {
+			      "type": "serverless",
+			      "sub_type": "elasticsearch",
+			      "lifecycle": "ga",
+			      "version": "all"
+			    }
+			  ],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Complex Test",
+			  "search_title": "Complex Test",
+			  "content_type": "doc",
+			  "path": "/test/complex",
+			  "url": "/test/complex",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -266,18 +383,29 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		// With default JSON options, null values might be omitted or serialized as null
-		// Let's check both possibilities
-		if (root.TryGetProperty("applies_to", out var appliesTo))
-			appliesTo.ValueKind.Should().Be(JsonValueKind.Null);
-		else
-		{
-			// Field is omitted, which is also acceptable
-			true.Should().BeTrue();
-		}
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "No Applies Test",
+			  "search_title": "No Applies Test",
+			  "content_type": "doc",
+			  "path": "/test/no-applies",
+			  "url": "/test/no-applies",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -293,12 +421,30 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		appliesTo.ValueKind.Should().Be(JsonValueKind.Array);
-		appliesTo.GetArrayLength().Should().Be(0);
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Empty Applies Test",
+			  "search_title": "Empty Applies Test",
+			  "content_type": "doc",
+			  "path": "/test/empty-applies",
+			  "url": "/test/empty-applies",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -411,22 +557,49 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
-		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(3);
-
-		// All should be stack type
-		appliesArray.Should().OnlyContain(e => e.GetProperty("type").GetString() == "stack");
-		appliesArray.Should().OnlyContain(e => e.GetProperty("sub_type").GetString() == "stack");
-
-		// Verify different lifecycle values
-		var lifecycles = appliesArray.Select(e => e.GetProperty("lifecycle").GetString()).ToList();
-		lifecycles.Should().Contain("ga");
-		lifecycles.Should().Contain("beta");
-		lifecycles.Should().Contain("deprecated");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "applies_to": [
+			    {
+			      "type": "stack",
+			      "sub_type": "stack",
+			      "lifecycle": "ga",
+			      "version": "8.0+"
+			    },
+			    {
+			      "type": "stack",
+			      "sub_type": "stack",
+			      "lifecycle": "beta",
+			      "version": "7.17+"
+			    },
+			    {
+			      "type": "stack",
+			      "sub_type": "stack",
+			      "lifecycle": "deprecated",
+			      "version": "7.0+"
+			    }
+			  ],
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Multiple Test",
+			  "search_title": "Multiple Test",
+			  "content_type": "doc",
+			  "path": "/test/multiple",
+			  "url": "/test/multiple",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -441,13 +614,30 @@ public class DocumentationDocumentSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		using var jsonDoc = JsonDocument.Parse(json);
-		jsonDoc
-			.RootElement
-			.GetProperty("source_url")
-			.GetString()
-			.Should()
-			.Be("https://github.com/elastic/docs-content/blob/main/docs/some-page.md");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "source_url": "https://github.com/elastic/docs-content/blob/main/docs/some-page.md",
+			  "title": "Some Page",
+			  "search_title": "Some Page",
+			  "content_type": "docs",
+			  "path": "/docs/some-page",
+			  "url": "/docs/some-page",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 
 	[Test]
@@ -456,7 +646,28 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument { Path = "/docs/some-page", Title = "Some Page", SearchTitle = "Some Page", SourceUrl = null };
 
 		var json = JsonSerializer.Serialize(doc, _options);
-		using var jsonDoc = JsonDocument.Parse(json);
-		jsonDoc.RootElement.TryGetProperty("source_url", out _).Should().BeFalse();
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "content_hash": "",
+			  "content_last_updated": "0001-01-01T00:00:00+00:00",
+			  "title": "Some Page",
+			  "search_title": "Some Page",
+			  "content_type": "docs",
+			  "path": "/docs/some-page",
+			  "url": "/docs/some-page",
+			  "hash": "",
+			  "batch_index_date": "0001-01-01T00:00:00+00:00",
+			  "last_updated": "0001-01-01T00:00:00+00:00",
+			  "headings": [],
+			  "parents": [],
+			  "content_tier": "reference",
+			  "navigation": {
+			    "depth": 50,
+			    "table_of_contents": 50
+			  }
+			}
+			"""
+		);
 	}
 }

@@ -1,0 +1,31 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "modified_date": "2024-06-01T12:00:00+00:00",
+  "og": {
+    "title": "Elastic Blog | News, Updates & Technical Content",
+    "description": "Read the latest from Elastic on search, observability, and security.",
+    "image": "https://images.contentstack.io/v3/assets/sample/blog-og.png"
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Elastic Blog",
+  "search_title": "Blog: Elastic Blog",
+  "content_type": "site",
+  "path": "/blog",
+  "url": "/blog",
+  "hash": "5e69b553831e39de",
+  "last_updated": "2024-06-01T12:00:00+00:00",
+  "description": "Read the latest from Elastic on search, observability, and security.",
+  "headings": [],
+  "body": "Read the latest from Elastic on search, observability, and security.",
+  "summary": "Read the latest from Elastic on search, observability, and security.",
+  "parents": [],
+  "translated": true,
+  "section": "blog",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 2,
+    "table_of_contents": 100
+  }
+}

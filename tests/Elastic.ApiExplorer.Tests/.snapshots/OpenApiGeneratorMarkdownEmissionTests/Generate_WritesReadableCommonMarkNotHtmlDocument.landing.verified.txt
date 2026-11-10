@@ -1,0 +1,48 @@
+---
+type: api
+title: Fixture API
+description: A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges and auth prerequisites.
+url: /api/doc/elasticsearch
+resource: /api/doc/elasticsearch
+products:
+  - elasticsearch
+version: "1.2.3"
+license: "Apache 2.0"
+servers:
+  - "https://fixture.example.com"
+spec:
+  json: /api/doc/elasticsearch.json
+  yaml: /api/doc/elasticsearch.yaml
+---
+
+# Fixture API
+
+A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges and auth prerequisites.
+
+- [Authentication](/api/doc/elasticsearch/authentication)
+## Search
+
+### [Search APIs](/api/doc/elasticsearch/group/endpoint-search)
+
+- [Search](/api/doc/elasticsearch/operation/operation-search): `POST` `/{index}/_search`
+## Data
+
+### [Documents](/api/doc/elasticsearch/group/endpoint-documents)
+
+- [docs.get](/api/doc/elasticsearch/operation/operation-docs-get): `GET` `/{index}/_doc/{id}`
+- [docs.get_source](/api/doc/elasticsearch/operation/operation-docs-get-source): `GET` `/{index}/_source/{id}`
+## unknown
+
+### [Misc](/api/doc/elasticsearch/group/endpoint-misc)
+
+- [/_fixture/anonymous:POST](/api/doc/elasticsearch/operation/operation-_fixture-anonymous): `POST` `/_fixture/anonymous`
+- [Clean up fixture data](/api/doc/elasticsearch/operation/operation-_fixture-cleanup): `DELETE` `/_fixture/cleanup`
+### Types
+
+### Query DSL
+
+- [Query](/api/doc/elasticsearch/types/_types-query_dsl-querycontainer) (`_types.query_dsl.QueryContainer`)
+### Aggregations
+
+- [Aggregation](/api/doc/elasticsearch/types/_types-aggregations-aggregationcontainer) (`_types.aggregations.AggregationContainer`)
+- [Aggregation result](/api/doc/elasticsearch/types/_types-aggregations-aggregate) (`_types.aggregations.Aggregate`)

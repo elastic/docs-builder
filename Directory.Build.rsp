@@ -1,0 +1,4 @@
+# Default MSBuild switches for every build in this repo (dotnet build, test, publish).
+# -graph schedules projects from the static dependency graph instead of blocking nodes on ProjectReference builds,
+# which keeps all cores busy on the 4-core CI runners.
+-graph
