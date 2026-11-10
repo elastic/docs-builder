@@ -1,5 +1,7 @@
+# @requires build-type:isolated
 set viewport 1280 800
 open /syntax/dropdowns
+wait --load networkidle
 expect --not attr "#markdown-content details" open
 click "#markdown-content details summary"
 expect attr "#markdown-content details" open

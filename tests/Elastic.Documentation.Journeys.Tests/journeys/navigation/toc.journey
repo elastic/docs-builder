@@ -1,5 +1,7 @@
+# @requires build-type:isolated
 set viewport 1280 800
 open /syntax/tabs
+wait --load networkidle
 expect visible #toc-nav
 find role link click --name "Tab Groups" --exact
 wait --url **#tab-groups

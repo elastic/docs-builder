@@ -1,5 +1,7 @@
+# @requires build-type:isolated
 set viewport 1280 800
 open /syntax/tabs
+wait --load networkidle
 expect checked find role radio --name "Tab #1 title"
 find nth 1 .tabs-label click
 expect checked find role radio --name "Tab #2 title"

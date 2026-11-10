@@ -1,0 +1,5 @@
+{
+  "shards": [
+    { "name": "site", "areas": ["api-explorer", "chrome", "content", "landing", "live", "navigation", "versions"] }
+  ]
+}

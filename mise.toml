@@ -44,12 +44,12 @@ description = "Browser journey tests against the isolated site (docs/). Extra ar
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:assembler"]
-description = "Browser journey tests against the output of `docs-builder assembler build` in .artifacts/assembly"
+description = "Serves the output of `docs-builder assembler build` (.artifacts/assembly); the isolated-site journeys are skipped until it has its own"
 env = { JOURNEY_TARGET = "assembler" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:codex"]
-description = "Browser journey tests against the output of `docs-builder codex build` in .artifacts/codex/docs"
+description = "Serves the output of `docs-builder codex build` (.artifacts/codex/docs); the isolated-site journeys are skipped until it has its own"
 env = { JOURNEY_TARGET = "codex" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
