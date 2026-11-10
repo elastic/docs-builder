@@ -238,7 +238,6 @@ describe('chat.store', () => {
             expect(state.conversations['conv-123'].messageCount).toBe(2)
             expect(state.conversations['conv-123'].createdAt).toBeDefined()
             expect(state.conversations['conv-123'].updatedAt).toBeDefined()
-            // aiProvider is stored per-conversation, not in the index
         })
 
         it('should update existing ConversationMeta when setConversationId is called with existing ID', () => {

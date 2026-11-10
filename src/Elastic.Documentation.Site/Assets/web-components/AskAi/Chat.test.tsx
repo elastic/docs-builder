@@ -24,7 +24,6 @@ const resetStores = () => {
         chatMessages: [],
         conversations: {},
         activeConversationId: null,
-        aiProvider: 'LlmGateway',
         scrollPosition: 0,
     })
     resetCooldownStore()
