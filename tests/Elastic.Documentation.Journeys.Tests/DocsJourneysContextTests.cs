@@ -45,16 +45,26 @@ public class DocsJourneysContextTests
 	}
 
 	[Test]
-	public async Task Run_SiteWithoutTags_LeavesTheContextUnknownSoOnlyJourneysWithoutNeedsRun()
+	public async Task Run_SiteWithoutTags_IsAnAssemblerSiteWithNoFeaturesSoOnlyMatchingJourneysRun()
 	{
 		await using var site = new FakeSite(buildType: null, features: null);
-		using var folder = new JourneyFolder().Add("a/plain", Passing).Add("a/needs-build", $"# @requires build-type:isolated\n{Passing}");
+		using var folder = new JourneyFolder()
+			.Add("a/plain", Passing)
+			.Add("a/needs-build", $"# @requires build-type:isolated\n{Passing}")
+			.Add("a/assembler", $"# @requires build-type:assembler\n{Passing}");
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path);
 
 		_ = run.ExitCode.Should().Be(0, run.Output);
-		_ = run.Output.Should().Contain("has no docs:build-type or docs:features tags").And.Contain("build-type=unknown");
-		_ = run.Output.Should().Contain("ok      a/plain").And.Contain("skipped a/needs-build");
+		_ = run
+			.Output
+			.Should()
+			.Contain("has no docs:build-type or docs:features tags")
+			.And
+			.Contain("build-type=assembler")
+			.And
+			.Contain("features=[]");
+		_ = run.Output.Should().Contain("ok      a/plain").And.Contain("ok      a/assembler").And.Contain("skipped a/needs-build");
 	}
 
 	[Test]

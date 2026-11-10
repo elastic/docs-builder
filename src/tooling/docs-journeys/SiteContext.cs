@@ -46,8 +46,8 @@ internal sealed partial class SiteContext
 	/// <summary>
 	/// Builds the context: an explicit <paramref name="env"/>, <paramref name="buildType"/> or <paramref name="features"/>
 	/// wins; the rest comes from the site's own <c>docs:build-type</c> and <c>docs:features</c> meta tags on
-	/// <paramref name="probePath"/>. A site that predates the tags, or a page that does not answer, leaves them unknown, and
-	/// unknown conditions are not matched.
+	/// <paramref name="probePath"/>. A page that does not answer leaves them unknown, and unknown conditions are not matched. A page
+	/// that answers without <c>docs:build-type</c> is an assembler site that predates the tag.
 	/// </summary>
 	public static async Task<SiteContext> ResolveAsync(Uri baseUrl, SiteContextOptions options, HttpClient http, CancellationToken ct)
 	{
@@ -71,7 +71,11 @@ internal sealed partial class SiteContext
 				var metaFeatures = FeaturesMeta().Match(html) is { Success: true } f ? Split(f.Groups["content"].Value) : null;
 				if (metaBuildType is null && metaFeatures is null)
 					notes.Add($"{probed} has no docs:build-type or docs:features tags");
-				buildType ??= metaBuildType;
+				// Isolated and Codex sites are built from current source, so they carry the tag. Only a deployed assembler
+				// site (prod, staging) can predate it, so an answering page without the tag is an assembler site.
+				if (metaBuildType is null && buildType is null)
+					notes.Add($"{probed} predates docs:build-type: assuming an assembler site");
+				buildType ??= metaBuildType ?? "assembler";
 				features ??= metaFeatures;
 			}
 		}
