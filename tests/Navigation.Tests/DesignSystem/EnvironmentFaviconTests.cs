@@ -24,13 +24,15 @@ public class EnvironmentFaviconTests
 		EnvironmentFavicon.FileName(buildType, environment).Should().Be(expected);
 
 	[Test]
-	[Arguments("prod", "og-default.png")]
-	[Arguments(null, "og-default.png")]
-	[Arguments("staging", "og-staging.png")]
-	[Arguments("local", "og-dev.png")]
-	[Arguments("air-gapped", "og-other.png")]
-	public void OgImageFileName_Environment_PicksTheImage(string? environment, string expected) =>
-		EnvironmentFavicon.OgImageFileName(environment).Should().Be(expected);
+	[Arguments(BuildType.Assembler, "prod", "og-default.png")]
+	[Arguments(BuildType.Assembler, null, "og-default.png")]
+	[Arguments(BuildType.Assembler, "staging", "og-staging.png")]
+	[Arguments(BuildType.Assembler, "local", "og-dev.png")]
+	[Arguments(BuildType.Assembler, "air-gapped", "og-other.png")]
+	[Arguments(BuildType.Codex, null, "og-codex.png")]
+	[Arguments(BuildType.Isolated, null, null)]
+	public void OgImageFileName_BuildTypeAndEnvironment_PicksTheImage(BuildType buildType, string? environment, string? expected) =>
+		EnvironmentFavicon.OgImageFileName(buildType, environment).Should().Be(expected);
 
 	[Test]
 	public void FileName_EveryNonProdFavicon_ExistsAsStaticAsset()
@@ -42,6 +44,7 @@ public class EnvironmentFaviconTests
 		assets.Should().Contain(n => n.EndsWith("apple-touch-icon.png"));
 		assets.Should().Contain(n => n.EndsWith("favicon.ico"));
 		assets.Should().Contain(n => n.EndsWith("og-default.png"));
+		assets.Should().Contain(n => n.EndsWith("og-codex.png"));
 		foreach (var name in new[] { "staging", "edge", "demo", "dev", "preview", "other" })
 			assets.Should().Contain(n => n.EndsWith($"og-{name}.png"));
 	}
