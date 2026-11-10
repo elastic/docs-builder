@@ -98,7 +98,7 @@ jobs:
         # language=bash
         run: |
           set -euo pipefail
-          for image in docs-builder docs-builder-mcp docs-builder-api; do
+          for image in docs-builder docs-builder-mcp docs-builder-api docs-builder-journeys; do
             ref="ghcr.io/elastic/${image}:edge"
             digest=$(docker buildx imagetools inspect "$ref" 2>/dev/null \
               | awk '/^Digest:/ {print $2; exit}')
@@ -129,6 +129,13 @@ jobs:
         with:
           subject-name: ghcr.io/elastic/docs-builder-api
           subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-journeys image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-journeys
+          subject-digest: ${{ steps.digests.outputs.docs-builder-journeys }}
           push-to-registry: true
 
       - name: Fetch ephemeral GitHub token

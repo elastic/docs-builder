@@ -1,0 +1,116 @@
+name: journeys-live
+
+# Two checks that need no site build:
+# - `prod`: journeys changed in a pull request still pass against https://www.elastic.co. Read-only, no secrets, never pages.
+# - `image`: the docs-journeys container builds, and the binary a consumer copies out of it runs.
+# Both jobs always run so their check names report, and each step is gated on its input.
+#
+# Needs docs-journeys with `--env`, `--changed-only` and `@requires` skipping (the docs-journeys PRs).
+
+on:
+  workflow_call:
+    inputs:
+      prod:
+        description: Whether journeys changed and must be checked against prod
+        required: true
+        type: boolean
+      image:
+        description: Whether the docs-journeys tool changed and its image must be built
+        required: true
+        type: boolean
+
+permissions: {}
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  prod:
+    name: journeys stay valid against prod
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      # `--changed-only` diffs against the base branch, so it needs the history. Blobs are fetched on demand.
+      - uses: actions/checkout@v7
+        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Bootstrap Action Workspace
+        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        uses: $/.github/actions/bootstrap
+
+      # Ubuntu 24.04 blocks the user namespaces Chrome's sandbox needs for an unprivileged user.
+      - name: Allow Chrome's sandbox
+        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      # Run from source: a pull request does not pay for the native AOT publish. The tool is read-only on a live site
+      # unless told otherwise, and skips a journey whose `@requires` does not hold on prod, naming the reason.
+      # It exits 1 when a journey fails, and when every journey it was given was skipped, so a changed journey that
+      # never ran on prod cannot pass unnoticed.
+      - name: Run the changed journeys against prod
+        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        env:
+          CDP_CHROME: /usr/bin/google-chrome
+          BASE_REF: ${{ github.base_ref }}
+          Curb_Bypass: true
+        run: |
+          set -o pipefail
+          status=0
+          dotnet run --project src/tooling/docs-journeys -c release -- \
+            run --url https://www.elastic.co --env prod --changed-only "origin/${BASE_REF}" \
+            2>&1 | tee prod-journeys.txt || status=$?
+          {
+            echo '### Journeys against https://www.elastic.co'
+            echo
+            echo '```text'
+            cat prod-journeys.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "${status}"
+
+  image:
+    name: docs-journeys image
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        if: ${{ inputs.image }}
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap Action Workspace
+        if: ${{ inputs.image }}
+        uses: $/.github/actions/bootstrap
+
+      # The same arguments `publishcontainers` uses (build/Targets.fs). With no registry the image goes to the local
+      # Docker daemon, so nothing is pushed. This also builds the native AOT binary for Linux.
+      - name: Build the image
+        if: ${{ inputs.image }}
+        env:
+          SkipNpmBuild: true
+          Curb_Bypass: true
+        run: |
+          dotnet publish src/tooling/docs-journeys/docs-journeys.csproj \
+            /t:PublishContainer \
+            -p:DebugType=none \
+            -p:ContainerBaseImage=mcr.microsoft.com/dotnet/nightly/runtime-deps:10.0-noble-chiseled \
+            -p:ContainerImageTags=ci \
+            -p:ContainerRepository=elastic/docs-builder-journeys
+
+      # Copy the binary out of the image the way a workflow in another repository does, and run it.
+      - name: Copy the binary out and list the journeys
+        if: ${{ inputs.image }}
+        run: |
+          id=$(docker create elastic/docs-builder-journeys:ci)
+          docker cp "${id}:/app/." ./out
+          docker rm "${id}"
+          chmod +x ./out/docs-journeys
+          ./out/docs-journeys list > journeys.txt
+          cat journeys.txt
+          grep -q '/' journeys.txt || { echo "::error::docs-journeys list printed no area/name journeys"; exit 1; }

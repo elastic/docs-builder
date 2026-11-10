@@ -1,0 +1,5 @@
+### health
+GET /docs/_api/health
+
+### alive
+GET /docs/_api/alive
