@@ -439,6 +439,39 @@ public class DocsJourneysExportTests
 	}
 
 	[Test]
+	public async Task Export_ASourceNamedWithLiteralBackslashes_StaysInsideTheOutJourneysFolder()
+	{
+		if (OperatingSystem.IsWindows())
+			return; // a backslash is a separator there
+
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add(@"..\escape", Monitor);
+		var outDir = Path.Combine(folder.Path, "out");
+		_ = Directory.CreateDirectory(outDir);
+		var sentinel = Path.Combine(outDir, "escape.journey.ts");
+		File.WriteAllText(sentinel, "sentinel");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
+
+		run.ShouldHaveExited(0);
+		_ = File.ReadAllText(sentinel).Should().Be("sentinel", "a backslash in a Unix file name is not a directory separator");
+		var written = Directory.EnumerateFiles(Path.Combine(outDir, "journeys"), "*.journey.ts", SearchOption.AllDirectories).ToList();
+		_ = written.Should().ContainSingle();
+		_ = Path.GetFullPath(written[0]).Should().StartWith(Path.Combine(outDir, "journeys") + Path.DirectorySeparatorChar);
+	}
+
+	[Test]
 	public async Task Export_TwoSourcesForTheSameOutputFile_AreRefused()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "");
