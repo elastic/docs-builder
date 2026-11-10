@@ -1,3 +1,4 @@
+# @requires build-type:isolated
 # Today's violations are recorded in the verified transcript: a new one, or a fixed one, changes it.
 set viewport 1280 800
 open /

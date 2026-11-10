@@ -1,3 +1,4 @@
+# @requires build-type:isolated
 # Render only: pressing a button sends feedback to the API, so this journey never clicks one.
 set viewport 1280 800
 open /syntax/code
