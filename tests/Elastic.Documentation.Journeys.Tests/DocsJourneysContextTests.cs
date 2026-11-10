@@ -335,6 +335,26 @@ internal static class Cli
 		return await RunAsync(info).ConfigureAwait(false);
 	}
 
+	/// <summary>Runs the tool with some environment variables set, or removed when the value is <c>null</c>.</summary>
+	public static async Task<(int ExitCode, string Output)> RunWithEnvironmentAsync(
+		IReadOnlyDictionary<string, string?> environment,
+		params string[] arguments
+	)
+	{
+		var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
+		info.ArgumentList.Add(FindDll());
+		foreach (var argument in arguments)
+			info.ArgumentList.Add(argument);
+		foreach (var (name, value) in environment)
+		{
+			if (value is null)
+				_ = info.Environment.Remove(name);
+			else
+				info.Environment[name] = value;
+		}
+		return await RunAsync(info).ConfigureAwait(false);
+	}
+
 	public static async Task GitAsync(string folder, params string[] arguments)
 	{
 		var info = new ProcessStartInfo("git") { WorkingDirectory = folder, RedirectStandardOutput = true, RedirectStandardError = true };

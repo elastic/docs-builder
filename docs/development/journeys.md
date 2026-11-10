@@ -113,3 +113,33 @@ The command exits with 1 when any journey fails, when one cannot be parsed (the 
 The binary ships no journeys. The journeys under `tests/Elastic.Documentation.Journeys.Tests/journeys` check the isolated docs-builder test site (`#isolated-header`, the `/syntax/*` pages), so they say `# @requires build-type:isolated` and a run against a deployed assembler site skips them. Pass `--journeys` a folder written for the site you run against.
 
 A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.
+
+## Export the monitors to Elastic Synthetics
+
+A journey marked `# @monitor` can also run as an Elastic Synthetics monitor. Two commands turn the journeys into monitors and send them to Kibana:
+
+```bash
+docs-journeys export synthetics --url https://docs-demo.elastic.dev --journeys journeys --out synthetics
+docs-journeys push --out synthetics --env demo
+```
+
+`export synthetics` reads the site the way `run` does (its `docs:*` tags, `--env`, `--build-type`, `--feature`), so a monitor is written only for a journey that applies to that site. It then runs `@nullean/journeys` through `npx`, which writes one file per monitor into `<out>/journeys`. It also writes the project config (`synthetics.config.ts`) and a `package.json`, and installs the two packages the generated files import, because `push` bundles them.
+
+| Option | Meaning |
+|---|---|
+| `--url`, `--journeys`, `--out` | The site, the folder of journeys, and where the monitors go. All three are required. |
+| `--env` | The environment's name. Defaults to the one the URL's host belongs to. The export fails when it is unknown, because the name picks the project. |
+| `--build-type`, `--feature`, `--probe` | The same as for `run`. |
+| `--paging` | Turn `# @alert pagerduty` into alert configuration. Only `--env prod` accepts it: edge, demo and staging monitors never page. |
+| `--project` | The Synthetics project id. Default: `elastic-co-docs-<env>`. |
+| `--kibana-url`, `--space` | Where the project lives. The defaults are the docs observability cluster and the `default` space. |
+| `--allow-empty` | Do not fail when no journey is exported. |
+| `--dry-run` | Print the context, the project config and the commands, and write and run nothing. |
+
+An export that produces no monitor fails, and so does a `push` of an output folder that holds none: `push` replaces the project's whole monitor set, so pushing nothing deletes every monitor in it.
+
+`push` runs `@elastic/synthetics push` from the output folder. It reads the API key from the `SYNTHETICS_API_KEY` environment variable and nowhere else, so the key is never an argument and never printed, and it stops before running anything when the variable is missing. `--dry-run` prints the command and whether the key is set, and needs no key.
+
+Each environment is its own project, which is what keeps their monitors apart. The command does not pass `--tags` to `push`: for `push` it is a filter that selects monitors by their own tags, so `--tags env:demo` would push nothing for monitors that do not carry that tag.
+
+The versions of `@nullean/journeys` and `@elastic/synthetics` are pinned in `SyntheticsPlan`, so a push never changes with a release of either tool. Node.js and access to the npm registry are required.

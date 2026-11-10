@@ -103,7 +103,7 @@ internal sealed class RunCommand
 		return Report(outcomes, baseUrl, junit);
 	}
 
-	private static async Task<SiteContext> ResolveSiteAsync(
+	internal static async Task<SiteContext> ResolveSiteAsync(
 		Uri baseUrl,
 		SiteContextOptions options,
 		RunIdentity identity,
