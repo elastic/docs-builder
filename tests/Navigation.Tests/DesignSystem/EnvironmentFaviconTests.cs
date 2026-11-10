@@ -32,5 +32,6 @@ public class EnvironmentFaviconTests
 		assets.Should().Contain(n => n.EndsWith("_static.favicon.svg"));
 		assets.Should().Contain(n => n.EndsWith("apple-touch-icon.png"));
 		assets.Should().Contain(n => n.EndsWith("favicon.ico"));
+		assets.Should().Contain(n => n.EndsWith("og-default.png"));
 	}
 }

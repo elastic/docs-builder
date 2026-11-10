@@ -190,6 +190,16 @@ public record GlobalLayoutViewModel
 	/// <summary>Static URL of the OG image, if configured.</summary>
 	public string? BrandingOgImageStaticPath => Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
 
+	/// <summary>Absolute URL of the default social image shipped in <c>_static</c>, so every environment serves it itself. Relative when there is no canonical base URL.</summary>
+	public string DefaultOgImageUrl
+	{
+		get
+		{
+			var path = Static("og-default.png");
+			return CanonicalBaseUrl is null ? path : new Uri(CanonicalBaseUrl, path).ToString();
+		}
+	}
+
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
 	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;
 
