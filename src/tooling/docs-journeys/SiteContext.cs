@@ -36,6 +36,9 @@ internal sealed partial class SiteContext
 	/// <summary>Where each part of the context came from, for the run's output.</summary>
 	public string Describe { get; init; } = "";
 
+	/// <summary>True when the site's tags were needed and the probe could not read them.</summary>
+	public bool ProbeFailed { get; init; }
+
 	public JourneyContext ToJourneyContext() => new(Features, BuildType, Env);
 
 	public static string? EnvFromHost(Uri url) => KnownHosts.TryGetValue(url.Host, out var env) ? env : null;
@@ -52,12 +55,16 @@ internal sealed partial class SiteContext
 		var buildType = options.BuildType;
 		var features = options.Features is { } given ? new HashSet<string>(given, StringComparer.Ordinal) : null;
 		var notes = new List<string> { $"env={env ?? "unknown"}{(options.Env is null ? "" : " (--env)")}" };
+		var probeFailed = false;
 
 		if (buildType is null || features is null)
 		{
 			var (html, probed, error) = await ProbeAsync(http, baseUrl, options.ProbePath, ct).ConfigureAwait(false);
 			if (html is null)
+			{
+				probeFailed = true;
 				notes.Add($"probe {options.ProbePath} failed: {error}");
+			}
 			else
 			{
 				var metaBuildType = BuildTypeMeta().Match(html) is { Success: true } b ? b.Groups["content"].Value : null;
@@ -71,7 +78,14 @@ internal sealed partial class SiteContext
 
 		notes.Add($"build-type={buildType ?? "unknown"}{(options.BuildType is null ? "" : " (--build-type)")}");
 		notes.Add($"features=[{string.Join(' ', (features ?? []).Order(StringComparer.Ordinal))}]");
-		return new SiteContext { Env = env, BuildType = buildType, Features = features ?? [], Describe = string.Join(", ", notes) };
+		return new SiteContext
+		{
+			Env = env,
+			BuildType = buildType,
+			Features = features ?? [],
+			Describe = string.Join(", ", notes),
+			ProbeFailed = probeFailed
+		};
 	}
 
 	public static HashSet<string> Split(string? list) =>

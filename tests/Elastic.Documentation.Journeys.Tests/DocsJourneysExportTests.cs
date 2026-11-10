@@ -46,7 +46,7 @@ public class DocsJourneysExportTests
 		_ = run
 			.Output
 			.Should()
-			.Contain("npx --yes @nullean/journeys@0.9.0 export-synthetics")
+			.Contain($"{NpxName} --yes @nullean/journeys@0.9.0 export-synthetics")
 			.And
 			.Contain("--features navigation-preview,page-feedback")
 			.And
@@ -55,6 +55,76 @@ public class DocsJourneysExportTests
 			.Contain("--env demo");
 		_ = run.Output.Should().NotContain("--paging");
 		_ = Directory.Exists(outDir).Should().BeFalse("a dry run writes nothing");
+	}
+
+	[Test]
+	public async Task Export_WhenTheSiteContextCannotBeRead_FailsClosed()
+	{
+		using var folder = new JourneyFolder().Add("landing/home", Monitor);
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			"http://127.0.0.1:1",
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out")
+		);
+
+		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		_ = run.Output.Should().Contain("could not be read");
+	}
+
+	[Test]
+	public async Task Push_ForAnotherEnvironmentThanExported_IsRefused()
+	{
+		using var folder = ExportedFolder();
+
+		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "prod", "--dry-run");
+
+		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		_ = run.Output.Should().Contain("was exported for the demo environment, not prod");
+	}
+
+	[Test]
+	public async Task Push_ForAnotherProjectThanExported_IsRefused()
+	{
+		using var folder = ExportedFolder();
+
+		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--project", "other", "--dry-run");
+
+		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		_ = run.Output.Should().Contain("was exported for project elastic-co-docs-demo, not other");
+	}
+
+	[Test]
+	public async Task Export_KibanaUrlWithAnApostrophe_IsEscapedInTheConfig()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("landing/home", Monitor);
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out"),
+			"--kibana-url",
+			"https://kibana.example/it's-kibana",
+			"--dry-run"
+		);
+
+		_ = run.ExitCode.Should().Be(0, run.Output);
+		_ = run.Output.Should().Contain("url: 'https://kibana.example/it\\'s-kibana',");
 	}
 
 	[Test]
@@ -173,7 +243,7 @@ public class DocsJourneysExportTests
 			.Output
 			.Should()
 			.Contain(
-				"command: npx --yes @elastic/synthetics@1.27.0 push journeys --config synthetics.config.ts --id elastic-co-docs-demo --yes"
+				$"command: {NpxName} --yes @elastic/synthetics@1.27.0 push journeys --config synthetics.config.ts --id elastic-co-docs-demo --yes"
 			);
 		_ = run.Output.Should().Contain("SYNTHETICS_API_KEY: not set");
 		_ = run.Output.Should().NotContain("--tags", "push --tags filters the monitors to push, it does not tag them");
@@ -315,10 +385,15 @@ public class DocsJourneysExportTests
 		_ = allowed.ExitCode.Should().Be(0, allowed.Output);
 	}
 
+	private static string NpxName => OperatingSystem.IsWindows() ? "npx.cmd" : "npx";
+
 	private static ExportedOutput ExportedFolder(int monitors = 1, bool install = true)
 	{
 		var output = new ExportedOutput();
-		File.WriteAllText(Path.Combine(output.Out, "synthetics.config.ts"), "export default () => ({})");
+		File.WriteAllText(
+			Path.Combine(output.Out, "synthetics.config.ts"),
+			"export default () => ({\n    params: {\n        environment: 'demo',\n    },\n    project: {\n        id: 'elastic-co-docs-demo',\n    },\n})"
+		);
 		_ = Directory.CreateDirectory(Path.Combine(output.Out, "journeys"));
 		for (var i = 0; i < monitors; i++)
 			File.WriteAllText(Path.Combine(output.Out, "journeys", $"m{i}.journey.ts"), "// generated");

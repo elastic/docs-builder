@@ -124,12 +124,31 @@ internal static partial class SyntheticsPlan
 			.AppendLine("    },")
 			.AppendLine("    project: {")
 			.AppendLine($"        id: '{project}',")
-			.AppendLine($"        url: '{kibana.AbsoluteUri}',")
+			.AppendLine($"        url: '{JsString(kibana.AbsoluteUri)}',")
 			.AppendLine($"        space: '{space}',")
 			.AppendLine("    },")
 			.AppendLine("})")
 			.ToString();
 	}
+
+	/// <summary>Escapes a value for the inside of a single-quoted JavaScript string.</summary>
+	public static string JsString(string value) =>
+		value
+			.Replace("\\", "\\\\")
+			.Replace("'", "\\'")
+			.Replace("\n", "\\n")
+			.Replace("\r", "\\r")
+			.Replace("\u2028", "\\u2028")
+			.Replace("\u2029", "\\u2029");
+
+	/// <summary>The project and environment the generated config names, which <c>push</c> must agree with.</summary>
+	public static (string? Project, string? Env) ReadExported(string configPath)
+	{
+		var text = File.ReadAllText(configPath);
+		return (ConfigValue(ProjectId(), text), ConfigValue(Environment(), text));
+	}
+
+	private static string? ConfigValue(Regex pattern, string text) => pattern.Match(text) is { Success: true } m ? m.Groups[1].Value : null;
 
 	public static void Require(Regex pattern, string value, string name)
 	{
@@ -140,6 +159,12 @@ internal static partial class SyntheticsPlan
 	public static void RequireEnv(string value) => Require(Identifier(), value, "env");
 
 	public static void RequireIdentifier(string value, string name) => Require(Identifier(), value, name);
+
+	[GeneratedRegex("^\\s*id: '([^']*)',", RegexOptions.Multiline)]
+	private static partial Regex ProjectId();
+
+	[GeneratedRegex("^\\s*environment: '([^']*)',", RegexOptions.Multiline)]
+	private static partial Regex Environment();
 
 	[GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9_-]*$")]
 	private static partial Regex Identifier();

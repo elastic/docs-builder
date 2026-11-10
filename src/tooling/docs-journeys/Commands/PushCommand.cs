@@ -21,12 +21,21 @@ internal sealed class PushCommand
 	public async Task<int> Push(string @out, string env, string? project = null, bool dryRun = false, Cancel ct = default)
 	{
 		SyntheticsPlan.RequireEnv(env);
-		var projectId = project ?? SyntheticsPlan.DefaultProject(env);
-		SyntheticsPlan.RequireIdentifier(projectId, "project");
 
 		if (!File.Exists(SyntheticsPlan.ConfigPath(@out)))
 			throw new FileNotFoundException(
 				$"{SyntheticsPlan.ConfigPath(@out)} does not exist. Run `docs-journeys export synthetics` first."
+			);
+		var (exportedProject, exportedEnv) = SyntheticsPlan.ReadExported(SyntheticsPlan.ConfigPath(@out));
+		var projectId = project ?? exportedProject ?? SyntheticsPlan.DefaultProject(env);
+		SyntheticsPlan.RequireIdentifier(projectId, "project");
+		if (exportedEnv is not null && exportedEnv != env)
+			throw new ArgumentException(
+				$"{@out} was exported for the {exportedEnv} environment, not {env}. Pushing it would replace another environment's monitors."
+			);
+		if (exportedProject is not null && exportedProject != projectId)
+			throw new ArgumentException(
+				$"{@out} was exported for project {exportedProject}, not {projectId}. Pushing it would replace another project's monitors."
 			);
 		var monitors = ExportCommands.MonitorFiles(@out);
 		if (monitors == 0)

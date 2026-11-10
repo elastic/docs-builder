@@ -27,7 +27,13 @@ internal static class Npx
 		string? workingDirectory = null
 	)
 	{
-		var info = new ProcessStartInfo(command) { UseShellExecute = false };
+		// npm.cmd and npx.cmd are batch files; CreateProcess cannot start them, cmd.exe can.
+		var info = new ProcessStartInfo(OperatingSystem.IsWindows() ? "cmd.exe" : command) { UseShellExecute = false };
+		if (OperatingSystem.IsWindows())
+		{
+			info.ArgumentList.Add("/c");
+			info.ArgumentList.Add(command);
+		}
 		if (workingDirectory is not null)
 			info.WorkingDirectory = workingDirectory;
 		foreach (var argument in arguments)

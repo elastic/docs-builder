@@ -62,6 +62,10 @@ internal sealed class ExportCommands
 
 		if (site.Env is null)
 			throw new ArgumentException($"The environment of {baseUrl.Host} is unknown, so the project cannot be named. Pass --env.");
+		if (site.ProbeFailed)
+			throw new InvalidOperationException(
+				$"The site context of {baseUrl.Host} could not be read, so which monitors apply is unknown and a push could delete deployed ones. Retry, or pass --build-type and --feature."
+			);
 		if (paging && !SyntheticsPlan.MayPage(site.Env))
 			throw new ArgumentException(
 				$"--paging is refused for the {site.Env} environment: only prod pages. Edge and demo monitors never alert PagerDuty."
@@ -84,6 +88,7 @@ internal sealed class ExportCommands
 			return 0;
 		}
 
+		ClearJourneysFolder(journeys, @out);
 		_ = Directory.CreateDirectory(@out);
 		await File.WriteAllTextAsync(SyntheticsPlan.ConfigPath(@out), config, ct).ConfigureAwait(false);
 		var exit = await Npx.RunAsync(arguments, ct).ConfigureAwait(false);
@@ -105,6 +110,17 @@ internal sealed class ExportCommands
 			return 1;
 		}
 		return 0;
+	}
+
+	// A reused output folder must not keep monitors of journeys that were deleted or no longer apply.
+	private static void ClearJourneysFolder(string journeys, string outDir)
+	{
+		var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(SyntheticsPlan.JourneysFolder(outDir)));
+		var source = Path.TrimEndingDirectorySeparator(Path.GetFullPath(journeys));
+		if (source == folder || source.StartsWith(folder + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			throw new ArgumentException($"--out would overwrite the journeys folder {journeys}. Choose another output folder.");
+		if (Directory.Exists(folder))
+			Directory.Delete(folder, recursive: true);
 	}
 
 	internal static int MonitorFiles(string outDir)
