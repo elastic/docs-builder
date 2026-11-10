@@ -1,0 +1,5 @@
+set viewport 1280 800
+open /
+expect title "docs-builder | docs-builder"
+expect visible #isolated-header
+expect visible #pages-nav

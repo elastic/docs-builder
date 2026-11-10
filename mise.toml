@@ -39,6 +39,20 @@ run = "dotnet run --project build -c release -- unit-test"
 description = "Integration tests (slow, clones real repositories)"
 run = "dotnet run --project build -c release -- integrate"
 
+[tasks.journeys]
+description = "Browser journey tests against the isolated site (docs/). Extra args pass through, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
+run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
+
+[tasks."journeys:assembler"]
+description = "Browser journey tests against the output of `docs-builder assembler build` in .artifacts/assembly"
+env = { JOURNEY_TARGET = "assembler" }
+run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
+
+[tasks."journeys:codex"]
+description = "Browser journey tests against the output of `docs-builder codex build` in .artifacts/codex/docs"
+env = { JOURNEY_TARGET = "codex" }
+run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
+
 [tasks.lint]
 description = "C# format check (curb, read-only)"
 run = "dotnet run --project build -c release -- lint"

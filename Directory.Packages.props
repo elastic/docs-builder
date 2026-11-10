@@ -134,6 +134,8 @@
     <PackageVersion Include="Nullean.Snapshots.Json" Version="0.6.0" />
     <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.6.0" />
     <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.6.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser" Version="0.6.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser.Assertions" Version="0.6.0" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />

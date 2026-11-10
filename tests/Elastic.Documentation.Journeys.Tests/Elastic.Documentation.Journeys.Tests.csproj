@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Builds docs-builder so the isolated target can serve this repository's docs/ folder; its output is not referenced. -->
+    <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nullean.Snapshots.Browser.Assertions" />
+  </ItemGroup>
+
+</Project>

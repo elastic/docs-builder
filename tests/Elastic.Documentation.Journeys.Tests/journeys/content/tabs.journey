@@ -1,0 +1,6 @@
+set viewport 1280 800
+open /syntax/tabs
+expect checked find role radio --name "Tab #1 title"
+find nth 1 .tabs-label click
+expect checked find role radio --name "Tab #2 title"
+expect unchecked find role radio --name "Tab #1 title"

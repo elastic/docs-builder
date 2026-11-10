@@ -152,6 +152,9 @@ let private publishContainers _ =
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
     createImage "src/tooling/essc/essc.csproj" "website-search-essc"
 
+// The journeys need Chrome and a built site, so they run through `mise run journeys` and their own CI jobs, not with the unit tests.
+let private isJourneyProject (project: string) = project.Contains "Journeys.Tests"
+
 let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
     let directories =
         match testSuite with
@@ -163,6 +166,7 @@ let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
         directories
         |> List.collect (fun d ->
             Directory.EnumerateFiles(Path.Combine(Paths.Root.FullName, d), "*.csproj", SearchOption.AllDirectories)
+            |> Seq.filter (fun project -> not (isJourneyProject project))
             |> Seq.sort
             |> Seq.toList
         )
