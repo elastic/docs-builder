@@ -50,5 +50,19 @@ internal static class Npx
 		}
 	}
 
+	// ArgumentList does not escape cmd.exe operators, so an argument that carries one would run as shell syntax.
+	internal static void RequireCmdSafe(IEnumerable<string> arguments)
+	{
+		foreach (var argument in arguments)
+		{
+			if (argument.AsSpan().ContainsAny(CmdMetacharacters) || argument.Any(char.IsControl))
+				throw new ArgumentException(
+					$"The argument '{argument}' contains characters that cmd.exe would interpret (one of & | < > ^ % ! \" ( )), so it is refused on Windows."
+				);
+		}
+	}
+
+	private static readonly System.Buffers.SearchValues<char> CmdMetacharacters = System.Buffers.SearchValues.Create("&|<>^%!\"()");
+
 	private static string Quote(string argument) => argument.Any(char.IsWhiteSpace) ? $"\"{argument}\"" : argument;
 }

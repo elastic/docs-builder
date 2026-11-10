@@ -308,6 +308,60 @@ public class DocsJourneysExportTests
 	}
 
 	[Test]
+	public async Task Export_ToAReusedOutFolder_RemovesStaleMonitorFiles()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
+		using var folder = new JourneyFolder().Add("landing/home", Monitor);
+		var outDir = Path.Combine(folder.Path, "out");
+		var stale = Path.Combine(outDir, "journeys", "deleted.journey.ts");
+		_ = Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
+		File.WriteAllText(stale, "stale");
+
+		_ = await Cli.RunAsync("export", "synthetics", "--url", site.Url, "--env", "demo", "--journeys", folder.Path, "--out", outDir);
+
+		_ = File.Exists(stale).Should().BeFalse("the journeys folder is cleared before the export");
+	}
+
+	[Test]
+	public async Task Export_WithAnOutThatOverlapsTheJourneys_IsRefusedBeforeAnythingIsDeleted()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
+		var root = Path.Combine(Path.GetTempPath(), "docs-journeys-" + Guid.NewGuid().ToString("N"));
+		var journeys = Path.Combine(root, "journeys");
+		_ = Directory.CreateDirectory(journeys);
+		var journey = Path.Combine(journeys, "home.journey");
+		File.WriteAllText(journey, Monitor);
+		try
+		{
+			// Same folder, different case: the same folder on macOS and Windows.
+			var differentCase = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+			foreach (var journeysArgument in differentCase ? new[] { journeys, Path.Combine(root, "JOURNEYS") } : [journeys])
+			{
+				var run = await Cli.RunAsync(
+					"export",
+					"synthetics",
+					"--url",
+					site.Url,
+					"--env",
+					"demo",
+					"--journeys",
+					journeysArgument,
+					"--out",
+					root
+				);
+
+				_ = run.ExitCode.Should().NotBe(0, run.Output);
+				_ = run.Output.Should().Contain("would overwrite the journeys folder");
+				_ = File.Exists(journey).Should().BeTrue("nothing is deleted when the folders overlap");
+			}
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Test]
 	public async Task Export_ForReal_WritesTheMonitorsTheConfigAndInstallsThePackages()
 	{
 		if (!await NpxWorksAsync())

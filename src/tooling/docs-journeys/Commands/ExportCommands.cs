@@ -117,7 +117,11 @@ internal sealed class ExportCommands
 	{
 		var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(SyntheticsPlan.JourneysFolder(outDir)));
 		var source = Path.TrimEndingDirectorySeparator(Path.GetFullPath(journeys));
-		if (source == folder || source.StartsWith(folder + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+		// macOS and Windows file systems ignore case by default, so `Journeys` and `journeys` are one folder there.
+		var comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+			? StringComparison.OrdinalIgnoreCase
+			: StringComparison.Ordinal;
+		if (string.Equals(source, folder, comparison) || source.StartsWith(folder + Path.DirectorySeparatorChar, comparison))
 			throw new ArgumentException($"--out would overwrite the journeys folder {journeys}. Choose another output folder.");
 		if (Directory.Exists(folder))
 			Directory.Delete(folder, recursive: true);
