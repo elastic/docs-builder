@@ -69,7 +69,6 @@ public class AskAiProviderTests
 			_ = builder.UseSetting("LLM_GATEWAY_SERVICE_ACCOUNT", "{}");
 			_ = builder.UseSetting("DOCUMENTATION_KIBANA_URL", "https://kibana.example.com");
 			_ = builder.UseSetting("DOCUMENTATION_KIBANA_APIKEY", "test-key");
-			if (provider is not null)
-				_ = builder.UseSetting(AskAiProviderOptions.ConfigurationKey, provider);
+			_ = builder.UseSetting(AskAiProviderOptions.ConfigurationKey, provider ?? string.Empty);
 		});
 }
