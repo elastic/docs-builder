@@ -1,9 +1,10 @@
 # Walks the main navigation paths of a published docs site and checks that links swap the page without reloading it.
-# Ported from synthetics/journeys/navigation-test.journey.ts. Run it with --url https://<host>/docs/ so that
-# relative paths resolve under /docs/.
+# Ported from synthetics/journeys/navigation-test.journey.ts. Run it with the cdp command in
+# docs/development/journeys.md#live-journeys: its --base-url ends in /docs/, so relative paths resolve under /docs/.
 # @tags navigation smoke
 # @requires build-type:assembler
 # @monitor schedule=15
+set viewport 1280 800
 open ./
 wait --load networkidle
 expect title "Elastic Docs | Elastic Docs"
