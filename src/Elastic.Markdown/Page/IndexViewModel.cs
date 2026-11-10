@@ -23,6 +23,7 @@ public class IndexViewModel
 {
 	public required BuildType BuildType { get; init; }
 	public string? EnvironmentName { get; init; }
+	public Uri? PublicBaseUrl { get; init; }
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }

@@ -190,15 +190,18 @@ public record GlobalLayoutViewModel
 	/// <summary>Static URL of the OG image, if configured.</summary>
 	public string? BrandingOgImageStaticPath => Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
 
-	/// <summary>Absolute URL of the default social image shipped in <c>_static</c>, so every environment serves it itself. Relative when there is no canonical base URL.</summary>
-	public string DefaultOgImageUrl
-	{
-		get
-		{
-			var path = Static("og-default.png");
-			return CanonicalBaseUrl is null ? path : new Uri(CanonicalBaseUrl, path).ToString();
-		}
-	}
+	/// <summary>The origin this build is served from; null when unknown (isolated builds).</summary>
+	public Uri? PublicBaseUrl { get; init; }
+
+	/// <summary>
+	/// The default social image. Self-hosted against the serving origin when it is known, because the
+	/// canonical origin is always production and would miss a preview's path prefix. Otherwise the
+	/// absolute elastic.co image, as social crawlers need an absolute URL.
+	/// </summary>
+	public string DefaultOgImageUrl =>
+		PublicBaseUrl is null
+			? "https://www.elastic.co/static-res/images/social_media_default.png"
+			: new Uri(PublicBaseUrl, Static("og-default.png")).ToString();
 
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
 	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;

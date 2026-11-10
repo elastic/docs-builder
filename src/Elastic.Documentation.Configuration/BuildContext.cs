@@ -65,6 +65,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	/// <summary>The assembler environment this build publishes to (e.g. <c>staging</c>). Null for isolated builds and for production.</summary>
 	public string? EnvironmentName { get; init; }
 
+	/// <summary>The origin this build is served from (assembler builds only), unlike <see cref="CanonicalBaseUrl"/>, which always points at production.</summary>
+	public Uri? PublicBaseUrl { get; init; }
+
 	/// <summary>The build does not render the API Explorer, so navigation hides the API sections. Saved in the generation state to invalidate incremental builds.</summary>
 	public bool SkipOpenApi { get; init; }
 
