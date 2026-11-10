@@ -169,6 +169,38 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		excerpt.Should().NotContain("word39");
 	}
 
+	private const string EsPreamble =
+		"**All methods and paths for this operation:**\n\n<div>\n  <span class=\"operation-verb get\">GET</span>\n  <span class=\"operation-path\">/_cat/indices</span>\n</div>\n<div>\n  <span class=\"operation-verb get\">GET</span>\n  <span class=\"operation-path\">/_cat/indices/{index}</span>\n</div>\n\n";
+
+	private const string KibanaPreamble =
+		"**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb post\">post</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/agent_builder/mcp</span></div>\n\nRefer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.\n\n";
+
+	[Test]
+	[Arguments(EsPreamble
+		+ "Get high-level information about indices in a cluster.\n\nSecond paragraph.", "Get high-level information about indices in a cluster.")]
+	[Arguments(KibanaPreamble + "Communicate with the MCP server.", "Communicate with the MCP server.")]
+	[Arguments("Reindex documents.\n\nCopies documents from a source to a destination.", "Reindex documents.")]
+	public void OperationText_SkipsThePathPreamble(string description, string expected) =>
+		ApiSeoDescription.Excerpt(ApiSeoDescription.OperationText(description, "Summary")).Should().Be(expected);
+
+	[Test]
+	[Arguments(EsPreamble, "Get index information")]
+	[Arguments(KibanaPreamble, "Get index information")]
+	[Arguments(null, "Get index information")]
+	[Arguments("  ", "Get index information")]
+	public void OperationText_NothingAfterThePreamble_UsesTheSummary(string? description, string expected) =>
+		ApiSeoDescription.OperationText(description, "Get index information").Should().Be(expected);
+
+	[Test]
+	public void OperationText_NoDescriptionNoSummary_ReturnsNull() => ApiSeoDescription.OperationText(EsPreamble, null).Should().BeNull();
+
+	[Test]
+	public void OperationText_ReferLineWithoutAListing_IsKept() =>
+		ApiSeoDescription
+			.OperationText("Refer to the docs for more information.", "Summary")
+			.Should()
+			.Be("Refer to the docs for more information.");
+
 	[Test]
 	public void Excerpt_EmptyMarkdown_ReturnsNull() => ApiSeoDescription.Excerpt("   ").Should().BeNull();
 
