@@ -5,7 +5,10 @@
 extern alias DocsApi;
 
 using AwesomeAssertions;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Http;
 using Nullean.Snapshots.TUnit;
@@ -19,7 +22,15 @@ public class DocsApiHttp
 	[HttpFiles("http/docs-api")]
 	public async Task Run(SnapshotFile file)
 	{
-		using var factory = new WebApplicationFactory<DocsApi::Program>();
+		// The page-feedback bootstrap hosted service would call Elasticsearch with whatever credentials the environment or user secrets hold.
+		using var factory = new WebApplicationFactory<DocsApi::Program>().WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+		{
+			var bootstrap = services.Where(
+				d => d.ServiceType == typeof(IHostedService) && d.ImplementationType?.Name == "PageFeedbackBootstrapService"
+			).ToList();
+			foreach (var descriptor in bootstrap)
+				_ = services.Remove(descriptor);
+		}));
 		using var client = factory.CreateClient();
 
 		var transcript = await HttpFileSnapshot.RunAsync(
