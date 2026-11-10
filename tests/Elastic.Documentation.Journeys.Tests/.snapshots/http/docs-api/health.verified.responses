@@ -1,0 +1,11 @@
+## health: GET /docs/_api/health
+status: 200 OK
+content-type: text/plain
+
+> Healthy
+
+## alive: GET /docs/_api/alive
+status: 200 OK
+content-type: text/plain
+
+> Healthy

@@ -10,7 +10,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The MCP and docs API areas run these hosts in memory. -->
+    <!-- Both hosts have a top-level Program in the global namespace, so each gets an extern alias. -->
+    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Mcp.Remote\Elastic.Documentation.Mcp.Remote.csproj" Aliases="McpRemote" />
+    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" Aliases="DocsApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Mcp.Remote.Tests\SseScrubbers.cs" Link="Linked\SseScrubbers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Nullean.Snapshots.Browser.Assertions" />
+    <PackageReference Include="Nullean.Snapshots.Http" />
+    <PackageReference Include="Nullean.Snapshots.Http.Assertions" />
   </ItemGroup>
 
 </Project>
