@@ -11,6 +11,7 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -80,7 +81,7 @@ public class AssemblerBuilder(
 			try
 			{
 				var result = await BuildAsync(set, markdownExporters.ToArray(), documentInferrer, ctx);
-				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.CrossLinkResolver);
+				CollectRedirects(redirects, result.Redirects, set);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
@@ -124,12 +125,31 @@ public class AssemblerBuilder(
 	private void CollectRedirects(
 		Dictionary<string, string> allRedirects,
 		IReadOnlyDictionary<string, LinkRedirect> redirects,
-		string repository,
-		ICrossLinkResolver linkResolver
+		AssemblerDocumentationSet set
 	)
 	{
 		if (redirects.Count == 0)
 			return;
+
+		var configuration = set.DocumentationSet.Configuration;
+		var source = new RedirectSource(
+			set.Checkout.Repository.Name,
+			set.DocumentationSet.CrossLinkResolver,
+			(configuration.RedirectsSource ?? configuration.SourceFile).FullName
+		);
+		CollectRedirects(allRedirects, redirects, source, context.Collector);
+	}
+
+	internal readonly record struct RedirectSource(string Repository, ICrossLinkResolver LinkResolver, string RedirectsFile);
+
+	internal static void CollectRedirects(
+		Dictionary<string, string> allRedirects,
+		IReadOnlyDictionary<string, LinkRedirect> redirects,
+		RedirectSource source,
+		IDiagnosticsCollector collector
+	)
+	{
+		var (repository, linkResolver, redirectsFile) = source;
 
 		foreach (var (k, v) in redirects)
 		{
@@ -149,8 +169,8 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 			{
 				_ = linkResolver.TryResolve(
-					specificErrorMessage => context.Collector.EmitError(
-						path,
+					specificErrorMessage => collector.EmitError(
+						redirectsFile,
 						$"An error occurred while resolving cross-link {path}",
 						specificErrorMessage
 					),
