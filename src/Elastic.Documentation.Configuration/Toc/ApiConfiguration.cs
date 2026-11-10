@@ -76,6 +76,18 @@ public class ApiProductEntry
 	public ApiCatalogSettings? Catalog { get; set; }
 
 	/// <summary>
+	/// Operation ids listed first on the product landing, in this order. Ids the spec does not have are skipped.
+	/// </summary>
+	[YamlPropertyName("popular")]
+	public List<string> Popular { get; set; } = [];
+
+	/// <summary>
+	/// Markdown for one how-to-use sentence shown under the landing intro, usually linking a conventions page.
+	/// </summary>
+	[YamlPropertyName("usage")]
+	public string? Usage { get; set; }
+
+	/// <summary>
 	/// 1-based line of this entry's mapping start in the source YAML. Populated by
 	/// <see cref="ApiConfigurationConverter"/>; used to attribute diagnostics that have no more
 	/// specific location, such as a missing <c>product:</c> key.
@@ -203,6 +215,12 @@ public class ResolvedApiConfiguration
 	/// Supplemental <c>op-*.md</c> / <c>tag-*.md</c> files are discovered from here.
 	/// </summary>
 	public IDirectoryInfo? ApiContentDirectory { get; init; }
+
+	/// <summary>Operation ids the product landing lists first; see <see cref="ApiProductEntry.Popular"/>.</summary>
+	public IReadOnlyList<string> PopularOperations { get; init; } = [];
+
+	/// <summary>The how-to-use sentence for the product landing; see <see cref="ApiProductEntry.Usage"/>.</summary>
+	public string? Usage { get; init; }
 
 	/// <summary>
 	/// Normalized catalog categories (<c>ece</c>, <c>ess</c>, <c>self</c>, <c>serverless</c>).
