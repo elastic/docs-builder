@@ -108,7 +108,7 @@ internal sealed class RunCommand
 		var settings = new RunSettings(journeyBase, hosts, selection.Context, identity) { Artifacts = artifacts, Parallel = parallel };
 		var outcomes = await JourneyExecution.RunAsync(plan, settings, ct).ConfigureAwait(false);
 
-		return Report(outcomes, journeyBase, junit, allowAllSkipped);
+		return Report(outcomes, journeyBase, junit, allowAllSkipped && !site.ProbeFailed);
 	}
 
 	internal static async Task<SiteContext> ResolveSiteAsync(

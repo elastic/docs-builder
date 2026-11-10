@@ -133,6 +133,39 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task Run_AllowAllSkippedWithAFailedProbe_StillExitsOne()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\nopen /");
+
+		var run = await Cli.RunAsync(
+			"run",
+			"--url",
+			site.Url,
+			"--env",
+			"prod",
+			"--probe",
+			"/error",
+			"--journeys",
+			folder.Path,
+			"--allow-all-skipped"
+		);
+
+		_ = run.ExitCode.Should().Be(1, run.Output);
+	}
+
+	[Test]
+	public async Task Run_RootPageWithOnlyTheBuildTypeBodyClass_IsAcceptedAsTheProbeFallback()
+	{
+		await using var site = new FakeSite(buildType: null, features: null, servedFromRoot: true, bodyClass: "build-type-isolated");
+		using var folder = new JourneyFolder().Add("a/isolated", "# @requires build-type:isolated\nopen /");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path);
+
+		_ = run.Output.Should().Contain("build-type=isolated").And.NotContain("is not a docs site");
+	}
+
+	[Test]
 	public async Task Run_ProbeThatFailsWithAServerError_DoesNotFallBackToTheRoot()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");

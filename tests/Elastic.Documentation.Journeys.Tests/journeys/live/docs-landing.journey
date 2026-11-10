@@ -4,4 +4,4 @@
 set viewport 1280 800
 open /docs
 expect visible body
-expect visible main
+expect visible #main-container
