@@ -42,6 +42,7 @@ internal static class JourneyExecution
 	public static async Task<IReadOnlyList<JourneyOutcome>> RunAsync(
 		IReadOnlyList<(LoadedJourney Loaded, string? Skip)> plan,
 		RunSettings settings,
+		IRunReporter reporter,
 		CancellationToken ct
 	)
 	{
@@ -53,22 +54,22 @@ internal static class JourneyExecution
 		{
 			var file = item.Loaded.File;
 			if (item.Loaded.Error is { } parseError)
-				return new JourneyOutcome(file, null, parseError, null, TimeSpan.Zero);
+				return Finish(new JourneyOutcome(file, null, parseError, null, TimeSpan.Zero));
 			if (item.Skip is { } reason)
 				return JourneyOutcome.Skip(file, reason);
 
 			await gate.WaitAsync(ct).ConfigureAwait(false);
+			reporter.Started(file);
 			var started = DateTime.UtcNow;
 			try
 			{
-				var result = await JourneyRunner.RunAsync(item.Loaded.Journey!, browser!, Options(file, settings), ct).ConfigureAwait(
-					false
-				);
-				return new JourneyOutcome(file, result, null, null, DateTime.UtcNow - started);
+				var options = Options(file, settings, step => reporter.Step(file, step));
+				var result = await JourneyRunner.RunAsync(item.Loaded.Journey!, browser!, options, ct).ConfigureAwait(false);
+				return Finish(new JourneyOutcome(file, result, null, null, DateTime.UtcNow - started));
 			}
 			catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
 			{
-				return new JourneyOutcome(file, null, e.Message, null, DateTime.UtcNow - started);
+				return Finish(new JourneyOutcome(file, null, e.Message, null, DateTime.UtcNow - started));
 			}
 			finally
 			{
@@ -76,9 +77,15 @@ internal static class JourneyExecution
 			}
 		});
 		return await Task.WhenAll(tasks).ConfigureAwait(false);
+
+		JourneyOutcome Finish(JourneyOutcome outcome)
+		{
+			reporter.Finished(outcome);
+			return outcome;
+		}
 	}
 
-	private static JourneyOptions Options(JourneyFile file, RunSettings settings)
+	private static JourneyOptions Options(JourneyFile file, RunSettings settings, Action<JourneyStep> onStep)
 	{
 		var headers = new Dictionary<string, string>();
 		if (settings.Identity.Synthetic)
@@ -94,6 +101,7 @@ internal static class JourneyExecution
 			Viewport = new JourneyViewport(1280, 800),
 			UserAgent = settings.Identity.Synthetic ? RunIdentity.UserAgent : null,
 			Headers = headers,
+			OnStep = onStep,
 			ReadOnly = settings.Identity.ReadOnly,
 			WritableUrls = settings.Identity.Writable
 		};

@@ -53,6 +53,14 @@ description = "Serves the output of `docs-builder codex build` (.artifacts/codex
 env = { JOURNEY_TARGET = "codex" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
+[tasks."journeys:live"]
+description = "Runs the live journeys read-only against a deployed site: prod, edge or demo (default). Extra args pass through, e.g. mise run journeys:live prod --only navigation/main-paths"
+usage = '''
+arg "[site]" default="demo" help="prod, edge, demo or local"
+arg "[args]..." var=#true help="Passed to docs-journeys run"
+'''
+run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args}"
+
 [tasks.lint]
 description = "C# format check (curb, read-only)"
 run = "dotnet run --project build -c release -- lint"

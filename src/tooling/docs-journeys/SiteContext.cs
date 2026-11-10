@@ -41,6 +41,25 @@ internal sealed partial class SiteContext
 
 	public JourneyContext ToJourneyContext() => new(Features, BuildType, Env);
 
+	/// <summary>The sites the environment names stand for.</summary>
+	private static readonly Dictionary<string, string> EnvironmentSites = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["prod"] = "https://www.elastic.co",
+		["edge"] = "https://docs-edge.elastic.dev",
+		["demo"] = "https://docs-demo.elastic.dev",
+		["local"] = "http://localhost:3000"
+	};
+
+	/// <summary>An http or https origin, or the name of an environment (<c>prod</c>, <c>edge</c>, <c>demo</c>, <c>local</c>).</summary>
+	public static Uri ParseUrl(string url) =>
+		EnvironmentSites.TryGetValue(url, out var site)
+			? new Uri(site)
+			: Uri.TryCreate(url, UriKind.Absolute, out var parsed) && parsed.Scheme is "http" or "https"
+				? parsed
+				: throw new ArgumentException(
+					$"--url must be an http or https origin or one of {string.Join(", ", EnvironmentSites.Keys)}, not '{url}'."
+				);
+
 	public static string? EnvFromHost(Uri url) => KnownHosts.TryGetValue(url.Host, out var env) ? env : null;
 
 	/// <summary>

@@ -9,6 +9,26 @@ internal sealed record JourneyFile(string Area, string Name, string Path)
 {
 	public string Id => $"{Area}/{Name}";
 
+	/// <summary>
+	/// Where to open this journey: its path relative to the working directory, or for a journey compiled into the binary the
+	/// matching file of the checkout when the working directory is inside one, and <c>journeys/...</c> otherwise.
+	/// </summary>
+	public string DisplayPath(string journeysRoot)
+	{
+		var relative = System.IO.Path.GetRelativePath(journeysRoot, Path).Replace('\\', '/');
+		if (JourneySource.IsEmbedded(journeysRoot))
+			return JourneySource.CheckoutJourneys() is { } checkout
+				? Relative(System.IO.Path.Combine(checkout, relative))
+				: $"journeys/{relative}";
+		return Relative(Path);
+	}
+
+	private static string Relative(string path)
+	{
+		var relative = System.IO.Path.GetRelativePath(Directory.GetCurrentDirectory(), path).Replace('\\', '/');
+		return relative.StartsWith("..", StringComparison.Ordinal) ? path : relative;
+	}
+
 	/// <summary>The journeys in <paramref name="root"/>; filtered to <paramref name="areas"/> when given.</summary>
 	public static IReadOnlyList<JourneyFile> Find(string root, string? areas)
 	{

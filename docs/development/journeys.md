@@ -96,6 +96,8 @@ The run prints a `context:` line with what it settled on and where each part cam
 | `--url` | The site to run against. For an assembler site given as an origin, journeys open relative paths under `/docs/` (`open get-started` is `https://host/docs/get-started`) and absolute ones from the origin; a URL that names a path is used as given. |
 | `--journeys` | A folder of journeys to run instead of the ones compiled into the binary. An empty folder is an error. Needed for `--changed-only`. |
 | `--area` | Only these areas, comma separated. An area with no journeys is an error. |
+| `--only` | Only these journeys by id (`area/name`), comma separated. An id that does not exist is an error. |
+| `--verbose` | List every skipped journey instead of collapsing a reason that more than three share. |
 | `--tag` | Only journeys with one of these `# @tags`, comma separated. |
 | `--changed-only <ref>` | Only journeys that differ from the git ref (`origin/main`) or are new, in the folder `--journeys` names. No change exits with 0. |
 | `--env`, `--build-type`, `--feature`, `--probe` | The context, as above. |
@@ -141,7 +143,19 @@ A live journey opens paths relative to a base URL that ends in `/docs/`, so `ope
 # @monitor schedule=15
 ```
 
-The layout changes with the `navigation-preview` flag, so a journey puts the steps that differ in `feature` blocks. A run has to tell the journey which flags the site has. Until the site reports them, pass them yourself with the `cdp` command from `Nullean.Cdp.Cli` 0.8.0 or later:
+The layout changes with the `navigation-preview` flag, so a journey puts the steps that differ in `feature` blocks. `docs-journeys` reads the flags from the site, so a live run needs only the site's name:
+
+```bash
+mise run journeys:live demo                                   # every journey that applies to demo
+mise run journeys:live prod --area navigation --tag smoke  # a selection
+mise run journeys:live demo --only navigation/main-paths   # one journey, by id
+```
+
+Results appear as each journey finishes. A reason that more than three journeys share (every isolated-site journey on a deployed site) is shown once with a count, and `--verbose` lists them. A failure is repeated at the end with the journey's path in the checkout, the line, the error and the last page it checked.
+
+`--url` takes `prod`, `edge`, `demo` and `local` (`http://localhost:3000`) as well as an origin.
+
+To debug a single file with Nullean.Cdp's own runner, `cdp run` from `Nullean.Cdp.Cli` takes the same context as flags. The allow list must include the hosts the docs pages load from (`RunCommand.DefaultAllow`), or those requests are refused:
 
 ```bash
 cdp run tests/Elastic.Documentation.Journeys.Tests/journeys/navigation/live/main-paths.journey \
@@ -150,7 +164,8 @@ cdp run tests/Elastic.Documentation.Journeys.Tests/journeys/navigation/live/main
   --read-only --viewport 1280x800 \
   --user-agent "Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0.0.0 Safari/537.36 Elastic/Synthetics" \
   --header "X-Docs-Synthetic-Monitor: true" \
-  --allow "*.elastic.co" --allow "*.googletagmanager.com"
+  --allow "*.elastic.co" --allow "*.elastic.dev" --allow "*.cloudfront.net" \
+  --allow "*.googletagmanager.com" --allow "elastic-global-nav-assets.s3.us-west-2.amazonaws.com"
 ```
 
 - `--read-only` refuses every request that is not a read, so a live run cannot change the site.

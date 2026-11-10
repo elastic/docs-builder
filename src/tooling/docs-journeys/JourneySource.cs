@@ -11,6 +11,21 @@ internal static class JourneySource
 
 	public static string Folder(string? journeys) => journeys ?? Embedded.Value;
 
+	/// <summary>True when <paramref name="folder"/> is the temporary folder the compiled-in journeys were written to.</summary>
+	public static bool IsEmbedded(string folder) => Embedded.IsValueCreated && folder == Embedded.Value;
+
+	/// <summary>The journeys folder of the repository the working directory is in, or <c>null</c> outside one.</summary>
+	public static string? CheckoutJourneys()
+	{
+		for (var directory = new DirectoryInfo(Directory.GetCurrentDirectory()); directory is not null; directory = directory.Parent)
+		{
+			var candidate = Path.Combine(directory.FullName, "tests", "Elastic.Documentation.Journeys.Tests", "journeys");
+			if (Directory.Exists(candidate))
+				return candidate;
+		}
+		return null;
+	}
+
 	private static string Extract()
 	{
 		var assembly = typeof(JourneySource).Assembly;
