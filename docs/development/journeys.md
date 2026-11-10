@@ -55,3 +55,33 @@ expect checked find role radio --name "Tab #2 title"
 - Find controls by role and accessible name first (`find role link click --name Admonitions --exact`). Use a CSS selector, quoted, when no role fits. `find nth` counts from zero.
 - A journey that only uses `expect` produces an empty transcript. Use `get text` or `snapshot -c -s <selector>` where you want the page content in the snapshot.
 - Accept new or changed transcripts with `SNAPSHOT_ACCEPT=1 mise run journeys`, then read the diff of the `.verified.journey` files.
+
+## Run the journeys against a deployed site
+
+`docs-journeys` is a native command-line tool that runs the same journey files against any URL. It is read-only: it runs the `expect` lines and reads nothing into a transcript. It uses the Chrome on the machine it runs on.
+
+```bash
+docs-journeys list
+docs-journeys run --url https://d3fvim9nkr2bzu.cloudfront.net --area landing,content --junit junit.xml
+```
+
+| Option | Meaning |
+|---|---|
+| `--url` | The origin to run against. A journey that opens `/docs` opens it on this origin. |
+| `--area` | Only these areas, comma separated. An area with no journeys is an error. |
+| `--journeys` | Run the journeys in this folder instead of the ones next to the binary. |
+| `--parallel` | How many journeys run at once, in one shared browser. The default is 4. |
+| `--allow` | Extra hosts a journey may reach, on top of `*.elastic.co` and the third-party hosts the docs pages load. |
+| `--junit` | Write a JUnit XML report. |
+| `--artifacts` | Write screenshots and recordings here, one folder per journey. |
+
+The command exits with 1 when any journey fails, and writes a table to `GITHUB_STEP_SUMMARY` when that variable is set.
+
+The binary ships with the journeys that were in the repository when it was built, so the journeys always match the `docs-builder` version they were released with. Take it from the `edge` image the way workflows take `docs-builder`:
+
+```bash
+docker cp "$(docker create --name tc ghcr.io/elastic/docs-builder-journeys:edge)":/app/. ./docs-journeys && docker rm tc
+./docs-journeys/docs-journeys run --url https://d3fvim9nkr2bzu.cloudfront.net
+```
+
+A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.
