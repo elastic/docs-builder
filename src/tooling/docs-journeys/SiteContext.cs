@@ -36,6 +36,9 @@ internal sealed partial class SiteContext
 	/// <summary>Where each part of the context came from, for the run's output.</summary>
 	public string Describe { get; init; } = "";
 
+	/// <summary>What the probe found worth saying: a failure, a missing tag, an assumption.</summary>
+	public IReadOnlyList<string> ProbeNotes { get; init; } = [];
+
 	/// <summary>True when the site's tags were needed and the probe could not read them.</summary>
 	public bool ProbeFailed { get; init; }
 
@@ -82,6 +85,13 @@ internal sealed partial class SiteContext
 		var features = options.Features is { } given ? new HashSet<string>(given, StringComparer.Ordinal) : null;
 		var notes = new List<string> { $"env={env ?? "unknown"}{(options.Env is null ? "" : " (--env)")}" };
 		var probeFailed = false;
+		var probeNotes = new List<string>();
+
+		void Note(string note)
+		{
+			notes.Add(note);
+			probeNotes.Add(note);
+		}
 
 		if (buildType is null || features is null)
 		{
@@ -89,7 +99,7 @@ internal sealed partial class SiteContext
 			if (html is null)
 			{
 				probeFailed = true;
-				notes.Add($"probe {options.ProbePath} failed: {error}");
+				Note($"probe {options.ProbePath} failed: {error}");
 			}
 			else
 			{
@@ -102,22 +112,20 @@ internal sealed partial class SiteContext
 				)
 				{
 					probeFailed = true;
-					notes.Add(
-						$"{probed} has a docs:build-type or docs:features tag with a value that is not a known build type or flag name"
-					);
+					Note($"{probed} has a docs:build-type or docs:features tag with a value that is not a known build type or flag name");
 					metaBuildType = null;
 					metaFeatures = null;
 				}
 				else
 				{
 					if (metaBuildType is null && metaFeatures is null)
-						notes.Add($"{probed} has no docs:build-type or docs:features tags");
+						Note($"{probed} has no docs:build-type or docs:features tags");
 					// Isolated and Codex sites render the build-type body class, so only a deployed assembler site that predates
 					// both can lack it.
 					var classBuildType = BuildTypeClass().Match(html) is { Success: true } c ? c.Groups["type"].Value : null;
 					var siteBuildType = metaBuildType ?? classBuildType;
 					if (siteBuildType is null && buildType is null)
-						notes.Add($"{probed} predates docs:build-type: assuming an assembler site");
+						Note($"{probed} predates docs:build-type: assuming an assembler site");
 					buildType ??= siteBuildType ?? "assembler";
 					features ??= metaFeatures;
 				}
@@ -132,6 +140,7 @@ internal sealed partial class SiteContext
 			BuildType = buildType,
 			Features = features ?? [],
 			Describe = string.Join(", ", notes),
+			ProbeNotes = probeNotes,
 			ProbeFailed = probeFailed
 		};
 	}

@@ -100,7 +100,12 @@ internal sealed class RunCommand
 			identity,
 			ct
 		).ConfigureAwait(false);
-		Console.Out.WriteLine($"context: {site.Describe}");
+		var interactive = ConsoleRunReporter.UseInteractive;
+		Console.Out.WriteLine(
+			interactive
+				? ConsoleRunReporter.ContextBlock(site, SiteContext.JourneyBase(baseUrl, site.BuildType), env, buildType, feature)
+				: $"context: {site.Describe}"
+		);
 
 		var selection = new Selection(SiteContext.Split(tag), site.ToJourneyContext(), allowMutations || allowWrites);
 		var plan = files
@@ -110,7 +115,7 @@ internal sealed class RunCommand
 		var hosts = DefaultAllow.Concat(SiteContext.Split(allow)).ToList();
 		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
 		var settings = new RunSettings(journeyBase, hosts, selection.Context, identity) { Artifacts = artifacts, Parallel = parallel };
-		var reporter = new ConsoleRunReporter(Console.Out, ConsoleRunReporter.UseInteractive, verbose);
+		var reporter = new ConsoleRunReporter(Console.Out, interactive, verbose, journeyBase);
 		reporter.Planned(
 			plan.Where(p => p.Skip is not null).Select(p => (p.Loaded.File, p.Skip!)).ToList(),
 			plan.Count(p => p.Skip is null)
@@ -119,6 +124,7 @@ internal sealed class RunCommand
 		var outcomes = await JourneyExecution.RunAsync(plan, settings, reporter, ct).ConfigureAwait(false);
 
 		return Report(
+			reporter,
 			outcomes,
 			journeyBase,
 			(junit, folder, clock.Elapsed, RerunCommand(url, journeys, (env, buildType, feature))),
@@ -172,13 +178,14 @@ internal sealed class RunCommand
 	}
 
 	private static int Report(
+		ConsoleRunReporter reporter,
 		IReadOnlyList<JourneyOutcome> outcomes,
 		Uri baseUrl,
 		(string? Junit, string Folder, TimeSpan Elapsed, string Rerun) run,
 		bool allowAllSkipped
 	)
 	{
-		Console.Out.WriteLine(ConsoleRunReporter.Summary(outcomes, baseUrl, run.Elapsed, run.Folder, run.Rerun));
+		Console.Out.WriteLine(reporter.Summary(outcomes, run.Elapsed, run.Folder, run.Rerun));
 		var failed = outcomes.Count(o => o.Failed);
 		var passed = outcomes.Count(o => o.Passed);
 		if (passed + failed == 0)
