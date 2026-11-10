@@ -182,8 +182,15 @@ The versions of `@nullean/journeys` and `@elastic/synthetics` are pinned in `Syn
 
 ## In CI
 
-`journeys.yml` builds `docs-builder` and the test project once on `ubuntu-24.04`, then runs the journeys in shards with the runner's own Chrome. It runs when the site, its markup, `docs/` or the journey tests change, and on every push to `main`.
+`journeys.yml` builds `docs-builder` and the test project once on `ubuntu-24.04`, then runs the journeys in shards with the runner's own Chrome. It runs when the site, its markup, the serving and configuration code, `docs/` or the journey tests change, and on every push to `main`.
 
 `tests/Elastic.Documentation.Journeys.Tests/shards.json` maps each shard to areas. A new folder under `journeys/` must be added to a shard, or the `plan` job fails. To split a slow shard, move areas into a new entry in that file.
 
-A failed run uploads a `journeys-results-<shard>` artifact. Download it into `.artifacts/.snapshots/received/` and run `dotnet snap review`.
+A failed run uploads a `journeys-results-<shard>` artifact. Extract it at the repository root, where it restores `.artifacts/.snapshots/received/`, and run `dotnet snap review`.
+
+## Checks on pull requests
+
+Two jobs in `journeys-live.yml` need no site build.
+
+- **Journeys stay valid against prod.** When a pull request changes a journey or an `.http` file, the changed ones run read-only against `https://www.elastic.co`. A journey whose `@requires` does not hold on prod is skipped with its reason. The job fails when a journey fails, and when every changed journey was skipped, so a journey that never ran on prod cannot pass unnoticed. A journey for a feature that ships with the pull request and is not yet on prod says so with `@requires !env:prod`.
+- **The `docs-journeys` image.** When the tool changes, the image builds without being pushed, the binary is copied out of it the way another repository's workflow would, and `docs-journeys list` runs from it. This is also the Linux native build check.
