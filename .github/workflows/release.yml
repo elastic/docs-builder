@@ -132,7 +132,11 @@ jobs:
           subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
           push-to-registry: true
 
+      # The package was created by its first push and this repository has no write access to it yet, so uploading the
+      # attestation gets a 403 from ghcr.io. A failure here must not stop the dispatch to docs-internal-workflows below.
+      # Grant `elastic/docs-builder` write access under the package's "Manage Actions access", then remove this line.
       - name: Attest docs-builder-journeys image
+        continue-on-error: true
         uses: actions/attest-build-provenance@v4
         with:
           subject-name: ghcr.io/elastic/docs-builder-journeys
