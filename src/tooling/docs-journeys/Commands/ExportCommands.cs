@@ -15,7 +15,7 @@ internal sealed class ExportCommands
 	/// files are written by <c>@nullean/journeys</c> through <c>npx</c>. Run <c>push</c> afterwards to send them to Kibana.
 	/// </summary>
 	/// <param name="url">-u, The origin of the site the monitors check, such as <c>https://www.elastic.co</c>.</param>
-	/// <param name="journeys">-j, The folder of journeys. Required.</param>
+	/// <param name="journeys">-j, A folder of journeys instead of the ones compiled into this binary.</param>
 	/// <param name="@out">-o, Where the generated monitors and the project config go.</param>
 	/// <param name="env">The environment's name (<c>prod</c>, <c>edge</c>, <c>demo</c>, <c>staging</c>). Defaults to the one the URL's host belongs to. Names the project.</param>
 	/// <param name="buildType">The site's build type, for <c>build-type:</c> conditions. Defaults to the site's <c>docs:build-type</c> tag, or unknown.</param>
@@ -29,8 +29,8 @@ internal sealed class ExportCommands
 	/// <param name="dryRun">Print the context, the project config and the command, and write and run nothing.</param>
 	public async Task<int> Synthetics(
 		string url,
-		string journeys,
 		string @out,
+		string? journeys = null,
 		string? env = null,
 		string? buildType = null,
 		string? feature = null,
@@ -47,6 +47,7 @@ internal sealed class ExportCommands
 		var baseUrl = Uri.TryCreate(url, UriKind.Absolute, out var parsed) && parsed.Scheme is "http" or "https"
 			? parsed
 			: throw new ArgumentException($"--url must be an http or https origin, not '{url}'.");
+		journeys = JourneySource.Folder(journeys);
 		if (!Directory.Exists(journeys))
 			throw new DirectoryNotFoundException($"No journeys folder at {journeys}.");
 		if (env is not null)

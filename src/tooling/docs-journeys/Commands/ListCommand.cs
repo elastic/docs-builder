@@ -12,12 +12,12 @@ namespace Elastic.Documentation.Journeys.Cli.Commands;
 internal sealed class ListCommand
 {
 	/// <summary>Lists the journeys with what their header says, or as JSON. Exits with 1 when one cannot be parsed.</summary>
-	/// <param name="journeys">-j, The folder of journeys. Required: journeys are specific to the kind of site they check.</param>
+	/// <param name="journeys">-j, A folder of journeys to list instead of the ones compiled into this binary.</param>
 	/// <param name="area">-a, Only these areas, comma separated.</param>
 	/// <param name="json">Write a JSON array of the journeys and their metadata.</param>
-	public Task<int> List(string journeys, string? area = null, bool json = false)
+	public Task<int> List(string? journeys = null, string? area = null, bool json = false)
 	{
-		var loaded = JourneyFile.Find(journeys, area).Select(LoadedJourney.Load).ToList();
+		var loaded = JourneyFile.Find(JourneySource.Folder(journeys), area).Select(LoadedJourney.Load).ToList();
 		if (json)
 			WriteJson(loaded);
 		else

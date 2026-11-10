@@ -61,8 +61,8 @@ expect checked find role radio --name "Tab #2 title"
 `docs-journeys` is a native command-line tool that runs journey files against any URL. It uses the Chrome on the machine it runs on. It checks the site with the `expect` lines and compares no transcripts.
 
 ```bash
-docs-journeys list --journeys tests/Elastic.Documentation.Journeys.Tests/journeys
-docs-journeys run --url https://docs-demo.elastic.dev --journeys journeys --area landing,content --junit junit.xml
+docs-journeys list
+docs-journeys run --url https://docs-demo.elastic.dev --area landing,content --junit junit.xml
 ```
 
 ### What a run knows about the site
@@ -70,7 +70,7 @@ docs-journeys run --url https://docs-demo.elastic.dev --journeys journeys --area
 Journeys say what they need in header comments (`# @requires build-type:isolated`, `# @requires navigation-preview`, `# @requires !env:prod`, `# @tags smoke`, `# @mutates`). A run decides which journeys apply from three facts, and a journey that does not apply is listed as skipped with its reason, in the console, the JUnit file and the step summary:
 
 - **The environment.** `--env <name>`, or the name of the environment whose host the URL belongs to (`www.elastic.co` is `prod`, `docs-edge.elastic.dev` and its CloudFront origin are `edge`, `docs-demo.elastic.dev` is `demo`, `localhost` is `local`). Any other host is unknown.
-- **The build type and the feature flags.** The tool reads the `docs:build-type` and `docs:features` tags from the page `--probe` names (`/docs` by default). `--build-type` and `--feature` (comma separated) override what the page says. A site that predates the tags, or a page that does not answer, leaves them unknown.
+- **The build type and the feature flags.** The tool reads the `docs:build-type` and `docs:features` tags from the page `--probe` names (`/docs` by default). `--build-type` and `--feature` (comma separated) override what the page says. A page that answers with neither `docs:build-type` nor a `build-type-*` body class (isolated and Codex builds always render the class) is an assembler site that predates both, so the build type is `assembler` and no feature is on. A page that does not answer leaves both unknown.
 - **Unknown is not matched.** A plain condition on something unknown fails and a negated one holds, so `# @requires !env:prod` still runs on a site whose environment is unknown.
 
 The run prints a `context:` line with what it settled on and where each part came from. When every selected journey is skipped, nothing was checked and the command exits with 1.
@@ -80,10 +80,10 @@ The run prints a `context:` line with what it settled on and where each part cam
 | Option | Meaning |
 |---|---|
 | `--url` | The origin to run against. A journey that opens `/docs` opens it on this origin. |
-| `--journeys` | Required. The folder of journeys to run. An empty folder is an error. |
+| `--journeys` | A folder of journeys to run instead of the ones compiled into the binary. An empty folder is an error. Needed for `--changed-only`. |
 | `--area` | Only these areas, comma separated. An area with no journeys is an error. |
 | `--tag` | Only journeys with one of these `# @tags`, comma separated. |
-| `--changed-only <ref>` | Only journeys that differ from the git ref (`origin/main`) or are new. No change exits with 0. |
+| `--changed-only <ref>` | Only journeys that differ from the git ref (`origin/main`) or are new, in the folder `--journeys` names. No change exits with 0. |
 | `--env`, `--build-type`, `--feature`, `--probe` | The context, as above. |
 | `--parallel` | How many journeys run at once, in one shared browser. The default is 4. |
 | `--allow` | Extra hosts a journey may reach, on top of `*.elastic.co`, `*.elastic.dev`, `*.cloudfront.net` and the third-party hosts the docs pages load. |
@@ -110,7 +110,7 @@ A run is safe against a live site unless told otherwise:
 
 The command exits with 1 when any journey fails, when one cannot be parsed (the others still run), or when every selected journey was skipped. It writes a table to `GITHUB_STEP_SUMMARY` when that variable is set.
 
-The binary ships no journeys. The journeys under `tests/Elastic.Documentation.Journeys.Tests/journeys` check the isolated docs-builder test site (`#isolated-header`, the `/syntax/*` pages), so they say `# @requires build-type:isolated` and a run against a deployed assembler site skips them. Pass `--journeys` a folder written for the site you run against.
+Every journey under `tests/Elastic.Documentation.Journeys.Tests/journeys` is compiled into the binary, so one file carries the runner and the journeys that match its build, and `list` and `run` need no folder. The tool decides which of them apply to the site from their `# @requires` lines: the isolated-site journeys (`#isolated-header`, the `/syntax/*` pages) say `build-type:isolated` and a deployed assembler site skips them, and the live journeys (`journeys/live`, one of them a `@monitor`) say `build-type:assembler`. A run where every journey is skipped still exits with 1, so it cannot pass without checking anything.
 
 A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.
 
@@ -119,7 +119,7 @@ A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestati
 A journey marked `# @monitor` can also run as an Elastic Synthetics monitor. Two commands turn the journeys into monitors and send them to Kibana:
 
 ```bash
-docs-journeys export synthetics --url https://docs-demo.elastic.dev --journeys journeys --out synthetics
+docs-journeys export synthetics --url https://docs-demo.elastic.dev --out synthetics
 docs-journeys push --out synthetics --env demo
 ```
 
@@ -127,7 +127,7 @@ docs-journeys push --out synthetics --env demo
 
 | Option | Meaning |
 |---|---|
-| `--url`, `--journeys`, `--out` | The site, the folder of journeys, and where the monitors go. All three are required. |
+| `--url`, `--out` | The site and where the monitors go. Both are required. `--journeys` names a folder instead of the embedded journeys. |
 | `--env` | The environment's name. Defaults to the one the URL's host belongs to. The export fails when it is unknown, because the name picks the project. |
 | `--build-type`, `--feature`, `--probe` | The same as for `run`. |
 | `--paging` | Turn `# @alert pagerduty` into alert configuration. Only `--env prod` accepts it: edge, demo and staging monitors never page. |

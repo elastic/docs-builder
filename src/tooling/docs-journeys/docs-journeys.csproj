@@ -16,6 +16,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Every journey is compiled into the binary, so one file carries the runner and the journeys that match its build. -->
+    <EmbeddedResource Include="..\..\..\tests\Elastic.Documentation.Journeys.Tests\journeys\**\*.journey"
+                      LogicalName="journeys/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Nullean.Argh.Hosting" />
     <PackageReference Include="Nullean.Cdp" />
     <PackageReference Include="Nullean.Cdp.Journeys" />
