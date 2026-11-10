@@ -165,6 +165,12 @@ public record GlobalLayoutViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	/// <summary>Assembler environment name; null for isolated builds and production.</summary>
+	public string? EnvironmentName { get; init; }
+
+	/// <summary>The default favicon: the Elastic glyph, with a coloured label for every environment except production.</summary>
+	public string FaviconStaticPath => Static(EnvironmentFavicon.FileName(BuildType, EnvironmentName));
+
 	public string PageFeedbackSurface { get; init; } = "docs";
 
 	public bool RenderHamburgerIcon { get; init; } = true;
@@ -183,6 +189,19 @@ public record GlobalLayoutViewModel
 
 	/// <summary>Static URL of the OG image, if configured.</summary>
 	public string? BrandingOgImageStaticPath => Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
+
+	/// <summary>The origin this build is served from; null when unknown (isolated builds).</summary>
+	public Uri? PublicBaseUrl { get; init; }
+
+	/// <summary>
+	/// The default social image. Self-hosted against the serving origin when it is known, because the
+	/// canonical origin is always production and would miss a preview's path prefix. Otherwise the
+	/// absolute elastic.co image, as social crawlers need an absolute URL.
+	/// </summary>
+	public string DefaultOgImageUrl =>
+		PublicBaseUrl is null
+			? "https://www.elastic.co/static-res/images/social_media_default.png"
+			: new Uri(PublicBaseUrl, Static(EnvironmentFavicon.OgImageFileName(EnvironmentName))).ToString();
 
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
 	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;

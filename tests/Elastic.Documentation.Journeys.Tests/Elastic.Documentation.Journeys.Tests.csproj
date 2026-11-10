@@ -7,10 +7,13 @@
   <ItemGroup>
     <!-- Builds docs-builder so the isolated target can serve this repository's docs/ folder; its output is not referenced. -->
     <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" ReferenceOutputAssembly="false" />
+    <!-- The CLI tests run docs-journeys as a process. -->
+    <ProjectReference Include="..\..\src\tooling\docs-journeys\docs-journeys.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Nullean.Snapshots.Browser.Assertions" />
+    <PackageReference Include="Nullean.Snapshots.Http.Assertions" />
   </ItemGroup>
 
 </Project>

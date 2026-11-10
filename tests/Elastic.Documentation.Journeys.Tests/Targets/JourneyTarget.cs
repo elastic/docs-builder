@@ -33,6 +33,18 @@ public sealed partial class JourneyTarget : IAsyncInitializer, IAsyncDisposable
 
 	public JourneySnapshotOptions Options => new() { BaseUrl = BaseUrl };
 
+	/// <summary>
+	/// The journeys open <c>/syntax/...</c> and assert the isolated header and titles, which only the isolated site has
+	/// (assembler content lives under <c>/docs/...</c>, Codex under <c>/r/&lt;repo&gt;/...</c>). Other targets skip them
+	/// until they get journeys of their own.
+	/// </summary>
+	public Task<JourneySnapshotOptions> OptionsForIsolatedJourneysAsync()
+	{
+		if (Name != "isolated")
+			Skip.Test($"These journeys target the isolated site; none are written for '{Name}' yet.");
+		return Task.FromResult(Options);
+	}
+
 	public async Task InitializeAsync()
 	{
 		Name = Environment.GetEnvironmentVariable("JOURNEY_TARGET")?.Trim().ToLowerInvariant() is { Length: > 0 } name ? name : "isolated";
