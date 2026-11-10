@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Nullean.Snapshots.Browser.Assertions" />
+    <PackageReference Include="Nullean.Snapshots.Http.Assertions" />
   </ItemGroup>
 
 </Project>

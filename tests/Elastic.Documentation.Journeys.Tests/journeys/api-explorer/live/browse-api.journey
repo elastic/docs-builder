@@ -1,0 +1,45 @@
+# Opens the API catalog, an API's landing page, switches its version and opens an operation.
+# Ported from synthetics/journeys/api-explorer.journey.ts. The version control differs by layout: a popover in the
+# API identity header (legacy), a link menu in the API sidebar (navigation-preview).
+# @tags api-explorer smoke
+# @requires build-type:assembler assembler-api-explorer
+# @monitor schedule=15
+set viewport 1280 800
+open api/
+wait --load networkidle
+expect visible find role heading --name "Elastic APIs"
+
+# Catalog to the Elasticsearch API.
+click "#elastic-docs-v3 a[href*='/docs/api/doc/elasticsearch']"
+wait --url **/docs/api/doc/elasticsearch**
+
+# Switch to an older version than the one the catalog opens (v9), so the assertions fail if switching is broken.
+feature !navigation-preview
+  expect visible "#api-hub-switcher button"
+  click "#api-hub-switcher button"
+  click "#api-version-switcher a[href*='/docs/api/doc/elasticsearch/v8']"
+end
+feature navigation-preview
+  expect visible "#api-version-switcher summary"
+  click "#api-version-switcher summary"
+  click "#api-version-switcher a[href*='/docs/api/doc/elasticsearch/v8']"
+end
+wait --url **/docs/api/doc/elasticsearch/v8*
+expect url **/docs/api/doc/elasticsearch/v8*
+# The URL changes before the new version's page is in, so wait for the control to show the new version.
+feature !navigation-preview
+  expect text ".api-identity-version-label" v8 --contains
+end
+feature navigation-preview
+  expect attr "#api-version-switcher summary" aria-label "API version: v8"
+end
+
+# Open an operation of that version: its page shows the method and the route under "Paths". Waiting for a link of the
+# new version also waits for the page swap to finish.
+expect attached "#elastic-docs-v3 a[href*='/docs/api/doc/elasticsearch/v8/operation/']"
+wait --load networkidle
+wait 1500
+click "#elastic-docs-v3 a[href*='/docs/api/doc/elasticsearch/v8/operation/']"
+wait --url **/docs/api/doc/elasticsearch/v8/operation/**
+expect text ".api-url-listing .api-method-label" "^(GET|PUT|POST|DELETE|HEAD|PATCH)$" --regex
+expect text ".api-url-listing .api-url-path" "^/" --regex
