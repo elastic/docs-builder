@@ -69,6 +69,12 @@ internal sealed class PushCommand
 		}
 
 		Console.Out.WriteLine($"pushing {monitors} monitor(s) to project {projectId} ({env})");
-		return await Npx.RunAsync(arguments, ct, Path.GetFullPath(@out)).ConfigureAwait(false);
+		return await Npx.RunReportedAsync(
+			"pushing the monitors with @elastic/synthetics",
+			Npx.Command,
+			arguments,
+			ct,
+			Path.GetFullPath(@out)
+		).ConfigureAwait(false);
 	}
 }

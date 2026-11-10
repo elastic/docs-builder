@@ -30,7 +30,7 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--junit", folder.JUnit);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("context: env=local, build-type=assembler, features=[navigation-preview page-feedback]");
 		_ = run.Output.Should().Contain("ok      a/assembler").And.Contain("ok      a/flag");
 		_ = run
@@ -55,7 +55,7 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run
 			.Output
 			.Should()
@@ -88,7 +88,7 @@ public class DocsJourneysContextTests
 			"navigation-preview"
 		);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run
 			.Output
 			.Should()
@@ -107,7 +107,7 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--env", "prod");
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run
 			.Output
 			.Should()
@@ -126,7 +126,7 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path);
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("Every selected journey was skipped");
 	}
 
@@ -191,7 +191,7 @@ public class DocsJourneysContextTests
 			"none"
 		);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("a/edited").And.Contain("a/new").And.NotContain("a/committed");
 		_ = none.Output.Should().NotContain("a/committed");
 	}
@@ -204,7 +204,7 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("build-type=isolated").And.Contain("ok      a/isolated");
 	}
 
@@ -246,7 +246,7 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--changed-only", "HEAD");
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("a/café").And.NotContain("No journeys changed");
 	}
 
@@ -275,10 +275,10 @@ public class DocsJourneysContextTests
 		var refused = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path);
 		var allowed = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--allow-writes");
 
-		_ = refused.ExitCode.Should().Be(1, refused.Output);
+		refused.ShouldHaveExited(1);
 		_ = refused.Output.Should().Contain("Blocked POST").And.Contain("read-only");
 		_ = site.Writes.Should().Be(1, "only the --allow-writes run reached the server");
-		_ = allowed.ExitCode.Should().Be(0, allowed.Output);
+		allowed.ShouldHaveExited(0);
 	}
 
 	[Test]
@@ -289,7 +289,7 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--writable", "**/save");
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 	}
 
 	[Test]
@@ -329,14 +329,36 @@ public class DocsJourneysContextTests
 
 		var run = await Cli.RunAsync("list", "--journeys", folder.Path);
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("a/bad  ERROR");
 	}
 }
 
+/// <summary>Carries the text of a failed docs-journeys run; TUnit's own FailTestException drops its message.</summary>
+internal sealed class DocsJourneysRunException(string message) : Exception(message);
+
+/// <summary>What a run of docs-journeys exited with and printed.</summary>
+internal readonly record struct CliRun(int ExitCode, string Output)
+{
+	/// <summary>Fails the test with the exit code and the tool's whole output, laid out so it reads as a log and not as a sentence.</summary>
+	public void ShouldHaveExited(int expected)
+	{
+		if (ExitCode != expected)
+			throw new DocsJourneysRunException(Describe($"docs-journeys exited with code {ExitCode}, expected {expected}."));
+	}
+
+	public void ShouldHaveFailed()
+	{
+		if (ExitCode == 0)
+			throw new DocsJourneysRunException(Describe("docs-journeys exited with code 0, expected a failure."));
+	}
+
+	private string Describe(string headline) => $"{headline}\n--- output of docs-journeys ---\n{Output.TrimEnd()}\n--- end of output ---";
+}
+
 internal static class Cli
 {
-	public static async Task<(int ExitCode, string Output)> RunAsync(params string[] arguments)
+	public static async Task<CliRun> RunAsync(params string[] arguments)
 	{
 		var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
 		info.ArgumentList.Add(FindDll());
@@ -346,10 +368,7 @@ internal static class Cli
 	}
 
 	/// <summary>Runs the tool with some environment variables set, or removed when the value is <c>null</c>.</summary>
-	public static async Task<(int ExitCode, string Output)> RunWithEnvironmentAsync(
-		IReadOnlyDictionary<string, string?> environment,
-		params string[] arguments
-	)
+	public static async Task<CliRun> RunWithEnvironmentAsync(IReadOnlyDictionary<string, string?> environment, params string[] arguments)
 	{
 		var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
 		info.ArgumentList.Add(FindDll());
@@ -374,13 +393,13 @@ internal static class Cli
 		_ = code.Should().Be(0, output);
 	}
 
-	private static async Task<(int ExitCode, string Output)> RunAsync(ProcessStartInfo info)
+	private static async Task<CliRun> RunAsync(ProcessStartInfo info)
 	{
 		using var process = Process.Start(info) ?? throw new InvalidOperationException($"{info.FileName} did not start.");
 		var output = process.StandardOutput.ReadToEndAsync();
 		var error = process.StandardError.ReadToEndAsync();
 		await process.WaitForExitAsync().ConfigureAwait(false);
-		return (process.ExitCode, await output.ConfigureAwait(false) + await error.ConfigureAwait(false));
+		return new CliRun(process.ExitCode, await output.ConfigureAwait(false) + await error.ConfigureAwait(false));
 	}
 
 	private static string FindDll()

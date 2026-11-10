@@ -18,7 +18,7 @@ public class DocsJourneysCliTests(JourneyTarget target)
 
 		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--junit", folder.JUnit);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("1 passed, 0 failed");
 		_ = File.ReadAllText(folder.JUnit).Should().Contain("failures=\"0\"");
 	}
@@ -30,7 +30,7 @@ public class DocsJourneysCliTests(JourneyTarget target)
 
 		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--junit", folder.JUnit);
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("FAILED  landing/broken");
 		var junit = File.ReadAllText(folder.JUnit);
 		_ = junit.Should().Contain("failures=\"1\"").And.Contain("<failure");
@@ -43,7 +43,7 @@ public class DocsJourneysCliTests(JourneyTarget target)
 
 		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--area", "missing");
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("No journeys in area missing");
 	}
 
@@ -56,7 +56,7 @@ public class DocsJourneysCliTests(JourneyTarget target)
 
 		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", empty);
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("No .journey files found");
 	}
 
@@ -68,7 +68,7 @@ public class DocsJourneysCliTests(JourneyTarget target)
 
 		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--junit", folder.JUnit);
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("ok      landing/home").And.Contain("FAILED  landing/broken").And.Contain("1 passed, 1 failed");
 		_ = File.ReadAllText(folder.JUnit).Should().Contain("tests=\"2\"").And.Contain("failures=\"1\"");
 	}
@@ -80,11 +80,11 @@ public class DocsJourneysCliTests(JourneyTarget target)
 
 		var run = await RunCliAsync(folder, "list", "--journeys", folder.Path);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Trim().Should().Be("content/tabs");
 	}
 
-	private static async Task<(int ExitCode, string Output)> RunCliAsync(TempJourneys _, params string[] arguments)
+	private static async Task<CliRun> RunCliAsync(TempJourneys _, params string[] arguments)
 	{
 		var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
 		info.ArgumentList.Add(FindCliDll());
@@ -94,7 +94,7 @@ public class DocsJourneysCliTests(JourneyTarget target)
 		var output = process.StandardOutput.ReadToEndAsync();
 		var error = process.StandardError.ReadToEndAsync();
 		await process.WaitForExitAsync().ConfigureAwait(false);
-		return (process.ExitCode, await output.ConfigureAwait(false) + await error.ConfigureAwait(false));
+		return new CliRun(process.ExitCode, await output.ConfigureAwait(false) + await error.ConfigureAwait(false));
 	}
 
 	private static string FindCliDll()

@@ -41,7 +41,7 @@ public class DocsJourneysExportTests
 			"--dry-run"
 		);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("context: env=demo (--env), build-type=assembler, features=[navigation-preview page-feedback]");
 		_ = run.Output.Should().Contain("project: elastic-co-docs-demo");
 		_ = run.Output.Should().Contain("id: 'elastic-co-docs-demo',").And.Contain("space: 'default',").And.Contain("schedule: 15,");
@@ -80,7 +80,7 @@ public class DocsJourneysExportTests
 			Path.Combine(folder.Path, "out")
 		);
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("could not be read");
 	}
 
@@ -91,7 +91,7 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "prod", "--dry-run");
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("was exported for the demo environment, not prod");
 	}
 
@@ -102,7 +102,7 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--project", "other", "--dry-run");
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("was exported for project elastic-co-docs-demo, not other");
 	}
 
@@ -128,7 +128,7 @@ public class DocsJourneysExportTests
 			"--dry-run"
 		);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("url: 'https://kibana.example/it\\'s-kibana',");
 	}
 
@@ -156,7 +156,7 @@ public class DocsJourneysExportTests
 			"--dry-run"
 		);
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain($"--paging is refused for the {env} environment: only prod pages");
 		_ = run.Output.Should().NotContain("command:");
 	}
@@ -182,7 +182,7 @@ public class DocsJourneysExportTests
 			"--dry-run"
 		);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("project: elastic-co-docs-prod").And.Contain(" --paging");
 	}
 
@@ -203,7 +203,7 @@ public class DocsJourneysExportTests
 			"--dry-run"
 		);
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("The environment of unknown.example.test is unknown").And.Contain("Pass --env");
 	}
 
@@ -231,7 +231,7 @@ public class DocsJourneysExportTests
 			"--dry-run"
 		);
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("--project may only contain letters, digits");
 	}
 
@@ -242,7 +242,7 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("would push 1 monitor(s) to project elastic-co-docs-demo (demo)");
 		_ = run
 			.Output
@@ -262,7 +262,7 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(environment, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("SYNTHETICS_API_KEY: set");
 		_ = run.Output.Should().NotContain("s3cret-key-value");
 	}
@@ -274,9 +274,34 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo");
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("SYNTHETICS_API_KEY is not set. Nothing was pushed.");
 		_ = run.Output.Should().NotContain("pushing");
+	}
+
+	[Test]
+	public async Task Push_WhenNpxFails_SaysWhatFailedAndExitsOneInsteadOfNpxsOwnCode()
+	{
+		if (OperatingSystem.IsWindows())
+			Skip.Test("The stand-in for npx is a shell script.");
+		using var folder = ExportedFolder();
+		var bin = Path.Combine(folder.Out, "..", "bin");
+		_ = Directory.CreateDirectory(bin);
+		var npx = Path.Combine(bin, "npx");
+		File.WriteAllText(npx, "#!/bin/sh\necho 'npm error code ENOTEMPTY'\nexit 217\n");
+		File.SetUnixFileMode(npx, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+		var environment = new Dictionary<string, string?>
+		{
+			["PATH"] = Path.GetFullPath(bin) + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
+			["SYNTHETICS_API_KEY"] = "not-a-real-key"
+		};
+
+		var run = await Cli.RunWithEnvironmentAsync(environment, "push", "--out", folder.Out, "--env", "demo");
+
+		run.ShouldHaveExited(1);
+		_ = run.Output.Should().Contain("npm error code ENOTEMPTY");
+		_ = run.Output.Should().Contain("docs-journeys: pushing the monitors with @elastic/synthetics failed: npx exited with code 217.");
+		_ = run.Output.Should().NotContain("not-a-real-key");
 	}
 
 	[Test]
@@ -286,7 +311,7 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("holds no monitors").And.Contain("would delete every monitor of elastic-co-docs-demo");
 	}
 
@@ -297,7 +322,7 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("node_modules does not exist").And.Contain("export synthetics");
 	}
 
@@ -308,7 +333,7 @@ public class DocsJourneysExportTests
 
 		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "de mo", "--dry-run");
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("--env may only contain letters, digits");
 	}
 
@@ -356,7 +381,7 @@ public class DocsJourneysExportTests
 					root
 				);
 
-				_ = run.ExitCode.Should().NotBe(0, run.Output);
+				run.ShouldHaveFailed();
 				_ = run.Output.Should().Contain("would overwrite the journeys folder");
 				_ = File.Exists(journey).Should().BeTrue("nothing is deleted when the folders overlap");
 			}
@@ -369,7 +394,6 @@ public class DocsJourneysExportTests
 
 	[Test]
 	// Both run the real npx, and concurrent npx runs of one package corrupt its shared ~/.npm/_npx cache (ENOTEMPTY, "journeys: not found").
-	[NotInParallel("npx")]
 	public async Task Export_ForReal_WritesTheMonitorsTheConfigAndInstallsThePackages()
 	{
 		if (!await NpxWorksAsync())
@@ -394,7 +418,7 @@ public class DocsJourneysExportTests
 			outDir
 		);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("1 monitor file(s)");
 		var generated = File.ReadAllText(Path.Combine(outDir, "journeys", "landing", "home.journey.ts"));
 		_ = generated.Should().Contain("monitor.use({ id: 'landing-home', schedule: 10, locations: ['germany'], tags: ['smoke'] })");
@@ -409,7 +433,6 @@ public class DocsJourneysExportTests
 
 	[Test]
 	// Both run the real npx, and concurrent npx runs of one package corrupt its shared ~/.npm/_npx cache (ENOTEMPTY, "journeys: not found").
-	[NotInParallel("npx")]
 	public async Task Export_OfNoApplicableMonitor_FailsUnlessEmptyIsAllowed()
 	{
 		if (!await NpxWorksAsync())
@@ -444,9 +467,9 @@ public class DocsJourneysExportTests
 			"--allow-empty"
 		);
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("No journey was exported").And.Contain("would delete every monitor");
-		_ = allowed.ExitCode.Should().Be(0, allowed.Output);
+		allowed.ShouldHaveExited(0);
 	}
 
 	private static string NpxName => OperatingSystem.IsWindows() ? "npx.cmd" : "npx";

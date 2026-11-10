@@ -20,6 +20,29 @@ internal static class Npx
 	public static Task<int> RunAsync(IReadOnlyList<string> arguments, CancellationToken ct, string? workingDirectory = null) =>
 		RunAsync(Command, arguments, ct, workingDirectory);
 
+	/// <summary>
+	/// Runs <paramref name="command"/> and, when it fails, says what was being done and with which exit code, then returns 1.
+	/// npm and node report a failure as their own exit code (a Node error number such as -39 reads as 217), which means
+	/// nothing to the person who ran docs-journeys, and the tool's own failures are all 1.
+	/// </summary>
+	public static async Task<int> RunReportedAsync(
+		string doing,
+		string command,
+		IReadOnlyList<string> arguments,
+		CancellationToken ct,
+		string? workingDirectory = null
+	)
+	{
+		var exit = await RunAsync(command, arguments, ct, workingDirectory).ConfigureAwait(false);
+		if (exit == 0)
+			return 0;
+		await Console
+			.Error
+			.WriteLineAsync($"docs-journeys: {doing} failed: {command} exited with code {exit}. Its output is above.")
+			.ConfigureAwait(false);
+		return 1;
+	}
+
 	public static async Task<int> RunAsync(
 		string command,
 		IReadOnlyList<string> arguments,

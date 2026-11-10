@@ -92,12 +92,20 @@ internal sealed class ExportCommands
 		ClearJourneysFolder(journeys, @out);
 		_ = Directory.CreateDirectory(@out);
 		await File.WriteAllTextAsync(SyntheticsPlan.ConfigPath(@out), config, ct).ConfigureAwait(false);
-		var exit = await Npx.RunAsync(arguments, ct).ConfigureAwait(false);
+		var exit = await Npx.RunReportedAsync("exporting the monitors with @nullean/journeys", Npx.Command, arguments, ct).ConfigureAwait(
+			false
+		);
 		if (exit != 0)
 			return exit;
 
 		await File.WriteAllTextAsync(SyntheticsPlan.PackageJsonPath(@out), SyntheticsPlan.PackageJson(), ct).ConfigureAwait(false);
-		exit = await Npx.RunAsync(Npx.NpmCommand, SyntheticsPlan.InstallArguments, ct, Path.GetFullPath(@out)).ConfigureAwait(false);
+		exit = await Npx.RunReportedAsync(
+			"installing the Synthetics packages with npm",
+			Npx.NpmCommand,
+			SyntheticsPlan.InstallArguments,
+			ct,
+			Path.GetFullPath(@out)
+		).ConfigureAwait(false);
 		if (exit != 0)
 			return exit;
 

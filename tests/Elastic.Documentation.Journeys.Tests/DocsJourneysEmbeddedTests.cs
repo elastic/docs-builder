@@ -15,7 +15,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	{
 		var run = await Cli.RunAsync("list");
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("landing/home").And.Contain("navigation/sidebar");
 	}
 
@@ -24,7 +24,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	{
 		var run = await Cli.RunAsync("run", "--url", target.BaseUrl.ToString(), "--changed-only", "origin/main");
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 		_ = run.Output.Should().Contain("--changed-only").And.Contain("--journeys");
 	}
 
@@ -46,7 +46,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 			"--allow-writes"
 		);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("build-type=isolated").And.Contain("0 failed");
 		_ = run.Output.Should().MatchRegex(@"[1-9]\d* passed");
 	}
@@ -59,7 +59,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--journeys", folder.Path);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		_ = run.Output.Should().Contain("build-type=assembler").And.Contain("assuming an assembler site").And.Contain("1 passed");
 	}
 
@@ -92,7 +92,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "demo", "--journeys", folder.Path);
 
-		_ = run.ExitCode.Should().Be(0, run.Output);
+		run.ShouldHaveExited(0);
 		lock (site.Paths)
 		{
 			_ = site.Paths.Should().Contain("/docs/get-started").And.Contain("/absolute").And.NotContain("/get-started");
@@ -108,9 +108,9 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 		var strict = await Cli.RunAsync("run", "--url", site.Url, "--env", "demo", "--journeys", folder.Path);
 		var lenient = await Cli.RunAsync("run", "--url", site.Url, "--env", "demo", "--journeys", folder.Path, "--allow-all-skipped");
 
-		_ = strict.ExitCode.Should().Be(1, strict.Output);
+		strict.ShouldHaveExited(1);
 		_ = strict.Output.Should().Contain("nothing was checked");
-		_ = lenient.ExitCode.Should().Be(0, lenient.Output);
+		lenient.ShouldHaveExited(0);
 		_ = lenient.Output.Should().Contain("none applies to this site");
 	}
 
@@ -151,7 +151,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 			"--allow-all-skipped"
 		);
 
-		_ = run.ExitCode.Should().Be(1, run.Output);
+		run.ShouldHaveExited(1);
 	}
 
 	[Test]
@@ -196,7 +196,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 			"--dry-run"
 		);
 
-		_ = run.ExitCode.Should().NotBe(0, run.Output);
+		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("not a known build type or flag name").And.NotContain("calc.exe");
 	}
 }
