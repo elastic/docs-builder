@@ -1,7 +1,7 @@
 ---
 type: api
 title: Kibana spaces
-description: Spaces enable you to organize your dashboards and other saved objects into meaningful categories. You can use the default space or create your own spaces.
+description: "Spaces enable you to organize your dashboards and other saved objects into meaningful categories. You can use the default space or create your own spaces."
 url: /api/doc/kibana/kibana-api-overview
 resource: /api/doc/kibana/kibana-api-overview
 ---
