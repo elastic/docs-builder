@@ -24,6 +24,15 @@ public class EnvironmentFaviconTests
 		EnvironmentFavicon.FileName(buildType, environment).Should().Be(expected);
 
 	[Test]
+	[Arguments("prod", "og-default.png")]
+	[Arguments(null, "og-default.png")]
+	[Arguments("staging", "og-staging.png")]
+	[Arguments("local", "og-dev.png")]
+	[Arguments("air-gapped", "og-other.png")]
+	public void OgImageFileName_Environment_PicksTheImage(string? environment, string expected) =>
+		EnvironmentFavicon.OgImageFileName(environment).Should().Be(expected);
+
+	[Test]
 	public void FileName_EveryNonProdFavicon_ExistsAsStaticAsset()
 	{
 		var assets = typeof(EnvironmentFavicon).Assembly.GetManifestResourceNames();
@@ -33,5 +42,7 @@ public class EnvironmentFaviconTests
 		assets.Should().Contain(n => n.EndsWith("apple-touch-icon.png"));
 		assets.Should().Contain(n => n.EndsWith("favicon.ico"));
 		assets.Should().Contain(n => n.EndsWith("og-default.png"));
+		foreach (var name in new[] { "staging", "edge", "demo", "dev", "preview", "other" })
+			assets.Should().Contain(n => n.EndsWith($"og-{name}.png"));
 	}
 }

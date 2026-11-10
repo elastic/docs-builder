@@ -21,4 +21,16 @@ public static class EnvironmentFavicon
 		null or "" => "favicon-isolated.svg",
 		_ => "favicon-other.svg"
 	};
+
+	/// <summary>The social image: the plain image in production, the same image with the environment label elsewhere.</summary>
+	public static string OgImageFileName(string? environmentName) => environmentName?.ToLowerInvariant() switch
+	{
+		null or "" or "prod" => "og-default.png",
+		"staging" => "og-staging.png",
+		"edge" => "og-edge.png",
+		"demo" => "og-demo.png",
+		"dev" or "local" => "og-dev.png",
+		"preview" => "og-preview.png",
+		_ => "og-other.png"
+	};
 }

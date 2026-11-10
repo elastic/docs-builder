@@ -201,7 +201,7 @@ public record GlobalLayoutViewModel
 	public string DefaultOgImageUrl =>
 		PublicBaseUrl is null
 			? "https://www.elastic.co/static-res/images/social_media_default.png"
-			: new Uri(PublicBaseUrl, Static("og-default.png")).ToString();
+			: new Uri(PublicBaseUrl, Static(EnvironmentFavicon.OgImageFileName(EnvironmentName))).ToString();
 
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
 	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;
