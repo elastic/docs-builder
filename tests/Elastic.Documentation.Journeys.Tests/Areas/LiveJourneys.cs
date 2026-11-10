@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Journeys.Tests.Areas;
 public class LiveJourneys
 {
 	private const string Reason =
-		"Live journeys run against a published site: docs-journeys run --url https://<host>/docs/ --journeys tests/Elastic.Documentation.Journeys.Tests/journeys/<area>/live";
+		"Live journeys run against a published site: run them with cdp run <file> --base-url https://<host>/docs/ --feature ... as described in docs/development/journeys.md#live-journeys";
 
 	[Test]
 	[JourneyFiles("journeys/chrome/live")]
