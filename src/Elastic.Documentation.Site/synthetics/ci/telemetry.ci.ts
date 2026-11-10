@@ -1,5 +1,5 @@
 import { expect, journey, step } from '@elastic/synthetics'
-import type { Page } from 'playwright-core'
+import type { Page, Request } from 'playwright-core'
 
 /**
  * Runs the deployed site with the EDOT browser SDK on, in a real browser, and checks that telemetry is
@@ -74,6 +74,8 @@ journey('browser telemetry', ({ browser, params }) => {
 
     const exports: TelemetryExport[] = []
     const pageErrors: string[] = []
+    const pendingExports = new Set<Request>()
+    const failedExports: string[] = []
     const sdkChunks = new Set<string>()
     let page: Page
 
@@ -95,19 +97,37 @@ journey('browser telemetry', ({ browser, params }) => {
             )
             if (match) sdkChunks.add(match[1])
         })
-        page.on('response', async (response) => {
-            const request = response.request()
+        const exportSignal = (request: Request) => {
             const match = /\/_api\/v1\/o\/([tlm])$/.exec(
-                new URL(response.url()).pathname
+                new URL(request.url()).pathname
             )
-            if (request.method() !== 'POST' || !match) return
-            const text = request.postData() ?? ''
+            return request.method() === 'POST' && match
+                ? SIGNAL_BY_PATH_SUFFIX[match[1]]
+                : undefined
+        }
+        page.on('request', (request) => {
+            if (exportSignal(request)) pendingExports.add(request)
+        })
+        page.on('requestfinished', async (request) => {
+            const signal = exportSignal(request)
+            if (!signal) return
+            const response = await request.response()
+            const buffer = request.postDataBuffer()
             exports.push({
-                signal: SIGNAL_BY_PATH_SUFFIX[match[1]],
-                status: response.status(),
-                bytes: text.length,
-                body: JSON.parse(text || '{}') as OtlpBody,
+                signal,
+                status: response?.status() ?? 0,
+                bytes: buffer?.length ?? 0,
+                body: JSON.parse(buffer?.toString('utf8') || '{}') as OtlpBody,
             })
+            pendingExports.delete(request)
+        })
+        page.on('requestfailed', (request) => {
+            const signal = exportSignal(request)
+            if (!signal) return
+            failedExports.push(
+                `${signal} -> ${request.failure()?.errorText ?? 'failed'}`
+            )
+            pendingExports.delete(request)
         })
 
         await page.goto(docsRoot, { timeout: 60000, waitUntil: 'networkidle' })
@@ -135,11 +155,18 @@ journey('browser telemetry', ({ browser, params }) => {
     step('Telemetry reaches the collector', async () => {
         // Leaving the page makes the SDK flush what it has batched.
         await page.goto('about:blank')
-        const arrived = await waitFor(
-            () => exports.some((e) => e.signal === 'logs'),
+        // Wait for the log export and for every export still in flight, so a late failure is not missed.
+        const settled = await waitFor(
+            () =>
+                pendingExports.size === 0 &&
+                exports.some((e) => e.signal === 'logs'),
             20000
         )
-        expect(arrived, 'No log export was posted within 20 s').toBe(true)
+        expect(
+            settled,
+            `No log export finished within 20 s (${pendingExports.size} still pending)`
+        ).toBe(true)
+        expect(failedExports, 'No export may fail').toEqual([])
 
         const failed = exports.filter((e) => e.status < 200 || e.status >= 300)
         expect(
