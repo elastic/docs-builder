@@ -261,7 +261,7 @@ public static class ApiOverviewBuilder
 				showTooltip: false,
 				designSystem: designSystem
 			),
-			Deprecated = operation.Model.Operation.Deprecated,
+			Deprecated = operation.Model.Deprecated,
 			DesignSystem = designSystem
 		};
 }

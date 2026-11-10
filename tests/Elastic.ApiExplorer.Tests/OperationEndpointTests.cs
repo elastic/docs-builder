@@ -24,8 +24,8 @@ public class OperationEndpointTests
 		};
 		var withoutListing = Op(HttpMethod.Get, "/_cluster/health");
 
-		((IHttpMethodNavigationModel)withListing).HttpMethod.Should().Be("post");
-		((IHttpMethodNavigationModel)withoutListing).HttpMethod.Should().Be("get");
+		((IApiOperationNavigationModel)withListing).HttpMethod.Should().Be("post");
+		((IApiOperationNavigationModel)withoutListing).HttpMethod.Should().Be("get");
 	}
 
 	private static ApiOperation Op(HttpMethod method, string route, string? operationId = null, params string[] queryParameters) =>

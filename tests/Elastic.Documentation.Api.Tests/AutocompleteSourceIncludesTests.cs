@@ -30,4 +30,8 @@ public class AutocompleteSourceIncludesTests
 		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain(required);
 		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("api.routes");
 	}
+
+	[Test]
+	public void AutocompleteSourceIncludes_ContainTheDeprecatedFlag() =>
+		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("api.deprecated");
 }
