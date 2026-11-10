@@ -32,8 +32,6 @@ public sealed record NavigationRenderNode
 	public string? Badge { get; init; }
 	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
 	public string? HttpMethod { get; init; }
-	/// <summary>Endpoint path template for API operation leaves, shown under the title so a familiar path is easy to spot.</summary>
-	public string? HttpPath { get; init; }
 	/// <summary>True when the row groups several HTTP operations under one endpoint.</summary>
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
@@ -398,15 +396,16 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
-		var endpoint = item is ILeafNavigationItem<INavigationModel> { Model: IHttpMethodNavigationModel method } ? method : null;
+		var httpMethod = item is ILeafNavigationItem<INavigationModel> { Model: IHttpMethodNavigationModel method }
+			? method.HttpMethod
+			: null;
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			HttpMethod = endpoint?.HttpMethod,
-			HttpPath = endpoint?.HttpPath,
+			HttpMethod = httpMethod,
 			Url = item.Url
 		};
 	}
@@ -467,9 +466,6 @@ public sealed record NavigationRenderModel
 		Append(hash, node.NavigationTitle);
 		Append(hash, node.Badge ?? string.Empty);
 		Append(hash, node.HttpMethod ?? string.Empty);
-		// Hashed only when set, so trees without API operations keep the hash, and so the tree id, they had before.
-		if (node.HttpPath is { } httpPath)
-			Append(hash, httpPath);
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);

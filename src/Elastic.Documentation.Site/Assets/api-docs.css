@@ -655,11 +655,7 @@
 	overflow-wrap: anywhere;
 }
 
-/* The path sits under the title, so a familiar endpoint is easy to spot. The chip lines up with the title line. */
-#markdown-content a.api-index-item:has(.api-index-item-path) {
-	align-items: flex-start;
-}
-
+/* The path sits under the title, so a familiar endpoint is easy to spot. The chip stays centered on the two lines. */
 .api-index-item-text {
 	display: flex;
 	flex-direction: column;
@@ -880,21 +876,6 @@
 }
 
 /* Legacy rows reserve 32px on the right; a row with a chip needs less. */
-/* The endpoint path under an operation's title: muted and monospaced so it reads as request syntax, not prose. */
-#pages-nav .nav-api-path {
-	display: block;
-	margin-top: 2px;
-	padding: 0;
-	border: 0;
-	background: none;
-	color: var(--color-grey-80);
-	font-family: var(--font-mono, ui-monospace, monospace);
-	font-size: 11px;
-	font-weight: 400;
-	line-height: 16px;
-	overflow-wrap: anywhere;
-}
-
 #pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
 	padding-right: 8px;
 }

@@ -97,21 +97,6 @@
 	overflow-wrap: anywhere;
 }
 
-/* The endpoint path under an API operation's title: muted and monospaced so it reads as request syntax, not prose. */
-.nav-tree__path {
-	display: block;
-	color: var(--color-text-muted);
-	font-family: var(--font-mono);
-	font-size: var(--text-xs);
-	font-weight: var(--weight-regular);
-	overflow-wrap: anywhere;
-}
-
-/* Two-line operation rows keep the method badge on the title line. */
-.nav-tree__link:has(.nav-tree__path) {
-	align-items: flex-start;
-}
-
 .nav-tree__link:hover,
 .nav-tree__row--heading:hover {
 	background: var(--color-accent-surface);

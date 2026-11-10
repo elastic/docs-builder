@@ -10,7 +10,7 @@
 	{
 		<li class="flex group/li pr-8 @(item.IsTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a href="@item.Url" class="sidebar-link nav-link"@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
-				<span>@item.NavigationTitle@if (item.HttpPath is { } httpPath) { <code class="nav-api-path">@httpPath</code> }</span>
+				<span>@item.NavigationTitle</span>
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 			</a>

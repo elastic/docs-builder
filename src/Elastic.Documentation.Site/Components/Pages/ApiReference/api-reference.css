@@ -664,11 +664,7 @@
 	overflow-wrap: anywhere;
 }
 
-/* The path sits under the title, so a familiar endpoint is easy to spot. The chip lines up with the title line. */
-#markdown-content a.api-index-item:has(.api-index-item-path) {
-	align-items: flex-start;
-}
-
+/* The path sits under the title, so a familiar endpoint is easy to spot. The chip stays centered on the two lines. */
 .api-index-item-text {
 	display: flex;
 	flex-direction: column;

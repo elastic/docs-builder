@@ -21,13 +21,9 @@ public record ApiOperation(
 	string ApiName
 ) : IApiModel<OperationPageModel>, IHttpMethodNavigationModel
 {
-	// The page header leads with the dominant method and the longest route, which can come from the description's
-	// method listing rather than the spec; the sidebar must agree with it.
-	string IHttpMethodNavigationModel.HttpMethod => MainEndpointRow.Method;
-
-	string IHttpMethodNavigationModel.HttpPath => MainEndpointRow.Route;
-
-	private EndpointRow MainEndpointRow => OperationEndpoint.Build(this, Operation.Description, []).Rows[0];
+	// The page header leads with the dominant method, which can come from the description's method listing
+	// rather than the spec; the sidebar badge must agree with it.
+	string IHttpMethodNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
 
 	/// <summary>The title shown for the operation; an operationId used as the grouping key is shown as readable words.</summary>
 	public string DisplayName =>
