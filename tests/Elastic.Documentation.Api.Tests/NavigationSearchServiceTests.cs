@@ -149,6 +149,22 @@ public class NavigationSearchServiceTests
 			.Select(r => (r.Path, string.Join(",", r.Methods)))
 			.Should()
 			.Equal(("/{index}/_search", "POST,GET"), ("/_search", "POST,GET"));
+		result.Deprecated.Should().BeFalse();
+	}
+
+	[Test]
+	public async Task NavigationSearchAsync_DeprecatedOperation_FlagsTheResult()
+	{
+		var document = SearchOperation();
+		var deprecated = document with { Api = document.Api! with { Deprecated = true } };
+
+		var response = await Search(
+			new NavigationSearchRequest { Query = "search", TypeFilter = "api" },
+			A.Fake<ISearchService<DocumentationDocument>>(),
+			(deprecated, Property())
+		);
+
+		response.Results.Single().Deprecated.Should().BeTrue();
 	}
 
 	[Test]

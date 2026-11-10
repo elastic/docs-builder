@@ -46,6 +46,7 @@ const SearchResultItem = z.object({
     parents: z.array(SearchResultItemParent),
     properties: z.array(ApiPropertyResult).optional(),
     routes: z.array(ApiRoute).optional(),
+    deprecated: z.boolean().optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>

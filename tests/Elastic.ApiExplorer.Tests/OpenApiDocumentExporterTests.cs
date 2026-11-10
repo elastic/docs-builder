@@ -196,15 +196,15 @@ public class OpenApiDocumentExporterTests
 	private static async Task<List<DocumentationDocument>> FetchDocuments(OpenApiDocumentExporter exporter, int limitPerSource, Cancel ctx)
 	{
 		var documents = new List<DocumentationDocument>();
-		foreach (var (key, url) in new[]
+		// The object keys VersionIndexClient builds from index.json; the previous spec host was retired on 2026-11-06.
+		foreach (var (key, objectKey) in new[]
 		{
-			("elasticsearch", "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json"),
-			("kibana", "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json")
+			("elasticsearch", "elastic/elasticsearch-specification/main/elasticsearch.json"),
+			("kibana", "elastic/kibana/main/kibana.yaml")
 		})
 		{
-			await using var stream = await HttpClient.GetStreamAsync(url, ctx);
-			var settings = new OpenApiReaderSettings { RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-			var spec = (await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx)).Document!;
+			var stream = await HttpClient.GetStreamAsync(new Uri(VersionIndexClient.DefaultBaseUri, objectKey), ctx);
+			var spec = (await OpenApiReader.Instance.ReadAsync(stream, Path.GetFileName(objectKey)))!;
 			documents.AddRange(exporter.ConvertToDocuments(new IndexedTree(key, key, "main", spec)).Take(limitPerSource));
 		}
 
