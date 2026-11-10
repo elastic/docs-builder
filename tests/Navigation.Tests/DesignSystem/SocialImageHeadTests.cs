@@ -131,6 +131,23 @@ public partial class SocialImageHeadTests : DocumentationSetNavigationTestBase
 	}
 
 	[Test]
+	public async Task OgImage_CodexHostedAtTheRoot_HasNoPrefixOnRepositoryPages()
+	{
+		var options = new HeadOptions(BuildType.Codex, null, null, "/r/repo") { CanonicalBaseUrl = new Uri("https://codex.example.com") };
+
+		var html = await RenderHead(options);
+
+		ImageMeta(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<meta property="og:image" content="https://codex.example.com/_static/og-codex.png?v=HASH"/>
+			<meta name="twitter:image" content="https://codex.example.com/_static/og-codex.png?v=HASH"/>
+			"""
+			);
+	}
+
+	[Test]
 	public async Task OgImage_CodexWithoutCanonicalUrl_FallsBackToTheAbsoluteElasticImage()
 	{
 		var html = await RenderHead(new HeadOptions(BuildType.Codex, null, null, "/internal-docs/r/repo"));
