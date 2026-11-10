@@ -36,9 +36,15 @@ Each folder under `journeys/` is an area, and each area has one test class under
 
 | Area | Covers |
 |---|---|
-| `landing` | The home page and the 404 page |
+| `landing` | The home page, the 404 page, a hub page and a group of page cards |
 | `navigation` | The sidebar and the table of contents |
 | `content` | Tabs, dropdowns, admonitions and the code copy button |
+| `chrome` | The isolated header (logo, search button, GitHub link, deployment info) and the footer |
+| `page-actions` | The "View as Markdown" and "Edit this page" links |
+| `feedback` | The "Was this page helpful?" buttons render with their accessible names |
+| `a11y` | The accessibility check on the home page, a content page and the 404 page |
+
+The isolated site has no theme switch, no "report an issue" link and no search that works without the search API, so those have no journeys here. The feedback journey only checks that the buttons render: pressing one sends feedback to the API.
 
 ## Write a journey
 
@@ -57,3 +63,7 @@ expect checked find role radio --name "Tab #2 title"
 - Find controls by role and accessible name first (`find role link click --name Admonitions --exact`). Use a CSS selector, quoted, when no role fits. `find nth` counts from zero.
 - A journey that only uses `expect` produces an empty transcript. Use `get text` or `snapshot -c -s <selector>` where you want the page content in the snapshot.
 - Accept new or changed transcripts with `SNAPSHOT_ACCEPT=1 mise run journeys`, then read the diff of the `.verified.journey` files.
+
+## Accessibility findings
+
+The `a11y` journeys run Nullean.Cdp's own accessibility rules and record the result in the verified transcript, violations included. The check is not relaxed: a new violation, or a fixed one, changes the transcript and fails the journey until someone reads the diff and accepts it. A transcript that lists violations is the list of known issues, not a statement that they are fine. The transcript names generated class names such as `span.css-16juuyo`, so a change to the header's styles can change it without a real regression.

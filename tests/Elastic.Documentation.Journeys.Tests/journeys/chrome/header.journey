@@ -1,0 +1,10 @@
+set viewport 1280 800
+open /syntax/code
+wait --load networkidle
+expect visible "#isolated-header"
+expect visible find role link --name "Elastic docs-builder"
+expect visible find role button --name "Open search"
+expect attr "#isolated-header a[href*='github.com']" href --regex "^https://github\.com/elastic/docs-builder"
+expect attr "#isolated-header button[aria-expanded]" aria-expanded false
+find role button click --name "Deployment info for branch"
+expect attr "#isolated-header button[aria-expanded]" aria-expanded true

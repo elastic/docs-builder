@@ -1,0 +1,6 @@
+set viewport 1280 800
+open /syntax/code
+wait --load networkidle
+expect visible find role link --name "View as Markdown"
+expect attr "li.view-as-markdown a" href /syntax/code.md
+expect attr "li.view-as-markdown a" target _blank

@@ -1,0 +1,8 @@
+set viewport 1280 800
+open /getting-started
+wait --load networkidle
+expect count a.page-card 7
+expect visible find role link --name "Preview docs locally"
+find role link click --name "Preview docs locally"
+wait --url **/documentation/isolated*
+expect --not visible a.page-card

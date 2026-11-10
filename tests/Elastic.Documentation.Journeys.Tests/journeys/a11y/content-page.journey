@@ -1,0 +1,4 @@
+set viewport 1280 800
+open /syntax/code
+wait --load networkidle
+a11y

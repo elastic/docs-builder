@@ -1,0 +1,10 @@
+set viewport 1280 800
+open /examples/products/docs-builder
+wait --load networkidle
+expect title "docs-builder documentation hub | docs-builder"
+expect visible find role heading --name "docs-builder documentation hub"
+expect visible find role navigation --name "On this page"
+expect visible find role heading --name "Get started in 4 steps"
+expect visible find role button --name "Copy code to clipboard"
+find role link click --name "Get hands-on"
+wait --url **#hands-on
