@@ -138,7 +138,7 @@ jobs:
             --results-directory TestResults
 
       - name: Upload results
-        # A failed journey leaves its received transcript here. Download it into .artifacts/.snapshots/received/ and run `dotnet snap review`.
+        # A failed journey leaves its received transcript here. Extract it at the repository root (it holds .artifacts/.snapshots/received/) and run `dotnet snap review`.
         if: ${{ failure() && inputs.run }}
         uses: actions/upload-artifact@v7
         with:

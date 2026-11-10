@@ -114,8 +114,13 @@ jobs:
               - src/Elastic.Documentation.Site/**
               - src/Elastic.Markdown/**/*.{cshtml,cs,css,js,ts}
               - src/Elastic.Documentation.Navigation/**
+              - src/Elastic.Documentation.Configuration/**
+              - src/Elastic.Documentation/**
+              - src/tooling/docs-builder/**
               - docs/**
               - Directory.Packages.props
+              - global.json
+              - .github/actions/bootstrap/**
               - .github/workflows/journeys.yml
               - .github/workflows/ci.yml
               - .github/workflows/changes.yml
