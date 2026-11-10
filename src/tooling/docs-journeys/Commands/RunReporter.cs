@@ -67,9 +67,7 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		{
 			_ = _running.Remove(outcome.File.Id);
 			_finished++;
-			ClearStatus();
 			WriteLine(Colour(outcome));
-			DrawStatus();
 		}
 	}
 
@@ -151,6 +149,7 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 
 	private void DrawStatus()
 	{
+		ClearStatus();
 		if (!interactive || _running.Count == 0)
 			return;
 		var running = string.Join(" · ", _running.OrderBy(r => r.Key, StringComparer.Ordinal).Select(r => $"{r.Key} ({r.Value})"));

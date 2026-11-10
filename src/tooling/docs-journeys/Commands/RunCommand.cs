@@ -121,10 +121,30 @@ internal sealed class RunCommand
 		return Report(
 			outcomes,
 			journeyBase,
-			(junit, folder, clock.Elapsed, $"docs-journeys run --url {url} --only {{id}}"),
+			(junit, folder, clock.Elapsed, RerunCommand(url, journeys, (env, buildType, feature))),
 			allowAllSkipped && !site.ProbeFailed
 		);
 	}
+
+	/// <summary>The command that reruns one journey: same source and site context, with <c>{id}</c> standing for the journey.</summary>
+	internal static string RerunCommand(string url, string? journeys, (string? Env, string? BuildType, string? Feature) context)
+	{
+		var text = new StringBuilder($"docs-journeys run --url {Quote(url)}");
+		if (journeys is not null)
+			_ = text.Append($" --journeys {Quote(journeys)}");
+		if (context.Env is not null)
+			_ = text.Append($" --env {Quote(context.Env)}");
+		if (context.BuildType is not null)
+			_ = text.Append($" --build-type {Quote(context.BuildType)}");
+		if (context.Feature is not null)
+			_ = text.Append($" --feature {Quote(context.Feature)}");
+		return text.Append(" --only {id}").ToString();
+	}
+
+	private static string Quote(string value) =>
+		value.Length > 0 && value.All(c => char.IsLetterOrDigit(c) || "/:.,_-@=+".Contains(c, StringComparison.Ordinal))
+			? value
+			: "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
 
 	private static IReadOnlyList<JourneyFile> SelectOnly(IReadOnlyList<JourneyFile> files, string only)
 	{

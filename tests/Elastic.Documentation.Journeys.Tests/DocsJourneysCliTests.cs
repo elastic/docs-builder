@@ -47,8 +47,41 @@ public class DocsJourneysCliTests(JourneyTarget target)
 		var lines = run.Output.ReplaceLineEndings("\n").Split('\n');
 		var stopped = lines.Single(l => l.StartsWith("Journey stopped at ", StringComparison.Ordinal));
 		_ = stopped.Should().EndWith("broken.journey:2: expect title \"no page has this title\" --timeout 500");
-		_ = run.Output.Should().Contain("Rerun:").And.Contain("--only landing/broken");
+		_ = run.Output.Should().Contain("Rerun:").And.Contain($"--journeys {folder.Path}").And.Contain("--only landing/broken");
 		_ = Array.IndexOf(lines, "FAILED  landing/broken").Should().BeLessThan(Array.IndexOf(lines, stopped));
+	}
+
+	[Test]
+	public async Task Run_FastJourneyFinishes_ItsResultIsWrittenWhileASlowOneIsStillRunning()
+	{
+		using var folder = new TempJourneys("landing/fast", "open /\nexpect visible body");
+		File.WriteAllText(
+			System.IO.Path.Combine(folder.Path, "landing", "slow.journey"),
+			"open /\nexpect title \"no page has this title\" --timeout 15000"
+		);
+		var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
+		foreach (var argument in new[] { FindCliDll(), "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path })
+			info.ArgumentList.Add(argument);
+		using var process = Process.Start(info) ?? throw new InvalidOperationException("docs-journeys did not start.");
+		var error = process.StandardError.ReadToEndAsync();
+
+		var sawFast = false;
+		var stillRunning = false;
+		while (await process.StandardOutput.ReadLineAsync().ConfigureAwait(false) is { } line)
+		{
+			if (!line.StartsWith("ok      landing/fast", StringComparison.Ordinal))
+				continue;
+			sawFast = true;
+			stillRunning = !process.HasExited;
+			break;
+		}
+		if (!process.HasExited)
+			process.Kill(entireProcessTree: true);
+		await process.WaitForExitAsync().ConfigureAwait(false);
+		_ = await error.ConfigureAwait(false);
+
+		_ = sawFast.Should().BeTrue();
+		_ = stillRunning.Should().BeTrue("the fast journey's result must not wait for the slow one");
 	}
 
 	[Test]
