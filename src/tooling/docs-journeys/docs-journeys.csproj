@@ -25,6 +25,7 @@
     <PackageReference Include="Nullean.Argh.Hosting" />
     <PackageReference Include="Nullean.Cdp" />
     <PackageReference Include="Nullean.Cdp.Journeys" />
+    <PackageReference Include="Nullean.Snapshots.Browser.Console" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
