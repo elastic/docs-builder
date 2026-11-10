@@ -1,0 +1,44 @@
+# Opens the API catalog, an API's landing page, switches its version and opens an operation.
+# Ported from synthetics/journeys/api-explorer.journey.ts. The version control differs by layout: a popover in the
+# API identity header (legacy), a link menu in the API sidebar (navigation-preview).
+# @tags api-explorer smoke
+# @requires build-type:assembler assembler-api-explorer
+# @monitor schedule=15
+open api/
+wait --load networkidle
+expect visible find role heading --name "Elastic APIs"
+
+# Catalog to the Elasticsearch API.
+click "#elastic-docs-v3 a[href*='/docs/api/doc/elasticsearch']"
+wait --url **/docs/api/doc/elasticsearch**
+
+# Switch the API version with the version control.
+feature !navigation-preview
+  expect visible "#api-hub-switcher button"
+  click "#api-hub-switcher button"
+  click "#api-version-switcher a[href*='/docs/api/doc/elasticsearch/v']"
+end
+feature navigation-preview
+  expect visible "#api-version-switcher summary"
+  click "#api-version-switcher summary"
+  click "#api-version-switcher a[href*='/docs/api/doc/elasticsearch/v']"
+end
+wait --url **/docs/api/doc/elasticsearch/v*
+expect url **/docs/api/doc/elasticsearch/v*
+# The URL changes before the new version's page is in, so wait for the control to show the new version.
+feature !navigation-preview
+  expect text ".api-identity-version-label" v9 --contains
+end
+feature navigation-preview
+  expect attr "#api-version-switcher summary" aria-label "API version: v9 (latest)"
+end
+
+# Open an operation of that version: its page shows the method and the route under "Paths". Waiting for a link of the
+# new version also waits for the page swap to finish.
+expect attached "#elastic-docs-v3 a[href*='/docs/api/doc/elasticsearch/v9/operation/']"
+wait --load networkidle
+wait 1500
+click "#elastic-docs-v3 a[href*='/docs/api/doc/elasticsearch/v9/operation/']"
+wait --url **/docs/api/doc/elasticsearch/v9/operation/**
+expect text ".api-url-listing .api-method-label" "^(GET|PUT|POST|DELETE|HEAD|PATCH)$" --regex
+expect text ".api-url-listing .api-url-path" "^/" --regex

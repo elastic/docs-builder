@@ -1,0 +1,61 @@
+# Walks the main navigation paths of a published docs site and checks that links swap the page without reloading it.
+# Ported from synthetics/journeys/navigation-test.journey.ts. Run it with --url https://<host>/docs/ so that
+# relative paths resolve under /docs/.
+# @tags navigation smoke
+# @requires build-type:assembler
+# @monitor schedule=15
+open ./
+wait --load networkidle
+expect title "Elastic Docs | Elastic Docs"
+
+# Home page card to a guide page: an htmx swap, not a reload.
+find role link click --name "Elastic Fundamentals"
+wait --url **/docs/get-started
+expect same-document
+expect title "Elastic fundamentals | Elastic Docs"
+expect visible find role heading --name "Elastic fundamentals"
+
+# Sidebar link in the same group: the article swaps and the sidebar stays.
+click "#pages-nav a[href$='/get-started/deployment-options']"
+wait --url **/docs/get-started/deployment-options
+expect same-document
+expect title "Elastic deployment options | Elastic Docs"
+expect visible find role heading --name "Elastic deployment options"
+expect attached "[id^='nav-tree']"
+
+# Link inside the article, into another group: still a swap, and the sidebar marks the new section.
+click "#markdown-content a[href$='/deploy-manage/deploy/elastic-cloud']"
+wait --url **/docs/deploy-manage/deploy/elastic-cloud
+expect same-document
+expect title "Elastic Cloud | Elastic Docs"
+feature !navigation-preview
+  expect visible "#pages-nav a.sidebar-link.current[href*='/deploy-manage/']"
+end
+feature navigation-preview
+  expect visible "#pages-nav a[aria-current='page'][href*='/deploy-manage/']"
+end
+
+# Top navigation to Reference.
+feature !navigation-preview
+  click "#secondary-nav a[href$='/reference']"
+end
+feature navigation-preview
+  click "nav[aria-label='Documentation sections'] a[href$='/reference']"
+end
+wait --url **/docs/reference
+
+# Sidebar to Elasticsearch, then back restores Reference.
+click "#pages-nav a[href$='/reference/elasticsearch']"
+wait --url **/docs/reference/elasticsearch**
+feature !navigation-preview
+  expect visible "#pages-nav a.sidebar-link.current[href*='/reference/elasticsearch']"
+end
+feature navigation-preview
+  expect visible "#pages-nav a[aria-current='page'][href*='/reference/elasticsearch']"
+end
+# Back restores Reference. The old journey also expected the Elasticsearch row to lose its current marker;
+# cdp's `back` leaves that marker stale where Playwright's goBack clears it, so that check stays in TypeScript.
+back
+wait --url **/docs/reference
+expect title "Reference | Elastic Docs"
+expect visible "#pages-nav a[href$='/reference/elasticsearch']"

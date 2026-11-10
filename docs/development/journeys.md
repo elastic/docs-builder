@@ -80,3 +80,37 @@ The command exits with 1 when any journey fails, and writes a table to `GITHUB_S
 The binary ships no journeys. The journeys under `tests/Elastic.Documentation.Journeys.Tests/journeys` check the isolated docs-builder test site (`#isolated-header`, the `/syntax/*` pages), so they do not pass against a deployed assembler site. Pass `--journeys` a folder written for the site you run against. A journey that throws, such as one that does not parse, is reported as a failed journey and the others still run.
 
 A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.
+
+## Live journeys
+
+The `live/` folders next to the area folders hold journeys for a published site: prod, edge or demo. They were ported from the Elastic Synthetics journeys in `src/Elastic.Documentation.Site/synthetics/` and keep their assertions. They cannot run against the isolated site, so the test project claims them (`Areas/LiveJourneys.cs`) and shows them as skipped.
+
+A live journey opens paths relative to a base URL that ends in `/docs/`, so `open get-started` opens `/docs/get-started`. Its header says where it applies and whether it is a Synthetics monitor:
+
+```text
+# @tags navigation smoke
+# @requires build-type:assembler
+# @monitor schedule=15
+```
+
+The layout changes with the `navigation-preview` flag, so a journey puts the steps that differ in `feature` blocks. A run has to tell the journey which flags the site has. Until the site reports them, pass them yourself with the `cdp` command from `Nullean.Cdp.Cli` 0.8.0 or later:
+
+```bash
+cdp run tests/Elastic.Documentation.Journeys.Tests/journeys/navigation/live/main-paths.journey \
+  --base-url https://docs-demo.elastic.dev/docs/ \
+  --build-type assembler --env demo --feature navigation-preview \
+  --read-only --viewport 1280x800 \
+  --user-agent "Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0.0.0 Safari/537.36 Elastic/Synthetics" \
+  --header "X-Docs-Synthetic-Monitor: true" \
+  --allow "*.elastic.co" --allow "*.googletagmanager.com"
+```
+
+- `--read-only` refuses every request that is not a read, so a live run cannot change the site.
+- The `Elastic/Synthetics` user agent switches the page's telemetry off. Without it, a read-only run fails on the telemetry `POST`.
+- Pass `--feature assembler-api-explorer` for the API journey, which only applies where that flag is on.
+
+| Site | Flags | Layout |
+|---|---|---|
+| `https://www.elastic.co/docs/` | none | legacy |
+| `https://docs-edge.elastic.dev/docs/` | `assembler-api-explorer` | legacy |
+| `https://docs-demo.elastic.dev/docs/` | `assembler-api-explorer`, `navigation-preview` | design system |
