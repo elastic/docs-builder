@@ -63,3 +63,10 @@ expect checked find role radio --name "Tab #2 title"
 `tests/Elastic.Documentation.Journeys.Tests/shards.json` maps each shard to areas. A new folder under `journeys/` must be added to a shard, or the `plan` job fails. To split a slow shard, move areas into a new entry in that file.
 
 A failed run uploads a `journeys-results-<shard>` artifact. Extract it at the repository root, where it restores `.artifacts/.snapshots/received/`, and run `dotnet snap review`.
+
+## Checks on pull requests
+
+Two jobs in `journeys-live.yml` need no site build.
+
+- **Journeys stay valid against prod.** When a pull request changes a journey or an `.http` file, the changed ones run read-only against `https://www.elastic.co`. A journey whose `@requires` does not hold on prod is skipped with its reason. The job fails when a journey fails, and when every changed journey was skipped, so a journey that never ran on prod cannot pass unnoticed. A journey for a feature that ships with the pull request and is not yet on prod says so with `@requires !env:prod`.
+- **The `docs-journeys` image.** When the tool changes, the image builds without being pushed, the binary is copied out of it the way another repository's workflow would, and `docs-journeys list` runs from it. This is also the Linux native build check.
