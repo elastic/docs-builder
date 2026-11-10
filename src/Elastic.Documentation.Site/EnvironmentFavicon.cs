@@ -22,15 +22,23 @@ public static class EnvironmentFavicon
 		_ => "favicon-other.svg"
 	};
 
-	/// <summary>The social image: the plain image in production, the same image with the environment label elsewhere.</summary>
-	public static string OgImageFileName(string? environmentName) => environmentName?.ToLowerInvariant() switch
+	/// <summary>
+	/// The self-hosted social card: "Codex" for Codex, "Documentation" for assembler builds with the environment label outside
+	/// production. Isolated builds have none and keep the elastic.co image.
+	/// </summary>
+	public static string? OgImageFileName(BuildType buildType, string? environmentName) => buildType switch
 	{
-		null or "" or "prod" => "og-default.png",
-		"staging" => "og-staging.png",
-		"edge" => "og-edge.png",
-		"demo" => "og-demo.png",
-		"dev" or "local" => "og-dev.png",
-		"preview" => "og-preview.png",
-		_ => "og-other.png"
+		BuildType.Codex => "og-codex.png",
+		BuildType.Assembler => environmentName?.ToLowerInvariant() switch
+		{
+			null or "" or "prod" => "og-default.png",
+			"staging" => "og-staging.png",
+			"edge" => "og-edge.png",
+			"demo" => "og-demo.png",
+			"dev" or "local" => "og-dev.png",
+			"preview" => "og-preview.png",
+			_ => "og-other.png"
+		},
+		_ => null
 	};
 }

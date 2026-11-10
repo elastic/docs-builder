@@ -5,6 +5,9 @@ name: changes
 # - link-index-lambda / openapi-index-lambda: the lambda's transitive project references or shared build inputs changed
 # - dotnet: .NET code, build inputs or test fixtures changed, so Windows and macOS run the unit tests
 #   (Linux runs them on every PR)
+# - journeys: the site, its markup or the docs it serves, or the journey tests changed, so the browser journeys run
+# - journey-files: journeys, `.http` files or the docs-journeys tool changed, so they are checked against prod
+# - docs-journeys: the docs-journeys tool changed, so its container image is built and smoke-tested
 # - frontend-toolchain: npm dependencies or the Vite/Tailwind config changed, so Windows and macOS build the
 #   frontend natively instead of reusing the `frontend` job's output. Native npm packages (esbuild, rolldown,
 #   lightningcss, tailwind oxide) can break on one OS only.
@@ -30,6 +33,15 @@ on:
       frontend-toolchain:
         description: "'true' when npm dependencies or the frontend build config changed"
         value: ${{ jobs.filter.outputs.frontend-toolchain }}
+      journeys:
+        description: "'true' when the site, the docs it serves or the journey tests changed"
+        value: ${{ jobs.filter.outputs.journeys }}
+      journey-files:
+        description: "'true' when journeys, .http files or the docs-journeys tool changed"
+        value: ${{ jobs.filter.outputs.journey-files }}
+      docs-journeys:
+        description: "'true' when the docs-journeys tool changed"
+        value: ${{ jobs.filter.outputs.docs-journeys }}
 
 permissions: {}
 
@@ -46,6 +58,9 @@ jobs:
       openapi-index-lambda: ${{ github.event_name != 'pull_request' || steps.files.outputs.openapi_index_lambda_any_modified == 'true' }}
       dotnet: ${{ github.event_name != 'pull_request' || steps.files.outputs.dotnet_any_modified == 'true' }}
       frontend-toolchain: ${{ github.event_name != 'pull_request' || steps.files.outputs.frontend_toolchain_any_modified == 'true' }}
+      journeys: ${{ github.event_name != 'pull_request' || steps.files.outputs.journeys_any_modified == 'true' }}
+      journey-files: ${{ github.event_name != 'pull_request' || steps.files.outputs.journey_files_any_modified == 'true' }}
+      docs-journeys: ${{ github.event_name != 'pull_request' || steps.files.outputs.docs_journeys_any_modified == 'true' }}
     steps:
       # On pull_request the action reads the diff from the GitHub API, so no checkout is needed.
       # `any_modified` also counts deleted files, which `any_changed` does not. Renames are split into a
@@ -104,6 +119,33 @@ jobs:
               - .github/workflows/ci.yml
               - .github/workflows/changes.yml
               - .github/actions/bootstrap/**
+            journeys:
+              - tests/Elastic.Documentation.Journeys.Tests/**
+              - src/Elastic.Documentation.Site/**
+              - src/Elastic.Markdown/**/*.{cshtml,cs,css,js,ts}
+              - src/Elastic.Documentation.Navigation/**
+              - src/Elastic.Documentation.Configuration/**
+              - src/Elastic.Documentation/**
+              - src/tooling/docs-builder/**
+              - docs/**
+              - Directory.Packages.props
+              - global.json
+              - .github/actions/bootstrap/**
+              - .github/workflows/journeys.yml
+              - .github/workflows/ci.yml
+              - .github/workflows/changes.yml
+            journey_files:
+              - tests/Elastic.Documentation.Journeys.Tests/journeys/**
+              - tests/Elastic.Documentation.Journeys.Tests/http/**
+              - src/tooling/docs-journeys/**
+              - .github/workflows/journeys-live.yml
+              - .github/workflows/changes.yml
+            docs_journeys:
+              - *shared
+              - src/tooling/docs-journeys/**
+              - .github/actions/bootstrap/**
+              - build/**
+              - .github/workflows/journeys-live.yml
             frontend_toolchain:
               - .nvmrc
               - src/Elastic.Documentation.Site/package.json
