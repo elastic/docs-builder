@@ -98,6 +98,17 @@ internal sealed class ExportCommands
 		Console.Out.WriteLine($"exported {result.Files.Count} of {sources.Count} for project {projectId}");
 		var manifest = SyntheticsPlan.Manifest(projectId, site.Env, result.Files);
 
+		if (result.Files.Count == 0 && !allowEmpty)
+		{
+			await Console
+				.Error
+				.WriteLineAsync(
+					"No journey was exported. Pushing nothing would delete every monitor of the project, so this is an error (--allow-empty to accept it)."
+				)
+				.ConfigureAwait(false);
+			return 1;
+		}
+
 		if (dryRun)
 		{
 			Console.Out.WriteLine($"project: {projectId}");
@@ -113,23 +124,19 @@ internal sealed class ExportCommands
 			return 0;
 		}
 
-		if (result.Files.Count == 0 && !allowEmpty)
-		{
-			await Console
-				.Error
-				.WriteLineAsync(
-					"No journey was exported. Pushing nothing would delete every monitor of the project, so this is an error (--allow-empty to accept it)."
-				)
-				.ConfigureAwait(false);
-			return 1;
-		}
-
 		GuardOutputFolder(journeys, @out);
 		RemoveStaleMonitors(@out, result.Files);
 		_ = Directory.CreateDirectory(@out);
 		foreach (var file in result.Files)
 		{
-			var target = Path.Combine(SyntheticsPlan.JourneysFolder(@out), file.FileName);
+			var target = Path.GetFullPath(Path.Combine(SyntheticsPlan.JourneysFolder(@out), file.FileName));
+			var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(SyntheticsPlan.JourneysFolder(@out)))
+				+ Path.DirectorySeparatorChar;
+			if (!target.StartsWith(root, StringComparison.Ordinal))
+			{
+				await Console.Error.WriteLineAsync($"{file.FileName} would be written outside {root}").ConfigureAwait(false);
+				return 1;
+			}
 			_ = Directory.CreateDirectory(Path.GetDirectoryName(target)!);
 			await File.WriteAllTextAsync(target, file.Content, ct).ConfigureAwait(false);
 		}

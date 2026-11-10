@@ -68,6 +68,7 @@ internal static partial class MonitorExporter
 		var files = new List<ExportedFile>();
 		var skipped = new List<ExportSkip>();
 		var ids = new Dictionary<string, string>(StringComparer.Ordinal);
+		var fileNames = new Dictionary<string, string>(StringComparer.Ordinal);
 		foreach (var source in sources.OrderBy(s => s.Name, StringComparer.Ordinal))
 		{
 			var text = source.Text.Replace("\r\n", "\n", StringComparison.Ordinal);
@@ -92,13 +93,11 @@ internal static partial class MonitorExporter
 			if (ids.TryGetValue(id, out var other))
 				throw new ExportException(source.Name, $"its monitor id '{id}' is already taken by {other}: rename one of them");
 			ids[id] = source.Name;
-			files.Add(
-				new ExportedFile(
-					source.Name,
-					$"{source.Name}.{(source.Kind == SourceKind.Http ? "http." : "")}journey.ts",
-					Render(source, text, info, context)
-				)
-			);
+			var fileName = $"{source.Name}.{(source.Kind == SourceKind.Http ? "http." : "")}journey.ts";
+			if (fileNames.TryGetValue(fileName, out var same))
+				throw new ExportException(source.Name, $"its output file '{fileName}' is already taken by {same}: rename one of them");
+			fileNames[fileName] = source.Name;
+			files.Add(new ExportedFile(source.Name, fileName, Render(source, text, info, context)));
 		}
 		return new ExportResult(files, skipped);
 	}
@@ -225,7 +224,7 @@ internal static partial class MonitorExporter
 			.Where(f => f.EndsWith(".journey", StringComparison.Ordinal) || f.EndsWith(".http", StringComparison.Ordinal))
 			.Select(file =>
 			{
-				var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
+				var relative = Path.GetRelativePath(root, file).Replace(Path.DirectorySeparatorChar, '/');
 				var http = relative.EndsWith(".http", StringComparison.Ordinal);
 				var name = relative[..relative.LastIndexOf('.')];
 				return new ExportSource(name, File.ReadAllText(file), http ? SourceKind.Http : SourceKind.Journey);

@@ -22,7 +22,13 @@ public class DocsJourneysExportConformanceTests
 	public async Task Export_WritesTheSameFilesAsTheNpmExporter()
 	{
 		if (!await NpmWorksAsync().ConfigureAwait(false))
+		{
+			if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
+				throw new InvalidOperationException(
+					"npx or the npm registry is not available in CI, so conformance with the npm exporter was not checked."
+				);
 			Skip.Test("npx or the npm registry is not available, so the npm exporter cannot run.");
+		}
 
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback navigation-preview");
 		using var folder = Fixtures();

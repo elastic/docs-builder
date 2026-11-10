@@ -415,6 +415,53 @@ public class DocsJourneysExportTests
 	}
 
 	[Test]
+	public async Task Export_DryRunOfNoApplicableMonitor_FailsLikeTheRealRun()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("a/plain", "open /page");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out"),
+			"--dry-run"
+		);
+
+		run.ShouldHaveExited(1);
+		_ = run.Output.Should().Contain("No journey was exported");
+	}
+
+	[Test]
+	public async Task Export_TwoSourcesForTheSameOutputFile_AreRefused()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("foo.http", Monitor).AddHttp("foo", "# @monitor\nGET https://docs.example/health\n");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out")
+		);
+
+		run.ShouldHaveExited(1);
+		_ = run.Output.Should().Contain("already taken");
+	}
+
+	[Test]
 	public async Task Export_ToAReusedOutFolder_RemovesOnlyGeneratedMonitorFilesThatAreNoLongerProduced()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
