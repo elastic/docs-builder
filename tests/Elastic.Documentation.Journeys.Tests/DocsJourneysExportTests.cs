@@ -333,9 +333,10 @@ public class DocsJourneysExportTests
 		File.WriteAllText(journey, Monitor);
 		try
 		{
-			// Same folder, different case: the same folder on macOS and Windows.
-			var differentCase = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
-			foreach (var journeysArgument in differentCase ? new[] { journeys, Path.Combine(root, "JOURNEYS") } : [journeys])
+			// Same folder, different case: only when this filesystem resolves it (case-insensitive volume).
+			var upperCased = Path.Combine(root, "JOURNEYS");
+			var differentCase = Directory.Exists(upperCased);
+			foreach (var journeysArgument in differentCase ? new[] { journeys, upperCased } : [journeys])
 			{
 				var run = await Cli.RunAsync(
 					"export",
