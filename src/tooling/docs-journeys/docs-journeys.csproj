@@ -22,7 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The lockfile for the packages the generated monitors import, so a caller installs exactly what was tested. -->
+    <EmbeddedResource Include="Synthetics\package-lock.json" LogicalName="synthetics/package-lock.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Nullean.Argh.Hosting" />
+    <PackageReference Include="Nullean.HttpFileParser" />
     <PackageReference Include="Nullean.Cdp" />
     <PackageReference Include="Nullean.Cdp.Journeys" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />

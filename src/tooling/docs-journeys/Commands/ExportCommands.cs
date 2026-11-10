@@ -4,6 +4,8 @@
 
 using Elastic.Documentation.Journeys.Cli.Synthetics;
 using Nullean.Argh;
+using Nullean.Cdp.Journeys;
+using Nullean.HttpFileParser;
 
 namespace Elastic.Documentation.Journeys.Cli.Commands;
 
@@ -11,8 +13,9 @@ internal sealed class ExportCommands
 {
 	/// <summary>
 	/// Writes the Elastic Synthetics monitors for the journeys that apply to a site: the ones marked <c># @monitor</c>
-	/// whose <c>@requires</c> the site meets, and that do not mutate. The site is read like <c>run</c> reads it, and the
-	/// files are written by <c>@nullean/journeys</c> through <c>npx</c>. Run <c>push</c> afterwards to send them to Kibana.
+	/// whose <c>@requires</c> the site meets, and that do not mutate. The site is read like <c>run</c> reads it. The output is a
+	/// project the caller validates and pushes with npm (<c>npm ci</c>, <c>elastic-synthetics --dry-run</c>, <c>@elastic/synthetics push</c>):
+	/// this tool runs no Node itself.
 	/// </summary>
 	/// <param name="url">-u, The origin of the site the monitors check, such as <c>https://www.elastic.co</c>.</param>
 	/// <param name="journeys">-j, A folder of journeys instead of the ones compiled into this binary.</param>
@@ -25,8 +28,8 @@ internal sealed class ExportCommands
 	/// <param name="project">The Synthetics project id. Default: elastic-co-docs-&lt;env&gt;</param>
 	/// <param name="kibanaUrl">The Kibana that holds the project.</param>
 	/// <param name="space">The Kibana space. Default: default</param>
-	/// <param name="allowEmpty">Do not fail when no journey is exported. A push of nothing deletes every monitor of the project.</param>
-	/// <param name="dryRun">Print the context, the project config and the command, and write and run nothing.</param>
+	/// <param name="allowEmpty">Do not fail when no journey is exported. Pushing nothing would delete every monitor of the project.</param>
+	/// <param name="dryRun">Print the context, the project config, the files that would be written and the manifest, and write nothing.</param>
 	public async Task<int> Synthetics(
 		string url,
 		string @out,
@@ -73,9 +76,38 @@ internal sealed class ExportCommands
 			);
 
 		var projectId = project ?? SyntheticsPlan.DefaultProject(site.Env);
-		var context = new ExportContext(site.Env, site.BuildType, site.Features);
-		var arguments = SyntheticsPlan.ExportArguments(journeys, @out, context, paging, SiteContext.JourneyBase(baseUrl, site.BuildType));
+		SyntheticsPlan.RequireIdentifier(projectId, "project");
+		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
+		var context = new MonitorContext(site.Features, site.BuildType, site.Env, paging, journeyBase.ToString());
 		var config = SyntheticsPlan.Config(projectId, kibanaUrl, space, site.Env, baseUrl);
+
+		ExportResult result;
+		var sources = MonitorExporter.ReadSources(journeys);
+		try
+		{
+			result = MonitorExporter.Export(sources, context);
+		}
+		catch (Exception e) when (e is ExportException or JourneyParseException or HttpFileParseException)
+		{
+			await Console.Error.WriteLineAsync(e.Message).ConfigureAwait(false);
+			return 1;
+		}
+
+		foreach (var skip in result.Skipped)
+			Console.Out.WriteLine($"skipped {skip.Name}: {skip.Reason}");
+		Console.Out.WriteLine($"exported {result.Files.Count} of {sources.Count} for project {projectId}");
+		var manifest = SyntheticsPlan.Manifest(projectId, site.Env, result.Files);
+
+		if (result.Files.Count == 0 && !allowEmpty)
+		{
+			await Console
+				.Error
+				.WriteLineAsync(
+					"No journey was exported. Pushing nothing would delete every monitor of the project, so this is an error (--allow-empty to accept it)."
+				)
+				.ConfigureAwait(false);
+			return 1;
+		}
 
 		if (dryRun)
 		{
@@ -84,45 +116,40 @@ internal sealed class ExportCommands
 			Console.Out.Write(config);
 			Console.Out.WriteLine($"package.json: {SyntheticsPlan.PackageJsonPath(@out)}");
 			Console.Out.Write(SyntheticsPlan.PackageJson());
-			Console.Out.WriteLine($"command: {Npx.Describe(arguments)}");
-			Console.Out.WriteLine($"then, in {@out}: {Npx.Describe(SyntheticsPlan.InstallArguments, Npx.NpmCommand)}");
+			Console.Out.WriteLine($"package-lock.json: {SyntheticsPlan.LockPath(@out)}");
+			foreach (var file in result.Files)
+				Console.Out.WriteLine($"monitor: {Path.Combine(SyntheticsPlan.JourneysFolder(@out), file.FileName)}");
+			Console.Out.WriteLine($"manifest.json: {SyntheticsPlan.ManifestPath(@out)}");
+			Console.Out.Write(manifest);
 			return 0;
 		}
 
-		ClearJourneysFolder(journeys, @out);
+		GuardOutputFolder(journeys, @out);
+		RemoveStaleMonitors(@out, result.Files);
 		_ = Directory.CreateDirectory(@out);
-		await File.WriteAllTextAsync(SyntheticsPlan.ConfigPath(@out), config, ct).ConfigureAwait(false);
-		var exit = await Npx.RunReportedAsync("exporting the monitors with @nullean/journeys", Npx.Command, arguments, ct).ConfigureAwait(
-			false
-		);
-		if (exit != 0)
-			return exit;
-
-		await File.WriteAllTextAsync(SyntheticsPlan.PackageJsonPath(@out), SyntheticsPlan.PackageJson(), ct).ConfigureAwait(false);
-		exit = await Npx.RunReportedAsync(
-			"installing the Synthetics packages with npm",
-			Npx.NpmCommand,
-			SyntheticsPlan.InstallArguments,
-			ct,
-			Path.GetFullPath(@out)
-		).ConfigureAwait(false);
-		if (exit != 0)
-			return exit;
-
-		var written = MonitorFiles(@out);
-		Console.Out.WriteLine($"{written} monitor file(s) in {SyntheticsPlan.JourneysFolder(@out)} for project {projectId}");
-		if (written == 0 && !allowEmpty)
+		foreach (var file in result.Files)
 		{
-			Console.Error.WriteLine(
-				"No journey was exported. Pushing nothing would delete every monitor of the project, so this is an error (--allow-empty to accept it)."
-			);
-			return 1;
+			var target = Path.GetFullPath(Path.Combine(SyntheticsPlan.JourneysFolder(@out), file.FileName));
+			var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(SyntheticsPlan.JourneysFolder(@out)))
+				+ Path.DirectorySeparatorChar;
+			if (!target.StartsWith(root, StringComparison.Ordinal))
+			{
+				await Console.Error.WriteLineAsync($"{file.FileName} would be written outside {root}").ConfigureAwait(false);
+				return 1;
+			}
+			_ = Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+			await File.WriteAllTextAsync(target, file.Content, ct).ConfigureAwait(false);
 		}
+		await File.WriteAllTextAsync(SyntheticsPlan.ConfigPath(@out), config, ct).ConfigureAwait(false);
+		await File.WriteAllTextAsync(SyntheticsPlan.PackageJsonPath(@out), SyntheticsPlan.PackageJson(), ct).ConfigureAwait(false);
+		await File.WriteAllTextAsync(SyntheticsPlan.LockPath(@out), SyntheticsPlan.PackageLock(), ct).ConfigureAwait(false);
+		await File.WriteAllTextAsync(SyntheticsPlan.ManifestPath(@out), manifest, ct).ConfigureAwait(false);
+		Console.Out.WriteLine($"{result.Files.Count} monitor file(s) in {SyntheticsPlan.JourneysFolder(@out)}");
 		return 0;
 	}
 
-	// A reused output folder must not keep monitors of journeys that were deleted or no longer apply.
-	private static void ClearJourneysFolder(string journeys, string outDir)
+	// The output must not be, or sit inside, the journeys it was made from: a re-export removes files it generated before.
+	private static void GuardOutputFolder(string journeys, string outDir)
 	{
 		var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(SyntheticsPlan.JourneysFolder(outDir)));
 		var source = Path.TrimEndingDirectorySeparator(Path.GetFullPath(journeys));
@@ -132,13 +159,20 @@ internal sealed class ExportCommands
 			: StringComparison.Ordinal;
 		if (string.Equals(source, folder, comparison) || source.StartsWith(folder + Path.DirectorySeparatorChar, comparison))
 			throw new ArgumentException($"--out would overwrite the journeys folder {journeys}. Choose another output folder.");
-		if (Directory.Exists(folder))
-			Directory.Delete(folder, recursive: true);
 	}
 
-	internal static int MonitorFiles(string outDir)
+	// Only files that say they were generated are removed, so a re-export drops the monitors of journeys that were deleted or
+	// no longer apply and touches nothing else in the folder.
+	private static void RemoveStaleMonitors(string outDir, IReadOnlyList<ExportedFile> files)
 	{
 		var folder = SyntheticsPlan.JourneysFolder(outDir);
-		return Directory.Exists(folder) ? Directory.EnumerateFiles(folder, "*.ts", SearchOption.AllDirectories).Count() : 0;
+		if (!Directory.Exists(folder))
+			return;
+		var keep = files.Select(f => Path.GetFullPath(Path.Combine(folder, f.FileName))).ToHashSet(StringComparer.Ordinal);
+		foreach (var existing in Directory.EnumerateFiles(folder, "*.journey.ts", SearchOption.AllDirectories))
+		{
+			if (!keep.Contains(Path.GetFullPath(existing)) && MonitorExporter.IsGenerated(File.ReadAllText(existing)))
+				File.Delete(existing);
+		}
 	}
 }

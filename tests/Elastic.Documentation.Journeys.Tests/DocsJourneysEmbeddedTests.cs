@@ -177,7 +177,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	}
 
 	[Test]
-	public async Task Export_SiteWithAFlagNameThatIsNotPlain_FailsTheProbeInsteadOfPassingItToNpx()
+	public async Task Export_SiteWithAFlagNameThatIsNotPlain_FailsTheProbeInsteadOfWritingItIntoMonitorFiles()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback calc.exe&whoami");
 		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\n# @monitor\nopen /");
