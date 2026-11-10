@@ -65,14 +65,15 @@ public class DocsJourneysCliTests(JourneyTarget target)
 		using var process = Process.Start(info) ?? throw new InvalidOperationException("docs-journeys did not start.");
 		var error = process.StandardError.ReadToEndAsync();
 
+		var clock = Stopwatch.StartNew();
 		var sawFast = false;
-		var stillRunning = false;
+		var secondsToFast = double.MaxValue;
 		while (await process.StandardOutput.ReadLineAsync().ConfigureAwait(false) is { } line)
 		{
 			if (!line.StartsWith("ok      landing/fast", StringComparison.Ordinal))
 				continue;
 			sawFast = true;
-			stillRunning = !process.HasExited;
+			secondsToFast = clock.Elapsed.TotalSeconds;
 			break;
 		}
 		if (!process.HasExited)
@@ -81,7 +82,8 @@ public class DocsJourneysCliTests(JourneyTarget target)
 		_ = await error.ConfigureAwait(false);
 
 		_ = sawFast.Should().BeTrue();
-		_ = stillRunning.Should().BeTrue("the fast journey's result must not wait for the slow one");
+		// the slow journey cannot finish before its 15s timeout, so a result held back until it ends arrives after that
+		_ = secondsToFast.Should().BeLessThan(12, "the fast journey's result must not wait for the slow one");
 	}
 
 	[Test]

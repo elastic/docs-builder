@@ -37,6 +37,7 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 	private int _finished;
 	private int _total;
 	private int _statusWidth;
+	private bool _stale;
 
 	public static bool UseInteractive => !Console.IsOutputRedirected && Environment.GetEnvironmentVariable("CI") is not { Length: > 0 };
 
@@ -158,7 +159,7 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 			var failure = outcome.Result!.Failure!;
 			_ = text.AppendLine($"Journey stopped at {failure.Describe(where)}");
 			if (_pages.TryGetValue(outcome.File.Id, out var page))
-				_ = text.AppendLine("Page:".PadRight(Label) + page);
+				_ = text.AppendLine("Last open:".PadRight(Label) + page);
 		}
 		return text.AppendLine("Rerun:".PadRight(Label) + rerun).ToString();
 	}
@@ -178,8 +179,8 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 			_ = text.AppendLine($"  {line}");
 		_ = text.AppendLine();
 		if (_pages.TryGetValue(outcome.File.Id, out var page))
-			_ = text.AppendLine($"  \e[2m{"page".PadRight(8)}\e[0m{page}");
-		_ = text.AppendLine($"  \e[2m{"rerun".PadRight(8)}\e[0m{rerun}");
+			_ = text.AppendLine($"  \e[2m{"last open".PadRight(10)}\e[0m{page}");
+		_ = text.AppendLine($"  \e[2m{"rerun".PadRight(10)}\e[0m{rerun}");
 		return text.ToString();
 	}
 
@@ -238,11 +239,17 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		DrawStatus(force: true);
 	}
 
-	/// <summary>Redraws the status line; a step update is skipped when the last draw was moments ago, so a fast journey does not flood the terminal.</summary>
+	/// <summary>Redraws the status line; a step update that comes moments after the last draw is deferred to the end of the interval, so a fast journey does not flood the terminal.</summary>
 	private void DrawStatus(bool force)
 	{
-		if (!interactive || _running.Count == 0 || (!force && _sinceDraw.Elapsed < StatusInterval))
+		if (!interactive || _running.Count == 0)
 			return;
+		if (!force && _sinceDraw.Elapsed < StatusInterval)
+		{
+			Defer();
+			return;
+		}
+		_stale = false;
 		ClearStatus();
 		var running = string.Join(" · ", _running.OrderBy(r => r.Key, StringComparer.Ordinal).Select(r => $"{r.Key} ({r.Value})"));
 		var status = $"running {_finished}/{_total} · {running}";
@@ -253,6 +260,25 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		output.Write($"\e[2m{status}\e[0m");
 		output.Flush();
 		_sinceDraw.Restart();
+	}
+
+	private void Defer()
+	{
+		if (_stale)
+			return;
+		_stale = true;
+		var wait = StatusInterval - _sinceDraw.Elapsed;
+		var due = wait > TimeSpan.Zero ? wait : TimeSpan.Zero;
+		_ = Task.Delay(due).ContinueWith(_ => RedrawIfStale(), TaskScheduler.Default);
+	}
+
+	private void RedrawIfStale()
+	{
+		lock (_gate)
+		{
+			if (_stale)
+				DrawStatus(force: true);
+		}
 	}
 
 	private void ClearStatus()
