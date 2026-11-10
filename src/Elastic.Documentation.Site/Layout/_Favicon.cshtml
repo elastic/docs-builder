@@ -1,6 +1,7 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @if (Model.Branding is null)
 {
+	<link rel="icon" href="@Model.Static("favicon.ico")" sizes="32x32"/> @* for browsers that don't support svg favicon *@
 	<link rel="icon" href="@Model.FaviconStaticPath" type="image/svg+xml"/>
 	<link rel="apple-touch-icon" href="@Model.Static("apple-touch-icon.png")" sizes="180x180"/>
 }

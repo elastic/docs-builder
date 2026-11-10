@@ -17,7 +17,7 @@ public static class EnvironmentFavicon
 		"demo" => "favicon-demo.svg",
 		"dev" or "local" => "favicon-dev.svg",
 		"preview" => "favicon-preview.svg",
-		null or "" when buildType == BuildType.Assembler => "favicon.svg",
+		null or "" when buildType != BuildType.Isolated => "favicon.svg",
 		null or "" => "favicon-isolated.svg",
 		_ => "favicon-other.svg"
 	};

@@ -19,6 +19,7 @@ public class EnvironmentFaviconTests
 	[Arguments(BuildType.Assembler, "preview", "favicon-preview.svg")]
 	[Arguments(BuildType.Assembler, "air-gapped", "favicon-other.svg")]
 	[Arguments(BuildType.Isolated, null, "favicon-isolated.svg")]
+	[Arguments(BuildType.Codex, null, "favicon.svg")]
 	public void FileName_EnvironmentAndBuildType_PicksTheFavicon(BuildType buildType, string? environment, string expected) =>
 		EnvironmentFavicon.FileName(buildType, environment).Should().Be(expected);
 
@@ -30,5 +31,6 @@ public class EnvironmentFaviconTests
 			assets.Should().Contain(n => n.EndsWith($"favicon-{name}.svg"));
 		assets.Should().Contain(n => n.EndsWith("_static.favicon.svg"));
 		assets.Should().Contain(n => n.EndsWith("apple-touch-icon.png"));
+		assets.Should().Contain(n => n.EndsWith("favicon.ico"));
 	}
 }
