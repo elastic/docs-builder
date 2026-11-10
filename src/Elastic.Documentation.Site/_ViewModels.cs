@@ -205,9 +205,21 @@ public record GlobalLayoutViewModel
 			const string fallback = "https://www.elastic.co/static-res/images/social_media_default.png";
 			var origin = BuildType == BuildType.Codex ? CanonicalBaseUrl : PublicBaseUrl;
 			return EnvironmentFavicon.OgImageFileName(BuildType, EnvironmentName) is { } file && origin is not null
-				? new Uri(origin, Static(file)).ToString()
+				? new Uri(origin, OgImagePath(file)).ToString()
 				: fallback;
 		}
+	}
+
+	// Codex publishes _static under its site prefix. Repository pages sit below it (/prefix/r/repo), but landing and group pages
+	// have the site prefix itself as their path prefix, which Static() reads as no prefix at all.
+	private string OgImagePath(string file) =>
+		BuildType != BuildType.Codex ? Static(file) : StaticFileContentHashProvider.GetUrl(file, CodexSitePrefix());
+
+	private string CodexSitePrefix()
+	{
+		var prefix = UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
+		var repositorySegment = prefix.IndexOf("/r/", StringComparison.Ordinal);
+		return repositorySegment > 0 ? prefix[..repositorySegment] : prefix;
 	}
 
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>

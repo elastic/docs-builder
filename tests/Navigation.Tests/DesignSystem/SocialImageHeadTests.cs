@@ -109,6 +109,28 @@ public partial class SocialImageHeadTests : DocumentationSetNavigationTestBase
 	}
 
 	[Test]
+	[Arguments("/internal-docs")]
+	[Arguments("/internal-docs/r/repo")]
+	public async Task OgImage_CodexWithSitePrefix_KeepsThePrefixOnLandingAndRepositoryPages(string urlPathPrefix)
+	{
+		var options = new HeadOptions(BuildType.Codex, null, null, urlPathPrefix)
+		{
+			CanonicalBaseUrl = new Uri("https://codex.example.com")
+		};
+
+		var html = await RenderHead(options);
+
+		ImageMeta(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<meta property="og:image" content="https://codex.example.com/internal-docs/_static/og-codex.png?v=HASH"/>
+			<meta name="twitter:image" content="https://codex.example.com/internal-docs/_static/og-codex.png?v=HASH"/>
+			"""
+			);
+	}
+
+	[Test]
 	public async Task OgImage_CodexWithoutCanonicalUrl_FallsBackToTheAbsoluteElasticImage()
 	{
 		var html = await RenderHead(new HeadOptions(BuildType.Codex, null, null, "/internal-docs/r/repo"));
