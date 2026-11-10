@@ -47,7 +47,7 @@ internal sealed partial class SiteContext
 	/// Builds the context: an explicit <paramref name="env"/>, <paramref name="buildType"/> or <paramref name="features"/>
 	/// wins; the rest comes from the site's own <c>docs:build-type</c> and <c>docs:features</c> meta tags on
 	/// <paramref name="probePath"/>. A page that does not answer leaves them unknown, and unknown conditions are not matched. A page
-	/// that answers without <c>docs:build-type</c> is an assembler site that predates the tag.
+	/// that answers with neither <c>docs:build-type</c> nor a <c>build-type-*</c> body class is an assembler site that predates the tag.
 	/// </summary>
 	public static async Task<SiteContext> ResolveAsync(Uri baseUrl, SiteContextOptions options, HttpClient http, CancellationToken ct)
 	{
@@ -68,14 +68,16 @@ internal sealed partial class SiteContext
 			else
 			{
 				var metaBuildType = BuildTypeMeta().Match(html) is { Success: true } b ? b.Groups["content"].Value : null;
+				var classBuildType = BuildTypeClass().Match(html) is { Success: true } c ? c.Groups["type"].Value : null;
 				var metaFeatures = FeaturesMeta().Match(html) is { Success: true } f ? Split(f.Groups["content"].Value) : null;
 				if (metaBuildType is null && metaFeatures is null)
 					notes.Add($"{probed} has no docs:build-type or docs:features tags");
-				// Isolated and Codex sites are built from current source, so they carry the tag. Only a deployed assembler
-				// site (prod, staging) can predate it, so an answering page without the tag is an assembler site.
-				if (metaBuildType is null && buildType is null)
+				// Isolated and Codex sites render the build-type body class, so only a deployed assembler site that predates
+				// both can lack it.
+				var siteBuildType = metaBuildType ?? classBuildType;
+				if (siteBuildType is null && buildType is null)
 					notes.Add($"{probed} predates docs:build-type: assuming an assembler site");
-				buildType ??= metaBuildType ?? "assembler";
+				buildType ??= siteBuildType ?? "assembler";
 				features ??= metaFeatures;
 			}
 		}
@@ -133,6 +135,10 @@ internal sealed partial class SiteContext
 
 	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""")]
 	private static partial Regex BuildTypeMeta();
+
+	// Every layout renders the build type as a body class, which is what isolated and Codex sites answer with.
+	[GeneratedRegex("""build-type-(?<type>isolated|assembler|codex)""")]
+	private static partial Regex BuildTypeClass();
 }
 
 internal sealed record SiteContextOptions(string? Env, string? BuildType, IReadOnlySet<string>? Features, string ProbePath);

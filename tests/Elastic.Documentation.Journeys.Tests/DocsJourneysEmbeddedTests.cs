@@ -64,6 +64,17 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task Run_SiteWithTheBuildTypeBodyClass_UsesItInsteadOfAssumingAssembler()
+	{
+		await using var site = new FakeSite(buildType: null, features: null, bodyClass: "build-type-isolated");
+		using var folder = new JourneyFolder().Add("chrome/live", "# @requires build-type:assembler\nopen /docs\nexpect visible body");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--journeys", folder.Path);
+
+		_ = run.Output.Should().Contain("build-type=isolated").And.NotContain("assuming an assembler site");
+	}
+
+	[Test]
 	public async Task Run_SiteThatDoesNotAnswer_LeavesTheBuildTypeUnknown()
 	{
 		using var folder = new JourneyFolder().Add("chrome/live", "# @requires build-type:assembler\nopen /docs\nexpect visible body");

@@ -423,7 +423,7 @@ internal sealed class FakeSite : IAsyncDisposable
 	private readonly bool _servedFromRoot;
 	private int _writes;
 
-	public FakeSite(string? buildType, string? features, bool servedFromRoot = false)
+	public FakeSite(string? buildType, string? features, bool servedFromRoot = false, string bodyClass = "")
 	{
 		_servedFromRoot = servedFromRoot;
 		(_listener, Url) = StartListener();
@@ -434,7 +434,7 @@ internal sealed class FakeSite : IAsyncDisposable
 			_ = tags.Append(
 				features.Length == 0 ? "<meta name=\"docs:features\">" : $"<meta name=\"docs:features\" content=\"{features}\">"
 			);
-		_docs = $"<html><head><title>Docs</title>{tags}</head><body>Docs</body></html>";
+		_docs = $"<html><head><title>Docs</title>{tags}</head><body class=\"{bodyClass}\">Docs</body></html>";
 		_serving = Task.Run(ServeAsync);
 	}
 
