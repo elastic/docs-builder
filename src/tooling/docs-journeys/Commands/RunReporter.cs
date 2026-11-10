@@ -48,8 +48,13 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		lock (_gate)
 		{
 			_total = toRun;
-			foreach (var line in SkipLines(skipped, verbose))
-				WriteLine(Dim(line));
+			var lines = SkipLines(skipped, verbose);
+			if (interactive && lines.Count > 0)
+				output.WriteLine();
+			foreach (var line in lines)
+				output.WriteLine(interactive ? Ansi.Blue($"{Ansi.Skip} {line}") : line);
+			if (interactive && lines.Count > 0)
+				output.WriteLine();
 		}
 	}
 
@@ -85,13 +90,23 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		}
 	}
 
-	/// <summary>The site and what the run decided about it, one fact per line.</summary>
+	/// <summary>The tool's version, or empty while builds are unstamped: the SDK's default <c>1.0.0</c> says nothing about the build.</summary>
+	private static string ToolVersion =>
+		typeof(ConsoleRunReporter)
+			.Assembly
+			.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), inherit: false)
+			.OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+			.FirstOrDefault()?.InformationalVersion.Split('+')[0]
+			?? "dev";
+
+	/// <summary>A lead-in, then the site and what the run decided about it, one fact per line.</summary>
 	public static string ContextBlock(SiteContext site, Uri url, string? env, string? buildType, string? feature)
 	{
 		var text = new StringBuilder();
+		_ = text.AppendLine($"{Ansi.Bold($"docs-journeys {ToolVersion}".TrimEnd())} running against:").AppendLine();
 
 		void Row(string label, string value, string? note = null) =>
-			text.AppendLine($"\e[2m{label.PadRight(Label)}\e[0m{value}{(note is null ? "" : $" \e[2m({note})\e[0m")}");
+			text.AppendLine($"  {label.PadRight(Label)}{Ansi.Cyan(value)}{(note is null ? "" : $" {Ansi.Dim($"({note})")}")}");
 
 		Row("Site", url.ToString());
 		Row("Env", site.Env ?? "unknown", env is null ? null : "--env");
@@ -102,7 +117,7 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 			feature is null ? null : "--feature"
 		);
 		foreach (var note in site.ProbeNotes)
-			_ = text.AppendLine($"\e[33m{"Note".PadRight(Label)}\e[0m{note}");
+			_ = text.AppendLine($"  {Ansi.Yellow("Note".PadRight(Label))}{note}");
 		return text.ToString().TrimEnd();
 	}
 
@@ -140,8 +155,24 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		var passed = outcomes.Count(o => o.Passed);
 		var failed = outcomes.Count(o => o.Failed);
 		var skipped = outcomes.Count(o => o.Skipped);
-		var totals = $"{passed} passed, {failed} failed, {skipped} skipped in {elapsed.TotalSeconds:0.0}s, against {baseUrl}";
-		return text.AppendLine().Append(interactive && failed > 0 ? $"\e[31m{totals}\e[0m" : totals).ToString();
+		return text
+			.AppendLine()
+			.Append(interactive ? PrettyTotals(passed, failed, skipped, elapsed) : PlainTotals(passed, failed, skipped, elapsed))
+			.ToString();
+	}
+
+	private string PlainTotals(int passed, int failed, int skipped, TimeSpan elapsed) =>
+		$"{passed} passed, {failed} failed, {skipped} skipped in {elapsed.TotalSeconds:0.0}s, against {baseUrl}";
+
+	private string PrettyTotals(int passed, int failed, int skipped, TimeSpan elapsed)
+	{
+		var counts = new List<string>
+		{
+			passed > 0 ? Ansi.Green($"{Ansi.Ok} {passed} passed") : $"{Ansi.Ok} {passed} passed",
+			failed > 0 ? Ansi.BoldRed($"{Ansi.Fail} {failed} failed") : $"{Ansi.Fail} {failed} failed",
+			skipped > 0 ? Ansi.Blue($"{Ansi.Skip} {skipped} skipped") : $"{Ansi.Skip} {skipped} skipped"
+		};
+		return $"{string.Join("   ", counts)}\n\n{Ansi.Dim($"{elapsed.TotalSeconds:0.0}s against")} {Ansi.Cyan(baseUrl.ToString())}";
 	}
 
 	/// <summary>
@@ -170,8 +201,8 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		var where = outcome.File.DisplayPath(journeysRoot);
 		var text = new StringBuilder();
 		var failure = outcome.Result?.Failure;
-		_ = text.AppendLine($"\e[1;31m✗ {outcome.File.Id}\e[0m");
-		_ = text.AppendLine($"  \e[2m{where}{(failure is null ? "" : $":{failure.Line}")}\e[0m");
+		_ = text.AppendLine(Ansi.BoldRed($"{Ansi.Fail} {outcome.File.Id}"));
+		_ = text.AppendLine($"  {Ansi.Dim($"{where}{(failure is null ? "" : $":{failure.Line}")}")}");
 		if (failure is not null)
 			AppendSource(text, outcome.File.Path, failure.Line);
 		_ = text.AppendLine();
@@ -179,8 +210,8 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 			_ = text.AppendLine($"  {line}");
 		_ = text.AppendLine();
 		if (_pages.TryGetValue(outcome.File.Id, out var page))
-			_ = text.AppendLine($"  \e[2m{"last open".PadRight(10)}\e[0m{page}");
-		_ = text.AppendLine($"  \e[2m{"rerun".PadRight(10)}\e[0m{rerun}");
+			_ = text.AppendLine($"  {Ansi.Dim("last open".PadRight(10))}{Ansi.Cyan(page.ToString())}");
+		_ = text.AppendLine($"  {Ansi.Dim("rerun".PadRight(10))}{rerun}");
 		return text.ToString();
 	}
 
@@ -199,8 +230,8 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		var last = Math.Min(lines.Length, failedLine + 1);
 		for (var number = Math.Max(1, failedLine - 2); number <= last; number++)
 			_ = number == failedLine
-				? text.AppendLine($"  \e[1;31m▶ {number,3} │ {lines[number - 1]}\e[0m")
-				: text.AppendLine($"  \e[2m  {number,3} │ {lines[number - 1]}\e[0m");
+				? text.AppendLine($"  {Ansi.BoldRed($"{Ansi.Pointer} {number,3} {Ansi.Bar} {lines[number - 1]}")}")
+				: text.AppendLine($"  {Ansi.Dim($"  {number,3} {Ansi.Bar} {lines[number - 1]}")}");
 	}
 
 	/// <summary>Breaks <paramref name="text"/> at spaces to fit <paramref name="width"/>; a word longer than that stays whole.</summary>
@@ -225,12 +256,16 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 	private string Colour(JourneyOutcome outcome)
 	{
 		var line = Line(outcome);
-		return !interactive
-			? line
-			: outcome.Skipped ? Dim(line) : outcome.Passed ? $"\e[32m{line[..2]}\e[0m{line[2..]}" : $"\e[31m{line}\e[0m";
+		if (!interactive)
+			return line;
+		if (outcome.Skipped)
+			return Ansi.Blue($"{Ansi.Skip} {line}");
+		return outcome.Passed
+			? $"{Ansi.Green($"{Ansi.Ok} ok")}      {outcome.File.Id} {Ansi.Dim($"({outcome.Elapsed.TotalSeconds:0.0}s)")}"
+			: $"{Ansi.BoldRed($"{Ansi.Fail} FAILED")}  {Ansi.Bold(outcome.File.Id)}";
 	}
 
-	private string Dim(string line) => interactive ? $"\e[2m{line}\e[0m" : line;
+	private string Dim(string line) => interactive ? Ansi.Dim(line) : line;
 
 	private void WriteLine(string line)
 	{
@@ -257,7 +292,7 @@ internal sealed class ConsoleRunReporter(TextWriter output, bool interactive, bo
 		if (status.Length > width)
 			status = status[..(width - 1)] + "…";
 		_statusWidth = status.Length;
-		output.Write($"\e[2m{status}\e[0m");
+		output.Write(Ansi.Dim(status));
 		output.Flush();
 		_sinceDraw.Restart();
 	}
