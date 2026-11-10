@@ -141,11 +141,11 @@ jobs:
               - .github/workflows/journeys-live.yml
               - .github/workflows/changes.yml
             docs_journeys:
+              - *shared
               - src/tooling/docs-journeys/**
-              - Directory.Packages.props
-              - global.json
+              - .github/actions/bootstrap/**
+              - build/**
               - .github/workflows/journeys-live.yml
-              - .github/workflows/changes.yml
             frontend_toolchain:
               - .nvmrc
               - src/Elastic.Documentation.Site/package.json

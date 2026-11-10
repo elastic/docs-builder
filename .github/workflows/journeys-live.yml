@@ -111,5 +111,6 @@ jobs:
           docker cp "${id}:/app/." ./out
           docker rm "${id}"
           chmod +x ./out/docs-journeys
-          ./out/docs-journeys list | tee journeys.txt
+          ./out/docs-journeys list > journeys.txt
+          cat journeys.txt
           grep -q '/' journeys.txt || { echo "::error::docs-journeys list printed no area/name journeys"; exit 1; }
