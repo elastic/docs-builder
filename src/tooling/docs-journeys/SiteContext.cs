@@ -138,9 +138,9 @@ internal sealed partial class SiteContext
 		var (rootHtml, rootError) = await ReadAsync(http, new Uri(baseUrl, "/"), ct).ConfigureAwait(false);
 		if (rootHtml is null)
 			return (null, probePath, $"{error}; / failed: {rootError}");
-		return BuildTypeMeta().IsMatch(rootHtml) || FeaturesMeta().IsMatch(rootHtml)
+		return BuildTypeMeta().IsMatch(rootHtml) || FeaturesMeta().IsMatch(rootHtml) || BuildTypeClass().IsMatch(rootHtml)
 			? (rootHtml, "/", null)
-			: (null, probePath, $"{error}; / is not a docs site (it has no docs:build-type or docs:features tag)");
+			: (null, probePath, $"{error}; / is not a docs site (it has no docs:build-type or docs:features tag or build-type body class)");
 	}
 
 	private static async Task<(string? Html, string? Error)> ReadAsync(HttpClient http, Uri url, CancellationToken ct)

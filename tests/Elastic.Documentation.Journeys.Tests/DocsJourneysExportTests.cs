@@ -368,6 +368,8 @@ public class DocsJourneysExportTests
 	}
 
 	[Test]
+	// Both run the real npx, and concurrent npx runs of one package corrupt its shared ~/.npm/_npx cache (ENOTEMPTY, "journeys: not found").
+	[NotInParallel("npx")]
 	public async Task Export_ForReal_WritesTheMonitorsTheConfigAndInstallsThePackages()
 	{
 		if (!await NpxWorksAsync())
@@ -406,6 +408,8 @@ public class DocsJourneysExportTests
 	}
 
 	[Test]
+	// Both run the real npx, and concurrent npx runs of one package corrupt its shared ~/.npm/_npx cache (ENOTEMPTY, "journeys: not found").
+	[NotInParallel("npx")]
 	public async Task Export_OfNoApplicableMonitor_FailsUnlessEmptyIsAllowed()
 	{
 		if (!await NpxWorksAsync())
