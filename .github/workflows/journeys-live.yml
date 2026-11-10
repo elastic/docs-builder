@@ -1,7 +1,8 @@
 name: journeys-live
 
 # Two checks that need no site build:
-# - `prod`: journeys changed in a pull request still pass against https://www.elastic.co. Read-only, no secrets, never pages.
+# - `prod`: journeys changed in a pull request still pass against https://www.elastic.co. Read-only, no secrets, never pages,
+#   and only for pull requests from branches of this repository: code from a fork never makes requests to prod from here.
 # - `image`: the docs-journeys container builds, and the binary a consumer copies out of it runs.
 # Both jobs always run so their check names report, and each step is gated on its input.
 #
@@ -33,19 +34,21 @@ jobs:
     steps:
       # `--changed-only` diffs against the base branch, so it needs the history. Blobs are fetched on demand.
       - uses: actions/checkout@v7
-        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        if: ${{ inputs.prod && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         with:
           persist-credentials: false
           fetch-depth: 0
           filter: blob:none
 
       - name: Bootstrap Action Workspace
-        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        if: ${{ inputs.prod && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         uses: $/.github/actions/bootstrap
 
-      # Ubuntu 24.04 blocks the user namespaces Chrome's sandbox needs for an unprivileged user.
+      # Ubuntu 24.04 blocks the user namespaces Chrome's sandbox needs for an unprivileged user. Chrome keeps its sandbox
+      # on (cdp never passes --no-sandbox), so this relaxes the restriction instead. It only ever changes a throwaway
+      # GitHub-hosted VM, never a self-hosted runner.
       - name: Allow Chrome's sandbox
-        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        if: ${{ inputs.prod && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && runner.environment == 'github-hosted' }}
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       # Run from source: a pull request does not pay for the native AOT publish. The tool is read-only on a live site
@@ -53,7 +56,7 @@ jobs:
       # It exits 1 when a journey fails. A change that only touches journeys that cannot apply to prod, such as the
       # isolated-site ones (`@requires build-type:isolated`), skips them all, and --allow-all-skipped lets that pass.
       - name: Run the changed journeys against prod
-        if: ${{ inputs.prod && github.event_name == 'pull_request' }}
+        if: ${{ inputs.prod && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         env:
           CDP_CHROME: /usr/bin/google-chrome
           BASE_REF: ${{ github.base_ref }}

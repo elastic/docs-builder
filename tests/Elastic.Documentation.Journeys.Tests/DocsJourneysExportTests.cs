@@ -12,6 +12,9 @@ namespace Elastic.Documentation.Journeys.Tests;
 /// which prints the exact <c>npx</c> command and the project config without Node or a network. One test runs the real
 /// export, which needs <c>npx</c> and the npm registry, and skips without them. Nothing here reaches a Kibana.
 /// </summary>
+// The tests that run the real export start npx with the same package, and concurrent npx runs share one cache folder that npm
+// cannot update twice at once (ENOTEMPTY), so these tests run one at a time.
+[NotInParallel("npx")]
 public class DocsJourneysExportTests
 {
 	private const string Monitor = "# @tags smoke\n# @monitor schedule=10 locations=germany\nopen /page\nexpect title Page";
@@ -54,6 +57,8 @@ public class DocsJourneysExportTests
 			.And
 			.Contain("--env demo");
 		_ = run.Output.Should().NotContain("--paging");
+		// Install scripts of the packages' dependencies must not run: a push process holds the Synthetics API key.
+		_ = run.Output.Should().Contain("install --no-audit --no-fund --silent --ignore-scripts");
 		_ = Directory.Exists(outDir).Should().BeFalse("a dry run writes nothing");
 	}
 

@@ -122,9 +122,11 @@ jobs:
           name: journeys-build
           path: .artifacts/bin
 
-      # Ubuntu 24.04 blocks the user namespaces Chrome's sandbox needs for an unprivileged user.
+      # Ubuntu 24.04 blocks the user namespaces Chrome's sandbox needs for an unprivileged user. Chrome keeps its sandbox
+      # on (cdp never passes --no-sandbox), so this relaxes the restriction instead. It only ever changes a throwaway
+      # GitHub-hosted VM, never a self-hosted runner.
       - name: Allow Chrome's sandbox
-        if: ${{ inputs.run }}
+        if: ${{ inputs.run && runner.environment == 'github-hosted' }}
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Run journeys

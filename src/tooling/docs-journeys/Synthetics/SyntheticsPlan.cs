@@ -77,7 +77,7 @@ internal static partial class SyntheticsPlan
 			+ "  }\n"
 			+ "}\n";
 
-	public static IReadOnlyList<string> InstallArguments { get; } = ["install", "--no-audit", "--no-fund", "--silent"];
+	public static IReadOnlyList<string> InstallArguments { get; } = ["install", "--no-audit", "--no-fund", "--silent", "--ignore-scripts"];
 
 	/// <summary>
 	/// Run from the output folder, so the generated files find their packages. The API key is not an argument:
