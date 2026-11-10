@@ -31,7 +31,7 @@ internal sealed class RunCommand
 	/// <param name="env">The environment's name (<c>prod</c>, <c>edge</c>, <c>demo</c>, <c>staging</c>), for <c>env:</c> conditions. Defaults to the one the URL's host belongs to, or unknown.</param>
 	/// <param name="buildType">The site's build type, for <c>build-type:</c> conditions. Defaults to the site's <c>docs:build-type</c> tag, or unknown.</param>
 	/// <param name="feature">The feature flags that are on, comma separated, for <c>@requires</c> and <c>feature</c> blocks. Defaults to the site's <c>docs:features</c> tag, or none.</param>
-	/// <param name="probe">The page that is read for the site's <c>docs:*</c> tags. Default: /docs</param>
+	/// <param name="probe">The page that is read for the site's <c>docs:*</c> tags. Default: /docs, falling back to / when it does not answer</param>
 	/// <param name="parallel">-p, How many journeys run at once. Default: 4</param>
 	/// <param name="allow">Extra host patterns the journeys may reach, comma separated, on top of the elastic.co defaults.</param>
 	/// <param name="realUserAgent">Do not identify as a monitor: the site's telemetry then runs, and its exports are allowed as writes.</param>
@@ -85,7 +85,7 @@ internal sealed class RunCommand
 		);
 		var site = await ResolveSiteAsync(
 			baseUrl,
-			new SiteContextOptions(env, buildType, SiteContext.Split(feature), probe),
+			new SiteContextOptions(env, buildType, feature is null ? null : SiteContext.Split(feature), probe),
 			identity,
 			ct
 		).ConfigureAwait(false);

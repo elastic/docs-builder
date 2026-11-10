@@ -50,12 +50,12 @@ internal sealed partial class SiteContext
 	{
 		var env = options.Env ?? EnvFromHost(baseUrl);
 		var buildType = options.BuildType;
-		var features = options.Features is { Count: > 0 } given ? new HashSet<string>(given, StringComparer.Ordinal) : null;
+		var features = options.Features is { } given ? new HashSet<string>(given, StringComparer.Ordinal) : null;
 		var notes = new List<string> { $"env={env ?? "unknown"}{(options.Env is null ? "" : " (--env)")}" };
 
 		if (buildType is null || features is null)
 		{
-			var (html, error) = await ReadAsync(http, new Uri(baseUrl, options.ProbePath), ct).ConfigureAwait(false);
+			var (html, probed, error) = await ProbeAsync(http, baseUrl, options.ProbePath, ct).ConfigureAwait(false);
 			if (html is null)
 				notes.Add($"probe {options.ProbePath} failed: {error}");
 			else
@@ -63,7 +63,7 @@ internal sealed partial class SiteContext
 				var metaBuildType = BuildTypeMeta().Match(html) is { Success: true } b ? b.Groups["content"].Value : null;
 				var metaFeatures = FeaturesMeta().Match(html) is { Success: true } f ? Split(f.Groups["content"].Value) : null;
 				if (metaBuildType is null && metaFeatures is null)
-					notes.Add($"{options.ProbePath} has no docs:build-type or docs:features tags");
+					notes.Add($"{probed} has no docs:build-type or docs:features tags");
 				buildType ??= metaBuildType;
 				features ??= metaFeatures;
 			}
@@ -78,6 +78,21 @@ internal sealed partial class SiteContext
 		(list ?? "").Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(
 			StringComparer.Ordinal
 		);
+
+	// An isolated docs-builder site serves from /, so a probe that 404s falls back to the root page.
+	private static async Task<(string? Html, string Probed, string? Error)> ProbeAsync(
+		HttpClient http,
+		Uri baseUrl,
+		string probePath,
+		CancellationToken ct
+	)
+	{
+		var (html, error) = await ReadAsync(http, new Uri(baseUrl, probePath), ct).ConfigureAwait(false);
+		if (html is not null || probePath == "/")
+			return (html, probePath, error);
+		var (rootHtml, rootError) = await ReadAsync(http, new Uri(baseUrl, "/"), ct).ConfigureAwait(false);
+		return rootHtml is null ? (null, probePath, $"{error}; / failed: {rootError}") : (rootHtml, "/", null);
+	}
 
 	private static async Task<(string? Html, string? Error)> ReadAsync(HttpClient http, Uri url, CancellationToken ct)
 	{

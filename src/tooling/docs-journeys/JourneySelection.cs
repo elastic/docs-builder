@@ -43,12 +43,12 @@ internal static class ChangedFiles
 	/// <summary>The full paths of journeys under <paramref name="folder"/> that differ from <paramref name="gitRef"/>, including new ones.</summary>
 	public static IReadOnlySet<string> Since(string folder, string gitRef)
 	{
-		var changed = Git(folder, "diff", "--name-only", "--relative", gitRef, "--", ".")
-			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		var changed = Git(folder, "diff", "-z", "--name-only", "--relative", gitRef, "--", ".")
+			.Split('\0', StringSplitOptions.RemoveEmptyEntries)
 			.Concat(
-				Git(folder, "ls-files", "--others", "--exclude-standard", "--", ".").Split(
-					'\n',
-					StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+				Git(folder, "ls-files", "-z", "--others", "--exclude-standard", "--", ".").Split(
+					'\0',
+					StringSplitOptions.RemoveEmptyEntries
 				)
 			);
 		return changed

@@ -187,6 +187,60 @@ public class DocsJourneysContextTests
 	}
 
 	[Test]
+	public async Task Run_SiteServedFromTheRoot_FallsBackToTheRootPageForItsTags()
+	{
+		await using var site = new FakeSite(buildType: "isolated", features: "", servedFromRoot: true);
+		using var folder = new JourneyFolder().Add("a/isolated", $"# @requires build-type:isolated\n{Passing}");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path);
+
+		_ = run.ExitCode.Should().Be(0, run.Output);
+		_ = run.Output.Should().Contain("build-type=isolated").And.Contain("ok      a/isolated");
+	}
+
+	[Test]
+	public async Task Run_EmptyFeatureOverride_MeansNoFeaturesEvenWhenTheSiteHasSome()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
+		using var folder = new JourneyFolder().Add("a/flag", $"# @requires page-feedback\n{Passing}").Add(
+			"a/no-flag",
+			$"# @requires !page-feedback\n{Passing}"
+		);
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--feature", "");
+
+		_ = run.Output.Should().Contain("features=[]").And.Contain("ok      a/no-flag").And.Contain("skipped a/flag");
+	}
+
+	[Test]
+	public async Task Run_ChangedOnly_FindsJourneysWithNonAsciiNames()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("a/base", Passing);
+		await Cli.GitAsync(folder.Path, "init", "-q", "-b", "main");
+		await Cli.GitAsync(folder.Path, "add", ".");
+		await Cli.GitAsync(
+			folder.Path,
+			"-c",
+			"user.name=t",
+			"-c",
+			"user.email=t@example.com",
+			"-c",
+			"commit.gpgsign=false",
+			"commit",
+			"-q",
+			"-m",
+			"base"
+		);
+		folder.Add("a/café", Passing);
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--changed-only", "HEAD");
+
+		_ = run.ExitCode.Should().Be(0, run.Output);
+		_ = run.Output.Should().Contain("a/café").And.NotContain("No journeys changed");
+	}
+
+	[Test]
 	public async Task Run_ByDefault_IdentifiesAsAMonitorAndRealUserAgentTurnsThatOff()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "");
@@ -336,10 +390,12 @@ internal sealed class FakeSite : IAsyncDisposable
 	private readonly HttpListener _listener;
 	private readonly Task _serving;
 	private readonly string _docs;
+	private readonly bool _servedFromRoot;
 	private int _writes;
 
-	public FakeSite(string? buildType, string? features)
+	public FakeSite(string? buildType, string? features, bool servedFromRoot = false)
 	{
+		_servedFromRoot = servedFromRoot;
 		(_listener, Url) = StartListener();
 		var tags = new StringBuilder();
 		if (buildType is not null)
@@ -379,12 +435,19 @@ internal sealed class FakeSite : IAsyncDisposable
 
 			var html = request.Url!.AbsolutePath switch
 			{
-				"/docs" => _docs,
+				"/docs" when _servedFromRoot => null,
+				"/docs" or "/" when !_servedFromRoot || request.Url!.AbsolutePath == "/" => _docs,
 				"/page" =>
 					"<html><head><title>Page</title></head><body><form method=\"post\" action=\"/save\"><button type=\"submit\">Save</button></form></body></html>",
 				"/save" => "<html><head><title>Saved</title></head><body>Saved</body></html>",
 				_ => "<html><head><title>Not found</title></head></html>"
 			};
+			if (html is null)
+			{
+				context.Response.StatusCode = 404;
+				context.Response.Close();
+				continue;
+			}
 			try
 			{
 				var bytes = Encoding.UTF8.GetBytes(html);
