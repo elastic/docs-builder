@@ -8,9 +8,9 @@ on:
   workflow_call:
     inputs:
       run:
-        description: "'true' when journeys need to run for this change"
+        description: Whether journeys need to run for this change
         required: true
-        type: string
+        type: boolean
 
 permissions: {}
 
@@ -34,10 +34,10 @@ jobs:
       - name: Check every area is in a shard
         working-directory: tests/Elastic.Documentation.Journeys.Tests
         run: |
-          folders=$(ls journeys | sort)
+          folders=$(find journeys -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
           areas=$(jq -r '.shards[].areas[]' shards.json | sort)
           if [ "${folders}" != "${areas}" ]; then
-            echo "::error::journeys/ folders and shards.json areas differ. Folders: $(echo ${folders}) Areas: $(echo ${areas})"
+            echo "::error::journeys/ folders and shards.json areas differ. Folders: ${folders//$'\n'/ } Areas: ${areas//$'\n'/ }"
             exit 1
           fi
 
@@ -56,17 +56,17 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         with:
           persist-credentials: false
 
       - name: Bootstrap Action Workspace
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         uses: $/.github/actions/bootstrap
 
       # The `frontend` job in ci.yml built the assets already.
       - name: Download frontend assets
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         uses: actions/download-artifact@v8
         with:
           name: frontend-static
@@ -74,14 +74,14 @@ jobs:
 
       # Building the test project also builds docs-builder, which the isolated target serves.
       - name: Build
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         env:
           SkipNpmBuild: true
           Curb_Bypass: true
         run: dotnet build tests/Elastic.Documentation.Journeys.Tests -c release
 
       - name: Upload build output
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         uses: actions/upload-artifact@v7
         with:
           name: journeys-build
@@ -105,17 +105,17 @@ jobs:
       # The test assembly records the path of its journey files at compile time, so this checkout must sit at the
       # same path as the one in the `build` job. Both run on ubuntu-24.04 with the default workspace.
       - uses: actions/checkout@v7
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         with:
           persist-credentials: false
 
       - uses: actions/setup-dotnet@v6.0.0
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         with:
           global-json-file: global.json
 
       - name: Download build output
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         uses: actions/download-artifact@v8
         with:
           name: journeys-build
@@ -123,11 +123,11 @@ jobs:
 
       # Ubuntu 24.04 blocks the user namespaces Chrome's sandbox needs for an unprivileged user.
       - name: Allow Chrome's sandbox
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Run journeys
-        if: ${{ inputs.run == 'true' }}
+        if: ${{ inputs.run }}
         env:
           CDP_CHROME: /usr/bin/google-chrome
           FILTER: ${{ matrix.filter }}
@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload results
         # A failed journey leaves its received transcript here. Download it into .artifacts/.snapshots/received/ and run `dotnet snap review`.
-        if: ${{ failure() && inputs.run == 'true' }}
+        if: ${{ failure() && inputs.run }}
         uses: actions/upload-artifact@v7
         with:
           name: journeys-results-${{ matrix.name }}
