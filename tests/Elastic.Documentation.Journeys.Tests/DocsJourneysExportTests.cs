@@ -289,7 +289,8 @@ public class DocsJourneysExportTests
 		_ = Directory.CreateDirectory(bin);
 		var npx = Path.Combine(bin, "npx");
 		File.WriteAllText(npx, "#!/bin/sh\necho 'npm error code ENOTEMPTY'\nexit 217\n");
-		File.SetUnixFileMode(npx, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+		if (!OperatingSystem.IsWindows())
+			File.SetUnixFileMode(npx, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 		var environment = new Dictionary<string, string?>
 		{
 			["PATH"] = Path.GetFullPath(bin) + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),

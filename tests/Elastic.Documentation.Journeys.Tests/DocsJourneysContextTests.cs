@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -448,7 +449,7 @@ internal sealed class FakeSite : IAsyncDisposable
 		(_listener, Url) = StartListener();
 		var tags = new StringBuilder();
 		if (buildType is not null)
-			_ = tags.Append($"<meta name=\"docs:build-type\" content=\"{buildType}\">");
+			_ = tags.Append(CultureInfo.InvariantCulture, $"<meta name=\"docs:build-type\" content=\"{buildType}\">");
 		if (features is not null)
 			_ = tags.Append(
 				features.Length == 0 ? "<meta name=\"docs:features\">" : $"<meta name=\"docs:features\" content=\"{features}\">"
