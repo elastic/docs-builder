@@ -101,8 +101,8 @@ public record ApiOperationMetadata
 	public bool Landing { get; init; }
 
 	/// <summary>
-	/// Whether the spec marks the operation deprecated. Current operations carry no flag in the index, so a query for them
-	/// tests that the field is absent rather than <c>false</c>.
+	/// Whether the spec marks the operation deprecated. The index may omit the flag on current operations, so a query for them
+	/// tests that the flag is not true rather than that it is <c>false</c>.
 	/// </summary>
 	[Boolean]
 	[JsonPropertyName("deprecated")]

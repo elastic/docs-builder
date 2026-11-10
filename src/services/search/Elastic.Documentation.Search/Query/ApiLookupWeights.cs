@@ -29,8 +29,8 @@ namespace Elastic.Documentation.Search;
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
 /// explain the typed words equally well. <c>isolate endpoint</c> lists <c>/api/endpoint/action/isolate</c> (8.08) above its deprecated
-/// predecessor <c>/api/endpoint/isolate</c> (7.88). It lifts operations without the flag, since the index writes <c>api.deprecated</c>
-/// only when true.</item>
+/// predecessor <c>/api/endpoint/isolate</c> (7.88). It lifts every operation whose flag is not true, whether the index omits the
+/// flag or writes <c>false</c>.</item>
 /// </list>
 /// </summary>
 public static class ApiLookupWeights

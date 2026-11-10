@@ -53,7 +53,7 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	public void Build_Words_LiftsOperationsWithoutADeprecatedFlag()
+	public void Build_Words_LiftsOperationsNotMarkedDeprecated()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("isolate endpoint"));
 
@@ -63,11 +63,12 @@ public class ApiLookupQueryBuilderTests
 		lift.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.NotDeprecated);
 		Clauses(lift.GetProperty("filter").GetProperty("bool").GetProperty("must_not"))
 			.Single()
-			.GetProperty("exists")
-			.GetProperty("field")
-			.GetString()
+			.GetProperty("term")
+			.GetProperty("api.deprecated")
+			.GetProperty("value")
+			.GetBoolean()
 			.Should()
-			.Be("api.deprecated");
+			.BeTrue();
 	}
 
 	/// <summary>The client writes a one-clause list as a bare object.</summary>

@@ -303,10 +303,10 @@ public static class ApiLookupQueryBuilder
 		lifts.AddRange(SearchQueryBuilder.ScoringQueries);
 		// An operation id of fewer words is more specific, so `esql query` prefers `esql-query` over `esql-async-query-stop`.
 		lifts.Add(new RankFeatureQuery { Field = QueryFieldNames.ApiIdWords, Boost = ApiLookupWeights.Specificity });
-		// The index writes api.deprecated only on deprecated operations, so a current one is one without the flag.
+		// Current operations carry no flag or an explicit false, so the lift tests that the flag is not true.
 		lifts.Add(
 			Constant(
-				new BoolQuery { MustNot = [new ExistsQuery { Field = QueryFieldNames.ApiDeprecated }] },
+				new BoolQuery { MustNot = [new TermQuery { Field = QueryFieldNames.ApiDeprecated, Value = true }] },
 				ApiLookupWeights.NotDeprecated,
 				NotDeprecatedQueryName
 			)
