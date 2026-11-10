@@ -45,7 +45,7 @@ export default () => {
             config.params.baseUrl = 'https://www.elastic.co'
             break
         case 'edge':
-            config.params.baseUrl = 'https://d34ipnu52o64md.cloudfront.net'
+            config.params.baseUrl = 'https://docs-edge.elastic.dev'
             break
         case 'staging':
             config.params.baseUrl = 'https://dwnz7p9ulv07a.cloudfront.net'
