@@ -74,12 +74,7 @@ let private publishZip _ =
                 $".artifacts/publish/{tool}/release/NOTICE.txt"
             ] @ extra ())
     zip "docs-builder" (fun () -> [])
-    // The journeys travel with the binary, so a runner that downloads the zip gets the journeys that match its version.
-    zip "docs-journeys" (fun () ->
-        Directory.EnumerateFiles(".artifacts/publish/docs-journeys/release/journeys", "*.journey", SearchOption.AllDirectories)
-        |> Seq.sort
-        |> Seq.toList
-    )
+    zip "docs-journeys" (fun () -> [])
     
 let private prNumber () =
     match Environment.environVarOrNone "GITHUB_REF_NAME" with
