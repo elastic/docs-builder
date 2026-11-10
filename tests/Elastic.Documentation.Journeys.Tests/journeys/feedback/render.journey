@@ -1,0 +1,10 @@
+# @requires build-type:isolated
+# Render only: pressing a button sends feedback to the API, so this journey never clicks one.
+set viewport 1280 800
+open /syntax/code
+wait --load networkidle
+expect visible find role group --name "Was this page helpful?"
+expect visible find role button --name "Yes, this page was helpful"
+expect visible find role button --name "No, this page was not helpful"
+expect attr "button.page-feedback__choice--yes" aria-pressed false
+expect attr "button.page-feedback__choice--no" aria-pressed false

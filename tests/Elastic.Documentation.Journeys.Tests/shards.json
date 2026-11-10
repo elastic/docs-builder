@@ -1,5 +1,5 @@
 {
   "shards": [
-    { "name": "site", "areas": ["api-explorer", "chrome", "content", "landing", "live", "navigation", "versions"] }
+    { "name": "site", "areas": ["a11y", "api-explorer", "chrome", "content", "feedback", "landing", "live", "navigation", "page-actions", "versions"] }
   ]
 }

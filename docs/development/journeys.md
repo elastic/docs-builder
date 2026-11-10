@@ -36,7 +36,7 @@ Each folder under `journeys/` is an area, and each area has one test class under
 
 | Area | Covers |
 |---|---|
-| `landing` | The home page and the 404 page |
+| `landing` | The home page, the 404 page, a hub page and a group of page cards |
 | `navigation` | The sidebar and the table of contents |
 | `content` | Tabs, dropdowns, admonitions and the code copy button |
 | `markdown-alternates` | The `<page>.md` alternate of a page (`.http` files; isolated target only) |
@@ -50,6 +50,13 @@ Areas that need no browser use `.http` files in `http/<area>/`, the format Visua
 - `markdown-alternates` sends its requests to the site the target serves. It uses pages of this repository's `docs/` folder, so the assembler and Codex targets skip it with a reason.
 - `mcp` and `docs-api` start `Elastic.Documentation.Mcp.Remote` and `Elastic.Documentation.Api` in memory with `WebApplicationFactory`, whatever the target is. They only cover requests that need no credentials: a tool call that searches Elasticsearch has no file yet.
 - Page bodies are cut to their first line (`BodyScrubbers.FirstQuotedLine`) and MCP descriptions to an ellipsis (`BodyScrubbers.WithoutProse`), so a snapshot changes when behaviour changes and not when the wording does. `Mcp.Remote.Tests` still snapshots the full handshake.
+
+| `chrome` | The isolated header (logo, search button, GitHub link, deployment info) and the footer |
+| `page-actions` | The "View as Markdown" and "Edit this page" links |
+| `feedback` | The "Was this page helpful?" buttons render with their accessible names |
+| `a11y` | The accessibility check on the home page, a content page and the 404 page |
+
+The isolated site has no theme switch, no "report an issue" link and no search that works without the search API, so those have no journeys here. The feedback journey only checks that the buttons render: pressing one sends feedback to the API.
 
 ## Write a journey
 
@@ -205,3 +212,7 @@ Two jobs in `journeys-live.yml` need no site build.
 
 - **Journeys stay valid against prod.** When a pull request changes a journey or an `.http` file, the changed ones run read-only against `https://www.elastic.co`. A journey whose `@requires` does not hold on prod is skipped with its reason. The job fails when a journey fails, and when every changed journey was skipped, so a journey that never ran on prod cannot pass unnoticed. A journey for a feature that ships with the pull request and is not yet on prod says so with `@requires !env:prod`.
 - **The `docs-journeys` image.** When the tool changes, the image builds without being pushed, the binary is copied out of it the way another repository's workflow would, and `docs-journeys list` runs from it. This is also the Linux native build check.
+
+## Accessibility findings
+
+The `a11y` journeys run Nullean.Cdp's own accessibility rules and record the result in the verified transcript, violations included. The check is not relaxed: a new violation, or a fixed one, changes the transcript and fails the journey until someone reads the diff and accepts it. A transcript that lists violations is the list of known issues, not a statement that they are fine. The transcript names generated class names such as `span.css-16juuyo`, so a change to the header's styles can change it without a real regression.
