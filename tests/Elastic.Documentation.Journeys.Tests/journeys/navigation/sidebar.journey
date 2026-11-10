@@ -1,5 +1,6 @@
 set viewport 1280 800
 open /syntax/tabs
+wait --load networkidle
 expect visible #pages-nav
 find role link click --name Admonitions --exact
 wait --url **/syntax/admonitions*

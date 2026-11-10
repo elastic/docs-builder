@@ -45,12 +45,14 @@ Each folder under `journeys/` is an area, and each area has one test class under
 ```text
 set viewport 1280 800
 open /syntax/tabs
+wait --load networkidle
 expect checked find role radio --name "Tab #1 title"
 find nth 1 .tabs-label click
 expect checked find role radio --name "Tab #2 title"
 ```
 
 - Start with `set viewport 1280 800`. At the default size the site uses its mobile layout, where a click on a sidebar link does nothing and reports no error.
+- After `open`, and before the first click, run `wait --load networkidle`. The page attaches its click handlers when its scripts finish loading, and a click before that does nothing and reports no error. With four test runs at once, a sidebar journey without the wait failed in 6 of 16 runs, and none with it.
 - After a click on a link, wait for the new address with `wait --url <glob>`. The site navigates with htmx and not a full page load, so the next step would otherwise still see the old page.
 - Find controls by role and accessible name first (`find role link click --name Admonitions --exact`). Use a CSS selector, quoted, when no role fits. `find nth` counts from zero.
 - A journey that only uses `expect` produces an empty transcript. Use `get text` or `snapshot -c -s <selector>` where you want the page content in the snapshot.
