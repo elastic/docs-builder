@@ -82,6 +82,8 @@ public record AssemblerDocumentationSet
 				"https://www.elastic.co"
 			), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 			BuildType = BuildType.Assembler,
+			EnvironmentName = env.Name,
+			PublicBaseUrl = Uri.TryCreate(env.Uri, UriKind.Absolute, out var publicUri) ? publicUri : null,
 			ContentSource = env.ContentSource
 		};
 		BuildContext = buildContext;

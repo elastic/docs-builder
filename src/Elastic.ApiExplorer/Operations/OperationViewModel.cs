@@ -90,10 +90,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 
 	// Lifting the authorization text out can leave nothing in the description, and a page with no meta description is worse.
 	protected override string? LayoutPageDescription =>
-		DescriptionOrSummary(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
-
-	internal static string? DescriptionOrSummary(string? description, string? summary) =>
-		string.IsNullOrWhiteSpace(description) ? summary : description;
+		ApiSeoDescription.OperationText(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
 
 	protected override IReadOnlyList<TocItem> GetTocItems()
 	{
