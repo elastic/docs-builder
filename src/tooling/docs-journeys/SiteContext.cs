@@ -36,6 +36,9 @@ internal sealed partial class SiteContext
 	/// <summary>Where each part of the context came from, for the run's output.</summary>
 	public string Describe { get; init; } = "";
 
+	/// <summary>True when the site's tags were needed and the probe could not read them.</summary>
+	public bool ProbeFailed { get; init; }
+
 	public JourneyContext ToJourneyContext() => new(Features, BuildType, Env);
 
 	public static string? EnvFromHost(Uri url) => KnownHosts.TryGetValue(url.Host, out var env) ? env : null;
@@ -43,8 +46,8 @@ internal sealed partial class SiteContext
 	/// <summary>
 	/// Builds the context: an explicit <paramref name="env"/>, <paramref name="buildType"/> or <paramref name="features"/>
 	/// wins; the rest comes from the site's own <c>docs:build-type</c> and <c>docs:features</c> meta tags on
-	/// <paramref name="probePath"/>. A site that predates the tags, or a page that does not answer, leaves them unknown, and
-	/// unknown conditions are not matched.
+	/// <paramref name="probePath"/>. A page that does not answer leaves them unknown, and unknown conditions are not matched. A page
+	/// that answers with neither <c>docs:build-type</c> nor a <c>build-type-*</c> body class is an assembler site that predates the tag.
 	/// </summary>
 	public static async Task<SiteContext> ResolveAsync(Uri baseUrl, SiteContextOptions options, HttpClient http, CancellationToken ct)
 	{
@@ -52,26 +55,43 @@ internal sealed partial class SiteContext
 		var buildType = options.BuildType;
 		var features = options.Features is { } given ? new HashSet<string>(given, StringComparer.Ordinal) : null;
 		var notes = new List<string> { $"env={env ?? "unknown"}{(options.Env is null ? "" : " (--env)")}" };
+		var probeFailed = false;
 
 		if (buildType is null || features is null)
 		{
 			var (html, probed, error) = await ProbeAsync(http, baseUrl, options.ProbePath, ct).ConfigureAwait(false);
 			if (html is null)
+			{
+				probeFailed = true;
 				notes.Add($"probe {options.ProbePath} failed: {error}");
+			}
 			else
 			{
 				var metaBuildType = BuildTypeMeta().Match(html) is { Success: true } b ? b.Groups["content"].Value : null;
+				var classBuildType = BuildTypeClass().Match(html) is { Success: true } c ? c.Groups["type"].Value : null;
 				var metaFeatures = FeaturesMeta().Match(html) is { Success: true } f ? Split(f.Groups["content"].Value) : null;
 				if (metaBuildType is null && metaFeatures is null)
 					notes.Add($"{probed} has no docs:build-type or docs:features tags");
-				buildType ??= metaBuildType;
+				// Isolated and Codex sites render the build-type body class, so only a deployed assembler site that predates
+				// both can lack it.
+				var siteBuildType = metaBuildType ?? classBuildType;
+				if (siteBuildType is null && buildType is null)
+					notes.Add($"{probed} predates docs:build-type: assuming an assembler site");
+				buildType ??= siteBuildType ?? "assembler";
 				features ??= metaFeatures;
 			}
 		}
 
 		notes.Add($"build-type={buildType ?? "unknown"}{(options.BuildType is null ? "" : " (--build-type)")}");
 		notes.Add($"features=[{string.Join(' ', (features ?? []).Order(StringComparer.Ordinal))}]");
-		return new SiteContext { Env = env, BuildType = buildType, Features = features ?? [], Describe = string.Join(", ", notes) };
+		return new SiteContext
+		{
+			Env = env,
+			BuildType = buildType,
+			Features = features ?? [],
+			Describe = string.Join(", ", notes),
+			ProbeFailed = probeFailed
+		};
 	}
 
 	public static HashSet<string> Split(string? list) =>
@@ -115,6 +135,10 @@ internal sealed partial class SiteContext
 
 	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""")]
 	private static partial Regex BuildTypeMeta();
+
+	// Every layout renders the build type as a body class, which is what isolated and Codex sites answer with.
+	[GeneratedRegex("""build-type-(?<type>isolated|assembler|codex)""")]
+	private static partial Regex BuildTypeClass();
 }
 
 internal sealed record SiteContextOptions(string? Env, string? BuildType, IReadOnlySet<string>? Features, string ProbePath);

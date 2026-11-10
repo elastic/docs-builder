@@ -24,7 +24,7 @@ internal sealed class RunCommand
 	/// validates the site without comparing transcripts.
 	/// </summary>
 	/// <param name="url">-u, The origin to run against, such as <c>https://www.elastic.co</c>. Journeys <c>open</c> paths on it.</param>
-	/// <param name="journeys">-j, The folder of journeys. Required: journeys are specific to the kind of site they check.</param>
+	/// <param name="journeys">-j, A folder of journeys to run instead of the ones compiled into this binary. Needed for <c>--changed-only</c>.</param>
 	/// <param name="area">-a, Only these areas, comma separated.</param>
 	/// <param name="tag">-t, Only journeys with one of these <c># @tags</c>, comma separated.</param>
 	/// <param name="changedOnly">Only journeys that differ from this git ref (or are new), such as <c>origin/main</c>.</param>
@@ -42,7 +42,7 @@ internal sealed class RunCommand
 	/// <param name="artifacts">Write screenshots and recordings here, one folder per journey.</param>
 	public async Task<int> Run(
 		string url,
-		string journeys,
+		string? journeys = null,
 		string? area = null,
 		string? tag = null,
 		string? changedOnly = null,
@@ -64,12 +64,17 @@ internal sealed class RunCommand
 		var baseUrl = Uri.TryCreate(url, UriKind.Absolute, out var parsed) && parsed.Scheme is "http" or "https"
 			? parsed
 			: throw new ArgumentException($"--url must be an http or https origin, not '{url}'.");
-		var files = JourneyFile.Find(journeys, area);
+		if (changedOnly is not null && journeys is null)
+			throw new ArgumentException(
+				"--changed-only compares journey files with a git ref, so it needs --journeys <folder> in a checkout."
+			);
+		var folder = JourneySource.Folder(journeys);
+		var files = JourneyFile.Find(folder, area);
 		if (files.Count == 0)
-			throw new ArgumentException($"No .journey files found in {journeys}; refusing to report an empty run as passed.");
+			throw new ArgumentException($"No .journey files found in {folder}; refusing to report an empty run as passed.");
 		if (changedOnly is not null)
 		{
-			var changed = ChangedFiles.Since(journeys, changedOnly);
+			var changed = ChangedFiles.Since(folder, changedOnly);
 			files = files.Where(f => changed.Contains(Path.GetFullPath(f.Path))).ToList();
 			if (files.Count == 0)
 			{
@@ -103,7 +108,7 @@ internal sealed class RunCommand
 		return Report(outcomes, baseUrl, junit);
 	}
 
-	private static async Task<SiteContext> ResolveSiteAsync(
+	internal static async Task<SiteContext> ResolveSiteAsync(
 		Uri baseUrl,
 		SiteContextOptions options,
 		RunIdentity identity,
