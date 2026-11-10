@@ -1,3 +1,4 @@
+# @requires build-type:isolated
 set viewport 1280 800
 open /this/page/does/not/exist
 expect title "404 - Page not found | docs-builder"
