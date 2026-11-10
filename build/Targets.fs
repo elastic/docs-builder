@@ -61,18 +61,20 @@ let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }
 
 let private publishZip _ =
-    let zip tool =
+    // `extra` runs after the publish, for files that only exist then.
+    let zip tool (extra: unit -> string list) =
         exec { run "dotnet" "publish" $"src/tooling/{tool}/{tool}.csproj" }
         let binary = match OS.Current with Windows -> $"{tool}.exe" | _ -> tool
         Zip.zip
             $".artifacts/publish/{tool}/release"
             $".artifacts/publish/{tool}/release/{tool}-%s{OS.Name}-{OS.Arch}.zip"
-            [
+            ([
                 $".artifacts/publish/{tool}/release/%s{binary}";
                 $".artifacts/publish/{tool}/release/LICENSE.txt";
                 $".artifacts/publish/{tool}/release/NOTICE.txt"
-            ]
-    zip "docs-builder"
+            ] @ extra ())
+    zip "docs-builder" (fun () -> [])
+    zip "docs-journeys" (fun () -> [])
     
 let private prNumber () =
     match Environment.environVarOrNone "GITHUB_REF_NAME" with
@@ -151,6 +153,10 @@ let private publishContainers _ =
     createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
     createImage "src/tooling/essc/essc.csproj" "website-search-essc"
+    createImage "src/tooling/docs-journeys/docs-journeys.csproj" "docs-builder-journeys"
+
+// The journeys need Chrome and a built site, so they run through `mise run journeys` and their own CI jobs, not with the unit tests.
+let private isJourneyProject (project: string) = project.Contains "Journeys.Tests"
 
 let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
     let directories =
@@ -163,6 +169,7 @@ let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
         directories
         |> List.collect (fun d ->
             Directory.EnumerateFiles(Path.Combine(Paths.Root.FullName, d), "*.csproj", SearchOption.AllDirectories)
+            |> Seq.filter (fun project -> not (isJourneyProject project))
             |> Seq.sort
             |> Seq.toList
         )

@@ -1,0 +1,152 @@
+name: journeys
+
+# Browser journeys against the isolated docs site, built once and run in shards of areas.
+# `shards.json` in the test project maps shard names to test classes; add a shard there and it gets its own job.
+# Every job and shard always runs so the check names report, and each step is gated on `inputs.run`.
+
+on:
+  workflow_call:
+    inputs:
+      run:
+        description: Whether journeys need to run for this change
+        required: true
+        type: boolean
+
+permissions: {}
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: tests/Elastic.Documentation.Journeys.Tests
+
+      # Every test class in the project must be in exactly one shard, or its tests would never run in CI. A class is named
+      # in shards.json as written in the code, so a class cannot be missed because of how its area folder is spelled.
+      - name: Check every test class is in a shard
+        working-directory: tests/Elastic.Documentation.Journeys.Tests
+        run: |
+          declared=$(grep -rhE '^public class [A-Za-z0-9]+' --include='*.cs' Areas ./*.cs | sed -E 's/^public class ([A-Za-z0-9]+).*/\1/' | sort)
+          listed=$(jq -r '.shards[].classes[]' shards.json | sort)
+          if [ "${declared}" != "${listed}" ]; then
+            echo "::error::The test classes and the shards.json classes differ. Classes: ${declared//$'\n'/ } Listed: ${listed//$'\n'/ }"
+            exit 1
+          fi
+
+      - id: matrix
+        run: |
+          matrix=$(jq -c '{include: [.shards[] | {name, filter: ("/*/*/(" + (.classes | join("|")) + ")/*")}]}' tests/Elastic.Documentation.Journeys.Tests/shards.json)
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+          echo "${matrix}"
+
+  build:
+    name: journeys build
+    needs: [plan]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        if: ${{ inputs.run }}
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap Action Workspace
+        if: ${{ inputs.run }}
+        uses: $/.github/actions/bootstrap
+
+      # The `frontend` job in ci.yml built the assets already.
+      - name: Download frontend assets
+        if: ${{ inputs.run }}
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-static
+          path: src/Elastic.Documentation.Site/_static
+
+      # Building the test project also builds docs-builder, which the isolated target serves.
+      - name: Build
+        if: ${{ inputs.run }}
+        env:
+          SkipNpmBuild: true
+          Curb_Bypass: true
+        run: dotnet build tests/Elastic.Documentation.Journeys.Tests -c release
+
+      - name: Upload build output
+        if: ${{ inputs.run }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: journeys-build
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            .artifacts/bin/docs-builder/release
+            .artifacts/bin/docs-journeys/release
+            .artifacts/bin/Elastic.Documentation.Journeys.Tests/release
+
+  journeys:
+    # The job name is fixed so a required check can name it, and the matrix always expands, so steps are gated and not the job.
+    name: journeys (${{ matrix.name }})
+    needs: [plan, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      # The test assembly records the path of its journey files at compile time, so this checkout must sit at the
+      # same path as the one in the `build` job. Both run on ubuntu-24.04 with the default workspace.
+      - uses: actions/checkout@v7
+        if: ${{ inputs.run }}
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6.0.0
+        if: ${{ inputs.run }}
+        with:
+          global-json-file: global.json
+
+      - name: Download build output
+        if: ${{ inputs.run }}
+        uses: actions/download-artifact@v8
+        with:
+          name: journeys-build
+          path: .artifacts/bin
+
+      # Ubuntu 24.04 blocks the user namespaces Chrome's sandbox needs for an unprivileged user. Chrome keeps its sandbox
+      # on (cdp never passes --no-sandbox), so this relaxes the restriction instead. It only ever changes a throwaway
+      # GitHub-hosted VM, never a self-hosted runner.
+      - name: Allow Chrome's sandbox
+        if: ${{ inputs.run && runner.environment == 'github-hosted' }}
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Run journeys
+        if: ${{ inputs.run }}
+        env:
+          CDP_CHROME: /usr/bin/google-chrome
+          FILTER: ${{ matrix.filter }}
+        run: |
+          google-chrome --version
+          dotnet .artifacts/bin/Elastic.Documentation.Journeys.Tests/release/Elastic.Documentation.Journeys.Tests.dll \
+            --treenode-filter "${FILTER}" \
+            --results-directory TestResults
+
+      - name: Upload results
+        # A failed journey leaves its received transcript here. Extract it at the repository root (it holds .artifacts/.snapshots/received/) and run `dotnet snap review`.
+        if: ${{ failure() && inputs.run }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: journeys-results-${{ matrix.name }}
+          path: |
+            TestResults
+            .artifacts/.snapshots/received/
+          if-no-files-found: ignore

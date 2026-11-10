@@ -91,7 +91,8 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/tooling/essc/` | `mise run test` (targets `Elastic.SiteSearch.Tests`) |
 | `src/Elastic.ApiExplorer/` | `mise run test` (targets `Elastic.ApiExplorer.Tests`) |
 | `src/services/Elastic.Documentation.Deploying/` | `mise run test` (targets `Elastic.Documentation.Deploying.Tests`) |
-| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. Markup or behaviour changes to page chrome, navigation or content components also run `mise run journeys`. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `tests/Elastic.Documentation.Journeys.Tests/` | `mise run journeys` (browser journeys; needs Chrome, and is not part of `mise run test`) |
 | `tests-integration/` | `mise run integrate` |
 | Multiple / uncertain | `mise run test` |
 

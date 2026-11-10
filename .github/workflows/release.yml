@@ -99,7 +99,7 @@ jobs:
         # language=bash
         run: |
           set -euo pipefail
-          for image in docs-builder docs-builder-mcp docs-builder-api; do
+          for image in docs-builder docs-builder-mcp docs-builder-api docs-builder-journeys; do
             ref="ghcr.io/elastic/${image}:${TAG_NAME}"
             digest=$(docker buildx imagetools inspect "$ref" 2>/dev/null \
               | awk '/^Digest:/ {print $2; exit}')
@@ -130,6 +130,13 @@ jobs:
         with:
           subject-name: ghcr.io/elastic/docs-builder-api
           subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-journeys image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-journeys
+          subject-digest: ${{ steps.digests.outputs.docs-builder-journeys }}
           push-to-registry: true
         
   build-link-index-lambda:
@@ -318,13 +325,14 @@ jobs:
         with:
           subject-path: |
             .artifacts/publish/docs-builder/release/*.zip
+            .artifacts/publish/docs-journeys/release/*.zip
 
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
         run: |
-          gh release upload "$TAG_NAME" .artifacts/publish/docs-builder/release/*.zip
+          gh release upload "$TAG_NAME" .artifacts/publish/docs-builder/release/*.zip .artifacts/publish/docs-journeys/release/*.zip
         shell: bash
 
   publish-release:
