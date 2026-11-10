@@ -41,6 +41,8 @@ public partial class DefaultSearchService<TDocument>(
 		"description",
 		"parents",
 		"headings",
+		// picks a landing row's icon
+		"product",
 		// every required member of ApiOperationMetadata, or the hit fails to deserialize; properties arrive as inner hits
 		"api.endpoints",
 		"api.method",
@@ -51,7 +53,9 @@ public partial class DefaultSearchService<TDocument>(
 		"api.key",
 		"api.trees",
 		// optional, so the required-member test cannot catch its absence; without it every hit reads as current
-		"api.deprecated"
+		"api.deprecated",
+		// optional too; without it a landing page reads as an operation and loses its row
+		"api.landing"
 	];
 
 	private static readonly string[] SearchSourceIncludes =

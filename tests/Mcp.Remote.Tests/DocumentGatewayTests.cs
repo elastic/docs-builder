@@ -49,6 +49,39 @@ public class DocumentGatewayTests
 		}
 		""";
 
+	private const string ApiLandingHit =
+		"""
+		{
+		  "took": 1,
+		  "timed_out": false,
+		  "hits": {
+		    "total": { "value": 1, "relation": "eq" },
+		    "hits": [
+		      {
+		        "_index": "test-index",
+		        "_id": "/docs/api/doc/logstash",
+		        "_source": {
+		          "path": "/docs/api/doc/logstash",
+		          "title": "Logstash API",
+		          "search_title": "Logstash API",
+		          "content_type": "api",
+		          "section": "api",
+		          "api": {
+		            "key": "logstash",
+		            "landing": true,
+		            "method": "",
+		            "path": "",
+		            "operation_id": "",
+		            "endpoints": [],
+		            "routes": []
+		          }
+		        }
+		      }
+		    ]
+		  }
+		}
+		""";
+
 	private const string NarrativeHit =
 		"""
 		{
@@ -86,6 +119,20 @@ public class DocumentGatewayTests
 		result.Api.Path.Should().Be("/_node/stats");
 		result.Api.OperationId.Should().Be("nodestats");
 		result.Api.Endpoints.Should().Equal("GET /_node/stats");
+	}
+
+	[Test]
+	public async Task GetByUrl_ApiLandingPage_ReturnsApiTypeAndNoOperation()
+	{
+		using var stub = ElasticsearchStub.Start(ApiLandingHit);
+		using var accessor = CreateAccessor(stub);
+		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
+
+		var result = await gateway.GetByUrlAsync("/docs/api/doc/logstash", TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.Type.Should().Be("api");
+		result.Api.Should().BeNull();
 	}
 
 	[Test]

@@ -224,7 +224,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				return field;
 			var builder = new MarkdownPipelineBuilder()
 				.UseFootnotes()
-				.UseAutoLinks()
+				.UseAutoLinks(checkApiLinks: false)
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
 				.UsePipeTables()

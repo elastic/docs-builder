@@ -1,5 +1,3 @@
-# Async search get
-
 ## Description
 
 Retrieve the results of a previously submitted asynchronous search request.

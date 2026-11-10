@@ -97,6 +97,7 @@ export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
 export const GO_TO_LABELS = {
     page: 'Go to page',
     operation: 'Go to operation',
+    api: 'Go to API',
     property: 'Go to property',
 } as const
 

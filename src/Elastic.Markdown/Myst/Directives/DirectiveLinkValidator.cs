@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
 using Markdig.Syntax;
@@ -90,7 +92,18 @@ internal static class DirectiveLinkValidator
 			return url;
 
 		if (IsExternal(trimmed))
+		{
+			if (
+				ApiLinkCheck.GetHint(
+					context.CrossLinkResolver,
+					trimmed,
+					context.Build.UrlPathPrefix,
+					context.Build.Configuration.SuppressDiagnostics
+				) is { } hint
+			)
+				block.EmitHint(hint);
 			return url;
+		}
 
 		if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && CrossLinkValidator.IsCrossLink(uri))
 			return ResolveCrossLink(url, uri, block, context);

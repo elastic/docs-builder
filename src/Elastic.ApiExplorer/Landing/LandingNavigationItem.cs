@@ -48,7 +48,12 @@ public class ApiLanding : IApiGroupingModel
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		return Task.FromResult<string?>(
-			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)
+			LandingCommonMark.Product(
+				context.Model.Info,
+				overviewRows,
+				context.CurrentNavigation.NavigationRoot.Url,
+				ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems)
+			)
 		);
 	}
 
