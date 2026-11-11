@@ -297,7 +297,7 @@ A failed run uploads a `journeys-results-<shard>` artifact. Extract it at the re
 
 ## Checks on pull requests
 
-Two jobs in `journeys-live.yml` need no site build.
+Two jobs in `journeys-synth.yml` need no site build.
 
 - **Journeys stay valid against prod.** When a pull request changes a journey or an `.http` file, the changed ones run read-only against `https://www.elastic.co`. A journey whose `@requires` does not hold on prod is skipped with its reason. The job fails when a journey fails. It passes when every changed journey was skipped (`--allow-all-skipped`), because a change to isolated-site journeys has nothing to run on prod, but not when the site probe failed, since the skips would then say nothing about the site. A journey for a feature that ships with the pull request and is not yet on prod says so with `@requires !env:prod`.
 - **The `docs-journeys` image.** When the tool changes, the image builds without being pushed, the binary is copied out of it the way another repository's workflow would, and `docs-journeys list` runs from it. This is also the Linux native build check.

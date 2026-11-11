@@ -143,11 +143,11 @@ jobs:
     with:
       run: ${{ needs.changes.outputs.journeys == 'true' && needs.changes.outputs.code == 'true' }}
 
-  # Journeys checked against prod, and the docs-journeys image, see journeys-live.yml
-  journeys-live:
+  # Journeys checked against prod, and the docs-journeys image, see journeys-synth.yml
+  journeys-synth:
     needs: [changes]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
-    uses: $/.github/workflows/journeys-live.yml
+    uses: $/.github/workflows/journeys-synth.yml
     permissions:
       contents: read
     with:
