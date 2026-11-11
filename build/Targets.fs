@@ -196,7 +196,14 @@ let Run (argv: string[]) =
             | Some _, _ -> [ "--max-parallel-test-modules"; "1" ]
             | None, Some n -> [ "--max-parallel-test-modules"; string n ]
             | None, None -> []
-        sh $"dotnet test --solution {filter} --no-build --no-restore -c release {modules}"
+        // On GitHub Actions the report extension writes annotations and a job summary for failures only. TUnit's own summary
+        // would repeat it for every project, so it is always off.
+        let report =
+            match envVarOrNone "GITHUB_ACTIONS" with
+            | Some _ -> [ "--report-gh"; "--report-gh-step-summary"; "on-failure"; "--report-gh-step-summary-sections"; "test-results" ]
+            | None -> []
+        env "TUNIT_DISABLE_GITHUB_REPORTER" "true"
+        sh $"dotnet test --solution {filter} --no-build --no-restore -c release {modules} {report}"
 
         // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.
         if suite <> TestSuite.Integration then
