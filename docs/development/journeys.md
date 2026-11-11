@@ -10,7 +10,7 @@ Journeys are short scripts of browser commands that open a page, interact with i
 
 | Command | Runs | Against | Compares transcripts | Use it to |
 |---|---|---|---|---|
-| `mise run journeys` | TUnit tests (`Nullean.Snapshots`) | `docs/` served by this task, as an isolated site | yes | change journeys and the site together, and review transcript changes with `dotnet snap review` |
+| `mise run journeys:test` | TUnit tests (`Nullean.Snapshots`) | `docs/` served by this task, as an isolated site | yes | change journeys and the site together, and review transcript changes with `dotnet snap review` |
 | `mise run journeys:local` | `docs-journeys` | `docs/` served by this task, as an isolated site | no, only the `expect` lines | iterate on a journey quickly, with the same output as `journeys:live`; takes the same options (`--only`, `--area`, `--screenshot-on-failure`) |
 | `mise run journeys:live [site]` | `docs-journeys` | a deployed site (`prod`, `edge`, `demo`), read-only | no, only the `expect` lines | check a deployment, or a pull request's journeys against prod |
 | `dotnet snap journey run <glob> --base-url <url>` | `snap` | any site you started | yes | run some journeys outside the test project, with the same output as `docs-journeys` |
@@ -22,7 +22,7 @@ journeys grouped by reason and a failure shown with the journey's lines around t
 ## Run them
 
 ```bash
-mise run journeys
+mise run journeys:test
 ```
 
 This builds `docs-builder`, serves this repository's `docs/` folder on a free port, and runs every journey against it. Chrome must be installed. Cdp finds it, or you can set `CDP_CHROME`.
@@ -30,8 +30,8 @@ This builds `docs-builder`, serves this repository's `docs/` folder on a free po
 To run one area or one journey, pass a TUnit filter:
 
 ```bash
-mise run journeys -- --treenode-filter "/*/*/NavigationJourneys/*"
-mise run journeys -- --treenode-filter "/*/*/*/Run(sidebar)"
+mise run journeys:test -- --treenode-filter "/*/*/NavigationJourneys/*"
+mise run journeys:test -- --treenode-filter "/*/*/*/Run(sidebar)"
 ```
 
 The tasks `journeys:assembler` and `journeys:codex` serve a built assembler (`.artifacts/assembly`) or Codex (`.artifacts/codex/docs`) site, but every journey in this project checks the isolated site, so on those targets they all skip with a reason and a green run is not coverage of either site. To check a deployed assembler site, run the live journeys with `docs-journeys` below.
@@ -81,7 +81,7 @@ expect checked find role radio --name "Tab #2 title"
 - After a click on a link, wait for the new address with `wait --url <glob>`. The site navigates with htmx and not a full page load, so the next step would otherwise still see the old page.
 - Find controls by role and accessible name first (`find role link click --name Admonitions --exact`). Use a CSS selector, quoted, when no role fits. `find nth` counts from zero.
 - A journey that only uses `expect` produces an empty transcript. Use `get text` or `snapshot -c -s <selector>` where you want the page content in the snapshot.
-- Accept new or changed transcripts with `SNAPSHOT_ACCEPT=1 mise run journeys`, then read the diff of the `.verified.journey` files.
+- Accept new or changed transcripts with `SNAPSHOT_ACCEPT=1 mise run journeys:test`, then read the diff of the `.verified.journey` files.
 
 ## Run the journeys against a deployed site
 
@@ -101,6 +101,21 @@ Journeys say what they need in header comments (`# @requires build-type:isolated
 - **Unknown is not matched.** A plain condition on something unknown fails and a negated one holds, so `# @requires !env:prod` still runs on a site whose environment is unknown.
 
 The run prints a `context:` line with what it settled on and where each part came from. When every selected journey is skipped, nothing was checked and the command exits with 1.
+
+### Choose which journeys run
+
+A journey has an **id** of the form `area/name`. The area is the folder it sits in under `journeys/` (`navigation`, `landing`, `chrome`, `content`, `versions`, `api-explorer`, `a11y`, `feedback`, `page-actions`), and a `live/` folder inside an area is part of that area. The name is the file's name without `.journey`.
+
+- `--area navigation,landing` runs every journey in those areas. An area with no journeys is an error.
+- `--only navigation/main-paths` runs one journey by its id, and `docs-journeys list` shows the ids.
+- `--tag smoke` runs the journeys whose header says `# @tags smoke` (a journey may have several tags, and `--tag a,b` takes the ones with either). Tags cut across areas: `smoke` marks the quick checks that matter most on a live site.
+
+```bash
+mise run journeys:live prod --area navigation --tag smoke   # the smoke journeys of one area
+mise run journeys:local --tag smoke                         # every smoke journey, against docs/
+```
+
+They combine: a journey must be in one of the areas and carry one of the tags. A journey that does not apply to the site is skipped whatever you choose.
 
 ### Options
 

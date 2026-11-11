@@ -39,7 +39,7 @@ run = "dotnet run --project build -c release -- unit-test"
 description = "Integration tests (slow, clones real repositories)"
 run = "dotnet run --project build -c release -- integrate"
 
-[tasks.journeys]
+[tasks."journeys:test"]
 description = "TUnit journey tests: starts docs/ as an isolated site and compares each journey with its verified transcript. Live journeys are skipped (see journeys:live). Extra args pass to dotnet test, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
