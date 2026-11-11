@@ -103,6 +103,8 @@ arg "[args]..." var=#true help="Passed to snap journey compare"
 run = '''
 #!/usr/bin/env bash
 set -eu
+# Without pipefail a failed curl below would pass for an empty feature set.
+set -o pipefail
 site() {
   case "$1" in
     prod) echo "https://www.elastic.co/docs/" ;;
@@ -122,7 +124,7 @@ ua="Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari/537.36 Elas
 # docs-journeys run reads each site's docs:features tag; compare takes one shared set, so probe both here.
 features() {
   curl -fsL -A "$ua" -H "X-Docs-Synthetic-Monitor: true" "$1" \
-    | sed -n 's/.*<meta name="docs:features" content="\([^"]*\)".*/\1/p' | head -1 | tr ', ' '\n\n' | sed '/^$/d' | sort -u
+    | sed -n 's/.*<meta name="docs:features" content="\([^"]*\)".*/\1/p' | tr ', ' '\n\n' | sed '/^$/d' | sort -u
 }
 base_features=$(features "$baseline") || { echo "could not read $baseline to find its docs:features" >&2; exit 2; }
 target_features=$(features "$target") || { echo "could not read $target to find its docs:features" >&2; exit 2; }
