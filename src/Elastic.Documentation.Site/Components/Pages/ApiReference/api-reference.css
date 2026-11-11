@@ -3081,6 +3081,14 @@ button.example-response-tab:focus-visible {
 	--layout-rail-max: 30rem;
 }
 
+/* Where the handles show, the rail's default is its drag minimum, 600px, and only gives way when the window has no room for it beside the reference. */
+@media (min-width: 1101px) {
+	.api-page-shell.layout--three {
+		--layout-rail-min: clamp(20rem, 100vw - 650px, 600px);
+		--layout-rail-max: 600px;
+	}
+}
+
 @media (min-width: 761px) {
 	/* The column gap and the right padding match (32px each, the shell adds 16px more on
 	   the right), so the content has the same space beside the nav as beside the window

@@ -3056,6 +3056,11 @@ button.example-response-tab:focus-visible {
 /* Wide enough for the capped block: the reference at the docs text width, the examples
    rail at a fixed width, more air between them. */
 @media (min-width: 1280px) {
+	/* The rail's default is its drag minimum, 600px, and only gives way when the window has no room for it beside the reference. */
+	.api-page-shell {
+		--max-examples-width: clamp(440px, 100vw - 700px, 600px);
+	}
+
 	#api-content-grid {
 		--api-column-gap: 32px;
 	}
