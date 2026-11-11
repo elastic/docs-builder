@@ -2249,7 +2249,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="metadata">Path to the decision metadata.json file</param>
 	/// <param name="commitOutcome">Outcome of the changelog commit step</param>
 	/// <param name="committedFile">Repo-relative path to the committed file (when <paramref name="commitOutcome"/> is Committed)</param>
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> GithubDecision(
 		string metadata,
@@ -2279,7 +2279,7 @@ internal sealed partial class ChangelogCommands(
 	/// <c>GITHUB_ACTIONS</c> and must only be invoked from a job with <c>pull-requests: write</c>.
 	/// </remarks>
 	/// <param name="metadata">Path to the decision metadata.json file</param>
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> GithubComment(string metadata, CancellationToken ct = default)
 	{
