@@ -3061,8 +3061,11 @@ button.example-response-tab:focus-visible {
 		--max-examples-width: clamp(440px, 100vw - 700px, 600px);
 	}
 
+	/* Three real columns up to a 1920px window: the reference takes whatever the sidebar and the rail leave. Past that the
+	   reference and the rail keep the width they have at 1920px and sit centred beside the sidebar. */
 	#api-content-grid {
 		--api-column-gap: 32px;
+		max-width: calc(1920px - var(--max-sidebar-width) - 64px);
 	}
 
 	.api-page-grid {

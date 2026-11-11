@@ -3081,6 +3081,14 @@ button.example-response-tab:focus-visible {
 	--layout-rail-max: 30rem;
 }
 
+/* Three real columns up to a 1920px window: the page takes the wide limit, and the header follows because it shares --layout-max.
+   Past that the whole box is centred. */
+@media (min-width: 1101px) {
+	body:has(.api-page-shell.layout--three) {
+		--layout-max: var(--layout-max-wide);
+	}
+}
+
 /* Where the handles show, the rail's default is 600px. It gives way when the window has no room for it beside the reference. */
 @media (min-width: 1101px) {
 	.api-page-shell.layout--three {
