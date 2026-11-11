@@ -281,11 +281,9 @@ let Run (argv: string[]) =
             sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
 
     // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
+    // Enum.TryParse also accepts numbers and comma lists, so compare with the declared names.
     let isSuite (value: string) =
-        // TryParse also accepts numbers and comma lists, so require a declared name
-        match Enum.TryParse<TestSuite>(value, true) with
-        | true, suite -> Enum.IsDefined suite
-        | _ -> false
+        Enum.GetNames<TestSuite>() |> Array.exists (fun name -> name.Equals(value, StringComparison.OrdinalIgnoreCase))
     argv
     |> Array.tryFindIndex (fun a -> a = "--suite")
     |> Option.bind (fun i -> Array.tryItem (i + 1) argv)
