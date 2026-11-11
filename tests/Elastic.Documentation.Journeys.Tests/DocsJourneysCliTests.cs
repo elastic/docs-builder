@@ -37,6 +37,30 @@ public class DocsJourneysCliTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task Run_FailingJourney_WritesFailureScreenshotOnlyWhenAsked()
+	{
+		using var folder = new TempJourneys("landing/broken", "open /\nexpect title \"no page has this title\" --timeout 500");
+		var without = System.IO.Path.Combine(folder.Path, "without");
+		var with = System.IO.Path.Combine(folder.Path, "with");
+
+		_ = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--artifacts", without);
+		_ = await RunCliAsync(
+			folder,
+			"run",
+			"--url",
+			target.BaseUrl.ToString(),
+			"--journeys",
+			folder.Path,
+			"--artifacts",
+			with,
+			"--screenshot-on-failure"
+		);
+
+		_ = File.Exists(System.IO.Path.Combine(without, "landing", "broken", "failure.png")).Should().BeFalse();
+		_ = File.Exists(System.IO.Path.Combine(with, "landing", "broken", "failure.png")).Should().BeTrue();
+	}
+
+	[Test]
 	public async Task Run_FailingJourney_ShowsTheStepTheErrorAndHowToRerunItAfterTheResults()
 	{
 		using var folder = new TempJourneys("landing/broken", "open /\nexpect title \"no page has this title\" --timeout 500");
