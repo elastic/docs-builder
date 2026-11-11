@@ -264,11 +264,12 @@ let Run (argv: string[]) =
             sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
 
     // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
+    let isSuite (value: string) = fst (System.Enum.TryParse<TestSuite>(value, true))
     argv
     |> Array.tryFindIndex (fun a -> a = "--suite")
     |> Option.bind (fun i -> Array.tryItem (i + 1) argv)
     |> Option.iter (fun suite ->
-        if not (List.contains suite [ "all"; "unit"; "integration" ]) then
+        if not (isSuite suite) then
             eprintfn "Unknown test suite '%s', expected all, unit or integration" suite
             exit 2)
 
