@@ -13,6 +13,7 @@ interface ColumnSpec {
 
 interface Variant {
     navSelector: string
+    contentSelector: string
     // Where the stylesheet shows the handles. The saved widths apply only there, so a narrow window never keeps a width it cannot undo.
     wide: string
     columns: ColumnSpec[]
@@ -21,6 +22,7 @@ interface Variant {
 // The design-system sidebar's own floor is 14rem, so a minimum above it would make a first drag jump.
 const designSystem: Variant = {
     navSelector: '.layout__nav',
+    contentSelector: '.layout__content',
     wide: '(min-width: 1101px)',
     columns: [
         { side: 'nav', cssVar: '--layout-nav-width', min: 224, max: 560 },
@@ -30,6 +32,7 @@ const designSystem: Variant = {
 
 const legacy: Variant = {
     navSelector: ':scope > div > aside',
+    contentSelector: '.api-page-main',
     wide: '(min-width: 1280px)',
     columns: [
         { side: 'nav', cssVar: '--max-sidebar-width', min: 240, max: 560 },
@@ -108,16 +111,14 @@ export function initApiColumnResize() {
     const isSaved = (side: Side) =>
         typeof widths[side] === 'number' && Number.isFinite(widths[side])
 
-    // How far the columns can still grow before the reference would drop under contentMin. Negative when they already crowd it.
+    // How far the columns can still grow before the reference would drop under contentMin, read from the reference column itself so
+    // whatever sits between the shell and the columns (padding, gaps, a width cap) is already counted. Negative when they crowd it.
+    // The reference stops at zero, so a window far too small for the columns reports only part of the shortage.
     const slack = (): number => {
-        const nav = columnEl('nav')?.getBoundingClientRect()
-        const rail = columnEl('rail')?.getBoundingClientRect()
-        if (!nav || !rail) return 0
-        const inner =
-            shell.getBoundingClientRect().right -
-            (parseFloat(getComputedStyle(shell).paddingRight) || 0)
-        const used = nav.width + rail.width + 2 * columnGap + contentMin
-        return inner - nav.left - used
+        const content = shell
+            .querySelector<HTMLElement>(variant.contentSelector)
+            ?.getBoundingClientRect()
+        return content ? content.width - contentMin : 0
     }
     const room = () => Math.max(0, slack())
 
@@ -133,14 +134,20 @@ export function initApiColumnResize() {
                 )
             else shell.style.removeProperty(spec.cssVar)
         }
-        let over = wide ? -slack() : 0
+        if (!wide) return
         for (const spec of [...variant.columns].reverse()) {
-            const width = columnEl(spec.side)?.getBoundingClientRect().width
-            if (over <= 0 || !width || !isSaved(spec.side)) continue
-            const cut = Math.min(over, Math.max(0, width - spec.min))
-            if (cut <= 0) continue
-            shell.style.setProperty(spec.cssVar, `${Math.round(width - cut)}px`)
-            over -= cut
+            // Cutting a column gives the room back to the reference, so look again until it has its minimum or the column its own.
+            for (let pass = 0; pass < 6; pass++) {
+                const over = -slack()
+                const width = columnEl(spec.side)?.getBoundingClientRect().width
+                if (over <= 0 || !width || !isSaved(spec.side)) break
+                const cut = Math.min(over, Math.max(0, width - spec.min))
+                if (cut <= 0) break
+                shell.style.setProperty(
+                    spec.cssVar,
+                    `${Math.round(width - cut)}px`
+                )
+            }
         }
     }
 

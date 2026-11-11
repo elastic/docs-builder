@@ -3,23 +3,30 @@ import { clampWidth, initApiColumnResize } from './api-column-resize'
 const rect = (left: number, width: number) =>
     ({ left, right: left + width, width }) as DOMRect
 
-// The columns report the widths the script applied through its custom properties, as the real layout does. The rail's right edge
-// stays where it is, so growing it moves its left edge.
-function mountShell({ width = 1600, nav = 300, rail = 640 } = {}) {
+// The columns report the widths the script applied through its custom properties, as the real layout does, and the reference takes
+// what is left of the shell. The rail's right edge stays where it is, so growing it moves its left edge. `inset` is space the
+// columns lose beyond the two 32px gaps, such as the legacy grid's right padding.
+function mountShell({ width = 1600, nav = 300, rail = 640, inset = 0 } = {}) {
     document.body.innerHTML = `<div class="api-page-shell layout--three">
         <aside class="layout__nav"></aside>
+        <main class="layout__content"></main>
         <aside class="api-page-rail"></aside>
     </div>`
     const shell = document.querySelector<HTMLElement>('.api-page-shell')!
     const applied = (name: string, fallback: number) =>
         parseFloat(shell.style.getPropertyValue(name)) || fallback
+    const navWidth = () => applied('--layout-nav-width', nav)
+    const railWidth = () => applied('--layout-rail-width', rail)
     shell.getBoundingClientRect = () => rect(0, width)
     document.querySelector('.layout__nav')!.getBoundingClientRect = () =>
-        rect(0, applied('--layout-nav-width', nav))
-    document.querySelector('.api-page-rail')!.getBoundingClientRect = () => {
-        const current = applied('--layout-rail-width', rail)
-        return rect(1000 + rail - current, current)
-    }
+        rect(0, navWidth())
+    document.querySelector('.layout__content')!.getBoundingClientRect = () =>
+        rect(
+            navWidth() + 32,
+            Math.max(0, width - navWidth() - railWidth() - 64 - inset)
+        )
+    document.querySelector('.api-page-rail')!.getBoundingClientRect = () =>
+        rect(1000 + rail - railWidth(), railWidth())
     return shell
 }
 
@@ -165,6 +172,19 @@ describe('initApiColumnResize', () => {
             '656px'
         )
         expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('300px')
+    })
+
+    it('counts the space the columns lose beyond the gaps when it measures the room', () => {
+        const shell = mountShell({ width: 1380, inset: 32 })
+        initApiColumnResize()
+
+        handle('rail').dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowLeft' })
+        )
+
+        expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
+            '640px'
+        )
     })
 
     it('stops a drag at the width that keeps the reference at its minimum', () => {
