@@ -271,7 +271,7 @@ The versions of `@nullean/journeys` and `@elastic/synthetics` are pinned in `Syn
 
 `tests/Elastic.Documentation.Journeys.Tests/shards.json` maps each shard to test classes. A new test class must be listed in a shard, or the `plan` job fails; a new folder under `journeys/` runs only through a class that claims it. To split a slow shard, move classes into a new entry in that file.
 
-A failed run uploads a `journeys-results-<shard>` artifact. Extract it at the repository root, where it restores `.artifacts/.snapshots/received/`, and run `dotnet snap review`.
+A failed run uploads a `journeys-results-<shard>` artifact. Extract it at the repository root, where it restores `.artifacts/.snapshots/received/`, and run `mise run snap:review`.
 
 ## Checks on pull requests
 
