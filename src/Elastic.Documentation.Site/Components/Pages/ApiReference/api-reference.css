@@ -4331,7 +4331,7 @@ html:has(.api-page-shell) {
 		height: 40px;
 		margin-inline: auto;
 		border-radius: 2px;
-		background: #b6c0d1;
+		background: var(--color-border-control);
 		transition:
 			background-color 100ms,
 			width 100ms,
