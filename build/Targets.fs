@@ -14,9 +14,14 @@ open Fake.Tools.Git
 open Proc.Fs
 open BuildInformation
 
+type TestSuite =
+    | All = 0
+    | Unit = 1
+    | Integration = 2
+
 type TestOptions =
-    { /// all, unit or integration. Default: all
-      Suite: string option }
+    { /// Which tests to run. Default: all
+      Suite: TestSuite option }
 
 type Target =
     /// Clean known output locations
@@ -63,13 +68,12 @@ type Target =
 // The journeys need Chrome and a built site, so they run through `mise run journeys` and their own CI jobs, not with the unit tests.
 let private isJourneyProject (project: string) = project.Contains "Journeys.Tests"
 
-let private testProjects (suite: string) =
+let private testProjects (suite: TestSuite) =
     let directories =
         match suite with
-        | "unit" -> [ "tests" ]
-        | "integration" -> [ "tests-integration" ]
-        | "all" -> [ "tests"; "tests-integration" ]
-        | other -> failBuild $"Unknown test suite '%s{other}', expected all, unit or integration"
+        | TestSuite.Unit -> [ "tests" ]
+        | TestSuite.Integration -> [ "tests-integration" ]
+        | _ -> [ "tests"; "tests-integration" ]
     let projects =
         directories
         |> List.collect (fun d ->
@@ -153,33 +157,20 @@ let private containerProjects =
 let Run (argv: string[]) =
     let app = MakeApp<Target>("build", None)
     let skipDirtyCheck = app.Flag("--skip-dirty-check", short = "-c", desc = "Skip the clean checkout check that guards the release/publish targets")
-    let parallelism = app.Option<int option>("--parallelism", desc = "Max number of test projects to run at once, defaults to the processor count", defaultValue = None)
     app.Default Build
 
-    // Runs each test project with its output buffered, so the logs of concurrent projects stay readable, and reports every failure.
-    let runTests (suite: string) = steps {
-        let projects = testProjects suite
-        let limit = parallelism.Value |> Option.defaultValue System.Environment.ProcessorCount
-        let! results =
-            concurrentlyAtMost limit [
-                for project in projects ->
-                    steps {
-                        let! result = cmd "dotnet" [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ] |> Cmd.result
-                        let code = result.ExitCode.GetValueOrDefault -1
-                        lock stdout (fun () ->
-                            printfn "::group::dotnet test %s (exit code %d)" (Path.GetFileNameWithoutExtension project) code
-                            for line in result.ConsoleOut do printfn "%s" line.Line
-                            printfn "::endgroup::")
-                        return project, code = 0
-                    }
-            ]
-        let failures = results |> List.filter (snd >> not) |> List.map fst
+    // TUnit runs the tests of a project in parallel; the projects run one after the other, so the output reads in order.
+    let runTests (suite: TestSuite) = steps {
+        let mutable failures = []
+        for project in testProjects suite do
+            let! code = exitCode $"dotnet test {project} -c release --no-restore --no-build"
+            if code <> 0 then failures <- project :: failures
         if not (List.isEmpty failures) then
-            let names = String.concat "\n" failures
+            let names = String.concat "\n" (List.rev failures)
             failBuild $"Test projects failed:\n%s{names}"
 
         // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.
-        if suite <> "integration" then
+        if suite <> TestSuite.Integration then
             let! orphans = exitCode $"dotnet snap orphans"
             if orphans <> 0 then
                 failBuild "Orphaned snapshots found. Delete them with `dotnet snap orphans --delete` and commit the removal."
@@ -196,9 +187,9 @@ let Run (argv: string[]) =
         | Compile -> step [] { sh $"dotnet build -c release" }
         | Build -> target [Clean; Lint; Compile] { printfn "build" }
 
-        | Test o -> target [Compile] { do! runTests (defaultArg o.Suite "all") }
-        | UnitTest -> target [Compile] { do! runTests "unit" }
-        | Integrate -> target [Compile] { do! runTests "integration" }
+        | Test o -> target [Compile] { do! runTests (defaultArg o.Suite TestSuite.All) }
+        | UnitTest -> target [Compile] { do! runTests TestSuite.Unit }
+        | Integrate -> target [Compile] { do! runTests TestSuite.Integration }
 
         | Format -> target [] {
             sh $"dotnet curb format ."

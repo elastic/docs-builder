@@ -23,7 +23,7 @@ The everyday tasks:
 |---|---|
 | `mise run serve` | Serve `docs/` with live reload |
 | `mise run build` | Build the solution |
-| `mise run test` | Unit tests (extra args pass through: `mise run test -- --parallelism 4`) |
+| `mise run test` | Unit tests |
 | `mise run integrate` | Integration tests (slow, clones repositories) |
 | `mise run lint` / `mise run fmt` | Check / fix C# formatting |
 | `mise run watch` | The watch loop described [below](#continuously-build-during-development) |
