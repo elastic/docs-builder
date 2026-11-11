@@ -4328,3 +4328,81 @@ html:has(.api-page-shell) {
 .api-expand-standalone[hidden] {
 	display: none;
 }
+
+/* Drag handles between the sidebar, the reference and the examples rail. Script adds them and sets each one's left edge. */
+.api-page-shell {
+	position: relative;
+}
+
+.api-column-handle {
+	display: none;
+}
+
+@media (min-width: 1280px) {
+	.api-column-handle {
+		display: block;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 12px;
+		transform: translateX(-50%);
+		cursor: ew-resize;
+		touch-action: none;
+		z-index: 20;
+	}
+
+	.api-column-handle[hidden] {
+		display: none;
+	}
+
+	.api-column-handle::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 2px;
+		transform: translateX(-50%);
+		transition: background-color 100ms;
+	}
+
+	.api-column-handle:hover::after,
+	.api-column-handle:focus-visible::after,
+	.api-column-handle[data-dragging]::after {
+		background: var(--color-blue-elastic);
+	}
+
+	.api-column-handle:focus-visible {
+		outline: none;
+	}
+
+	/* The grab bar sits at the middle of the window, so it stays in reach however far the page is scrolled. */
+	.api-column-handle::before {
+		content: '';
+		display: block;
+		position: sticky;
+		top: calc(50vh - 20px);
+		width: 4px;
+		height: 40px;
+		margin-inline: auto;
+		border-radius: 2px;
+		background: #b6c0d1;
+		transition:
+			background-color 100ms,
+			width 100ms,
+			border-radius 100ms;
+	}
+
+	.api-column-handle:hover::before,
+	.api-column-handle:focus-visible::before,
+	.api-column-handle[data-dragging]::before {
+		width: 6px;
+		border-radius: 3px;
+		background: var(--color-blue-elastic);
+	}
+}
+
+body[data-api-column-dragging] {
+	cursor: ew-resize;
+	user-select: none;
+}
