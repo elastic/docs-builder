@@ -109,13 +109,13 @@ describe('initApiColumnResize', () => {
 
     it('shrinks saved widths, rail first, when the window is too narrow for them', () => {
         localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
-        const shell = mountShell({ width: 1300 })
+        const shell = mountShell({ width: 1000 })
         initApiColumnResize()
 
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
-            '600px'
+            '320px'
         )
-        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('276px')
+        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('256px')
         expect(localStorage.getItem('api-column-widths')).toBe(
             '{"nav":560,"rail":900}'
         )
@@ -202,7 +202,7 @@ describe('initApiColumnResize', () => {
         expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('224px')
     })
 
-    it('does not drag the examples rail under 600px', () => {
+    it('does not drag the examples rail under 320px', () => {
         const shell = mountShell()
         initApiColumnResize()
 
@@ -214,7 +214,7 @@ describe('initApiColumnResize', () => {
         )
 
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
-            '600px'
+            '320px'
         )
     })
 })

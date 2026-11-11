@@ -3081,7 +3081,7 @@ button.example-response-tab:focus-visible {
 	--layout-rail-max: 30rem;
 }
 
-/* Where the handles show, the rail's default is its drag minimum, 600px, and only gives way when the window has no room for it beside the reference. */
+/* Where the handles show, the rail's default is 600px. It gives way when the window has no room for it beside the reference. */
 @media (min-width: 1101px) {
 	.api-page-shell.layout--three {
 		--layout-rail-min: clamp(20rem, 100vw - 650px, 600px);

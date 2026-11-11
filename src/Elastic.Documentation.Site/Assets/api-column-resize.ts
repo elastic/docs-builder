@@ -24,7 +24,7 @@ const designSystem: Variant = {
     wide: '(min-width: 1101px)',
     columns: [
         { side: 'nav', cssVar: '--layout-nav-width', min: 224, max: 560 },
-        { side: 'rail', cssVar: '--layout-rail-width', min: 600, max: 900 },
+        { side: 'rail', cssVar: '--layout-rail-width', min: 320, max: 900 },
     ],
 }
 
@@ -33,7 +33,7 @@ const legacy: Variant = {
     wide: '(min-width: 1280px)',
     columns: [
         { side: 'nav', cssVar: '--max-sidebar-width', min: 240, max: 560 },
-        { side: 'rail', cssVar: '--max-examples-width', min: 600, max: 900 },
+        { side: 'rail', cssVar: '--max-examples-width', min: 440, max: 900 },
     ],
 }
 
