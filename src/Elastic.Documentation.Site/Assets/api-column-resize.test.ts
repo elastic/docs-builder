@@ -130,4 +130,61 @@ describe('initApiColumnResize', () => {
         expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('')
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe('')
     })
+
+    it('stops a key step at the width that keeps the reference at its minimum', () => {
+        const shell = mountShell(1180)
+        initApiColumnResize()
+
+        handle('rail').dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowLeft' })
+        )
+        handle('nav').dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowRight' })
+        )
+
+        expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
+            '456px'
+        )
+        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('316px')
+    })
+
+    it('stops a drag at the width that keeps the reference at its minimum', () => {
+        const shell = mountShell()
+        initApiColumnResize()
+
+        handle('rail').dispatchEvent(
+            new MouseEvent('pointerdown', { clientX: 2000 })
+        )
+        handle('rail').dispatchEvent(
+            new MouseEvent('pointermove', { clientX: 0 })
+        )
+        handle('rail').dispatchEvent(new MouseEvent('pointerup'))
+
+        expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
+            '876px'
+        )
+    })
+
+    it('follows a drag and saves the width only when the drag ends', () => {
+        const shell = mountShell()
+        initApiColumnResize()
+
+        handle('rail').dispatchEvent(
+            new MouseEvent('pointerdown', { clientX: 100 })
+        )
+        handle('rail').dispatchEvent(
+            new MouseEvent('pointermove', { clientX: 60 })
+        )
+
+        expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
+            '480px'
+        )
+        expect(handle('rail').dataset.dragging).toBe('')
+        expect(localStorage.getItem('api-column-widths')).toBeNull()
+
+        handle('rail').dispatchEvent(new MouseEvent('pointerup'))
+
+        expect(handle('rail').dataset.dragging).toBeUndefined()
+        expect(localStorage.getItem('api-column-widths')).toBe('{"rail":480}')
+    })
 })
