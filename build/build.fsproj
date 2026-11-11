@@ -5,19 +5,16 @@
          FS3261 and FS3262 are the nullness diagnostics that disagree. -->
     <NoWarn>$(NoWarn);NU1701;FS3261;FS3262</NoWarn>
     <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Argu" />
-    <PackageReference Include="Bullseye" />
+    <PackageReference Include="Nullean.Make.Fs" />
     <PackageReference Include="Proc.Fs" />
-    <PackageReference Include="Fake.Tools.Git" />
-    <PackageReference Include="Fake.IO.Zip" />
     <PackageReference Include="FSharp.Core" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="BuildInformation.fs"/>
-    <Compile Include="CommandLine.fs"/>
     <Compile Include="Targets.fs"/>
     <Compile Include="Program.fs"/>
 
