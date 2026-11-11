@@ -1,0 +1,8 @@
+# What goes wrong on a page without anyone clicking: console messages and script errors.
+# @tags compare
+# @requires build-type:assembler compare
+set viewport 1280 800
+open get-started
+wait --load networkidle
+errors
+console

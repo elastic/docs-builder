@@ -40,7 +40,7 @@ description = "Integration tests (slow, clones real repositories)"
 run = "dotnet run --project build -c release -- integrate"
 
 [tasks."journeys:test"]
-description = "TUnit journey tests: starts docs/ as an isolated site and compares each journey with its verified transcript. Live journeys are skipped (see journeys:live). Extra args pass to dotnet test, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
+description = "TUnit journey tests: starts docs/ as an isolated site and compares each journey with its verified transcript. Live journeys are skipped (see journeys:synth). Extra args pass to dotnet test, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:test:assembler"]
@@ -54,7 +54,7 @@ env = { JOURNEY_TARGET = "codex" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:local"]
-description = "docs-journeys against docs/ served by this task (the isolated site): same output as journeys:live, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:local --only landing/home --screenshot-on-failure"
+description = "docs-journeys against docs/ served by this task (the isolated site): same output as journeys:synth, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:local --only landing/home --screenshot-on-failure"
 usage = '''
 arg "[args]..." var=#true help="Passed to docs-journeys run"
 '''
@@ -85,8 +85,8 @@ eval "extra=(${usage_args:-})"
 dotnet run --project src/tooling/docs-journeys -- run --url "http://localhost:$port" --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${extra[@]+"${extra[@]}"}
 '''
 
-[tasks."journeys:live"]
-description = "docs-journeys against a deployed site (prod, edge or demo, default demo): read-only, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:live prod --only navigation/main-paths"
+[tasks."journeys:synth"]
+description = "the Synthetics journeys (docs-journeys) against a deployed site (prod, edge or demo, default demo): read-only, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:synth prod --only navigation/main-paths"
 usage = '''
 arg "[site]" default="demo" help="prod, edge, demo or local"
 arg "[args]..." var=#true help="Passed to docs-journeys run"
@@ -94,7 +94,7 @@ arg "[args]..." var=#true help="Passed to docs-journeys run"
 run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args:-}"
 
 [tasks."journeys:compare"]
-description = "Run the live journeys against two deployed sites and compare their transcripts: what differs between prod and edge is what the next release changes. Read-only. Differences nobody expected fail; expected ones are rules in {journey}.differences. Extra args pass to snap journey compare, e.g. mise run journeys:compare edge demo --tag smoke --image-diff fail"
+description = "Run the compare journeys (journeys/compare) against two deployed sites and compare their transcripts and screenshots: what differs between prod and edge is what the next release changes. Read-only. Differences nobody expected fail; expected ones are rules in {journey}.differences. Extra args pass to snap journey compare, e.g. mise run journeys:compare edge demo --image-diff fail"
 usage = '''
 arg "[baseline]" default="prod" help="prod, edge, demo or a URL: the site that stays as it is"
 arg "[target]" default="edge" help="prod, edge, demo or a URL: the site that is compared with it"
@@ -133,9 +133,8 @@ differing=$(comm -3 <(echo "$base_features") <(echo "$target_features") | tr -d 
 [ -z "${differing% }" ] || echo "docs:features differ between the sites ($differing): the journeys that need them run on neither; pass --feature to force one" >&2
 feature_args=()
 for f in $shared; do feature_args+=(--feature "$f"); done
-# Only the assembler journeys describe a deployed site; the isolated-site ones skip with their reason.
-dotnet snap journey compare 'tests/Elastic.Documentation.Journeys.Tests/journeys/**/*.journey' \
-  --baseline "$baseline" --target "$target" --build-type assembler --read-only --viewport 1280x800 \
+dotnet snap journey compare 'tests/Elastic.Documentation.Journeys.Tests/journeys/compare/*.journey' \
+  --baseline "$baseline" --target "$target" --build-type assembler --feature compare --read-only --viewport 1280x800 \
   --allow '*.elastic.co' --allow '*.elastic.dev' --allow '*.cloudfront.net' --allow '*.googletagmanager.com' \
   --allow elastic-global-nav-assets.s3.us-west-2.amazonaws.com \
   --user-agent "$ua" --header "X-Docs-Synthetic-Monitor: true" \
