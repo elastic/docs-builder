@@ -3,7 +3,7 @@ import { clampWidth, initApiColumnResize } from './api-column-resize'
 const rect = (left: number, width: number) =>
     ({ left, right: left + width, width }) as DOMRect
 
-function mountShell(width = 1600, navWidth = 300) {
+function mountShell({ width = 1600, nav = 300, rail = 640 } = {}) {
     document.body.innerHTML = `<div class="api-page-shell layout--three">
         <aside class="layout__nav"></aside>
         <aside class="api-page-rail"></aside>
@@ -11,9 +11,9 @@ function mountShell(width = 1600, navWidth = 300) {
     const shell = document.querySelector<HTMLElement>('.api-page-shell')!
     shell.getBoundingClientRect = () => rect(0, width)
     document.querySelector('.layout__nav')!.getBoundingClientRect = () =>
-        rect(0, navWidth)
+        rect(0, nav)
     document.querySelector('.api-page-rail')!.getBoundingClientRect = () =>
-        rect(1000, 440)
+        rect(1000, rail)
     return shell
 }
 
@@ -71,10 +71,10 @@ describe('initApiColumnResize', () => {
 
         expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('324px')
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
-            '464px'
+            '664px'
         )
         expect(localStorage.getItem('api-column-widths')).toBe(
-            '{"nav":324,"rail":464}'
+            '{"nav":324,"rail":664}'
         )
     })
 
@@ -109,13 +109,13 @@ describe('initApiColumnResize', () => {
 
     it('shrinks saved widths, rail first, when the window is too narrow for them', () => {
         localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
-        const shell = mountShell(1000)
+        const shell = mountShell({ width: 1300 })
         initApiColumnResize()
 
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
-            '280px'
+            '615px'
         )
-        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('296px')
+        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('261px')
         expect(localStorage.getItem('api-column-widths')).toBe(
             '{"nav":560,"rail":900}'
         )
@@ -132,7 +132,7 @@ describe('initApiColumnResize', () => {
     })
 
     it('stops a key step at the width that keeps the reference at its minimum', () => {
-        const shell = mountShell(1180)
+        const shell = mountShell({ width: 1380 })
         initApiColumnResize()
 
         handle('rail').dispatchEvent(
@@ -143,7 +143,7 @@ describe('initApiColumnResize', () => {
         )
 
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
-            '456px'
+            '656px'
         )
         expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('316px')
     })
@@ -177,7 +177,7 @@ describe('initApiColumnResize', () => {
         )
 
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
-            '480px'
+            '680px'
         )
         expect(handle('rail').dataset.dragging).toBe('')
         expect(localStorage.getItem('api-column-widths')).toBeNull()
@@ -185,11 +185,11 @@ describe('initApiColumnResize', () => {
         handle('rail').dispatchEvent(new MouseEvent('pointerup'))
 
         expect(handle('rail').dataset.dragging).toBeUndefined()
-        expect(localStorage.getItem('api-column-widths')).toBe('{"rail":480}')
+        expect(localStorage.getItem('api-column-widths')).toBe('{"rail":680}')
     })
 
     it('does not move a sidebar that sits at the design-system floor when a drag starts', () => {
-        const shell = mountShell(1600, 224)
+        const shell = mountShell({ nav: 224 })
         initApiColumnResize()
 
         handle('nav').dispatchEvent(
@@ -200,5 +200,21 @@ describe('initApiColumnResize', () => {
         )
 
         expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('224px')
+    })
+
+    it('does not drag the examples rail under 615px', () => {
+        const shell = mountShell()
+        initApiColumnResize()
+
+        handle('rail').dispatchEvent(
+            new MouseEvent('pointerdown', { clientX: 100 })
+        )
+        handle('rail').dispatchEvent(
+            new MouseEvent('pointermove', { clientX: 1500 })
+        )
+
+        expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
+            '615px'
+        )
     })
 })
