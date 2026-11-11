@@ -39,16 +39,16 @@ run = "dotnet run --project build -c release -- unit-test"
 description = "Integration tests (slow, clones real repositories)"
 run = "dotnet run --project build -c release -- integrate"
 
-[tasks.journeys]
+[tasks."journeys:test"]
 description = "TUnit journey tests: starts docs/ as an isolated site and compares each journey with its verified transcript. Live journeys are skipped (see journeys:live). Extra args pass to dotnet test, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
-[tasks."journeys:assembler"]
+[tasks."journeys:test:assembler"]
 description = "TUnit journey tests against the output of `docs-builder assembler build` (.artifacts/assembly); the isolated-site journeys are skipped until the assembler site has its own"
 env = { JOURNEY_TARGET = "assembler" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
-[tasks."journeys:codex"]
+[tasks."journeys:test:codex"]
 description = "TUnit journey tests against the output of `docs-builder codex build` (.artifacts/codex/docs); the isolated-site journeys are skipped until the Codex site has its own"
 env = { JOURNEY_TARGET = "codex" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
@@ -92,6 +92,48 @@ arg "[site]" default="demo" help="prod, edge, demo or local"
 arg "[args]..." var=#true help="Passed to docs-journeys run"
 '''
 run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args:-}"
+
+[tasks."snap:status"]
+description = "List snapshots a test run left to review (received files). Exits 1 when there are any"
+usage = '''
+arg "[args]..." var=#true help="Passed to dotnet snap status"
+'''
+run = 'eval "dotnet snap status ${usage_args:-}"'
+
+[tasks."snap:diff"]
+description = "Show how a received snapshot differs from its verified file. Takes a key from snap:status, a unique suffix of one, or a glob"
+usage = '''
+arg "[args]..." var=#true help="Passed to dotnet snap diff"
+'''
+run = 'eval "dotnet snap diff ${usage_args:-}"'
+
+[tasks."snap:review"]
+description = "Review pending snapshots one by one: see each diff, then accept, reject or skip it"
+usage = '''
+arg "[args]..." var=#true help="Passed to dotnet snap review"
+'''
+run = 'eval "dotnet snap review ${usage_args:-}"'
+
+[tasks."snap:accept"]
+description = "Accept received snapshots as verified: keys, unique suffixes or globs, or --all. Read the diff first. Never in CI"
+usage = '''
+arg "[args]..." var=#true help="Passed to dotnet snap accept"
+'''
+run = 'eval "dotnet snap accept ${usage_args:-}"'
+
+[tasks."snap:reject"]
+description = "Reject received snapshots: delete the received files and keep the verified ones. Keys, unique suffixes or globs, or --all"
+usage = '''
+arg "[args]..." var=#true help="Passed to dotnet snap reject"
+'''
+run = 'eval "dotnet snap reject ${usage_args:-}"'
+
+[tasks."snap:orphans"]
+description = "List verified snapshots the latest full run of mise run test did not use (run the whole suite first); --delete removes them. Exits 1 when there are any"
+usage = '''
+arg "[args]..." var=#true help="Passed to dotnet snap orphans"
+'''
+run = 'eval "dotnet snap orphans ${usage_args:-}"'
 
 [tasks.lint]
 description = "C# format check (curb, read-only)"

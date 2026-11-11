@@ -69,7 +69,7 @@ Tests live in `tests/` (unit) and `tests-integration/` (integration).
   - Small values go inline: `x.Should().MatchInlineSnapshot("""...""")`, `MatchInlineHtmlSnapshot`, `MatchInlineJsonSnapshot`. Leave the argument out to write a new one. Large values go to a verified file: `MatchSnapshot()`, `MatchHtmlSnapshot()`, `MatchJsonSnapshot()`, `MatchYamlSnapshot()`.
   - Diagnostics: `collector.Diagnostics.ToSnapshotText()` (`DiagnosticsSnapshot`). A clean run is the empty snapshot.
   - Navigation trees and generated files: `NavigationDump.ToText(...)`, `MockFileSystemDump.ToText(fs, dir)`. Rendered docs HTML: `DocsHtml.Section()` (the page content, no fixture H1, no htmx attributes) or `DocsHtml.Body()`.
-  - Accept with the `snap` tool (`dotnet snap status`, `dotnet snap review`, `dotnet snap accept <key>`), or `SNAPSHOT_ACCEPT=1`. Read the diff of the changed `.verified.*` files and inline literals before committing. Nothing is accepted in CI. When a CI test run fails, download the `received-snapshots-*` artifact into `.artifacts/.snapshots/received/` and run `dotnet snap review`.
+  - Accept with the `snap` tool (`mise run snap:status`, `mise run snap:review`, `mise run snap:accept <key>`; `mise run snap:diff`, `snap:reject` and `snap:orphans` take the same arguments), or `SNAPSHOT_ACCEPT=1`. Read the diff of the changed `.verified.*` files and inline literals before committing. Nothing is accepted in CI. When a CI test run fails, download the `received-snapshots-*` artifact into `.artifacts/.snapshots/received/` and run `dotnet snap review`.
   - Changing a snapshot test's output is a behaviour change. Mutate the code once and confirm the test fails before you commit.
 - **HTML snapshots** (`Nullean.Snapshots.Html`, used in `Elastic.ApiExplorer.Tests`): when a test would check one rendered block with many `Contain` assertions, compare it to a verified snapshot instead and keep one assertion that states the intent.
   - Write `html.Should().MatchHtmlSnapshot()`. Narrow it with `new HtmlSnapshotOptions().Select("#some-id")` or `.RemoveAttributes(...)` so unrelated markup and volatile values (bundle names, CI git info) stay out.
@@ -78,6 +78,10 @@ Tests live in `tests/` (unit) and `tests-integration/` (integration).
   - Create or update them with `SNAPSHOT_ACCEPT=1 dotnet test --project tests/Elastic.ApiExplorer.Tests --treenode-filter "/*/*/MyTests/*"`, then review the diff of the `.verified.html` files. The variable is ignored when `CI=true`.
   - Before committing, change the markup in the partial and confirm the test fails, then revert.
 - **Integration** (`tests-integration/`): needs real Elasticsearch credentials in the `docs-builder` user-secrets store, or Docker. Not run in CI; run with `mise run integrate` when you change search, MCP or content-date enrichment code.
+- **Browser journeys** (`tests/Elastic.Documentation.Journeys.Tests/journeys/`, `.journey` files; guide: [`docs/development/journeys.md`](docs/development/journeys.md)). Not part of `mise run test`; needs Chrome.
+  - Quick check while writing or fixing one: `mise run journeys:local --only <area/name>` (or `--area <area>`, `--tag <tag>`). It serves `docs/` and runs `docs-journeys`; `--screenshot-on-failure` draws a failure's page.
+  - Before pushing a change to a journey or to page chrome: `mise run journeys:test`. It compares each transcript with its verified file, so review changes with the `snap:*` tasks and read the diff before accepting.
+  - Against a deployed site: `mise run journeys:live <prod|edge|demo>`. A live run is read-only and compares no transcripts.
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
 
@@ -91,8 +95,8 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/tooling/essc/` | `mise run test` (targets `Elastic.SiteSearch.Tests`) |
 | `src/Elastic.ApiExplorer/` | `mise run test` (targets `Elastic.ApiExplorer.Tests`) |
 | `src/services/Elastic.Documentation.Deploying/` | `mise run test` (targets `Elastic.Documentation.Deploying.Tests`) |
-| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. Markup or behaviour changes to page chrome, navigation or content components also run `mise run journeys`. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
-| `tests/Elastic.Documentation.Journeys.Tests/` | `mise run journeys` (browser journeys; needs Chrome, and is not part of `mise run test`) |
+| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. Markup or behaviour changes to page chrome, navigation or content components also run `mise run journeys:test`. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `tests/Elastic.Documentation.Journeys.Tests/` | `mise run journeys:test` (browser journeys; needs Chrome, and is not part of `mise run test`) |
 | `tests-integration/` | `mise run integrate` |
 | Multiple / uncertain | `mise run test` |
 
