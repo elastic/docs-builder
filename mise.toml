@@ -119,13 +119,25 @@ extra=()
 eval "extra=(${usage_args:-})"
 # Same identity as docs-journeys run: a monitor, so the site's telemetry sends nothing the read-only run would block.
 ua="Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari/537.36 Elastic/Synthetics docs-journeys"
+# docs-journeys run reads each site's docs:features tag; compare takes one shared set, so probe both here.
+features() {
+  curl -fsL -A "$ua" -H "X-Docs-Synthetic-Monitor: true" "$1" \
+    | sed -n 's/.*<meta name="docs:features" content="\([^"]*\)".*/\1/p' | head -1 | tr ', ' '\n\n' | sed '/^$/d' | sort -u
+}
+base_features=$(features "$baseline") || { echo "could not read $baseline to find its docs:features" >&2; exit 2; }
+target_features=$(features "$target") || { echo "could not read $target to find its docs:features" >&2; exit 2; }
+shared=$(comm -12 <(echo "$base_features") <(echo "$target_features"))
+differing=$(comm -3 <(echo "$base_features") <(echo "$target_features") | tr -d '\t' | sort -u | tr '\n' ' ')
+[ -z "${differing% }" ] || echo "docs:features differ between the sites ($differing): the journeys that need them run on neither; pass --feature to force one" >&2
+feature_args=()
+for f in $shared; do feature_args+=(--feature "$f"); done
 # Only the assembler journeys describe a deployed site; the isolated-site ones skip with their reason.
 dotnet snap journey compare 'tests/Elastic.Documentation.Journeys.Tests/journeys/**/*.journey' \
   --baseline "$baseline" --target "$target" --build-type assembler --read-only --viewport 1280x800 \
   --allow '*.elastic.co' --allow '*.elastic.dev' --allow '*.cloudfront.net' --allow '*.googletagmanager.com' \
   --allow elastic-global-nav-assets.s3.us-west-2.amazonaws.com \
   --user-agent "$ua" --header "X-Docs-Synthetic-Monitor: true" \
-  ${extra[@]+"${extra[@]}"}
+  ${feature_args[@]+"${feature_args[@]}"} ${extra[@]+"${extra[@]}"}
 '''
 
 [tasks."snap:status"]
