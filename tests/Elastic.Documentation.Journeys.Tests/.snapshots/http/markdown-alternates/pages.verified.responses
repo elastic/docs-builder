@@ -1,0 +1,20 @@
+## a page as Markdown: GET /syntax/tabs.md
+status: 200 OK
+content-type: text/markdown; charset=utf-8
+
+> # Tabs
+> …
+
+## the home page as Markdown: GET /index.md
+status: 200 OK
+content-type: text/markdown; charset=utf-8
+
+> # docs-builder
+> …
+
+## a page that does not exist: GET /missing/page.md
+status: 404 Not Found
+content-type: text/html
+
+> <!DOCTYPE html>
+> …

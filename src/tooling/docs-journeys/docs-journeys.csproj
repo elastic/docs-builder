@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>docs-journeys</AssemblyName>
+    <RootNamespace>Elastic.Documentation.Journeys.Cli</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <IsPublishable>true</IsPublishable>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101;IL3050;CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Every journey is compiled into the binary, so one file carries the runner and the journeys that match its build. -->
+    <EmbeddedResource Include="..\..\..\tests\Elastic.Documentation.Journeys.Tests\journeys\**\*.journey"
+                      LogicalName="journeys/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The lockfile for the packages the generated monitors import, so a caller installs exactly what was tested. -->
+    <EmbeddedResource Include="Synthetics\package-lock.json" LogicalName="synthetics/package-lock.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nullean.Argh.Hosting" />
+    <PackageReference Include="Nullean.HttpFileParser" />
+    <PackageReference Include="Nullean.Cdp" />
+    <PackageReference Include="Nullean.Cdp.Journeys" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+</Project>

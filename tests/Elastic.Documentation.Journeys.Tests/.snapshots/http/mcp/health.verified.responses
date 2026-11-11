@@ -1,0 +1,11 @@
+## health: GET /docs/_mcp/health
+status: 200 OK
+content-type: text/plain
+
+> Healthy
+
+## alive: GET /docs/_mcp/alive
+status: 200 OK
+content-type: text/plain
+
+> Healthy

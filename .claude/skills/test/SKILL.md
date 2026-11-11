@@ -31,6 +31,7 @@ Use this decision table based on which directories have changed files:
 | `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
 | `src/Elastic.Documentation.Navigation/` or `Navigation.Tests/` | `dotnet test tests/Navigation.Tests/` |
 | `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
+| `tests/Elastic.Documentation.Journeys.Tests/`, or Site markup that changes page chrome, navigation or content components | `mise run journeys` |
 | `tests-integration/` | `mise run integrate` |
 | `src/tooling/docs-builder/` | `mise run test` |
 | Multiple areas or uncertain | `mise run test` |
