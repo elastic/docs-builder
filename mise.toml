@@ -40,18 +40,26 @@ description = "Integration tests (slow, clones real repositories)"
 run = "dotnet run --project build -c release -- integrate"
 
 [tasks.journeys]
-description = "Browser journey tests against the isolated site (docs/). Extra args pass through, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
+description = "TUnit journey tests: starts docs/ as an isolated site and compares each journey with its verified transcript. Live journeys are skipped (see journeys:live). Extra args pass to dotnet test, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:assembler"]
-description = "Serves the output of `docs-builder assembler build` (.artifacts/assembly); the isolated-site journeys are skipped until it has its own"
+description = "TUnit journey tests against the output of `docs-builder assembler build` (.artifacts/assembly); the isolated-site journeys are skipped until the assembler site has its own"
 env = { JOURNEY_TARGET = "assembler" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:codex"]
-description = "Serves the output of `docs-builder codex build` (.artifacts/codex/docs); the isolated-site journeys are skipped until it has its own"
+description = "TUnit journey tests against the output of `docs-builder codex build` (.artifacts/codex/docs); the isolated-site journeys are skipped until the Codex site has its own"
 env = { JOURNEY_TARGET = "codex" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
+
+[tasks."journeys:live"]
+description = "docs-journeys against a deployed site (prod, edge or demo, default demo): read-only, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:live prod --only navigation/main-paths"
+usage = '''
+arg "[site]" default="demo" help="prod, edge, demo or local"
+arg "[args]..." var=#true help="Passed to docs-journeys run"
+'''
+run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args}"
 
 [tasks.lint]
 description = "C# format check (curb, read-only)"

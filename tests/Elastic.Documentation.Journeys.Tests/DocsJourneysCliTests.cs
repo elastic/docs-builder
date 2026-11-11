@@ -37,6 +37,114 @@ public class DocsJourneysCliTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task Run_FailingJourney_ShowsTheStepTheErrorAndHowToRerunItAfterTheResults()
+	{
+		using var folder = new TempJourneys("landing/broken", "open /\nexpect title \"no page has this title\" --timeout 500");
+
+		var run = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path);
+
+		run.ShouldHaveExited(1);
+		var lines = run.Output.ReplaceLineEndings("\n").Split('\n');
+		var stopped = lines.Single(l => l.StartsWith("Journey stopped at ", StringComparison.Ordinal));
+		_ = stopped.Should().EndWith("broken.journey:2: expect title \"no page has this title\" --timeout 500");
+		_ = run.Output.Should().Contain("Rerun:").And.Contain($"--journeys {folder.Path}").And.Contain("--only landing/broken");
+		_ = Array.IndexOf(lines, "FAILED  landing/broken").Should().BeLessThan(Array.IndexOf(lines, stopped));
+	}
+
+	[Test]
+	public async Task Run_FastJourneyFinishes_ItsResultIsWrittenWhileASlowOneIsStillRunning()
+	{
+		using var folder = new TempJourneys("landing/fast", "open /\nexpect visible body");
+		File.WriteAllText(
+			System.IO.Path.Combine(folder.Path, "landing", "slow.journey"),
+			"open /\nexpect title \"no page has this title\" --timeout 90000"
+		);
+		var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
+		foreach (var argument in new[] { FindCliDll(), "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path })
+			info.ArgumentList.Add(argument);
+		using var process = Process.Start(info) ?? throw new InvalidOperationException("docs-journeys did not start.");
+		var error = process.StandardError.ReadToEndAsync();
+
+		var clock = Stopwatch.StartNew();
+		var sawFast = false;
+		var secondsToFast = double.MaxValue;
+		while (await process.StandardOutput.ReadLineAsync().ConfigureAwait(false) is { } line)
+		{
+			if (!line.StartsWith("ok      landing/fast", StringComparison.Ordinal))
+				continue;
+			sawFast = true;
+			secondsToFast = clock.Elapsed.TotalSeconds;
+			break;
+		}
+		if (!process.HasExited)
+			process.Kill(entireProcessTree: true);
+		await process.WaitForExitAsync().ConfigureAwait(false);
+		_ = await error.ConfigureAwait(false);
+
+		_ = sawFast.Should().BeTrue();
+		// The slow journey cannot finish before its 90s timeout, so a result held back until it ends arrives after that. The
+		// process is killed as soon as the fast result is seen, so the wide margin costs nothing, and a loaded CI runner
+		// (dotnet start-up, a Chrome launch) has the time it needs.
+		_ = secondsToFast.Should().BeLessThan(60, "the fast journey's result must not wait for the slow one");
+	}
+
+	[Test]
+	public async Task Run_Only_RunsJustThatJourney()
+	{
+		using var folder = new TempJourneys("landing/home", "open /\nexpect visible body");
+		File.WriteAllText(System.IO.Path.Combine(folder.Path, "landing", "other.journey"), "open /\nexpect visible body");
+
+		var run = await RunCliAsync(
+			folder,
+			"run",
+			"--url",
+			target.BaseUrl.ToString(),
+			"--journeys",
+			folder.Path,
+			"--only",
+			"landing/other"
+		);
+
+		run.ShouldHaveExited(0);
+		_ = run.Output.Should().Contain("ok      landing/other").And.NotContain("landing/home").And.Contain("1 passed");
+	}
+
+	[Test]
+	public async Task Run_BadInput_IsOneErrorLineAndNotAStackTrace()
+	{
+		using var folder = new TempJourneys("landing/home", "open /");
+
+		var unknownId = await RunCliAsync(folder, "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--only", "nope/x");
+		var badUrl = await RunCliAsync(folder, "run", "--url", "nonsense", "--journeys", folder.Path);
+
+		unknownId.ShouldHaveExited(1);
+		badUrl.ShouldHaveExited(1);
+		_ = unknownId.Output.Trim().Should().StartWith("Error: No journey with id nope/x").And.NotContain("   at ");
+		_ = badUrl.Output.Trim().Should().StartWith("Error: --url must be an http or https origin or one of prod, edge, demo, local");
+	}
+
+	[Test]
+	public async Task Run_ManyJourneysSkippedForOneReason_CollapsesThemUnlessVerbose()
+	{
+		using var folder = new TempJourneys("a/j0", "# @requires build-type:isolated\nopen /");
+		for (var i = 1; i < 5; i++)
+			File.WriteAllText(System.IO.Path.Combine(folder.Path, "a", $"j{i}.journey"), "# @requires build-type:isolated\nopen /");
+		File.WriteAllText(System.IO.Path.Combine(folder.Path, "a", "runs.journey"), "open /\nexpect visible body");
+		string[] common = ["run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path, "--build-type", "assembler"];
+
+		var collapsed = await RunCliAsync(folder, common);
+		var verbose = await RunCliAsync(folder, [.. common, "--verbose"]);
+
+		_ = collapsed.Output.Should().Contain("skipped 5 journeys (requires build-type:isolated)").And.NotContain("skipped a/j0");
+		_ = verbose
+			.Output
+			.Should()
+			.Contain("skipped a/j0 (requires build-type:isolated)")
+			.And
+			.Contain("skipped a/j4 (requires build-type:isolated)");
+	}
+
+	[Test]
 	public async Task Run_UnknownArea_ExitsOneWithoutRunningAnything()
 	{
 		using var folder = new TempJourneys("landing/home", "open /");

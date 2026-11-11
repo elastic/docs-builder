@@ -23,9 +23,10 @@ internal sealed class RunCommand
 	/// selected journey was skipped. A run is read-only and identifies itself as a monitor unless told otherwise, and it
 	/// validates the site without comparing transcripts.
 	/// </summary>
-	/// <param name="url">-u, The origin to run against, such as <c>https://www.elastic.co</c>. Journeys <c>open</c> paths on it.</param>
+	/// <param name="url">-u, The origin to run against, such as <c>https://www.elastic.co</c>, or <c>prod</c>, <c>edge</c>, <c>demo</c> or <c>local</c> for the site of that environment. Journeys <c>open</c> paths on it.</param>
 	/// <param name="journeys">-j, A folder of journeys to run instead of the ones compiled into this binary. Needed for <c>--changed-only</c>.</param>
 	/// <param name="area">-a, Only these areas, comma separated.</param>
+	/// <param name="only">-o, Only these journeys by id (<c>area/name</c>), comma separated.</param>
 	/// <param name="tag">-t, Only journeys with one of these <c># @tags</c>, comma separated.</param>
 	/// <param name="changedOnly">Only journeys that differ from this git ref (or are new), such as <c>origin/main</c>.</param>
 	/// <param name="env">The environment's name (<c>prod</c>, <c>edge</c>, <c>demo</c>, <c>staging</c>), for <c>env:</c> conditions. Defaults to the one the URL's host belongs to, or unknown.</param>
@@ -41,10 +42,12 @@ internal sealed class RunCommand
 	/// <param name="allowAllSkipped">Exit with 0 when every selected journey was skipped. For a check of the journeys a change touched, where none of them may apply to the site.</param>
 	/// <param name="junit">Write a JUnit XML report here.</param>
 	/// <param name="artifacts">Write screenshots and recordings here, one folder per journey.</param>
+	/// <param name="verbose">-v, List every skipped journey instead of collapsing a reason that many share.</param>
 	public async Task<int> Run(
 		string url,
 		string? journeys = null,
 		string? area = null,
+		string? only = null,
 		string? tag = null,
 		string? changedOnly = null,
 		string? env = null,
@@ -60,12 +63,11 @@ internal sealed class RunCommand
 		bool allowAllSkipped = false,
 		string? junit = null,
 		string? artifacts = null,
+		bool verbose = false,
 		Cancel ct = default
 	)
 	{
-		var baseUrl = Uri.TryCreate(url, UriKind.Absolute, out var parsed) && parsed.Scheme is "http" or "https"
-			? parsed
-			: throw new ArgumentException($"--url must be an http or https origin, not '{url}'.");
+		var baseUrl = SiteContext.ParseUrl(url);
 		if (changedOnly is not null && journeys is null)
 			throw new ArgumentException(
 				"--changed-only compares journey files with a git ref, so it needs --journeys <folder> in a checkout."
@@ -74,6 +76,8 @@ internal sealed class RunCommand
 		var files = JourneyFile.Find(folder, area);
 		if (files.Count == 0)
 			throw new ArgumentException($"No .journey files found in {folder}; refusing to report an empty run as passed.");
+		if (only is not null)
+			files = SelectOnly(files, only);
 		if (changedOnly is not null)
 		{
 			var changed = ChangedFiles.Since(folder, changedOnly);
@@ -96,7 +100,12 @@ internal sealed class RunCommand
 			identity,
 			ct
 		).ConfigureAwait(false);
-		Console.Out.WriteLine($"context: {site.Describe}");
+		var interactive = ConsoleRunReporter.UseInteractive;
+		Console.Out.WriteLine(
+			interactive
+				? ConsoleRunReporter.ContextBlock(site, SiteContext.JourneyBase(baseUrl, site.BuildType), env, buildType, feature)
+				: $"context: {site.Describe}"
+		);
 
 		var selection = new Selection(SiteContext.Split(tag), site.ToJourneyContext(), allowMutations || allowWrites);
 		var plan = files
@@ -106,9 +115,50 @@ internal sealed class RunCommand
 		var hosts = DefaultAllow.Concat(SiteContext.Split(allow)).ToList();
 		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
 		var settings = new RunSettings(journeyBase, hosts, selection.Context, identity) { Artifacts = artifacts, Parallel = parallel };
-		var outcomes = await JourneyExecution.RunAsync(plan, settings, ct).ConfigureAwait(false);
+		var reporter = new ConsoleRunReporter(Console.Out, interactive, verbose, journeyBase);
+		reporter.Planned(
+			plan.Where(p => p.Skip is not null).Select(p => (p.Loaded.File, p.Skip!)).ToList(),
+			plan.Count(p => p.Skip is null)
+		);
+		var clock = System.Diagnostics.Stopwatch.StartNew();
+		var outcomes = await JourneyExecution.RunAsync(plan, settings, reporter, ct).ConfigureAwait(false);
 
-		return Report(outcomes, journeyBase, junit, allowAllSkipped && !site.ProbeFailed);
+		return Report(
+			reporter,
+			outcomes,
+			journeyBase,
+			(junit, folder, clock.Elapsed, RerunCommand(url, journeys, (env, buildType, feature))),
+			allowAllSkipped && !site.ProbeFailed
+		);
+	}
+
+	/// <summary>The command that reruns one journey: same source and site context, with <c>{id}</c> standing for the journey.</summary>
+	internal static string RerunCommand(string url, string? journeys, (string? Env, string? BuildType, string? Feature) context)
+	{
+		var text = new StringBuilder($"docs-journeys run --url {Quote(url)}");
+		if (journeys is not null)
+			_ = text.Append($" --journeys {Quote(journeys)}");
+		if (context.Env is not null)
+			_ = text.Append($" --env {Quote(context.Env)}");
+		if (context.BuildType is not null)
+			_ = text.Append($" --build-type {Quote(context.BuildType)}");
+		if (context.Feature is not null)
+			_ = text.Append($" --feature {Quote(context.Feature)}");
+		return text.Append(" --only {id}").ToString();
+	}
+
+	private static string Quote(string value) =>
+		value.Length > 0 && value.All(c => char.IsLetterOrDigit(c) || "/:.,_-@=+".Contains(c, StringComparison.Ordinal))
+			? value
+			: "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+
+	private static IReadOnlyList<JourneyFile> SelectOnly(IReadOnlyList<JourneyFile> files, string only)
+	{
+		var ids = SiteContext.Split(only);
+		var unknown = ids.Where(id => !files.Any(f => f.Id.Equals(id, StringComparison.OrdinalIgnoreCase))).ToList();
+		return unknown.Count > 0
+			? throw new ArgumentException($"No journey with id {string.Join(", ", unknown)}; run `docs-journeys list` for the ids.")
+			: files.Where(f => ids.Contains(f.Id, StringComparer.OrdinalIgnoreCase)).ToList();
 	}
 
 	internal static async Task<SiteContext> ResolveSiteAsync(
@@ -127,21 +177,17 @@ internal sealed class RunCommand
 		return await SiteContext.ResolveAsync(baseUrl, options, http, ct).ConfigureAwait(false);
 	}
 
-	private static int Report(IReadOnlyList<JourneyOutcome> outcomes, Uri baseUrl, string? junit, bool allowAllSkipped)
+	private static int Report(
+		ConsoleRunReporter reporter,
+		IReadOnlyList<JourneyOutcome> outcomes,
+		Uri baseUrl,
+		(string? Junit, string Folder, TimeSpan Elapsed, string Rerun) run,
+		bool allowAllSkipped
+	)
 	{
-		foreach (var outcome in outcomes)
-			Console.Out.WriteLine(
-				outcome.Skipped
-					? $"skipped {outcome.File.Id} ({outcome.SkipReason})"
-					: outcome.Passed
-						? $"ok      {outcome.File.Id} ({outcome.Elapsed.TotalSeconds:0.0}s)"
-						: $"FAILED  {outcome.File.Id}\n{outcome.Describe()}"
-			);
-
+		Console.Out.WriteLine(reporter.Summary(outcomes, run.Elapsed, run.Folder, run.Rerun));
 		var failed = outcomes.Count(o => o.Failed);
-		var skipped = outcomes.Count(o => o.Skipped);
 		var passed = outcomes.Count(o => o.Passed);
-		Console.Out.WriteLine($"{passed} passed, {failed} failed, {skipped} skipped, against {baseUrl}");
 		if (passed + failed == 0)
 			Console.Out.WriteLine(
 				allowAllSkipped
@@ -149,8 +195,8 @@ internal sealed class RunCommand
 					: "Every selected journey was skipped, so nothing was checked."
 			);
 
-		if (junit is not null)
-			JUnitReport.Write(junit, baseUrl.Host, outcomes);
+		if (run.Junit is not null)
+			JUnitReport.Write(run.Junit, baseUrl.Host, outcomes);
 		WriteStepSummary(baseUrl, outcomes);
 		return failed > 0 || (passed + failed == 0 && !allowAllSkipped) ? 1 : 0;
 	}

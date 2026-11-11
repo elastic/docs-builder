@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- [JourneyFiles] yields TestDataRow<SnapshotFile> for a SnapshotFile parameter, which TUnit's analyzer reports on every use. The attribute is Nullean.Snapshots', so it is fixed there. -->
+    <NoWarn>$(NoWarn);TUnit0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

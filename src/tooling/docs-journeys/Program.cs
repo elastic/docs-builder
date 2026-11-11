@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Journeys.Cli;
 using Elastic.Documentation.Journeys.Cli.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh.Hosting;
+using Nullean.Argh.Middleware;
 
 var builder = Host.CreateApplicationBuilder(args);
 _ = builder.Logging.ClearProviders();
@@ -19,6 +21,7 @@ builder.Services.AddSingleton<ExportCommands>();
 builder.Services.AddArgh(args, argh =>
 {
 	_ = argh.UseCliDescription("Runs the docs browser journeys against a deployed site or a local build, and lists them.");
+	_ = argh.UseMiddleware<UserInputErrors>();
 	_ = argh.Map<RunCommand>();
 	_ = argh.Map<ListCommand>();
 	_ = argh.MapNamespace<ExportCommands>("export");

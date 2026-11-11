@@ -11,12 +11,12 @@ namespace Elastic.Documentation.Journeys.Tests.Areas;
 /// <summary>
 /// The journeys under <c>live/</c> check a published site (prod, edge or demo), whose paths sit under <c>/docs/</c>. Each
 /// <c>live</c> folder is claimed here so the area classes do not run it against the isolated site, and the cases show
-/// as skipped with a pointer to how to run them. See docs/development/journeys.md#live-journeys.
+/// as skipped with a pointer to `mise run journeys:live`. See docs/development/journeys.md#live-journeys.
 /// </summary>
 public class LiveJourneys
 {
 	private const string Reason =
-		"Live journeys run against a published site: run them with cdp run <file> --base-url https://<host>/docs/ --feature ... as described in docs/development/journeys.md#live-journeys";
+		"Live journey: it checks a published site, not the isolated one this test serves. Run it with `mise run journeys:live <prod|edge|demo>`, see docs/development/journeys.md#live-journeys";
 
 	[Test]
 	[JourneyFiles("journeys/chrome/live")]
