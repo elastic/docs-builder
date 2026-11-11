@@ -53,13 +53,38 @@ description = "TUnit journey tests against the output of `docs-builder codex bui
 env = { JOURNEY_TARGET = "codex" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
+[tasks."journeys:local"]
+description = "docs-journeys against docs/ served by this task (the isolated site): same output as journeys:live, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:local --only landing/home --screenshot-on-failure"
+usage = '''
+arg "[args]..." var=#true help="Passed to docs-journeys run"
+'''
+run = '''
+#!/usr/bin/env bash
+set -eu
+build=$(dotnet build src/tooling/docs-builder -nologo -v q -clp:NoSummary 2>&1) || { echo "$build"; exit 1; }
+dll="$PWD/.artifacts/bin/docs-builder/debug/docs-builder.dll"
+port=$(( (RANDOM % 20000) + 20000 ))
+# A flag exported in the shell must not change what the journeys see.
+for name in $(env | sed -n 's/^\(FEATURE_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$name"; done
+(cd docs && exec dotnet "$dll" serve --port "$port" --no-hud >/dev/null 2>&1) &
+server=$!
+trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
+for _ in $(seq 1 240); do
+  curl -fs -o /dev/null "http://localhost:$port/" && break
+  kill -0 "$server" 2>/dev/null || { echo "docs-builder exited before it served http://localhost:$port/" >&2; exit 1; }
+  sleep 0.5
+done
+curl -fs -o /dev/null "http://localhost:$port/" || { echo "http://localhost:$port/ did not answer within 120 s" >&2; exit 1; }
+dotnet run --project src/tooling/docs-journeys -- run --url "http://localhost:$port" --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args:-}
+'''
+
 [tasks."journeys:live"]
 description = "docs-journeys against a deployed site (prod, edge or demo, default demo): read-only, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:live prod --only navigation/main-paths"
 usage = '''
 arg "[site]" default="demo" help="prod, edge, demo or local"
 arg "[args]..." var=#true help="Passed to docs-journeys run"
 '''
-run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args}"
+run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args:-}"
 
 [tasks.lint]
 description = "C# format check (curb, read-only)"
