@@ -45,8 +45,8 @@
     <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.11.0" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
     <PackageVersion Include="Nullean.ScopedFileSystem" Version="0.5.0" />
-    <PackageVersion Include="Pagefind.Net" Version="0.4.1" />
-    <PackageVersion Include="Pagefind.Net.Frontend" Version="0.4.1" />
+    <PackageVersion Include="Pagefind.Net" Version="0.4.2" />
+    <PackageVersion Include="Pagefind.Net.Frontend" Version="0.4.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
     <PackageVersion Include="Generator.Equals" Version="4.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
@@ -126,14 +126,20 @@
   </ItemGroup>
   <!-- Test packages -->
   <ItemGroup>
-    <PackageVersion Include="Nullean.Snapshots" Version="0.6.0" />
-    <PackageVersion Include="Nullean.Snapshots.AwesomeAssertions" Version="0.6.0" />
-    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.6.0" />
-    <PackageVersion Include="Nullean.Snapshots.Http" Version="0.6.0" />
-    <PackageVersion Include="Nullean.Snapshots.Http.Assertions" Version="0.6.0" />
-    <PackageVersion Include="Nullean.Snapshots.Json" Version="0.6.0" />
-    <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.6.0" />
-    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.6.0" />
+    <PackageVersion Include="Nullean.Snapshots" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.AwesomeAssertions" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Http" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Http.Assertions" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Json" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.8.0" />
+    <PackageVersion Include="Nullean.HttpFileParser" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser.Console" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser.Assertions" Version="0.8.0" />
+    <PackageVersion Include="Nullean.Cdp" Version="0.10.0" />
+    <PackageVersion Include="Nullean.Cdp.Journeys" Version="0.10.0" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />

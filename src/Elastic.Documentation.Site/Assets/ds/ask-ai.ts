@@ -47,7 +47,6 @@ export const streamFromApi: AskAiStream = async (request) => {
         headers: {
             'Content-Type': 'application/json',
             'x-amz-content-sha256': await sha256(body),
-            'X-AI-Provider': askAiConfig.defaultAiProvider,
         },
         body,
         signal: request.signal,

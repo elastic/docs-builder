@@ -91,7 +91,8 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/tooling/essc/` | `mise run test` (targets `Elastic.SiteSearch.Tests`) |
 | `src/Elastic.ApiExplorer/` | `mise run test` (targets `Elastic.ApiExplorer.Tests`) |
 | `src/services/Elastic.Documentation.Deploying/` | `mise run test` (targets `Elastic.Documentation.Deploying.Tests`) |
-| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. Markup or behaviour changes to page chrome, navigation or content components also run `mise run journeys`. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `tests/Elastic.Documentation.Journeys.Tests/` | `mise run journeys` (browser journeys; needs Chrome, and is not part of `mise run test`) |
 | `tests-integration/` | `mise run integrate` |
 | Multiple / uncertain | `mise run test` |
 
@@ -142,6 +143,8 @@ Beyond what `.editorconfig` can check:
 - **Early returns**: guard clauses first, happy path last.
 - **Parameters**: max 4 — use a record/options object beyond that. Boolean params must be named at call sites.
 - **Collections**: never return `null` — return `[]`. Use the TryGet pattern for lookups.
+- **Results**: a method with more than one outcome returns a `union` — not `bool` + `out`, not a `bool Success` + a nullable payload, not a `(bool, T?)` tuple. Case types are top-level; prefix with the union name only when the bare name would be too generic at a match site (e.g. `LinkResolved` not `Resolved`). The one documented exception is a genuine keyed lookup, where `bool TryGetX(key, out value)` with `false` meaning "absent" is idiomatic and sufficient. If the `out` parameter carries an error message or an exception, it is not a lookup — use a union. Never assign a meaningful value to an `out` parameter on the failure path. Exhaustive switches over unions are enforced by CS8509, which this repo already treats as an error (`TreatWarningsAsErrors=true`).
+- **Sealed hierarchies**: annotate an `abstract` type as `closed` instead when all its subtypes live in the same assembly and the set is intentionally finite. `closed` is implicitly abstract — remove the `abstract` keyword. Wire types that use `[JsonPolymorphic]` use `closed`, not `union` — `closed` does not change the serialization representation; `union` does.
 - **Testing**: TUnit with AwesomeAssertions fluent style. Method naming: `Method_Scenario_Expected`.
 - **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.
 

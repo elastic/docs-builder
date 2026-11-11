@@ -57,15 +57,10 @@ public class FloatingLinkTests
 
 	private static (bool Resolved, string? Url, string? Error) Resolve(string crossLink)
 	{
-		string? error = null;
-		var resolved = CrossLinkResolver.TryResolve(
-			e => error = e,
-			CrossLinks(),
-			new IsolatedBuildEnvironmentUriResolver(),
-			new Uri(crossLink),
-			out var uri
-		);
-		return (resolved, uri?.ToString(), error);
+		var crossLinkUri = new Uri(crossLink);
+		var resolution = CrossLinkResolver.Resolve(CrossLinks(), new IsolatedBuildEnvironmentUriResolver(), crossLinkUri);
+		var uri = resolution.ResolvedUri();
+		return (uri is not null, uri?.ToString(), uri is null ? resolution.ToDiagnosticMessage(crossLinkUri) : null);
 	}
 
 	[Test]
@@ -160,15 +155,13 @@ public class FloatingLinkTests
 		foreach (var relative in new[] { false, true })
 		{
 			var resolver = new CodexAwareUriResolver(new[] { "other" }.ToFrozenSet(), relative);
-			var resolved = CrossLinkResolver.TryResolve(
-				_ => { },
+			var uri = CrossLinkResolver.Resolve(
 				CrossLinks(),
 				resolver,
-				new Uri("elasticsearch://api/elasticsearch/operation/operation-search"),
-				out var uri
-			);
+				new Uri("elasticsearch://api/elasticsearch/operation/operation-search")
+			).ResolvedUri();
 
-			resolved.Should().BeTrue();
+			uri.Should().NotBeNull();
 			uri!.ToString().Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search");
 		}
 	}

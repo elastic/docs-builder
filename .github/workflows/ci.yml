@@ -133,6 +133,27 @@ jobs:
           include-hidden-files: true
           path: src/Elastic.Documentation.Site/_static
 
+  # Browser journeys against the isolated site, see journeys.yml
+  journeys:
+    needs: [changes, frontend]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    uses: $/.github/workflows/journeys.yml
+    permissions:
+      contents: read
+    with:
+      run: ${{ needs.changes.outputs.journeys == 'true' && needs.changes.outputs.code == 'true' }}
+
+  # Journeys checked against prod, and the docs-journeys image, see journeys-live.yml
+  journeys-live:
+    needs: [changes]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    uses: $/.github/workflows/journeys-live.yml
+    permissions:
+      contents: read
+    with:
+      prod: ${{ needs.changes.outputs.journey-files == 'true' && needs.changes.outputs.code == 'true' }}
+      image: ${{ needs.changes.outputs.docs-journeys == 'true' && needs.changes.outputs.code == 'true' }}
+
   build:
     needs: [changes, frontend]
     # `frontend` is skipped for metadata-only PRs. The matrix still has to expand so the required

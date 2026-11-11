@@ -172,29 +172,19 @@ public static class CrossLinkResolverAssertions
 
 	/// <summary>
 	/// Asserts that <paramref name="inputUrl"/> resolves (via the standard
-	/// <see cref="CrossLinkResolver.TryResolve"/> path) to
+	/// <see cref="CrossLinkResolver.Resolve"/> path) to
 	/// <c>baseExpectedUrl + expectedPathWithOptionalAnchor</c>.
 	/// Port of F# <c>resolvesTo</c>.
 	/// </summary>
 	public static void ResolvesTo(string inputUrl, string expectedPathWithOptionalAnchor)
 	{
-		var errors = new List<string>();
-
-		void ErrorEmitter(string msg) => errors.Add(msg);
-
 		var inputUri = new Uri(inputUrl);
-		var success = CrossLinkResolver.TryResolve(ErrorEmitter, FetchedLinks, UriResolver, inputUri, out var resolvedUri);
-
-		if (errors.Count > 0)
-			throw new AwesomeAssertions.Execution.AssertionFailedException(
-				$"Resolution for '{inputUrl}' failed with errors: {string.Join(", ", errors)}"
-			);
-
-		success.Should().BeTrue(because: $"TryResolve should succeed for '{inputUrl}'");
+		var resolution = CrossLinkResolver.Resolve(FetchedLinks, UriResolver, inputUri);
+		var resolvedUri = resolution.ResolvedUri();
 
 		if (resolvedUri is null)
 			throw new AwesomeAssertions.Execution.AssertionFailedException(
-				$"Resolved URI was null for input '{inputUrl}' even though TryResolve returned true."
+				$"Resolution for '{inputUrl}' failed: {resolution.ToDiagnosticMessage(inputUri)}"
 			);
 
 		var expectedFullUrl = BaseExpectedUrl + expectedPathWithOptionalAnchor;

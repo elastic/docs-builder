@@ -75,7 +75,7 @@ public class StaticFileContentHashProviderTests
 	[Test]
 	public void ParseManifest_NonObjectValues_AreIgnored()
 	{
-		using var stream = new MemoryStream(Encoding.UTF8.GetBytes("""{ "name": "Docs", "icons": [], "start_url": "/" }"""));
+		using var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes("""{ "name": "Docs", "icons": [], "start_url": "/" }"""));
 
 		var entries = StaticFileContentHashProvider.ParseManifest(stream);
 
@@ -93,7 +93,7 @@ public class StaticFileContentHashProviderTests
 				"_isolated.ts": { "file": "chunk-isolated-B5UY0lxh.js", "name": "isolated" }
 			}
 			""";
-		using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+		using var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(json));
 
 		var entries = StaticFileContentHashProvider.ParseManifest(stream);
 

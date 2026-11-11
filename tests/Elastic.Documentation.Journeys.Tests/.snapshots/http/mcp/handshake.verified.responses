@@ -1,0 +1,246 @@
+## initialize: POST /docs/_mcp
+status: 200 OK
+content-type: text/event-stream
+
+> event: message
+> data: {
+>   "result": {
+>     "protocolVersion": "2025-11-25",
+>     "capabilities": {
+>       "logging": {},
+>       "tools": {}
+>     },
+>     "serverInfo": {
+>       "name": "docs-mcp",
+>       "version": "{server-version}"
+>     },
+>     "instructions": "…"
+>   },
+>   "id": 1,
+>   "jsonrpc": "2.0"
+> }
+>
+>
+
+## tools/list: POST /docs/_mcp
+status: 200 OK
+content-type: text/event-stream
+
+> event: message
+> data: {
+>   "result": {
+>     "tools": [
+>       {
+>         "name": "find_docs_inconsistencies",
+>         "description": "…",
+>         "inputSchema": {
+>           "type": "object",
+>           "properties": {
+>             "topic": {
+>               "description": "…",
+>               "type": "string"
+>             },
+>             "focusArea": {
+>               "description": "…",
+>               "type": [
+>                 "string",
+>                 "null"
+>               ],
+>               "default": null
+>             }
+>           },
+>           "required": [
+>             "topic"
+>           ]
+>         },
+>         "annotations": {
+>           "destructiveHint": false,
+>           "idempotentHint": true,
+>           "openWorldHint": false,
+>           "readOnlyHint": true
+>         },
+>         "execution": {
+>           "taskSupport": "optional"
+>         }
+>       },
+>       {
+>         "name": "check_docs_coherence",
+>         "description": "…",
+>         "inputSchema": {
+>           "type": "object",
+>           "properties": {
+>             "topic": {
+>               "description": "…",
+>               "type": "string"
+>             },
+>             "limit": {
+>               "description": "…",
+>               "type": "integer",
+>               "default": 20
+>             }
+>           },
+>           "required": [
+>             "topic"
+>           ]
+>         },
+>         "annotations": {
+>           "destructiveHint": false,
+>           "idempotentHint": true,
+>           "openWorldHint": false,
+>           "readOnlyHint": true
+>         },
+>         "execution": {
+>           "taskSupport": "optional"
+>         }
+>       },
+>       {
+>         "name": "find_related_docs",
+>         "description": "…",
+>         "inputSchema": {
+>           "type": "object",
+>           "properties": {
+>             "topic": {
+>               "description": "…",
+>               "type": "string"
+>             },
+>             "limit": {
+>               "description": "…",
+>               "type": "integer",
+>               "default": 10
+>             },
+>             "productFilter": {
+>               "description": "…",
+>               "type": [
+>                 "string",
+>                 "null"
+>               ],
+>               "default": null
+>             }
+>           },
+>           "required": [
+>             "topic"
+>           ]
+>         },
+>         "annotations": {
+>           "destructiveHint": false,
+>           "idempotentHint": true,
+>           "openWorldHint": false,
+>           "readOnlyHint": true
+>         },
+>         "execution": {
+>           "taskSupport": "optional"
+>         }
+>       },
+>       {
+>         "name": "get_document_by_url",
+>         "description": "…",
+>         "inputSchema": {
+>           "type": "object",
+>           "properties": {
+>             "url": {
+>               "description": "…",
+>               "type": "string"
+>             },
+>             "includeBody": {
+>               "description": "…",
+>               "type": "boolean",
+>               "default": false
+>             }
+>           },
+>           "required": [
+>             "url"
+>           ]
+>         },
+>         "annotations": {
+>           "destructiveHint": false,
+>           "idempotentHint": true,
+>           "openWorldHint": false,
+>           "readOnlyHint": true
+>         },
+>         "execution": {
+>           "taskSupport": "optional"
+>         }
+>       },
+>       {
+>         "name": "search_docs",
+>         "description": "…",
+>         "inputSchema": {
+>           "type": "object",
+>           "properties": {
+>             "query": {
+>               "description": "…",
+>               "type": "string"
+>             },
+>             "pageNumber": {
+>               "description": "…",
+>               "type": "integer",
+>               "default": 1
+>             },
+>             "pageSize": {
+>               "description": "…",
+>               "type": "integer",
+>               "default": 10
+>             },
+>             "productFilter": {
+>               "description": "…",
+>               "type": [
+>                 "string",
+>                 "null"
+>               ],
+>               "default": null
+>             },
+>             "sectionFilter": {
+>               "description": "…",
+>               "type": [
+>                 "string",
+>                 "null"
+>               ],
+>               "default": null
+>             }
+>           },
+>           "required": [
+>             "query"
+>           ]
+>         },
+>         "annotations": {
+>           "destructiveHint": false,
+>           "idempotentHint": true,
+>           "openWorldHint": false,
+>           "readOnlyHint": true
+>         },
+>         "execution": {
+>           "taskSupport": "optional"
+>         }
+>       },
+>       {
+>         "name": "analyze_document_structure",
+>         "description": "…",
+>         "inputSchema": {
+>           "type": "object",
+>           "properties": {
+>             "url": {
+>               "description": "…",
+>               "type": "string"
+>             }
+>           },
+>           "required": [
+>             "url"
+>           ]
+>         },
+>         "annotations": {
+>           "destructiveHint": false,
+>           "idempotentHint": true,
+>           "openWorldHint": false,
+>           "readOnlyHint": true
+>         },
+>         "execution": {
+>           "taskSupport": "optional"
+>         }
+>       }
+>     ]
+>   },
+>   "id": 2,
+>   "jsonrpc": "2.0"
+> }
+>
+>

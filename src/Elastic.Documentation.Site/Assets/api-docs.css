@@ -655,6 +655,24 @@
 	overflow-wrap: anywhere;
 }
 
+/* The path sits under the title, so a familiar endpoint is easy to spot. The chip stays centered on the two lines. */
+.api-index-item-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+#markdown-content .api-index-item-path {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-subdued, #516381);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 12px;
+	line-height: 16px;
+	overflow-wrap: anywhere;
+}
+
 #markdown-content a.api-index-item:hover,
 #markdown-content a.api-index-item:focus-visible {
 	background: var(--color-grey-10);

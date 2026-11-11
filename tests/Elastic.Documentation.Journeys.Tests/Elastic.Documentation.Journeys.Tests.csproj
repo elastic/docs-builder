@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- [JourneyFiles] yields TestDataRow<SnapshotFile> for a SnapshotFile parameter, which TUnit's analyzer reports on every use. The attribute is Nullean.Snapshots', so it is fixed there. -->
+    <NoWarn>$(NoWarn);TUnit0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Builds docs-builder so the isolated target can serve this repository's docs/ folder; its output is not referenced. -->
+    <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" ReferenceOutputAssembly="false" />
+    <!-- The CLI tests run docs-journeys as a process. -->
+    <ProjectReference Include="..\..\src\tooling\docs-journeys\docs-journeys.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The MCP and docs API areas run these hosts in memory. -->
+    <!-- Both hosts have a top-level Program in the global namespace, so each gets an extern alias. -->
+    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Mcp.Remote\Elastic.Documentation.Mcp.Remote.csproj" Aliases="McpRemote" />
+    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" Aliases="DocsApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Mcp.Remote.Tests\SseScrubbers.cs" Link="Linked\SseScrubbers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Nullean.Snapshots.Browser.Assertions" />
+    <PackageReference Include="Nullean.Snapshots.Http" />
+    <PackageReference Include="Nullean.Snapshots.Http.Assertions" />
+  </ItemGroup>
+
+</Project>

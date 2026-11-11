@@ -178,7 +178,7 @@ internal sealed class FakeS3
 		var response = new GetObjectResponse
 		{
 			ETag = $"\"{obj.ETag}\"",
-			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(obj.Content))
+			ResponseStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(obj.Content))
 		};
 		AfterGet?.Invoke(request.Key, n);
 		return response;

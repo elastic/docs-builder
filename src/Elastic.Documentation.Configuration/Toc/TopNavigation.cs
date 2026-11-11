@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Configuration.Toc;
 /// </summary>
 public record TopNavRenderModel(IReadOnlyList<TopNavRenderItem> Items);
 
-public abstract record TopNavRenderItem(string Title)
+public closed record class TopNavRenderItem(string Title)
 {
 	/// <summary>
 	/// Whether this tab is active given the current page's navigation root id.

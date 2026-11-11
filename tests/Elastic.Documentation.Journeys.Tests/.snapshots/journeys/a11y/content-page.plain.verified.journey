@@ -1,0 +1,70 @@
+## a11y
+url: {origin}/syntax/code
+> violations: 3
+> [serious] aria-hidden-focus: Content hidden with aria-hidden must not be focusable (28 nodes)
+>   - input#F75783B9
+>   - input#2C2179F7
+>   - input#78CF72A0
+>   - input#10BED9BD
+>   - input#4E0FAA17
+>   - input#ADFD811F
+>   - input#C942397C
+>   - input#091005F1
+>   - input#D230956F
+>   - input#101D97C1
+>   - input#6166E5EF
+>   - input#E0BBC89D
+>   - input#B30767CE
+>   - input#5B332019
+>   - input#BD412AFA
+>   - input#418B7278
+>   - input#AEAFF75E
+>   - input#6DD03C09
+>   - input#DBF75672
+>   - input#30FE3E16
+>   - input#A7A86C75
+>   - input#42187ED1
+>   - input#EA3BA40A
+>   - input#3BF2C2C5
+>   - input#69EC7242
+>   - input#64511A27
+>   - input#3B0B6DC9
+>   - input#2FF53299
+> [serious] color-contrast: Text contrast meets WCAG AA (4.5:1, or 3:1 for large text) (14 nodes)
+>   - span.css-16juuyo (3.15:1)
+>   - span.css-n4hum7 (3.15:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-keyword (4.38:1)
+>   - span.hljs-section (4.38:1)
+> [critical] image-alt: Images need alternative text (alt), or alt="" when decorative (22 nodes)
+>   - svg.size-6
+>   - svg.size-6
+>   - svg.size-6
+>   - svg.size-6
+>   - svg.size-6
+>   - svg.size-6
+>   - svg.size-6
+>   - svg.size-6
+>   - svg.size-6
+>   - (no element)
+>   - svg.size-6.mr-2
+>   - svg.size-6.ml-2
+>   - svg.link-icon
+>   - svg.link-icon
+>   - svg.nav-chevron
+>   - svg.nav-chevron
+>   - svg.nav-chevron
+>   - svg.nav-chevron
+>   - svg.nav-chevron
+>   - svg.nav-chevron
+>   - svg.nav-chevron
+>   - svg.nav-chevron
