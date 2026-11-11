@@ -78,6 +78,10 @@ Tests live in `tests/` (unit) and `tests-integration/` (integration).
   - Create or update them with `SNAPSHOT_ACCEPT=1 dotnet test --project tests/Elastic.ApiExplorer.Tests --treenode-filter "/*/*/MyTests/*"`, then review the diff of the `.verified.html` files. The variable is ignored when `CI=true`.
   - Before committing, change the markup in the partial and confirm the test fails, then revert.
 - **Integration** (`tests-integration/`): needs real Elasticsearch credentials in the `docs-builder` user-secrets store, or Docker. Not run in CI; run with `mise run integrate` when you change search, MCP or content-date enrichment code.
+- **Browser journeys** (`tests/Elastic.Documentation.Journeys.Tests/journeys/`, `.journey` files; guide: [`docs/development/journeys.md`](docs/development/journeys.md)). Not part of `mise run test`; needs Chrome.
+  - Quick check while writing or fixing one: `mise run journeys:local --only <area/name>` (or `--area <area>`, `--tag <tag>`). It serves `docs/` and runs `docs-journeys`; `--screenshot-on-failure` draws a failure's page.
+  - Before pushing a change to a journey or to page chrome: `mise run journeys:test`. It compares each transcript with its verified file, so review changes with the `snap:*` tasks and read the diff before accepting.
+  - Against a deployed site: `mise run journeys:live <prod|edge|demo>`. A live run is read-only and compares no transcripts.
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
 
