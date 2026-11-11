@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 
