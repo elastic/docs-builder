@@ -5,6 +5,7 @@
  */
 import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiColumnResize } from './api-column-resize'
+import { initExamplesBalance } from './api-examples-balance'
 import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
@@ -764,6 +765,7 @@ export function initApiDocs(): void {
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()
     initApiExamples()
+    initExamplesBalance()
     initUnionChips()
     initApiPageActions()
     initApiColumnResize()
