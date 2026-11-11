@@ -80,7 +80,11 @@ let active: {
 
 export function initApiColumnResize() {
     const shell = document.querySelector<HTMLElement>('.api-page-shell')
-    if (!shell) return
+    if (!shell) {
+        active?.dispose()
+        active = null
+        return
+    }
     if (active?.shell === shell) {
         active.sync()
         return

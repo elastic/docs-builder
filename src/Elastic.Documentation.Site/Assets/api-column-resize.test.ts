@@ -113,6 +113,19 @@ describe('initApiColumnResize', () => {
         remove.mockRestore()
     })
 
+    it('lets go of the shell when navigation leaves the API pages', () => {
+        const remove = vi.spyOn(window, 'removeEventListener')
+        mountShell()
+        initApiColumnResize()
+        disconnects = 0
+        document.body.innerHTML = '<p>A documentation page</p>'
+        initApiColumnResize()
+
+        expect(disconnects).toBe(1)
+        expect(remove).toHaveBeenCalledWith('resize', expect.any(Function))
+        remove.mockRestore()
+    })
+
     it('shrinks saved widths, rail first, when the window is too narrow for them', () => {
         localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
         const shell = mountShell({ width: 1000 })
