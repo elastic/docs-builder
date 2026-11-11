@@ -73,7 +73,8 @@ let private testProjects (suite: TestSuite) =
         match suite with
         | TestSuite.Unit -> [ "tests" ]
         | TestSuite.Integration -> [ "tests-integration" ]
-        | _ -> [ "tests"; "tests-integration" ]
+        | TestSuite.All -> [ "tests"; "tests-integration" ]
+        | other -> failwithf "Unknown test suite '%O'" other
     let projects =
         directories
         |> List.collect (fun d ->
@@ -264,7 +265,11 @@ let Run (argv: string[]) =
             sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
 
     // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
-    let isSuite (value: string) = fst (System.Enum.TryParse<TestSuite>(value, true))
+    let isSuite (value: string) =
+        // TryParse also accepts numbers and comma lists, so require a declared name
+        match System.Enum.TryParse<TestSuite>(value, true) with
+        | true, suite -> System.Enum.IsDefined suite
+        | _ -> false
     argv
     |> Array.tryFindIndex (fun a -> a = "--suite")
     |> Option.bind (fun i -> Array.tryItem (i + 1) argv)
