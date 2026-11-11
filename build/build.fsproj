@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <!-- .NET SDK 10.0.403 annotates Path.GetExtension as nullable and 10.0.404 does not, so no code form compiles cleanly under both.
          FS3261 and FS3262 are the nullness diagnostics that disagree. -->

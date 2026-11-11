@@ -4,7 +4,9 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -64,13 +66,14 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			var buffered = new MemoryStream();
 			await stream.CopyToAsync(buffered).ConfigureAwait(false);
 			await stream.DisposeAsync().ConfigureAwait(false);
+			buffered = EnsureSwagger2Scheme(buffered);
 			hasTemplatePlaceholderHost = HasTemplatePlaceholderHost(buffered);
 			buffered.Position = 0;
 			result = await OpenApiDocument.LoadAsync(buffered, settings: settings);
 		}
 		else
 		{
-			var jsonStream = await ParseYamlToJsonStreamAsync(stream).ConfigureAwait(false);
+			var jsonStream = EnsureSwagger2Scheme(await ParseYamlToJsonStreamAsync(stream).ConfigureAwait(false));
 			hasTemplatePlaceholderHost = HasTemplatePlaceholderHost(jsonStream);
 			result = await OpenApiDocument.LoadAsync(jsonStream, JsonFormat, settings: settings);
 		}
@@ -92,6 +95,38 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		}
 
 		return result.Document;
+	}
+
+	// Microsoft.OpenApi builds Swagger 2.0 server URLs from host + schemes. Without schemes it assigns
+	// UriBuilder.Host = "//host", which .NET 11 rejects with an ArgumentException (.NET 10 accepted it
+	// and produced a file:// URL). Default to https so such specs keep loading.
+	private static MemoryStream EnsureSwagger2Scheme(MemoryStream jsonStream)
+	{
+		jsonStream.Position = 0;
+		try
+		{
+			if (
+				JsonNode.Parse(jsonStream) is not JsonObject root
+				|| !root.ContainsKey("swagger")
+				|| root["host"] is not JsonValue { } host
+				|| host.GetValueKind() != JsonValueKind.String
+				|| root["schemes"] is JsonArray { Count: > 0 }
+			)
+				return Rewound(jsonStream);
+
+			root["schemes"] = new JsonArray("https");
+			return new MemoryStream(Encoding.UTF8.GetBytes(root.ToJsonString()));
+		}
+		catch (JsonException)
+		{
+			return Rewound(jsonStream);
+		}
+	}
+
+	private static MemoryStream Rewound(MemoryStream stream)
+	{
+		stream.Position = 0;
+		return stream;
 	}
 
 	// Reads the "host" field from a JSON representation of a spec and returns true when the

@@ -101,6 +101,24 @@ public class ReaderTests
 	}
 
 	[Test]
+	[Arguments("spec.json", "{\"swagger\":\"2.0\",\"info\":{\"title\":\"T\",\"version\":\"1\"},\"host\":\"example.com\",\"basePath\":\"/v1\",\"paths\":{}}")]
+	[Arguments("spec.yaml", "swagger: '2.0'\ninfo:\n  title: T\n  version: '1'\nhost: example.com\nbasePath: /v1\npaths: {}")]
+	[Arguments("spec.json", "{\"swagger\":\"2.0\",\"info\":{\"title\":\"T\",\"version\":\"1\"},\"host\":\"example.com\",\"basePath\":\"/v1\",\"schemes\":[],\"paths\":{}}")]
+	[Arguments("spec.yaml", "swagger: '2.0'\ninfo:\n  title: T\n  version: '1'\nhost: example.com\nbasePath: /v1\nschemes: []\npaths: {}")]
+	public async Task ReadAsync_Swagger20HostWithoutSchemes_DefaultsToHttps(string fileName, string content)
+	{
+		// Microsoft.OpenApi assigns UriBuilder.Host = "//host" when schemes is missing, which .NET 11 rejects.
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+		var collector = new DiagnosticsCollector([]);
+
+		var doc = await OpenApiReader.Instance.ReadAsync(stream, fileName, collector);
+
+		doc.Should().NotBeNull();
+		collector.Errors.Should().Be(0);
+		doc.Servers.Should().ContainSingle().Which.Url.Should().Be("https://example.com/v1");
+	}
+
+	[Test]
 	public async Task ReadsYamlSpec_WithQuotedPathKeys()
 	{
 		// Quoted mapping keys ('/path/{id}') must reach Microsoft.OpenApi as the bare path, not as the

@@ -89,7 +89,7 @@ internal sealed class ExportCommands
 		}
 		catch (Exception e) when (e is ExportException or JourneyParseException or HttpFileParseException)
 		{
-			await Console.Error.WriteLineAsync(e.Message).ConfigureAwait(false);
+			await Console.Error.WriteLineAsync(e.Message.AsMemory(), ct).ConfigureAwait(false);
 			return 1;
 		}
 
@@ -103,7 +103,8 @@ internal sealed class ExportCommands
 			await Console
 				.Error
 				.WriteLineAsync(
-					"No journey was exported. Pushing nothing would delete every monitor of the project, so this is an error (--allow-empty to accept it)."
+					"No journey was exported. Pushing nothing would delete every monitor of the project, so this is an error (--allow-empty to accept it).".AsMemory(),
+					ct
 				)
 				.ConfigureAwait(false);
 			return 1;
@@ -134,7 +135,7 @@ internal sealed class ExportCommands
 				+ Path.DirectorySeparatorChar;
 			if (!target.StartsWith(root, StringComparison.Ordinal))
 			{
-				await Console.Error.WriteLineAsync($"{file.FileName} would be written outside {root}").ConfigureAwait(false);
+				await Console.Error.WriteLineAsync($"{file.FileName} would be written outside {root}".AsMemory(), ct).ConfigureAwait(false);
 				return 1;
 			}
 			_ = Directory.CreateDirectory(Path.GetDirectoryName(target)!);

@@ -10,6 +10,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
     <IsPackable>False</IsPackable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>
