@@ -916,7 +916,13 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	public async Task LoadChangelogConfiguration_SeededInitTemplate_LoadsWithoutErrors()
 	{
 		var template = await ReadInitTemplate();
-		var seeded = ChangelogTemplateSeeder.ApplyBundleRepoSeed(template, ownerCli: "elastic", repoCli: "docs-builder", gitOwner: null, gitRepo: null);
+		var seeded = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
+			template,
+			ownerCli: "elastic",
+			repoCli: "docs-builder",
+			gitOwner: null,
+			gitRepo: null
+		);
 		seeded.Should().NotBe(template);
 
 		var config = await LoadConfig(seeded);
@@ -932,7 +938,9 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 
 	private static async Task<string> ReadInitTemplate()
 	{
-		await using var stream = typeof(ChangelogConfigurationTests).Assembly.GetManifestResourceStream("Elastic.Changelog.Tests.changelog.example.yml");
+		await using var stream = typeof(ChangelogConfigurationTests).Assembly.GetManifestResourceStream(
+			"Elastic.Changelog.Tests.changelog.example.yml"
+		);
 		stream.Should().NotBeNull();
 		using var reader = new StreamReader(stream!);
 		return await reader.ReadToEndAsync(TestContext.Current!.Execution.CancellationToken);
