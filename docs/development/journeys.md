@@ -174,11 +174,11 @@ mise run journeys:compare prod edge --image-diff fail
 | Journey | Records |
 |---|---|
 | `compare/home` | The docs home page: title, content tree and a screenshot |
-| `compare/content-page` | The article of `/docs/get-started`: title, content tree and a screenshot |
+| `compare/content-page` | `/docs/get-started`: title, heading, lead paragraph and a screenshot of the article |
 | `compare/sidebar` | The navigation tree of the same page, with a screenshot |
 | `compare/page-health` | Script errors and console messages on load |
 
-A difference you expect goes in a rules file next to the journey, `{journey}.differences`. `content-page.differences` holds one: the page links to `https://www.elastic.co/training`, and a transcript of the prod site records that link as `{origin}/training`. Keep the rules per journey: a rule that matches nothing in a journey fails it as stale, so a file shared with `include?` fails every journey that lacks the step ([nullean/snapshots#77](https://github.com/nullean/snapshots/issues/77), which also notes that the rule syntax is not documented upstream). `--record <file>` appends a rule for every unexpected difference to a file the journey's rules include, instead of failing.
+No journey needs a rules file today. `content-page` records the heading and lead paragraph, not the article's link tree: a link to `www.elastic.co` reads as `{origin}` when prod is the baseline and as itself elsewhere, so a rule for it would fail as stale on every other pair of sites. A difference you expect goes in a rules file next to the journey, `{journey}.differences`, and `--record <file>` appends a rule for every unexpected difference to a file the journey's rules include, instead of failing. Keep the rules per journey: a rule that matches nothing in a journey fails it as stale, so a file shared with `include?` fails every journey that lacks the step ([nullean/snapshots#77](https://github.com/nullean/snapshots/issues/77), which also notes that the rule syntax is not documented upstream).
 
 The run is read-only and identifies itself as a monitor, like `docs-journeys`, and it may reach the same hosts. A `screenshot` of the two sites that differs is listed with a diff image (`--image-diff report`, the default), fails the run (`fail`) or is ignored (`off`). The compare journeys say `# @requires compare`, a feature only this task turns on (`--feature compare`), so `journeys:synth` and `journeys:local` skip them, and `mise run journeys:test` skips them too.
 
