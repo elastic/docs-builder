@@ -119,8 +119,8 @@ internal sealed class ContentStackCommands(
 	{
 		if (!AiEnrichmentBudget.TryValidateMaxTime(maxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
-			await Console.Error.WriteLineAsync("Run 'essc contentstack ai-enrich --help' for usage.");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}", ct);
+			await Console.Error.WriteLineAsync("Run 'essc contentstack ai-enrich --help' for usage.", ct);
 			Environment.Exit(2);
 		}
 

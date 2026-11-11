@@ -429,6 +429,14 @@ internal sealed class JourneyFolder : IDisposable
 		return this;
 	}
 
+	public JourneyFolder AddHttp(string id, string requests)
+	{
+		var file = System.IO.Path.Combine(Path, id + ".http");
+		_ = Directory.CreateDirectory(System.IO.Path.GetDirectoryName(file)!);
+		File.WriteAllText(file, requests);
+		return this;
+	}
+
 	public void Dispose() => Directory.Delete(Path, recursive: true);
 }
 

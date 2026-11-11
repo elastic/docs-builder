@@ -2,26 +2,22 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics;
+using System.Text.Json;
 using AwesomeAssertions;
 
 namespace Elastic.Documentation.Journeys.Tests;
 
 /// <summary>
-/// <c>docs-journeys export synthetics</c> and <c>push</c> as a process. The commands are checked through <c>--dry-run</c>,
-/// which prints the exact <c>npx</c> command and the project config without Node or a network. One test runs the real
-/// export, which needs <c>npx</c> and the npm registry, and skips without them. Nothing here reaches a Kibana.
+/// <c>docs-journeys export synthetics</c> as a process. It runs no Node: it writes a project that the caller validates and
+/// pushes with npm, so everything here runs without Node, a network or a Kibana. The files are compared with what the npm
+/// exporter writes in <see cref="DocsJourneysExportConformanceTests"/>.
 /// </summary>
-// The tests that run the real export start npx with the same package, and concurrent npx runs share one cache folder that npm
-// cannot update twice at once (ENOTEMPTY), so these tests run one at a time.
-[NotInParallel("npx")]
 public class DocsJourneysExportTests
 {
 	private const string Monitor = "# @tags smoke\n# @monitor schedule=10 locations=germany\nopen /page\nexpect title Page";
-	private static readonly IReadOnlyDictionary<string, string?> NoKey = new Dictionary<string, string?> { ["SYNTHETICS_API_KEY"] = null };
 
 	[Test]
-	public async Task Export_DryRun_PrintsTheContextTheProjectConfigAndThePinnedCommandAndWritesNothing()
+	public async Task Export_DryRun_PrintsTheContextTheConfigTheFilesAndTheManifestAndWritesNothing()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback navigation-preview");
 		using var folder = new JourneyFolder().Add("landing/home", Monitor);
@@ -46,19 +42,8 @@ public class DocsJourneysExportTests
 		_ = run.Output.Should().Contain("project: elastic-co-docs-demo");
 		_ = run.Output.Should().Contain("id: 'elastic-co-docs-demo',").And.Contain("space: 'default',").And.Contain("schedule: 15,");
 		_ = run.Output.Should().Contain("url: 'https://elastic-docs-v3-prod-e6053a.kb.us-east-1.aws.elastic.cloud/',");
-		_ = run
-			.Output
-			.Should()
-			.Contain($"{NpxName} --yes @nullean/journeys@0.9.0 export-synthetics")
-			.And
-			.Contain("--features navigation-preview,page-feedback")
-			.And
-			.Contain("--build-type assembler")
-			.And
-			.Contain("--env demo");
-		_ = run.Output.Should().NotContain("--paging");
-		// Install scripts of the packages' dependencies must not run: a push process holds the Synthetics API key.
-		_ = run.Output.Should().Contain("install --no-audit --no-fund --silent --ignore-scripts");
+		_ = run.Output.Should().Contain(Path.Combine("journeys", "landing", "home.journey.ts"));
+		_ = run.Output.Should().Contain("\"file\": \"journeys/landing/home.journey.ts\"");
 		_ = Directory.Exists(outDir).Should().BeFalse("a dry run writes nothing");
 	}
 
@@ -82,28 +67,6 @@ public class DocsJourneysExportTests
 
 		run.ShouldHaveFailed();
 		_ = run.Output.Should().Contain("could not be read");
-	}
-
-	[Test]
-	public async Task Push_ForAnotherEnvironmentThanExported_IsRefused()
-	{
-		using var folder = ExportedFolder();
-
-		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "prod", "--dry-run");
-
-		run.ShouldHaveFailed();
-		_ = run.Output.Should().Contain("was exported for the demo environment, not prod");
-	}
-
-	[Test]
-	public async Task Push_ForAnotherProjectThanExported_IsRefused()
-	{
-		using var folder = ExportedFolder();
-
-		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--project", "other", "--dry-run");
-
-		run.ShouldHaveFailed();
-		_ = run.Output.Should().Contain("was exported for project elastic-co-docs-demo, not other");
 	}
 
 	[Test]
@@ -152,22 +115,26 @@ public class DocsJourneysExportTests
 			folder.Path,
 			"--out",
 			Path.Combine(folder.Path, "out"),
-			"--paging",
-			"--dry-run"
+			"--paging"
 		);
 
 		run.ShouldHaveFailed();
-		_ = run.Output.Should().Contain($"--paging is refused for the {env} environment: only prod pages");
-		_ = run.Output.Should().NotContain("command:");
+		_ = run.Output.Should().Contain("--paging is refused").And.Contain("only prod pages");
+		_ = Directory.Exists(Path.Combine(folder.Path, "out")).Should().BeFalse();
 	}
 
 	[Test]
-	public async Task Export_PagingInProd_IsPassedToTheExporter()
+	public async Task Export_PagingInProd_AddsTheAlertOnlyToMonitorsThatAskForPagerDuty()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "");
-		using var folder = new JourneyFolder().Add("landing/home", Monitor);
+		using var folder = new JourneyFolder().Add(
+			"a/pages",
+			"# @tags smoke\n# @monitor schedule=10 locations=germany\n# @alert pagerduty\nopen /page\nexpect title Page"
+		).Add("a/slack", "# @monitor\n# @alert slack\nopen /page");
+		var withPaging = Path.Combine(folder.Path, "with");
+		var without = Path.Combine(folder.Path, "without");
 
-		var run = await Cli.RunAsync(
+		var on = await Cli.RunAsync(
 			"export",
 			"synthetics",
 			"--url",
@@ -177,13 +144,28 @@ public class DocsJourneysExportTests
 			"--journeys",
 			folder.Path,
 			"--out",
-			Path.Combine(folder.Path, "out"),
-			"--paging",
-			"--dry-run"
+			withPaging,
+			"--paging"
+		);
+		var off = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"prod",
+			"--journeys",
+			folder.Path,
+			"--out",
+			without
 		);
 
-		run.ShouldHaveExited(0);
-		_ = run.Output.Should().Contain("project: elastic-co-docs-prod").And.Contain(" --paging");
+		on.ShouldHaveExited(0);
+		off.ShouldHaveExited(0);
+		var paged = File.ReadAllText(Path.Combine(withPaging, "journeys", "a", "pages.journey.ts"));
+		_ = paged.Should().Contain("alert: { status: { enabled: true } }").And.Contain("'alert:pagerduty'");
+		_ = File.ReadAllText(Path.Combine(withPaging, "journeys", "a", "slack.journey.ts")).Should().NotContain("alert:");
+		_ = File.ReadAllText(Path.Combine(without, "journeys", "a", "pages.journey.ts")).Should().NotContain("alert:");
 	}
 
 	[Test]
@@ -236,121 +218,334 @@ public class DocsJourneysExportTests
 	}
 
 	[Test]
-	public async Task Push_DryRun_ShowsTheCommandWithoutTagsAndNeedsNoKey()
+	public async Task Export_WritesTheMonitorsTheConfigThePackagesTheLockfileAndTheManifest()
 	{
-		using var folder = ExportedFolder();
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
+		using var folder = new JourneyFolder().Add("landing/home", Monitor).Add("navigation/main", "# @monitor schedule=15\nopen /page");
+		var outDir = Path.Combine(folder.Path, "out");
 
-		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
 
 		run.ShouldHaveExited(0);
-		_ = run.Output.Should().Contain("would push 1 monitor(s) to project elastic-co-docs-demo (demo)");
-		_ = run
-			.Output
+		_ = File
+			.ReadAllText(Path.Combine(outDir, "manifest.json"))
 			.Should()
-			.Contain(
-				$"command: {NpxName} --yes @elastic/synthetics@1.27.0 push journeys --config synthetics.config.ts --id elastic-co-docs-demo --yes"
+			.Be(
+				"{\n" + "  \"project\": \"elastic-co-docs-demo\",\n" + "  \"env\": \"demo\",\n" + "  \"monitors\": [\n" + "    {\n" +
+					"      \"name\": \"landing/home\",\n" + "      \"file\": \"journeys/landing/home.journey.ts\"\n" + "    },\n" +
+					"    {\n" + "      \"name\": \"navigation/main\",\n" + "      \"file\": \"journeys/navigation/main.journey.ts\"\n" +
+					"    }\n" + "  ]\n" + "}\n"
 			);
-		_ = run.Output.Should().Contain("SYNTHETICS_API_KEY: not set");
-		_ = run.Output.Should().NotContain("--tags", "push --tags filters the monitors to push, it does not tag them");
+		_ = File.Exists(Path.Combine(outDir, "journeys", "landing", "home.journey.ts")).Should().BeTrue();
+		_ = File.ReadAllText(Path.Combine(outDir, "synthetics.config.ts")).Should().Contain("id: 'elastic-co-docs-demo',");
+		_ = File
+			.ReadAllText(Path.Combine(outDir, "journeys", "landing", "home.journey.ts"))
+			.Should()
+			.StartWith("// Generated by `journeys export-synthetics` from landing/home.journey.")
+			.And
+			.Contain($"baseUrl: '{site.Url}/docs/'")
+			.And
+			.Contain("features: ['page-feedback']")
+			.And
+			.Contain("buildType: 'assembler'")
+			.And
+			.Contain("env: 'demo'")
+			.And
+			.Contain("readOnly: true");
 	}
 
 	[Test]
-	public async Task Push_DryRun_NeverPrintsTheApiKey()
+	public async Task Export_Lockfile_AgreesWithThePinsInPackageJson()
 	{
-		using var folder = ExportedFolder();
-		var environment = new Dictionary<string, string?> { ["SYNTHETICS_API_KEY"] = "s3cret-key-value" };
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("landing/home", Monitor);
+		var outDir = Path.Combine(folder.Path, "out");
 
-		var run = await Cli.RunWithEnvironmentAsync(environment, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
 
 		run.ShouldHaveExited(0);
-		_ = run.Output.Should().Contain("SYNTHETICS_API_KEY: set");
-		_ = run.Output.Should().NotContain("s3cret-key-value");
+		using var package = JsonDocument.Parse(File.ReadAllText(Path.Combine(outDir, "package.json")));
+		using var lockfile = JsonDocument.Parse(File.ReadAllText(Path.Combine(outDir, "package-lock.json")));
+		var pins = package.RootElement.GetProperty("dependencies").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString());
+		var packages = lockfile.RootElement.GetProperty("packages");
+		var root = packages.GetProperty("");
+		_ = root.GetProperty("name").GetString().Should().Be(package.RootElement.GetProperty("name").GetString());
+		_ = pins.Should().NotBeEmpty();
+		foreach (var (name, version) in pins)
+		{
+			_ = root.GetProperty("dependencies").GetProperty(name).GetString().Should().Be(version, $"the lockfile asks for {name}");
+			_ = packages
+				.GetProperty("node_modules/" + name)
+				.GetProperty("version")
+				.GetString()
+				.Should()
+				.Be(version, $"the lockfile installs {name}");
+		}
 	}
 
 	[Test]
-	public async Task Push_WithoutAnApiKey_FailsBeforeRunningAnything()
+	public async Task Export_SaysWhyAJourneyIsNotAMonitorAndLeavesItOutOfTheManifest()
 	{
-		using var folder = ExportedFolder();
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
+		using var folder = new JourneyFolder()
+			.Add("a/plain", "open /page")
+			.Add("b/mutates", "# @monitor\n# @mutates\nopen /page")
+			.Add("c/needs-flag", "# @monitor\n# @requires navigation-preview\nopen /page")
+			.Add("d/applies", "# @monitor\n# @requires page-feedback\nopen /page");
+		var outDir = Path.Combine(folder.Path, "out");
 
-		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo");
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
+
+		run.ShouldHaveExited(0);
+		_ = run.Output.Should().Contain("skipped a/plain: no @monitor");
+		_ = run.Output.Should().Contain("skipped b/mutates: @mutates: a monitor runs against a live site");
+		_ = run.Output.Should().Contain("skipped c/needs-flag: @requires navigation-preview does not hold");
+		_ = run.Output.Should().Contain("exported 1 of 4 for project elastic-co-docs-demo");
+		using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outDir, "manifest.json")));
+		_ = manifest
+			.RootElement
+			.GetProperty("monitors")
+			.EnumerateArray()
+			.Select(m => m.GetProperty("name").GetString())
+			.Should()
+			.Equal("d/applies");
+	}
+
+	[Test]
+	public async Task Export_AnHttpFileThatIsAMonitor_BecomesAnHttpStepsFileInTheManifest()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().AddHttp(
+			"mcp/tools",
+			"# @monitor schedule=15\n# @tags mcp\n@host = https://docs.example\n\n# @readonly\n# @expect status 200\nPOST {{host}}/docs/_mcp\nContent-Type: application/json\n\n{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}\n"
+		);
+		var outDir = Path.Combine(folder.Path, "out");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
+
+		run.ShouldHaveExited(0);
+		var content = File.ReadAllText(Path.Combine(outDir, "journeys", "mcp", "tools.http.journey.ts"));
+		_ = content.Should().Contain("import { httpSteps } from '@nullean/journeys/synthetics';").And.NotContain("expect,");
+		_ = File.ReadAllText(Path.Combine(outDir, "manifest.json")).Should().Contain("\"file\": \"journeys/mcp/tools.http.journey.ts\"");
+	}
+
+	[Test]
+	public async Task Export_OfNoApplicableMonitor_FailsUnlessEmptyIsAllowed()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("a/plain", "open /page");
+		var strictOut = Path.Combine(folder.Path, "strict");
+		var emptyOut = Path.Combine(folder.Path, "empty");
+
+		var strict = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			strictOut
+		);
+		var allowed = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			emptyOut,
+			"--allow-empty"
+		);
+
+		strict.ShouldHaveExited(1);
+		_ = strict.Output.Should().Contain("No journey was exported").And.Contain("--allow-empty");
+		_ = Directory.Exists(strictOut).Should().BeFalse("nothing is written for a failed export");
+		allowed.ShouldHaveExited(0);
+		_ = File.ReadAllText(Path.Combine(emptyOut, "manifest.json")).Should().Contain("\"monitors\": []");
+	}
+
+	[Test]
+	public async Task Export_DryRunOfNoApplicableMonitor_FailsLikeTheRealRun()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("a/plain", "open /page");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out"),
+			"--dry-run"
+		);
 
 		run.ShouldHaveExited(1);
-		_ = run.Output.Should().Contain("SYNTHETICS_API_KEY is not set. Nothing was pushed.");
-		_ = run.Output.Should().NotContain("pushing");
+		_ = run.Output.Should().Contain("No journey was exported");
 	}
 
 	[Test]
-	public async Task Push_WhenNpxFails_SaysWhatFailedAndExitsOneInsteadOfNpxsOwnCode()
+	public async Task Export_ASourceNamedWithLiteralBackslashes_StaysInsideTheOutJourneysFolder()
 	{
 		if (OperatingSystem.IsWindows())
-			Skip.Test("The stand-in for npx is a shell script.");
-		using var folder = ExportedFolder();
-		var bin = Path.Combine(folder.Out, "..", "bin");
-		_ = Directory.CreateDirectory(bin);
-		var npx = Path.Combine(bin, "npx");
-		File.WriteAllText(npx, "#!/bin/sh\necho 'npm error code ENOTEMPTY'\nexit 217\n");
-		if (!OperatingSystem.IsWindows())
-			File.SetUnixFileMode(npx, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-		var environment = new Dictionary<string, string?>
-		{
-			["PATH"] = Path.GetFullPath(bin) + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
-			["SYNTHETICS_API_KEY"] = "not-a-real-key"
-		};
+			return; // a backslash is a separator there
 
-		var run = await Cli.RunWithEnvironmentAsync(environment, "push", "--out", folder.Out, "--env", "demo");
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add(@"..\escape", Monitor);
+		var outDir = Path.Combine(folder.Path, "out");
+		_ = Directory.CreateDirectory(outDir);
+		var sentinel = Path.Combine(outDir, "escape.journey.ts");
+		File.WriteAllText(sentinel, "sentinel");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
+
+		run.ShouldHaveExited(0);
+		_ = File.ReadAllText(sentinel).Should().Be("sentinel", "a backslash in a Unix file name is not a directory separator");
+		var written = Directory.EnumerateFiles(Path.Combine(outDir, "journeys"), "*.journey.ts", SearchOption.AllDirectories).ToList();
+		_ = written.Should().ContainSingle();
+		_ = Path.GetFullPath(written[0]).Should().StartWith(Path.Combine(outDir, "journeys") + Path.DirectorySeparatorChar);
+	}
+
+	[Test]
+	public async Task Export_TwoSourcesForTheSameOutputFile_AreRefused()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("foo.http", Monitor).AddHttp("foo", "# @monitor\nGET https://docs.example/health\n");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out")
+		);
 
 		run.ShouldHaveExited(1);
-		_ = run.Output.Should().Contain("npm error code ENOTEMPTY");
-		_ = run.Output.Should().Contain("docs-journeys: pushing the monitors with @elastic/synthetics failed: npx exited with code 217.");
-		_ = run.Output.Should().NotContain("not-a-real-key");
+		_ = run.Output.Should().Contain("already taken");
 	}
 
 	[Test]
-	public async Task Push_OfNoMonitors_IsRefusedBecauseItWouldDeleteTheProjectsMonitors()
-	{
-		using var folder = ExportedFolder(monitors: 0);
-
-		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
-
-		run.ShouldHaveExited(1);
-		_ = run.Output.Should().Contain("holds no monitors").And.Contain("would delete every monitor of elastic-co-docs-demo");
-	}
-
-	[Test]
-	public async Task Push_WithoutTheInstalledPackages_SaysToExportFirst()
-	{
-		using var folder = ExportedFolder(install: false);
-
-		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "demo", "--dry-run");
-
-		run.ShouldHaveFailed();
-		_ = run.Output.Should().Contain("node_modules does not exist").And.Contain("export synthetics");
-	}
-
-	[Test]
-	public async Task Push_AnEnvThatCouldBreakTheProjectId_IsRefused()
-	{
-		using var folder = ExportedFolder();
-
-		var run = await Cli.RunWithEnvironmentAsync(NoKey, "push", "--out", folder.Out, "--env", "de mo", "--dry-run");
-
-		run.ShouldHaveFailed();
-		_ = run.Output.Should().Contain("--env may only contain letters, digits");
-	}
-
-	[Test]
-	public async Task Export_ToAReusedOutFolder_RemovesStaleMonitorFiles()
+	public async Task Export_ToAReusedOutFolder_RemovesOnlyGeneratedMonitorFilesThatAreNoLongerProduced()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
 		using var folder = new JourneyFolder().Add("landing/home", Monitor);
 		var outDir = Path.Combine(folder.Path, "out");
-		var stale = Path.Combine(outDir, "journeys", "deleted.journey.ts");
-		_ = Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
-		File.WriteAllText(stale, "stale");
+		var generated = Path.Combine(outDir, "journeys", "deleted.journey.ts");
+		var handWritten = Path.Combine(outDir, "journeys", "mine.journey.ts");
+		var unrelated = Path.Combine(outDir, "notes.txt");
+		_ = Directory.CreateDirectory(Path.GetDirectoryName(generated)!);
+		File.WriteAllText(generated, "// Generated by `journeys export-synthetics` from deleted.journey. Do not edit.\n");
+		File.WriteAllText(handWritten, "// written by a person\n");
+		File.WriteAllText(unrelated, "keep");
 
-		_ = await Cli.RunAsync("export", "synthetics", "--url", site.Url, "--env", "demo", "--journeys", folder.Path, "--out", outDir);
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
 
-		_ = File.Exists(stale).Should().BeFalse("the journeys folder is cleared before the export");
+		run.ShouldHaveExited(0);
+		_ = File.Exists(generated).Should().BeFalse("a generated file that is not produced any more is removed");
+		_ = File.Exists(handWritten).Should().BeTrue("a file that does not say it was generated is never removed");
+		_ = File.Exists(unrelated).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task Export_Twice_WritesTheSameBytes()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
+		using var folder = new JourneyFolder().Add("landing/home", Monitor).Add("a/b", "# @monitor\nopen /page");
+		var first = Path.Combine(folder.Path, "first");
+		var second = Path.Combine(folder.Path, "second");
+
+		_ = await Cli.RunAsync("export", "synthetics", "--url", site.Url, "--env", "demo", "--journeys", folder.Path, "--out", first);
+		_ = await Cli.RunAsync("export", "synthetics", "--url", site.Url, "--env", "demo", "--journeys", folder.Path, "--out", second);
+
+		var files = Directory
+			.EnumerateFiles(first, "*", SearchOption.AllDirectories)
+			.Select(f => Path.GetRelativePath(first, f))
+			.Order()
+			.ToList();
+		_ = files.Should().NotBeEmpty();
+		foreach (var file in files)
+			_ = File.ReadAllText(Path.Combine(second, file)).Should().Be(File.ReadAllText(Path.Combine(first, file)), file);
 	}
 
 	[Test]
@@ -394,53 +589,13 @@ public class DocsJourneysExportTests
 	}
 
 	[Test]
-	// Both run the real npx, and concurrent npx runs of one package corrupt its shared ~/.npm/_npx cache (ENOTEMPTY, "journeys: not found").
-	public async Task Export_ForReal_WritesTheMonitorsTheConfigAndInstallsThePackages()
+	public async Task Export_TwoSourcesThatWouldShareAMonitorId_AreAnErrorNamingBoth()
 	{
-		if (!await NpxWorksAsync())
-			Skip.Test("npx (Node.js) is not available, or cannot reach the npm registry.");
-		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
-		using var folder = new JourneyFolder().Add("landing/home", Monitor).Add(
-			"landing/isolated",
-			"# @requires build-type:isolated\n# @monitor\nopen /page"
-		);
-		var outDir = Path.Combine(folder.Path, "out");
-
-		var run = await Cli.RunAsync(
-			"export",
-			"synthetics",
-			"--url",
-			site.Url,
-			"--env",
-			"demo",
-			"--journeys",
-			folder.Path,
-			"--out",
-			outDir
-		);
-
-		run.ShouldHaveExited(0);
-		_ = run.Output.Should().Contain("1 monitor file(s)");
-		var generated = File.ReadAllText(Path.Combine(outDir, "journeys", "landing", "home.journey.ts"));
-		_ = generated.Should().Contain("monitor.use({ id: 'landing-home', schedule: 10, locations: ['germany'], tags: ['smoke'] })");
-		_ = generated.Should().Contain("features: ['page-feedback']").And.Contain("env: 'demo'");
-		_ = File
-			.Exists(Path.Combine(outDir, "journeys", "landing", "isolated.journey.ts"))
-			.Should()
-			.BeFalse("its @requires does not hold on an assembler site");
-		_ = File.ReadAllText(Path.Combine(outDir, "package.json")).Should().Contain("\"@nullean/journeys\": \"0.9.0\"");
-		_ = Directory.Exists(Path.Combine(outDir, "node_modules", "@nullean", "journeys")).Should().BeTrue();
-	}
-
-	[Test]
-	// Both run the real npx, and concurrent npx runs of one package corrupt its shared ~/.npm/_npx cache (ENOTEMPTY, "journeys: not found").
-	public async Task Export_OfNoApplicableMonitor_FailsUnlessEmptyIsAllowed()
-	{
-		if (!await NpxWorksAsync())
-			Skip.Test("npx (Node.js) is not available, or cannot reach the npm registry.");
 		await using var site = new FakeSite(buildType: "assembler", features: "");
-		using var folder = new JourneyFolder().Add("landing/isolated", "# @requires build-type:isolated\n# @monitor\nopen /page");
-		var outDir = Path.Combine(folder.Path, "out");
+		using var folder = new JourneyFolder().Add("mcp/tools", "# @monitor\nopen /page").AddHttp(
+			"mcp-tools",
+			"# @monitor\nGET https://docs.example/health\n"
+		);
 
 		var run = await Cli.RunAsync(
 			"export",
@@ -452,78 +607,68 @@ public class DocsJourneysExportTests
 			"--journeys",
 			folder.Path,
 			"--out",
-			outDir
-		);
-		var allowed = await Cli.RunAsync(
-			"export",
-			"synthetics",
-			"--url",
-			site.Url,
-			"--env",
-			"demo",
-			"--journeys",
-			folder.Path,
-			"--out",
-			Path.Combine(folder.Path, "out2"),
-			"--allow-empty"
+			Path.Combine(folder.Path, "out")
 		);
 
 		run.ShouldHaveExited(1);
-		_ = run.Output.Should().Contain("No journey was exported").And.Contain("would delete every monitor");
-		allowed.ShouldHaveExited(0);
+		_ = run.Output.Should().Contain("mcp/tools: its monitor id 'mcp-tools' is already taken by mcp-tools");
 	}
 
-	private static string NpxName => OperatingSystem.IsWindows() ? "npx.cmd" : "npx";
-
-	private static ExportedOutput ExportedFolder(int monitors = 1, bool install = true)
+	[Test]
+	[Arguments("# @monitor schedule=7\nopen /page", "@monitor schedule=7 is not one Synthetics accepts")]
+	[Arguments("# @monitor locations=mars\nopen /page", "@monitor location 'mars' is not a public Synthetics location")]
+	public async Task Export_AMonitorSettingSyntheticsRefuses_IsAnErrorNamingTheJourney(string journey, string message)
 	{
-		var output = new ExportedOutput();
-		File.WriteAllText(
-			Path.Combine(output.Out, "synthetics.config.ts"),
-			"export default () => ({\n    params: {\n        environment: 'demo',\n    },\n    project: {\n        id: 'elastic-co-docs-demo',\n    },\n})"
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("landing/home", journey);
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			Path.Combine(folder.Path, "out")
 		);
-		_ = Directory.CreateDirectory(Path.Combine(output.Out, "journeys"));
-		for (var i = 0; i < monitors; i++)
-			File.WriteAllText(Path.Combine(output.Out, "journeys", $"m{i}.journey.ts"), "// generated");
-		if (install)
-			_ = Directory.CreateDirectory(Path.Combine(output.Out, "node_modules"));
-		return output;
+
+		run.ShouldHaveExited(1);
+		_ = run.Output.Should().Contain($"landing/home: {message}");
 	}
 
-	private static async Task<bool> NpxWorksAsync()
+	[Test]
+	public async Task Export_AJourneyThatDoesNotParse_ExitsOneAndSaysWhere()
 	{
-		try
-		{
-			var info = new ProcessStartInfo(OperatingSystem.IsWindows() ? "npm.cmd" : "npm")
-			{
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			};
-			info.ArgumentList.Add("view");
-			info.ArgumentList.Add("@nullean/journeys@0.9.0");
-			info.ArgumentList.Add("version");
-			using var process = Process.Start(info);
-			if (process is null)
-				return false;
-			_ = process.StandardOutput.ReadToEndAsync();
-			_ = process.StandardError.ReadToEndAsync();
-			await process.WaitForExitAsync().ConfigureAwait(false);
-			return process.ExitCode == 0;
-		}
-		catch (System.ComponentModel.Win32Exception)
-		{
-			return false;
-		}
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("landing/broken", "# @monitor\nthis-is-not-a-command /page");
+		var outDir = Path.Combine(folder.Path, "out");
+
+		var run = await Cli.RunAsync(
+			"export",
+			"synthetics",
+			"--url",
+			site.Url,
+			"--env",
+			"demo",
+			"--journeys",
+			folder.Path,
+			"--out",
+			outDir
+		);
+
+		run.ShouldHaveExited(1);
+		_ = run.Output.Should().Contain("landing/broken");
+		_ = Directory.Exists(outDir).Should().BeFalse("nothing is written for a journey that cannot be exported");
 	}
 
-	private sealed class ExportedOutput : IDisposable
+	[Test]
+	public async Task Push_IsNotACommandAnyMore()
 	{
-		private readonly string _root = Path.Combine(Path.GetTempPath(), "docs-journeys-export-" + Guid.NewGuid().ToString("N"));
+		var run = await Cli.RunAsync("push", "--out", "x", "--env", "demo");
 
-		public ExportedOutput() => Directory.CreateDirectory(Out);
-
-		public string Out => Path.Combine(_root, "out");
-
-		public void Dispose() => Directory.Delete(_root, recursive: true);
+		run.ShouldHaveFailed();
 	}
 }

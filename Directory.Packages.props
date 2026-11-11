@@ -134,6 +134,7 @@
     <PackageVersion Include="Nullean.Snapshots.Json" Version="0.8.0" />
     <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.8.0" />
     <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.8.0" />
+    <PackageVersion Include="Nullean.HttpFileParser" Version="0.8.0" />
     <PackageVersion Include="Nullean.Snapshots.Browser" Version="0.8.0" />
     <PackageVersion Include="Nullean.Snapshots.Browser.Console" Version="0.8.0" />
     <PackageVersion Include="Nullean.Snapshots.Browser.Assertions" Version="0.8.0" />
