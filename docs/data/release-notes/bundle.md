@@ -90,32 +90,25 @@ bundle:
 
 ### Bundle by GitHub releases [profile-gh-release]
 
-If you have automated GitHub release notes, the `changelog bundle` command can fetch the release from GitHub, parse PR references from the release notes, and uses them as the bundle filter.
+If you have automated GitHub release notes, the [`changelog gh-release`](/cli/changelog/gh-release.md) command fetches the release from GitHub, parses the PR references from the release notes, creates one changelog file per pull request, and bundles them in a single step.
 Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 
-Your profile must contain `source: github_release`.
-It's also a good idea to include the [basic bundle settings](/data/release-notes/configure-ref.md#bundle-basic) and the [profile settings](/data/release-notes/configure-ref.md#bundle-profiles) for the output filename and output products.
-For example:
-
-```yaml
-bundle:
-  profiles:
-    agent-gh-release:
-      source: github_release <1>
-      repo: apm-agent-dotnet
-      owner: elastic
-      output_products: "apm-agent-dotnet {version} {lifecycle}" <2>
+```sh
+docs-builder changelog gh-release elastic/apm-agent-dotnet v1.34.1
 ```
 
-1. This profile fetches the PR list from the GitHub release notes for the version tag specified in the command.
-2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output_products` is inferred from full release tag name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
+The product and lifecycle are inferred from the release tag and the repository name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
+
+:::{note}
+The profile setting `source: github_release` is removed. It emits a deprecation warning at config load, and `changelog bundle` stops with an error when it runs a profile that sets it. Remove the field from `changelog.yml`.
+:::
 
 ### Bundle by git commit range [profile-git-range]
 
 If the source of truth for what was shipped in each release is a git commit range, pass `--start-git-ref` and `--end-git-ref` alongside the profile.
 The command derives the PR list from the range itself (GitHub compare API + GraphQL `associatedPullRequests`), so no PR list file or promotion report is needed.
 
-Your profile must **not** contain a `products` pattern or `source: github_release`; it contributes output metadata only. For example:
+Your profile must **not** contain a `products` pattern; it contributes output metadata only. For example:
 
 ```yaml
 bundle:
@@ -261,14 +254,12 @@ For example, if the source of truth for what was shipped in each release is:
 - automated release notes for GitHub releases:
 
   ```sh
-  # Bundle changelogs from the release notes of a specific GitHub tag
-  docs-builder changelog bundle agent-gh-release v1.34.1
+  # Create the changelogs from the release notes of a GitHub tag and bundle them
+  docs-builder changelog gh-release apm-agent-dotnet v1.34.1
 
   # Use "latest" to fetch the most recent release
-  docs-builder changelog bundle agent-gh-release latest
+  docs-builder changelog gh-release apm-agent-dotnet latest
   ```
-
-  Alternatively, use the [changelog gh-release](/cli/changelog/gh-release.md) command, which creates the changelogs and bundles at the same time.
 
   :::{note}
   This method requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
@@ -417,16 +408,6 @@ For example, if the source of truth for what was shipped in each release is:
   docs-builder changelog remove serverless-release ./changelogs.txt
   ```
 
-- automated release notes for GitHub releases:
-
-  ```sh
-  docs-builder changelog remove agent-gh-release 1.34.1
-  ```
-
-  :::{note}
-  This method requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
-  :::
-
 - all changelog files that exist in a specific folder:
 
   ```sh
@@ -515,29 +496,12 @@ Any changelogs with matching `feature-id` values are commented out when you publ
 ### Hide private links
 
 A changelog can reference multiple pull requests and issues in its `prs` and `issues` fields.
-You can allowlist links to certain repos with the [`link_allow_repos` setting](/data/release-notes/configure-ref.md#bundle-basic).
-For example:
-
-```yaml
-bundle:
-  directory: docs/changelog
-  output_directory: docs/releases
-  repo: elasticsearch 
-  owner: elastic
-  link_allow_repos: <1>
-    - elastic/elasticsearch
-    - elastic/kibana
-    - elastic/roadmap
-```
-
-1. Only links to these owner/repo pairs are shown in the release docs. Others are rewritten to `# PRIVATE:` sentinels.
-
-There are no implicit values for this setting.
-You must list every repo whose links should appear, including the current repo.
-When this setting is omitted entirely, no link filtering is applied.
+The [`link_allow_repos` setting](/data/release-notes/configure-ref.md#bundle-basic) is no longer read by `changelog bundle`; remove it from `changelog.yml`.
+Links in published bundles are controlled by the changelog scrubber Lambda, which builds its allowlist from the public repositories in `assembler.yml`.
+Links to repositories that are not on that allowlist are scrubbed when the bundle is published.
 
 :::{tip}
-The bundle's changelog entries are sanitized but the individual changelog files are unchanged.
+The published copy is sanitized; the bundle file in the repository and the individual changelog files are unchanged.
 :::
 
 If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibility in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.

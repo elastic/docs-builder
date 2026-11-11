@@ -117,10 +117,10 @@ Both refs are always required together — the start ref is never inferred from 
    - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
 4. Records the end ref in the bundle output as the `git_ref` metadata field.
 
-Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. The bundle name follows the `{repo}-{product}-{version}.yaml` convention.
+Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`product`, `description`, `hide_features`, and so on) — it must not set a `products` pattern. The bundle name follows the `{repo}-{product}-{version}.yaml` convention.
 
 Re-running the same range produces the same bundle content; bundling never overwrites changelog entries.
-Commit-range mode does not automatically add changelog notes whose `products[].versions` match `output_products`. Use `--files` or a path list if those files must be in the bundle.
+Commit-range mode does not automatically add changelog notes whose `products[].versions` match the profile's `product`. Use `--files` or a path list if those files must be in the bundle.
 
 :::{note}
 Commit-range mode requires a `GITHUB_TOKEN` environment variable: the GraphQL API used for commit→PR association does not accept anonymous requests.
@@ -186,11 +186,11 @@ For `--input-products` and profile `products`, a concrete version or date in the
 
 ## Lifecycle inference [lifecycle-inference]
 
-The way that lifecycle values are inferred varies between GitHub release profiles and standard profiles.
+The way that lifecycle values are inferred varies between `changelog gh-release` and bundle profiles.
 
-### GitHub release profiles
+### GitHub releases
 
-For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is derived from the full release tag name. For example:
+For `changelog gh-release`, the lifecycle is derived from the full release tag name. For example:
 
 | Release tag | `{version}` | `{lifecycle}` |
 |-------------|-------------|---------------|
@@ -221,7 +221,7 @@ For more information about acceptable product and lifecycle values, go to [Produ
 
 A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
 
-Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/repo` strings. When this key is present (including as an empty list), PR and issue references are filtered at bundle time: only links whose resolved repository is in the list are kept; others are rewritten to `# PRIVATE:` sentinel strings in the bundle YAML.
+`bundle.link_allow_repos` in `changelog.yml` is no longer read by `changelog bundle`; remove it. PR and issue references are not filtered at bundle time. When the bundle is published, the changelog scrubber Lambda scrubs links to repositories that are not on its allowlist, which it builds from the public repositories in `assembler.yml`. Use `changelog scrubber-allowlist` to resolve the identity of the allowlist the deployed scrubber runs with.
 
 ## Examples
 

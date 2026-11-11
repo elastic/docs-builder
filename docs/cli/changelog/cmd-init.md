@@ -10,7 +10,7 @@ The command locates the docs folder using the following priority:
 
 The command creates a `changelog.yml` configuration file and `changelog` and `releases` subdirectories in the docs folder.
 
-When the template is written for the first time, the command seeds `bundle.owner`, `bundle.repo`, and `bundle.link_allow_repos` from your `git` remote `origin` (when it points at `github.com`) and/or from `--owner` and `--repo`. CLI values override values inferred from `git`. If neither source provides enough information, the placeholder lines are removed from the template for manual editing.
+When the template is written for the first time, the command seeds `bundle.owner`, `bundle.repo`, and `bundle.link_allow_repos` from your `git` remote `origin` (when it points at `github.com`) and/or from `--owner` and `--repo`; `bundle.link_allow_repos` is still seeded but no longer read by `changelog bundle`, so you can remove it. CLI values override values inferred from `git`. If neither source provides enough information, the placeholder lines are removed from the template for manual editing.
 
 ## Examples
 

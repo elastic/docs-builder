@@ -12,11 +12,11 @@
 
 # Filename strategy for generated changelog files.
 # Controls how files created by 'changelog add' are named.
-#   pr        — use the PR number (e.g., 12345.yaml).
-#   issue     — use the issue number (e.g., 67890.yaml).
-#   timestamp — use a Unix timestamp with a title slug (e.g., 1735689600-fix-search.yaml). Default.
-# Can be overridden per invocation with --use-pr-number or --use-issue-number CLI flags.
-filename: timestamp
+#   pr — use the PR number (e.g., 12345.yaml). Default, and the only supported value.
+# 'timestamp' and 'issue' are no longer supported: the configuration fails to load with either value.
+# Changelog entries are keyed by PR number; for items with no PR use 'changelog note'.
+# --use-pr-number selects this strategy per invocation. --use-issue-number is no longer supported.
+filename: pr
 
 # Products configuration (optional)
 # If not specified, all products from products.yml are allowed (including those
@@ -243,20 +243,17 @@ bundle:
   #   
   #   For more information, see the [release notes](https://www.elastic.co/docs/release-notes/product#product-{version}).
   # changelog-init-bundle-seed
-  # PR/issue link allowlist: when set (including []), only links to these owner/repo pairs are kept
-  # in bundle output; others are rewritten to '# PRIVATE:' sentinels.
-  # There is no implicit allow: you must list every repo whose links should appear, including your
-  # own (bundle.repo as owner/repo). When omitted entirely, no link filtering is applied.
-  # Run `changelog init` in a GitHub clone to pre-fill owner, repo, and link_allow_repos, or set
-  # bundle.owner, bundle.repo, and link_allow_repos manually. Example — allow only this repo:
+  # link_allow_repos is no longer read by 'changelog bundle'. Remove it from this file.
+  # Links in published bundles are scrubbed by the changelog scrubber Lambda, which builds its
+  # allowlist from the public repositories in assembler.yml. The loader still rejects an entry
+  # that is not exactly 'owner/repo'. `changelog init` still seeds the key; it is unused.
   # link_allow_repos:
   #   - elastic/kibana
-  # To allow cross-repo links, add more owner/repo entries (for example elastic/elasticsearch).
-  # Optional: default GitHub repo name applied to all profiles that do not specify their own.
-  # Used by the {changelog} directive to generate correct PR/issue links when the product ID
-  # differs from the GitHub repository name. Can be overridden per profile.
+  # Deprecated: the repo and owner are derived from GITHUB_REPOSITORY or the git remote origin.
+  # Remove them. Setting bundle.repo to a different repository than the one the command runs in
+  # is a hard error. When set, repo is used by the {changelog} directive to generate PR/issue
+  # links when the product ID differs from the GitHub repository name.
   # repo: elasticsearch
-  # Optional: default GitHub owner applied to all profiles that do not specify their own.
   # owner: elastic
   # Optional: branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) is sourced from when
   # bundling entries from the CDN. Defaults to "main" when unset. Can be overridden per profile.
@@ -270,19 +267,22 @@ bundle:
   #   docs-builder changelog bundle elasticsearch-release 9.2.0
   #   docs-builder changelog remove elasticsearch-release 9.2.0
   # When used with 'changelog remove', only the 'products' field is applied.
-  # The 'output_products', 'repo', 'owner', and 'hide_features' fields are
+  # The 'product', 'output_products', 'repo', 'owner', and 'hide_features' fields are
   # bundle-specific and are ignored for removal.
   # Bundle file names are derived by convention as '{repo}-{product}-{version}.yaml' from the
-  # authoring repo and the profile's primary output product; setting an explicit 'output'
-  # pattern is an error. If no repo can be resolved, the name falls back to '{product}-{version}.yaml'.
+  # authoring repo and the profile's primary output product; an explicit 'output'
+  # pattern is deprecated and ignored (a warning at config load). If no repo can be resolved, the name falls back to '{product}-{version}.yaml'.
   profiles:
     # Example: Elasticsearch release profile (filter by changelog fields)
     # elasticsearch-release:
-    #   # Filter: which input changelogs to include ({version} and {lifecycle} are substituted at runtime)
-    #   products: "elasticsearch {version} {lifecycle}"
-    #   # The bundle's products metadata; also determines the conventional output
-    #   # file name ({repo}-{product}-{version}.yaml from the authoring repo and the first product).
-    #   output_products: "elasticsearch {version}"
+    #   # The product this profile bundles for (validated against products.yml). Sets the bundle's
+    #   # products metadata (product, version argument, inferred lifecycle), the conventional output
+    #   # file name ({repo}-{product}-{version}.yaml), and the output folder
+    #   # (bundle.output_directory/{product}/). Replaces the deprecated 'output_products'.
+    #   product: elasticsearch
+    #   # Optional filter: which input changelogs to include ({version} and {lifecycle} are
+    #   # substituted at runtime). When omitted, derived from 'product' as "<product> {version} {lifecycle}".
+    #   # products: "elasticsearch {version} {lifecycle}"
     #   # Optional: profile-specific description (overrides bundle.description)
     #   # description: |
     #   #   Elasticsearch {version} includes:
@@ -293,32 +293,33 @@ bundle:
     #   # Optional: control auto-population of release-date for this profile.
     #   # When true (default), auto-populate release dates. When false, equivalent to --no-release-date.
     #   # release_dates: true
-    # Example: GitHub release profile (fetches PR list directly from a GitHub release)
-    # Use when you want to bundle or remove changelogs based on a published GitHub release.
-    # elasticsearch-gh-release:
-    #   source: github_release       # Fetch PR list from GitHub release instead of filtering input changelogs
-    #   repo: elasticsearch          # GitHub repository (required if bundle.repo is not set)
-    #   owner: elastic               # GitHub owner (optional; defaults to bundle.owner or "elastic")
-    #   output_products: "elasticsearch {version} {lifecycle}"
+    # Bundling from a GitHub release: the profile setting 'source: github_release' is removed.
+    # It warns at config load, and 'changelog bundle' stops with an error at runtime. Remove it.
+    # Use 'changelog gh-release' instead; it creates the changelog files and the bundle in one step:
+    #   docs-builder changelog gh-release elastic/elasticsearch v9.2.0
 
     # Example: Serverless release profile (filter by promotion report, PR, or issue list)
     # serverless-release:
-    #   output_products: "cloud-serverless {version}"           # omit lifecycle
+    #   product: cloud-serverless
+    #   # Deprecated: 'output_products' still works but warns at config load. 'product' always
+    #   # derives the lifecycle from the version argument; 'output_products' can omit or hardcode it.
+    #   # output_products: "cloud-serverless {version}"           # omit lifecycle
     #   # output_products: "cloud-serverless {version} {lifecycle}"  # derive (ga for ISO dates)
     #   # output_products: "cloud-serverless {version} preview"      # hardcode for exceptional releases
-    #   # Optional: replace bundle.output_directory for this profile (same as --output as a directory).
-    #   # The conventional {repo}-{product}-{version}.yaml name is written in this folder.
+    #   # Deprecated: the output folder is derived as bundle.output_directory/{product}/. When set,
+    #   # the conventional {repo}-{product}-{version}.yaml name is written in this folder instead.
     #   # output_directory: docs/releases/cloud-serverless
-    #   # Optional: GitHub repository for link and file name generation (overrides bundle.repo if set)
-    #     repo: elasticsearch
-    #     owner: elastic
+    #   # Deprecated: repo and owner are derived from GITHUB_REPOSITORY or the git remote origin.
+    #   # repo: elasticsearch
+    #   # owner: elastic
     #   # Feature IDs to hide when bundling with this profile (accepts string or list)
     #   hide_features:
     #     - feature-flag-1
     #     - feature-flag-2
 
     # Example: Multi-product profile (Mode 3 rule context = first product alphabetically, e.g. kibana).
-    # For security-only rules, add a separate profile with output_products listing only security.
+    # 'product' takes one ID, so a multi-product bundle still uses the deprecated 'output_products'
+    # (it warns at config load). For security-only rules, add a separate profile with product: security.
     # Bundle names are derived as {repo}-{product}-{version}.yaml from the first output product.
     # kibana-security-release:
     #   output_products: "kibana {version}, security {version}"
