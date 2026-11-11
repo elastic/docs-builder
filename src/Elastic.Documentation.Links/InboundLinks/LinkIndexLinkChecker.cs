@@ -151,23 +151,20 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 				var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json";
 				if (crossLinks.LinkIndexEntries.TryGetValue(uri.Scheme, out var linkIndexEntry))
 					linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkIndexEntry.Path}";
-				_ = resolver.TryResolve(
-					s =>
-					{
-						if (s.Contains("is not a valid link in the"))
-						{
-							//
-							var error = $"'elastic/{repository}' links to unknown file: " + s;
-							error = error.Replace("is not a valid link in the", "in the");
-							collector.EmitError(linksJson, error);
-							return;
-						}
 
+				var resolution = resolver.Resolve(uri);
+				if (resolution.ResolvedUri() is null)
+				{
+					var s = resolution.ToDiagnosticMessage(uri);
+					if (s.Contains("is not a valid link in the"))
+					{
+						var error = $"'elastic/{repository}' links to unknown file: " + s;
+						error = error.Replace("is not a valid link in the", "in the");
+						collector.EmitError(linksJson, error);
+					}
+					else
 						collector.EmitError(repository, s);
-					},
-					uri,
-					out _
-				);
+				}
 			}
 		}
 
