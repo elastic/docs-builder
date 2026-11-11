@@ -41,9 +41,9 @@ const storageKey = 'api-column-widths'
 const keyStep = 24
 const contentMin = 360
 const columnGap = 32
-// Half the handle's 12px hit area. The sidebar's own scrollbar sits on its right edge, so its handle starts there instead of straddling it.
-// The stylesheet draws the line and the bar back onto the edge.
-const handleReach = 6
+// The sidebar's own scrollbar sits on its right edge, so its handle's 12px hit area reaches only 3px back over the sidebar. The
+// stylesheet draws the line and the bar on the edge itself, which keeps the whole bar inside the hit area.
+const handleReach = 3
 
 type Widths = Partial<Record<Side, number>>
 

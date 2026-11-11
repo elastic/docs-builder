@@ -54,7 +54,7 @@ describe('initApiColumnResize', () => {
         expect(handle('rail').getAttribute('aria-label')).toBe(
             'Resize examples'
         )
-        expect(handle('nav').style.left).toBe('306px')
+        expect(handle('nav').style.left).toBe('303px')
         expect(handle('rail').style.left).toBe('984px')
     })
 

@@ -4406,15 +4406,13 @@ html:has(.api-page-shell) {
 		outline: none;
 	}
 
-	/* The sidebar handle's box starts at the sidebar's edge so it stays off the scrollbar. Its line and bar are drawn back onto that edge. */
+	/* The sidebar handle's box starts 3px inside the sidebar, so most of it stays off the scrollbar. Its line and bar are drawn on the edge. */
 	.api-column-handle[data-api-column-handle='nav']::after {
-		transform: translateX(calc(-50% - 6px));
-		pointer-events: none;
+		transform: translateX(calc(-50% - 3px));
 	}
 
 	.api-column-handle[data-api-column-handle='nav']::before {
-		transform: translateX(-6px);
-		pointer-events: none;
+		transform: translateX(-3px);
 	}
 
 	/* The grab bar sits at the middle of the window, so it stays in reach however far the page is scrolled. */
