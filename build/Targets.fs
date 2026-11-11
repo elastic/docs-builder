@@ -272,4 +272,13 @@ let Run (argv: string[]) =
             printfn "Running at http://localhost:8080"
             sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
 
+    // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
+    argv
+    |> Array.tryFindIndex (fun a -> a = "--suite")
+    |> Option.bind (fun i -> Array.tryItem (i + 1) argv)
+    |> Option.iter (fun suite ->
+        if not (List.contains suite [ "all"; "unit"; "integration" ]) then
+            eprintfn "Unknown test suite '%s', expected all, unit or integration" suite
+            exit 2)
+
     app.RunAsync(argv).GetAwaiter().GetResult()
