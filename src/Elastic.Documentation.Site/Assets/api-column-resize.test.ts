@@ -3,17 +3,23 @@ import { clampWidth, initApiColumnResize } from './api-column-resize'
 const rect = (left: number, width: number) =>
     ({ left, right: left + width, width }) as DOMRect
 
+// The columns report the widths the script applied through its custom properties, as the real layout does. The rail's right edge
+// stays where it is, so growing it moves its left edge.
 function mountShell({ width = 1600, nav = 300, rail = 640 } = {}) {
     document.body.innerHTML = `<div class="api-page-shell layout--three">
         <aside class="layout__nav"></aside>
         <aside class="api-page-rail"></aside>
     </div>`
     const shell = document.querySelector<HTMLElement>('.api-page-shell')!
+    const applied = (name: string, fallback: number) =>
+        parseFloat(shell.style.getPropertyValue(name)) || fallback
     shell.getBoundingClientRect = () => rect(0, width)
     document.querySelector('.layout__nav')!.getBoundingClientRect = () =>
-        rect(0, nav)
-    document.querySelector('.api-page-rail')!.getBoundingClientRect = () =>
-        rect(1000, rail)
+        rect(0, applied('--layout-nav-width', nav))
+    document.querySelector('.api-page-rail')!.getBoundingClientRect = () => {
+        const current = applied('--layout-rail-width', rail)
+        return rect(1000 + rail - current, current)
+    }
     return shell
 }
 
@@ -80,7 +86,7 @@ describe('initApiColumnResize', () => {
 
     it('restores saved widths and a double click gives the column back to the stylesheet', () => {
         localStorage.setItem('api-column-widths', '{"nav":340,"rail":50000}')
-        const shell = mountShell()
+        const shell = mountShell({ width: 2000 })
         initApiColumnResize()
 
         expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('340px')
@@ -131,7 +137,7 @@ describe('initApiColumnResize', () => {
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe('')
     })
 
-    it('stops a key step at the width that keeps the reference at its minimum', () => {
+    it('stops a key step at the width that keeps the reference at its minimum, across both columns', () => {
         const shell = mountShell({ width: 1380 })
         initApiColumnResize()
 
@@ -145,7 +151,7 @@ describe('initApiColumnResize', () => {
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
             '656px'
         )
-        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('316px')
+        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('300px')
     })
 
     it('stops a drag at the width that keeps the reference at its minimum', () => {
