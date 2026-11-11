@@ -13,11 +13,14 @@ interface ColumnSpec {
 
 interface Variant {
     navSelector: string
+    // Where the stylesheet shows the handles. The saved widths apply only there, so a narrow window never keeps a width it cannot undo.
+    wide: string
     columns: ColumnSpec[]
 }
 
 const designSystem: Variant = {
     navSelector: '.layout__nav',
+    wide: '(min-width: 1101px)',
     columns: [
         { side: 'nav', cssVar: '--layout-nav-width', min: 240, max: 560 },
         { side: 'rail', cssVar: '--layout-rail-width', min: 280, max: 900 },
@@ -26,6 +29,7 @@ const designSystem: Variant = {
 
 const legacy: Variant = {
     navSelector: ':scope > div > aside',
+    wide: '(min-width: 1280px)',
     columns: [
         { side: 'nav', cssVar: '--max-sidebar-width', min: 240, max: 560 },
         { side: 'rail', cssVar: '--max-examples-width', min: 280, max: 900 },
@@ -66,7 +70,7 @@ export function clampWidth(width: number, min: number, max: number): number {
 // Boosted navigation swaps the whole shell, so the window listener and the observer of the shell it replaced must go.
 let active: {
     shell: HTMLElement
-    place: () => void
+    sync: () => void
     dispose: () => void
 } | null = null
 
@@ -74,7 +78,7 @@ export function initApiColumnResize() {
     const shell = document.querySelector<HTMLElement>('.api-page-shell')
     if (!shell) return
     if (active?.shell === shell) {
-        active.place()
+        active.sync()
         return
     }
     active?.dispose()
@@ -93,14 +97,11 @@ export function initApiColumnResize() {
         shell.style.setProperty(spec.cssVar, `${width}px`)
         widths[spec.side] = width
     }
-    for (const spec of variant.columns) {
-        const saved = widths[spec.side]
-        if (typeof saved === 'number' && Number.isFinite(saved))
-            apply(spec, clampWidth(saved, spec.min, spec.max))
-    }
+    const isSaved = (side: Side) =>
+        typeof widths[side] === 'number' && Number.isFinite(widths[side])
 
-    // How far a column can still grow before the reference would drop under contentMin.
-    const room = (): number => {
+    // How far the columns can still grow before the reference would drop under contentMin. Negative when they already crowd it.
+    const slack = (): number => {
         const nav = columnEl('nav')?.getBoundingClientRect()
         const rail = columnEl('rail')?.getBoundingClientRect()
         if (!nav || !rail) return 0
@@ -108,7 +109,31 @@ export function initApiColumnResize() {
             shell.getBoundingClientRect().right -
             (parseFloat(getComputedStyle(shell).paddingRight) || 0)
         const used = nav.width + rail.width + 2 * columnGap + contentMin
-        return Math.max(0, inner - nav.left - used)
+        return inner - nav.left - used
+    }
+    const room = () => Math.max(0, slack())
+
+    // Saved widths come from whatever window the reader had then. Show them only where the handles are, and shrink them, rail first,
+    // until the reference has its minimum again. The saved values stay as they are for the next wide window.
+    const reconcile = () => {
+        const wide = window.matchMedia?.(variant.wide).matches ?? true
+        for (const spec of variant.columns) {
+            if (wide && isSaved(spec.side))
+                shell.style.setProperty(
+                    spec.cssVar,
+                    `${clampWidth(widths[spec.side]!, spec.min, spec.max)}px`
+                )
+            else shell.style.removeProperty(spec.cssVar)
+        }
+        let over = wide ? -slack() : 0
+        for (const spec of [...variant.columns].reverse()) {
+            const width = columnEl(spec.side)?.getBoundingClientRect().width
+            if (over <= 0 || !width || !isSaved(spec.side)) continue
+            const cut = Math.min(over, Math.max(0, width - spec.min))
+            if (cut <= 0) continue
+            shell.style.setProperty(spec.cssVar, `${Math.round(width - cut)}px`)
+            over -= cut
+        }
     }
 
     const handles = new Map<Side, HTMLElement>()
@@ -125,6 +150,11 @@ export function initApiColumnResize() {
             handle.style.left = `${Math.round(edge - origin)}px`
             handle.setAttribute('aria-valuenow', String(Math.round(rect.width)))
         }
+    }
+
+    const sync = () => {
+        reconcile()
+        place()
     }
 
     const resize = (
@@ -203,16 +233,16 @@ export function initApiColumnResize() {
         })
     }
 
-    const observer = new ResizeObserver(place)
+    const observer = new ResizeObserver(sync)
     observer.observe(shell)
-    window.addEventListener('resize', place)
+    window.addEventListener('resize', sync)
     active = {
         shell,
-        place,
+        sync,
         dispose: () => {
             observer.disconnect()
-            window.removeEventListener('resize', place)
+            window.removeEventListener('resize', sync)
         },
     }
-    place()
+    sync()
 }

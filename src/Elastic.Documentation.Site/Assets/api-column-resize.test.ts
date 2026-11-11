@@ -3,13 +3,13 @@ import { clampWidth, initApiColumnResize } from './api-column-resize'
 const rect = (left: number, width: number) =>
     ({ left, right: left + width, width }) as DOMRect
 
-function mountShell() {
+function mountShell(width = 1600) {
     document.body.innerHTML = `<div class="api-page-shell layout--three">
         <aside class="layout__nav"></aside>
         <aside class="api-page-rail"></aside>
     </div>`
     const shell = document.querySelector<HTMLElement>('.api-page-shell')!
-    shell.getBoundingClientRect = () => rect(0, 1600)
+    shell.getBoundingClientRect = () => rect(0, width)
     document.querySelector('.layout__nav')!.getBoundingClientRect = () =>
         rect(0, 300)
     document.querySelector('.api-page-rail')!.getBoundingClientRect = () =>
@@ -32,6 +32,7 @@ let disconnects = 0
 
 describe('initApiColumnResize', () => {
     beforeEach(() => {
+        vi.unstubAllGlobals()
         disconnects = 0
         localStorage.clear()
         vi.stubGlobal(
@@ -104,5 +105,29 @@ describe('initApiColumnResize', () => {
         expect(disconnects).toBe(1)
         expect(remove).toHaveBeenCalledWith('resize', expect.any(Function))
         remove.mockRestore()
+    })
+
+    it('shrinks saved widths, rail first, when the window is too narrow for them', () => {
+        localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
+        const shell = mountShell(1000)
+        initApiColumnResize()
+
+        expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
+            '280px'
+        )
+        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('296px')
+        expect(localStorage.getItem('api-column-widths')).toBe(
+            '{"nav":560,"rail":900}'
+        )
+    })
+
+    it('leaves the stylesheet widths alone below the breakpoint that shows the handles', () => {
+        vi.stubGlobal('matchMedia', () => ({ matches: false }))
+        localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
+        const shell = mountShell()
+        initApiColumnResize()
+
+        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('')
+        expect(shell.style.getPropertyValue('--layout-rail-width')).toBe('')
     })
 })
