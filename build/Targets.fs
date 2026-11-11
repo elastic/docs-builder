@@ -125,14 +125,14 @@ let private publishContainers _ =
     let createImage projectPath containerName =
         let ci = Environment.environVarOrNone "GITHUB_ACTIONS"
         let pr = prNumber()
-        let baseImageTag = "11.0-noble-chiseled"
+        let baseImageTag = "11.0-resolute-chiseled"
         let labels = imageTags()
         let args =
             ["publish"; projectPath]
             @ [
                 "/t:PublishContainer";
                 "-p"; "DebugType=none";
-                "-p"; $"ContainerBaseImage=mcr.microsoft.com/dotnet/nightly/runtime-deps:%s{baseImageTag}";
+                "-p"; $"ContainerBaseImage=mcr.microsoft.com/dotnet/runtime-deps:%s{baseImageTag}";
                 "-p"; $"ContainerImageTags=\"%s{labels};%s{Software.Version.Normalize()}\""
                 "-p"; $"ContainerRepository=elastic/%s{containerName}"
             ]
