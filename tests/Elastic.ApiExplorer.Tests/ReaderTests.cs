@@ -40,7 +40,7 @@ public class ReaderTests
 	[Arguments("yaml", "swagger: \"2.0\"\ninfo:\n  title: Test\n  version: \"1\"\nhost: example.com\nbasePath: /\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(specification));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(specification));
 
 		var document = await OpenApiReader.Instance.ReadAsync(stream, $"openapi.{extension}");
 
@@ -75,7 +75,7 @@ public class ReaderTests
 		// Genuinely malformed hosts must remain hard errors. Only a host value that is itself
 		// a complete {{...}} template placeholder (starts with {{ and ends with }}) is downgraded.
 		var spec = $$$"""{"swagger":"2.0","info":{"title":"T","version":"1"},"host":"{{{host}}}","basePath":"/","paths":{}}""";
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(spec));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(spec));
 		var collector = new DiagnosticsCollector([]);
 
 		var document = await OpenApiReader.Instance.ReadAsync(stream, "spec.json", collector);
@@ -92,7 +92,7 @@ public class ReaderTests
 		// causing Microsoft.OpenApi's version detector to see "2" instead of "2.0" and fail to parse
 		// the document as Swagger 2.0.
 		const string yaml = "swagger: \"2.0\"\ninfo:\n  title: QuotedVersion\n  version: \"1\"\nhost: h\nbasePath: /\npaths: {}";
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(yaml));
 
 		var doc = await OpenApiReader.Instance.ReadAsync(stream, "spec.yaml");
 
@@ -108,7 +108,7 @@ public class ReaderTests
 	public async Task ReadAsync_Swagger20HostWithoutSchemes_DefaultsToHttps(string fileName, string content)
 	{
 		// Microsoft.OpenApi assigns UriBuilder.Host = "//host" when schemes is missing, which .NET 11 rejects.
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(content));
 		var collector = new DiagnosticsCollector([]);
 
 		var doc = await OpenApiReader.Instance.ReadAsync(stream, fileName, collector);
@@ -125,7 +125,7 @@ public class ReaderTests
 		// quoted YAML representation, otherwise every path is rejected as "not a valid property".
 		const string yaml =
 			"openapi: 3.0.3\ninfo:\n  title: Quoted\n  version: '1'\npaths:\n  '/items/{item_id}':\n    get:\n      responses:\n        '200':\n          description: ok\n";
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(yaml));
 		var collector = new DiagnosticsCollector([]);
 
 		var document = await OpenApiReader.Instance.ReadAsync(stream, "spec.yaml", collector);

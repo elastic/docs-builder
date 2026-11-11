@@ -102,7 +102,7 @@ public class ScrubberAllowlistIdentityTests
 	public void ComputeSha256_KnownContent_MatchesSha256Sum()
 	{
 		// printf 'hello\n' | sha256sum
-		using var stream = new MemoryStream(Encoding.UTF8.GetBytes("hello\n"));
+		using var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes("hello\n"));
 
 		var hash = ScrubberAllowlistIdentity.ComputeSha256(stream);
 

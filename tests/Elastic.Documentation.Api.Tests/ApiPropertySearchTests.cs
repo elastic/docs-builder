@@ -193,7 +193,7 @@ public class ApiPropertySearchTests
 
 	private static Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument> ParseResponse(string json)
 	{
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		using var stream = new ReadOnlyMemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
 		using var accessor = new ElasticsearchClientAccessor(
 			new DocumentationEndpoints
 			{
