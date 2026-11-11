@@ -63,19 +63,26 @@ run = '''
 set -eu
 build=$(dotnet build src/tooling/docs-builder -nologo -v q -clp:NoSummary 2>&1) || { echo "$build"; exit 1; }
 dll="$PWD/.artifacts/bin/docs-builder/debug/docs-builder.dll"
-port=$(( (RANDOM % 20000) + 20000 ))
+# A port nothing listens on, so the readiness check cannot be answered by another server.
+while :; do
+  port=$(( (RANDOM % 20000) + 20000 ))
+  nc -z localhost "$port" 2>/dev/null || break
+done
 # A flag exported in the shell must not change what the journeys see.
 for name in $(env | sed -n 's/^\(FEATURE_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$name"; done
 (cd docs && exec dotnet "$dll" serve --port "$port" --no-hud >/dev/null 2>&1) &
 server=$!
 trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
 for _ in $(seq 1 240); do
-  curl -fs -o /dev/null "http://localhost:$port/" && break
   kill -0 "$server" 2>/dev/null || { echo "docs-builder exited before it served http://localhost:$port/" >&2; exit 1; }
+  curl -fs -o /dev/null "http://localhost:$port/" && break
   sleep 0.5
 done
-curl -fs -o /dev/null "http://localhost:$port/" || { echo "http://localhost:$port/ did not answer within 120 s" >&2; exit 1; }
-dotnet run --project src/tooling/docs-journeys -- run --url "http://localhost:$port" --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args:-}
+kill -0 "$server" 2>/dev/null && curl -fs -o /dev/null "http://localhost:$port/" || { echo "http://localhost:$port/ did not answer within 120 s" >&2; exit 1; }
+# mise shell-quotes the variadic args; eval restores the word boundaries.
+extra=()
+eval "extra=(${usage_args:-})"
+dotnet run --project src/tooling/docs-journeys -- run --url "http://localhost:$port" --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${extra[@]+"${extra[@]}"}
 '''
 
 [tasks."journeys:live"]
