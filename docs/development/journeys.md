@@ -34,7 +34,7 @@ mise run journeys:test -- --treenode-filter "/*/*/NavigationJourneys/*"
 mise run journeys:test -- --treenode-filter "/*/*/*/Run(sidebar)"
 ```
 
-The tasks `journeys:assembler` and `journeys:codex` serve a built assembler (`.artifacts/assembly`) or Codex (`.artifacts/codex/docs`) site, but every journey in this project checks the isolated site, so on those targets they all skip with a reason and a green run is not coverage of either site. To check a deployed assembler site, run the live journeys with `docs-journeys` below.
+The tasks `journeys:test:assembler` and `journeys:test:codex` serve a built assembler (`.artifacts/assembly`) or Codex (`.artifacts/codex/docs`) site, but every journey in this project checks the isolated site, so on those targets they all skip with a reason and a green run is not coverage of either site. To check a deployed assembler site, run the live journeys with `docs-journeys` below.
 
 The test host removes every `FEATURE_*` variable from the environment of the site it starts, so a flag exported in your shell does not change what a journey sees.
 
