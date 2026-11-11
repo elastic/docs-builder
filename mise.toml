@@ -93,6 +93,41 @@ arg "[args]..." var=#true help="Passed to docs-journeys run"
 '''
 run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args:-}"
 
+[tasks."journeys:compare"]
+description = "Run the live journeys against two deployed sites and compare their transcripts: what differs between prod and edge is what the next release changes. Read-only. Differences nobody expected fail; expected ones are rules in {journey}.differences. Extra args pass to snap journey compare, e.g. mise run journeys:compare edge demo --tag smoke --image-diff fail"
+usage = '''
+arg "[baseline]" default="prod" help="prod, edge, demo or a URL: the site that stays as it is"
+arg "[target]" default="edge" help="prod, edge, demo or a URL: the site that is compared with it"
+arg "[args]..." var=#true help="Passed to snap journey compare"
+'''
+run = '''
+#!/usr/bin/env bash
+set -eu
+site() {
+  case "$1" in
+    prod) echo "https://www.elastic.co/docs/" ;;
+    edge) echo "https://docs-edge.elastic.dev/docs/" ;;
+    demo) echo "https://docs-demo.elastic.dev/docs/" ;;
+    http://*|https://*) echo "$1" ;;
+    *) echo "'$1' is not prod, edge, demo or an http(s) URL" >&2; exit 2 ;;
+  esac
+}
+baseline=$(site "$usage_baseline")
+target=$(site "$usage_target")
+# mise shell-quotes the variadic args; eval restores the word boundaries.
+extra=()
+eval "extra=(${usage_args:-})"
+# Same identity as docs-journeys run: a monitor, so the site's telemetry sends nothing the read-only run would block.
+ua="Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari/537.36 Elastic/Synthetics docs-journeys"
+# Only the assembler journeys describe a deployed site; the isolated-site ones skip with their reason.
+dotnet snap journey compare 'tests/Elastic.Documentation.Journeys.Tests/journeys/**/*.journey' \
+  --baseline "$baseline" --target "$target" --build-type assembler --read-only --viewport 1280x800 \
+  --allow '*.elastic.co' --allow '*.elastic.dev' --allow '*.cloudfront.net' --allow '*.googletagmanager.com' \
+  --allow elastic-global-nav-assets.s3.us-west-2.amazonaws.com \
+  --user-agent "$ua" --header "X-Docs-Synthetic-Monitor: true" \
+  ${extra[@]+"${extra[@]}"}
+'''
+
 [tasks."snap:status"]
 description = "List snapshots a test run left to review (received files). Exits 1 when there are any"
 usage = '''

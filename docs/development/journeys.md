@@ -13,6 +13,7 @@ Journeys are short scripts of browser commands that open a page, interact with i
 | `mise run journeys:test` | TUnit tests (`Nullean.Snapshots`) | `docs/` served by this task, as an isolated site | yes | change journeys and the site together, and review transcript changes with `dotnet snap review` |
 | `mise run journeys:local` | `docs-journeys` | `docs/` served by this task, as an isolated site | no, only the `expect` lines | iterate on a journey quickly, with the same output as `journeys:live`; takes the same options (`--only`, `--area`, `--screenshot-on-failure`) |
 | `mise run journeys:live [site]` | `docs-journeys` | a deployed site (`prod`, `edge`, `demo`), read-only | no, only the `expect` lines | check a deployment, or a pull request's journeys against prod |
+| `mise run journeys:compare [baseline] [target]` | `snap journey compare` | two deployed sites, `prod` and `edge` by default, read-only | yes, one site against the other | see what a release changes: what differs between prod and edge |
 | `dotnet snap journey run <glob> --base-url <url>` | `snap` | any site you started | yes | run some journeys outside the test project, with the same output as `docs-journeys` |
 | `cdp run <file> --base-url <url>` | `Nullean.Cdp.Cli` | any site | no | debug one journey file; its output is fenced for agents |
 
@@ -159,6 +160,18 @@ The command exits with 1 when any journey fails, when one cannot be parsed (the 
 Every journey under `tests/Elastic.Documentation.Journeys.Tests/journeys` is compiled into the binary, so one file carries the runner and the journeys that match its build, and `list` and `run` need no folder. The tool decides which of them apply to the site from their `# @requires` lines: the isolated-site journeys (`#isolated-header`, the `/syntax/*` pages) say `build-type:isolated` and a deployed assembler site skips them, and the live journeys (`journeys/live`, one of them a `@monitor`) say `build-type:assembler`. A run where every journey is skipped still exits with 1, so it cannot pass without checking anything.
 
 A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.
+
+### Compare two deployed sites
+
+```bash
+mise run journeys:compare                      # prod is the baseline, edge the target
+mise run journeys:compare edge demo --tag smoke
+mise run journeys:compare prod edge --image-diff fail
+```
+
+`journeys:compare` runs the journeys that apply to an assembler site (the others skip with their reason) against the baseline, then against the target, and compares the two transcripts. It does not compare with a verified file: edge against prod tells you what the next release changes. A difference that nobody expected, or a failed step, exits with 1. A difference you expect goes in a `{journey}.differences` rule file next to the journey, and `--record <file>` appends a rule for every unexpected difference instead of failing. Extra arguments go to `snap journey compare`.
+
+The run is read-only and identifies itself as a monitor, like `docs-journeys`, and it may reach the same hosts. A `screenshot` step in a journey is compared as an image when the two sites differ: `--image-diff report` (the default) lists it with a diff image, `fail` fails the run, and `off` skips it. No journey has a `screenshot` step yet, so today only the transcripts are compared.
 
 ## Live journeys
 
