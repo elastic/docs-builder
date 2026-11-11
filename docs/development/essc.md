@@ -215,7 +215,7 @@ widgets to plain log lines:
 `essc` ships as a **distroless container** only, published to
 `ghcr.io/elastic/website-search-essc` using the .NET SDK's native container
 support as part of the docs-builder release pipeline (`./build.sh publishcontainers`).
-Base image: `mcr.microsoft.com/dotnet/nightly/runtime-deps:10.0-noble-chiseled`.
+Base image: `mcr.microsoft.com/dotnet/nightly/runtime-deps:11.0-noble-chiseled`.
 Tagged `edge;latest;<version>` on release, `edge` on every push to main.
 
 AOT compilation is validated on every CI run by building the container image and

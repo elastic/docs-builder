@@ -17,7 +17,6 @@ _ = builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Services.AddSingleton<RunCommand>();
 builder.Services.AddSingleton<ListCommand>();
 builder.Services.AddSingleton<ExportCommands>();
-builder.Services.AddSingleton<PushCommand>();
 
 builder.Services.AddArgh(args, argh =>
 {
@@ -25,7 +24,6 @@ builder.Services.AddArgh(args, argh =>
 	_ = argh.UseMiddleware<UserInputErrors>();
 	_ = argh.Map<RunCommand>();
 	_ = argh.Map<ListCommand>();
-	_ = argh.Map<PushCommand>();
 	_ = argh.MapNamespace<ExportCommands>("export");
 });
 

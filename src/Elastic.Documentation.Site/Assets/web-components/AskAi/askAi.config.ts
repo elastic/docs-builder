@@ -8,8 +8,6 @@ interface AskAiConfig {
     assistantName: string
     assistantDescription: string
     inputPlaceholder: string
-    defaultAiProvider: 'AgentBuilder' | 'LlmGateway'
-    forceAiProvider: boolean
     suggestions: AskAiSuggestion[]
 }
 
@@ -18,8 +16,6 @@ const codexConfig: AskAiConfig = {
     assistantDescription:
         "I'm here to help you navigate Elastic's internal documentation. Ask me anything about our internal processes, tools, and standards. How can I help?",
     inputPlaceholder: 'Ask me anything...',
-    defaultAiProvider: 'AgentBuilder',
-    forceAiProvider: true,
     suggestions: [
         { question: 'How do I get started with Elastic Internal Docs?' },
         {
@@ -50,8 +46,6 @@ const defaultConfig: AskAiConfig = {
     assistantDescription:
         "I'm here to help you find answers about Elastic, powered entirely by our technical documentation. How can I help?",
     inputPlaceholder: 'Ask the Elastic Docs AI Assistant',
-    defaultAiProvider: 'LlmGateway',
-    forceAiProvider: false,
     suggestions: [
         { question: 'How do I set up a data stream in Elasticsearch?' },
         { question: 'What are the best practices for indexing performance?' },

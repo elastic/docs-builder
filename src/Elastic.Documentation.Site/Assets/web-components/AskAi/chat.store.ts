@@ -1,10 +1,9 @@
 import { logError } from '../../telemetry/logging'
-import { startAskAiStream, AiProvider } from '../shared/askAiStreamClient'
+import { startAskAiStream } from '../shared/askAiStreamClient'
 import { cooldownStore } from '../shared/cooldown.store'
 import { ApiError, isApiError, isRateLimitError } from '../shared/errorHandling'
 import { AskAiEvent } from './AskAiEvent'
 import { MessageThrottler } from './MessageThrottler'
-import { askAiConfig } from './askAi.config'
 import {
     get as idbGet,
     set as idbSet,
@@ -76,7 +75,6 @@ interface PersistedConversation {
         chatMessages: ChatMessage[]
         totalMessageCount: number
         messageFeedback: Record<string, Reaction>
-        aiProvider: AiProvider
     }
     version: number
 }
@@ -86,15 +84,13 @@ async function saveConversationData(
     conversationId: ConversationId,
     messages: ChatMessage[],
     totalMessageCount: number,
-    messageFeedback: Record<string, Reaction>,
-    aiProvider: AiProvider
+    messageFeedback: Record<string, Reaction>
 ) {
     const data: PersistedConversation = {
         state: {
             chatMessages: messages,
             totalMessageCount,
             messageFeedback,
-            aiProvider,
         },
         version: 1,
     }
@@ -106,7 +102,6 @@ async function loadConversationData(conversationId: ConversationId): Promise<{
     chatMessages: ChatMessage[]
     totalMessageCount: number
     messageFeedback: Record<string, Reaction>
-    aiProvider: AiProvider
 } | null> {
     try {
         const stored = await get<PersistedConversation>(
@@ -126,10 +121,6 @@ async function loadConversationData(conversationId: ConversationId): Promise<{
                 totalMessageCount:
                     stored.state.totalMessageCount ?? messages.length,
                 messageFeedback: stored.state.messageFeedback ?? {},
-                aiProvider: askAiConfig.forceAiProvider
-                    ? askAiConfig.defaultAiProvider
-                    : (stored.state.aiProvider ??
-                      askAiConfig.defaultAiProvider),
             }
         }
     } catch {
@@ -143,7 +134,6 @@ async function deleteConversationData(conversationId: ConversationId) {
     await del(getConversationKey(conversationId))
 }
 
-export type { AiProvider }
 export type ConversationId = string
 export type Reaction = 'thumbsUp' | 'thumbsDown'
 
@@ -196,7 +186,6 @@ interface ChatState {
     chatMessages: ChatMessage[]
     totalMessageCount: number // Tracks all messages ever sent (for "X earlier messages not shown")
     // Other state
-    aiProvider: AiProvider
     messageFeedback: Record<string, Reaction> // messageId -> reaction
     scrollPosition: number
     inputValue: string // Draft input text (persisted so user doesn't lose it)
@@ -212,7 +201,6 @@ interface ChatState {
         ) => void
         addReasoningToMessage: (id: string, event: AskAiEvent) => void
         setConversationId: (conversationId: ConversationId) => void
-        setAiProvider: (provider: AiProvider) => void
         clearChat: () => void
         clearNon429Errors: () => void
         cancelStreaming: () => void
@@ -239,7 +227,6 @@ export const chatStore = createStore<ChatState>()(
             chatMessages: [],
             totalMessageCount: 0,
             // Other state
-            aiProvider: askAiConfig.defaultAiProvider,
             messageFeedback: {},
             hasHydrated: false, // Will be set to true after IndexedDB hydration
             scrollPosition: 0,
@@ -281,8 +268,7 @@ export const chatStore = createStore<ChatState>()(
                     startStream(
                         aiMessageId,
                         question,
-                        state.activeConversationId,
-                        state.aiProvider
+                        state.activeConversationId
                     )
                 },
 
@@ -372,10 +358,6 @@ export const chatStore = createStore<ChatState>()(
                             conversations: updatedConversations,
                         })
                     }
-                },
-
-                setAiProvider: (provider) => {
-                    set({ aiProvider: provider })
                 },
 
                 clearChat: () => {
@@ -485,8 +467,7 @@ export const chatStore = createStore<ChatState>()(
                             state.activeConversationId,
                             state.chatMessages,
                             state.totalMessageCount,
-                            state.messageFeedback,
-                            state.aiProvider
+                            state.messageFeedback
                         )
                     }
 
@@ -498,7 +479,6 @@ export const chatStore = createStore<ChatState>()(
                         chatMessages: loaded?.chatMessages ?? [],
                         totalMessageCount: loaded?.totalMessageCount ?? 0,
                         messageFeedback: loaded?.messageFeedback ?? {},
-                        aiProvider: loaded?.aiProvider ?? state.aiProvider,
                         scrollPosition: 0,
                         inputValue: '',
                     })
@@ -516,8 +496,7 @@ export const chatStore = createStore<ChatState>()(
                             state.activeConversationId,
                             state.chatMessages,
                             state.totalMessageCount,
-                            state.messageFeedback,
-                            state.aiProvider
+                            state.messageFeedback
                         )
                     }
 
@@ -562,8 +541,6 @@ export const chatStore = createStore<ChatState>()(
                                 totalMessageCount:
                                     loaded?.totalMessageCount ?? 0,
                                 messageFeedback: loaded?.messageFeedback ?? {},
-                                aiProvider:
-                                    loaded?.aiProvider ?? state.aiProvider,
                                 scrollPosition: 0,
                             })
                         } else {
@@ -619,7 +596,6 @@ export const chatStore = createStore<ChatState>()(
                 ({
                     conversations: state.conversations,
                     activeConversationId: state.activeConversationId,
-                    aiProvider: state.aiProvider,
                     scrollPosition: state.scrollPosition,
                     inputValue: state.inputValue,
                 }) as Partial<ChatState>,
@@ -640,7 +616,6 @@ if (typeof window !== 'undefined') {
 
             let conversations: Record<ConversationId, ConversationMeta> = {}
             let activeConversationId: ConversationId | null = null
-            let aiProvider: AiProvider = askAiConfig.defaultAiProvider
             let scrollPosition = 0
             let inputValue = ''
 
@@ -654,11 +629,6 @@ if (typeof window !== 'undefined') {
                     persistedState.activeConversationId ?? null
                 scrollPosition = persistedState.scrollPosition ?? 0
                 inputValue = persistedState.inputValue ?? ''
-                // For Codex always use AgentBuilder; ignore persisted value from Assembler
-                aiProvider = askAiConfig.forceAiProvider
-                    ? askAiConfig.defaultAiProvider
-                    : (persistedState.aiProvider ??
-                      askAiConfig.defaultAiProvider)
             }
 
             // Phase 2: Load active conversation's data (if any)
@@ -672,8 +642,6 @@ if (typeof window !== 'undefined') {
                     chatMessages = loaded.chatMessages
                     totalMessageCount = loaded.totalMessageCount
                     messageFeedback = loaded.messageFeedback
-                    // loadConversationData already returns AgentBuilder for Codex
-                    aiProvider = loaded.aiProvider
                 }
             }
 
@@ -683,7 +651,6 @@ if (typeof window !== 'undefined') {
                 activeConversationId,
                 chatMessages,
                 totalMessageCount,
-                aiProvider,
                 messageFeedback,
                 scrollPosition,
                 inputValue,
@@ -723,8 +690,7 @@ if (typeof window !== 'undefined') {
                 state.activeConversationId,
                 messages,
                 state.totalMessageCount,
-                state.messageFeedback,
-                state.aiProvider
+                state.messageFeedback
             )
         }
     })
@@ -736,8 +702,7 @@ if (typeof window !== 'undefined') {
 async function startStream(
     messageId: string,
     question: string,
-    conversationId: ConversationId | null,
-    aiProvider: AiProvider
+    conversationId: ConversationId | null
 ): Promise<void> {
     if (activeStreams.has(messageId)) return
 
@@ -755,7 +720,6 @@ async function startStream(
         await startAskAiStream({
             message: question,
             conversationId,
-            aiProvider,
             signal: controller.signal,
             callbacks: {
                 onEvent: (event) => throttler.push(event),
@@ -821,8 +785,7 @@ function handleStreamEvent(messageId: string, event: AskAiEvent): void {
                 state.activeConversationId,
                 state.chatMessages,
                 state.totalMessageCount,
-                state.messageFeedback,
-                state.aiProvider
+                state.messageFeedback
             )
         }
     }
@@ -861,8 +824,6 @@ export const useChatMessages = () =>
     useStore(chatStore, (state) => state.chatMessages)
 export const useConversationId = () =>
     useStore(chatStore, (state) => state.activeConversationId)
-export const useAiProvider = () =>
-    useStore(chatStore, (state) => state.aiProvider)
 export const useChatScrollPosition = () =>
     useStore(chatStore, (state) => state.scrollPosition)
 export const useInputValue = () =>

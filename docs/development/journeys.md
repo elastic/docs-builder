@@ -192,33 +192,61 @@ cdp run tests/Elastic.Documentation.Journeys.Tests/journeys/navigation/live/main
 
 ## Export the monitors to Elastic Synthetics
 
-A journey marked `# @monitor` can also run as an Elastic Synthetics monitor. Two commands turn the journeys into monitors and send them to Kibana:
+A journey marked `# @monitor` can also run as an Elastic Synthetics monitor. `docs-journeys export synthetics` writes the project for them. It runs no Node, npm or npx: validating the project and pushing it to Kibana is the caller's job, with npm.
 
 ```bash
 docs-journeys export synthetics --url https://docs-demo.elastic.dev --out synthetics
-docs-journeys push --out synthetics --env demo
 ```
 
-`export synthetics` reads the site the way `run` does (its `docs:*` tags, `--env`, `--build-type`, `--feature`), so a monitor is written only for a journey that applies to that site. It then runs `@nullean/journeys` through `npx`, which writes one file per monitor into `<out>/journeys`. It also writes the project config (`synthetics.config.ts`) and a `package.json`, and installs the two packages the generated files import, because `push` bundles them.
+`export synthetics` reads the site the way `run` does (its `docs:*` tags, `--env`, `--build-type`, `--feature`), so a monitor is written only for a journey that applies to that site. It writes:
+
+| File | What it is |
+|---|---|
+| `journeys/**/<name>.journey.ts` | One file per monitor journey, importing `@nullean/journeys/synthetics` and embedding the journey text. An `.http` monitor is `<name>.http.journey.ts`. |
+| `synthetics.config.ts` | The project config: the project id, Kibana URL and space, and the defaults every monitor gets. |
+| `package.json` and `package-lock.json` | The two packages the files import, pinned (`@nullean/journeys` and `@elastic/synthetics`), and the lockfile for them that ships inside the binary. |
+| `manifest.json` | The monitors that must register, for the check below. |
+
+The monitor files are byte for byte what `npx @nullean/journeys export-synthetics` of the npm package writes for the same journeys, and a test checks that. A re-export removes only files that say they were generated and are no longer produced.
 
 | Option | Meaning |
 |---|---|
-| `--url`, `--out` | The site and where the monitors go. Both are required. `--journeys` names a folder instead of the embedded journeys. |
+| `--url`, `--out` | The site and where the project goes. Both are required. `--journeys` names a folder instead of the embedded journeys. |
 | `--env` | The environment's name. Defaults to the one the URL's host belongs to. The export fails when it is unknown, because the name picks the project. |
 | `--build-type`, `--feature`, `--probe` | The same as for `run`. |
 | `--paging` | Turn `# @alert pagerduty` into alert configuration. Only `--env prod` accepts it: edge, demo and staging monitors never page. |
 | `--project` | The Synthetics project id. Default: `elastic-co-docs-<env>`. |
 | `--kibana-url`, `--space` | Where the project lives. The defaults are the docs observability cluster and the `default` space. |
 | `--allow-empty` | Do not fail when no journey is exported. |
-| `--dry-run` | Print the context, the project config and the commands, and write and run nothing. |
+| `--dry-run` | Print the context, the project config, the files that would be written and the manifest, and write nothing. |
 
-An export that produces no monitor fails, and so does a `push` of an output folder that holds none: `push` replaces the project's whole monitor set, so pushing nothing deletes every monitor in it.
+An export that produces no monitor fails and writes nothing: pushing an empty project would delete every monitor in it.
 
-`push` runs `@elastic/synthetics push` from the output folder. It reads the API key from the `SYNTHETICS_API_KEY` environment variable and nowhere else, so the key is never an argument and never printed, and it stops before running anything when the variable is missing. `--dry-run` prints the command and whether the key is set, and needs no key.
+### Validate and push with npm
 
-Each environment is its own project, which is what keeps their monitors apart. The command does not pass `--tags` to `push`: for `push` it is a filter that selects monitors by their own tags, so `--tags env:demo` would push nothing for monitors that do not carry that tag.
+The caller installs the packages, checks that the monitors register as expected, and pushes. This is what a workflow runs from the output folder:
 
-The versions of `@nullean/journeys` and `@elastic/synthetics` are pinned in `SyntheticsPlan`, so a push never changes with a release of either tool. Node.js and access to the npm registry are required.
+```bash
+npm ci --ignore-scripts
+npx elastic-synthetics --dry-run --reporter json journeys   # lists the journeys that register
+npx @elastic/synthetics push --yes                          # with SYNTHETICS_API_KEY in the environment
+```
+
+- `npm ci` installs exactly the lockfile, and `--ignore-scripts` keeps install scripts of the dependencies from running in a job that goes on to hold the API key.
+- `--dry-run` loads the journey files and reports each registration as a `journey/register` event whose `journey.name` is the journey's name. Compare those names with `monitors[].name` in `manifest.json`, and stop when they differ. `push` has no dry run of its own.
+- `push` reads the API key from `SYNTHETICS_API_KEY`, never from an argument. Each environment is its own project, which keeps their monitors apart, and `push` replaces the project's whole monitor set, so a monitor whose journey was deleted is removed. Do not pass `--tags`: for `push` it filters the monitors by their own tags.
+
+`manifest.json` has this shape, one entry per monitor, in the order the files were exported:
+
+```json
+{
+  "project": "elastic-co-docs-demo",
+  "env": "demo",
+  "monitors": [{ "name": "navigation/live/main-paths", "file": "journeys/navigation/live/main-paths.journey.ts" }]
+}
+```
+
+The versions of `@nullean/journeys` and `@elastic/synthetics` are pinned in `SyntheticsPlan`, with their lockfile next to it, so a push never changes with a release of either package. A test fails when the lockfile and the pins disagree. To move to new versions, change the pins and regenerate the lockfile with `npm install --package-lock-only --ignore-scripts` in a folder that holds the generated `package.json`.
 
 ## In CI
 

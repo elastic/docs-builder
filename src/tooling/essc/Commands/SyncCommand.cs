@@ -55,8 +55,8 @@ internal sealed class SyncCommand(ContentStackClient client, SourcingConfigurati
 	{
 		if (!AiEnrichmentBudget.TryValidateMaxTime(maxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
-			await Console.Error.WriteLineAsync("Run 'essc contentstack sync --help' for usage.");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}", ct);
+			await Console.Error.WriteLineAsync("Run 'essc contentstack sync --help' for usage.", ct);
 			Environment.Exit(2);
 		}
 
