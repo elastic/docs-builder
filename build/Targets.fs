@@ -7,6 +7,7 @@ module Targets
 open System
 open System.IO
 open System.IO.Compression
+open System.Text.Json
 open System.Text
 open Nullean.Make.Fs
 open Proc.Fs
@@ -17,9 +18,15 @@ type TestSuite =
     | Unit = 1
     | Integration = 2
 
+type ParallelOptions =
+    { /// Test projects to run at once. Local runs only: CI always runs them one at a time. Default: the number of cores
+      Parallelism: int option }
+
 type TestOptions =
     { /// Which tests to run. Default: all
-      Suite: TestSuite option }
+      Suite: TestSuite option
+      /// Test projects to run at once. Local runs only: CI always runs them one at a time. Default: the number of cores
+      Parallelism: int option }
 
 type Target =
     /// Clean known output locations
@@ -33,9 +40,9 @@ type Target =
     /// Run a clean build, then the tests (--suite all|unit|integration)
     | Test of TestOptions
     /// Alias of: test --suite unit
-    | UnitTest
+    | UnitTest of ParallelOptions
     /// Alias of: test --suite integration
-    | Integrate
+    | Integrate of ParallelOptions
     /// Run dotnet curb format and cleanup
     | Format
     /// Run dotnet watch to build code, templates and web assets continuously
@@ -172,29 +179,24 @@ let private containerProjects =
 let Run (argv: string[]) =
     let app = MakeApp<Target>("build", None)
     let skipDirtyCheck = app.Flag("--skip-dirty-check", short = "-c", desc = "Skip the clean checkout check that guards the release/publish targets")
-    let testParallelism = app.Option<int option>("--test-parallelism", desc = "Max number of test projects to run at once, defaults to the processor count", defaultValue = None)
     app.Default Build
 
-    // Test projects run concurrently, each captured and printed as one group so the logs stay readable; every failure is reported.
-    let runTests (suite: TestSuite) = steps {
-        let limit = testParallelism.Value |> Option.defaultValue Environment.ProcessorCount
-        let! results =
-            concurrentlyAtMost limit [
-                for project in testProjects suite ->
-                    steps {
-                        let! result = cmd "dotnet" [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ] |> Cmd.result
-                        let code = result.ExitCode.GetValueOrDefault -1
-                        lock stdout (fun () ->
-                            printfn "::group::dotnet test %s (exit code %d)" (Path.GetFileNameWithoutExtension project) code
-                            for line in result.ConsoleOut do printfn "%s" line.Line
-                            printfn "::endgroup::")
-                        return project, code = 0
-                    }
-            ]
-        let failures = results |> List.filter (snd >> not) |> List.map fst
-        if not (List.isEmpty failures) then
-            let names = String.concat "\n" failures
-            failBuild $"Test projects failed:\n%s{names}"
+    // One `dotnet test` call over a generated solution filter of the test projects: the Microsoft.Testing.Platform runner
+    // runs the test modules in parallel and prints one summary.
+    let runTests (suite: TestSuite) (parallelism: int option) = steps {
+        let projects = testProjects suite
+        let filter = Path.Combine(Paths.ArtifactFolder.FullName, "tests.slnf")
+        Directory.CreateDirectory(Paths.ArtifactFolder.FullName) |> ignore
+        let solution = Path.GetRelativePath(Paths.ArtifactFolder.FullName, Path.Combine(Paths.Root.FullName, "docs-builder.slnx"))
+        let relative = projects |> List.map (fun project -> Paths.RelativePathToRoot project)
+        File.WriteAllText(filter, JsonSerializer.Serialize({| solution = {| path = solution; projects = relative |} |}))
+        // CI runs the test projects one at a time: its runners have 3-4 cores, and concurrent projects starve the thread pool.
+        let modules =
+            match envVarOrNone "CI", parallelism with
+            | Some _, _ -> [ "--max-parallel-test-modules"; "1" ]
+            | None, Some n -> [ "--max-parallel-test-modules"; string n ]
+            | None, None -> []
+        sh $"dotnet test --solution {filter} --no-build --no-restore -c release {modules}"
 
         // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.
         if suite <> TestSuite.Integration then
@@ -214,9 +216,9 @@ let Run (argv: string[]) =
         | Compile -> step [] { sh $"dotnet build -c release" }
         | Build -> target [Clean; Lint; Compile] { printfn "build" }
 
-        | Test o -> target [Compile] { do! runTests (defaultArg o.Suite TestSuite.All) }
-        | UnitTest -> target [Compile] { do! runTests TestSuite.Unit }
-        | Integrate -> target [Compile] { do! runTests TestSuite.Integration }
+        | Test o -> target [Compile] { do! runTests (defaultArg o.Suite TestSuite.All) o.Parallelism }
+        | UnitTest o -> target [Compile] { do! runTests TestSuite.Unit o.Parallelism }
+        | Integrate o -> target [Compile] { do! runTests TestSuite.Integration o.Parallelism }
 
         | Format -> target [] {
             sh $"dotnet curb format ."
@@ -301,7 +303,8 @@ let Run (argv: string[]) =
     |> Option.bind (fun i -> Array.tryItem (i + 1) argv)
     |> Option.iter (fun suite ->
         if not (isSuite suite) then
-            eprintfn "Unknown test suite '%s', expected all, unit or integration" suite
+            let names = String.Join(", ", Enum.GetNames<TestSuite>() |> Array.map _.ToLowerInvariant())
+            eprintfn "Unknown test suite '%s', expected one of: %s" suite names
             exit 2)
 
     app.RunAsync(argv).GetAwaiter().GetResult()
