@@ -18,11 +18,12 @@ interface Variant {
     columns: ColumnSpec[]
 }
 
+// The design-system sidebar's own floor is 14rem, so a minimum above it would make a first drag jump.
 const designSystem: Variant = {
     navSelector: '.layout__nav',
     wide: '(min-width: 1101px)',
     columns: [
-        { side: 'nav', cssVar: '--layout-nav-width', min: 240, max: 560 },
+        { side: 'nav', cssVar: '--layout-nav-width', min: 224, max: 560 },
         { side: 'rail', cssVar: '--layout-rail-width', min: 280, max: 900 },
     ],
 }

@@ -3,7 +3,7 @@ import { clampWidth, initApiColumnResize } from './api-column-resize'
 const rect = (left: number, width: number) =>
     ({ left, right: left + width, width }) as DOMRect
 
-function mountShell(width = 1600) {
+function mountShell(width = 1600, navWidth = 300) {
     document.body.innerHTML = `<div class="api-page-shell layout--three">
         <aside class="layout__nav"></aside>
         <aside class="api-page-rail"></aside>
@@ -11,7 +11,7 @@ function mountShell(width = 1600) {
     const shell = document.querySelector<HTMLElement>('.api-page-shell')!
     shell.getBoundingClientRect = () => rect(0, width)
     document.querySelector('.layout__nav')!.getBoundingClientRect = () =>
-        rect(0, 300)
+        rect(0, navWidth)
     document.querySelector('.api-page-rail')!.getBoundingClientRect = () =>
         rect(1000, 440)
     return shell
@@ -186,5 +186,19 @@ describe('initApiColumnResize', () => {
 
         expect(handle('rail').dataset.dragging).toBeUndefined()
         expect(localStorage.getItem('api-column-widths')).toBe('{"rail":480}')
+    })
+
+    it('does not move a sidebar that sits at the design-system floor when a drag starts', () => {
+        const shell = mountShell(1600, 224)
+        initApiColumnResize()
+
+        handle('nav').dispatchEvent(
+            new MouseEvent('pointerdown', { clientX: 100 })
+        )
+        handle('nav').dispatchEvent(
+            new MouseEvent('pointermove', { clientX: 100 })
+        )
+
+        expect(shell.style.getPropertyValue('--layout-nav-width')).toBe('224px')
     })
 })
