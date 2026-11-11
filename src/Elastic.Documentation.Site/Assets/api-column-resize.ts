@@ -42,6 +42,7 @@ const keyStep = 24
 const contentMin = 360
 const columnGap = 32
 // Half the handle's 12px hit area. The sidebar's own scrollbar sits on its right edge, so its handle starts there instead of straddling it.
+// The stylesheet draws the line and the bar back onto the edge.
 const handleReach = 6
 
 type Widths = Partial<Record<Side, number>>
