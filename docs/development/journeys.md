@@ -11,6 +11,7 @@ Journeys are short scripts of browser commands that open a page, interact with i
 | Command | Runs | Against | Compares transcripts | Use it to |
 |---|---|---|---|---|
 | `mise run journeys` | TUnit tests (`Nullean.Snapshots`) | `docs/` served by this task, as an isolated site | yes | change journeys and the site together, and review transcript changes with `dotnet snap review` |
+| `mise run journeys:local` | `docs-journeys` | `docs/` served by this task, as an isolated site | no, only the `expect` lines | iterate on a journey quickly, with the same output as `journeys:live`; takes the same options (`--only`, `--area`, `--screenshot-on-failure`) |
 | `mise run journeys:live [site]` | `docs-journeys` | a deployed site (`prod`, `edge`, `demo`), read-only | no, only the `expect` lines | check a deployment, or a pull request's journeys against prod |
 | `dotnet snap journey run <glob> --base-url <url>` | `snap` | any site you started | yes | run some journeys outside the test project, with the same output as `docs-journeys` |
 | `cdp run <file> --base-url <url>` | `Nullean.Cdp.Cli` | any site | no | debug one journey file; its output is fenced for agents |
