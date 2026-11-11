@@ -249,10 +249,12 @@ bundle:
   # that is not exactly 'owner/repo'. `changelog init` still seeds the key; it is unused.
   # link_allow_repos:
   #   - elastic/kibana
-  # Deprecated: the repo and owner are derived from GITHUB_REPOSITORY or the git remote origin.
-  # Remove them. Setting bundle.repo to a different repository than the one the command runs in
-  # is a hard error. When set, repo is used by the {changelog} directive to generate PR/issue
-  # links when the product ID differs from the GitHub repository name.
+  # Deprecated for bundle file names: the repo is derived from GITHUB_REPOSITORY or the git remote
+  # origin, and a bundle.repo that differs from the repository the command runs in is a hard error.
+  # Still read for CDN entry sourcing (changelog/{owner}/{repo}/{branch}/...) and for the
+  # products[].repo value the {changelog} directive uses to resolve PR and issue links. Without
+  # bundle.repo, option-mode bundles built from PR lists or reports read local entries instead of
+  # the CDN pool. The owner defaults to elastic. Keep both until entry sourcing derives them too.
   # repo: elasticsearch
   # owner: elastic
   # Optional: branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) is sourced from when
@@ -266,9 +268,10 @@ bundle:
   # Profiles can be used with both 'changelog bundle' and 'changelog remove':
   #   docs-builder changelog bundle elasticsearch-release 9.2.0
   #   docs-builder changelog remove elasticsearch-release 9.2.0
-  # When used with 'changelog remove', only the 'products' field is applied.
-  # The 'product', 'output_products', 'repo', 'owner', and 'hide_features' fields are
-  # bundle-specific and are ignored for removal.
+  # When used with 'changelog remove', the 'products' filter selects the files to remove. When
+  # 'products' is absent, the filter is derived from 'product' as '<product> {version} {lifecycle}',
+  # so a product-only profile removes the matching files. The 'output_products', 'repo', 'owner',
+  # and 'hide_features' fields are bundle-specific and are ignored for removal.
   # Bundle file names are derived by convention as '{repo}-{product}-{version}.yaml' from the
   # authoring repo and the profile's primary output product; an explicit 'output'
   # pattern is deprecated and ignored (a warning at config load). If no repo can be resolved, the name falls back to '{product}-{version}.yaml'.

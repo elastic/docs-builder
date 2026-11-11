@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The changelog init template, so a test can load the real file through the configuration loader. -->
+    <EmbeddedResource Include="..\..\config\changelog.example.yml" Link="changelog.example.yml" LogicalName="Elastic.Changelog.Tests.changelog.example.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Elastic.Changelog" />
     <Using Include="Elastic.Documentation" />
   </ItemGroup>

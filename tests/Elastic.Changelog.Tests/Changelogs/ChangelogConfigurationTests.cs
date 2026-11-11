@@ -899,6 +899,45 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	/// Helper to reduce boilerplate in lenient list tests.
 	/// Creates a temporary config file and loads the configuration.
 	/// </summary>
+	[Test]
+	public async Task LoadChangelogConfiguration_InitTemplate_LoadsWithoutErrors()
+	{
+		// The template is the file `changelog init` writes. A value the loader rejects would break every new config.
+		var template = await ReadInitTemplate();
+
+		var config = await LoadConfig(template);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Filename.Should().Be(FilenameStrategy.Pr);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_SeededInitTemplate_LoadsWithoutErrors()
+	{
+		var template = await ReadInitTemplate();
+		var seeded = ChangelogTemplateSeeder.ApplyBundleRepoSeed(template, ownerCli: "elastic", repoCli: "docs-builder", gitOwner: null, gitRepo: null);
+		seeded.Should().NotBe(template);
+
+		var config = await LoadConfig(seeded);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle.Should().NotBeNull();
+#pragma warning disable CS0618
+		config.Bundle!.Repo.Should().Be("docs-builder");
+		config.Bundle.Owner.Should().Be("elastic");
+#pragma warning restore CS0618
+	}
+
+	private static async Task<string> ReadInitTemplate()
+	{
+		await using var stream = typeof(ChangelogConfigurationTests).Assembly.GetManifestResourceStream("Elastic.Changelog.Tests.changelog.example.yml");
+		stream.Should().NotBeNull();
+		using var reader = new StreamReader(stream!);
+		return await reader.ReadToEndAsync(TestContext.Current!.Execution.CancellationToken);
+	}
+
 	private async Task<ChangelogConfiguration?> LoadConfig(string yamlContent)
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);

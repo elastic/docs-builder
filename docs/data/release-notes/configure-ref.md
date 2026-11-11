@@ -51,9 +51,9 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | `bundle.backports.labels` | Exact label names that mark a pull request as a backport, for example `[backport]`. When bundling a commit range, such a pull request is replaced by the original pull request it was backported from, so the entry and the links come from the original. Not a pattern: `backport*` would also match opt-out labels such as `backport-skip`. When omitted, no tracing happens. |
 | `bundle.link_allow_repos` | No longer read by `changelog bundle`. Remove it from `changelog.yml`. Links in published bundles are scrubbed by the changelog scrubber Lambda, which builds its allowlist from the public repositories in `assembler.yml`. The loader still rejects an entry that is not exactly `owner/repo`. |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). Conventional `{repo}-{product}-{version}.yaml` names are written to a `{product}/` folder here, for example `docs/releases/elasticsearch/`, in profile mode (unless the profile sets `output_directory`) and in option mode when `--output` is omitted. This matches the `bundle/{product}/` layout on the CDN. Passing `--output` as a directory, or setting a profile `output_directory`, writes that same file name in the directory you specify instead, with no `{product}/` folder. When `bundle.output_directory` is not set, the `{product}/` folder is created under `bundle.directory`. |
-| `bundle.owner`            | Deprecated. The owner is derived automatically; remove it from `changelog.yml`. When set, it is the default GitHub repository owner (for example, `elastic`) and the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
+| `bundle.owner`            | Deprecated for bundle file names, where the owner is derived automatically. Still read for CDN entry sourcing: it is the org segment of the changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and defaults to `elastic` when unset. Keep it when your organization is not `elastic`. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Deprecated. The repository is derived from `GITHUB_REPOSITORY` or the git `origin`; remove it from `changelog.yml`. Setting it to a different repository than the one the command runs in is a hard error. When set, it is the GitHub repository name for link and file name generation (for example, `elasticsearch`). Written to `products[].repo` so `{changelog}` can resolve bare PR and issue numbers. Also the `{repo}` segment of `{repo}-{product}-{version}.yaml` names, and the repo segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
+| `bundle.repo`             | Deprecated for bundle file names: the `{repo}` segment of `{repo}-{product}-{version}.yaml` is derived from `GITHUB_REPOSITORY` or the git `origin`, and a `bundle.repo` that differs from the repository the command runs in is a hard error. Still read for CDN entry sourcing and for `products[].repo`, which `{changelog}` uses to resolve bare PR and issue numbers: `changelog bundle` has no git fallback there, so without `bundle.repo` or `--repo` an option-mode bundle built from PR lists or reports reads local entries instead of the CDN pool. Keep it until entry sourcing derives the repository too. |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
@@ -66,7 +66,7 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 
 `changelog bundle` reads the individual changelog entries it aggregates either from the local folder or from the public CDN. Entries are stored on the CDN per **authoring org/repo/branch** (`changelog/{org}/{repo}/{branch}/...`), not per product, so CDN sourcing keys off the resolvable authoring org/repo/branch rather than the bundle's target products.
 
-The authoring repo is resolved with the same precedence as `changelog upload`: `--repo` > `bundle.repo` in `changelog.yml` > the git remote origin. The owner is resolved from `--owner` > `bundle.owner` (default `elastic`), and the branch from `--branch` > `bundle.branch` (default `main`).
+The authoring repo is resolved from `--repo` > `bundle.repo` in `changelog.yml`. There is no git fallback for entry sourcing: without both, entries are read locally. The owner is resolved from `--owner` > `bundle.owner` (default `elastic`), and the branch from `--branch` > `bundle.branch` (default `main`).
 
 Sourcing is decided per run:
 
@@ -151,7 +151,7 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 `product`
 :   The product ID this profile bundles for, validated against `products.yml`. Replaces `output_products`.
 :   The bundle's `products` metadata becomes this product with the version argument and the lifecycle inferred from it (refer to [](/cli/changelog/bundle.md#lifecycle-inference)). The bundle is written to the `{product}/` folder under [`bundle.output_directory`](#bundle-basic).
-:   When `products` is not set, the input filter is derived as `"<product> {version} {lifecycle}"`.
+:   When `products` is not set, the input filter is derived as `"<product> {version} {lifecycle}"`, for `changelog bundle` and for `changelog remove` alike. A product-only profile therefore removes the matching files when you run `changelog remove` with it.
 :   Example: `product: cloud-serverless`
 
 `products`

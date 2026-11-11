@@ -90,8 +90,7 @@ bundle:
 
 ### Bundle by GitHub releases [profile-gh-release]
 
-If you have automated GitHub release notes, the [`changelog gh-release`](/cli/changelog/gh-release.md) command fetches the release from GitHub, parses the PR references from the release notes, creates one changelog file per pull request, and bundles them in a single step.
-Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+If you publish GitHub releases, the [`changelog gh-release`](/cli/changelog/gh-release.md) command fetches the release from GitHub, resolves the pull requests merged between the previous release tag and the requested tag through the GitHub commit-range API, creates one changelog file per pull request, and bundles them in a single step. It does not read the release notes text, so a pull request left out of hand-written release notes is still included, and the notes need no particular format.
 
 ```sh
 docs-builder changelog gh-release elastic/apm-agent-dotnet v1.34.1
@@ -254,7 +253,7 @@ For example, if the source of truth for what was shipped in each release is:
 - automated release notes for GitHub releases:
 
   ```sh
-  # Create the changelogs from the release notes of a GitHub tag and bundle them
+  # Create the changelogs for the pull requests between the previous release tag and this tag, and bundle them
   docs-builder changelog gh-release apm-agent-dotnet v1.34.1
 
   # Use "latest" to fetch the most recent release

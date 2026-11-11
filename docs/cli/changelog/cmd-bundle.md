@@ -231,7 +231,7 @@ You can use `--release-version` to fetch pull request references directly from G
 This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
 
 :::{important}
-Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+The command resolves the pull requests from the commit range between the previous release tag and the requested tag; it does not read the release notes text.
 :::
 
 ```sh
