@@ -172,16 +172,28 @@ let private containerProjects =
 let Run (argv: string[]) =
     let app = MakeApp<Target>("build", None)
     let skipDirtyCheck = app.Flag("--skip-dirty-check", short = "-c", desc = "Skip the clean checkout check that guards the release/publish targets")
+    let testParallelism = app.Option<int option>("--test-parallelism", desc = "Max number of test projects to run at once, defaults to the processor count", defaultValue = None)
     app.Default Build
 
-    // TUnit runs the tests of a project in parallel; the projects run one after the other, so the output reads in order.
+    // Test projects run concurrently, each captured and printed as one group so the logs stay readable; every failure is reported.
     let runTests (suite: TestSuite) = steps {
-        let mutable failures = []
-        for project in testProjects suite do
-            let! code = exitCode $"dotnet test {project} -c release --no-restore --no-build"
-            if code <> 0 then failures <- project :: failures
+        let limit = testParallelism.Value |> Option.defaultValue Environment.ProcessorCount
+        let! results =
+            concurrentlyAtMost limit [
+                for project in testProjects suite ->
+                    steps {
+                        let! result = cmd "dotnet" [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ] |> Cmd.result
+                        let code = result.ExitCode.GetValueOrDefault -1
+                        lock stdout (fun () ->
+                            printfn "::group::dotnet test %s (exit code %d)" (Path.GetFileNameWithoutExtension project) code
+                            for line in result.ConsoleOut do printfn "%s" line.Line
+                            printfn "::endgroup::")
+                        return project, code = 0
+                    }
+            ]
+        let failures = results |> List.filter (snd >> not) |> List.map fst
         if not (List.isEmpty failures) then
-            let names = String.concat "\n" (List.rev failures)
+            let names = String.concat "\n" failures
             failBuild $"Test projects failed:\n%s{names}"
 
         // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.

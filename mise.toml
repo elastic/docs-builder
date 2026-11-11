@@ -32,7 +32,7 @@ description = "Build the solution"
 run = "dotnet build"
 
 [tasks.test]
-description = "Unit tests (fast)"
+description = "Unit tests (fast). Extra args pass through, e.g. -- --test-parallelism 4"
 run = "dotnet run --project build -c release -- unit-test"
 
 [tasks.integrate]
