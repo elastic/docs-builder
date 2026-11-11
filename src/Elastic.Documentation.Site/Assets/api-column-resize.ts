@@ -40,6 +40,8 @@ const storageKey = 'api-column-widths'
 const keyStep = 24
 const contentMin = 360
 const columnGap = 32
+// Half the handle's 12px hit area. The sidebar's own scrollbar sits on its right edge, so its handle starts there instead of straddling it.
+const handleReach = 6
 
 type Widths = Partial<Record<Side, number>>
 
@@ -146,7 +148,9 @@ export function initApiColumnResize() {
             handle.hidden = !rect
             if (!rect) continue
             const edge =
-                spec.side === 'nav' ? rect.right : rect.left - columnGap / 2
+                spec.side === 'nav'
+                    ? rect.right + handleReach
+                    : rect.left - columnGap / 2
             handle.style.left = `${Math.round(edge - origin)}px`
             handle.setAttribute('aria-valuenow', String(Math.round(rect.width)))
         }
