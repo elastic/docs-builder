@@ -23,21 +23,6 @@ internal sealed record LoadedJourney(JourneyFile File, Journey? Journey, string?
 	}
 }
 
-/// <summary>What narrows a run: tags, what the site is, and whether journeys that write may run.</summary>
-internal sealed record Selection(IReadOnlySet<string> Tags, JourneyContext Context, bool AllowMutations)
-{
-	/// <summary>Why <paramref name="journey"/> does not run in this selection, or <c>null</c> when it does.</summary>
-	public string? SkipReason(Journey journey)
-	{
-		var metadata = journey.Metadata;
-		if (Tags.Count > 0 && !metadata.Tags.Any(Tags.Contains))
-			return $"no tag in [{string.Join(' ', Tags.Order(StringComparer.Ordinal))}]";
-		if (metadata.Unmet(Context) is { } unmet)
-			return $"requires {unmet}";
-		return metadata.Mutates && !AllowMutations ? "mutates data; a read-only run skips it" : null;
-	}
-}
-
 internal static class ChangedFiles
 {
 	/// <summary>The full paths of journeys under <paramref name="folder"/> that differ from <paramref name="gitRef"/>, including new ones.</summary>

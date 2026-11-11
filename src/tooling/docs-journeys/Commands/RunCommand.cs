@@ -4,6 +4,8 @@
 
 using System.Text;
 using Nullean.Argh;
+using Nullean.Cdp.Journeys;
+using Nullean.Snapshots.Browser.Console;
 
 namespace Elastic.Documentation.Journeys.Cli.Commands;
 
@@ -42,6 +44,7 @@ internal sealed class RunCommand
 	/// <param name="allowAllSkipped">Exit with 0 when every selected journey was skipped. For a check of the journeys a change touched, where none of them may apply to the site.</param>
 	/// <param name="junit">Write a JUnit XML report here.</param>
 	/// <param name="artifacts">Write screenshots and recordings here, one folder per journey.</param>
+	/// <param name="screenshotOnFailure">Take a screenshot when a step fails: drawn under the failure on a terminal that can show images, and written to <c>failure.png</c> in the journey's folder under <c>--artifacts</c>. A page can show private data, so it is off unless asked for.</param>
 	/// <param name="verbose">-v, List every skipped journey instead of collapsing a reason that many share.</param>
 	public async Task<int> Run(
 		string url,
@@ -64,6 +67,7 @@ internal sealed class RunCommand
 		string? junit = null,
 		string? artifacts = null,
 		bool verbose = false,
+		bool screenshotOnFailure = false,
 		Cancel ct = default
 	)
 	{
@@ -100,37 +104,62 @@ internal sealed class RunCommand
 			identity,
 			ct
 		).ConfigureAwait(false);
-		var interactive = ConsoleRunReporter.UseInteractive;
+		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
 		Console.Out.WriteLine(
-			interactive
-				? ConsoleRunReporter.ContextBlock(site, SiteContext.JourneyBase(baseUrl, site.BuildType), env, buildType, feature)
+			ConsoleJourneyReporter.UseInteractive
+				? ConsoleJourneyReporter.ContextBlock(
+					"docs-journeys",
+					ContextRows(site, journeyBase, (env, buildType, feature)),
+					site.ProbeNotes
+				)
 				: $"context: {site.Describe}"
 		);
 
-		var selection = new Selection(SiteContext.Split(tag), site.ToJourneyContext(), allowMutations || allowWrites);
-		var plan = files
-			.Select(LoadedJourney.Load)
-			.Select(l => (Loaded: l, Skip: l.Journey is null ? null : selection.SkipReason(l.Journey)))
-			.ToList();
-		var hosts = DefaultAllow.Concat(SiteContext.Split(allow)).ToList();
-		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
-		var settings = new RunSettings(journeyBase, hosts, selection.Context, identity) { Artifacts = artifacts, Parallel = parallel };
-		var reporter = new ConsoleRunReporter(Console.Out, interactive, verbose, journeyBase);
-		reporter.Planned(
-			plan.Where(p => p.Skip is not null).Select(p => (p.Loaded.File, p.Skip!)).ToList(),
-			plan.Count(p => p.Skip is null)
-		);
-		var clock = System.Diagnostics.Stopwatch.StartNew();
-		var outcomes = await JourneyExecution.RunAsync(plan, settings, reporter, ct).ConfigureAwait(false);
-
-		return Report(
-			reporter,
-			outcomes,
-			journeyBase,
-			(junit, folder, clock.Elapsed, RerunCommand(url, journeys, (env, buildType, feature))),
-			allowAllSkipped && !site.ProbeFailed
-		);
+		var headers = new Dictionary<string, string>();
+		if (identity.Synthetic)
+			headers[RunIdentity.MonitorHeader] = "true";
+		var options = new JourneyRunOptions
+		{
+			Files = [.. files.Select(f => new JourneyRunFile(f.Id, f.Path) { Display = f.DisplayPath(folder) })],
+			BaseUrl = journeyBase,
+			AllowedHosts = [.. DefaultAllow, .. SiteContext.Split(allow)],
+			ArtifactsFor = artifacts is null ? null : f => Path.Combine(artifacts, f.Id.TrimStart('/', '\\')),
+			Features = site.Features,
+			BuildType = site.BuildType,
+			Env = site.Env,
+			ReadOnly = identity.ReadOnly,
+			AllowMutations = allowMutations || allowWrites,
+			WritableUrls = identity.Writable,
+			Viewport = new JourneyViewport(1280, 800),
+			UserAgent = identity.Synthetic ? RunIdentity.UserAgent : null,
+			Headers = headers,
+			Tags = SiteContext.Split(tag),
+			Parallel = parallel,
+			AllowAllSkipped = allowAllSkipped && !site.ProbeFailed,
+			Verbose = verbose,
+			ScreenshotOnFailure = screenshotOnFailure,
+			JUnitPath = junit,
+			Rerun = RerunCommand(url, journeys, (env, buildType, feature)),
+			ParseErrorExitCode = 1,
+		};
+		return await JourneyConsoleRunner.RunAsync(options, Console.Out, Console.Error, ct).ConfigureAwait(false);
 	}
+
+	private static List<ContextRow> ContextRows(
+		SiteContext site,
+		Uri journeyBase,
+		(string? Env, string? BuildType, string? Feature) given
+	) =>
+		[
+			new("Site", journeyBase.ToString()),
+			new("Env", site.Env ?? "unknown", given.Env is null ? null : "--env"),
+			new("Build", site.BuildType ?? "unknown", given.BuildType is null ? null : "--build-type"),
+			new(
+				"Features",
+				site.Features.Count == 0 ? "none" : string.Join(' ', site.Features.Order(StringComparer.Ordinal)),
+				given.Feature is null ? null : "--feature"
+			),
+		];
 
 	/// <summary>The command that reruns one journey: same source and site context, with <c>{id}</c> standing for the journey.</summary>
 	internal static string RerunCommand(string url, string? journeys, (string? Env, string? BuildType, string? Feature) context)
@@ -175,45 +204,5 @@ internal sealed class RunCommand
 			_ = http.DefaultRequestHeaders.TryAddWithoutValidation(RunIdentity.MonitorHeader, "true");
 		}
 		return await SiteContext.ResolveAsync(baseUrl, options, http, ct).ConfigureAwait(false);
-	}
-
-	private static int Report(
-		ConsoleRunReporter reporter,
-		IReadOnlyList<JourneyOutcome> outcomes,
-		Uri baseUrl,
-		(string? Junit, string Folder, TimeSpan Elapsed, string Rerun) run,
-		bool allowAllSkipped
-	)
-	{
-		Console.Out.WriteLine(reporter.Summary(outcomes, run.Elapsed, run.Folder, run.Rerun));
-		var failed = outcomes.Count(o => o.Failed);
-		var passed = outcomes.Count(o => o.Passed);
-		if (passed + failed == 0)
-			Console.Out.WriteLine(
-				allowAllSkipped
-					? "Every selected journey was skipped; none applies to this site."
-					: "Every selected journey was skipped, so nothing was checked."
-			);
-
-		if (run.Junit is not null)
-			JUnitReport.Write(run.Junit, baseUrl.Host, outcomes);
-		WriteStepSummary(baseUrl, outcomes);
-		return failed > 0 || (passed + failed == 0 && !allowAllSkipped) ? 1 : 0;
-	}
-
-	private static void WriteStepSummary(Uri baseUrl, IReadOnlyList<JourneyOutcome> outcomes)
-	{
-		if (Environment.GetEnvironmentVariable("GITHUB_STEP_SUMMARY") is not { Length: > 0 } path)
-			return;
-		var text = new StringBuilder()
-			.AppendLine($"### Journeys against {baseUrl}")
-			.AppendLine()
-			.AppendLine("| Journey | Result |")
-			.AppendLine("|---|---|");
-		foreach (var outcome in outcomes)
-			_ = text.AppendLine(
-				$"| `{outcome.File.Id}` | {(outcome.Skipped ? $"skipped: {outcome.SkipReason}" : outcome.Passed ? "passed" : "**failed**")} |"
-			);
-		File.AppendAllText(path, text.ToString());
 	}
 }

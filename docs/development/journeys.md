@@ -121,6 +121,7 @@ The run prints a `context:` line with what it settled on and where each part cam
 | `--allow-mutations` | Run journeys marked `# @mutates`. |
 | `--allow-all-skipped` | Exit with 0 when every selected journey was skipped. The prod check of a pull request uses it, because a change to isolated-site journeys has nothing to run on prod. A failed site probe still exits 1. |
 | `--junit` | Write a JUnit XML report. |
+| `--screenshot-on-failure` | Take a screenshot of the page when a step fails. It is drawn under the failure on a terminal that can show images (Kitty, Ghostty, iTerm2, WezTerm, Sixel, half blocks otherwise) and written to `failure.png` in the journey's folder when `--artifacts` is set. Off by default, because a page can show private data. |
 | `--artifacts` | Write screenshots and recordings here, one folder per journey. |
 
 ### Identity and read-only by default
