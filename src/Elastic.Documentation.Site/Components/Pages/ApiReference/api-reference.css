@@ -3089,10 +3089,11 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Where the handles show, the rail's default is 600px. It gives way when the window has no room for it beside the reference. */
+/* Where the handles show, the rail's default grows with the window, from 20rem at 1101px to 600px at 1700px, so a laptop window keeps
+   room for the reference. */
 @media (min-width: 1101px) {
 	.api-page-shell.layout--three {
-		--layout-rail-min: clamp(20rem, 100vw - 650px, 600px);
+		--layout-rail-min: clamp(20rem, 20rem + (100vw - 1101px) * 0.47, 600px);
 		--layout-rail-max: 600px;
 	}
 }
@@ -4351,4 +4352,11 @@ html:has(.api-page-shell) {
 body[data-api-column-dragging] {
 	cursor: ew-resize;
 	user-select: none;
+}
+
+/* The reference column is fluid, but prose keeps the docs text width (48rem) so its lines stay readable. Parameter rows, tables and code
+   still use the whole column. */
+.api-page-shell .api-operation-description > :is(p, ul, ol, .admonition),
+.api-page-shell .property-list dd > :is(p, ul, ol, .admonition) {
+	max-width: 48rem;
 }

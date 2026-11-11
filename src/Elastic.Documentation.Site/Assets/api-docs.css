@@ -3056,9 +3056,13 @@ button.example-response-tab:focus-visible {
 /* Wide enough for the capped block: the reference at the docs text width, the examples
    rail at a fixed width, more air between them. */
 @media (min-width: 1280px) {
-	/* Where the handles show, the rail's default is 600px. It gives way when the window has no room for it beside the reference. */
+	/* The rail's default grows with the window, from 440px at 1280px to 600px at 1700px, so a laptop window keeps room for the reference. */
 	.api-page-shell {
-		--max-examples-width: clamp(440px, 100vw - 700px, 600px);
+		--max-examples-width: clamp(
+			440px,
+			440px + (100vw - 1280px) * 0.38,
+			600px
+		);
 	}
 
 	/* Three real columns up to a 1920px window: the reference takes whatever the sidebar and the rail leave. Past that the
@@ -4442,4 +4446,11 @@ html:has(.api-page-shell) {
 body[data-api-column-dragging] {
 	cursor: ew-resize;
 	user-select: none;
+}
+
+/* The reference column is fluid, but prose keeps the docs text width (48rem) so its lines stay readable. Parameter rows, tables and code
+   still use the whole column. */
+.api-page-shell .api-operation-description > :is(p, ul, ol, .admonition),
+.api-page-shell .property-list dd > :is(p, ul, ol, .admonition) {
+	max-width: 48rem;
 }
