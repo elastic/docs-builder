@@ -482,7 +482,10 @@ describe('PageFeedback', () => {
             await submitPositiveFeedback()
             const script = findSdkScript()
             expect(script).not.toBeNull()
-            window.AwsWafIntegration = { fetch: wafFetch }
+            window.AwsWafIntegration = {
+                fetch: wafFetch,
+                getToken: vi.fn().mockResolvedValue('token'),
+            }
             act(() => {
                 script!.dispatchEvent(new Event('load'))
             })

@@ -84,5 +84,10 @@ With no URL (local dev, isolated, codex, air-gapped) nothing loads and the compo
 uses plain `fetch`. If the SDK is configured but fails to load or times out, the
 submit shows the normal error state instead of sending an unchallenged request.
 
-Only page feedback uses the SDK. External callers of other `/docs/_api/v1/*` paths
-can't run it and stay on IP rate limits.
+Browser telemetry uses the same URL. When it's set, the OTLP exporters wait for the
+token before each export to `/docs/_api/v1/o/{t,l,m}`, so the web ACL can challenge
+those paths too. If the token can't be fetched within 5 seconds, exports go out
+without it. The SDK still starts at page load, so instrumentation isn't delayed.
+
+External callers of other `/docs/_api/v1/*` paths can't run the SDK and stay on IP
+rate limits.
