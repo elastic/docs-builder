@@ -63,16 +63,21 @@ export function clampWidth(width: number, min: number, max: number): number {
     return Math.round(Math.min(Math.max(width, min), max))
 }
 
-const bound = new WeakMap<HTMLElement, () => void>()
+// Boosted navigation swaps the whole shell, so the window listener and the observer of the shell it replaced must go.
+let active: {
+    shell: HTMLElement
+    place: () => void
+    dispose: () => void
+} | null = null
 
 export function initApiColumnResize() {
     const shell = document.querySelector<HTMLElement>('.api-page-shell')
     if (!shell) return
-    const sync = bound.get(shell)
-    if (sync) {
-        sync()
+    if (active?.shell === shell) {
+        active.place()
         return
     }
+    active?.dispose()
     const variant = shell.classList.contains('layout--three')
         ? designSystem
         : legacy
@@ -198,8 +203,16 @@ export function initApiColumnResize() {
         })
     }
 
-    bound.set(shell, place)
-    new ResizeObserver(place).observe(shell)
+    const observer = new ResizeObserver(place)
+    observer.observe(shell)
     window.addEventListener('resize', place)
+    active = {
+        shell,
+        place,
+        dispose: () => {
+            observer.disconnect()
+            window.removeEventListener('resize', place)
+        },
+    }
     place()
 }

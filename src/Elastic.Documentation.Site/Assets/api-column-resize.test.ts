@@ -28,13 +28,19 @@ describe('clampWidth', () => {
     })
 })
 
+let disconnects = 0
+
 describe('initApiColumnResize', () => {
     beforeEach(() => {
+        disconnects = 0
         localStorage.clear()
         vi.stubGlobal(
             'ResizeObserver',
             class {
                 observe() {}
+                disconnect() {
+                    disconnects++
+                }
             }
         )
     })
@@ -85,5 +91,18 @@ describe('initApiColumnResize', () => {
 
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe('')
         expect(localStorage.getItem('api-column-widths')).toBe('{"nav":340}')
+    })
+
+    it('lets go of the replaced shell when a new one is mounted', () => {
+        const remove = vi.spyOn(window, 'removeEventListener')
+        mountShell()
+        initApiColumnResize()
+        disconnects = 0
+        mountShell()
+        initApiColumnResize()
+
+        expect(disconnects).toBe(1)
+        expect(remove).toHaveBeenCalledWith('resize', expect.any(Function))
+        remove.mockRestore()
     })
 })
