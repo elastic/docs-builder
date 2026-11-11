@@ -57,7 +57,7 @@ public class DocsJourneysCliTests(JourneyTarget target)
 		using var folder = new TempJourneys("landing/fast", "open /\nexpect visible body");
 		File.WriteAllText(
 			System.IO.Path.Combine(folder.Path, "landing", "slow.journey"),
-			"open /\nexpect title \"no page has this title\" --timeout 15000"
+			"open /\nexpect title \"no page has this title\" --timeout 90000"
 		);
 		var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
 		foreach (var argument in new[] { FindCliDll(), "run", "--url", target.BaseUrl.ToString(), "--journeys", folder.Path })
@@ -82,8 +82,10 @@ public class DocsJourneysCliTests(JourneyTarget target)
 		_ = await error.ConfigureAwait(false);
 
 		_ = sawFast.Should().BeTrue();
-		// the slow journey cannot finish before its 15s timeout, so a result held back until it ends arrives after that
-		_ = secondsToFast.Should().BeLessThan(12, "the fast journey's result must not wait for the slow one");
+		// The slow journey cannot finish before its 90s timeout, so a result held back until it ends arrives after that. The
+		// process is killed as soon as the fast result is seen, so the wide margin costs nothing, and a loaded CI runner
+		// (dotnet start-up, a Chrome launch) has the time it needs.
+		_ = secondsToFast.Should().BeLessThan(60, "the fast journey's result must not wait for the slow one");
 	}
 
 	[Test]
