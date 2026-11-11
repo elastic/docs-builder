@@ -3081,10 +3081,11 @@ button.example-response-tab:focus-visible {
 	--layout-rail-max: 30rem;
 }
 
-/* Three real columns up to a 1920px window: the page takes the wide limit, and the header follows because it shares --layout-max.
-   Past that the whole box is centred. */
+/* Three real columns up to a 1920px window: the shell takes the wide limit and is centred beyond it. The token changes on the shell
+   only. The header keeps the page's --layout-max, because the elastic.co masthead follows that token and the assembler has to stay
+   contained. */
 @media (min-width: 1101px) {
-	body:has(.api-page-shell.layout--three) {
+	.api-page-shell.layout--three {
 		--layout-max: var(--layout-max-wide);
 	}
 }
