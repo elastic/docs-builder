@@ -85,7 +85,7 @@ let private prNumber () =
 let private imageTags () = 
     let pr = prNumber()
     let exitCode = exec {
-        validExitCode (fun _ -> true)
+        valid_exit_code (fun _ -> true)
         exit_code_of "git" "describe" "--tags" "--exact-match" "HEAD"
     }
     match (exitCode, pr) with
@@ -108,7 +108,7 @@ let private runDotnetWithRegistryPushRetry (args: string list) =
     let rec attempt number =
         let exitCode =
             exec {
-                validExitCode (fun _ -> true)
+                valid_exit_code (fun _ -> true)
                 exit_code_of "dotnet" args
             }
         match exitCode with
