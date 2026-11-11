@@ -145,6 +145,17 @@ public class DocsJourneysContextTests
 	}
 
 	[Test]
+	public async Task Run_AllowWritesAlone_RunsMutatingJourneys()
+	{
+		await using var site = new FakeSite(buildType: "assembler", features: "");
+		using var folder = new JourneyFolder().Add("a/writes", $"# @mutates\n{Passing}");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--allow-writes");
+
+		_ = run.Output.Should().Contain("ok      a/writes");
+	}
+
+	[Test]
 	public async Task Run_Tag_RunsOnlyJourneysWithThatTag()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "");
