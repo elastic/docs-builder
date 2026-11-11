@@ -108,11 +108,11 @@ A journey has an **id** of the form `area/name`. The area is the folder it sits 
 
 - `--area navigation,landing` runs every journey in those areas. An area with no journeys is an error.
 - `--only navigation/main-paths` runs one journey by its id, and `docs-journeys list` shows the ids.
-- `--tag smoke` runs the journeys whose header says `# @tags smoke` (a journey may have several tags, and `--tag a,b` takes the ones with either). Tags cut across areas: `smoke` marks the quick checks that matter most on a live site.
+- `--tag smoke` runs the journeys whose header says `# @tags smoke` (a journey may have several tags, and `--tag a,b` takes the ones with either). Tags cut across areas: `smoke` marks the quick checks that matter most on a live site. The smoke journeys need an assembler site, so on the isolated site `journeys:local` serves they are all skipped.
 
 ```bash
 mise run journeys:live prod --area navigation --tag smoke   # the smoke journeys of one area
-mise run journeys:local --tag smoke                         # every smoke journey, against docs/
+mise run journeys:local --area content                      # the content journeys, against docs/
 ```
 
 They combine: a journey must be in one of the areas and carry one of the tags. A journey that does not apply to the site is skipped whatever you choose.
