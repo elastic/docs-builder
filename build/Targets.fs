@@ -4,13 +4,11 @@
 
 module Targets
 
+open System
 open System.IO
 open System.IO.Compression
 open System.Text
 open Nullean.Make.Fs
-open Fake.Core
-open Fake.IO
-open Fake.Tools.Git
 open Proc.Fs
 open BuildInformation
 
@@ -87,8 +85,24 @@ let private testProjects (suite: TestSuite) =
         failBuild $"No test projects found under %A{directories}"
     projects
 
+let private envVarOrNone name =
+    match Environment.GetEnvironmentVariable name with
+    | null | "" -> None
+    | value -> Some value
+
+// Empties a folder and keeps it, creating it when it is missing.
+let private cleanDir (directory: string) =
+    if Directory.Exists directory then Directory.Delete(directory, true)
+    Directory.CreateDirectory directory |> ignore
+
+let private zipFiles (workingDir: string) (zipFile: string) (files: string list) =
+    if File.Exists zipFile then File.Delete zipFile
+    use archive = ZipFile.Open(zipFile, ZipArchiveMode.Create)
+    for file in files do
+        archive.CreateEntryFromFile(file, Path.GetRelativePath(workingDir, file), CompressionLevel.Optimal) |> ignore
+
 let private prNumber () =
-    match Environment.environVarOrNone "GITHUB_REF_NAME" with
+    match envVarOrNone "GITHUB_REF_NAME" with
     | None -> None
     | Some s when s.EndsWith "/merge" -> Some (s.Split('/') |> Seq.head)
     | _ -> None
@@ -137,7 +151,7 @@ let private gzipCompressDirectory (directory: string) =
 
 let private zipTool tool =
     let binary = match OS.Current with Windows -> $"{tool}.exe" | _ -> tool
-    Zip.zip
+    zipFiles
         $".artifacts/publish/{tool}/release"
         $".artifacts/publish/{tool}/release/{tool}-%s{OS.Name}-{OS.Arch}.zip"
         [
@@ -179,12 +193,12 @@ let Run (argv: string[]) =
 
     app.Bind <| function
         | Version -> target [] {
-            printfn $"Informational version: %s{Software.Version.AsString}"
-            printfn $"Semantic version: %s{Software.Version.Normalize()}" }
+            printfn $"Informational version: %s{Software.Version.Informational}"
+            printfn $"Semantic version: %s{Software.Version.Semantic}" }
         | Clean -> target [Version] {
             sh $"dotnet clean -c release"
             for folder in [ "package"; "release-notes"; "tests"; "docs-builder" ] do
-                Shell.cleanDir (Paths.ArtifactPath folder).FullName }
+                cleanDir (Paths.ArtifactPath folder).FullName }
         | Compile -> step [] { sh $"dotnet build -c release" }
         | Build -> target [Clean; Lint; Compile] { printfn "build" }
 
@@ -203,8 +217,10 @@ let Run (argv: string[]) =
             else failBuild "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check" }
         | PristineCheck -> step [] {
             if skipDirtyCheck.Value then printfn "Skip checking for clean working copy since -c is specified"
-            elif Information.isCleanWorkingCopy "." then printfn "The checkout folder does not have pending changes, proceeding"
-            else failBuild "The checkout folder has pending changes, aborting. Specify -c to ./build.sh to skip this check"
+            else
+                let! changes = text $"git status --porcelain"
+                if changes = "" then printfn "The checkout folder does not have pending changes, proceeding"
+                else failBuild "The checkout folder has pending changes, aborting. Specify -c to ./build.sh to skip this check"
 
             if skipDirtyCheck.Value then printfn "Skip formatting checks since -c is specified"
             else
@@ -227,15 +243,15 @@ let Run (argv: string[]) =
         | PublishContainers -> step [] {
             let! onTag = succeeds $"git describe --tags --exact-match HEAD"
             let labels = imageTags onTag
-            let ci = Environment.environVarOrNone "GITHUB_ACTIONS"
-            let noPublish = Environment.environVarOrNone "DOCKER_NO_PUBLISH"
+            let ci = envVarOrNone "GITHUB_ACTIONS"
+            let noPublish = envVarOrNone "DOCKER_NO_PUBLISH"
             let registry =
                 match ci, prNumber (), noPublish with
                 | Some _, None, None -> [ "-p"; "ContainerRegistry=ghcr.io"; "-p"; "ContainerUser=1001:1001" ]
                 | _ -> []
             let baseImage = "mcr.microsoft.com/dotnet/runtime-deps:11.0-resolute-chiseled"
             // The quotes stay part of the value, as they always did.
-            let tags = $"ContainerImageTags=\"%s{labels};%s{Software.Version.Normalize()}\""
+            let tags = $"ContainerImageTags=\"%s{labels};%s{Software.Version.Semantic}\""
             for project, name in containerProjects do
                 let publish =
                     sh $"dotnet publish {project} /t:PublishContainer -p DebugType=none -p ContainerBaseImage={baseImage} -p {tags} -p ContainerRepository=elastic/{name} {registry}"
@@ -267,8 +283,8 @@ let Run (argv: string[]) =
     // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
     let isSuite (value: string) =
         // TryParse also accepts numbers and comma lists, so require a declared name
-        match System.Enum.TryParse<TestSuite>(value, true) with
-        | true, suite -> System.Enum.IsDefined suite
+        match Enum.TryParse<TestSuite>(value, true) with
+        | true, suite -> Enum.IsDefined suite
         | _ -> false
     argv
     |> Array.tryFindIndex (fun a -> a = "--suite")

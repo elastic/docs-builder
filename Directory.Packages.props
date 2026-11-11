@@ -70,8 +70,6 @@
   <ItemGroup>
     <PackageVersion Include="Nullean.Make.Fs" Version="0.27.1" />
     <PackageVersion Include="Proc.Fs" Version="0.20.0" />
-    <PackageVersion Include="Fake.Tools.Git" Version="6.1.4" />
-    <PackageVersion Include="Fake.IO.Zip" Version="6.1.4" />
     <PackageVersion Include="FSharp.Core" Version="11.0.101" />
   </ItemGroup>
   <ItemGroup>
