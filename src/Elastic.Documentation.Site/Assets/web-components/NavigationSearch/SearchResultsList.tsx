@@ -433,8 +433,8 @@ const ApiMark = ({
 /**
  * Breadcrumb with 3-part layout:
  * - First: always visible
- * - Middle: truncates with ellipsis
- * - Last: always visible
+ * - Middle: truncates with ellipsis first
+ * - Last: truncates with ellipsis once the middle is gone
  */
 const Breadcrumb = ({
     items,
@@ -494,7 +494,8 @@ const Breadcrumb = ({
             {middle.length > 0 && (
                 <span
                     css={css`
-                        flex-shrink: 1;
+                        /* far above the last crumb's 1, so the middle gives up its width first */
+                        flex-shrink: 1000;
                         min-width: 0;
                         overflow: hidden;
                         text-overflow: ellipsis;
@@ -508,7 +509,10 @@ const Breadcrumb = ({
 
             <span
                 css={css`
-                    flex-shrink: 0;
+                    flex-shrink: 1;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                     margin-left: 0.5ch;
                 `}
             >
