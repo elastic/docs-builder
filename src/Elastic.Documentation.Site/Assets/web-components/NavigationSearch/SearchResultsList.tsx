@@ -50,11 +50,12 @@ export const navigationSearchBreadcrumbs = (
     typeFilter: TypeFilter,
     buildType: string
 ) => {
+    // The API tab already says API, so the product crumb (with its mark) leads instead.
     if (typeFilter === 'api') {
         const [, product, ...rest] = parents
+        if (!product) return ['API']
         return [
-            'API',
-            ...(product ? [formatApiProductCrumb(product.title)] : []),
+            formatApiProductCrumb(product.title),
             ...rest.map((parent) => parent.title),
         ]
     }
@@ -344,7 +345,7 @@ const SearchResultRow = ({
             `}
         >
             {result.landing && (
-                <LandingIcon product={result.product ?? result.apiKey} />
+                <ApiMark product={result.product ?? result.apiKey} size="l" />
             )}
             <div
                 css={css`
@@ -353,7 +354,19 @@ const SearchResultRow = ({
                     overflow: hidden;
                 `}
             >
-                {!result.landing && <Breadcrumb items={breadcrumbItems} />}
+                {!result.landing && (
+                    <Breadcrumb
+                        items={breadcrumbItems}
+                        icon={
+                            typeFilter === 'api' && (
+                                <ApiMark
+                                    product={result.product ?? result.apiKey}
+                                    size="s"
+                                />
+                            )
+                        }
+                    />
+                )}
                 <Title text={result.title} deprecated={result.deprecated} />
                 {route ? (
                     <RouteLine route={route} tokens={tokens} />
@@ -378,12 +391,23 @@ const SearchResultRow = ({
     )
 }
 
-/** The API's own mark, as its landing page and the catalog show it, in the gutter where an operation row has none. */
-const LandingIcon = ({ product }: { product?: string | null }) => {
+/**
+ * The API's own mark, as its landing page and the catalog show it: in the landing row's gutter, and before the
+ * product crumb of an operation row. An API without a mark shows none rather than a generic glyph.
+ */
+const ApiMark = ({
+    product,
+    size,
+}: {
+    product?: string | null
+    size: 's' | 'l'
+}) => {
     const { euiTheme } = useEuiTheme()
     const svg = apiProductIconSvg(product ?? undefined)
     if (!svg) return null
 
+    // The small mark matches the breadcrumb's font size, so it reads as part of the crumb rather than a logo.
+    const edge = size === 'l' ? euiTheme.size.xl : euiTheme.size.m
     return (
         <span
             aria-hidden="true"
@@ -391,8 +415,9 @@ const LandingIcon = ({ product }: { product?: string | null }) => {
             css={css`
                 flex-shrink: 0;
                 display: inline-flex;
-                width: ${euiTheme.size.xl};
-                height: ${euiTheme.size.xl};
+                align-self: center;
+                width: ${edge};
+                height: ${edge};
                 margin-right: ${euiTheme.size.xs};
 
                 svg {
@@ -408,10 +433,16 @@ const LandingIcon = ({ product }: { product?: string | null }) => {
 /**
  * Breadcrumb with 3-part layout:
  * - First: always visible
- * - Middle: truncates with ellipsis
- * - Last: always visible
+ * - Middle: truncates with ellipsis first
+ * - Last: truncates with ellipsis once the middle is gone
  */
-const Breadcrumb = ({ items }: { items: string[] }) => {
+const Breadcrumb = ({
+    items,
+    icon,
+}: {
+    items: string[]
+    icon?: React.ReactNode
+}) => {
     const { euiTheme } = useEuiTheme()
 
     if (items.length === 0) return null
@@ -424,7 +455,17 @@ const Breadcrumb = ({ items }: { items: string[] }) => {
     `
 
     if (items.length === 1) {
-        return <div css={baseStyles}>{items[0]}</div>
+        return (
+            <div
+                css={css`
+                    ${baseStyles}
+                    display: flex;
+                `}
+            >
+                {icon}
+                {items[0]}
+            </div>
+        )
     }
 
     const first = items[0]
@@ -443,15 +484,18 @@ const Breadcrumb = ({ items }: { items: string[] }) => {
             <span
                 css={css`
                     flex-shrink: 0;
+                    display: inline-flex;
                 `}
             >
+                {icon}
                 {first}
             </span>
 
             {middle.length > 0 && (
                 <span
                     css={css`
-                        flex-shrink: 1;
+                        /* far above the last crumb's 1, so the middle gives up its width first */
+                        flex-shrink: 1000;
                         min-width: 0;
                         overflow: hidden;
                         text-overflow: ellipsis;
@@ -465,7 +509,10 @@ const Breadcrumb = ({ items }: { items: string[] }) => {
 
             <span
                 css={css`
-                    flex-shrink: 0;
+                    flex-shrink: 1;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                     margin-left: 0.5ch;
                 `}
             >
