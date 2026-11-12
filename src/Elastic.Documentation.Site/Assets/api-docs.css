@@ -2641,33 +2641,68 @@ a.docs-reference-btn::after {
 	box-shadow: none;
 }
 
-/* Thin scrollbar thumb on the dark surface. */
-.api-code-card .api-code-sample-body,
-.api-code-card .example-block-body {
-	scrollbar-width: thin;
-	scrollbar-color: var(--api-code-scroll) transparent;
+/* Chrome draws ::-webkit-scrollbar only while scrollbar-width and scrollbar-color are auto; styles.css sets both on *. */
+.api-code-card
+	:is(
+		.api-code-carousel-card-body,
+		.api-code-sample-body,
+		.example-block-body
+	) {
+	scrollbar-width: auto;
+	scrollbar-color: auto;
+
+	@supports not selector(::-webkit-scrollbar) {
+		scrollbar-width: thin;
+		scrollbar-color: var(--api-code-scroll) transparent;
+	}
+
+	&::-webkit-scrollbar {
+		width: 14px;
+		height: 14px;
+	}
+
+	&::-webkit-scrollbar-track,
+	&::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+
+	/* A 6px thumb in a 14px slot that fills it under the pointer: a drag target that never shifts the code.
+	   Shown while the card is hovered or focused, always on touch screens. */
+	&::-webkit-scrollbar-thumb {
+		background-color: var(--api-code-scroll);
+		background-clip: padding-box;
+		border: 4px solid transparent;
+		border-radius: 9999px;
+
+		@media (hover: hover) {
+			background-color: transparent;
+		}
+	}
 }
 
-.api-code-card .api-code-sample-body::-webkit-scrollbar,
-.api-code-card .example-block-body::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-track,
-.api-code-card .example-block-body::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
-.api-code-card .example-block-body::-webkit-scrollbar-thumb {
+.api-code-card:is(:hover, :focus-within)
+	:is(
+		.api-code-carousel-card-body,
+		.api-code-sample-body,
+		.example-block-body
+	)::-webkit-scrollbar-thumb {
 	background-color: var(--api-code-scroll);
-	border-radius: 9999px;
 }
 
-.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
-.api-code-card .example-block-body::-webkit-scrollbar-thumb:hover {
+.api-code-card
+	:is(
+		.api-code-carousel-card-body,
+		.api-code-sample-body,
+		.example-block-body
+	)::-webkit-scrollbar-thumb:hover,
+.api-code-card
+	:is(
+		.api-code-carousel-card-body,
+		.api-code-sample-body,
+		.example-block-body
+	)::-webkit-scrollbar-thumb:active {
 	background-color: var(--api-code-scroll-hover);
+	border-width: 2px;
 }
 
 .example-block {

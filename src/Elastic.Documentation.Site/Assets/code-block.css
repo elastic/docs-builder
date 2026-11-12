@@ -206,31 +206,29 @@
 	}
 
 	/* Line-number gutter (rendered by _ApiCodeBlock.cshtml): a sibling element that is excluded from
-	   selection and copy. The wrapper owns the surface so the gutter sits on the same fill. */
+	   selection and copy. The wrapper owns the surface so the gutter sits on the same fill.
+	   As wide as its longest line, so long lines scroll in the card and the sticky gutter stays put the whole way. */
 	.highlight .code-lines {
 		display: flex;
 		align-items: flex-start;
-		min-width: 0;
+		width: max-content;
+		min-width: 100%;
 		background-color: var(--code-bg);
 		border-radius: var(--code-radius);
 
-		/* width:max-content keeps long lines from wrapping; the card scrolls instead. */
 		> pre {
 			display: block;
 			margin: 0;
 			flex: 1 0 auto;
-			width: max-content;
-			min-width: 0;
 
 			code {
 				display: block;
-				width: max-content;
-				min-width: 0;
 				max-height: none;
 				overflow: visible;
 				background-color: transparent;
 				border-radius: 0;
-				padding-left: 0.5rem !important;
+				/* The gap after the numbers is the gutter's, so it holds while the code scrolls. */
+				padding-left: 0 !important;
 				white-space: pre;
 				word-break: normal;
 				overflow-wrap: normal;
@@ -238,18 +236,21 @@
 		}
 	}
 
+	/* Sticky, and opaque so code scrolls under it. */
 	.highlight .code-line-gutter {
+		position: sticky;
+		left: 0;
 		flex: 0 0 auto;
 		margin: 0;
 		border: 0;
-		background: transparent;
+		background-color: var(--code-bg);
 		user-select: none;
 		-webkit-user-select: none;
 		pointer-events: none;
 		text-align: right;
 		font-variant-numeric: tabular-nums;
 		white-space: pre;
-		padding: var(--code-pad) 0.5rem var(--code-pad) 1rem;
+		padding: var(--code-pad) 1rem;
 		color: var(--code-gutter);
 		font-family: var(--code-font);
 		font-size: var(--code-size);
