@@ -4359,3 +4359,44 @@ body[data-api-column-dragging] {
 .api-page-shell .property-list dd > :is(p, ul, ol, .admonition) {
 	max-width: 48rem;
 }
+
+/* Beta notice above every API page (_ApiBetaBanner). One line on desktop; below 768px the middle sentence drops so it stays within two. */
+.api-beta-banner {
+	align-self: stretch;
+	padding: var(--space-1) var(--layout-gutter);
+	border-bottom: var(--border-width) solid var(--color-accent-border);
+	background: var(--color-accent-surface);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+	text-align: center;
+}
+
+.api-beta-banner__message {
+	margin: 0;
+}
+
+.api-beta-banner__label {
+	display: inline-block;
+	margin-right: var(--space-1);
+	padding: 0 var(--space-2);
+	border-radius: var(--radius-sm);
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-bold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.api-beta-banner__link {
+	color: inherit;
+	font-weight: var(--weight-semibold);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+	.api-beta-banner__detail {
+		display: none;
+	}
+}

@@ -4483,3 +4483,46 @@ body[data-api-column-dragging] {
 .api-page-shell .property-list dd > :is(p, ul, ol, .admonition) {
 	max-width: 48rem;
 }
+
+/* Beta notice above every API page (_ApiBetaBanner). One line on desktop; below 768px the middle sentence drops so it stays within two. */
+.api-beta-banner {
+	align-self: stretch;
+	padding: 6px 16px;
+	border-bottom: 1px solid var(--color-blue-elastic-30, #a6c9f7);
+	background: var(--color-blue-elastic-10, #e8f1ff);
+	color: var(--color-ink-dark, #1d2a3e);
+	font-size: 14px;
+	line-height: 20px;
+	text-align: center;
+}
+
+.api-beta-banner__message {
+	margin: 0;
+}
+
+.api-beta-banner__label {
+	display: inline-block;
+	margin-right: 4px;
+	padding: 0 6px;
+	border-radius: 4px;
+	background: var(--color-blue-elastic, #0b64dd);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	vertical-align: 1px;
+}
+
+.api-beta-banner__link {
+	color: var(--color-blue-elastic-100, #1750ba);
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+	.api-beta-banner__detail {
+		display: none;
+	}
+}
