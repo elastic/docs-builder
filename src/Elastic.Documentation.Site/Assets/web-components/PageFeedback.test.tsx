@@ -450,14 +450,11 @@ describe('PageFeedback', () => {
     })
 
     describe('AWS WAF token', () => {
-        const sdkUrl = 'https://waf.example/challenge.js'
-        const findSdkScript = () =>
-            document.head.querySelector<HTMLScriptElement>(
-                `script[src="${sdkUrl}"]`
-            )
+        const sdkUrl = 'https://waf.example/jsapi.js'
 
-        const submitPositiveFeedback = async () => {
-            const user = userEvent.setup()
+        const renderAndReact = async (
+            user = userEvent.setup()
+        ): Promise<ReturnType<typeof userEvent.setup>> => {
             render(
                 <PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />
             )
@@ -470,25 +467,20 @@ describe('PageFeedback', () => {
         }
 
         afterEach(() => {
+            vi.useRealTimers()
             delete config.wafIntegrationUrl
             delete window.AwsWafIntegration
-            document.head.querySelectorAll('script').forEach((s) => s.remove())
         })
 
-        it('sends the PUT through AwsWafIntegration.fetch once the SDK loads', async () => {
+        it('sends the PUT through AwsWafIntegration.fetch once the SDK is ready', async () => {
             config.wafIntegrationUrl = sdkUrl
             const wafFetch = vi.fn().mockResolvedValue(successfulResponse)
 
-            await submitPositiveFeedback()
-            const script = findSdkScript()
-            expect(script).not.toBeNull()
+            await renderAndReact()
             window.AwsWafIntegration = {
                 fetch: wafFetch,
                 getToken: vi.fn().mockResolvedValue('token'),
             }
-            act(() => {
-                script!.dispatchEvent(new Event('load'))
-            })
 
             await waitFor(() =>
                 expect(wafFetch).toHaveBeenCalledWith(
@@ -507,22 +499,22 @@ describe('PageFeedback', () => {
             expect(global.fetch).not.toHaveBeenCalled()
         })
 
-        it('uses plain fetch and loads no script when no SDK URL is configured', async () => {
-            await submitPositiveFeedback()
+        it('uses plain fetch when no SDK URL is configured', async () => {
+            await renderAndReact()
 
             await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
-            expect(document.head.querySelector('script')).toBeNull()
         })
 
-        it('shows the error state and sends nothing when the SDK fails to load', async () => {
+        it('shows the error state and sends nothing when the SDK never appears', async () => {
+            vi.useFakeTimers({ shouldAdvanceTime: true })
             config.wafIntegrationUrl = sdkUrl
 
-            const user = await submitPositiveFeedback()
+            const user = await renderAndReact(
+                userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+            )
             await user.click(screen.getByRole('checkbox', { name: /Accurate/ }))
             await user.click(screen.getByRole('button', { name: 'Submit' }))
-            act(() => {
-                findSdkScript()!.dispatchEvent(new Event('error'))
-            })
+            await act(() => vi.advanceTimersByTimeAsync(5000))
 
             expect(await screen.findByRole('alert')).toBeInTheDocument()
             expect(global.fetch).not.toHaveBeenCalled()

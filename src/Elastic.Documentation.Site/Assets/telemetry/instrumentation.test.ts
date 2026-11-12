@@ -117,11 +117,10 @@ describe('initializeOtel', () => {
             mockUserAgent('Mozilla/5.0 Chrome/120.0.0.0')
         })
 
-        it('sends plain headers and loads no script without an SDK URL', () => {
+        it('sends plain headers without an SDK URL', () => {
             initializeOtel()
 
             expect(exportHeaders()).toEqual({ 'X-Docs-Session': 'active' })
-            expect(document.head.querySelector('script')).toBeNull()
         })
 
         it('holds each export until the WAF token is fetched', async () => {
@@ -166,31 +165,27 @@ describe('initializeOtel', () => {
             }
         })
 
-        it('retries the WAF token on the next export after a failed load', async () => {
-            config.wafIntegrationUrl = sdkUrl
+        it('exports without the token when the SDK never appears, then retries', async () => {
+            vi.useFakeTimers()
+            try {
+                config.wafIntegrationUrl = sdkUrl
 
-            initializeOtel()
-            const headers = exportHeadersFn()
-            document.head
-                .querySelector(`script[src="${sdkUrl}"]`)!
-                .dispatchEvent(new Event('error'))
-            await headers()
+                initializeOtel()
+                const headers = exportHeadersFn()
+                const first = headers()
+                await vi.advanceTimersByTimeAsync(5000)
+                expect(await first).toEqual({ 'X-Docs-Session': 'active' })
 
-            expect(
-                document.head.querySelector(`script[src="${sdkUrl}"]`)
-            ).not.toBeNull()
-        })
+                const getToken = vi.fn().mockResolvedValue('token')
+                window.AwsWafIntegration = { fetch: vi.fn(), getToken }
+                const second = headers()
+                await vi.advanceTimersByTimeAsync(25)
 
-        it('still exports when the WAF SDK fails to load', async () => {
-            config.wafIntegrationUrl = sdkUrl
-
-            initializeOtel()
-            const headers = exportHeadersFn()
-            document.head
-                .querySelector(`script[src="${sdkUrl}"]`)!
-                .dispatchEvent(new Event('error'))
-
-            expect(await headers()).toEqual({ 'X-Docs-Session': 'active' })
+                expect(getToken).toHaveBeenCalled()
+                expect(await second).toEqual({ 'X-Docs-Session': 'active' })
+            } finally {
+                vi.useRealTimers()
+            }
         })
     })
 })

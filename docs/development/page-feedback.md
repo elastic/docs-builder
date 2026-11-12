@@ -73,21 +73,30 @@ name; it does not replace index versioning.
 
 The web ACL can require a valid `aws-waf-token` cookie on `/docs/_api/v1/page-feedback`.
 A request without one gets an HTTP 202 challenge that a plain `fetch()` can't solve.
-When `waf_integration_url` is set on an environment in `config/assembler.yml`, the
-`<page-feedback>` component loads the AWS WAF JavaScript SDK from that URL and sends
-the `PUT` through `AwsWafIntegration.fetch`. Take the URL from the AWS WAF console's
-Application integration page. Use the CloudFront (`edge`) script URL, not the regional
-one. It belongs to the AWS account and is not tied to a web ACL, so environments in the
-same account share it.
+When `waf_integration_url` is set on an environment in `config/assembler.yml`, the page
+`<head>` loads the AWS WAF JavaScript SDK from that URL (`Layout/_Head.cshtml`). The SDK
+fetches the token in the background and stores it in the cookie. Take the URL from the
+AWS WAF console's Application integration page. Use the CloudFront (`edge`) script URL,
+not the regional one. It belongs to the AWS account and is not tied to a web ACL, so
+environments in the same account share it.
 
-With no URL (local dev, isolated, codex, air-gapped) nothing loads and the component
-uses plain `fetch`. If the SDK is configured but fails to load or times out, the
-submit shows the normal error state instead of sending an unchallenged request.
+The URL is the `jsapi.js` script from the **CAPTCHA integration** tab. The
+**Intelligent threat integration** tab only lists web ACLs that use the ACFP or ATP rule
+groups or targeted Bot Control, and the docs web ACLs use common Bot Control. `jsapi.js`
+loads `challenge.js`, which defines `AwsWafIntegration` a little later, so
+`waitForWafSdk` in `Assets/waf.ts` waits up to 5 seconds for the global.
 
-Browser telemetry uses the same URL. When it's set, the OTLP exporters wait for the
-token before each export to `/docs/_api/v1/o/{t,l,m}`, so the web ACL can challenge
-those paths too. If the token can't be fetched within 5 seconds, exports go out
-without it. The SDK still starts at page load, so instrumentation isn't delayed.
+The `<page-feedback>` component sends the `PUT` through `AwsWafIntegration.fetch`. If the
+SDK doesn't appear in time, the submit shows the normal error state instead of sending
+an unchallenged request.
+
+Browser telemetry waits for the token before each export to `/docs/_api/v1/o/{t,l,m}`,
+so the web ACL can challenge those paths too. If the token can't be fetched within 5
+seconds, exports go out without it. The telemetry SDK still starts at page load, so
+instrumentation isn't delayed.
+
+With no URL (local dev, isolated, codex, air-gapped) no script loads, page feedback uses
+plain `fetch`, and telemetry doesn't wait.
 
 External callers of other `/docs/_api/v1/*` paths can't run the SDK and stay on IP
 rate limits.
