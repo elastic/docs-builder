@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\api\Elastic.Documentation.Mcp.Remote\Elastic.Documentation.Mcp.Remote.csproj" />
-      <ProjectReference Include="..\..\src\services\search\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
-      <ProjectReference Include="..\..\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Mcp.Remote\Elastic.Documentation.Mcp.Remote.csproj" />
+    <ProjectReference Include="..\..\src\services\search\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+    <ProjectReference Include="..\..\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
+  </ItemGroup>
 
 </Project>

@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <IsAotCompatible>true</IsAotCompatible>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="AWSSDK.CloudFront" />
-      <PackageReference Include="AWSSDK.S3" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.CloudFront" />
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
 
 </Project>

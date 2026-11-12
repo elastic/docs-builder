@@ -1,27 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <AssemblyName>Elastic.Documentation.Search</AssemblyName>
-        <RootNamespace>Elastic.Documentation.Search</RootNamespace>
-        <IsAotCompatible>true</IsAotCompatible>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Elastic.Documentation.Search</AssemblyName>
+    <RootNamespace>Elastic.Documentation.Search</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
-      <ProjectReference Include="..\..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
-      <ProjectReference Include="..\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Elastic.Clients.Elasticsearch" />
-      <PackageReference Include="Microsoft.Extensions.Logging" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Elastic.Clients.Elasticsearch" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-            <_Parameter1>Elastic.Documentation.Api.Tests</_Parameter1>
-        </AssemblyAttribute>
-    </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Documentation.Api.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

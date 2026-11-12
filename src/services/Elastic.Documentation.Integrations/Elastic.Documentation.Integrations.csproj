@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<IsAotCompatible>true</IsAotCompatible>
-	</PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="AWSSDK.S3" />
-		<PackageReference Include="Microsoft.Extensions.Logging" />
-		<PackageReference Include="System.IO.Abstractions" />
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="System.IO.Abstractions" />
+  </ItemGroup>
 
 </Project>
