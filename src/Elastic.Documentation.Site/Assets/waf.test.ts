@@ -1,51 +1,43 @@
 import { config } from './config'
-import { loadWafSdk } from './waf'
+import { waitForWafSdk } from './waf'
 
-const sdkUrl = 'https://waf.example/jsapi.js'
 const integration = {
     fetch: vi.fn(),
     getToken: vi.fn().mockResolvedValue('token'),
 }
-const sdkScript = () =>
-    document.head.querySelector<HTMLScriptElement>(`script[src="${sdkUrl}"]`)
 
 beforeEach(() => {
     vi.useFakeTimers()
-    config.wafIntegrationUrl = sdkUrl
+    config.wafIntegrationUrl = 'https://waf.example/jsapi.js'
 })
 
 afterEach(() => {
     vi.useRealTimers()
     delete config.wafIntegrationUrl
     delete window.AwsWafIntegration
-    document.head.querySelectorAll('script').forEach((s) => s.remove())
 })
 
-// On edge, jsapi.js fires load once it has appended challenge.js, about 20 to 200 ms before
-// challenge.js defines AwsWafIntegration.
-it('resolves when AwsWafIntegration appears after the script load event', async () => {
-    const load = loadWafSdk()
-    sdkScript()!.dispatchEvent(new Event('load'))
-    await vi.advanceTimersByTimeAsync(200)
+// On edge, jsapi.js adds challenge.js, which defines AwsWafIntegration about 400 to 600 ms
+// after the page starts loading.
+it('resolves once AwsWafIntegration appears', async () => {
+    const ready = waitForWafSdk()
+    await vi.advanceTimersByTimeAsync(500)
     window.AwsWafIntegration = integration
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(25)
 
-    await expect(load).resolves.toBe(integration)
+    await expect(ready).resolves.toBe(integration)
 })
 
 it('rejects when AwsWafIntegration never appears', async () => {
-    const load = loadWafSdk()
-    const rejected = expect(load).rejects.toThrow('AWS WAF SDK load timed out')
-    sdkScript()!.dispatchEvent(new Event('load'))
+    const ready = waitForWafSdk()
+    const rejected = expect(ready).rejects.toThrow('AWS WAF SDK not available')
     await vi.advanceTimersByTimeAsync(5000)
 
     await rejected
-    expect(sdkScript()).toBeNull()
 })
 
-it('resolves to null and loads nothing without an SDK URL', async () => {
+it('resolves to null without an SDK URL', async () => {
     delete config.wafIntegrationUrl
 
-    await expect(loadWafSdk()).resolves.toBeNull()
-    expect(document.head.querySelector('script')).toBeNull()
+    await expect(waitForWafSdk()).resolves.toBeNull()
 })

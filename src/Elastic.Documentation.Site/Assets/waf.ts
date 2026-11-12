@@ -13,50 +13,22 @@ declare global {
 
 const WAF_SDK_TIMEOUT = 5000
 
-let wafSdkLoad: Promise<AwsWafIntegration> | undefined
+// Layout/_Head.cshtml loads the AWS WAF SDK when wafIntegrationUrl is set. Its jsapi.js adds
+// challenge.js, which defines AwsWafIntegration a little after the page loads, so this waits
+// for the global. Resolves to null without a URL, so callers fall back to plain fetch.
+export const waitForWafSdk = (): Promise<AwsWafIntegration | null> => {
+    if (!config.wafIntegrationUrl) return Promise.resolve(null)
 
-// Loads the AWS WAF JS SDK from config.wafIntegrationUrl. Resolves to null when no URL is
-// configured, so callers fall back to plain fetch.
-export const loadWafSdk = (): Promise<AwsWafIntegration | null> => {
-    const url = config.wafIntegrationUrl
-    if (!url) return Promise.resolve(null)
-    if (window.AwsWafIntegration)
-        return Promise.resolve(window.AwsWafIntegration)
-    if (wafSdkLoad) return wafSdkLoad
-
-    wafSdkLoad = new Promise<AwsWafIntegration>((resolve, reject) => {
-        const script = document.createElement('script')
-        let poll: ReturnType<typeof setTimeout> | undefined
-        const fail = (reason: string) => {
-            clearTimeout(timer)
-            clearTimeout(poll)
-            script.remove()
-            reject(new Error(reason))
+    const deadline = Date.now() + WAF_SDK_TIMEOUT
+    return new Promise((resolve, reject) => {
+        const check = () => {
+            if (window.AwsWafIntegration) resolve(window.AwsWafIntegration)
+            else if (Date.now() >= deadline)
+                reject(new Error('AWS WAF SDK not available'))
+            else setTimeout(check, 25)
         }
-        const timer = setTimeout(
-            () => fail('AWS WAF SDK load timed out'),
-            WAF_SDK_TIMEOUT
-        )
-        // jsapi.js fires load once it has appended challenge.js, which defines
-        // AwsWafIntegration a little later, so wait for the global until the timeout.
-        const resolveWhenReady = () => {
-            const integration = window.AwsWafIntegration
-            if (!integration) {
-                poll = setTimeout(resolveWhenReady, 25)
-                return
-            }
-            clearTimeout(timer)
-            resolve(integration)
-        }
-        script.src = url
-        script.defer = true
-        script.onload = resolveWhenReady
-        script.onerror = () => fail('AWS WAF SDK failed to load')
-        document.head.appendChild(script)
-    }).finally(() => {
-        wafSdkLoad = undefined
+        check()
     })
-    return wafSdkLoad
 }
 
 // Resolves to true once the SDK has stored the aws-waf-token cookie, or to false when the SDK
@@ -66,7 +38,7 @@ export const waitForWafToken = (): Promise<boolean> => {
     const timeout = new Promise<boolean>((resolve) => {
         timer = setTimeout(() => resolve(false), WAF_SDK_TIMEOUT)
     })
-    const token = loadWafSdk()
+    const token = waitForWafSdk()
         .then((waf) => waf?.getToken())
         .then(
             () => true,

@@ -1,5 +1,5 @@
 import { config } from '../config'
-import { loadWafSdk } from '../waf'
+import { waitForWafSdk } from '../waf'
 import r2wc from '@r2wc/react-to-web-component'
 import * as React from 'react'
 import { FormEvent, useEffect, useId, useRef, useState } from 'react'
@@ -226,7 +226,7 @@ const submitFeedback = async (
     feedbackId: string,
     payload: PageFeedbackPayload
 ) => {
-    const waf = await loadWafSdk()
+    const waf = await waitForWafSdk()
     const response = await (waf?.fetch ?? fetch)(
         `${config.apiBasePath}/v1/page-feedback/${feedbackId}`,
         {
@@ -287,11 +287,6 @@ export const PageFeedback = ({
     }, [pageUrl, feedbackId, reaction, reasons, comment, showThanks])
 
     useEffect(() => () => pendingReactionSaveRef.current?.(false), [])
-
-    useEffect(() => {
-        // Warm the WAF token; a failure resurfaces on submit.
-        loadWafSdk().catch(() => {})
-    }, [])
 
     const saveInitialReaction = async (nextReaction: Reaction) => {
         try {

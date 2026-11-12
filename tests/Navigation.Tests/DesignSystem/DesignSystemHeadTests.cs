@@ -131,6 +131,34 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 			);
 	}
 
+	private const string WafIntegrationUrl = "https://waf.example/jsapi.js";
+
+	[Test]
+	public async Task WafSdk_AssemblerWithUrl_LoadsTheScriptDeferred()
+	{
+		var html = await RenderHead(new FeatureFlags([]) { WafIntegrationUrl = WafIntegrationUrl }, BuildType.Assembler);
+
+		html.Should().Contain($"""<script src="{WafIntegrationUrl}" defer></script>""");
+	}
+
+	[Test]
+	[Arguments(BuildType.Isolated)]
+	[Arguments(BuildType.Codex)]
+	public async Task WafSdk_OtherBuildTypes_LoadNoScript(BuildType buildType)
+	{
+		var html = await RenderHead(new FeatureFlags([]) { WafIntegrationUrl = WafIntegrationUrl }, buildType);
+
+		html.Should().NotContain(WafIntegrationUrl);
+	}
+
+	[Test]
+	public async Task WafSdk_AssemblerWithoutUrl_LoadsNoScript()
+	{
+		var html = await RenderHead(new FeatureFlags([]), BuildType.Assembler);
+
+		html.Should().NotContain("awswaf").And.NotContain("waf.example");
+	}
+
 	private static string StateMeta(string html) =>
 		string.Join('\n', Regex.Matches(html, @"<meta name=""docs:(features|build-type)""[^>]*>").Select(m => m.Value));
 
