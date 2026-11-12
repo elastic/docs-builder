@@ -1,3 +1,4 @@
+@using Elastic.Documentation.Extensions
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Image.ImageCarouselViewModel>
 @{
     // Convert semantic height values to pixel values
@@ -22,7 +23,7 @@
             var image = Model.Images[i];
             <div class="carousel-slide" data-index="@i" @(i == 0 ? "data-active=true" : "")>
                 <a class="carousel-image-reference reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-@(image.UniqueImageId)">
-                    <img title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" style="@image.Style" />
+                    <img title="@image.Title.NullIfEmpty()" alt="@(image.Alt ?? "")" src="@image.ImageUrl" style="@image.Style" />
                 </a>
             </div>
         }
@@ -67,7 +68,7 @@
                 </a>
             </span>
             <a class="reference internal image-reference" href="@image.ImageUrl" target="_blank">
-                <img title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" />
+                <img title="@image.Title.NullIfEmpty()" alt="@(image.Alt ?? "")" src="@image.ImageUrl" />
             </a>
         </div>
     </div>
