@@ -4,6 +4,7 @@
  * for both OperationView and SchemaView pages.
  */
 import { decorateApiCodeTokens } from './api-code-tokens'
+import { initApiColumnResize } from './api-column-resize'
 import { initExamplesBalance } from './api-examples-balance'
 import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
@@ -767,6 +768,7 @@ export function initApiDocs(): void {
     initExamplesBalance()
     initUnionChips()
     initApiPageActions()
+    initApiColumnResize()
     initExamplesRailSteadying()
     syncExpandAll()
     // After initHighlight — gutters need final textContent line counts

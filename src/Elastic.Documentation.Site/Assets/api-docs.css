@@ -3069,8 +3069,20 @@ button.example-response-tab:focus-visible {
 /* Wide enough for the capped block: the reference at the docs text width, the examples
    rail at a fixed width, more air between them. */
 @media (min-width: 1280px) {
+	/* The rail's default grows with the window, from 440px at 1280px to 600px at 1700px, so a laptop window keeps room for the reference. */
+	.api-page-shell {
+		--max-examples-width: clamp(
+			440px,
+			440px + (100vw - 1280px) * 0.38,
+			600px
+		);
+	}
+
+	/* Three real columns up to a 1920px window: the reference takes whatever the sidebar and the rail leave. Past that the
+	   reference and the rail keep the width they have at 1920px and sit centred beside the sidebar. */
 	#api-content-grid {
 		--api-column-gap: 32px;
+		max-width: calc(1920px - var(--max-sidebar-width) - 64px);
 	}
 
 	.api-page-grid {
@@ -4357,4 +4369,117 @@ html:has(.api-page-shell) {
 
 .api-expand-standalone[hidden] {
 	display: none;
+}
+
+/* Drag handles between the sidebar, the reference and the examples rail. Script adds them and sets each one's left edge. */
+.api-page-shell {
+	position: relative;
+}
+
+.api-column-handle {
+	display: none;
+}
+
+@media (min-width: 1280px) {
+	.api-column-handle {
+		display: block;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 12px;
+		transform: translateX(-50%);
+		cursor: ew-resize;
+		touch-action: none;
+		z-index: 20;
+	}
+
+	.api-column-handle[hidden] {
+		display: none;
+	}
+
+	.api-column-handle::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 2px;
+		transform: translateX(-50%);
+		transition: background-color 100ms;
+	}
+
+	.api-column-handle:hover::after,
+	.api-column-handle:focus-visible::after,
+	.api-column-handle[data-dragging]::after {
+		background: var(--color-blue-elastic);
+	}
+
+	.api-column-handle:focus-visible {
+		outline: none;
+	}
+
+	/* The sidebar handle's box starts 3px inside the sidebar, so most of it stays off the scrollbar. The sidebar's own border is 1px wide
+	   and ends on the edge, so its centre is half a pixel inside it. The line and the bar are odd widths drawn on that pixel, so they
+	   overhang the border by the same amount on both sides. The bar takes its position from a whole-pixel margin, because a half-pixel
+	   offset is snapped in layout and then smeared across a seventh column. */
+	.api-column-handle[data-api-column-handle='nav']::after {
+		width: 3px;
+		transform: translateX(calc(-50% - 3.5px));
+	}
+
+	.api-column-handle[data-api-column-handle='nav']::before {
+		width: 5px;
+		margin-inline: 0;
+		border-radius: 2px;
+		transition:
+			background-color 100ms,
+			width 100ms,
+			margin-left 100ms,
+			border-radius 100ms;
+	}
+
+	.api-column-handle[data-api-column-handle='nav']:hover::before,
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::before,
+	.api-column-handle[data-api-column-handle='nav'][data-dragging]::before {
+		width: 7px;
+		margin-left: -1px;
+		border-radius: 3px;
+	}
+
+	/* The grab bar sits at the middle of the window, so it stays in reach however far the page is scrolled. */
+	.api-column-handle::before {
+		content: '';
+		display: block;
+		position: sticky;
+		top: calc(50vh - 20px);
+		width: 4px;
+		height: 40px;
+		margin-inline: auto;
+		border-radius: 2px;
+		background: #b6c0d1;
+		transition:
+			background-color 100ms,
+			width 100ms,
+			border-radius 100ms;
+	}
+
+	.api-column-handle:hover::before,
+	.api-column-handle:focus-visible::before,
+	.api-column-handle[data-dragging]::before {
+		width: 6px;
+		border-radius: 3px;
+		background: var(--color-blue-elastic);
+	}
+}
+
+body[data-api-column-dragging] {
+	cursor: ew-resize;
+	user-select: none;
+}
+
+/* The reference column is fluid, but prose keeps the docs text width (48rem) so its lines stay readable. Parameter rows, tables and code
+   still use the whole column. */
+.api-page-shell .api-operation-description > :is(p, ul, ol, .admonition),
+.api-page-shell .property-list dd > :is(p, ul, ol, .admonition) {
+	max-width: 48rem;
 }

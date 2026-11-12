@@ -3081,6 +3081,24 @@ button.example-response-tab:focus-visible {
 	--layout-rail-max: 30rem;
 }
 
+/* Three real columns up to a 1920px window: the shell takes the wide limit and is centred beyond it. The token changes on the shell
+   only. The header keeps the page's --layout-max, because the elastic.co masthead follows that token and the assembler has to stay
+   contained. */
+@media (min-width: 1101px) {
+	.api-page-shell.layout--three {
+		--layout-max: var(--layout-max-wide);
+	}
+}
+
+/* Where the handles show, the rail's default grows with the window, from 20rem at 1101px to 600px at 1700px, so a laptop window keeps
+   room for the reference. */
+@media (min-width: 1101px) {
+	.api-page-shell.layout--three {
+		--layout-rail-min: clamp(20rem, 20rem + (100vw - 1101px) * 0.47, 600px);
+		--layout-rail-max: 600px;
+	}
+}
+
 @media (min-width: 761px) {
 	/* The column gap and the right padding match (32px each, the shell adds 16px more on
 	   the right), so the content has the same space beside the nav as beside the window
@@ -4247,4 +4265,97 @@ html:has(.api-page-shell) {
 		line-height: 1.5rem;
 		text-transform: none;
 	}
+}
+
+/* Drag handles between the sidebar, the reference and the examples rail. Script adds them and sets each one's left edge. */
+.api-page-shell {
+	position: relative;
+}
+
+.api-column-handle {
+	display: none;
+}
+
+@media (min-width: 1101px) {
+	.api-column-handle {
+		display: block;
+		position: absolute;
+		inset-block: 0;
+		width: var(--space-3);
+		translate: -50% 0;
+		cursor: ew-resize;
+		touch-action: none;
+		z-index: var(--z-sticky);
+	}
+
+	.api-column-handle[hidden] {
+		display: none;
+	}
+
+	.api-column-handle::after {
+		content: '';
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: 50%;
+		width: 2px;
+		translate: -50% 0;
+		background: transparent;
+		transition: background-color var(--duration-fast);
+	}
+
+	.api-column-handle:hover::after,
+	.api-column-handle:focus-visible::after,
+	.api-column-handle[data-dragging]::after {
+		background: var(--color-accent);
+	}
+
+	.api-column-handle:focus-visible {
+		outline: none;
+	}
+
+	/* The sidebar handle's box starts 3px inside the sidebar, so most of it stays off the scrollbar. Its line and bar are drawn on the edge. */
+	.api-column-handle[data-api-column-handle='nav']::after {
+		translate: calc(-50% - 3px) 0;
+	}
+
+	.api-column-handle[data-api-column-handle='nav']::before {
+		translate: -3px 0;
+	}
+
+	/* The grab bar sits at the middle of the window, so it stays in reach however far the page is scrolled. */
+	.api-column-handle::before {
+		content: '';
+		display: block;
+		position: sticky;
+		top: calc(50vh - 20px);
+		width: 4px;
+		height: 40px;
+		margin-inline: auto;
+		border-radius: 2px;
+		background: var(--color-border-control);
+		transition:
+			background-color 100ms,
+			width 100ms,
+			border-radius 100ms;
+	}
+
+	.api-column-handle:hover::before,
+	.api-column-handle:focus-visible::before,
+	.api-column-handle[data-dragging]::before {
+		width: 6px;
+		border-radius: 3px;
+		background: var(--color-accent);
+	}
+}
+
+body[data-api-column-dragging] {
+	cursor: ew-resize;
+	user-select: none;
+}
+
+/* The reference column is fluid, but prose keeps the docs text width (48rem) so its lines stay readable. Parameter rows, tables and code
+   still use the whole column. */
+.api-page-shell .api-operation-description > :is(p, ul, ol, .admonition),
+.api-page-shell .property-list dd > :is(p, ul, ol, .admonition) {
+	max-width: 48rem;
 }
