@@ -1,6 +1,5 @@
 ### initialize
-# The client deliberately asks for an older protocol version than the one the server pins to. If the pinning
-# regresses, the SDK echoes the client's version and the snapshot shows it.
+# What most MCP clients send today. The other protocol versions are in mcp-protocol-versions.http.
 POST /docs/_mcp
 Content-Type: application/json
 Accept: application/json, text/event-stream
@@ -10,7 +9,7 @@ Accept: application/json, text/event-stream
   "id": 1,
   "method": "initialize",
   "params": {
-    "protocolVersion": "2024-11-05",
+    "protocolVersion": "2025-11-25",
     "capabilities": {},
     "clientInfo": { "name": "test-client", "version": "1.0.0" }
   }
