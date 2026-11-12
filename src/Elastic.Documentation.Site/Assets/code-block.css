@@ -205,9 +205,8 @@
 		}
 	}
 
-	/* Line-number gutter (rendered by _ApiCodeBlock.cshtml): a sibling element that is excluded from
-	   selection and copy. The wrapper owns the surface so the gutter sits on the same fill.
-	   As wide as its longest line, so long lines scroll in the card and the sticky gutter stays put the whole way. */
+	/* Line-number gutter (rendered by _ApiCodeBlock.cshtml): a sibling excluded from selection and copy.
+	   As wide as its longest line, so long lines scroll in the card while the sticky gutter stays put. */
 	.highlight .code-lines {
 		display: flex;
 		align-items: flex-start;
