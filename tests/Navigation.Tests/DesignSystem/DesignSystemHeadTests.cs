@@ -152,6 +152,16 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	}
 
 	[Test]
+	public async Task WafSdk_AirGappedAssembler_LoadsNoScript()
+	{
+		var features = new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }) { WafIntegrationUrl = WafIntegrationUrl };
+
+		var html = await RenderHead(features, BuildType.Assembler);
+
+		html.Should().NotContain(WafIntegrationUrl);
+	}
+
+	[Test]
 	public async Task WafSdk_AssemblerWithoutUrl_LoadsNoScript()
 	{
 		var html = await RenderHead(new FeatureFlags([]), BuildType.Assembler);

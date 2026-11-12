@@ -58,7 +58,7 @@
 		   cached copy running before the parser reaches the body throws. *@
 		<script src="@(Model.Features.StagingElasticNavEnabled ? "https://stag-www.elastic.co/elastic-nav.js" : "https://www.elastic.co/elastic-nav.js")" defer></script>
 	}
-	@if (Model.BuildType == BuildType.Assembler && Model.Features.WafIntegrationUrl is { } wafIntegrationUrl)
+	@if (Model.FrontendConfig.WafIntegrationUrl is { } wafIntegrationUrl)
 	{
 		@* AWS WAF SDK: fetches the aws-waf-token cookie in the background for page feedback and
 		   telemetry exports (Assets/waf.ts). *@
