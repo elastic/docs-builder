@@ -125,6 +125,49 @@ public class ServerlessPromotionTests
 	}
 
 	[Test]
+	public async Task FindPreviousVersionAsync_UsesTheRequestedFinalSlice_NotDs5()
+	{
+		const string ds1 = "production-noncanary-ds-1";
+
+		static GitopsCommit Slice(string sha, string slice) => new(sha, $"gitops: {slice} Artifact promotion for kibana to x (#3)");
+
+		static string TwoSlices(string ds1Version, string ds5Version) =>
+			$"""
+			services:
+			  kibana:
+			    versions:
+			      production-noncanary-ds-1: "{ds1Version}"
+			      production-noncanary-ds-5: "{ds5Version}"
+			""";
+
+		var reads = new List<string>();
+		var commits =
+			(IReadOnlyList<GitopsCommit>)[Slice("s5-new", Ds5), Slice("s1-current", ds1), Slice("s5-old", Ds5), Slice("s1-previous", ds1)];
+		var yaml = new Dictionary<string, string>
+		{
+			["s5-new"] = TwoSlices("111111111111", "555555555555"),
+			["s1-current"] = TwoSlices("aaaaaaaaaaaa", "555555555555"),
+			["s5-old"] = TwoSlices("aaaaaaaaaaaa", "444444444444"),
+			["s1-previous"] = TwoSlices("bbbbbbbbbbbb", "444444444444")
+		};
+
+		var result = await ServerlessPromotion.FindPreviousVersionAsync(
+			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? commits : []),
+			sha =>
+			{
+				reads.Add(sha);
+				return Task.FromResult<string?>(yaml[sha]);
+			},
+			new PreviousVersionSearch(ds1, "aaaaaaaaaaaa")
+		);
+
+		result.Status.Should().Be(HistoryWalkStatus.Found);
+		result.PreviousVersion.Should().Be("bbbbbbbbbbbb");
+		result.ScannedCommits.Should().Be(4);
+		reads.Should().Equal("s1-current", "s1-previous");
+	}
+
+	[Test]
 	public async Task FindPreviousVersionAsync_AFailedFileReadFailsTheWalk_NotSkipsTheCommit()
 	{
 		var result = await ServerlessPromotion.FindPreviousVersionAsync(
