@@ -4029,14 +4029,35 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
-/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
-   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
-   above the response. The 12-line cap stays as the minimum. */
+/* Beside the article the rail is sticky and as tall as the window, and the response fills what is left under
+   the request. Every box from the rail down to the response body may shrink, so the body scrolls inside the
+   window whatever sits above it, and its scrollbar stays in view. */
 @media (min-width: 1024px) {
+	#api-examples-panel,
+	#api-examples-panel .api-examples {
+		display: flex;
+		flex-direction: column;
+	}
+
+	#api-examples-panel .api-examples-panel-nav,
+	#api-examples-panel .api-examples,
+	#api-examples-panel .api-examples-scenario-panel:not([hidden]),
 	#api-examples-panel .example-block-body {
-		max-height: max(
-			var(--api-response-cap),
-			calc(100dvh - var(--offset-top, 0px) - 26rem)
+		flex: 0 1 auto;
+		min-height: 0;
+	}
+
+	#api-examples-panel .example-block-body {
+		max-height: none;
+	}
+
+	/* A floor of four lines, or the whole response when it is shorter; below it the rail scrolls instead.
+	   flex-basis: content keeps the preferred size at the content, so the height only sets the automatic
+	   minimum: min(content, height). The height counts the 48px header and the 14px scrollbar slot. */
+	#api-examples-panel .example-block--response {
+		flex: 0 1 content;
+		height: calc(
+			48px + 4 * var(--code-size) * 1.5 + var(--code-pad) * 2 + 14px
 		);
 	}
 }
