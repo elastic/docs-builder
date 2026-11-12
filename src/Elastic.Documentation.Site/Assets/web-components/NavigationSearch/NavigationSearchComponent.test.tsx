@@ -302,6 +302,14 @@ describe('NavigationSearchWrapper while htmx loads the result', () => {
                         score: 5,
                         parents: [],
                     },
+                    {
+                        type: 'api',
+                        url: `${operationUrl}-other`,
+                        title: 'Delete a document',
+                        description: 'Removes a document',
+                        score: 4,
+                        parents: [],
+                    },
                 ],
             }),
         })
@@ -364,6 +372,21 @@ describe('NavigationSearchWrapper while htmx loads the result', () => {
 
         endRequest()
         await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it('rejects another result while one is loading', async () => {
+        const { row } = await openBoostedResult()
+        await userEvent.click(row)
+        const other = screen.getByRole('link', { name: /Delete a document/ })
+
+        const second = new CustomEvent('htmx:beforeRequest', {
+            bubbles: true,
+            cancelable: true,
+            detail: { elt: other },
+        })
+        other.dispatchEvent(second)
+
+        expect(second.defaultPrevented).toBe(true)
     })
 
     it('aborts the request and closes on Escape', async () => {

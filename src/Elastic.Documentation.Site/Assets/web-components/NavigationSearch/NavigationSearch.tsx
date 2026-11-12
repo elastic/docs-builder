@@ -117,14 +117,20 @@ export const NavigationSearch = ({
     finishNavigationRef.current = finishNavigation
 
     useEffect(() => {
-        const onBeforeSend = (event: Event) => {
+        const resultLink = (event: Event) => {
             const link = (event as CustomEvent<{ elt?: Element }>).detail?.elt
-            if (
-                link?.hasAttribute('data-search-result-index') &&
+            return link?.hasAttribute('data-search-result-index') &&
                 popoverContentRef.current?.contains(link)
-            ) {
-                setPending(link)
-            }
+                ? link
+                : null
+        }
+        // Tab and Enter reach another result while one loads; its request would race the one in flight.
+        const onBeforeRequest = (event: Event) => {
+            if (pendingRef.current && resultLink(event)) event.preventDefault()
+        }
+        const onBeforeSend = (event: Event) => {
+            const link = resultLink(event)
+            if (link) setPending(link)
         }
         // Fires once the response is swapped in, and on an error, abort or timeout as well.
         const onAfterRequest = (event: Event) => {
@@ -132,9 +138,11 @@ export const NavigationSearch = ({
             if (link && link === pendingRef.current)
                 finishNavigationRef.current()
         }
+        document.addEventListener('htmx:beforeRequest', onBeforeRequest)
         document.addEventListener('htmx:beforeSend', onBeforeSend)
         document.addEventListener('htmx:afterRequest', onAfterRequest)
         return () => {
+            document.removeEventListener('htmx:beforeRequest', onBeforeRequest)
             document.removeEventListener('htmx:beforeSend', onBeforeSend)
             document.removeEventListener('htmx:afterRequest', onAfterRequest)
         }
