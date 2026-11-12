@@ -20,7 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Mcp.Remote.Tests\SseScrubbers.cs" Link="Linked\SseScrubbers.cs" />
   </ItemGroup>
 
   <ItemGroup>

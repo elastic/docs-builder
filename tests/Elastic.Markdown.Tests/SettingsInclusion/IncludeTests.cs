@@ -142,23 +142,22 @@ groups:
 	public void RendersAsFencedCodeBlock() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<h2 id="example">Example</h2>
-		<dl>
-			<dt id="xpack-legacy-example">xpack.legacy.example
-			</dt>
-			<dd>
-				<p>Example code:</p>
-				<div class="highlight-yaml notranslate">
-					<div class="highlight">
-						<pre>
-							<code class="language-yaml">xpack.legacy.example:   enabled: true
-							</code>
-						</pre>
+			<h2 id="example">Example</h2>
+			<dl>
+				<dt id="xpack-legacy-example">xpack.legacy.example
+				</dt>
+				<dd>
+					<p>Example code:</p>
+					<div class="highlight-yaml notranslate">
+						<div class="highlight">
+							<pre><code class="language-yaml">xpack.legacy.example:
+			  enabled: true
+			</code>		</pre>
+						</div>
 					</div>
-				</div>
-			</dd>
-		</dl>
-		""",
+				</dd>
+			</dl>
+			""",
 			DocsHtml.Body()
 		);
 }

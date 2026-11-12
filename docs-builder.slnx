@@ -22,10 +22,10 @@
   </Folder>
   <Folder Name="/config/">
     <File Path="config/assembler.yml" />
-	<File Path="config/changelog.example.yml" />
+    <File Path="config/changelog.example.yml" />
     <File Path="config/legacy-url-mappings.yml" />
     <File Path="config/navigation.yml" />
-	<File Path="config/codex.example.yml" />
+    <File Path="config/codex.example.yml" />
     <File Path="config/products.yml" />
     <File Path="config/versions.yml" />
     <File Path="config/search.yml" />
@@ -60,16 +60,16 @@
   </Folder>
   <Folder Name="/src/api/">
     <Project Path="src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" />
-	<Project Path="src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" />
+    <Project Path="src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" />
   </Folder>
   <Folder Name="/src/authoring/">
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
     <Project Path="src/authoring/Elastic.LegacyDocs.Migration/Elastic.LegacyDocs.Migration.csproj" />
   </Folder>
   <Folder Name="/src/infra/">
-	  <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
-	  <Project Path="src/infra/docs-lambda-changelog-scrubber/docs-lambda-changelog-scrubber.csproj" />
-	  <Project Path="src/infra/docs-lambda-openapi-index/docs-lambda-openapi-index.csproj" />
+    <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
+    <Project Path="src/infra/docs-lambda-changelog-scrubber/docs-lambda-changelog-scrubber.csproj" />
+    <Project Path="src/infra/docs-lambda-openapi-index/docs-lambda-openapi-index.csproj" />
   </Folder>
   <Folder Name="/src/services/">
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
@@ -98,8 +98,8 @@
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
-	  <Project Path="tests-integration/Mcp.Remote.IntegrationTests/Mcp.Remote.IntegrationTests.csproj" />
-	  <Project Path="tests-integration/Elastic.ContentDateEnrichment.IntegrationTests/Elastic.ContentDateEnrichment.IntegrationTests.csproj" />
+    <Project Path="tests-integration/Mcp.Remote.IntegrationTests/Mcp.Remote.IntegrationTests.csproj" />
+    <Project Path="tests-integration/Elastic.ContentDateEnrichment.IntegrationTests/Elastic.ContentDateEnrichment.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />

@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-	</PropertyGroup>
+  <PropertyGroup>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\..\src\services\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\services\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="FakeItEasy" />
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FakeItEasy" />
+  </ItemGroup>
 
 </Project>
