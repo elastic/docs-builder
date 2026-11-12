@@ -35,4 +35,7 @@ public class StringExtensionsTests
 	[Arguments("", "")]
 	public void CapitalizeFirstLetter_CapitalizesPlainWordsAndKeepsCodeLikeNames(string input, string expected) =>
 		input.CapitalizeFirstLetter().Should().Be(expected);
+
+	[Test]
+	public void Slugify_NullInput_ReturnsEmptyString() => ((string?)null).Slugify().Should().BeEmpty();
 }
