@@ -395,6 +395,9 @@ toc:
                   - toc: apm-agent-ios://reference/edot-ios
                     path_prefix: reference/opentelemetry/edot-sdks/ios
                     island: true
+                  - toc: elastic-otel-react-native://reference/edot-react-native
+                    path_prefix: reference/opentelemetry/edot-sdks/react-native
+                    island: true
                   - toc: elastic-otel-java://reference/edot-java
                     path_prefix: reference/opentelemetry/edot-sdks/java
                     island: true
@@ -691,6 +694,10 @@ toc:
               # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
               - toc: apm-agent-ios://release-notes
                 path_prefix: release-notes/edot/sdks/ios
+              # EDOT React Native
+              # https://github.com/elastic/elastic-otel-react-native/blob/main/docs/release-notes/toc.yml
+              - toc: elastic-otel-react-native://release-notes
+                path_prefix: release-notes/edot/sdks/react-native
               # EDOT Java
               # https://github.com/elastic/elastic-otel-java/blob/main/docs/release-notes/toc.yml
               - toc: elastic-otel-java://release-notes
