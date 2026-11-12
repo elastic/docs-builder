@@ -99,7 +99,7 @@ internal sealed class UnifiedReleaseCommands(
 	/// a product's local file takes precedence over the file fetched from GitHub, allowing teams to
 	/// iterate on the configuration ahead of landing it in their repository.
 	/// </param>
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> Bundle(
 		[Argument] string versionOrKeyword,
@@ -318,7 +318,7 @@ internal sealed class UnifiedReleaseCommands(
 	/// <param name="output">Destination for the generated site. Defaults to <c>./site</c>. The folder is cleaned first.</param>
 	/// <param name="pathPrefix">URL path prefix prepended to every generated link.</param>
 	/// <param name="canonicalBaseUrl">Base URL written into canonical link tags.</param>
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> Build(
 		[Argument] string versionOrKeyword,

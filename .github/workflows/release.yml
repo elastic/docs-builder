@@ -83,7 +83,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Containers
-        run: ./build.sh publishcontainers
+        run: ./build.sh publish-containers
 
       # Resolve the manifest digest of each pushed image so we can
       # mint a signed attestation against the immutable digest. The
@@ -317,7 +317,7 @@ jobs:
         uses: $/.github/actions/bootstrap
 
       - name: Publish Binaries
-        run: ./build.sh publishzip
+        run: ./build.sh publish-zip
         shell: bash
         
       - name: Generate artifact attestation

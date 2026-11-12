@@ -235,17 +235,17 @@ jobs:
 
       - name: Publish AOT
         if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os != 'ubuntu-latest') }} # publish containers already validates AOT build
-        run: dotnet run --project build -c release -- publishbinaries
+        run: dotnet run --project build -c release -- publish-binaries
 
       - name: Publish Containers
         if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os == 'ubuntu-latest') }}
         env:
           DOCKER_NO_PUBLISH: true
-        run: dotnet run --project build -c release -- publishcontainers
+        run: dotnet run --project build -c release -- publish-containers
 
       - name: Run Container
         if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os == 'ubuntu-latest') }}
-        run: dotnet run --project build -c release -- runlocalcontainer
+        run: dotnet run --project build -c release -- run-local-container
 
   integration:
     # TODO temporarily disabled: credentials now actually reach the tests (Parameters:-prefixed
