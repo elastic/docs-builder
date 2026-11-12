@@ -26,8 +26,10 @@ export const loadWafSdk = (): Promise<AwsWafIntegration | null> => {
 
     wafSdkLoad = new Promise<AwsWafIntegration>((resolve, reject) => {
         const script = document.createElement('script')
+        let poll: ReturnType<typeof setTimeout> | undefined
         const fail = (reason: string) => {
             clearTimeout(timer)
+            clearTimeout(poll)
             script.remove()
             reject(new Error(reason))
         }
@@ -35,14 +37,20 @@ export const loadWafSdk = (): Promise<AwsWafIntegration | null> => {
             () => fail('AWS WAF SDK load timed out'),
             WAF_SDK_TIMEOUT
         )
+        // jsapi.js fires load once it has appended challenge.js, which defines
+        // AwsWafIntegration a little later, so wait for the global until the timeout.
+        const resolveWhenReady = () => {
+            const integration = window.AwsWafIntegration
+            if (!integration) {
+                poll = setTimeout(resolveWhenReady, 25)
+                return
+            }
+            clearTimeout(timer)
+            resolve(integration)
+        }
         script.src = url
         script.defer = true
-        script.onload = () => {
-            clearTimeout(timer)
-            const integration = window.AwsWafIntegration
-            if (integration) resolve(integration)
-            else fail('AWS WAF SDK loaded without AwsWafIntegration')
-        }
+        script.onload = resolveWhenReady
         script.onerror = () => fail('AWS WAF SDK failed to load')
         document.head.appendChild(script)
     }).finally(() => {
