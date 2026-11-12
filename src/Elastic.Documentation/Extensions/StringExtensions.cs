@@ -11,7 +11,7 @@ public static class StringExtensions
 {
 	private static readonly SlugHelper SlugHelper = new();
 
-	public static string Slugify(this string? text) => SlugHelper.GenerateSlug(text ?? string.Empty);
+	public static string Slugify(this string? text) => SlugHelper.GenerateSlug(text);
 
 	public static string OptionalWindowsReplace(this string relativePath)
 	{
