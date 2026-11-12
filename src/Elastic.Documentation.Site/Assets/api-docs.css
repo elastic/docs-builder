@@ -4418,13 +4418,32 @@ html:has(.api-page-shell) {
 		outline: none;
 	}
 
-	/* The sidebar handle's box starts 3px inside the sidebar, so most of it stays off the scrollbar. Its line and bar are drawn on the edge. */
+	/* The sidebar handle's box starts 3px inside the sidebar, so most of it stays off the scrollbar. The sidebar's own border is 1px wide
+	   and ends on the edge, so its centre is half a pixel inside it. The line and the bar are odd widths drawn on that pixel, so they
+	   overhang the border by the same amount on both sides. The bar takes its position from a whole-pixel margin, because a half-pixel
+	   offset is snapped in layout and then smeared across a seventh column. */
 	.api-column-handle[data-api-column-handle='nav']::after {
-		transform: translateX(calc(-50% - 3px));
+		width: 3px;
+		transform: translateX(calc(-50% - 3.5px));
 	}
 
 	.api-column-handle[data-api-column-handle='nav']::before {
-		transform: translateX(-3px);
+		width: 5px;
+		margin-inline: 0;
+		border-radius: 2px;
+		transition:
+			background-color 100ms,
+			width 100ms,
+			margin-left 100ms,
+			border-radius 100ms;
+	}
+
+	.api-column-handle[data-api-column-handle='nav']:hover::before,
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::before,
+	.api-column-handle[data-api-column-handle='nav'][data-dragging]::before {
+		width: 7px;
+		margin-left: -1px;
+		border-radius: 3px;
 	}
 
 	/* The grab bar sits at the middle of the window, so it stays in reach however far the page is scrolled. */
