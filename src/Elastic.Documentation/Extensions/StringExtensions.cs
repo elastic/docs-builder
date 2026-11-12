@@ -11,7 +11,7 @@ public static class StringExtensions
 {
 	private static readonly SlugHelper SlugHelper = new();
 
-	public static string Slugify(this string? text) => SlugHelper.GenerateSlug(text);
+	public static string Slugify(this string? text) => text is null ? string.Empty : SlugHelper.GenerateSlug(text);
 
 	/// <summary>Null for an empty string, so a Razor attribute bound to it is left out instead of written as <c>name=""</c>.</summary>
 	public static string? NullIfEmpty(this string? value) => string.IsNullOrEmpty(value) ? null : value;
