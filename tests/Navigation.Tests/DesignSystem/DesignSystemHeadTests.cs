@@ -134,11 +134,11 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	private const string WafIntegrationUrl = "https://waf.example/jsapi.js";
 
 	[Test]
-	public async Task WafSdk_AssemblerWithUrl_LoadsTheScriptDeferred()
+	public async Task WafSdk_AssemblerWithUrl_LoadsTheScriptAsync()
 	{
 		var html = await RenderHead(new FeatureFlags([]) { WafIntegrationUrl = WafIntegrationUrl }, BuildType.Assembler);
 
-		html.Should().Contain($"""<script src="{WafIntegrationUrl}" defer></script>""");
+		html.Should().Contain($"""<script src="{WafIntegrationUrl}" async></script>""");
 	}
 
 	[Test]
