@@ -337,6 +337,7 @@ let Run (argv: string[]) =
             let tag = match imageTags onTag with ci when ci.StartsWith "ci-" -> ci | _ -> "edge"
             sh $"docker run elastic/docs-builder:{tag} --help"
             sh $"docker run elastic/website-search-essc:{tag} --help" }
+                               |> needsTool [ "docker" ]
 
         | AirGappedBuild -> target [] {
             let assemblyDir = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly")
@@ -351,6 +352,7 @@ let Run (argv: string[]) =
             gzipCompressDirectory assemblyDir
 
             sh $"docker build -f build/air-gapped/Dockerfile --build-context content=.artifacts/assembly --build-context config=build/air-gapped -t elastic-docs-air-gapped build/air-gapped" }
+                            |> needsTool [ "docker" ]
         | Setup -> target [] {
             sh $"dotnet tool restore"
             sh $"dotnet husky install"
@@ -373,6 +375,7 @@ let Run (argv: string[]) =
         | AirGappedRun -> target [] {
             printfn "Running at http://localhost:8080"
             sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
+                          |> needsTool [ "docker" ]
 
     // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
     // Enum.TryParse also accepts numbers and comma lists, so compare with the declared names.
