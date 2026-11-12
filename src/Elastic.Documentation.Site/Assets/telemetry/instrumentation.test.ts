@@ -14,13 +14,32 @@ vi.mock('@elastic/opentelemetry-browser', () => ({ startBrowserSdk }))
 
 describe('initializeOtel', () => {
     let initializeOtel: typeof import('./instrumentation').initializeOtel
+    let config: typeof import('../config').config
 
     beforeEach(async () => {
         startBrowserSdk.mockClear()
         // Re-import so the module-level initialized flag is reset.
         vi.resetModules()
         ;({ initializeOtel } = await import('./instrumentation'))
+        ;({ config } = await import('../config'))
     })
+
+    afterEach(() => {
+        delete window.AwsWafIntegration
+        document.head.querySelectorAll('script').forEach((s) => s.remove())
+    })
+
+    const exportHeaders = () =>
+        startBrowserSdk.mock.calls[0][0]?.exportConfig?.headers as unknown as
+            Record<string, string> | (() => Promise<Record<string, string>>)
+    const exportHeadersFn = () =>
+        exportHeaders() as () => Promise<Record<string, string>>
+    const trackSettled = <T>(promise: Promise<T>) => {
+        const state = { settled: false, promise }
+        promise.then(() => (state.settled = true))
+        return state
+    }
+    const flushTasks = () => new Promise((resolve) => setTimeout(resolve, 0))
 
     const mockUserAgent = (userAgent: string) =>
         vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent)
@@ -89,5 +108,89 @@ describe('initializeOtel', () => {
         expect(
             startBrowserSdk.mock.calls[0][0]?.disableInstrumentations
         ).toEqual(['resource-timing'])
+    })
+
+    describe('AWS WAF token', () => {
+        const sdkUrl = 'https://waf.example/challenge.js'
+
+        beforeEach(() => {
+            mockUserAgent('Mozilla/5.0 Chrome/120.0.0.0')
+        })
+
+        it('sends plain headers and loads no script without an SDK URL', () => {
+            initializeOtel()
+
+            expect(exportHeaders()).toEqual({ 'X-Docs-Session': 'active' })
+            expect(document.head.querySelector('script')).toBeNull()
+        })
+
+        it('holds each export until the WAF token is fetched', async () => {
+            config.wafIntegrationUrl = sdkUrl
+            let issueToken: (token: string) => void = () => {}
+            window.AwsWafIntegration = {
+                fetch: vi.fn(),
+                getToken: () =>
+                    new Promise<string>((resolve) => (issueToken = resolve)),
+            }
+
+            initializeOtel()
+            const pending = trackSettled(exportHeadersFn()())
+            await flushTasks()
+            expect(pending.settled).toBe(false)
+
+            issueToken('token')
+
+            expect(await pending.promise).toEqual({
+                'X-Docs-Session': 'active',
+            })
+        })
+
+        it('stops waiting for the WAF token after 5 seconds', async () => {
+            vi.useFakeTimers()
+            try {
+                config.wafIntegrationUrl = sdkUrl
+                window.AwsWafIntegration = {
+                    fetch: vi.fn(),
+                    getToken: () => new Promise<string>(() => {}),
+                }
+
+                initializeOtel()
+                const pending = trackSettled(exportHeadersFn()())
+                await vi.advanceTimersByTimeAsync(4999)
+                expect(pending.settled).toBe(false)
+
+                await vi.advanceTimersByTimeAsync(1)
+                expect(pending.settled).toBe(true)
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        it('retries the WAF token on the next export after a failed load', async () => {
+            config.wafIntegrationUrl = sdkUrl
+
+            initializeOtel()
+            const headers = exportHeadersFn()
+            document.head
+                .querySelector(`script[src="${sdkUrl}"]`)!
+                .dispatchEvent(new Event('error'))
+            await headers()
+
+            expect(
+                document.head.querySelector(`script[src="${sdkUrl}"]`)
+            ).not.toBeNull()
+        })
+
+        it('still exports when the WAF SDK fails to load', async () => {
+            config.wafIntegrationUrl = sdkUrl
+
+            initializeOtel()
+            const headers = exportHeadersFn()
+            document.head
+                .querySelector(`script[src="${sdkUrl}"]`)!
+                .dispatchEvent(new Event('error'))
+
+            expect(await headers()).toEqual({ 'X-Docs-Session': 'active' })
+        })
     })
 })
