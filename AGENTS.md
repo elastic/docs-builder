@@ -21,7 +21,7 @@ Elastic's documentation build toolchain. Processes Markdown from multiple repos 
 
 ## Essential Commands
 
-[mise](https://mise.jdx.dev) is the entry point. `mise install` provisions the .NET SDK (from `global.json`) and Node (from `.nvmrc`), restores the local dotnet tools and installs the git hooks. `mise tasks` lists every task. `build.sh` and `dev.sh` still work; the tasks call them and the F# build project.
+[mise](https://mise.jdx.dev) is the entry point. `mise install` provisions the .NET SDK (from `global.json`) and Node (from `.nvmrc`), restores the local dotnet tools and installs the git hooks. `mise tasks` lists every task. `build.sh` and `dev.sh` still work. Most tasks are generated from the targets of the F# build (`build/Targets.fs`; `./build.sh --help` lists them): `mise install` writes the gitignored `.make/mise-tasks.toml`, so a new target is a mise task without editing `mise.toml`. Until `mise install` has run in a clone, those tasks do not exist. The `snap:*` and `journeys:*` tasks stay in `mise.toml` until [nullean/argh#142](https://github.com/nullean/argh/issues/142) lets a namespaced target take options.
 
 ```bash
 mise trust                                      # once per clone, in the root git folder; its worktrees are trusted too

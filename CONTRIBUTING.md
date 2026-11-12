@@ -23,14 +23,14 @@ The everyday tasks:
 |---|---|
 | `mise run serve` | Serve `docs/` with live reload |
 | `mise run build` | Build the solution |
-| `mise run test` | Unit tests (extra args pass through: `mise run test -- --parallelism 4`) |
+| `mise run test` | Unit tests (options of the target pass through: `mise run test --parallelism 4`) |
 | `mise run integrate` | Integration tests (slow, clones repositories) |
 | `mise run lint` / `mise run fmt` | Check / fix C# formatting |
 | `mise run watch` | The watch loop described [below](#continuously-build-during-development) |
 | `mise run site:build`, `site:test`, `site:lint`, `site:fmt`, `site:check` | The frontend scripts in `src/Elastic.Documentation.Site` |
 | `mise run schema` | Regenerate `docs/cli-schema.json` |
 
-`./build.sh` and `./dev.sh` still work. The mise tasks call the same build project and scripts.
+`./build.sh` and `./dev.sh` still work. Most mise tasks are generated from the targets of the build project (`./build.sh --help`), so `./build.sh test` and `mise run test` are the same command; `mise install` regenerates them into `.make/`, which is gitignored.
 
 ### Docker, without local installs (`./dev.sh`)
 
