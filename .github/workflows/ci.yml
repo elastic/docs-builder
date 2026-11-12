@@ -108,16 +108,21 @@ jobs:
 
       - name: Generated tasks are listed
         run: |
-          mise tasks | grep -E '^(site:check|test|serve|version) '
+          tasks=$(mise tasks)
+          for t in site:check test serve version; do
+            echo "$tasks" | grep -qE "^$t " || { echo "missing task: $t"; exit 1; }
+          done
 
-      - name: Options reach the build target
-        run: mise run test --help | grep -i 'parallelism'
+      - name: Generated task runs the build target
+        run: mise run version | grep -F 'Semantic version:'
+
+      - name: Arguments are forwarded to the build target
+        run: |
+          if out=$(mise run test --suite nonsense 2>&1); then echo "expected failure"; exit 1; fi
+          echo "$out" | grep -F "Unknown test suite 'nonsense'"
 
       - name: Namespaced task runs
         run: mise run site:check
-
-      - name: Arguments are forwarded
-        run: mise run serve --help
 
   lint:
     runs-on: ubuntu-latest
