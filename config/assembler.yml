@@ -26,6 +26,8 @@ environments:
       NAVIGATION_PREVIEW: false
       PAGE_FEEDBACK: true
     website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
+    # Same AWS account as edge, so the WAF integration URL is shared.
+    waf_integration_url: https://33d8ddf078ac.edge.captcha-sdk.awswaf.com/33d8ddf078ac/jsapi.js
   edge:
     uri: https://docs-edge.elastic.dev
     path_prefix: docs
