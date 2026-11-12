@@ -9,6 +9,7 @@ open System.IO
 open System.IO.Compression
 open System.Text.Json
 open System.Text
+open Nullean.Argh
 open Nullean.Make.Fs
 open Proc.Fs
 open BuildInformation
@@ -28,6 +29,27 @@ type TestOptions =
       /// Test projects to run at once. Local runs only: CI always runs them one at a time. Default: the number of cores
       Parallelism: int option }
 
+type ServeOptions =
+    { /// Passed to docs-builder serve, such as --port 3001
+      [<Rest>] Rest: string list }
+
+[<RequireQualifiedAccess>]
+type SiteTarget =
+    /// npm ci for the frontend, skipped while package-lock.json is unchanged
+    | Install
+    /// Production frontend build
+    | Build
+    /// Frontend dev build with live reload
+    | Watch
+    /// Frontend tests (Vitest)
+    | Test
+    /// Frontend lint (ESLint)
+    | Lint
+    /// Frontend auto-format (Prettier)
+    | Fmt
+    /// Frontend TypeScript type check
+    | Check
+
 type Target =
     /// Clean known output locations
     | Clean
@@ -37,17 +59,17 @@ type Target =
     | Compile
     /// Run a clean build with the format check
     | Build
-    /// Run a clean build, then the tests (--suite all|unit|integration)
+    /// Run a clean build, then the tests (--suite unit|integration|all). Default: unit
     | Test of TestOptions
     /// Alias of: test --suite unit
     | UnitTest of ParallelOptions
     /// Alias of: test --suite integration
     | Integrate of ParallelOptions
-    /// Run dotnet curb format and cleanup
-    | Format
+    /// Auto-fix C# formatting: dotnet curb format and cleanup
+    | Fmt
     /// Run dotnet watch to build code, templates and web assets continuously
     | Watch
-    /// Run dotnet curb check
+    /// C# format check (curb, read-only)
     | Lint
     /// Check for a clean working copy and formatting
     | PristineCheck
@@ -69,6 +91,14 @@ type Target =
     | AirGappedBuild
     /// Run the air-gapped docs container on port 8080
     | AirGappedRun
+    /// Restore the local dotnet tools, wire the git hooks, install the frontend dependencies
+    | Setup
+    /// Serve docs/ with live reload
+    | Serve of ServeOptions
+    /// Regenerate docs/cli-schema.json after changing docs-builder commands
+    | Schema
+    /// Frontend build, test and lint (src/Elastic.Documentation.Site)
+    | Site of SiteTarget
 
 // The journeys need Chrome and a built site, so they run through `mise run journeys` and their own CI jobs, not with the unit tests.
 let private isJourneyProject (project: string) = project.Contains "Journeys.Tests"
@@ -176,6 +206,8 @@ let private containerProjects =
       "src/tooling/essc/essc.csproj", "website-search-essc"
       "src/tooling/docs-journeys/docs-journeys.csproj", "docs-builder-journeys" ]
 
+let private siteDir = "src/Elastic.Documentation.Site"
+
 let Run (argv: string[]) =
     let app = MakeApp<Target>("build", None)
     let skipDirtyCheck = app.Flag("--skip-dirty-check", short = "-c", desc = "Skip the clean checkout check that guards the release/publish targets")
@@ -212,6 +244,20 @@ let Run (argv: string[]) =
                 failBuild "Orphaned snapshots found. Delete them with `dotnet snap orphans --delete` and commit the removal."
     }
 
+    // npm ci runs only when package-lock.json is newer than what the last install left in node_modules.
+    let siteInstall = steps {
+        let lockFile = Path.Combine(siteDir, "package-lock.json")
+        let stamp = Path.Combine(siteDir, "node_modules", ".package-lock.json")
+        if not (File.Exists stamp) || File.GetLastWriteTimeUtc lockFile > File.GetLastWriteTimeUtc stamp then
+            use! _ = inDir siteDir
+            sh $"npm ci"
+    }
+    let npmRun (script: string) = steps {
+        do! siteInstall
+        use! _ = inDir siteDir
+        sh $"npm run {script}"
+    }
+
     app.Bind <| function
         | Version -> target [] {
             printfn $"Informational version: %s{Software.Version.Informational}"
@@ -223,16 +269,16 @@ let Run (argv: string[]) =
         | Compile -> step [] { sh $"dotnet build -c release" }
         | Build -> target [Clean; Lint; Compile] { printfn "build" }
 
-        | Test o -> target [Compile] { do! runTests (defaultArg o.Suite TestSuite.All) o.Parallelism }
+        | Test o -> target [Compile] { do! runTests (defaultArg o.Suite TestSuite.Unit) o.Parallelism }
         | UnitTest o -> target [Compile] { do! runTests TestSuite.Unit o.Parallelism }
         | Integrate o -> target [Compile] { do! runTests TestSuite.Integration o.Parallelism }
 
-        | Format -> target [] {
+        | Fmt -> target [] {
             sh $"dotnet curb format ."
             sh $"dotnet curb cleanup --forward" }
         | Watch -> target [] { sh $"dotnet watch --project src/tooling/docs-builder --configuration debug -- serve --watch" }
 
-        | Lint -> step [] {
+        | Lint -> target [] {
             let! code = exitCode $"dotnet curb check . --cache .artifacts/curb.cache"
             if code = 0 then printfn "No formatting violations found."
             else failBuild "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check" }
@@ -297,6 +343,25 @@ let Run (argv: string[]) =
             gzipCompressDirectory assemblyDir
 
             sh $"docker build -f build/air-gapped/Dockerfile --build-context content=.artifacts/assembly --build-context config=build/air-gapped -t elastic-docs-air-gapped build/air-gapped" }
+        | Setup -> target [] {
+            sh $"dotnet tool restore"
+            sh $"dotnet husky install"
+            do! siteInstall }
+        | Serve o -> target [] { sh $"dotnet run --project src/tooling/docs-builder -- serve {o.Rest}" }
+        | Schema -> target [] {
+            // Written as captured: Cmd.toFile would add a trailing newline that the file has never had.
+            let! json = text $"dotnet run --project src/tooling/docs-builder -- __schema"
+            File.WriteAllText("docs/cli-schema.json", json) }
+
+        | Site SiteTarget.Install -> target [] { do! siteInstall }
+        | Site SiteTarget.Build -> target [] { do! npmRun "build" }
+        | Site SiteTarget.Watch -> target [] { do! npmRun "watch" }
+        | Site SiteTarget.Test -> target [] { do! npmRun "test" }
+        | Site SiteTarget.Lint -> target [] { do! npmRun "lint" }
+        | Site SiteTarget.Fmt -> target [] { do! npmRun "fmt:write" }
+        | Site SiteTarget.Check -> target [] { do! npmRun "compile:check" }
+
+
         | AirGappedRun -> target [] {
             printfn "Running at http://localhost:8080"
             sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
