@@ -27,7 +27,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 
 interface Props {
     placeholder?: string
@@ -78,11 +78,67 @@ export const NavigationSearch = ({
         setOpen(false)
     }
 
-    const handleResultClick = (opensElsewhere = false) => {
-        if (opensElsewhere) return
+    // The result link whose htmx request is in flight. The dropdown stays up until that request ends, so the reader
+    // is not left on the old page with no cue. htmx sends from its listener on the link itself, ahead of React's
+    // delegated onClick, so the click handler already sees it. beforeSend, not beforeRequest: preloads and the
+    // new-tab and full-page-load paths in htmx-hooks cancel beforeRequest and never send.
+    const pendingRef = useRef<Element | null>(null)
+    const [isNavigating, setIsNavigating] = useState(false)
+    const setPending = (link: Element | null) => {
+        pendingRef.current = link
+        setIsNavigating(!!link)
+    }
+
+    const finishNavigation = () => {
+        setPending(null)
         close('navigate')
         inputRef.current?.blur()
     }
+
+    const cancelNavigation = () => {
+        const link = pendingRef.current
+        if (!link) return
+        // Cleared first, so the afterRequest the abort fires is not taken for the end of a navigation.
+        setPending(null)
+        link.dispatchEvent(
+            new CustomEvent('htmx:abort', {
+                bubbles: true,
+                detail: { elt: link },
+            })
+        )
+    }
+
+    const handleResultClick = (opensElsewhere = false) => {
+        if (opensElsewhere) return
+        if (!pendingRef.current) finishNavigation()
+    }
+
+    const finishNavigationRef = useRef(finishNavigation)
+    finishNavigationRef.current = finishNavigation
+
+    useEffect(() => {
+        const onBeforeSend = (event: Event) => {
+            const link = (event as CustomEvent<{ elt?: Element }>).detail?.elt
+            if (
+                link?.hasAttribute('data-search-result-index') &&
+                popoverContentRef.current?.contains(link)
+            ) {
+                setPending(link)
+            }
+        }
+        // Fires once the response is swapped in, and on an error, abort or timeout as well.
+        const onAfterRequest = (event: Event) => {
+            const link = (event as CustomEvent<{ elt?: Element }>).detail?.elt
+            if (link && link === pendingRef.current)
+                finishNavigationRef.current()
+        }
+        document.addEventListener('htmx:beforeSend', onBeforeSend)
+        document.addEventListener('htmx:afterRequest', onAfterRequest)
+        return () => {
+            document.removeEventListener('htmx:beforeSend', onBeforeSend)
+            document.removeEventListener('htmx:afterRequest', onAfterRequest)
+        }
+    }, [])
 
     const {
         inputRef,
@@ -93,7 +149,6 @@ export const NavigationSearch = ({
         resultsCount: navigableRowCount(groups),
         isLoading: isSearching,
         onClose: () => setOpen(false),
-        onNavigate: () => handleResultClick(),
         typeFilter,
     })
 
@@ -104,6 +159,7 @@ export const NavigationSearch = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
+        cancelNavigation()
         setSearchTerm(value)
         setOpen(!!value.trim())
     }
@@ -111,6 +167,7 @@ export const NavigationSearch = ({
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Escape') {
             e.preventDefault()
+            cancelNavigation()
             close('escape')
             setSearchTerm('')
             // After the re-render, so handleBlur doesn't log a second close for the same Escape.
@@ -119,10 +176,15 @@ export const NavigationSearch = ({
             }
             return
         }
+        if (e.key === 'Enter' && pendingRef.current) {
+            e.preventDefault()
+            return
+        }
         handleInputKeyDown(e)
     }
 
     const handleBlur = (e: React.FocusEvent) => {
+        if (pendingRef.current) return
         // Check if focus is moving to something inside the popover
         const relatedTarget = e.relatedTarget as Node | null
         if (
@@ -176,7 +238,7 @@ export const NavigationSearch = ({
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
                         disabled={isSearchCooldownActive}
-                        isLoading={isSearching}
+                        isLoading={isSearching || isNavigating}
                         keyShortcuts={slashFocusEnabled ? '/ s' : undefined}
                         shortcutHint={slashFocusEnabled ? '/' : undefined}
                         ariaLabel={isApi ? 'Explore APIs' : undefined}
@@ -194,6 +256,7 @@ export const NavigationSearch = ({
                     <SearchResultsList
                         results={groups}
                         isLoading={isSearching}
+                        isNavigating={isNavigating}
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
