@@ -80,6 +80,12 @@ Application integration page. Use the CloudFront (`edge`) script URL, not the re
 one. It belongs to the AWS account and is not tied to a web ACL, so environments in the
 same account share it.
 
+The URL is the `jsapi.js` script from the **CAPTCHA integration** tab. The
+**Intelligent threat integration** tab only lists web ACLs that use the ACFP or ATP rule
+groups or targeted Bot Control, and the docs web ACLs use common Bot Control. `jsapi.js`
+loads `challenge.js`, which defines `AwsWafIntegration` shortly after `jsapi.js` fires its
+`load` event, so `loadWafSdk` waits for the global.
+
 With no URL (local dev, isolated, codex, air-gapped) nothing loads and the component
 uses plain `fetch`. If the SDK is configured but fails to load or times out, the
 submit shows the normal error state instead of sending an unchallenged request.
