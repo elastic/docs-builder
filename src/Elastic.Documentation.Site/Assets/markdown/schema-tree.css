@@ -1,0 +1,105 @@
+/* Schema layout uses the shared theme roles and scales in both docs bundles. */
+.schema-tree {
+	margin-block: var(--space-4, calc(var(--spacing) * 4));
+	padding: var(--space-3, calc(var(--spacing) * 3));
+	border: var(--border-width, 1px) solid
+		var(--color-border, var(--color-grey-20));
+	border-radius: var(--radius-md);
+	background: var(--color-surface, var(--color-white));
+	color: var(--color-text-muted, var(--color-subdued));
+	font-size: var(--text-sm);
+	line-height: var(--leading-normal, normal);
+}
+
+.schema-tree .schema-tree__nodes {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.schema-tree .schema-tree__node {
+	margin: 0;
+	padding: 0;
+}
+
+.schema-tree .schema-tree__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4, calc(var(--spacing) * 4));
+	padding-block: var(--space-1, var(--spacing));
+	list-style: none;
+}
+
+.schema-tree summary.schema-tree__row {
+	cursor: pointer;
+}
+
+.schema-tree summary.schema-tree__row::-webkit-details-marker {
+	display: none;
+}
+
+.schema-tree summary.schema-tree__row:hover {
+	color: var(--color-accent, var(--color-blue-elastic));
+}
+
+.schema-tree .schema-tree__row:focus-visible {
+	outline: 3px solid var(--color-focus-ring, var(--color-blue-elastic));
+	outline-offset: -3px;
+}
+
+/* Match the shared disclosure's small icon in both the legacy and design-system bundles. */
+.schema-tree .schema-tree__row > .icon {
+	flex: none;
+	width: 1rem;
+	height: 1rem;
+	fill: currentcolor;
+	color: var(--color-text-muted, var(--color-subdued));
+	rotate: -90deg;
+}
+
+.schema-tree details[open] > .schema-tree__row > .icon {
+	rotate: 0deg;
+}
+
+.schema-tree .schema-tree__label {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+/* Preserve the docs' monospace font while removing inline-code chrome within the field diagram. */
+.schema-tree code {
+	padding: 0;
+	border: 0;
+	background: none;
+	font-size: inherit;
+}
+
+.schema-tree .schema-tree__label > code:first-of-type {
+	color: var(--color-heading, var(--color-ink-dark));
+	font-weight: var(--weight-semibold, var(--font-weight-semibold));
+}
+
+.schema-tree .schema-tree__label > code:nth-of-type(2) {
+	color: var(--color-accent, var(--color-blue-elastic));
+}
+
+.schema-tree .schema-tree__body {
+	margin-left: var(--space-3, calc(var(--spacing) * 3));
+	padding-left: calc(var(--space-3, calc(var(--spacing) * 3)) * 2);
+	border-left: var(--border-width, 1px) solid
+		var(--color-border, var(--color-grey-20));
+}
+
+.schema-tree .schema-tree__description {
+	font-size: var(--text-xs);
+	color: var(--color-text-muted, var(--color-subdued));
+}
+
+.schema-tree .schema-tree__description > :first-child {
+	margin-top: 0;
+}
+
+.schema-tree .schema-tree__description > :last-child {
+	margin-bottom: var(--space-2, calc(var(--spacing) * 2));
+}

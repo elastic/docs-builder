@@ -111,3 +111,5 @@
 @import '../Components/Overlays/Flyout/flyout.css' layer(ds.components);
 @import '../Components/Overlays/AskAi/ask-ai.css' layer(ds.components);
 @import './ds/tokens/language-icons.css' layer(ds.components);
+
+@import './markdown/schema-tree.css' layer(ds.components);

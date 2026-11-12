@@ -565,3 +565,5 @@ h1:has(.cli-badge-ns, .cli-badge-cmd) {
 	color: #b45309;
 	border: 1px solid #fde68a;
 }
+
+@import './markdown/schema-tree.css';

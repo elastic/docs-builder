@@ -1,0 +1,7 @@
+<schema-tree>
+  - `value` — `List` — nullable
+    Metadata: `elastic:type = date_range`
+    - `$data$` — `Struct` — non-null
+      - `from` — `Timestamp[ms]` — nullable
+      - `to` — `Timestamp[ms]` — nullable
+</schema-tree>
