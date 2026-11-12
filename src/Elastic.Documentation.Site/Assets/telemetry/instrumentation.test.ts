@@ -166,6 +166,21 @@ describe('initializeOtel', () => {
             }
         })
 
+        it('retries the WAF token on the next export after a failed load', async () => {
+            config.wafIntegrationUrl = sdkUrl
+
+            initializeOtel()
+            const headers = exportHeadersFn()
+            document.head
+                .querySelector(`script[src="${sdkUrl}"]`)!
+                .dispatchEvent(new Event('error'))
+            await headers()
+
+            expect(
+                document.head.querySelector(`script[src="${sdkUrl}"]`)
+            ).not.toBeNull()
+        })
+
         it('still exports when the WAF SDK fails to load', async () => {
             config.wafIntegrationUrl = sdkUrl
 

@@ -51,17 +51,18 @@ export const loadWafSdk = (): Promise<AwsWafIntegration | null> => {
     return wafSdkLoad
 }
 
-// Resolves once the SDK has stored the aws-waf-token cookie, or after WAF_SDK_TIMEOUT. Never rejects.
-export const waitForWafToken = (): Promise<void> => {
+// Resolves to true once the SDK has stored the aws-waf-token cookie, or to false when the SDK
+// fails or WAF_SDK_TIMEOUT passes first. Never rejects.
+export const waitForWafToken = (): Promise<boolean> => {
     let timer: ReturnType<typeof setTimeout> | undefined
-    const timeout = new Promise<void>((resolve) => {
-        timer = setTimeout(resolve, WAF_SDK_TIMEOUT)
+    const timeout = new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), WAF_SDK_TIMEOUT)
     })
     const token = loadWafSdk()
         .then((waf) => waf?.getToken())
         .then(
-            () => undefined,
-            () => undefined
+            () => true,
+            () => false
         )
     return Promise.race([token, timeout]).finally(() => clearTimeout(timer))
 }

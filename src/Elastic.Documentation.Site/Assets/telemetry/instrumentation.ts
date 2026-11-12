@@ -54,13 +54,14 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
 const EXPORT_HEADERS = { 'X-Docs-Session': 'active' }
 
 // The WAF answers /v1/o/* requests without a token with a 202 that the exporter counts as a
-// success, so every export waits for the token cookie. SDK start doesn't wait.
+// success, so every export waits for the token cookie. SDK start doesn't wait. After a failed
+// wait the export goes out anyway, and the next export tries again.
 function exportHeaders(): Record<string, string> {
     if (!docsConfig.wafIntegrationUrl) return EXPORT_HEADERS
 
-    const tokenReady = waitForWafToken()
+    let tokenReady = waitForWafToken()
     const headers = async () => {
-        await tokenReady
+        if (!(await tokenReady)) tokenReady = waitForWafToken()
         return EXPORT_HEADERS
     }
     // EDOT types headers as an object, but its OTLP exporters accept a function.
