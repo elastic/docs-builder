@@ -78,6 +78,20 @@ A paragraph is not a field list.
 * Root
   1. Ordered child
 :::
+
+:::{schema-tree}
+* Root
+  * Child
+    1. Ordered grandchild
+:::
+
+:::{schema-tree}
+* Root
+  * Child
+    * ```text
+      A field label cannot start with a code block.
+      ```
+:::
 """
 )
 {
@@ -106,4 +120,33 @@ public class SchemaTreeMarkdownBodyTests() : DirectiveTest<SchemaTreeBlock>(
 {
 	[Test]
 	public void Render_MultipleRoots_PreservesDescriptions() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
+}
+
+[InheritsTests]
+public class SchemaTreeDescriptionListsTests() : DirectiveTest<SchemaTreeBlock>(
+	"""
+::::{schema-tree} Described fields
+
+* `value` — `Struct` — nullable
+
+  :::{note}
+  1. Read the schema.
+     1. Inspect the field metadata.
+
+  * ```text
+    This description item starts with a code block.
+    ```
+  :::
+
+  * `child` — `Utf8` — non-null
+
+::::
+"""
+)
+{
+	[Test]
+	public void Parse_ListsInsideDescriptions_EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+
+	[Test]
+	public void Render_ListsInsideDescriptions_PreservesMarkdown() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

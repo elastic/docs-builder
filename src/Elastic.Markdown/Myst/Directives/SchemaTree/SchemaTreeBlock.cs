@@ -22,12 +22,22 @@ public class SchemaTreeBlock(DirectiveBlockParser parser, ParserContext context)
 		}
 
 		Tree = list;
-		foreach (var item in list.Descendants<ListItemBlock>())
+		ValidateFields(list);
+	}
+
+	// Match the view's traversal: description blocks can contain unrelated lists.
+	private void ValidateFields(ListBlock list)
+	{
+		foreach (var item in list.OfType<ListItemBlock>())
 		{
 			if (item.Count == 0 || item[0] is not ParagraphBlock)
 				this.EmitError("Each schema-tree item requires a label paragraph.");
-			if (item.OfType<ListBlock>().Any(child => child.IsOrdered))
-				this.EmitError("schema-tree child lists must be unordered.");
+			foreach (var child in item.OfType<ListBlock>())
+			{
+				if (child.IsOrdered)
+					this.EmitError("schema-tree child lists must be unordered.");
+				ValidateFields(child);
+			}
 		}
 	}
 }
