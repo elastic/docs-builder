@@ -53,7 +53,7 @@ internal sealed class ServerlessReleaseCommand(
 	/// <param name="outputDir">Directory for the bundle file. Defaults to <c>./bundles</c>.</param>
 	/// <param name="dryRun">Resolve the range and print the run report without writing a bundle.</param>
 	[CommandName("serverless")]
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> Serverless(
 		[Argument] string service,

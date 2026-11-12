@@ -91,7 +91,7 @@ jobs:
         if: ${{ inputs.image }}
         uses: $/.github/actions/bootstrap
 
-      # The same arguments `publishcontainers` uses (build/Targets.fs). With no registry the image goes to the local
+      # The same arguments `publish-containers` uses (build/Targets.fs). With no registry the image goes to the local
       # Docker daemon, so nothing is pushed. This also builds the native AOT binary for Linux.
       - name: Build the image
         if: ${{ inputs.image }}

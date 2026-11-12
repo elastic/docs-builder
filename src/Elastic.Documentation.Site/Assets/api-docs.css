@@ -2975,9 +2975,9 @@ button.example-response-tab:focus-visible {
 		grid-template-rows: auto auto;
 	}
 
-	/* Feedback spans both columns so it ends the page, below the article and the examples rail. */
+	/* Feedback ends the article column, in the row under both the article and the examples rail. */
 	.api-page-grid > page-feedback {
-		grid-column: 1 / -1;
+		grid-column: 1;
 		grid-row: 2;
 	}
 
