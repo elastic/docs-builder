@@ -34,6 +34,12 @@ describe('initializeOtel', () => {
             Record<string, string> | (() => Promise<Record<string, string>>)
     const exportHeadersFn = () =>
         exportHeaders() as () => Promise<Record<string, string>>
+    const trackSettled = <T>(promise: Promise<T>) => {
+        const state = { settled: false, promise }
+        promise.then(() => (state.settled = true))
+        return state
+    }
+    const flushTasks = () => new Promise((resolve) => setTimeout(resolve, 0))
 
     const mockUserAgent = (userAgent: string) =>
         vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent)
@@ -128,14 +134,36 @@ describe('initializeOtel', () => {
             }
 
             initializeOtel()
-            const headers = exportHeadersFn()
-            expect(
-                await Promise.race([headers(), Promise.resolve('pending')])
-            ).toBe('pending')
+            const pending = trackSettled(exportHeadersFn()())
+            await flushTasks()
+            expect(pending.settled).toBe(false)
 
             issueToken('token')
 
-            expect(await headers()).toEqual({ 'X-Docs-Session': 'active' })
+            expect(await pending.promise).toEqual({
+                'X-Docs-Session': 'active',
+            })
+        })
+
+        it('stops waiting for the WAF token after 5 seconds', async () => {
+            vi.useFakeTimers()
+            try {
+                config.wafIntegrationUrl = sdkUrl
+                window.AwsWafIntegration = {
+                    fetch: vi.fn(),
+                    getToken: () => new Promise<string>(() => {}),
+                }
+
+                initializeOtel()
+                const pending = trackSettled(exportHeadersFn()())
+                await vi.advanceTimersByTimeAsync(4999)
+                expect(pending.settled).toBe(false)
+
+                await vi.advanceTimersByTimeAsync(1)
+                expect(pending.settled).toBe(true)
+            } finally {
+                vi.useRealTimers()
+            }
         })
 
         it('still exports when the WAF SDK fails to load', async () => {
