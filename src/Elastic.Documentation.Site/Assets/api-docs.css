@@ -3988,6 +3988,27 @@ html:has(.api-page-shell) {
 	-webkit-user-select: none;
 }
 
+/* In a response the note sits in .example-media-body, and a sticky box cannot leave its parent: the media body
+   spans the full code width so the note can stay put, and everything in it that is not code (the note, a caption,
+   a media header with its copy button) keeps to the visible width and to the left. The panel is the container
+   because, as a block inside the scroll body, it is exactly the visible width; 100cqi of the scroll body itself
+   would include its vertical scrollbar. */
+#api-examples-panel .example-response-panel {
+	container-type: inline-size;
+}
+
+#api-examples-panel .example-media-body {
+	width: max-content;
+	min-width: 100%;
+
+	> :not(.notranslate) {
+		position: sticky;
+		left: 0;
+		box-sizing: border-box;
+		width: 100cqi;
+	}
+}
+
 /* The short line carries the full explanation in a tooltip; the dotted underline says there is one. */
 .api-code-carousel-card-note > span {
 	cursor: help;
