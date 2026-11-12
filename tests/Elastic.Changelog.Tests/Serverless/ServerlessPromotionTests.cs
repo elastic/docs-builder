@@ -86,6 +86,58 @@ public class ServerlessPromotionTests
 		ServerlessPromotion.Services["kibana"].Submodules.Should().BeEmpty();
 	}
 
+	// ── Elastic Cloud Hosted (frontend-adminconsole) ─────────────────────
+
+	private const string EchFinalSlice = "production-sds-1";
+
+	private const string AdminconsoleVersionsYaml =
+		"""
+		services:
+		  frontend-adminconsole:
+		    versions:
+		      govcloud-moderate-sds-1: "d3124c7dda83"
+		      govcloud-staging-sds-1: "d3124c7dda83"
+		      production-sds-1: "d3124c7dda83"
+		      staging-sds-1: "2d4c3217bf7c"
+		""";
+
+	[Test]
+	public void FrontendAdminconsole_BundlesTheCloudRepositoryWithTheEchProfileOnMaster()
+	{
+		var ech = ServerlessPromotion.Services["frontend-adminconsole"];
+		ech.Repository.Should().Be("cloud");
+		ech.Profile.Should().Be("ech-release");
+		ech.VersionsPath.Should().Be("services/frontend-adminconsole/versions.yaml");
+		ech.FinalSlice.Should().Be(EchFinalSlice);
+		ech.BaseBranch.Should().Be("master");
+		ech.Submodules.Should().BeEmpty();
+	}
+
+	[Test]
+	public void Services_KeepTheirOwnFinalSliceAndBaseBranch()
+	{
+		ServerlessPromotion.Services["kibana"].FinalSlice.Should().Be(Ds5);
+		ServerlessPromotion.Services["kibana"].BaseBranch.Should().Be("main");
+		ServerlessPromotion.Services["elasticsearch"].FinalSlice.Should().Be(Ds5);
+		ServerlessPromotion.Services["elasticsearch"].BaseBranch.Should().Be("main");
+	}
+
+	[Test]
+	public void ParseFinalSliceVersion_ReadsProductionSds1ForFrontendAdminconsole() =>
+		ServerlessPromotion.ParseFinalSliceVersion(AdminconsoleVersionsYaml, EchFinalSlice).Should().Be("d3124c7dda83");
+
+	[Test]
+	public void ParseFinalSliceVersion_DoesNotReadAnotherServicesSliceNames() =>
+		ServerlessPromotion.ParseFinalSliceVersion(AdminconsoleVersionsYaml, Ds5).Should().BeNull();
+
+	[Test]
+	[Arguments("gitops: production-sds-1 Artifact promotion for frontend-adminconsole to d3124c7dda836280f00d8c4b1259f7a2b96ec765 (#224336)", true)]
+	[Arguments("gitops: staging-sds-1 Artifact promotion for frontend-adminconsole to 2d4c3217bf7cc0a885781ab82bf65c945ec44203 (#229116)", false)]
+	[Arguments("gitops: govcloud-moderate-sds-1 Artifact promotion for frontend-adminconsole to d3124c7dda83 (#224464)", false)]
+	[Arguments("gitops: govcloud-staging-sds-1 Artifact promotion for frontend-adminconsole to d3124c7dda83 (#224422)", false)]
+	public void IsFinalSlicePromotion_ForFrontendAdminconsole(string message, bool expected) =>
+		ServerlessPromotion.IsFinalSlicePromotion(message, EchFinalSlice).Should().Be(expected);
+
 	// ── History walk ─────────────────────────────────────────────────────
 
 	private static string Yaml(string ds5) =>

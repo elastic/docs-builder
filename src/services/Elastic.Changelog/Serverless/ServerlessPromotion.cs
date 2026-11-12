@@ -62,7 +62,7 @@ public sealed record HistoryWalkResult(HistoryWalkStatus Status, string? Previou
 /// <summary>Pure helpers for resolving a serverless promotion's commit range from serverless-gitops history.</summary>
 public static partial class ServerlessPromotion
 {
-	/// <summary>Services that can be bundled. An Elasticsearch release spans <c>elasticsearch-serverless</c>
+	/// <summary>Services that can be bundled. Kibana, Elasticsearch and, for Elastic Cloud Hosted, frontend-adminconsole. An Elasticsearch release spans <c>elasticsearch-serverless</c>
 	/// and its <c>elasticsearch</c> submodule, so it produces two bundles.</summary>
 	public static IReadOnlyDictionary<string, ServerlessService> Services { get; } = new Dictionary<string, ServerlessService>(
 		StringComparer.OrdinalIgnoreCase
@@ -85,6 +85,17 @@ public static partial class ServerlessPromotion
 			[new ServerlessSubmodule("elasticsearch", "elasticsearch")],
 			"production-noncanary-ds-5",
 			"main"
+		),
+		// Elastic Cloud Hosted. frontend-adminconsole is the anchor: it is the user-facing API service, its single production
+		// slice ends a release, and cloud's default branch is master.
+		["frontend-adminconsole"] = new(
+			"frontend-adminconsole",
+			"cloud",
+			"ech-release",
+			"services/frontend-adminconsole/versions.yaml",
+			[],
+			"production-sds-1",
+			"master"
 		)
 	};
 
