@@ -17,12 +17,18 @@ DOTNET_CLI_TELEMETRY_OPTOUT = "1"
 includes = [".make/mise-tasks.toml"]
 
 [hooks]
-postinstall = "dotnet tool restore && dotnet husky install && dotnet run --project build -c release -- __wrappers sync --quiet --run 'dotnet run --project build -c release --' --only mise"
+postinstall = "dotnet tool restore && dotnet husky install && mise run sync-tasks"
 
 # In a shell with `mise activate`, regenerate the include on the next prompt after a target changes.
 [[watch_files]]
 patterns = ["build/*.fs"]
-run = "dotnet run --project build -c release -- __wrappers sync --quiet"
+task = "sync-tasks"
+
+# The one command that writes .make/mise-tasks.toml, shared by the postinstall and watch_files hooks so they cannot drift apart.
+[tasks.sync-tasks]
+description = "Regenerate .make/mise-tasks.toml from the targets of the F# build"
+hide = true
+run = "dotnet run --project build -c release -- __wrappers sync --quiet --run 'dotnet run --project build -c release --' --only mise"
 
 # ---- tasks that are not build targets yet ----
 # `build` stays the quick compile: the build target of that name cleans and lints first.

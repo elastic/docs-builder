@@ -24,7 +24,7 @@ type ParallelOptions =
       Parallelism: int option }
 
 type TestOptions =
-    { /// Which tests to run. Default: all
+    { /// Which tests to run. Default: unit
       Suite: TestSuite option
       /// Test projects to run at once. Local runs only: CI always runs them one at a time. Default: the number of cores
       Parallelism: int option }
@@ -245,12 +245,20 @@ let Run (argv: string[]) =
     }
 
     // npm ci runs only when package-lock.json is newer than what the last install left in node_modules.
+    // Tasks that run in parallel are separate processes, and npm ci deletes node_modules, so the install holds a file lock.
     let siteInstall = steps {
         let lockFile = Path.Combine(siteDir, "package-lock.json")
         let stamp = Path.Combine(siteDir, "node_modules", ".package-lock.json")
-        if not (File.Exists stamp) || File.GetLastWriteTimeUtc lockFile > File.GetLastWriteTimeUtc stamp then
-            use! _ = inDir siteDir
-            sh $"npm ci"
+        let stale () = not (File.Exists stamp) || File.GetLastWriteTimeUtc lockFile > File.GetLastWriteTimeUtc stamp
+        if stale () then
+            let rec acquire () =
+                try new FileStream(Path.Combine(siteDir, ".npm-ci.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)
+                with :? IOException -> System.Threading.Thread.Sleep 500; acquire ()
+            use _lock = acquire ()
+            // another process may have finished the install while this one waited
+            if stale () then
+                use! _ = inDir siteDir
+                sh $"npm ci"
     }
     let npmRun (script: string) = steps {
         do! siteInstall

@@ -94,6 +94,31 @@ jobs:
       - name: Test
         run: npm run test
 
+  # The mise tasks are generated from the build targets at `mise install`; nothing else exercises that path.
+  mise-tasks:
+    needs: [changes]
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v3
+
+      - name: Generated tasks are listed
+        run: |
+          mise tasks | grep -E '^(site:check|test|serve|version) '
+
+      - name: Options reach the build target
+        run: mise run test --help | grep -i 'parallelism'
+
+      - name: Namespaced task runs
+        run: mise run site:check
+
+      - name: Arguments are forwarded
+        run: mise run serve --help
+
   lint:
     runs-on: ubuntu-latest
     steps:
