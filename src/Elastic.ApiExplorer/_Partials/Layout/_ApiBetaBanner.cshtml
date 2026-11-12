@@ -1,5 +1,6 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiBetaBanner>
-@* Inside #main-container, so boosted navigation adds it on the way into the API and drops it on the way out. *@
-<aside class="api-beta-banner" aria-label="About this API reference">
+@* Outside #main-container, which a move between docs and API pages reloads. Moves within the API swap only part of the page,
+   so the banner replaces itself out of band and its feedback link names the page the reader is on. *@
+<aside id="api-beta-banner" class="api-beta-banner" aria-label="About this API reference" hx-swap-oob="true">
 	<p class="api-beta-banner__message"><span class="api-beta-banner__label">Beta</span> This is our new API reference.<span class="api-beta-banner__detail"> It's now part of the main Elastic docs, and we're still tuning it.</span> If something looks wrong or is missing, <a class="api-beta-banner__link" href="@Model.FeedbackUrl">let us know</a>.</p>
 </aside>

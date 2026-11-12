@@ -4360,7 +4360,8 @@ body[data-api-column-dragging] {
 	max-width: 48rem;
 }
 
-/* Beta notice above every API page (_ApiBetaBanner). One line on desktop; below 768px the middle sentence drops so it stays within two. */
+/* Beta notice above every API page (_ApiBetaBanner). The middle sentence shows only from 1200px, where the whole message fits on one line.
+   Narrower, the short message takes one line down to tablet width and two at most on a phone. */
 .api-beta-banner {
 	align-self: stretch;
 	padding: var(--space-1) var(--layout-gutter);
@@ -4395,7 +4396,7 @@ body[data-api-column-dragging] {
 	text-underline-offset: 3px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1199px) {
 	.api-beta-banner__detail {
 		display: none;
 	}
