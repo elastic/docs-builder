@@ -1,0 +1,10 @@
+# What the docs home page shows: its content as an accessibility tree, and a picture of it.
+# Run by `mise run journeys:compare`, which compares the two sites; the result is not a verified file.
+# @tags compare
+# @requires build-type:assembler compare
+set viewport 1280 800
+open ./
+wait --load networkidle
+get title
+snapshot -c -s "#main-container"
+screenshot "#main-container" home.png

@@ -45,7 +45,7 @@
       "rollForward": false
     },
     "nullean.snapshots.cli": {
-      "version": "0.8.1",
+      "version": "0.10.1",
       "commands": [
         "snap"
       ],

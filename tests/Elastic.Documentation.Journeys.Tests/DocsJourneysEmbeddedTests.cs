@@ -55,7 +55,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	public async Task Run_SiteWithoutTheBuildTypeTag_IsAssumedToBeAnAssemblerSite()
 	{
 		await using var site = new FakeSite(buildType: null, features: null);
-		using var folder = new JourneyFolder().Add("chrome/live", "# @requires build-type:assembler\nopen /docs\nexpect visible body");
+		using var folder = new JourneyFolder().Add("chrome/synth", "# @requires build-type:assembler\nopen /docs\nexpect visible body");
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--journeys", folder.Path);
 
@@ -67,7 +67,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	public async Task Run_SiteWithTheBuildTypeBodyClass_UsesItInsteadOfAssumingAssembler()
 	{
 		await using var site = new FakeSite(buildType: null, features: null, bodyClass: "build-type-isolated");
-		using var folder = new JourneyFolder().Add("chrome/live", "# @requires build-type:assembler\nopen /docs\nexpect visible body");
+		using var folder = new JourneyFolder().Add("chrome/synth", "# @requires build-type:assembler\nopen /docs\nexpect visible body");
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--journeys", folder.Path);
 
@@ -77,7 +77,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	[Test]
 	public async Task Run_SiteThatDoesNotAnswer_LeavesTheBuildTypeUnknown()
 	{
-		using var folder = new JourneyFolder().Add("chrome/live", "# @requires build-type:assembler\nopen /docs\nexpect visible body");
+		using var folder = new JourneyFolder().Add("chrome/synth", "# @requires build-type:assembler\nopen /docs\nexpect visible body");
 
 		var run = await Cli.RunAsync("run", "--url", "http://127.0.0.1:9", "--env", "prod", "--journeys", folder.Path);
 
@@ -88,7 +88,10 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	public async Task Run_AssemblerSiteGivenAsAnOrigin_OpensRelativePathsUnderDocs()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "");
-		using var folder = new JourneyFolder().Add("navigation/live", "# @requires build-type:assembler\nopen get-started\nopen /absolute");
+		using var folder = new JourneyFolder().Add(
+			"navigation/synth",
+			"# @requires build-type:assembler\nopen get-started\nopen /absolute"
+		);
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "demo", "--journeys", folder.Path);
 
@@ -118,7 +121,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	public async Task Run_RootPageThatIsNotADocsSite_IsNotAcceptedAsTheProbeFallback()
 	{
 		await using var site = new FakeSite(buildType: null, features: null, servedFromRoot: true);
-		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\nopen /");
+		using var folder = new JourneyFolder().Add("a/synth", "# @requires build-type:assembler\nopen /");
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--journeys", folder.Path);
 
@@ -136,7 +139,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	public async Task Run_AllowAllSkippedWithAFailedProbe_StillExitsOne()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "");
-		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\nopen /");
+		using var folder = new JourneyFolder().Add("a/synth", "# @requires build-type:assembler\nopen /");
 
 		var run = await Cli.RunAsync(
 			"run",
@@ -169,7 +172,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	public async Task Run_ProbeThatFailsWithAServerError_DoesNotFallBackToTheRoot()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback");
-		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\nopen /");
+		using var folder = new JourneyFolder().Add("a/synth", "# @requires build-type:assembler\nopen /");
 
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--env", "prod", "--probe", "/error", "--journeys", folder.Path);
 
@@ -180,7 +183,7 @@ public class DocsJourneysEmbeddedTests(JourneyTarget target)
 	public async Task Export_SiteWithAFlagNameThatIsNotPlain_FailsTheProbeInsteadOfWritingItIntoMonitorFiles()
 	{
 		await using var site = new FakeSite(buildType: "assembler", features: "page-feedback calc.exe&whoami");
-		using var folder = new JourneyFolder().Add("a/live", "# @requires build-type:assembler\n# @monitor\nopen /");
+		using var folder = new JourneyFolder().Add("a/synth", "# @requires build-type:assembler\n# @monitor\nopen /");
 
 		var run = await Cli.RunAsync(
 			"export",

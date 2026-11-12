@@ -40,7 +40,7 @@ run = "dotnet run --project build -c release -- compile"
 # The snap and journeys tasks wait for nullean/argh#142: a namespaced target cannot take options yet.
 
 [tasks."journeys:test"]
-description = "TUnit journey tests: starts docs/ as an isolated site and compares each journey with its verified transcript. Live journeys are skipped (see journeys:live). Extra args pass to dotnet test, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
+description = "TUnit journey tests: starts docs/ as an isolated site and compares each journey with its verified transcript. Live journeys are skipped (see journeys:synth). Extra args pass to dotnet test, e.g. -- --treenode-filter /*/*/NavigationJourneys/*"
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:test:assembler"]
@@ -54,7 +54,7 @@ env = { JOURNEY_TARGET = "codex" }
 run = "dotnet test --project tests/Elastic.Documentation.Journeys.Tests"
 
 [tasks."journeys:local"]
-description = "docs-journeys against docs/ served by this task (the isolated site): same output as journeys:live, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:local --only landing/home --screenshot-on-failure"
+description = "docs-journeys against docs/ served by this task (the isolated site): same output as journeys:synth, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:local --only landing/home --screenshot-on-failure"
 usage = '''
 arg "[args]..." var=#true help="Passed to docs-journeys run"
 '''
@@ -85,13 +85,61 @@ eval "extra=(${usage_args:-})"
 dotnet run --project src/tooling/docs-journeys -- run --url "http://localhost:$port" --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${extra[@]+"${extra[@]}"}
 '''
 
-[tasks."journeys:live"]
-description = "docs-journeys against a deployed site (prod, edge or demo, default demo): read-only, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:live prod --only navigation/main-paths"
+[tasks."journeys:synth"]
+description = "the Synthetics journeys (docs-journeys) against a deployed site (prod, edge or demo, default demo): read-only, checks the expect lines, compares no transcripts. Extra args pass to docs-journeys run, e.g. mise run journeys:synth prod --only navigation/main-paths"
 usage = '''
 arg "[site]" default="demo" help="prod, edge, demo or local"
 arg "[args]..." var=#true help="Passed to docs-journeys run"
 '''
 run = "dotnet run --project src/tooling/docs-journeys -- run --url ${usage_site} --journeys tests/Elastic.Documentation.Journeys.Tests/journeys ${usage_args:-}"
+
+[tasks."journeys:compare"]
+description = "Run the compare journeys (journeys/compare) against two deployed sites and compare their transcripts and screenshots: what differs between prod and edge is what the next release changes. Read-only. Differences nobody expected fail; expected ones are rules in {journey}.differences. Extra args pass to snap journey compare, e.g. mise run journeys:compare edge demo --image-diff fail"
+usage = '''
+arg "[baseline]" default="prod" help="prod, edge, demo or a URL: the site that stays as it is"
+arg "[target]" default="edge" help="prod, edge, demo or a URL: the site that is compared with it"
+arg "[args]..." var=#true help="Passed to snap journey compare"
+'''
+run = '''
+#!/usr/bin/env bash
+set -eu
+# Without pipefail a failed curl below would pass for an empty feature set.
+set -o pipefail
+site() {
+  case "$1" in
+    prod) echo "https://www.elastic.co/docs/" ;;
+    edge) echo "https://docs-edge.elastic.dev/docs/" ;;
+    demo) echo "https://docs-demo.elastic.dev/docs/" ;;
+    http://*|https://*) echo "$1" ;;
+    *) echo "'$1' is not prod, edge, demo or an http(s) URL" >&2; exit 2 ;;
+  esac
+}
+baseline=$(site "$usage_baseline")
+target=$(site "$usage_target")
+# mise shell-quotes the variadic args; eval restores the word boundaries.
+extra=()
+eval "extra=(${usage_args:-})"
+# Same identity as docs-journeys run: a monitor, so the site's telemetry sends nothing the read-only run would block.
+ua="Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari/537.36 Elastic/Synthetics docs-journeys"
+# docs-journeys run reads each site's docs:features tag; compare takes one shared set, so probe both here.
+features() {
+  curl -fsL -A "$ua" -H "X-Docs-Synthetic-Monitor: true" "$1" \
+    | sed -n 's/.*<meta name="docs:features" content="\([^"]*\)".*/\1/p' | tr ', ' '\n\n' | sed '/^$/d' | sort -u
+}
+base_features=$(features "$baseline") || { echo "could not read $baseline to find its docs:features" >&2; exit 2; }
+target_features=$(features "$target") || { echo "could not read $target to find its docs:features" >&2; exit 2; }
+shared=$(comm -12 <(echo "$base_features") <(echo "$target_features"))
+differing=$(comm -3 <(echo "$base_features") <(echo "$target_features") | tr -d '\t' | sort -u | tr '\n' ' ')
+[ -z "${differing% }" ] || echo "docs:features differ between the sites ($differing): the journeys that need them run on neither; pass --feature to force one" >&2
+feature_args=()
+for f in $shared; do feature_args+=(--feature "$f"); done
+dotnet snap journey compare 'tests/Elastic.Documentation.Journeys.Tests/journeys/compare/*.journey' \
+  --baseline "$baseline" --target "$target" --build-type assembler --feature compare --read-only --viewport 1280x800 \
+  --allow '*.elastic.co' --allow '*.elastic.dev' --allow '*.cloudfront.net' --allow '*.googletagmanager.com' \
+  --allow elastic-global-nav-assets.s3.us-west-2.amazonaws.com \
+  --user-agent "$ua" --header "X-Docs-Synthetic-Monitor: true" \
+  ${feature_args[@]+"${feature_args[@]}"} ${extra[@]+"${extra[@]}"}
+'''
 
 [tasks."snap:status"]
 description = "List snapshots a test run left to review (received files). Exits 1 when there are any"

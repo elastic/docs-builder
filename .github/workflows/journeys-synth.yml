@@ -1,4 +1,4 @@
-name: journeys-live
+name: journeys-synth
 
 # Two checks that need no site build:
 # - `prod`: journeys changed in a pull request still pass against https://www.elastic.co. Read-only, no secrets, never pages,

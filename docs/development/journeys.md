@@ -11,8 +11,9 @@ Journeys are short scripts of browser commands that open a page, interact with i
 | Command | Runs | Against | Compares transcripts | Use it to |
 |---|---|---|---|---|
 | `mise run journeys:test` | TUnit tests (`Nullean.Snapshots`) | `docs/` served by this task, as an isolated site | yes | change journeys and the site together, and review transcript changes with `dotnet snap review` |
-| `mise run journeys:local` | `docs-journeys` | `docs/` served by this task, as an isolated site | no, only the `expect` lines | iterate on a journey quickly, with the same output as `journeys:live`; takes the same options (`--only`, `--area`, `--screenshot-on-failure`) |
-| `mise run journeys:live [site]` | `docs-journeys` | a deployed site (`prod`, `edge`, `demo`), read-only | no, only the `expect` lines | check a deployment, or a pull request's journeys against prod |
+| `mise run journeys:local` | `docs-journeys` | `docs/` served by this task, as an isolated site | no, only the `expect` lines | iterate on a journey quickly, with the same output as `journeys:synth`; takes the same options (`--only`, `--area`, `--screenshot-on-failure`) |
+| `mise run journeys:synth [site]` | `docs-journeys` | a deployed site (`prod`, `edge`, `demo`), read-only | no, only the `expect` lines | check a deployment, or a pull request's journeys against prod |
+| `mise run journeys:compare [baseline] [target]` | `snap journey compare` | two deployed sites, `prod` and `edge` by default, read-only | yes, one site against the other | see what a release changes: what differs between prod and edge |
 | `dotnet snap journey run <glob> --base-url <url>` | `snap` | any site you started | yes | run some journeys outside the test project, with the same output as `docs-journeys` |
 | `cdp run <file> --base-url <url>` | `Nullean.Cdp.Cli` | any site | no | debug one journey file; its output is fenced for agents |
 
@@ -34,7 +35,7 @@ mise run journeys:test -- --treenode-filter "/*/*/NavigationJourneys/*"
 mise run journeys:test -- --treenode-filter "/*/*/*/Run(sidebar)"
 ```
 
-The tasks `journeys:test:assembler` and `journeys:test:codex` serve a built assembler (`.artifacts/assembly`) or Codex (`.artifacts/codex/docs`) site, but every journey in this project checks the isolated site, so on those targets they all skip with a reason and a green run is not coverage of either site. To check a deployed assembler site, run the live journeys with `docs-journeys` below.
+The tasks `journeys:test:assembler` and `journeys:test:codex` serve a built assembler (`.artifacts/assembly`) or Codex (`.artifacts/codex/docs`) site, but every journey in this project checks the isolated site, so on those targets they all skip with a reason and a green run is not coverage of either site. To check a deployed assembler site, run the Synthetics journeys with `docs-journeys` below.
 
 The test host removes every `FEATURE_*` variable from the environment of the site it starts, so a flag exported in your shell does not change what a journey sees.
 
@@ -104,14 +105,14 @@ The run prints a `context:` line with what it settled on and where each part cam
 
 ### Choose which journeys run
 
-A journey has an **id** of the form `area/name`. The area is the folder it sits in under `journeys/` (`navigation`, `landing`, `chrome`, `content`, `versions`, `api-explorer`, `a11y`, `feedback`, `page-actions`), and a `live/` folder inside an area is part of that area. The name is the file's name without `.journey`.
+A journey has an **id** of the form `area/name`. The area is the folder it sits in under `journeys/` (`navigation`, `landing`, `chrome`, `content`, `versions`, `api-explorer`, `a11y`, `feedback`, `page-actions`, `compare`, `synth`), and a `synth/` folder inside an area is part of that area. The name is the file's name without `.journey`.
 
 - `--area navigation,landing` runs every journey in those areas. An area with no journeys is an error.
 - `--only navigation/main-paths` runs one journey by its id, and `docs-journeys list` shows the ids.
 - `--tag smoke` runs the journeys whose header says `# @tags smoke` (a journey may have several tags, and `--tag a,b` takes the ones with either). Tags cut across areas: `smoke` marks the quick checks that matter most on a live site. The smoke journeys need an assembler site, so on the isolated site `journeys:local` serves they are all skipped.
 
 ```bash
-mise run journeys:live prod --area navigation --tag smoke   # the smoke journeys of one area
+mise run journeys:synth prod --area navigation --tag smoke   # the smoke journeys of one area
 mise run journeys:local --area content                      # the content journeys, against docs/
 ```
 
@@ -156,15 +157,36 @@ A run is safe against a live site unless told otherwise:
 
 The command exits with 1 when any journey fails, when one cannot be parsed (the others still run), or when every selected journey was skipped. It writes a table to `GITHUB_STEP_SUMMARY` when that variable is set.
 
-Every journey under `tests/Elastic.Documentation.Journeys.Tests/journeys` is compiled into the binary, so one file carries the runner and the journeys that match its build, and `list` and `run` need no folder. The tool decides which of them apply to the site from their `# @requires` lines: the isolated-site journeys (`#isolated-header`, the `/syntax/*` pages) say `build-type:isolated` and a deployed assembler site skips them, and the live journeys (`journeys/live`, one of them a `@monitor`) say `build-type:assembler`. A run where every journey is skipped still exits with 1, so it cannot pass without checking anything.
+Every journey under `tests/Elastic.Documentation.Journeys.Tests/journeys` is compiled into the binary, so one file carries the runner and the journeys that match its build, and `list` and `run` need no folder. The tool decides which of them apply to the site from their `# @requires` lines: the isolated-site journeys (`#isolated-header`, the `/syntax/*` pages) say `build-type:isolated` and a deployed assembler site skips them, and the Synthetics journeys (`journeys/synth`, one of them a `@monitor`) say `build-type:assembler`. A run where every journey is skipped still exits with 1, so it cannot pass without checking anything.
 
 A release also attaches `docs-journeys-<os>-<arch>.zip`, with the same attestation as the `docs-builder` zip.
 
-## Live journeys
+### Compare two deployed sites
 
-The `live/` folders next to the area folders hold journeys for a published site: prod, edge or demo. They were ported from the Elastic Synthetics journeys in `src/Elastic.Documentation.Site/synthetics/` and keep their assertions. They cannot run against the isolated site, so the test project claims them (`Areas/LiveJourneys.cs`) and shows them as skipped.
+```bash
+mise run journeys:compare                      # prod is the baseline, edge the target
+mise run journeys:compare edge demo
+mise run journeys:compare prod edge --image-diff fail
+```
 
-A live journey opens paths relative to a base URL that ends in `/docs/`, so `open get-started` opens `/docs/get-started`. Its header says where it applies and whether it is a Synthetics monitor:
+`journeys:compare` runs the journeys in `journeys/compare/` against the baseline, then against the target, and compares the two transcripts. It compares with no verified file: edge against prod shows what the next release changes. The compare journeys record what a page shows (`get title`, `snapshot -c -s <selector>`, `errors`, `console`) and take a `screenshot` of it. A difference nobody expected, or a failed step, exits with 1. The task reads each site's `docs:features` tag, as `docs-journeys run` does, and passes the features that are on at both sites, because `snap journey compare` takes one set for both. A feature that is on at only one site is reported, and the journeys that need it run on neither; `--feature <name>` forces one. Extra arguments go to `snap journey compare`.
+
+| Journey | Records |
+|---|---|
+| `compare/home` | The docs home page: title, content tree and a screenshot |
+| `compare/content-page` | `/docs/get-started`: title, heading, lead paragraph and a screenshot of the article |
+| `compare/sidebar` | The navigation tree of the same page, with a screenshot |
+| `compare/page-health` | Script errors and console messages on load |
+
+No journey needs a rules file today. `content-page` records the heading and lead paragraph, not the article's link tree: a link to `www.elastic.co` reads as `{origin}` when prod is the baseline and as itself elsewhere, so a rule for it would fail as stale on every other pair of sites. A difference you expect goes in a rules file next to the journey, `{journey}.differences`, and `--record <file>` appends a rule for every unexpected difference to a file the journey's rules include, instead of failing. Keep the rules per journey: a rule that matches nothing in a journey fails it as stale, so a file shared with `include?` fails every journey that lacks the step ([nullean/snapshots#77](https://github.com/nullean/snapshots/issues/77), which also notes that the rule syntax is not documented upstream).
+
+The run is read-only and identifies itself as a monitor, like `docs-journeys`, and it may reach the same hosts. A `screenshot` of the two sites that differs is listed with a diff image (`--image-diff report`, the default), fails the run (`fail`) or is ignored (`off`). The compare journeys say `# @requires compare`, a feature only this task turns on (`--feature compare`), so `journeys:synth` and `journeys:local` skip them, and `mise run journeys:test` skips them too.
+
+## Synthetics journeys
+
+The `synth/` folders next to the area folders hold journeys for a published site: prod, edge or demo. They were ported from the Elastic Synthetics journeys in `src/Elastic.Documentation.Site/synthetics/` and keep their assertions. They cannot run against the isolated site, so the test project claims them (`Areas/SynthJourneys.cs`) and shows them as skipped.
+
+A Synthetics journey opens paths relative to a base URL that ends in `/docs/`, so `open get-started` opens `/docs/get-started`. Its header says where it applies and whether it is a Synthetics monitor:
 
 ```text
 # @tags navigation smoke
@@ -172,12 +194,12 @@ A live journey opens paths relative to a base URL that ends in `/docs/`, so `ope
 # @monitor schedule=15
 ```
 
-The layout changes with the `navigation-preview` flag, so a journey puts the steps that differ in `feature` blocks. `docs-journeys` reads the flags from the site, so a live run needs only the site's name:
+The layout changes with the `navigation-preview` flag, so a journey puts the steps that differ in `feature` blocks. `docs-journeys` reads the flags from the site, so a run against a deployed site needs only the site's name:
 
 ```bash
-mise run journeys:live demo                                   # every journey that applies to demo
-mise run journeys:live prod --area navigation --tag smoke  # a selection
-mise run journeys:live demo --only navigation/main-paths   # one journey, by id
+mise run journeys:synth demo                                   # every journey that applies to demo
+mise run journeys:synth prod --area navigation --tag smoke  # a selection
+mise run journeys:synth demo --only navigation/main-paths   # one journey, by id
 ```
 
 Results appear as each journey finishes. A reason that more than three journeys share (every isolated-site journey on a deployed site) is shown once with a count, and `--verbose` lists them. A failure is repeated at the end with the journey's path in the checkout, the line, the error and the last page it checked.
@@ -187,7 +209,7 @@ Results appear as each journey finishes. A reason that more than three journeys 
 To debug a single file with Nullean.Cdp's own runner, `cdp run` from `Nullean.Cdp.Cli` takes the same context as flags. The allow list must include the hosts the docs pages load from (`RunCommand.DefaultAllow`), or those requests are refused:
 
 ```bash
-cdp run tests/Elastic.Documentation.Journeys.Tests/journeys/navigation/live/main-paths.journey \
+cdp run tests/Elastic.Documentation.Journeys.Tests/journeys/navigation/synth/main-paths.journey \
   --base-url https://docs-demo.elastic.dev/docs/ \
   --build-type assembler --env demo --feature navigation-preview \
   --read-only --viewport 1280x800 \
@@ -259,7 +281,7 @@ npx @elastic/synthetics push --yes                          # with SYNTHETICS_AP
 {
   "project": "elastic-co-docs-demo",
   "env": "demo",
-  "monitors": [{ "name": "navigation/live/main-paths", "file": "journeys/navigation/live/main-paths.journey.ts" }]
+  "monitors": [{ "name": "navigation/synth/main-paths", "file": "journeys/navigation/synth/main-paths.journey.ts" }]
 }
 ```
 
@@ -275,7 +297,7 @@ A failed run uploads a `journeys-results-<shard>` artifact. Extract it at the re
 
 ## Checks on pull requests
 
-Two jobs in `journeys-live.yml` need no site build.
+Two jobs in `journeys-synth.yml` need no site build.
 
 - **Journeys stay valid against prod.** When a pull request changes a journey or an `.http` file, the changed ones run read-only against `https://www.elastic.co`. A journey whose `@requires` does not hold on prod is skipped with its reason. The job fails when a journey fails. It passes when every changed journey was skipped (`--allow-all-skipped`), because a change to isolated-site journeys has nothing to run on prod, but not when the site probe failed, since the skips would then say nothing about the site. A journey for a feature that ships with the pull request and is not yet on prod says so with `@requires !env:prod`.
 - **The `docs-journeys` image.** When the tool changes, the image builds without being pushed, the binary is copied out of it the way another repository's workflow would, and `docs-journeys list` runs from it. This is also the Linux native build check.

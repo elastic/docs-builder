@@ -1,0 +1,8 @@
+# The navigation tree of a page: which sections and links a reader sees.
+# @tags compare
+# @requires build-type:assembler compare
+set viewport 1280 800
+open get-started
+wait --load networkidle
+snapshot -c -s "#pages-nav"
+screenshot "#pages-nav" sidebar.png
