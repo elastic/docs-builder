@@ -107,6 +107,8 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 				return null;
 			if (relativePath.EndsWith(".asciidoc", StringComparison.Ordinal))
 				return null;
+			if (relativePath.EndsWith(".json", StringComparison.Ordinal))
+				return null;
 
 			foreach (var prefix in PhantomPrefixes)
 			{

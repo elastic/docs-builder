@@ -29,11 +29,7 @@ public class JsonFileHttpTests
 			var path = Path.Join(directory.FullName, "autoops-insights.json");
 			await File.WriteAllTextAsync(path, body, cancellation);
 			var fileSystem = new FileSystem();
-			var json = new JsonFile(
-				fileSystem.FileInfo.New(path),
-				fileSystem.DirectoryInfo.New(directory.FullName),
-				"repo"
-			);
+			var json = new JsonFile(fileSystem.FileInfo.New(path), fileSystem.DirectoryInfo.New(directory.FullName), "repo");
 
 			var builder = WebApplication.CreateBuilder();
 			builder.Logging.ClearProviders();

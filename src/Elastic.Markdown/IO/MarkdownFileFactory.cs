@@ -150,12 +150,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		return new ImageFile(file, sourceDirectory, context.Git.RepositoryName, mimeType);
 	}
 
-	private DocumentationFile CreateJsonFile(
-		IFileInfo file,
-		IDirectoryInfo sourceDirectory,
-		BuildContext context,
-		string relativePath
-	)
+	private DocumentationFile CreateJsonFile(IFileInfo file, IDirectoryInfo sourceDirectory, BuildContext context, string relativePath)
 	{
 		if (context.Configuration.IsExcluded(relativePath))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);

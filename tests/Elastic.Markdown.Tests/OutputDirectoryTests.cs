@@ -135,10 +135,7 @@ toc:
 			{
 				{ "docs/docset.yml", new MockFileData("project: test\ntoc:\n- file: index.md\n") },
 				{ "docs/index.md", new MockFileData("# Test") },
-				{
-					"docs/autoops-insights.json",
-					new MockFileData("""{"high_cpu_on_node":{"tags":["deployment:hosted"]}}""")
-				}
+				{ "docs/autoops-insights.json", new MockFileData("""{"high_cpu_on_node":{"tags":["deployment:hosted"]}}""") }
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
@@ -150,9 +147,7 @@ toc:
 			SkipStaticAssetExtraction = true
 		};
 		var set = new DocumentationSet(context, logger, new TestCrossLinkResolver());
-		set.Files.Values.Should().Contain(f =>
-			f is JsonFile && f.RelativePath.Replace('\\', '/').EndsWith("autoops-insights.json")
-		);
+		set.Files.Values.Should().Contain(f => f is JsonFile && f.RelativePath.Replace('\\', '/').EndsWith("autoops-insights.json"));
 
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(TestContext.Current!.Execution.CancellationToken);
@@ -170,16 +165,13 @@ toc:
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
-				{
-					"docs/docset.yml",
-					new MockFileData("""
+				{ "docs/docset.yml", new MockFileData("""
 project: test
 toc:
   - file: index.md
 exclude:
   - 'secret.json'
-""")
-				},
+""") },
 				{ "docs/index.md", new MockFileData("# Test") },
 				{ "docs/secret.json", new MockFileData("""{"hidden":true}""") },
 				{ "docs/catalog.json", new MockFileData("""{"ok":true}""") }
