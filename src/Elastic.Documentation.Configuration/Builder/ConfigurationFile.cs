@@ -28,7 +28,7 @@ public record ConfigurationFile
 
 	private Glob[] Exclude { get; } = [];
 	private string[] Include { get; } = [];
-	private readonly HashSet<string> _publishedJson = new(StringComparer.Ordinal);
+	private readonly HashSet<string> _publishedJson = [with(StringComparer.Ordinal)];
 
 	public string[] CrossLinkRepositories { get; } = [];
 
