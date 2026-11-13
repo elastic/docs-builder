@@ -7,7 +7,6 @@ extern alias McpRemote;
 using System.Reflection;
 using AwesomeAssertions;
 using Elastic.Documentation.Journeys.Tests.Targets;
-using Mcp.Remote.Tests;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Http;
@@ -47,10 +46,9 @@ public class McpHttp
 
 		// The wording of instructions and tool descriptions is covered by Mcp.Remote.Tests; this area keeps names, schemas and hints.
 		transcript.Should().MatchHttpFileSnapshot(
-			new SnapshotOptions()
-				.Scrub(SseScrubbers.PrettyPrintDataLines)
-				.Scrub(BodyScrubbers.WithoutProse)
-				.Scrub(text => text.Replace(version, "{server-version}", StringComparison.Ordinal))
+			new SnapshotOptions().Scrub(BodyScrubbers.WithoutProse).Scrub(
+				text => text.Replace(version, "{server-version}", StringComparison.Ordinal)
+			)
 		);
 	}
 }

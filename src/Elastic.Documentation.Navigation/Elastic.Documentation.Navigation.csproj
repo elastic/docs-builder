@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <IsAotCompatible>true</IsAotCompatible>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
-      <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
+  </ItemGroup>
 
 </Project>

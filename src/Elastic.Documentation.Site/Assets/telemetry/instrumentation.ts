@@ -6,6 +6,7 @@
  * All web components will automatically be instrumented once initialised.
  */
 import { config as docsConfig } from '../config'
+import { waitForWafToken } from '../waf'
 import { detectEnvironment } from './environment'
 import { startBrowserSdk } from '@elastic/opentelemetry-browser'
 
@@ -28,7 +29,7 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
             logLevel: options.debug ? 'debug' : 'warn',
             exportConfig: {
                 ...otlpSignalUrls(),
-                headers: { 'X-Docs-Session': 'active' },
+                headers: exportHeaders(),
             },
             resourceAttributes: {
                 'deployment.environment': detectEnvironment(),
@@ -48,6 +49,23 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
         isInitialized = false
         return false
     }
+}
+
+const EXPORT_HEADERS = { 'X-Docs-Session': 'active' }
+
+// The WAF answers /v1/o/* requests without a token with a 202 that the exporter counts as a
+// success, so every export waits for the token cookie. SDK start doesn't wait. After a failed
+// wait the export goes out anyway, and the next export tries again.
+function exportHeaders(): Record<string, string> {
+    if (!docsConfig.wafIntegrationUrl) return EXPORT_HEADERS
+
+    let tokenReady = waitForWafToken()
+    const headers = async () => {
+        if (!(await tokenReady)) tokenReady = waitForWafToken()
+        return EXPORT_HEADERS
+    }
+    // EDOT types headers as an object, but its OTLP exporters accept a function.
+    return headers as unknown as Record<string, string>
 }
 
 // The ALB routes the browser's OTLP paths to the collector, so each signal gets its own

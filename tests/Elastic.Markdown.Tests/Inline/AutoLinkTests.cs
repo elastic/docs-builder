@@ -227,15 +227,13 @@ https://docs.test.io/should/not/be/linked
 	public void DoesNotCreateLink() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight- notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-">https://docs.test.io/should/not/be/linked
-					</code>
-				</pre>
+			<div class="highlight- notranslate">
+				<div class="highlight">
+					<pre><code class="language-">https://docs.test.io/should/not/be/linked
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		""",
+			""",
 			DocsHtml.Body()
 		);
 
