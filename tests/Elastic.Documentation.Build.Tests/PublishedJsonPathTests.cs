@@ -42,14 +42,48 @@ public class PublishedJsonPathTests
 			.Should()
 			.BeFalse();
 
-		GlobalNavigationPathProvider.DocsetRootPrefix("autoops-insights", AutoOpsMappings).Should().Be("reference/autoops-insights");
+		GlobalNavigationPathProvider
+			.DocsetRootPrefix("autoops-insights", SharedReferenceMappings())
+			.Should()
+			.Be("reference/autoops-insights");
 	}
 
 	[Test]
-	public void SingleMountKeepsItsOwnPrefix()
-	{
-		NavigationTocMapping[] mappings = [new() { Source = new Uri("search-ui://reference/"), SourcePathPrefix = "reference/search-ui" }];
+	public void SingleMountKeepsItsOwnPrefix() =>
+		GlobalNavigationPathProvider.DocsetRootPrefix("search-ui", SharedReferenceMappings()).Should().Be("reference/search-ui");
 
-		GlobalNavigationPathProvider.DocsetRootPrefix("search-ui", mappings).Should().Be("reference/search-ui");
+	[Test]
+	public void DetectionRuleJsonKeepsItsExtension()
+	{
+		GlobalNavigationPathProvider.UsesDetectionRuleMarkdownPath("detection-rules", "catalog.json").Should().BeFalse();
+		GlobalNavigationPathProvider.UsesDetectionRuleMarkdownPath("detection-rules", "rules/rule.toml").Should().BeTrue();
+
+		NavigationTocMapping[] mappings =
+		[
+			new() { Source = new Uri("detection-rules://"), SourcePathPrefix = "reference/security/prebuilt-rules" }
+		];
+		var mapped = GlobalNavigationPathProvider.TryGetMountedRelativePath(
+			"detection-rules",
+			"catalog.json",
+			mappings.ToDictionary(mapping => mapping.Source),
+			out var prefix,
+			out var remainder
+		);
+
+		mapped.Should().BeTrue();
+		prefix.Should().Be("reference/security/prebuilt-rules");
+		remainder.Should().Be("catalog.json");
 	}
+
+	/// <summary>
+	/// <c>toc: reference</c> is a parent of every reference docset. A sibling mount stops that parent from claiming root JSON.
+	/// </summary>
+	private static NavigationTocMapping[] SharedReferenceMappings() =>
+		[
+			new() { Source = new Uri("docs-content://reference/"), SourcePathPrefix = "reference" },
+			new() { Source = new Uri("docs-content://reference/autoops-insights/"), SourcePathPrefix = "reference/autoops-insights" },
+			new() { Source = new Uri("autoops-insights://elasticsearch/"), SourcePathPrefix = "reference/autoops-insights/elasticsearch" },
+			new() { Source = new Uri("search-ui://reference/"), SourcePathPrefix = "reference/search-ui" },
+			new() { Source = new Uri("elasticsearch://reference/elasticsearch/"), SourcePathPrefix = "reference/elasticsearch" }
+		];
 }

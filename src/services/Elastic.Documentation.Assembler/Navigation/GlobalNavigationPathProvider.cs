@@ -62,7 +62,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
 
-		if (repositoryName == "detection-rules")
+		if (UsesDetectionRuleMarkdownPath(repositoryName, relativePath))
 		{
 			var output = DetectionRuleFile.OutputPath(defaultOutputFile, documentationSet.Context);
 			var md = fs.FileInfo.New(Path.ChangeExtension(output.FullName, "md"));
@@ -173,33 +173,68 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 	/// <summary>
 	/// Published directory for a JSON file that sits at the docset root, such as <c>autoops-insights.json</c>.
-	/// Uses the navigation parent of this repository's mounts.
+	/// Uses this repository's own mount. A parent toc is used only when every mount under it belongs to this repository.
 	/// </summary>
 	internal static string? DocsetRootPrefix(string repositoryName, IEnumerable<NavigationTocMapping> mappings)
 	{
 		var mappingList = mappings as IReadOnlyCollection<NavigationTocMapping> ?? mappings.ToArray();
 		var repoPrefixes = mappingList
 			.Where(mapping => string.Equals(mapping.Source.Scheme, repositoryName, StringComparison.OrdinalIgnoreCase))
-			.Select(mapping => mapping.SourcePathPrefix.Replace('\\', '/').Trim('/'))
+			.Select(mapping => NormalizePrefix(mapping.SourcePathPrefix))
 			.Where(prefix => prefix.Length > 0)
 			.Distinct(StringComparer.Ordinal)
 			.ToArray();
 		if (repoPrefixes.Length == 0)
 			return null;
 
+		var own = CommonDirectoryPrefix(repoPrefixes);
+		if (own is null)
+			return null;
+
 		foreach (var candidate in mappingList
-			.Select(mapping => mapping.SourcePathPrefix.Replace('\\', '/').Trim('/'))
-			.Distinct()
+			.Select(mapping => NormalizePrefix(mapping.SourcePathPrefix))
+			.Where(prefix => prefix.Length > 0)
+			.Distinct(StringComparer.Ordinal)
 			.OrderByDescending(prefix => prefix.Length))
 		{
-			if (candidate.Length == 0)
+			if (candidate == own || !own.StartsWith(candidate + "/", StringComparison.Ordinal))
 				continue;
-			if (repoPrefixes.All(prefix => prefix.StartsWith(candidate + "/", StringComparison.Ordinal)))
-				return candidate;
+			if (!repoPrefixes.All(prefix => prefix.StartsWith(candidate + "/", StringComparison.Ordinal)))
+				continue;
+			if (!WrapsOnlyRepository(candidate, repositoryName, mappingList))
+				continue;
+			return candidate;
 		}
 
-		var common = repoPrefixes[0];
-		foreach (var prefix in repoPrefixes.Skip(1))
+		return own;
+	}
+
+	/// <summary>
+	/// Detection-rule sources are published as markdown. A JSON export keeps its extension and its <c>.json</c> URL.
+	/// </summary>
+	internal static bool UsesDetectionRuleMarkdownPath(string repositoryName, string relativePath) =>
+		repositoryName == "detection-rules" && !relativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+
+	private static bool WrapsOnlyRepository(string candidate, string repositoryName, IReadOnlyCollection<NavigationTocMapping> mappings)
+	{
+		foreach (var mapping in mappings)
+		{
+			var prefix = NormalizePrefix(mapping.SourcePathPrefix);
+			if (prefix.Length == 0 || prefix == candidate)
+				continue;
+			if (!prefix.StartsWith(candidate + "/", StringComparison.Ordinal))
+				continue;
+			if (!string.Equals(mapping.Source.Scheme, repositoryName, StringComparison.OrdinalIgnoreCase))
+				return false;
+		}
+
+		return true;
+	}
+
+	private static string? CommonDirectoryPrefix(string[] prefixes)
+	{
+		var common = prefixes[0];
+		foreach (var prefix in prefixes.Skip(1))
 		{
 			while (common.Length > 0 && prefix != common && !prefix.StartsWith(common + "/", StringComparison.Ordinal))
 			{
@@ -210,6 +245,8 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 		return common.Length == 0 ? null : common;
 	}
+
+	private static string NormalizePrefix(string prefix) => prefix.Replace('\\', '/').Trim('/');
 
 	private static bool IsDocsetRootJson(string relativePath) =>
 		relativePath.EndsWith(".json", StringComparison.Ordinal) && !relativePath.Contains('/') && !relativePath.Contains('\\');
