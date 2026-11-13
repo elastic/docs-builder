@@ -58,6 +58,13 @@
 		   cached copy running before the parser reaches the body throws. *@
 		<script src="@(Model.Features.StagingElasticNavEnabled ? "https://stag-www.elastic.co/elastic-nav.js" : "https://www.elastic.co/elastic-nav.js")" defer></script>
 	}
+	@if (Model.FrontendConfig.WafIntegrationUrl is { } wafIntegrationUrl)
+	{
+		@* AWS WAF SDK: fetches the aws-waf-token cookie in the background for page feedback and
+		   telemetry exports (Assets/waf.ts). async, not defer: a deferred script delays
+		   DOMContentLoaded, so a slow WAF endpoint would hold up page init. *@
+		<script src="@wafIntegrationUrl" async></script>
+	}
 	@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is { } websiteSearchUrl)
 	{
 		<script type="module" src="@websiteSearchUrl"></script>

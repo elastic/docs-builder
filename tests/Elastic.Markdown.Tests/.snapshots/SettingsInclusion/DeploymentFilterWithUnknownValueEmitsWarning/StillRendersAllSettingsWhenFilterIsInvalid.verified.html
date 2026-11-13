@@ -1481,10 +1481,17 @@
 			configuration:</p>
 		<div class="highlight-text notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-text">logging:   appenders:     console_appender:       type: console       layout:         type: pattern         highlight: true   root:     appenders: [console_appender]     level: all
-					</code>
-				</pre>
+				<pre><code class="language-text">logging:
+  appenders:
+    console_appender:
+      type: console
+      layout:
+        type: pattern
+        highlight: true
+  root:
+    appenders: [console_appender]
+    level: all
+</code>		</pre>
 			</div>
 		</div>
 	</dd>
@@ -3266,10 +3273,8 @@
 			setting requires the following format:</p>
 		<div class="highlight-text notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-text">*Default: [ ]* An array of API endpoints which should be exempt from Cross-Site Request Forgery ("XSRF") protections.
-					</code>
-				</pre>
+				<pre><code class="language-text">*Default: [ ]* An array of API endpoints which should be exempt from Cross-Site Request Forgery ("XSRF") protections.
+</code>		</pre>
 			</div>
 		</div>
 		<p>It is available in {{ecloud}} 8.0.0 and later versions.</p>

@@ -79,6 +79,7 @@ export const emptyStateCopy = (typeFilter: TypeFilter) =>
 export interface SearchResultsListProps {
     results: ResultGroup[]
     isLoading: boolean
+    isNavigating?: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: (opensElsewhere: boolean) => void
@@ -88,6 +89,7 @@ export interface SearchResultsListProps {
 export const SearchResultsList = ({
     results,
     isLoading,
+    isNavigating = false,
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
@@ -196,7 +198,18 @@ export const SearchResultsList = ({
     }
 
     return (
-        <div ref={containerRef} css={containerStyles}>
+        <div
+            ref={containerRef}
+            aria-busy={isNavigating}
+            css={[
+                containerStyles,
+                // A second click would start a request racing the one in flight.
+                isNavigating &&
+                    css`
+                        pointer-events: none;
+                    `,
+            ]}
+        >
             {results.map(({ result, index, rank, properties }) => (
                 <div
                     key={result.url}
