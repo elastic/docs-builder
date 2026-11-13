@@ -363,6 +363,28 @@ describe('API examples carousel', () => {
         dialog.dispatchEvent(new Event('close'))
     })
 
+    it('sizes the strip to a short wide sample including its horizontal scrollbar', () => {
+        const strip = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-carousel-strip]'
+        )!
+        const body = strip.querySelector<HTMLElement>(
+            '[data-lang="Console"] > div'
+        )!
+        body.className = 'api-code-carousel-card-body'
+        body.style.maxHeight = '300px'
+        const metrics = {
+            scrollHeight: 102,
+            clientHeight: 102,
+            offsetHeight: 116,
+        }
+        for (const [key, value] of Object.entries(metrics))
+            Object.defineProperty(body, key, { configurable: true, value })
+
+        initApiExamples()
+
+        expect(strip.style.getPropertyValue('--api-strip-height')).toBe('118px')
+    })
+
     it('steps with the arrows and disables them at the ends', () => {
         initApiExamples()
         const prev = document.querySelector<HTMLButtonElement>(

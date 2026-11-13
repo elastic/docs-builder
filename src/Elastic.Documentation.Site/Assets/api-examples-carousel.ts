@@ -83,9 +83,12 @@ function syncStripHeight(carousel: HTMLElement) {
     )
     if (!strip || !card || !body) return
     const cap = parseFloat(getComputedStyle(body).maxHeight)
-    const code = Number.isFinite(cap)
-        ? Math.min(body.scrollHeight, cap)
-        : body.scrollHeight
+    // scrollHeight leaves out the horizontal scrollbar a wide line adds; without it a short sample scrolls by the bar's height.
+    const scrollbar = body.offsetHeight - body.clientHeight
+    const code =
+        (Number.isFinite(cap)
+            ? Math.min(body.scrollHeight, cap)
+            : body.scrollHeight) + scrollbar
     const header = card.querySelector<HTMLElement>('header')?.offsetHeight ?? 0
     // The card's border and the strip's own padding, or the card comes up short and its code scrolls.
     const stripStyle = getComputedStyle(strip)
