@@ -430,6 +430,8 @@ public class DocumentationWebHost
 
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
+			case JsonFile json:
+				return Results.File(json.SourceFile.FullName, json.MimeType);
 			default:
 				if (s == "index.md")
 					return Results.Redirect(generator.DocumentationSet.Navigation.Url);

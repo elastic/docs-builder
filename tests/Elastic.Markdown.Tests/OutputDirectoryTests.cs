@@ -128,6 +128,42 @@ toc:
 	}
 
 	[Test]
+	public async Task CopiesJsonFileToOutput()
+	{
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/docset.yml", new MockFileData("project: test\ntoc:\n- file: index.md\n") },
+				{ "docs/index.md", new MockFileData("# Test") },
+				{
+					"docs/autoops-insights.json",
+					new MockFileData("""{"high_cpu_on_node":{"tags":["deployment:hosted"]}}""")
+				}
+			},
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
+		var logger = new TestLoggerFactory();
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
+		{
+			SkipStaticAssetExtraction = true
+		};
+		var set = new DocumentationSet(context, logger, new TestCrossLinkResolver());
+		set.Files.Values.Should().Contain(f =>
+			f is JsonFile && f.RelativePath.Replace('\\', '/').EndsWith("autoops-insights.json")
+		);
+
+		var generator = new DocumentationGenerator(set, logger);
+		await generator.GenerateAll(TestContext.Current!.Execution.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var output = fileSystem.Path.Join(set.OutputDirectory.FullName, "autoops-insights.json");
+		fileSystem.File.Exists(output).Should().BeTrue();
+		fileSystem.File.ReadAllText(output).Should().Contain("deployment:hosted");
+	}
+
+	[Test]
 	[MethodDataSource(nameof(ValidFileNames))]
 	public void OutputFileValidationValidNames(string fileName)
 	{
@@ -210,7 +246,10 @@ toc:
 			// Plus sign in path (e.g., semantic version with build metadata)
 			"release-notes/_snippets/9.2.0+build202510300150/index.md",
 			"test+file.md",
-			"c++.md"
+			"c++.md",
+			// JSON catalogs published next to the pages
+			"autoops-insights.json",
+			"path/to/catalog.json"
 		];
 
 	public static IEnumerable<string> InvalidFileNames =>

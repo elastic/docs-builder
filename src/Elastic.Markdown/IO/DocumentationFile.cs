@@ -41,6 +41,16 @@ public record ImageFile(
 	string MimeType = "image/png"
 ) : DocumentationFile(SourceFile, RootPath, Repository);
 
+/// <summary>
+/// A JSON file shipped next to the markdown pages, copied through unchanged.
+/// </summary>
+public record JsonFile(
+	IFileInfo SourceFile,
+	IDirectoryInfo RootPath,
+	string Repository,
+	string MimeType = "application/json"
+) : DocumentationFile(SourceFile, RootPath, Repository);
+
 public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository) : DocumentationFile(
 	SourceFile,
 	RootPath,
