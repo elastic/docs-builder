@@ -609,7 +609,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ctx);
-		// Boosted navigation within an API swaps less than #main-container, so the banner replaces itself out of band.
+		// No boosted swap carries the banner; api-beta-banner.ts matches it to each new page.
 		html
 			.IndexOf("id=\"api-beta-banner\"", StringComparison.Ordinal)
 			.Should()
