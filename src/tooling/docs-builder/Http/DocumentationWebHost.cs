@@ -428,8 +428,9 @@ public class DocumentationWebHost
 				var rendered = await generator.RenderLayout(markdown, ctx);
 				return LiveReloadHtml(rendered.Html);
 
-			case ImageFile image:
-				return Results.File(image.SourceFile.FullName, image.MimeType);
+			case ImageFile:
+			case JsonFile:
+				return DocumentationFileResults.Serve(documentationFile);
 			default:
 				if (s == "index.md")
 					return Results.Redirect(generator.DocumentationSet.Navigation.Url);

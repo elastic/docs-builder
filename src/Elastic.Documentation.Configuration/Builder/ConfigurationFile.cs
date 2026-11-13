@@ -28,6 +28,7 @@ public record ConfigurationFile
 
 	private Glob[] Exclude { get; } = [];
 	private string[] Include { get; } = [];
+	private readonly HashSet<string> _publishedJson = [with(StringComparer.Ordinal)];
 
 	public string[] CrossLinkRepositories { get; } = [];
 
@@ -140,6 +141,20 @@ public record ConfigurationFile
 		return Exclude.Any(g => g.IsMatch(relativePath));
 	}
 
+	/// <summary>
+	/// True when <paramref name="relativePath"/> is listed under <c>json</c> in <c>docset.yml</c>.
+	/// </summary>
+	public bool IsPublishedJson(string relativePath) =>
+		_publishedJson.Count > 0 && _publishedJson.Contains(NormalizeJsonPath(relativePath));
+
+	private static string NormalizeJsonPath(string relativePath)
+	{
+		var normalized = relativePath.Replace('\\', '/');
+		if (normalized.StartsWith("./", StringComparison.Ordinal))
+			normalized = normalized[2..];
+		return normalized;
+	}
+
 	public ConfigurationFile(
 		DocumentationSetFile docSetFile,
 		IDocumentationSetContext context,
@@ -170,6 +185,11 @@ public record ConfigurationFile
 
 			// Convert exclude patterns to Glob
 			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
+			foreach (var path in docSetFile.Json)
+			{
+				if (!string.IsNullOrWhiteSpace(path))
+					_ = _publishedJson.Add(NormalizeJsonPath(path.Trim()));
+			}
 			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
 			FolderExcludedFiles = docSetFile.FolderExcludedFiles;
 

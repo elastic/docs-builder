@@ -40,6 +40,12 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlPropertyName("exclude")]
 	public List<string> Exclude { get; set; } = [];
 
+	/// <summary>
+	/// Docset-relative JSON paths to publish next to the HTML pages. Other <c>.json</c> files stay build inputs.
+	/// </summary>
+	[YamlPropertyName("json")]
+	public List<string> Json { get; set; } = [];
+
 	[YamlPropertyName("extensions")]
 	public List<string> Extensions { get; set; } = [];
 

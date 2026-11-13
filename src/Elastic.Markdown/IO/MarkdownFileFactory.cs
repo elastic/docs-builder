@@ -128,6 +128,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 							".gif" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/gif")),
 							".svg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/svg+xml")),
 							".png" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative)),
+							".json" => (t.file, CreateJsonFile(t.file, sourceDirectory, build, t.relative)),
 							".md" => CreateMarkdownTuple(t.file, build),
 							_ => (t.file, DefaultFileHandling(t.file, sourceDirectory))
 						}
@@ -147,6 +148,14 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		return new ImageFile(file, sourceDirectory, context.Git.RepositoryName, mimeType);
+	}
+
+	private DocumentationFile CreateJsonFile(IFileInfo file, IDirectoryInfo sourceDirectory, BuildContext context, string relativePath)
+	{
+		if (!context.Configuration.IsPublishedJson(relativePath) || context.Configuration.IsExcluded(relativePath))
+			return DefaultFileHandling(file, sourceDirectory);
+
+		return new JsonFile(file, sourceDirectory, context.Git.RepositoryName);
 	}
 
 	private (IFileInfo, DocumentationFile) CreateMarkdownTuple(IFileInfo file, BuildContext context)

@@ -4,6 +4,7 @@
 
 using System.Collections.Immutable;
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown;
@@ -61,7 +62,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
 
-		if (repositoryName == "detection-rules")
+		if (UsesDetectionRuleMarkdownPath(repositoryName, relativePath))
 		{
 			var output = DetectionRuleFile.OutputPath(defaultOutputFile, documentationSet.Context);
 			var md = fs.FileInfo.New(Path.ChangeExtension(output.FullName, "md"));
@@ -84,16 +85,15 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		if (lookup.StartsWith("docs-content://") && !relativePath.Contains('/'))
 			return defaultOutputFile;
 
-		Uri? match = null;
-		foreach (var prefix in TableOfContentsPrefixes)
-		{
-			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
-				continue;
-			match = new Uri(prefix);
-			break;
-		}
-
-		if (match is null || !_assembleSources.NavigationTocMappings.TryGetValue(match, out var toc))
+		if (
+			!TryGetMountedRelativePath(
+				repositoryName,
+				relativePath,
+				_assembleSources.NavigationTocMappings,
+				out var sourcePathPrefix,
+				out var remainder
+			)
+		)
 		{
 			if (relativePath.StartsWith("raw-migrated-files/", StringComparison.Ordinal))
 				return null;
@@ -114,6 +114,14 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 					return null;
 			}
 
+			// A JSON file at the docset root has no toc entry. Put it on the docset's published mount.
+			if (IsDocsetRootJson(relativePath))
+			{
+				var root = DocsetRootPrefix(repositoryName, _assembleSources.NavigationTocMappings.Values);
+				if (root is not null)
+					return fs.FileInfo.New(fs.Path.Join(outputDirectory.FullName, root, relativePath));
+			}
+
 			var fallBack = fs.Path.Join(outputDirectory.FullName, "_failed", repositoryName, relativePath);
 			_context.Collector.EmitError(
 				_context.ConfigurationFileProvider.NavigationFile,
@@ -122,12 +130,124 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			return fs.FileInfo.New(fallBack);
 		}
 
-		var originalPath = Path.Join(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
-		var relativePathSpan = relativePath.AsSpan();
-		var newRelativePath = relativePathSpan.GetTrimmedRelativePath(originalPath);
-
-		var path = fs.Path.Join(outputDirectory.FullName, toc.SourcePathPrefix, newRelativePath);
-
+		var path = fs.Path.Join(outputDirectory.FullName, sourcePathPrefix, remainder);
 		return fs.FileInfo.New(path);
 	}
+
+	/// <summary>
+	/// Maps a docset file onto its navigation mount. A file under <c>autoops-insights://elasticsearch</c>
+	/// lands at <c>reference/autoops-insights/elasticsearch</c>, not next to the shared output root.
+	/// </summary>
+	internal static bool TryGetMountedRelativePath(
+		string repositoryName,
+		string relativePath,
+		IReadOnlyDictionary<Uri, NavigationTocMapping> mappings,
+		out string sourcePathPrefix,
+		out string remainder
+	)
+	{
+		var lookup = ContentSourceMoniker.CreateString(repositoryName, relativePath).TrimEnd('/');
+		string? bestPrefix = null;
+		foreach (var mapping in mappings.Values)
+		{
+			var source = mapping.Source.ToString();
+			var prefix = source.EndsWith(":///", StringComparison.OrdinalIgnoreCase) ? source[..^1] : source;
+			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
+				continue;
+			if (bestPrefix is null || prefix.Length > bestPrefix.Length)
+				bestPrefix = prefix;
+		}
+
+		if (bestPrefix is null || !Uri.TryCreate(bestPrefix, UriKind.Absolute, out var match) || !mappings.TryGetValue(match, out var toc))
+		{
+			sourcePathPrefix = "";
+			remainder = "";
+			return false;
+		}
+
+		var originalPath = Path.Join(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
+		remainder = relativePath.AsSpan().GetTrimmedRelativePath(originalPath);
+		sourcePathPrefix = toc.SourcePathPrefix;
+		return true;
+	}
+
+	/// <summary>
+	/// Published directory for a JSON file that sits at the docset root, such as <c>autoops-insights.json</c>.
+	/// Uses this repository's own mount. A parent toc is used only when every mount under it belongs to this repository.
+	/// </summary>
+	internal static string? DocsetRootPrefix(string repositoryName, IEnumerable<NavigationTocMapping> mappings)
+	{
+		var mappingList = mappings as IReadOnlyCollection<NavigationTocMapping> ?? mappings.ToArray();
+		var repoPrefixes = mappingList
+			.Where(mapping => string.Equals(mapping.Source.Scheme, repositoryName, StringComparison.OrdinalIgnoreCase))
+			.Select(mapping => NormalizePrefix(mapping.SourcePathPrefix))
+			.Where(prefix => prefix.Length > 0)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+		if (repoPrefixes.Length == 0)
+			return null;
+
+		var own = CommonDirectoryPrefix(repoPrefixes);
+		if (own is null)
+			return null;
+
+		foreach (var candidate in mappingList
+			.Select(mapping => NormalizePrefix(mapping.SourcePathPrefix))
+			.Where(prefix => prefix.Length > 0)
+			.Distinct(StringComparer.Ordinal)
+			.OrderByDescending(prefix => prefix.Length))
+		{
+			if (candidate == own || !own.StartsWith(candidate + "/", StringComparison.Ordinal))
+				continue;
+			if (!repoPrefixes.All(prefix => prefix.StartsWith(candidate + "/", StringComparison.Ordinal)))
+				continue;
+			if (!WrapsOnlyRepository(candidate, repositoryName, mappingList))
+				continue;
+			return candidate;
+		}
+
+		return own;
+	}
+
+	/// <summary>
+	/// Detection-rule sources are published as markdown. A JSON export keeps its extension and its <c>.json</c> URL.
+	/// </summary>
+	internal static bool UsesDetectionRuleMarkdownPath(string repositoryName, string relativePath) =>
+		repositoryName == "detection-rules" && !relativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+
+	private static bool WrapsOnlyRepository(string candidate, string repositoryName, IReadOnlyCollection<NavigationTocMapping> mappings)
+	{
+		foreach (var mapping in mappings)
+		{
+			var prefix = NormalizePrefix(mapping.SourcePathPrefix);
+			if (prefix.Length == 0 || prefix == candidate)
+				continue;
+			if (!prefix.StartsWith(candidate + "/", StringComparison.Ordinal))
+				continue;
+			if (!string.Equals(mapping.Source.Scheme, repositoryName, StringComparison.OrdinalIgnoreCase))
+				return false;
+		}
+
+		return true;
+	}
+
+	private static string? CommonDirectoryPrefix(string[] prefixes)
+	{
+		var common = prefixes[0];
+		foreach (var prefix in prefixes.Skip(1))
+		{
+			while (common.Length > 0 && prefix != common && !prefix.StartsWith(common + "/", StringComparison.Ordinal))
+			{
+				var slash = common.LastIndexOf('/');
+				common = slash < 0 ? "" : common[..slash];
+			}
+		}
+
+		return common.Length == 0 ? null : common;
+	}
+
+	private static string NormalizePrefix(string prefix) => prefix.Replace('\\', '/').Trim('/');
+
+	private static bool IsDocsetRootJson(string relativePath) =>
+		relativePath.EndsWith(".json", StringComparison.Ordinal) && !relativePath.Contains('/') && !relativePath.Contains('\\');
 }

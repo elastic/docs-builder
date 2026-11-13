@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.FrontMatter;
+using Microsoft.AspNetCore.Http;
 
 namespace Elastic.Markdown.IO;
 
@@ -40,6 +41,29 @@ public record ImageFile(
 	string Repository,
 	string MimeType = "image/png"
 ) : DocumentationFile(SourceFile, RootPath, Repository);
+
+/// <summary>
+/// A JSON file shipped next to the markdown pages, copied through unchanged.
+/// </summary>
+public record JsonFile(
+	IFileInfo SourceFile,
+	IDirectoryInfo RootPath,
+	string Repository,
+	string MimeType = "application/json"
+) : DocumentationFile(SourceFile, RootPath, Repository);
+
+/// <summary>
+/// Serves an image or JSON documentation file as an HTTP result. The preview server uses this for those files.
+/// </summary>
+public static class DocumentationFileResults
+{
+	public static IResult Serve(DocumentationFile file) => file switch
+	{
+		ImageFile image => Results.File(image.SourceFile.FullName, image.MimeType),
+		JsonFile json => Results.File(json.SourceFile.FullName, json.MimeType),
+		_ => Results.NotFound()
+	};
+}
 
 public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository) : DocumentationFile(
 	SourceFile,
