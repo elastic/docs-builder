@@ -17,6 +17,7 @@ using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.RelatedLearning;
+using Elastic.Markdown.Myst.Directives.SchemaTree;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
@@ -126,6 +127,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{literalinclude}") > 0)
 			return new LiteralIncludeBlock(this, context);
+
+		if (info.IndexOf("{schema-tree}") > 0)
+			return new SchemaTreeBlock(this, context);
 
 		if (info.IndexOf("{settings}") > 0)
 			return new SettingsBlock(this, context);
