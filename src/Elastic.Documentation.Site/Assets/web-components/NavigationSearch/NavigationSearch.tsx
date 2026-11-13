@@ -214,7 +214,8 @@ export const NavigationSearch = ({
             // The panel stays mounted while hidden; an anchor jump scrolls the page under it.
             repositionOnScroll
             disableFocusTrap={true}
-            panelMinWidth={isMobile ? undefined : 640}
+            // The landing box is already wide, so its results match it. The narrow sidebar box needs the wider panel.
+            panelMinWidth={isMobile || size === 'l' ? undefined : 640}
             panelPaddingSize="none"
             offset={12}
             panelProps={{
