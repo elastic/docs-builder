@@ -145,19 +145,18 @@ exclude:
   - '_*.md'
 ```
 
-## JSON files
+## `json`
 
-A `.json` file in the documentation set is published next to the HTML pages. It does not need a `toc` entry. The build copies the bytes unchanged and serves the file as `application/json`.
+Paths, relative to the documentation set, of JSON files to publish next to the HTML pages. A listed file does not need a `toc` entry. The build copies the bytes unchanged and serves the file as `application/json`. Any `.json` file that is not listed stays a build input.
+
+```yaml
+json:
+  - autoops-insights.json
+```
 
 The file name follows the same rules as a page name. It must be lowercase and start with a letter, number, or underscore. The rest may contain letters, numbers, spaces, dashes, dots, underscores, and plus signs. `catalog.json` is published. `Catalog.json` fails the build with an invalid file name error.
 
-A JSON file that is only a build input stays out of the site when you list it under `exclude`. This documentation set excludes `cli-schema.json` that way. The CLI reference is generated from that file, and the raw schema is not a page.
-
-```yaml
-exclude:
-  - 'build-input.json'
-  - 'schemas/**/*.json'
-```
+`exclude` still applies to a listed path. This documentation set does not list `cli-schema.json`. The CLI reference is generated from that file, and the raw schema is not a page.
 
 ## `subs`
 

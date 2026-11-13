@@ -6,7 +6,6 @@ cross_links:
   - elasticsearch
 exclude:
   - '_*.md'
-  - 'cli-schema.json'
 subs:
   a-global-variable: "This was defined in docset.yml"
   serverless-short: Serverless

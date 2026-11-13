@@ -152,8 +152,8 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 
 	private DocumentationFile CreateJsonFile(IFileInfo file, IDirectoryInfo sourceDirectory, BuildContext context, string relativePath)
 	{
-		if (context.Configuration.IsExcluded(relativePath))
-			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
+		if (!context.Configuration.IsPublishedJson(relativePath) || context.Configuration.IsExcluded(relativePath))
+			return DefaultFileHandling(file, sourceDirectory);
 
 		return new JsonFile(file, sourceDirectory, context.Git.RepositoryName);
 	}

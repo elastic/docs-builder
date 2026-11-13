@@ -133,7 +133,7 @@ toc:
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
-				{ "docs/docset.yml", new MockFileData("project: test\ntoc:\n- file: index.md\n") },
+				{ "docs/docset.yml", new MockFileData("project: test\ntoc:\n- file: index.md\njson:\n- autoops-insights.json\n") },
 				{ "docs/index.md", new MockFileData("# Test") },
 				{ "docs/autoops-insights.json", new MockFileData("""{"high_cpu_on_node":{"tags":["deployment:hosted"]}}""") }
 			},
@@ -159,22 +159,31 @@ toc:
 	}
 
 	[Test]
-	public async Task ExcludedJsonFileIsNotPublished()
+	public async Task PublishesOnlyListedJsonFiles()
 	{
 		var logger = new TestLoggerFactory();
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
-				{ "docs/docset.yml", new MockFileData("""
+				{
+					"docs/docset.yml",
+					new MockFileData(
+						"""
 project: test
 toc:
   - file: index.md
+json:
+  - catalog.json
+  - secret.json
 exclude:
   - 'secret.json'
-""") },
+"""
+					)
+				},
 				{ "docs/index.md", new MockFileData("# Test") },
 				{ "docs/secret.json", new MockFileData("""{"hidden":true}""") },
-				{ "docs/catalog.json", new MockFileData("""{"ok":true}""") }
+				{ "docs/catalog.json", new MockFileData("""{"ok":true}""") },
+				{ "docs/other.json", new MockFileData("""{"other":true}""") }
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
@@ -188,6 +197,7 @@ exclude:
 
 		set.Files.Values.Should().Contain(f => f is JsonFile && f.RelativePath.Replace('\\', '/').EndsWith("catalog.json"));
 		set.Files.Values.Should().NotContain(f => f.RelativePath.Replace('\\', '/').EndsWith("secret.json"));
+		set.Files.Values.Should().NotContain(f => f.RelativePath.Replace('\\', '/').EndsWith("other.json"));
 		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 	}
 

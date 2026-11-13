@@ -57,6 +57,10 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		if (relativePath.StartsWith("_static/", StringComparison.Ordinal))
 			return defaultOutputFile;
 
+		// Published JSON is a file next to the pages, not a toc entry.
+		if (relativePath.EndsWith(".json", StringComparison.Ordinal))
+			return defaultOutputFile;
+
 		var repositoryName = documentationSet.Context.Git.RepositoryName;
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
@@ -106,8 +110,6 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			if (relativePath.StartsWith("doc_examples", StringComparison.Ordinal))
 				return null;
 			if (relativePath.EndsWith(".asciidoc", StringComparison.Ordinal))
-				return null;
-			if (relativePath.EndsWith(".json", StringComparison.Ordinal))
 				return null;
 
 			foreach (var prefix in PhantomPrefixes)
