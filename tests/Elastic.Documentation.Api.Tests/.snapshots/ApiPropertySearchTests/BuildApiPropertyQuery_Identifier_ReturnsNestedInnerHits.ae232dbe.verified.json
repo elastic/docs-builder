@@ -3,7 +3,7 @@
     "ignore_unmapped": true,
     "inner_hits": {
       "name": "api_properties",
-      "size": 5,
+      "size": 20,
       "_source": {
         "includes": "api.properties.*"
       }

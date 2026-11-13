@@ -31,21 +31,21 @@
       "rollForward": true
     },
     "release-notes": {
-      "version": "0.6.0",
+      "version": "0.11.7",
       "commands": [
         "release-notes"
       ],
       "rollForward": true
     },
     "curb-cli": {
-      "version": "0.9.0",
+      "version": "0.14.3",
       "commands": [
         "curb"
       ],
       "rollForward": false
     },
     "nullean.snapshots.cli": {
-      "version": "0.8.0",
+      "version": "0.11.0",
       "commands": [
         "snap"
       ],

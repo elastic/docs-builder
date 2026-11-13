@@ -138,14 +138,14 @@ jobs:
               - tests/Elastic.Documentation.Journeys.Tests/journeys/**
               - tests/Elastic.Documentation.Journeys.Tests/http/**
               - src/tooling/docs-journeys/**
-              - .github/workflows/journeys-live.yml
+              - .github/workflows/journeys-synth.yml
               - .github/workflows/changes.yml
             docs_journeys:
               - *shared
               - src/tooling/docs-journeys/**
               - .github/actions/bootstrap/**
               - build/**
-              - .github/workflows/journeys-live.yml
+              - .github/workflows/journeys-synth.yml
             frontend_toolchain:
               - .nvmrc
               - src/Elastic.Documentation.Site/package.json

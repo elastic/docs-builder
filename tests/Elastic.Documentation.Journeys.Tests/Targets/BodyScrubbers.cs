@@ -32,11 +32,11 @@ public static partial class BodyScrubbers
 	}
 
 	/// <summary>
-	/// Replaces the text of every <c>description</c> and <c>instructions</c> string in a pretty-printed JSON body with an ellipsis, so
+	/// Replaces the text of every <c>description</c> and <c>instructions</c> string in a pretty-printed JSON body (plain or quoted with <c>&gt; </c>) with an ellipsis, so
 	/// a snapshot of a tool list keeps the names, schemas and hints but not wording that the tool authors edit often.
 	/// </summary>
 	public static string WithoutProse(string transcript) => ProseLine().Replace(transcript, "${prefix}\"…\"${suffix}");
 
-	[GeneratedRegex("""(?<prefix>^> +"(?:description|instructions)": )".*"(?<suffix>,?)$""", RegexOptions.Multiline)]
+	[GeneratedRegex("""(?<prefix>^[> ]* *"(?:description|instructions)": )".*"(?<suffix>,?)$""", RegexOptions.Multiline)]
 	private static partial Regex ProseLine();
 }

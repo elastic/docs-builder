@@ -1,0 +1,10 @@
+# What goes wrong on a page without anyone clicking: console messages and script errors. Failed requests are noted at the end, off for now.
+# @tags compare
+# @requires build-type:assembler compare
+set viewport 1280 800
+open get-started
+wait --load networkidle
+errors
+console
+# To observe and fix later: requests that fail differ between runs (fonts from other hosts, a font that 404s on edge).
+# network requests --failed

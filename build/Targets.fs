@@ -4,167 +4,112 @@
 
 module Targets
 
+open System
 open System.IO
 open System.IO.Compression
+open System.Text.Json
 open System.Text
-open Argu
-open CommandLine
-open Fake.Core
-open Fake.IO
-open Fake.Tools.Git
+open Nullean.Argh
+open Nullean.Make.Fs
 open Proc.Fs
 open BuildInformation
 
-let private clean _ =
-    exec { run "dotnet" "clean" "-c" "release" }
-    let removeArtifacts folder = Shell.cleanDir (Paths.ArtifactPath folder).FullName
-    removeArtifacts "package"
-    removeArtifacts "release-notes"
-    removeArtifacts "tests"
-    removeArtifacts "docs-builder"
+type TestSuite =
+    | All = 0
+    | Unit = 1
+    | Integration = 2
 
-let private compile _ = exec { run "dotnet" "build" "-c" "release" }
+type ParallelOptions =
+    { /// Test projects to run at once. Local runs only: CI always runs them one at a time. Default: the number of cores
+      Parallelism: int option }
 
-let private build _ = printfn "build"
-let private release _ = printfn "release"
-let private publish _ = printfn "publish"
+type TestOptions =
+    { /// Which tests to run. Default: unit
+      Suite: TestSuite option
+      /// Test projects to run at once. Local runs only: CI always runs them one at a time. Default: the number of cores
+      Parallelism: int option }
 
-let private version _ =
-    let version = Software.Version
-    printfn $"Informational version: %s{version.AsString}"
-    printfn $"Semantic version: %s{version.Normalize()}"
+type ServeOptions =
+    { /// Passed to docs-builder serve, such as --port 3001
+      [<Rest>] Rest: string list }
 
-let private format _ =
-    exec { run "dotnet" ["curb"; "format"; "."] }
-    exec { run "dotnet" ["curb"; "cleanup"; "--forward"] }
+[<RequireQualifiedAccess>]
+type SiteTarget =
+    /// npm ci for the frontend, skipped while package-lock.json is unchanged
+    | Install
+    /// Production frontend build
+    | Build
+    /// Frontend dev build with live reload
+    | Watch
+    /// Frontend tests (Vitest)
+    | Test
+    /// Frontend lint (ESLint)
+    | Lint
+    /// Frontend auto-format (Prettier)
+    | Fmt
+    /// Frontend TypeScript type check
+    | Check
 
-let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
-
-let private lint _ =
-    match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
-    | 0 -> printfn "No formatting violations found."
-    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
-
-let private pristineCheck (arguments:ParseResults<Build>) =
-    let skipCheck = arguments.TryGetResult Skip_Dirty_Check |> Option.isSome
-    match skipCheck, Information.isCleanWorkingCopy "." with
-    | true, _ -> printfn "Skip checking for clean working copy since -c is specified"
-    | _, true  -> printfn "The checkout folder does not have pending changes, proceeding"
-    | _ -> failwithf "The checkout folder has pending changes, aborting. Specify -c to ./build.sh to skip this check"
-    
-    match skipCheck, (exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" }) with
-    | true, _ -> printfn "Skip formatting checks since -c is specified"
-    | _, 0  -> printfn "No formatting violations found."
-    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
-
-let private publishBinaries _ =
-    exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }
-
-let private publishZip _ =
-    // `extra` runs after the publish, for files that only exist then.
-    let zip tool (extra: unit -> string list) =
-        exec { run "dotnet" "publish" $"src/tooling/{tool}/{tool}.csproj" }
-        let binary = match OS.Current with Windows -> $"{tool}.exe" | _ -> tool
-        Zip.zip
-            $".artifacts/publish/{tool}/release"
-            $".artifacts/publish/{tool}/release/{tool}-%s{OS.Name}-{OS.Arch}.zip"
-            ([
-                $".artifacts/publish/{tool}/release/%s{binary}";
-                $".artifacts/publish/{tool}/release/LICENSE.txt";
-                $".artifacts/publish/{tool}/release/NOTICE.txt"
-            ] @ extra ())
-    zip "docs-builder" (fun () -> [])
-    zip "docs-journeys" (fun () -> [])
-    
-let private prNumber () =
-    match Environment.environVarOrNone "GITHUB_REF_NAME" with
-    | None -> None 
-    | Some s when s.EndsWith "/merge"  -> Some (s.Split('/') |> Seq.head)
-    | _ -> None
-
-let private imageTags () = 
-    let pr = prNumber()
-    let exitCode = exec {
-        validExitCode (fun _ -> true)
-        exit_code_of "git" "describe" "--tags" "--exact-match" "HEAD"
-    }
-    match (exitCode, pr) with
-    | 0, _ -> "edge;latest"
-    | _, None -> "edge"
-    | _, Some pr -> $"ci-%s{pr}"
-    
-let private runLocalContainer _ =
-    let tag =
-        match imageTags() with
-        | ci when ci.StartsWith("ci-") -> ci
-        | _ -> "edge"
-    let image = $"elastic/docs-builder:%s{tag}"
-    exec { run "docker" ["docker"; "run"; image; "--help"] }
-    let esscImage = $"elastic/website-search-essc:%s{tag}"
-    exec { run "docker" ["docker"; "run"; esscImage; "--help"] }
-
-let private runDotnetWithRegistryPushRetry (args: string list) =
-    let maxAttempts = 3
-    let rec attempt number =
-        let exitCode =
-            exec {
-                validExitCode (fun _ -> true)
-                exit_code_of "dotnet" args
-            }
-        match exitCode with
-        | 0 -> ()
-        | _ when number < maxAttempts ->
-            printfn "Container registry push failed (attempt %d/%d); retrying..." number maxAttempts
-            attempt (number + 1)
-        | code ->
-            failwithf "Container registry push failed after %d attempts (last exit code %d)" maxAttempts code
-    attempt 1
-
-let private publishContainers _ =
-
-    let createImage projectPath containerName =
-        let ci = Environment.environVarOrNone "GITHUB_ACTIONS"
-        let pr = prNumber()
-        let baseImageTag = "11.0-resolute-chiseled"
-        let labels = imageTags()
-        let args =
-            ["publish"; projectPath]
-            @ [
-                "/t:PublishContainer";
-                "-p"; "DebugType=none";
-                "-p"; $"ContainerBaseImage=mcr.microsoft.com/dotnet/runtime-deps:%s{baseImageTag}";
-                "-p"; $"ContainerImageTags=\"%s{labels};%s{Software.Version.Normalize()}\""
-                "-p"; $"ContainerRepository=elastic/%s{containerName}"
-            ]
-
-        let noPublish = Environment.environVarOrNone "DOCKER_NO_PUBLISH"
-        let registry =
-            match (ci, pr, noPublish) with
-            | Some _, None, None -> [
-                    "-p"; "ContainerRegistry=ghcr.io"
-                    "-p"; "ContainerUser=1001:1001";
-                ]
-            | _ -> []
-        let dotnetArgs = args @ registry
-        match registry with
-        | [] -> exec { run "dotnet" dotnetArgs }
-        | _ -> runDotnetWithRegistryPushRetry dotnetArgs
-    createImage "src/tooling/docs-builder/docs-builder.csproj" "docs-builder"
-    createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
-    createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
-    createImage "src/tooling/essc/essc.csproj" "website-search-essc"
-    createImage "src/tooling/docs-journeys/docs-journeys.csproj" "docs-builder-journeys"
+type Target =
+    /// Clean known output locations
+    | Clean
+    /// Print version information
+    | Version
+    /// Compile the solution
+    | Compile
+    /// Run a clean build with the format check
+    | Build
+    /// Run a clean build, then the tests (--suite unit|integration|all). Default: unit
+    | Test of TestOptions
+    /// Alias of: test --suite unit
+    | UnitTest of ParallelOptions
+    /// Alias of: test --suite integration
+    | Integrate of ParallelOptions
+    /// Auto-fix C# formatting: dotnet curb format and cleanup
+    | Fmt
+    /// Run dotnet watch to build code, templates and web assets continuously
+    | Watch
+    /// C# format check (curb, read-only)
+    | Lint
+    /// Check for a clean working copy and formatting
+    | PristineCheck
+    /// Check the licenses of the dependencies
+    | ValidateLicenses
+    /// Build, test, validate the licenses; shy of publishing
+    | Release
+    /// Publish the binaries and the container images
+    | Publish
+    /// Publish the docs-builder binary
+    | PublishBinaries
+    /// Publish the container images
+    | PublishContainers
+    /// Zip the published docs-builder and docs-journeys binaries
+    | PublishZip
+    /// Run the container images with --help
+    | RunLocalContainer
+    /// Clone, build the docs and package them into an air-gapped container
+    | AirGappedBuild
+    /// Run the air-gapped docs container on port 8080
+    | AirGappedRun
+    /// Restore the local dotnet tools, wire the git hooks, install the frontend dependencies
+    | Setup
+    /// Serve docs/ with live reload
+    | Serve of ServeOptions
+    /// Regenerate docs/cli-schema.json after changing docs-builder commands
+    | Schema
+    /// Frontend build, test and lint (src/Elastic.Documentation.Site)
+    | Site of SiteTarget
 
 // The journeys need Chrome and a built site, so they run through `mise run journeys` and their own CI jobs, not with the unit tests.
 let private isJourneyProject (project: string) = project.Contains "Journeys.Tests"
 
-let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
+let private testProjects (suite: TestSuite) =
     let directories =
-        match testSuite with
-        | All -> [ "tests"; "tests-integration" ]
-        | Unit -> [ "tests" ]
-        | Integration -> [ "tests-integration" ]
-
+        match suite with
+        | TestSuite.Unit -> [ "tests" ]
+        | TestSuite.Integration -> [ "tests-integration" ]
+        | TestSuite.All -> [ "tests"; "tests-integration" ]
+        | other -> failwithf "Unknown test suite '%O'" other
     let projects =
         directories
         |> List.collect (fun d ->
@@ -173,52 +118,39 @@ let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
             |> Seq.sort
             |> Seq.toList
         )
-
     if List.isEmpty projects then
-        failwithf "No test projects found under %A" directories
+        failBuild $"No test projects found under %A{directories}"
+    projects
 
-    let parallelism = parsed.TryGetResult Test_Parallelism |> Option.defaultValue System.Environment.ProcessorCount
+let private envVarOrNone name =
+    match Environment.GetEnvironmentVariable name with
+    | null | "" -> None
+    | value -> Some value
 
-    // Test projects run concurrently; output is buffered per project so logs stay readable.
-    let runOne (project: string) =
-        async {
-            let psi = System.Diagnostics.ProcessStartInfo("dotnet", [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ])
-            psi.RedirectStandardOutput <- true
-            psi.RedirectStandardError <- true
-            let log = StringBuilder()
-            let append (e: System.Diagnostics.DataReceivedEventArgs) = if not (isNull e.Data) then lock log (fun () -> log.AppendLine e.Data |> ignore)
-            use proc = new System.Diagnostics.Process(StartInfo = psi)
-            proc.OutputDataReceived.Add append
-            proc.ErrorDataReceived.Add append
-            proc.Start() |> ignore
-            proc.BeginOutputReadLine()
-            proc.BeginErrorReadLine()
-            do! proc.WaitForExitAsync() |> Async.AwaitTask
-            lock stdout (fun () ->
-                printfn "::group::dotnet test %s (exit code %d)" (Path.GetFileNameWithoutExtension project) proc.ExitCode
-                printf "%s" (log.ToString())
-                printfn "::endgroup::"
-            )
-            return project, proc.ExitCode = 0
-        }
+// Empties a folder and keeps it, creating it when it is missing.
+let private cleanDir (directory: string) =
+    if Directory.Exists directory then Directory.Delete(directory, true)
+    Directory.CreateDirectory directory |> ignore
 
-    let failures =
-        projects
-        |> List.map runOne
-        |> fun runs -> Async.Parallel(runs, maxDegreeOfParallelism = parallelism)
-        |> Async.RunSynchronously
-        |> Array.filter (snd >> not)
-        |> Array.map fst
-        |> Array.toList
-    if not (List.isEmpty failures) then
-        failwithf "Test projects failed:\n%s" (String.concat "\n" failures)
+let private zipFiles (workingDir: string) (zipFile: string) (files: string list) =
+    if File.Exists zipFile then File.Delete zipFile
+    use archive = ZipFile.Open(zipFile, ZipArchiveMode.Create)
+    for file in files do
+        archive.CreateEntryFromFile(file, Path.GetRelativePath(workingDir, file), CompressionLevel.Optimal) |> ignore
 
-    // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.
-    if testSuite <> Integration then
-        match exec { exit_code_of "dotnet" "snap" "orphans" } with
-        | 0 -> ()
-        | _ -> failwith "Orphaned snapshots found. Delete them with `dotnet snap orphans --delete` and commit the removal."
-    
+let private prNumber () =
+    match envVarOrNone "GITHUB_REF_NAME" with
+    | None -> None
+    | Some s when s.EndsWith "/merge" -> Some (s.Split('/') |> Seq.head)
+    | _ -> None
+
+// `onTag` is whether HEAD is exactly a tag.
+let private imageTags (onTag: bool) =
+    match onTag, prNumber () with
+    | true, _ -> "edge;latest"
+    | _, None -> "edge"
+    | _, Some pr -> $"ci-%s{pr}"
+
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 
 let private gzipCompressDirectory (directory: string) =
@@ -254,91 +186,208 @@ let private gzipCompressDirectory (directory: string) =
 
     printfn "Compression complete"
 
-let private airGappedBuild _ =
-    let assemblyDir = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly")
-    if Directory.Exists(assemblyDir) then
-        Directory.Delete(assemblyDir, true)
+let private zipTool tool =
+    let binary = match OS.Current with Windows -> $"{tool}.exe" | _ -> tool
+    zipFiles
+        $".artifacts/publish/{tool}/release"
+        $".artifacts/publish/{tool}/release/{tool}-%s{OS.Name}-{OS.Arch}.zip"
+        [
+            $".artifacts/publish/{tool}/release/%s{binary}"
+            $".artifacts/publish/{tool}/release/LICENSE.txt"
+            $".artifacts/publish/{tool}/release/NOTICE.txt"
+        ]
 
-    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "clone" "--environment" "air-gapped" }
-    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "build" "--exporters" "html" "--environment" "air-gapped" }
-    let searchDir = Path.Combine(assemblyDir, "docs", "_search")
-    if Directory.Exists(searchDir) then
-        Directory.Delete(searchDir, true)
+let private licenseFilter = @"#System\..*#"
 
-    File.WriteAllText(
-        Path.Combine(assemblyDir, "index.html"),
-        """<meta http-equiv="refresh" content="0;url=/docs">"""
-    )
+let private containerProjects =
+    [ "src/tooling/docs-builder/docs-builder.csproj", "docs-builder"
+      "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj", "docs-builder-mcp"
+      "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj", "docs-builder-api"
+      "src/tooling/essc/essc.csproj", "website-search-essc"
+      "src/tooling/docs-journeys/docs-journeys.csproj", "docs-builder-journeys" ]
 
-    gzipCompressDirectory assemblyDir
+let private siteDir = "src/Elastic.Documentation.Site"
 
-    exec {
-        run "docker" "build"
-            "-f" "build/air-gapped/Dockerfile"
-            "--build-context" "content=.artifacts/assembly"
-            "--build-context" "config=build/air-gapped"
-            "-t" "elastic-docs-air-gapped"
-            "build/air-gapped"
+let Run (argv: string[]) =
+    let app = MakeApp<Target>("build", None)
+    let skipDirtyCheck = app.Flag("--skip-dirty-check", short = "-c", desc = "Skip the clean checkout check that guards the release/publish targets")
+    app.Default Build
+
+    // One `dotnet test` call over a generated solution filter of the test projects: the Microsoft.Testing.Platform runner
+    // runs the test modules in parallel and prints one summary.
+    let runTests (suite: TestSuite) (parallelism: int option) = steps {
+        let projects = testProjects suite
+        let filter = Path.Combine(Paths.ArtifactFolder.FullName, "tests.slnf")
+        Directory.CreateDirectory(Paths.ArtifactFolder.FullName) |> ignore
+        let solution = Path.GetRelativePath(Paths.ArtifactFolder.FullName, Path.Combine(Paths.Root.FullName, "docs-builder.slnx"))
+        let relative = projects |> List.map (fun project -> Paths.RelativePathToRoot project)
+        File.WriteAllText(filter, JsonSerializer.Serialize({| solution = {| path = solution; projects = relative |} |}))
+        // CI runs the test projects one at a time: its runners have 3-4 cores, and concurrent projects starve the thread pool.
+        let modules =
+            match envVarOrNone "CI", parallelism with
+            | Some _, _ -> [ "--max-parallel-test-modules"; "1" ]
+            | None, Some n -> [ "--max-parallel-test-modules"; string n ]
+            | None, None -> []
+        // On GitHub Actions the report extension writes annotations and a job summary for failures only. TUnit's own summary
+        // would repeat it for every project, so it is always off.
+        let report =
+            match envVarOrNone "GITHUB_ACTIONS" with
+            | Some _ -> [ "--report-gh"; "--report-gh-step-summary"; "on-failure"; "--report-gh-step-summary-sections"; "test-results" ]
+            | None -> []
+        env "TUNIT_DISABLE_GITHUB_REPORTER" "true"
+        sh $"dotnet test --solution {filter} --no-build --no-restore -c release {modules} {report}"
+
+        // Every test project has now run, so the run manifests are complete: a verified snapshot nobody used belongs to a deleted or renamed test.
+        if suite <> TestSuite.Integration then
+            let! orphans = exitCode $"dotnet snap orphans"
+            if orphans <> 0 then
+                failBuild "Orphaned snapshots found. Delete them with `dotnet snap orphans --delete` and commit the removal."
     }
 
-let private airGappedRun _ =
-    printfn "Running at http://localhost:8080"
-    exec { run "docker" "run" "-p" "127.0.0.1:8080:8080" "elastic-docs-air-gapped" }
+    // npm ci runs only when package-lock.json is newer than what the last install left in node_modules.
+    // Tasks that run in parallel are separate processes, and npm ci deletes node_modules, so the install holds a file lock.
+    let siteInstall = steps {
+        let lockFile = Path.Combine(siteDir, "package-lock.json")
+        let stamp = Path.Combine(siteDir, "node_modules", ".package-lock.json")
+        let stale () = not (File.Exists stamp) || File.GetLastWriteTimeUtc lockFile > File.GetLastWriteTimeUtc stamp
+        if stale () then
+            let rec acquire () =
+                try new FileStream(Path.Combine(siteDir, ".npm-ci.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)
+                with :? IOException -> System.Threading.Thread.Sleep 500; acquire ()
+            use _lock = acquire ()
+            // another process may have finished the install while this one waited
+            if stale () then
+                use! _ = inDir siteDir
+                sh $"npm ci"
+    }
+    let npmRun (script: string) = steps {
+        do! siteInstall
+        use! _ = inDir siteDir
+        sh $"npm run {script}"
+    }
 
-let private validateLicenses _ =
-    let args = ["-u"; "-t"; "-i"; "docs-builder.sln"; "--use-project-assets-json"
-                "--forbidden-license-types"; "build/forbidden-license-types.json"
-                "--packages-filter"; "#System\..*#";]
-    exec { run "dotnet" (["dotnet-project-licenses"] @ args) }
+    app.Bind <| function
+        | Version -> target [] {
+            printfn $"Informational version: %s{Software.Version.Informational}"
+            printfn $"Semantic version: %s{Software.Version.Semantic}" }
+        | Clean -> target [Version] {
+            sh $"dotnet clean -c release"
+            for folder in [ "package"; "release-notes"; "tests"; "docs-builder" ] do
+                cleanDir (Paths.ArtifactPath folder).FullName }
+        | Compile -> step [] { sh $"dotnet build -c release" }
+        | Build -> target [Clean; Lint; Compile] { printfn "build" }
 
-let Setup (parsed:ParseResults<Build>) =
-    let wireCommandLine (t: Build) =
-        match t with
-        // commands
-        | Version -> Build.Step version
-        | Clean -> Build.Cmd [Version] [] clean
-        | Compile -> Build.Step compile
-        | Build ->
-            Build.Cmd
-                [Clean; Lint; Compile] [] build
-        
-        | Test -> Build.Cmd [Compile] [] <| runTests TestSuite.All
-        | Unit_Test -> Build.Cmd [Compile] [] <| runTests TestSuite.Unit
-        | Integrate -> Build.Cmd [Compile] [] <| runTests TestSuite.Integration
+        | Test o -> target [Compile] { do! runTests (defaultArg o.Suite TestSuite.Unit) o.Parallelism }
+        | UnitTest o -> target [Compile] { do! runTests TestSuite.Unit o.Parallelism }
+        | Integrate o -> target [Compile] { do! runTests TestSuite.Integration o.Parallelism }
 
-        | Release ->
-            Build.Cmd 
-                [PristineCheck; Build]
-                [ValidateLicenses;]
-                release
+        | Fmt -> target [] {
+            sh $"dotnet curb format ."
+            sh $"dotnet curb cleanup --forward" }
+        | Watch -> target [] { sh $"dotnet watch --project src/tooling/docs-builder --configuration debug -- serve --watch" }
 
-        | Publish ->
-            Build.Cmd
-                []
-                [PublishBinaries; PublishContainers]
-                release
+        | Lint -> target [] {
+            let! code = exitCode $"dotnet curb check . --cache .artifacts/curb.cache"
+            if code = 0 then printfn "No formatting violations found."
+            else failBuild "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check" }
+        | PristineCheck -> step [] {
+            if skipDirtyCheck.Value then printfn "Skip checking for clean working copy since -c is specified"
+            else
+                let! changes = text $"git status --porcelain"
+                if changes = "" then printfn "The checkout folder does not have pending changes, proceeding"
+                else failBuild "The checkout folder has pending changes, aborting. Specify -c to ./build.sh to skip this check"
 
-        | Format -> Build.Step format
-        | Watch -> Build.Step watch
+            if skipDirtyCheck.Value then printfn "Skip formatting checks since -c is specified"
+            else
+                let! code = exitCode $"dotnet curb check . --cache .artifacts/curb.cache"
+                if code = 0 then printfn "No formatting violations found."
+                else failBuild "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check" }
+        | ValidateLicenses -> step [] {
+            sh $"dotnet dotnet-project-licenses -u -t -i docs-builder.sln --use-project-assets-json --forbidden-license-types build/forbidden-license-types.json --packages-filter {licenseFilter}" }
 
-        // steps
-        | Lint -> Build.Step lint
-        | PristineCheck -> Build.Step pristineCheck
-        | PublishBinaries -> Build.Step publishBinaries
-        | PublishContainers -> Build.Step publishContainers
-        | RunLocalContainer -> Build.Step runLocalContainer
-        | PublishZip -> Build.Step publishZip
-        | ValidateLicenses -> Build.Step validateLicenses
-        | Air_Gapped_Build -> Build.Cmd [] [] airGappedBuild
-        | Air_Gapped_Run -> Build.Cmd [] [] airGappedRun
+        | Release -> command {
+            requires [PristineCheck; Build]
+            composes [ValidateLicenses] }
+        | Publish -> command { composes [PublishBinaries; PublishContainers] }
 
-        // flags
-        | Single_Target
-        | Test_Suite _
-        | Test_Parallelism _
-        | Token _
-        | Skip_Dirty_Check -> Build.Ignore
+        | PublishBinaries -> step [] { sh $"dotnet publish src/tooling/docs-builder/docs-builder.csproj" }
+        | PublishZip -> step [] {
+            for tool in [ "docs-builder"; "docs-journeys" ] do
+                sh $"dotnet publish src/tooling/{tool}/{tool}.csproj"
+                zipTool tool }
+        | PublishContainers -> step [] {
+            let! onTag = succeeds $"git describe --tags --exact-match HEAD"
+            let labels = imageTags onTag
+            let ci = envVarOrNone "GITHUB_ACTIONS"
+            let noPublish = envVarOrNone "DOCKER_NO_PUBLISH"
+            let registry =
+                match ci, prNumber (), noPublish with
+                | Some _, None, None -> [ "-p"; "ContainerRegistry=ghcr.io"; "-p"; "ContainerUser=1001:1001" ]
+                | _ -> []
+            let baseImage = "mcr.microsoft.com/dotnet/runtime-deps:11.0-resolute-chiseled"
+            // The quotes stay part of the value, as they always did.
+            let tags = $"ContainerImageTags=\"%s{labels};%s{Software.Version.Semantic}\""
+            for project, name in containerProjects do
+                let publish =
+                    sh $"dotnet publish {project} /t:PublishContainer -p DebugType=none -p ContainerBaseImage={baseImage} -p {tags} -p ContainerRepository=elastic/{name} {registry}"
+                // A push to the registry is retried; a local image is not.
+                if List.isEmpty registry then publish else publish |> Cmd.retry 2 }
+        | RunLocalContainer -> step [] {
+            let! onTag = succeeds $"git describe --tags --exact-match HEAD"
+            let tag = match imageTags onTag with ci when ci.StartsWith "ci-" -> ci | _ -> "edge"
+            sh $"docker run elastic/docs-builder:{tag} --help"
+            sh $"docker run elastic/website-search-essc:{tag} --help" }
+                               |> needsTool [ "docker" ]
 
-    for target in Build.Targets do
-        let setup = wireCommandLine target 
-        setup target parsed
+        | AirGappedBuild -> target [] {
+            let assemblyDir = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly")
+            if Directory.Exists assemblyDir then Directory.Delete(assemblyDir, true)
+
+            sh $"dotnet run --project src/tooling/docs-builder -- assembler clone --environment air-gapped"
+            sh $"dotnet run --project src/tooling/docs-builder -- assembler build --exporters html --environment air-gapped"
+            let searchDir = Path.Combine(assemblyDir, "docs", "_search")
+            if Directory.Exists searchDir then Directory.Delete(searchDir, true)
+
+            File.WriteAllText(Path.Combine(assemblyDir, "index.html"), """<meta http-equiv="refresh" content="0;url=/docs">""")
+            gzipCompressDirectory assemblyDir
+
+            sh $"docker build -f build/air-gapped/Dockerfile --build-context content=.artifacts/assembly --build-context config=build/air-gapped -t elastic-docs-air-gapped build/air-gapped" }
+                            |> needsTool [ "docker" ]
+        | Setup -> target [] {
+            sh $"dotnet tool restore"
+            sh $"dotnet husky install"
+            do! siteInstall }
+        | Serve o -> target [] { sh $"dotnet run --project src/tooling/docs-builder -- serve {o.Rest}" }
+        | Schema -> target [] {
+            // Written as captured: Cmd.toFile would add a trailing newline that the file has never had.
+            let! json = text $"dotnet run --project src/tooling/docs-builder -- __schema"
+            File.WriteAllText("docs/cli-schema.json", json) }
+
+        | Site SiteTarget.Install -> target [] { do! siteInstall }
+        | Site SiteTarget.Build -> target [] { do! npmRun "build" }
+        | Site SiteTarget.Watch -> target [] { do! npmRun "watch" }
+        | Site SiteTarget.Test -> target [] { do! npmRun "test" }
+        | Site SiteTarget.Lint -> target [] { do! npmRun "lint" }
+        | Site SiteTarget.Fmt -> target [] { do! npmRun "fmt:write" }
+        | Site SiteTarget.Check -> target [] { do! npmRun "compile:check" }
+
+
+        | AirGappedRun -> target [] {
+            printfn "Running at http://localhost:8080"
+            sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
+                          |> needsTool [ "docker" ]
+
+    // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
+    // Enum.TryParse also accepts numbers and comma lists, so compare with the declared names.
+    let isSuite (value: string) =
+        Enum.GetNames<TestSuite>() |> Array.exists (fun name -> name.Equals(value, StringComparison.OrdinalIgnoreCase))
+    argv
+    |> Array.tryFindIndex (fun a -> a = "--suite")
+    |> Option.bind (fun i -> Array.tryItem (i + 1) argv)
+    |> Option.iter (fun suite ->
+        if not (isSuite suite) then
+            let names = String.Join(", ", Enum.GetNames<TestSuite>() |> Array.map _.ToLowerInvariant())
+            eprintfn "Unknown test suite '%s', expected one of: %s" suite names
+            exit 2)
+
+    app.RunAsync(argv).GetAwaiter().GetResult()

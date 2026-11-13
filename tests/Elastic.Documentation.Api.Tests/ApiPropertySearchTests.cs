@@ -154,6 +154,45 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	public void ProcessHit_SameNameRepeatedInTheRequest_StillListsTheResponseRow()
+	{
+		var innerHits = string.Join(
+			",",
+			InnerHit("req-a", 5, "a"),
+			InnerHit("req-b-a", 4.5, "b.a"),
+			InnerHit("req-c-a", 4, "c.a"),
+			InnerHit("res-a", 3, "a", location: "response")
+		);
+		var result = SearchResultProcessor.ProcessHit(
+			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
+			"a",
+			new Dictionary<string, string[]>()
+		);
+
+		result.Properties.Select(p => p.Anchor).Should().Equal("req-a", "req-b-a", "res-a");
+	}
+
+	[Test]
+	public void ProcessHit_MoreSectionsThanRows_ListsEverySection()
+	{
+		var innerHits = string.Join(
+			",",
+			InnerHit("req-a", 5, "a"),
+			InnerHit("req-b-a", 4.5, "b.a"),
+			InnerHit("query-a", 4, "a", location: "query"),
+			InnerHit("path-a", 3.5, "a", location: "path"),
+			InnerHit("res-a", 3, "a", location: "response")
+		);
+		var result = SearchResultProcessor.ProcessHit(
+			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
+			"a",
+			new Dictionary<string, string[]>()
+		);
+
+		result.Properties.Select(p => p.Anchor).Should().Equal("req-a", "query-a", "path-a", "res-a");
+	}
+
+	[Test]
 	public void BuildApiPropertyQuery_DocsWide_HasNoChildrenOption() =>
 		Json(SearchQueryBuilder.BuildApiPropertyQuery("retriever.standard", null)).Should().MatchJsonSnapshot();
 

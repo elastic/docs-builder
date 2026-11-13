@@ -70,11 +70,8 @@ var x = 1; // this uses `formatting` and a [link](testing/req.md)
 			"""
 			<div class="highlight-csharp notranslate">
 				<div class="highlight">
-					<pre>
-						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 0ch"></span>
-							<span class="code-callout" data-index="1"></span>
-						</code>
-					</pre>
+					<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 0ch"></span><span class="code-callout" data-index="1"></span>
+			</code>		</pre>
 				</div>
 			</div>
 			<ol class="code-callouts">
@@ -167,13 +164,10 @@ var z = y - 2; <2>
 			"""
 			<div class="highlight-csharp notranslate">
 				<div class="highlight">
-					<pre>
-						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
-							<span class="code-callout" data-index="1"></span>
-							var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
-							<span class="code-callout" data-index="2"></span>
-						</code>
-					</pre>
+					<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
+			var y = x - 2;
+			var z = y - 2;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="2"></span>
+			</code>		</pre>
 				</div>
 			</div>
 			<p>
@@ -422,13 +416,10 @@ var z = y - 2; <2>
 			"""
 			<div class="highlight-csharp notranslate">
 				<div class="highlight">
-					<pre>
-						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
-							<span class="code-callout" data-index="1"></span>
-							var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
-							<span class="code-callout" data-index="2"></span>
-						</code>
-					</pre>
+					<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
+			var y = x - 2;
+			var z = y - 2;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="2"></span>
+			</code>		</pre>
 				</div>
 			</div>
 			<ol class="code-callouts">
@@ -495,13 +486,10 @@ var z = y - 2; <2>
 			"""
 			<div class="highlight-csharp notranslate">
 				<div class="highlight">
-					<pre>
-						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
-							<span class="code-callout" data-index="1"></span>
-							var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
-							<span class="code-callout" data-index="2"></span>
-						</code>
-					</pre>
+					<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
+			var y = x - 2;
+			var z = y - 2;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="2"></span>
+			</code>		</pre>
 				</div>
 			</div>
 			<p>
@@ -603,22 +591,19 @@ var z = y - 2; <2>
 	public void RenderedHtmlDoesNotContainComments() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-csharp notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
-						<span class="code-callout" data-index="1"></span>
-						var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
-						<span class="code-callout" data-index="2"></span>
-					</code>
-				</pre>
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
+			var y = x - 2;
+			var z = y - 2;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="2"></span>
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		<ol class="code-callouts">
-			<li>First callout</li>
-			<li>Second callout</li>
-		</ol>
-		""",
+			<ol class="code-callouts">
+				<li>First callout</li>
+				<li>Second callout</li>
+			</ol>
+			""",
 			DocsHtml.Body()
 		);
 }

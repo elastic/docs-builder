@@ -94,6 +94,36 @@ jobs:
       - name: Test
         run: npm run test
 
+  # The mise tasks are generated from the build targets at `mise install`; nothing else exercises that path.
+  mise-tasks:
+    needs: [changes]
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+
+      - name: Generated tasks are listed
+        run: |
+          tasks=$(mise tasks)
+          for t in site:check test serve version; do
+            echo "$tasks" | grep -qE "^$t " || { echo "missing task: $t"; exit 1; }
+          done
+
+      - name: Generated task runs the build target
+        run: mise run version | grep -F 'Semantic version:'
+
+      - name: Arguments are forwarded to the build target
+        run: |
+          if out=$(mise run test --suite nonsense 2>&1); then echo "expected failure"; exit 1; fi
+          echo "$out" | grep -F "Unknown test suite 'nonsense'"
+
+      - name: Namespaced task runs
+        run: mise run site:check
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -143,11 +173,11 @@ jobs:
     with:
       run: ${{ needs.changes.outputs.journeys == 'true' && needs.changes.outputs.code == 'true' }}
 
-  # Journeys checked against prod, and the docs-journeys image, see journeys-live.yml
-  journeys-live:
+  # Journeys checked against prod, and the docs-journeys image, see journeys-synth.yml
+  journeys-synth:
     needs: [changes]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
-    uses: $/.github/workflows/journeys-live.yml
+    uses: $/.github/workflows/journeys-synth.yml
     permissions:
       contents: read
     with:
@@ -235,17 +265,17 @@ jobs:
 
       - name: Publish AOT
         if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os != 'ubuntu-latest') }} # publish containers already validates AOT build
-        run: dotnet run --project build -c release -- publishbinaries
+        run: dotnet run --project build -c release -- publish-binaries
 
       - name: Publish Containers
         if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os == 'ubuntu-latest') }}
         env:
           DOCKER_NO_PUBLISH: true
-        run: dotnet run --project build -c release -- publishcontainers
+        run: dotnet run --project build -c release -- publish-containers
 
       - name: Run Container
         if: ${{ needs.changes.outputs.code == 'true' && (github.event_name == 'push' && matrix.os == 'ubuntu-latest') }}
-        run: dotnet run --project build -c release -- runlocalcontainer
+        run: dotnet run --project build -c release -- run-local-container
 
   integration:
     # TODO temporarily disabled: credentials now actually reach the tests (Parameters:-prefixed
