@@ -4235,10 +4235,12 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
-/* 100 characters of code; the dialog fits around it (gutter and padding add themselves) and longer lines scroll sideways. */
+/* At least 100 characters of code; the dialog fits around it (gutter and padding add themselves), grows with a longer
+   line up to the window and scrolls past that. A minimum, not a width: a fixed width would end .code-lines at 100ch,
+   and the sticky line numbers could not follow a longer line. */
 .api-code-preview-body .highlight pre code {
 	box-sizing: content-box;
-	width: 100ch;
+	min-width: 100ch;
 }
 
 @media (max-width: 1023px) {
