@@ -164,6 +164,42 @@ toc:
 	}
 
 	[Test]
+	public async Task ExcludedJsonFileIsNotPublished()
+	{
+		var logger = new TestLoggerFactory();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{
+					"docs/docset.yml",
+					new MockFileData("""
+project: test
+toc:
+  - file: index.md
+exclude:
+  - 'secret.json'
+""")
+				},
+				{ "docs/index.md", new MockFileData("# Test") },
+				{ "docs/secret.json", new MockFileData("""{"hidden":true}""") },
+				{ "docs/catalog.json", new MockFileData("""{"ok":true}""") }
+			},
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
+		{
+			SkipStaticAssetExtraction = true
+		};
+		var set = new DocumentationSet(context, logger, new TestCrossLinkResolver());
+
+		set.Files.Values.Should().Contain(f => f is JsonFile && f.RelativePath.Replace('\\', '/').EndsWith("catalog.json"));
+		set.Files.Values.Should().NotContain(f => f.RelativePath.Replace('\\', '/').EndsWith("secret.json"));
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
+	}
+
+	[Test]
 	[MethodDataSource(nameof(ValidFileNames))]
 	public void OutputFileValidationValidNames(string fileName)
 	{
