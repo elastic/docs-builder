@@ -1,0 +1,7 @@
+elasticsearch -> elasticsearch | single: elasticsearch
+elastic/kibana -> kibana | single: kibana
+private-repo-2 -> cloud-hosted, cloud-enterprise, cloud-serverless | single: null
+docs-content -> elastic-docs | single: elastic-docs
+does-not-exist ->  | single: null
+ELASTIC-TRANSPORT-GO -> transport-go | single: transport-go
+display of unknown id: nope

@@ -1,0 +1,40 @@
+model <NarrativeRepository>:
+  Origin: <default origin>
+  CheckoutStrategy: Full
+  Skip: False
+  Path: null
+  GitReferenceCurrent: "main"
+  GitReferenceNext: "main"
+  GitReferenceEdge: "main"
+  SparsePaths:
+    - "docs"
+  Private: False
+  CloneTimeout: null
+  Name: "docs-content"
+model:
+  stack <Repository>:
+    Name: ""
+    Origin: ""
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "9.5"
+    GitReferenceNext: "9.6"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  master <Repository>:
+    Name: ""
+    Origin: ""
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "master"
+    GitReferenceNext: "master"
+    GitReferenceEdge: "master"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null

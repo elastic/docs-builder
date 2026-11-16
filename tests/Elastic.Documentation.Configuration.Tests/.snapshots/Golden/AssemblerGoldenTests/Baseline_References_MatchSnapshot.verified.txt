@@ -1,0 +1,1003 @@
+model:
+  apm-server <Repository>:
+    Name: "apm-server"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-android <Repository>:
+    Name: "apm-agent-android"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-dotnet <Repository>:
+    Name: "apm-agent-dotnet"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-go <Repository>:
+    Name: "apm-agent-go"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-ios <Repository>:
+    Name: "apm-agent-ios"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-java <Repository>:
+    Name: "apm-agent-java"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-nodejs <Repository>:
+    Name: "apm-agent-nodejs"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-php <Repository>:
+    Name: "apm-agent-php"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-python <Repository>:
+    Name: "apm-agent-python"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-ruby <Repository>:
+    Name: "apm-agent-ruby"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-agent-rum-js <Repository>:
+    Name: "apm-agent-rum-js"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-aws-lambda <Repository>:
+    Name: "apm-aws-lambda"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  apm-k8s-attacher <Repository>:
+    Name: "apm-k8s-attacher"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs <Repository>:
+    Name: "ecs"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "9.5"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-dotnet <Repository>:
+    Name: "ecs-dotnet"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-go-logrus <Repository>:
+    Name: "ecs-logging-go-logrus"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-go-zap <Repository>:
+    Name: "ecs-logging-go-zap"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-go-zerolog <Repository>:
+    Name: "ecs-logging-go-zerolog"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-java <Repository>:
+    Name: "ecs-logging-java"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-nodejs <Repository>:
+    Name: "ecs-logging-nodejs"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-php <Repository>:
+    Name: "ecs-logging-php"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-python <Repository>:
+    Name: "ecs-logging-python"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging-ruby <Repository>:
+    Name: "ecs-logging-ruby"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecs-logging <Repository>:
+    Name: "ecs-logging"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  private-repo-6 <Repository>:
+    Name: "private-repo-6"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-7 <Repository>:
+    Name: "private-repo-7"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  elastic-agent <Repository>:
+    Name: "elastic-agent"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-otel-dotnet <Repository>:
+    Name: "elastic-otel-dotnet"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-otel-java <Repository>:
+    Name: "elastic-otel-java"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-otel-node <Repository>:
+    Name: "elastic-otel-node"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-otel-php <Repository>:
+    Name: "elastic-otel-php"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-otel-python <Repository>:
+    Name: "elastic-otel-python"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-otel-react-native <Repository>:
+    Name: "elastic-otel-react-native"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-otel-rum-js <Repository>:
+    Name: "elastic-otel-rum-js"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elastic-serverless-forwarder <Repository>:
+    Name: "elastic-serverless-forwarder"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  fleet-server <Repository>:
+    Name: "fleet-server"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  private-repo-8 <Repository>:
+    Name: "private-repo-8"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  integrations <Repository>:
+    Name: "integrations"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  private-repo-10 <Repository>:
+    Name: "private-repo-10"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  opentelemetry <Repository>:
+    Name: "opentelemetry"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  beats <Repository>:
+    Name: "beats"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "9.5"
+    GitReferenceNext: "9.6"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  logstash <Repository>:
+    Name: "logstash"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "9.5"
+    GitReferenceNext: "9.6"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  cloud-on-k8s <Repository>:
+    Name: "cloud-on-k8s"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  private-repo-2 <Repository>:
+    Name: "private-repo-2"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "master"
+    GitReferenceNext: "master"
+    GitReferenceEdge: "master"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  cli <Repository>:
+    Name: "cli"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  curator <Repository>:
+    Name: "curator"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "master"
+    GitReferenceNext: "master"
+    GitReferenceEdge: "master"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  ecctl <Repository>:
+    Name: "ecctl"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "master"
+    GitReferenceNext: "master"
+    GitReferenceEdge: "master"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch <Repository>:
+    Name: "elasticsearch"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  kibana <Repository>:
+    Name: "kibana"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  private-repo-9 <Repository>:
+    Name: "private-repo-9"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-12 <Repository>:
+    Name: "private-repo-12"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-11 <Repository>:
+    Name: "private-repo-11"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-13 <Repository>:
+    Name: "private-repo-13"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-14 <Repository>:
+    Name: "private-repo-14"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  roadmap <Repository>:
+    Name: "roadmap"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  private-repo-16 <Repository>:
+    Name: "private-repo-16"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-17 <Repository>:
+    Name: "private-repo-17"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-15 <Repository>:
+    Name: "private-repo-15"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-18 <Repository>:
+    Name: "private-repo-18"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  eland <Repository>:
+    Name: "eland"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-dsl-js <Repository>:
+    Name: "elasticsearch-dsl-js"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-hadoop <Repository>:
+    Name: "elasticsearch-hadoop"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-java <Repository>:
+    Name: "elasticsearch-java"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-js <Repository>:
+    Name: "elasticsearch-js"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-net <Repository>:
+    Name: "elasticsearch-net"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-php <Repository>:
+    Name: "elasticsearch-php"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-py <Repository>:
+    Name: "elasticsearch-py"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-rs <Repository>:
+    Name: "elasticsearch-rs"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  elasticsearch-ruby <Repository>:
+    Name: "elasticsearch-ruby"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  go-elasticsearch <Repository>:
+    Name: "go-elasticsearch"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  search-ui <Repository>:
+    Name: "search-ui"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  detection-rules <Repository>:
+    Name: "detection-rules"
+    Origin: <default origin>
+    CheckoutStrategy: Full
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: False
+    CloneTimeout: null
+  private-repo-1 <Repository>:
+    Name: "private-repo-1"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: False
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "generated/docs"
+    Private: True
+    CloneTimeout: null
+  docs-builder <Repository>:
+    Name: "docs-builder"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "9.0"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+      - "config"
+    Private: False
+    CloneTimeout: null
+  private-repo-3 <Repository>:
+    Name: "private-repo-3"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-4 <Repository>:
+    Name: "private-repo-4"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null
+  private-repo-5 <Repository>:
+    Name: "private-repo-5"
+    Origin: <default origin>
+    CheckoutStrategy: Partial
+    Skip: True
+    Path: null
+    GitReferenceCurrent: "main"
+    GitReferenceNext: "main"
+    GitReferenceEdge: "main"
+    SparsePaths:
+      - "docs"
+    Private: True
+    CloneTimeout: null

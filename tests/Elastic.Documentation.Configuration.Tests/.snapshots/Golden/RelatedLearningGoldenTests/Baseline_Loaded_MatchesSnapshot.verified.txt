@@ -1,0 +1,46 @@
+model <RelatedLearningConfiguration>:
+  Links:
+    apm-with-elastic <RelatedLearningLink>:
+      Id: "apm-with-elastic"
+      Title: "APM with Elastic on-demand training"
+      Url: "https://www.elastic.co/training/apm-with-elastic"
+    data-types-and-mappings <RelatedLearningLink>:
+      Id: "data-types-and-mappings"
+      Title: "Data types and mappings on-demand training"
+      Url: "https://www.elastic.co/training/data-types-and-mappings"
+    elastic-agent <RelatedLearningLink>:
+      Id: "elastic-agent"
+      Title: "Elastic Agent on-demand training"
+      Url: "https://www.elastic.co/training/elastic-agent"
+    index-basics <RelatedLearningLink>:
+      Id: "index-basics"
+      Title: "Index Basics"
+      Url: "https://www.elastic.co/training/index-basics"
+    logs-essentials <RelatedLearningLink>:
+      Id: "logs-essentials"
+      Title: "Logs essentials getting started on-demand training"
+      Url: "https://www.elastic.co/training/logs-essentials-getting-started"
+    rag-beyond-basics <RelatedLearningLink>:
+      Id: "rag-beyond-basics"
+      Title: "Beyond RAG basics: Advanced strategies for AI applications blog"
+      Url: "https://www.elastic.co/blog/beyond-rag-basics"
+    rag-build-agentic <RelatedLearningLink>:
+      Id: "rag-build-agentic"
+      Title: "Agentic RAG with Elasticsearch & Langchain blog"
+      Url: "https://www.elastic.co/search-labs/blog/rag-agent-tool-elasticsearch-langchain"
+    rag-build-system <RelatedLearningLink>:
+      Id: "rag-build-system"
+      Title: "Building a RAG System With Gemma, Hugging Face & Elasticsearch blog"
+      Url: "https://www.elastic.co/search-labs/blog/building-a-rag-system-with-gemma-hugging-face-elasticsearch"
+    rag-foundation <RelatedLearningLink>:
+      Id: "rag-foundation"
+      Title: "RAG Foundation on-demand training"
+      Url: "https://www.elastic.co/training/rag-foundation"
+    semantic-search-foundation <RelatedLearningLink>:
+      Id: "semantic-search-foundation"
+      Title: "Semantic search foundation on-demand training"
+      Url: "https://www.elastic.co/training/semantic-search-foundation"
+    semantic-search-text-embedding <RelatedLearningLink>:
+      Id: "semantic-search-text-embedding"
+      Title: "Semantic search text embedding on-demand training"
+      Url: "https://www.elastic.co/training/semantic-search-text-embedding"
