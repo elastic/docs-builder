@@ -39,6 +39,8 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	public string? ProductName { get; init; }
 
+	public required ApiBetaBanner BetaBanner { get; init; }
+
 	/// <summary>
 	/// Preload hint for API links. Body already hx-boosts into <c>#main-container</c>,
 	/// so the examples rail swaps with the article without a dedicated OOB provider.
@@ -139,6 +141,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,
+			BetaBanner = ApiBetaBanner.For(BuildContext.CanonicalBaseUrl, CurrentNavigationItem.Url),
 			SiteTopNav = RenderContext.SiteTopNav,
 			ApiCatalogUrl = catalogUrl,
 			ShowSecondaryNav = false,

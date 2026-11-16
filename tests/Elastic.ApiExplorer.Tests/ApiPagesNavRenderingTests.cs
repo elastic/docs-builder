@@ -305,6 +305,7 @@ public partial class ApiPagesNavRenderingTests
 			Previous = null,
 			Next = null,
 			NavigationHtml = "<nav>tree</nav>",
+			BetaBanner = ApiBetaBanner.For(null, navigationUrl),
 			UrlPathPrefix = string.Empty,
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,

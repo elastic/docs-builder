@@ -1,4 +1,5 @@
 import { initAgentSkillCopy } from './agent-skill'
+import { bindApiBetaBanner } from './api-beta-banner'
 import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
 import { initApiMenus } from './api-menu'
@@ -87,6 +88,7 @@ initPrivacyConsent()
 initSecondaryNav()
 initApiMenus()
 initApiChromeSync()
+bindApiBetaBanner()
 bindHtmxHooks({
     forcesFullPageLoad: (targetPath) =>
         // A move between a docs page and an API page, or to another API product: the swap would

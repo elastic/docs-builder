@@ -22,7 +22,8 @@
 	{
 		@await RenderPartialAsync(_DesignSystemHeader.Create(Model))
 	}
-		<div id="main-container" class="api-catalog-shell">
+	@await RenderPartialAsync(_ApiBetaBanner.Create(Model.BetaBanner))
+	<div id="main-container" class="api-catalog-shell">
 		@await RenderSectionAsync(ApiCatalog.HeroSection)
 		<main id="content-container" class="layout layout--single api-catalog">
 			<div class="api-page-toolbar">
@@ -43,6 +44,7 @@ else
 	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 }
 @* min-h-screen, like the API product layout: a short page still fills the screen, so the footer sits below the fold instead of under the cards. *@
+@await RenderPartialAsync(_ApiBetaBanner.Create(Model.BetaBanner))
 <div id="main-container" class="flex min-h-screen flex-col items-center">
 	@* The catalog's hero, outside the container below so a band behind it can span the screen. *@
 	@await RenderSectionAsync(ApiCatalog.HeroSection)
