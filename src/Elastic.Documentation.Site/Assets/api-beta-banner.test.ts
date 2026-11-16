@@ -187,6 +187,90 @@ describe('API beta banner feedback dialog', () => {
         expect(isOpen()).toBe(false)
     })
 
+    describe('Escape', () => {
+        // The elastic.co header prevents the key on the way up, so the browser would not close the dialog.
+        const preventEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') event.preventDefault()
+        }
+
+        function press(
+            target: Element,
+            init: KeyboardEventInit = {}
+        ): KeyboardEvent {
+            const event = new KeyboardEvent('keydown', {
+                key: 'Escape',
+                bubbles: true,
+                cancelable: true,
+                ...init,
+            })
+            target.dispatchEvent(event)
+            return event
+        }
+
+        afterEach(() => {
+            document.removeEventListener('keydown', preventEscape)
+        })
+
+        it('closes the dialog even when the page prevents the key', () => {
+            document.body.innerHTML = `${bannerWithDialog('first')}<div id="main-container"></div>`
+            document.addEventListener('keydown', preventEscape)
+            click('#open')
+
+            press(document.getElementById('inside')!)
+
+            expect(isOpen()).toBe(false)
+        })
+
+        it('closes the dialog when focus is outside it', () => {
+            document.body.innerHTML = `${bannerWithDialog('first')}<div id="main-container"></div>`
+            document.addEventListener('keydown', preventEscape)
+            click('#open')
+
+            press(document.body)
+
+            expect(isOpen()).toBe(false)
+        })
+
+        it('keeps the key from the handlers of the page', () => {
+            document.body.innerHTML = `${bannerWithDialog('first')}<div id="main-container"></div>`
+            const seen = vi.fn()
+            document.addEventListener('keydown', seen)
+            click('#open')
+
+            press(document.getElementById('inside')!)
+            document.removeEventListener('keydown', seen)
+
+            expect(seen).not.toHaveBeenCalled()
+        })
+
+        it('leaves the key alone while the dialog is closed', () => {
+            document.body.innerHTML = `${bannerWithDialog('first')}<div id="main-container"></div>`
+            const seen = vi.fn()
+            document.addEventListener('keydown', seen)
+
+            const event = press(document.body)
+            document.removeEventListener('keydown', seen)
+
+            expect(seen).toHaveBeenCalledTimes(1)
+            expect(event.defaultPrevented).toBe(false)
+        })
+
+        it.each([
+            ['another key', { key: 'a' }],
+            [
+                'an Escape that cancels an IME composition',
+                { isComposing: true },
+            ],
+        ])('ignores %s', (_, init) => {
+            document.body.innerHTML = `${bannerWithDialog('first')}<div id="main-container"></div>`
+            click('#open')
+
+            press(document.body, init)
+
+            expect(isOpen()).toBe(true)
+        })
+    })
+
     it('opens the dialog of a banner that navigation put in the page', () => {
         document.body.innerHTML = `${banner('first')}<div id="main-container"></div>`
 

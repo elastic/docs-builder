@@ -51,6 +51,11 @@ air-gapped, and the build type has the feedback API behind it
 without script or `<dialog>`, the link goes to the docs-content issue form with
 the page URL filled in. A click with a modifier key opens that form in a new tab.
 
+A modal dialog closes on Escape unless a handler prevents the keydown, and the
+elastic.co header on assembled sites does. The banner therefore closes its own
+dialog from a capturing `keydown` listener on `window`, wherever focus is, and
+keeps the key from the header's handlers.
+
 The banner sits outside `#main-container`, which boosted navigation swaps. After
 each swap `api-beta-banner.ts` replaces, inserts or removes the banner to match
 the new page, so the dialog always reports the page the reader is on.
