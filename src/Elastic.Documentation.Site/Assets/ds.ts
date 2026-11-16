@@ -1,6 +1,7 @@
 // Entry point of the design-system bundle, loaded instead of main.ts when NAVIGATION_PREVIEW is on.
 // Everything here is progressive enhancement: pages are complete HTML without it. Enhancements bind to data-* attributes,
 // never to styling classes, so a theme can rewrite the CSS without touching behaviour.
+import { bindApiBetaBanner } from './api-beta-banner'
 import { initApiChromeSync } from './api-chrome-sync'
 import { initApiColumnResize } from './api-column-resize'
 import { initAskAi } from './ds/ask-ai'
@@ -69,6 +70,8 @@ function init(scope: ParentNode = document) {
 }
 
 bindOutsideClick()
+// The banner sits outside #main-container, so htmx:load does not reach a banner that navigation brings in.
+bindApiBetaBanner((banner) => init(banner))
 initDocsBarSync()
 initApiChromeSync()
 bindSearchShortcut()

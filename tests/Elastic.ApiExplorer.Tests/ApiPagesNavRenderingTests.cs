@@ -287,7 +287,7 @@ public partial class ApiPagesNavRenderingTests
 		return html[start..(end + 4)];
 	}
 
-	private static ApiLayoutViewModel CreateLayoutModel(
+	internal static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
 		ApiIdentity? apiContext = null,
