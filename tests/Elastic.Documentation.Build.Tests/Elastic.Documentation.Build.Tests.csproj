@@ -11,6 +11,11 @@
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Isolated\Elastic.Documentation.Isolated.csproj" />
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <!-- Referenced so RegexTimeoutsTests scans their regexes too. -->
+    <ProjectReference Include="..\..\src\services\Elastic.Changelog\Elastic.Changelog.csproj" />
+    <ProjectReference Include="..\..\src\services\search\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+    <ProjectReference Include="..\..\src\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
+    <ProjectReference Include="..\..\src\authoring\Elastic.LegacyDocs.Migration\Elastic.LegacyDocs.Migration.csproj" />
   </ItemGroup>
 
 </Project>

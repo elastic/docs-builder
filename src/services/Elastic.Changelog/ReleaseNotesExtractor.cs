@@ -53,7 +53,7 @@ public static partial class ReleaseNotesExtractor
 
 	// Blockquote markers at the start of a line: "> ", ">" or nested ">> " and "> > ". Markdown allows up to three
 	// spaces before the marker; four spaces or a tab start an indented code block, whose ">" is content.
-	[GeneratedRegex(@"^ {0,3}(?:>[ \t]?)+")]
+	[GeneratedRegex(@"^ {0,3}(?:>[ \t]?)+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BlockquoteMarkerRegex();
 
 	/// <summary>

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Documentation.Diagnostics;
 
@@ -62,6 +63,6 @@ public static partial class ApiLinkMatcher
 	public static string Normalize(string path) =>
 		DuplicateSlashes().Replace(Uri.UnescapeDataString(path), "/").TrimEnd('/').ToLowerInvariant();
 
-	[GeneratedRegex("/{2,}")]
+	[GeneratedRegex("/{2,}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex DuplicateSlashes();
 }

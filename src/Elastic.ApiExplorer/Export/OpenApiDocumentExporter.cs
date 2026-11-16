@@ -31,7 +31,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationListIntroRegex();
 
-	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase)]
+	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>
