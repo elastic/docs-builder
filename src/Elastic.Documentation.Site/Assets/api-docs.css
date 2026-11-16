@@ -2637,7 +2637,6 @@ a.docs-reference-btn::after {
 	--api-code-muted: var(--code-muted);
 	--api-code-accent: var(--color-blue-elastic-50);
 	--api-code-scroll: var(--code-border);
-	--api-code-scroll-hover: var(--color-grey-100);
 	overflow: visible;
 	position: relative;
 	margin-bottom: 24px;
@@ -2646,35 +2645,6 @@ a.docs-reference-btn::after {
 	border: 1px solid var(--api-code-border);
 	border-radius: var(--api-code-radius);
 	box-shadow: none;
-}
-
-/* Thin scrollbar thumb on the dark surface. */
-.api-code-card .api-code-sample-body,
-.api-code-card .example-block-body {
-	scrollbar-width: thin;
-	scrollbar-color: var(--api-code-scroll) transparent;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar,
-.api-code-card .example-block-body::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-track,
-.api-code-card .example-block-body::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
-.api-code-card .example-block-body::-webkit-scrollbar-thumb {
-	background-color: var(--api-code-scroll);
-	border-radius: 9999px;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
-.api-code-card .example-block-body::-webkit-scrollbar-thumb:hover {
-	background-color: var(--api-code-scroll-hover);
 }
 
 .example-block {
@@ -3980,6 +3950,27 @@ html:has(.api-page-shell) {
 	-webkit-user-select: none;
 }
 
+/* In a response the note sits in .example-media-body, and a sticky box cannot leave its parent: the media body
+   spans the full code width so the note can stay put, and everything in it that is not code (the note, a caption,
+   a media header with its copy button) keeps to the visible width and to the left. The panel is the container
+   because, as a block inside the scroll body, it is exactly the visible width; 100cqi of the scroll body itself
+   would include its vertical scrollbar. */
+#api-examples-panel .example-response-panel {
+	container-type: inline-size;
+}
+
+#api-examples-panel .example-media-body {
+	width: max-content;
+	min-width: 100%;
+
+	> :not(.notranslate) {
+		position: sticky;
+		left: 0;
+		box-sizing: border-box;
+		width: 100cqi;
+	}
+}
+
 /* The short line carries the full explanation in a tooltip; the dotted underline says there is one. */
 .api-code-carousel-card-note > span {
 	cursor: help;
@@ -4181,10 +4172,12 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
-/* 100 characters of code; the dialog fits around it (gutter and padding add themselves) and longer lines scroll sideways. */
+/* At least 100 characters of code; the dialog fits around it (gutter and padding add themselves), grows with a longer
+   line up to the window and scrolls past that. A minimum, not a width: a fixed width would end .code-lines at 100ch,
+   and the sticky line numbers could not follow a longer line. */
 .api-code-preview-body .highlight pre code {
 	box-sizing: content-box;
-	width: 100ch;
+	min-width: 100ch;
 }
 
 @media (max-width: 1023px) {
