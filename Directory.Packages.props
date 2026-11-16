@@ -85,10 +85,10 @@
     <PackageVersion Include="Markdig" Version="1.6.0" />
     <PackageVersion Include="Mermaider" Version="0.17.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.23.0" />
-    <PackageVersion Include="ModelContextProtocol" Version="1.4.0" />
-    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="1.4.1" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.4.1" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
-    <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta21" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Proc" Version="0.22.1" />
     <PackageVersion Include="RazorSlices" Version="0.12.2" />
     <PackageVersion Include="Sep" Version="0.18.0" />
