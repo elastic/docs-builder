@@ -181,6 +181,7 @@ products:
     repository: 'elastic-agent'
     features:
       public-reference: false
+      release-notes: false
   elastic-agent-package:
     display: 'Elastic Agent Package'
     versioning: 'stack'
