@@ -82,10 +82,10 @@ versioning_systems:
     current: 1.11.0
   edot-browser:
     base: 0.1
-    current: 0.4.0
+    current: 0.5.0
   edot-react-native:
     base: 0.1
-    current: 0.1.0
+    current: 0.2.0
   edot-dotnet:
     base: 1.0
     current: 1.7.0
@@ -97,7 +97,7 @@ versioning_systems:
     current: 1.20.1
   edot-php:
     base: 1.0
-    current: 1.9.0
+    current: 1.9.1
   edot-python:
     base: 1.0
     current: 1.19.0

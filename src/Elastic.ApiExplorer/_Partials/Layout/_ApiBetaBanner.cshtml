@@ -1,0 +1,5 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiBetaBanner>
+@* Outside #main-container, so no boosted swap carries it. api-beta-banner.ts matches it to each new page. *@
+<aside id="api-beta-banner" class="api-beta-banner" aria-label="About this API reference">
+	<p class="api-beta-banner__message"><span class="api-beta-banner__label">Beta</span> This is our new API reference.<span class="api-beta-banner__detail"> It's now part of the main Elastic docs, and we're still tuning it.</span> If something looks wrong or is missing, <a class="api-beta-banner__link" href="@Model.FeedbackUrl">let us know</a>.</p>
+</aside>
