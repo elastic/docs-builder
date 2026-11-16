@@ -28,7 +28,6 @@ describe('traceSpan', () => {
             exportConfig: {
                 tracesUrl: 'http://localhost/t',
                 logsUrl: 'http://localhost/l',
-                metricsUrl: 'http://localhost/m',
             },
         })
     })
