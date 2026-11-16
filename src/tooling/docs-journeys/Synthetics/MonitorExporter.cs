@@ -233,7 +233,7 @@ internal static partial class MonitorExporter
 			.ToList();
 	}
 
-	[GeneratedRegex("[^A-Za-z0-9_-]+")]
+	[GeneratedRegex("[^A-Za-z0-9_-]+", RegexOptions.None, JourneysRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex NotIdCharacters();
 
 	/// <summary>Whether <paramref name="content"/> says a previous export generated it, so a re-export may delete it.</summary>

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Browser;
 using TUnit.Core.Interfaces;
@@ -205,12 +206,12 @@ public sealed partial class JourneyTarget : IAsyncInitializer, IAsyncDisposable
 		return ((IPEndPoint)listener.LocalEndpoint).Port;
 	}
 
-	[GeneratedRegex("""<meta name="docs:features"(?: content="(?<content>[^"]*)")?""")]
+	[GeneratedRegex("""<meta name="docs:features"(?: content="(?<content>[^"]*)")?""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FeaturesMeta();
 
-	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""")]
+	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildTypeMeta();
 
-	[GeneratedRegex("""build-type-(?<type>isolated|assembler|codex)""")]
+	[GeneratedRegex("""build-type-(?<type>isolated|assembler|codex)""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildTypeClass();
 }

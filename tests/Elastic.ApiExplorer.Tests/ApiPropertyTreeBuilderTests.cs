@@ -697,7 +697,12 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Text
 			.RegularExpressions
 			.Regex
-			.Match(html, $"id=\"{property.AnchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(Show|Hide) \\d+ propert");
+			.Match(
+				html,
+				$"id=\"{property.AnchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(Show|Hide) \\d+ propert",
+				System.Text.RegularExpressions.RegexOptions.None,
+				Elastic.Documentation.RegexTimeouts.MatchTimeout
+			);
 		match.Success.Should().BeTrue($"property {property.AnchorId} renders an expand control");
 		match.Groups[2].Value.Should().Be(expanded ? "true" : "false");
 		var count = property.NestedCount;

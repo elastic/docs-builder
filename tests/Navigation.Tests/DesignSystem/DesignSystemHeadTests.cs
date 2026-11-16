@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation.Tests.Isolation;
@@ -170,12 +171,17 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	}
 
 	private static string StateMeta(string html) =>
-		string.Join('\n', Regex.Matches(html, @"<meta name=""docs:(features|build-type)""[^>]*>").Select(m => m.Value));
+		string.Join(
+			'\n',
+			Regex.Matches(html, @"<meta name=""docs:(features|build-type)""[^>]*>", RegexOptions.None, RegexTimeouts.MatchTimeout).Select(
+				m => m.Value
+			)
+		);
 
 	// Vite writes an entry bundle as <name>-[hash].js and the head references it by that name, so match the name with or without a hash.
 	private static int EntryIndex(string html, string name)
 	{
-		var match = Regex.Match(html, $@"/{name}(-[\w-]+)?\.js");
+		var match = Regex.Match(html, $@"/{name}(-[\w-]+)?\.js", RegexOptions.None, RegexTimeouts.MatchTimeout);
 		return match.Success ? match.Index : -1;
 	}
 

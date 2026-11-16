@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -16,10 +17,10 @@ namespace Elastic.Changelog.Bundling;
 public static partial class LinkAllowlistSanitizer
 {
 	private const string SentinelPrefix = "# PRIVATE:";
-	[GeneratedRegex(@"https?://github\.com/(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)/(?:pull|issues)/\d+", RegexOptions.None)]
+	[GeneratedRegex(@"https?://github\.com/(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)/(?:pull|issues)/\d+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubUrlRegex();
 
-	[GeneratedRegex(@"(?<![/\w])(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)#\d+", RegexOptions.None)]
+	[GeneratedRegex(@"(?<![/\w])(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)#\d+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ShortFormRefRegex();
 
 	/// <summary>

@@ -4,6 +4,7 @@
 
 using System.IO.Compression;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.FileProviders;
 
@@ -41,7 +42,7 @@ public static partial class StyleGuideExport
 	}
 
 	// A file name as it appears in the text of a page, script or stylesheet.
-	[GeneratedRegex(@"[A-Za-z0-9_.@-]+\.(?:js|css|woff2?|ttf|png|svg|jpe?g|webp|gif|avif)")]
+	[GeneratedRegex(@"[A-Za-z0-9_.@-]+\.(?:js|css|woff2?|ttf|png|svg|jpe?g|webp|gif|avif)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AssetName();
 
 	/// <summary>The files a set of pages needs: the entry points and whatever the pages, scripts and stylesheets refer to, followed to the end.</summary>

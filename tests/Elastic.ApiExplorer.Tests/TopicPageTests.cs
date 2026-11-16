@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -514,6 +515,6 @@ public partial class TopicPageTests
 			MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 		};
 
-	[System.Text.RegularExpressions.GeneratedRegex("<input[^>]*\\bchecked\\b[^>]*>")]
+	[System.Text.RegularExpressions.GeneratedRegex("<input[^>]*\\bchecked\\b[^>]*>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex CheckedToggleRegex();
 }

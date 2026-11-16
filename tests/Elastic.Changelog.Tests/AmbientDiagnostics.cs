@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests;
@@ -22,7 +23,7 @@ public sealed class AmbientDiagnostic
 	private AmbientDiagnostic(Severity severity, string messagePattern)
 	{
 		_severity = severity;
-		_message = new Regex(messagePattern, RegexOptions.CultureInvariant | RegexOptions.Singleline);
+		_message = new Regex(messagePattern, RegexOptions.CultureInvariant | RegexOptions.Singleline, RegexTimeouts.MatchTimeout);
 	}
 
 	internal bool Matches(Diagnostic d) => d.Severity == _severity && d.Message is { } m && _message.IsMatch(m);
