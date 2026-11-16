@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Assembler\Baseline\*.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Elastic.Documentation.Testing" />
     <Using Include="Nullean.Snapshots" />
     <Using Include="Nullean.Snapshots.Html" />
