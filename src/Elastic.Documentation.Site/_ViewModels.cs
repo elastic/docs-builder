@@ -173,6 +173,19 @@ public record GlobalLayoutViewModel
 
 	public string PageFeedbackSurface { get; init; } = "docs";
 
+	/// <summary>Page feedback runs when its flag is on, the site is not air-gapped and the build type has the feedback API behind it.</summary>
+	public bool ShowPageFeedback
+	{
+		get
+		{
+			var supportedBuildType = BuildType is BuildType.Assembler or BuildType.Codex;
+#if DEBUG
+			supportedBuildType |= BuildType is BuildType.Isolated;
+#endif
+			return Features.PageFeedbackEnabled && !Features.AirGappedEnabled && supportedBuildType;
+		}
+	}
+
 	public bool RenderHamburgerIcon { get; init; } = true;
 
 	/// <summary>Lays the page out at the full window width, up to the wide limit, instead of the width of the elastic.co header.</summary>

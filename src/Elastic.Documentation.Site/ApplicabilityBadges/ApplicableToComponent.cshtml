@@ -1,3 +1,4 @@
+@using Elastic.Documentation.Extensions
 @using System.Text.Json
 @using Elastic.Documentation.Site.ApplicabilityBadges
 @inherits RazorSlice<Elastic.Documentation.Site.ApplicabilityBadges.ApplicableToViewModel>
@@ -13,9 +14,9 @@
 @foreach (var item in Model.GetApplicabilityItems())
 {
 	<applies-to-popover
-		badge-key="@item.Key"
-		badge-lifecycle-text="@item.RenderData.BadgeLifecycleText"
-		badge-version="@item.RenderData.Version"
+		badge-key="@item.Key.NullIfEmpty()"
+		badge-lifecycle-text="@item.RenderData.BadgeLifecycleText.NullIfEmpty()"
+		badge-version="@item.RenderData.Version.NullIfEmpty()"
 		lifecycle-class="@item.RenderData.LifecycleClass"
 		lifecycle-name="@item.RenderData.LifecycleName"
 		show-lifecycle-name="@item.RenderData.ShowLifecycleName.ToString().ToLowerInvariant()"

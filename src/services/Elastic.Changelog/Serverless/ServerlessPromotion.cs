@@ -119,6 +119,21 @@ public static partial class ServerlessPromotion
 	public static string? ParseFinalSliceVersion(string versionsYaml, string finalSlice) =>
 		SliceVersionRegex().Matches(versionsYaml).FirstOrDefault(m => m.Groups["slice"].Value == finalSlice)?.Groups["sha"].Value;
 
+	/// <summary>The first 12 characters of a ref, in lower case. It names a promotion in serverless-gitops and in its review pull request.</summary>
+	public static string ShortRef(string gitRef) => (gitRef.Length > 12 ? gitRef[..12] : gitRef).ToLowerInvariant();
+
+	/// <summary>
+	/// Adds the short ref of the promotion to a bundle file name. Bundle names are <c>{repo}-{product}-{date}</c>, so two promotions
+	/// on one day would share a name and a later release, including one with no notes, could replace an earlier one when published.
+	/// A name that already ends with the short ref is unchanged.
+	/// </summary>
+	public static string WithShortRef(string fileName, string serviceVersion)
+	{
+		var shortRef = ShortRef(serviceVersion);
+		var stem = Path.GetFileNameWithoutExtension(fileName);
+		return stem.EndsWith($"-{shortRef}", StringComparison.Ordinal) ? fileName : $"{stem}-{shortRef}{Path.GetExtension(fileName)}";
+	}
+
 	/// <summary>Gitops stores 12-character hashes and callers may send a full SHA in any case,
 	/// so two refs are the same when their first 12 characters match, case-insensitively.</summary>
 	public static bool SameRef(string a, string b)

@@ -287,7 +287,7 @@ public partial class ApiPagesNavRenderingTests
 		return html[start..(end + 4)];
 	}
 
-	private static ApiLayoutViewModel CreateLayoutModel(
+	internal static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
 		ApiIdentity? apiContext = null,
@@ -305,6 +305,7 @@ public partial class ApiPagesNavRenderingTests
 			Previous = null,
 			Next = null,
 			NavigationHtml = "<nav>tree</nav>",
+			BetaBanner = ApiBetaBanner.For(null, navigationUrl),
 			UrlPathPrefix = string.Empty,
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,

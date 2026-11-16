@@ -11,7 +11,13 @@ public static class StringExtensions
 {
 	private static readonly SlugHelper SlugHelper = new();
 
-	public static string Slugify(this string? text) => SlugHelper.GenerateSlug(text);
+	public static string Slugify(this string? text) => text is null ? string.Empty : SlugHelper.GenerateSlug(text);
+
+	/// <summary>Null for an empty string, so a Razor attribute bound to it is left out instead of written as <c>name=""</c>.</summary>
+	public static string? NullIfEmpty(this string? value) => string.IsNullOrEmpty(value) ? null : value;
+
+	/// <summary>The values joined with <paramref name="separator"/>, or null when the joined text is empty (see <see cref="NullIfEmpty"/>).</summary>
+	public static string? JoinOrNull(this IEnumerable<string> values, char separator) => string.Join(separator, values).NullIfEmpty();
 
 	public static string OptionalWindowsReplace(this string relativePath)
 	{

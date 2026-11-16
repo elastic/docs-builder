@@ -10,7 +10,7 @@ open System.IO.Compression
 open System.Text.Json
 open System.Text
 open Nullean.Argh
-open Nullean.Make.Fs
+open Nullean.Runna.Fs
 open Proc.Fs
 open BuildInformation
 
@@ -209,7 +209,7 @@ let private containerProjects =
 let private siteDir = "src/Elastic.Documentation.Site"
 
 let Run (argv: string[]) =
-    let app = MakeApp<Target>("build", None)
+    let app = RunnaApp<Target>("build", None)
     let skipDirtyCheck = app.Flag("--skip-dirty-check", short = "-c", desc = "Skip the clean checkout check that guards the release/publish targets")
     app.Default Build
 
@@ -377,7 +377,7 @@ let Run (argv: string[]) =
             sh $"docker run -p 127.0.0.1:8080:8080 elastic-docs-air-gapped" }
                           |> needsTool [ "docker" ]
 
-    // Make.Fs only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
+    // Runna only hands over the option once the Compile dependency has run, so check the value here to fail a typo fast.
     // Enum.TryParse also accepts numbers and comma lists, so compare with the declared names.
     let isSuite (value: string) =
         Enum.GetNames<TestSuite>() |> Array.exists (fun name -> name.Equals(value, StringComparison.OrdinalIgnoreCase))
