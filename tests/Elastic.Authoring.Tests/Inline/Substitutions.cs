@@ -41,8 +41,9 @@ public class RequiresValidSyntaxAndKeyToBeFound : DocumentTest
 		The following should be subbed too: {{ hello-world }}
 		""";
 
-	[Test, DisplayName("emits an error when sub key is not found")]
-	public async Task EmitsError() => await Docs.HasError("key {valid-key} is undefined");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:9 Substitution key {valid-key} is undefined");
 
 	[Test, DisplayName("validate HTML: leaves non subs alone")]
 	public async Task ValidateHtml() =>

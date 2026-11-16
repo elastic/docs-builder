@@ -26,7 +26,7 @@ public class NavigationResolutionProperties
 	private static readonly string[] Repositories = ["docs-content", "elasticsearch", "kibana"];
 
 	private static Gen<string[]> Segments(int min, int max) =>
-		Gen.OneOfConst("apm", "apm-agents", "apm-x", "ref", "a", "ab", "reference").Array[min, max];
+		Gen.OneOf("apm", "apm-agents", "apm-x", "ref", "a", "ab", "reference").Array[min, max];
 
 	private sealed record Mount(string Repository, string[] Path, string Prefix)
 	{
@@ -36,7 +36,7 @@ public class NavigationResolutionProperties
 
 	/// <summary>Mounts with distinct sources and one prefix each (<c>docs/m0</c>, <c>docs/m1</c>, ...), so a prefix names one mount.</summary>
 	private static Gen<Mount[]> Mounts { get; } = Gen
-		.Select(Gen.OneOfConst(Repositories), Segments(1, 3))
+		.Select(Gen.OneOf(Repositories), Segments(1, 3))
 		.Array[0, 6]
 		.Select(
 			raw => raw
@@ -47,7 +47,7 @@ public class NavigationResolutionProperties
 		);
 
 	private static Gen<(string Repository, string[] Path, bool Markdown)> Links { get; } = Gen.Select(
-		Gen.OneOfConst(Repositories),
+		Gen.OneOf(Repositories),
 		Segments(1, 4),
 		Gen.Bool,
 		(r, p, md) => (r, p, md)
@@ -174,7 +174,7 @@ public class NavigationResolutionProperties
 	private sealed record Entry(string Repository, string Source, string Prefix);
 
 	private static Gen<Entry[]> Entries { get; } = Gen
-		.Select(Gen.OneOfConst(Repositories), Segments(1, 2), Gen.OneOfConst("docs/a", "docs/b", "ref/apm", "ref/apm-agents", "x"))
+		.Select(Gen.OneOf(Repositories), Segments(1, 2), Gen.OneOf("docs/a", "docs/b", "ref/apm", "ref/apm-agents", "x"))
 		.Array[0, 7]
 		.Select(
 			raw => raw

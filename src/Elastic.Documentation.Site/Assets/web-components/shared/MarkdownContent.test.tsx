@@ -2,8 +2,8 @@ import { MarkdownContent } from './MarkdownContent'
 import { EuiProvider } from '@elastic/eui'
 import { render, waitFor } from '@testing-library/react'
 
-jest.mock('../../copybutton', () => ({
-    initCopyButton: jest.fn(),
+vi.mock('../../copybutton', () => ({
+    initCopyButton: vi.fn(),
 }))
 
 const renderMarkdown = (content: string) =>

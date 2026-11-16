@@ -15,7 +15,7 @@ describe('initCopyButtons', () => {
         written = []
         Object.assign(navigator, {
             clipboard: {
-                writeText: jest.fn(
+                writeText: vi.fn(
                     async (text: string) => void written.push(text)
                 ),
             },
@@ -64,16 +64,16 @@ describe('initCopyButtons', () => {
 
 describe('initCopyText', () => {
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         Object.assign(navigator, {
-            clipboard: { writeText: jest.fn(async () => undefined) },
+            clipboard: { writeText: vi.fn(async () => undefined) },
         })
         document.body.innerHTML =
             '<button data-copy-text="npx skills add x">Copy install command</button>'
         initCopyText()
     })
 
-    afterEach(() => jest.useRealTimers())
+    afterEach(() => vi.useRealTimers())
 
     it('copies the text, confirms, then restores the label', async () => {
         const button = document.querySelector('button')!
@@ -87,7 +87,7 @@ describe('initCopyText', () => {
         expect(button.textContent).toBe('Copied!')
         expect(button.hasAttribute('data-copied')).toBe(true)
 
-        jest.advanceTimersByTime(1500)
+        vi.advanceTimersByTime(1500)
         expect(button.textContent).toBe('Copy install command')
         expect(button.hasAttribute('data-copied')).toBe(false)
     })

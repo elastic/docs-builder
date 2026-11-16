@@ -25,13 +25,13 @@ internal static class Gens
 
 	/// <summary>A path prefix of one to three segments, sometimes with a trailing slash.</summary>
 	public static Gen<string> PathPrefix { get; } = Gen.Select(
-		Gen.OneOfConst(Segments).Array[1, 3],
+		Gen.OneOf(Segments).Array[1, 3],
 		Gen.Bool,
 		(parts, slash) => string.Join('/', parts) + (slash ? "/" : "")
 	);
 
 	/// <summary>A navigation.yml mount: a repository and the prefix it publishes under.</summary>
-	public static Gen<(string Repository, string Prefix)> Mount { get; } = Gen.Select(Gen.OneOfConst(Repositories), PathPrefix);
+	public static Gen<(string Repository, string Prefix)> Mount { get; } = Gen.Select(Gen.OneOf(Repositories), PathPrefix);
 
 	/// <summary>Mounts that no repository repeats: each (repository, prefix without trailing slash) pair occurs once.</summary>
 	public static Gen<(string Repository, string Prefix)[]> DistinctMounts { get; } = Mount.Array[0, 8].Select(
@@ -58,13 +58,13 @@ internal static class Gens
 		);
 
 	/// <summary>A docset's registry as authored: absent, the known codex registry, the legacy 'public', or an unknown value.</summary>
-	public static Gen<string?> Registry { get; } = Gen.OneOfConst<string?>(null, "", "internal", "INTERNAL", "public", "security");
+	public static Gen<string?> Registry { get; } = Gen.OneOf<string?>(null, "", "internal", "INTERNAL", "public", "security");
 
 	/// <summary>The registries of the docsets found at a repository's known locations, in discovery order.</summary>
 	public static Gen<string?[]> DiscoveredRegistries { get; } = Registry.Array[1, 4];
 
 	/// <summary>A product id from the test catalog, spelled with '-' or '_' and in any case.</summary>
-	public static Gen<string> ProductSpelling { get; } = Gen.Select(Gen.OneOfConst(
+	public static Gen<string> ProductSpelling { get; } = Gen.Select(Gen.OneOf(
 		"apm-server",
 		"elastic-agent",
 		"elasticsearch"

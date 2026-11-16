@@ -14,7 +14,7 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 public class LlmMarkdownRenderer : TextRendererBase
 {
 	public required IDocumentationConfigurationContext BuildContext { get; set; }
-	private bool _isAtLineStart = true;
+	public bool IsAtLineStart { get; private set; } = true;
 
 	/// <summary>
 	/// Optional hook to override how link URLs are rewritten (e.g. to bundle-relative paths for the
@@ -28,7 +28,7 @@ public class LlmMarkdownRenderer : TextRendererBase
 	/// </summary>
 	public void Reset()
 	{
-		_isAtLineStart = true;
+		IsAtLineStart = true;
 		LinkUrlRewriter = null;
 	}
 
@@ -37,10 +37,10 @@ public class LlmMarkdownRenderer : TextRendererBase
 	/// </summary>
 	public void EnsureLine()
 	{
-		if (_isAtLineStart)
+		if (IsAtLineStart)
 			return;
 		Writer.WriteLine();
-		_isAtLineStart = true;
+		IsAtLineStart = true;
 	}
 
 	/// <summary>
@@ -50,19 +50,19 @@ public class LlmMarkdownRenderer : TextRendererBase
 	{
 		EnsureLine();
 		Writer.WriteLine();
-		_isAtLineStart = true;
+		IsAtLineStart = true;
 	}
 
 	public void WriteLine(string text = "")
 	{
 		Writer.WriteLine(text);
-		_isAtLineStart = true;
+		IsAtLineStart = true;
 	}
 
 	public void Write(string text)
 	{
 		Writer.Write(text);
-		_isAtLineStart = text.EndsWith(Environment.NewLine) || text.EndsWith('\n');
+		IsAtLineStart = text.EndsWith(Environment.NewLine) || text.EndsWith('\n');
 	}
 
 	public void WriteLeafInline(LeafBlock leafBlock)

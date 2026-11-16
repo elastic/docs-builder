@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -55,14 +57,12 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided") && d.Message.Contains(
-					"default to 'unknown'"
-				)
+			.MatchInlineSnapshot(
+				"warning  No --title option provided and bundle files do not contain 'target' values. Output folder and markdown titles will default to 'unknown'. Consider using --title to specify a custom title."
 			);
 	}
 
@@ -101,8 +101,7 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title =
-				"9.2.0" // Title is provided
+			Title = "9.2.0" // Title is provided
 		};
 
 		// Act
@@ -112,7 +111,7 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		// Should not have warning about missing title
-		Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided"));
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 
 	[Test]
@@ -163,12 +162,26 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// Check that output directory uses raw date slug
-		var indexFile = FileSystem.Path.Join(outputDir, "2026-05-04", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-
-		// Check that heading uses formatted date but anchor uses raw date
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("## May 4, 2026 [elastic-release-notes-2026-05-04]");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 2026-05-04/breaking-changes.md ===
+			## May 4, 2026 [elastic-2026-05-04-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 2026-05-04/deprecations.md ===
+			## May 4, 2026 [elastic-2026-05-04-deprecations]
+			_There are no deprecations associated with this release._
+			=== 2026-05-04/index.md ===
+			## May 4, 2026 [elastic-release-notes-2026-05-04]
+			### Features and enhancements [elastic-2026-05-04-features-enhancements]
+			* Test feature. [#100](https://github.com/elastic/elastic/pull/100)
+			=== 2026-05-04/known-issues.md ===
+			## May 4, 2026 [elastic-2026-05-04-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -219,12 +232,26 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// Check that output directory uses raw date slug
-		var indexFile = FileSystem.Path.Join(outputDir, "2026-05", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-
-		// Check that heading uses formatted date but anchor uses raw date
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("## May 2026 [elastic-release-notes-2026-05]");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 2026-05/breaking-changes.md ===
+			## May 2026 [elastic-2026-05-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 2026-05/deprecations.md ===
+			## May 2026 [elastic-2026-05-deprecations]
+			_There are no deprecations associated with this release._
+			=== 2026-05/index.md ===
+			## May 2026 [elastic-release-notes-2026-05]
+			### Features and enhancements [elastic-2026-05-features-enhancements]
+			* Test feature. [#100](https://github.com/elastic/elastic/pull/100)
+			=== 2026-05/known-issues.md ===
+			## May 2026 [elastic-2026-05-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -264,8 +291,7 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title =
-				"2026-05-04" // Explicit title provided - should stay literal
+			Title = "2026-05-04" // Explicit title provided - should stay literal
 		};
 
 		// Act
@@ -276,11 +302,25 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// Check that output directory uses title slug
-		var indexFile = FileSystem.Path.Join(outputDir, "2026-05-04", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-
-		// Check that heading uses literal title (no formatting applied)
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("## 2026-05-04 [elastic-release-notes-2026-05-04]");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 2026-05-04/breaking-changes.md ===
+			## 2026-05-04 [elastic-2026-05-04-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 2026-05-04/deprecations.md ===
+			## 2026-05-04 [elastic-2026-05-04-deprecations]
+			_There are no deprecations associated with this release._
+			=== 2026-05-04/index.md ===
+			## 2026-05-04 [elastic-release-notes-2026-05-04]
+			### Features and enhancements [elastic-2026-05-04-features-enhancements]
+			* Test feature. [#100](https://github.com/elastic/elastic/pull/100)
+			=== 2026-05-04/known-issues.md ===
+			## 2026-05-04 [elastic-2026-05-04-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 }

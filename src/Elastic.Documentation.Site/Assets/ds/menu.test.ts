@@ -54,12 +54,12 @@ describe('menus', () => {
 
 describe('hover menus', () => {
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         document.body.innerHTML =
             '<details data-menu data-hover-menu id="h"><summary>main</summary><div>info</div></details>'
         initMenus()
     })
-    afterEach(() => jest.useRealTimers())
+    afterEach(() => vi.useRealTimers())
 
     const pointer = (type: string, pointerType: string) => {
         const event = new Event(type, { bubbles: false })
@@ -75,7 +75,7 @@ describe('hover menus', () => {
 
         details.dispatchEvent(pointer('pointerleave', 'mouse'))
         expect(details.open).toBe(true)
-        jest.advanceTimersByTime(200)
+        vi.advanceTimersByTime(200)
         expect(details.open).toBe(false)
     })
 

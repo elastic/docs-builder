@@ -31,18 +31,8 @@ public class WhatsNewWithAnInlineBody : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("renders the heading and intro")]
-	public async Task RendersHeadingAndIntro() =>
-		await Docs.ConvertsToContainingHtml("""<h2 class="hub-wn-title">What's new in docs-builder</h2>""");
-
-	[Test, DisplayName("renders a card per item")]
-	public async Task RendersCardPerItem() => await Docs.ConvertsToContainingHtml("""<h3 class="hub-wn-card-title">Hub pages</h3>""");
-
-	[Test, DisplayName("spans the featured card across two columns")]
-	public async Task SpansFeaturedCard() => await Docs.ConvertsToContainingRawHtml("""<li class="hub-wn-card hub-wn-card-featured">""");
-
-	[Test, DisplayName("renders the date and tag")]
-	public async Task RendersDateAndTag() => await Docs.ConvertsToContainingHtml("""<span class="hub-wn-card-tag">Syntax</span>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() => await Docs.ConvertsToHtmlSnapshot();
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -63,13 +53,36 @@ public class WhatsNewWithReleaseAndUpgradeLinks : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("renders the release link")]
-	public async Task RendersReleaseLink() =>
-		await Docs.ConvertsToContainingHtml("""<a class="hub-wn-rn-link" href="/">View release notes</a>""");
-
-	[Test, DisplayName("renders the upgrade prompt")]
-	public async Task RendersUpgradePrompt() =>
-		await Docs.ConvertsToContainingHtml("""<span class="hub-wn-footer-text">Ready to move to the latest version?</span>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<section class="hub-whats-new">
+			<header class="hub-wn-header">
+				<div class="hub-wn-heading">
+					<h2 class="hub-wn-title">What's new</h2>
+				</div>
+				<div class="hub-wn-rn">
+					<span class="hub-wn-rn-label">Go to latest release notes:</span>
+					<ul class="hub-wn-rn-list">
+						<li>
+							<a class="hub-wn-rn-link" href="/">View release notes</a>
+						</li>
+					</ul>
+				</div>
+			</header>
+			<div class="hub-wn-footer">
+				<span class="hub-wn-footer-text">Ready to move to the latest version?</span>
+				<a class="hub-wn-upgrade" href="/">
+					<span>Upgrade</span>
+					<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
+					</svg>
+				</a>
+			</div>
+		</section>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -83,8 +96,11 @@ public class WhatsNewWithAnUnresolvableProduct : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors and names the file it looked in")]
-	public async Task ErrorsAndNamesFile() => await Docs.HasError("hub-whats-new.yml");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 {whats-new} :product: 'not-a-product' was not found in hub-whats-new.yml at the root of this documentation set."
+		);
 }
 
 public class WhatsNewWithNeitherProductNorBody : MarkdownTest
@@ -94,8 +110,9 @@ public class WhatsNewWithNeitherProductNorBody : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors")]
-	public async Task Errors() => await Docs.HasError("requires either a `:product:` option or a YAML body");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 {whats-new} requires either a `:product:` option or a YAML body.");
 }
 
 public class WhatsNewWithARelativeItemLink : MarkdownTest
@@ -110,8 +127,11 @@ public class WhatsNewWithARelativeItemLink : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("rejects a relative path")]
-	public async Task RejectsRelativePath() => await Docs.HasError("must be an absolute path starting with `/`");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 Directive link `nope.md` must be an absolute path starting with `/`, a cross-link scheme (for example `kibana://`), or an external URL."
+		);
 }
 
 public class WhatsNewWithAvailabilityAndSubstitutedLabel : MarkdownTest
@@ -138,19 +158,54 @@ public class WhatsNewWithAvailabilityAndSubstitutedLabel : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("renders the release notes label")]
-	public async Task RendersReleaseNotesLabel() =>
-		await Docs.ConvertsToContainingHtml("""<span class="hub-wn-rn-label">Go to latest release notes:</span>""");
-
-	[Test, DisplayName("resolves a substitution in a release link label")]
-	public async Task ResolvesSubstitutionInLabel() => await Docs.DoesNotConvertToContainingHtml("{{version.stack}}");
-
-	[Test, DisplayName("shows the availability list in place of the date")]
-	public async Task ShowsAvailabilityInPlaceOfDate() =>
-		await Docs.ConvertsToContainingHtml("""<span class="hub-wn-card-date">9.5 · Serverless</span>""");
-
-	[Test, DisplayName("falls back to the date when there is no availability")]
-	public async Task FallsBackToDate() => await Docs.ConvertsToContainingHtml("""<span class="hub-wn-card-date">Aug 2026</span>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<section class="hub-whats-new">
+			<header class="hub-wn-header">
+				<div class="hub-wn-heading">
+					<h2 class="hub-wn-title">What's new</h2>
+				</div>
+				<div class="hub-wn-rn">
+					<span class="hub-wn-rn-label">Go to latest release notes:</span>
+					<ul class="hub-wn-rn-list">
+						<li>
+							<a class="hub-wn-rn-link" href="/">8.0.0</a>
+						</li>
+						<li>
+							<a class="hub-wn-rn-link" href="/">Serverless</a>
+						</li>
+					</ul>
+				</div>
+			</header>
+			<ul class="hub-wn-grid">
+				<li class="hub-wn-card">
+					<div class="hub-wn-card-link">
+						<div class="hub-wn-card-meta">
+							<span class="hub-wn-card-meta-left">
+								<span class="hub-wn-card-date">9.5 · Serverless</span>
+							</span>
+						</div>
+						<h3 class="hub-wn-card-title">Both</h3>
+						<p class="hub-wn-card-desc">Ships in both.</p>
+					</div>
+				</li>
+				<li class="hub-wn-card">
+					<div class="hub-wn-card-link">
+						<div class="hub-wn-card-meta">
+							<span class="hub-wn-card-meta-left">
+								<span class="hub-wn-card-date">Aug 2026</span>
+							</span>
+						</div>
+						<h3 class="hub-wn-card-title">Dated</h3>
+						<p class="hub-wn-card-desc">Only a date.</p>
+					</div>
+				</li>
+			</ul>
+		</section>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -208,11 +263,75 @@ public class WhatsNewFromCentralConfigOnTwoPages : GeneratorTest
 			)
 		];
 
-	[Test, DisplayName("resolves the substitution on the first page")]
-	public async Task FirstPage() => await Docs.Converts("index.md").ContainsRawHtml("1.0 &#xB7; Serverless");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<section class="hub-whats-new">
+			<header class="hub-wn-header">
+				<div class="hub-wn-heading">
+					<h2 class="hub-wn-title">What's new in Demo</h2>
+				</div>
+				<div class="hub-wn-rn">
+					<span class="hub-wn-rn-label">Go to latest release notes:</span>
+					<ul class="hub-wn-rn-list">
+						<li>
+							<a class="hub-wn-rn-link" href="/">1.0</a>
+						</li>
+					</ul>
+				</div>
+			</header>
+			<ul class="hub-wn-grid">
+				<li class="hub-wn-card">
+					<div class="hub-wn-card-link">
+						<div class="hub-wn-card-meta">
+							<span class="hub-wn-card-meta-left">
+								<span class="hub-wn-card-date">1.0 · Serverless</span>
+							</span>
+						</div>
+						<h3 class="hub-wn-card-title">Card</h3>
+						<p class="hub-wn-card-desc">A card.</p>
+					</div>
+				</li>
+			</ul>
+		</section>
+		"""
+		);
 
-	[Test, DisplayName("resolves the substitution again on the second page")]
-	public async Task SecondPage() => await Docs.Converts("second.md").ContainsRawHtml("2.0 &#xB7; Serverless");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtmlOfSecond() =>
+		await Docs.Converts("second.md").ToHtml(
+			"""
+		<section class="hub-whats-new">
+			<header class="hub-wn-header">
+				<div class="hub-wn-heading">
+					<h2 class="hub-wn-title">What's new in Demo</h2>
+				</div>
+				<div class="hub-wn-rn">
+					<span class="hub-wn-rn-label">Go to latest release notes:</span>
+					<ul class="hub-wn-rn-list">
+						<li>
+							<a class="hub-wn-rn-link" href="/">2.0</a>
+						</li>
+					</ul>
+				</div>
+			</header>
+			<ul class="hub-wn-grid">
+				<li class="hub-wn-card">
+					<div class="hub-wn-card-link">
+						<div class="hub-wn-card-meta">
+							<span class="hub-wn-card-meta-left">
+								<span class="hub-wn-card-date">2.0 · Serverless</span>
+							</span>
+						</div>
+						<h3 class="hub-wn-card-title">Card</h3>
+						<p class="hub-wn-card-desc">A card.</p>
+					</div>
+				</li>
+			</ul>
+		</section>
+		"""
+		);
 }
 
 // Every documentation set in these tests reads hub-whats-new.yml from the same path, and the parse is
@@ -243,8 +362,31 @@ public class WhatsNewFromCentralConfigThatChanged : GeneratorTest
 				""")
 		];
 
-	[Test, DisplayName("renders the current content of the file")]
-	public async Task RendersCurrentContent() => await Docs.Converts("index.md").ContainsRawHtml(">Changed panel</h2>");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<section class="hub-whats-new">
+			<header class="hub-wn-header">
+				<div class="hub-wn-heading">
+					<h2 class="hub-wn-title">Changed panel</h2>
+				</div>
+			</header>
+			<ul class="hub-wn-grid">
+				<li class="hub-wn-card">
+					<div class="hub-wn-card-link">
+						<div class="hub-wn-card-meta">
+							<span class="hub-wn-card-meta-left">
+							</span>
+						</div>
+						<h3 class="hub-wn-card-title">Card</h3>
+						<p class="hub-wn-card-desc">A card.</p>
+					</div>
+				</li>
+			</ul>
+		</section>
+		"""
+		);
 
 	[Test]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();

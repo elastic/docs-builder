@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +21,11 @@
 
   <ItemGroup>
     <None Include="Baseline\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Baseline" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Elastic.Documentation.Testing" />
+    <Using Include="Nullean.Snapshots" />
   </ItemGroup>
 
   <ItemGroup>

@@ -119,6 +119,9 @@ public static class NestedRowsId
 public record DictionaryChildDisplay
 {
 	public required string KeyAnchorId { get; init; }
+
+	/// <summary>The JSON path of the map's values, such as <c>aggs.&lt;string&gt;</c>; null where paths are not shown.</summary>
+	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(KeyAnchorId);
 	public required int Depth { get; init; }
 	public required bool IsCollapsible { get; init; }
@@ -130,6 +133,9 @@ public record DictionaryChildDisplay
 	/// <summary>The literals a map value can take, as a "Values:" row under the key.</summary>
 	public IReadOnlyList<string> EnumValues { get; init; } = [];
 	public required ApiPropertyList Properties { get; init; }
+
+	/// <summary>The variants of a map whose values are a union, listed after the value's own properties.</summary>
+	public ApiUnionVariants? Variants { get; init; }
 }
 
 /// <summary>The precomputed children of a property, discriminated by <see cref="Kind"/>.</summary>
@@ -145,6 +151,17 @@ public record ApiPropertyChildren
 	public ApiPropertyList? Properties { get; init; }
 	public ApiUnionVariants? Variants { get; init; }
 	public DictionaryChildDisplay? Dictionary { get; init; }
+
+	/// <summary>
+	/// Every row nested directly under the property, in page order: its fields, its map values' fields, then the fields of each
+	/// listed variant, nested variants included. Walkers that visit rows (the search index, row counts) read this, so a new
+	/// kind of child needs one change here.
+	/// </summary>
+	public IEnumerable<ApiProperty> NestedRows =>
+		(Properties?.Items ?? [])
+			.Concat(Dictionary?.Properties.Items ?? [])
+			.Concat(Dictionary?.Variants?.Rows ?? [])
+			.Concat(Variants?.Rows ?? []);
 }
 
 /// <summary>
@@ -159,12 +176,24 @@ public record ApiProperty
 	public required IOpenApiSchema Schema { get; init; }
 
 	public required string AnchorId { get; init; }
+
+	/// <summary>Where the field sits in the body, such as <c>query.bool.must[].match</c>; null where paths are not shown.</summary>
+	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(AnchorId);
+
+	/// <summary>The hover tooltip: the JSON path, except on a top-level field, where it would only repeat the name.</summary>
+	public string? TooltipPath => JsonPath is { } path && path != Name ? path : null;
+
+	/// <summary>What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.</summary>
+	public string PermalinkLabel => JsonPath is { Length: > 0 } path ? path : Name;
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
 
 	/// <summary>For a path parameter that some routes leave out, the route to use without it; the row reads "optional".</summary>
 	public string? OptionalRoute { get; init; }
+
+	/// <summary>Whether a path parameter is optional, either because some routes leave it out or because it is not required; the row reads "optional".</summary>
+	public bool IsOptionalPath { get; init; }
 
 	/// <summary>Whether the value can be <c>null</c>; the type annotation leaves <c>null</c> out, so a badge says it.</summary>
 	public bool IsNullable { get; init; }
@@ -189,6 +218,9 @@ public record ApiProperty
 
 	/// <summary>An example that tells the reader more than the type does, as it should read; null when the row has none worth showing.</summary>
 	public string? Example { get; init; }
+
+	/// <summary>An object or array default too long for a chip, as one compact line; shown in a "Default:" row that wraps.</summary>
+	public string? DefaultValue { get; init; }
 	public UnionDisplay? Union { get; init; }
 
 	/// <summary>Item type name for primitive arrays, rendered as an "Array of:" row.</summary>

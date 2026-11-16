@@ -48,8 +48,29 @@ public class DiagnosticsCollectorDisposeTests
 
 		collector.Warnings.Should().Be(1, "severity counters update regardless of reader state");
 		collector.IsStarted.Should().BeFalse();
-		collector.OffendingFiles.Should().Contain("file.yaml", "StopAsync drains the channel synchronously");
+		collector.OffendingFiles.Keys.Should().Contain("file.yaml", "StopAsync drains the channel synchronously");
 		output.Items.Should().HaveCount(1, "outputs receive items from the synchronous drain in StopAsync");
+	}
+
+	// Regression: the codex build failed with "Destination array is not long enough" because the
+	// background reader added to OffendingFiles while the build thread snapshotted it.
+	[Test]
+	public async Task OffendingFiles_SnapshotWhileReaderIsWriting_DoesNotThrow()
+	{
+		const int total = 20_000;
+		var collector = new DiagnosticsCollector([]);
+		_ = collector.StartAsync(CancellationToken.None);
+		for (var i = 0; i < total; i++)
+			collector.EmitWarning($"file-{i}.md", "warning");
+
+		// Snapshot for as long as the reader is still adding, so both sides overlap.
+		using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+		while (collector.OffendingFiles.Count < total && !timeout.IsCancellationRequested)
+			_ = collector.OffendingFiles.Keys.ToArray();
+
+		await collector.DisposeAsync();
+
+		collector.OffendingFiles.Should().HaveCount(20_000);
 	}
 
 	[Test]
@@ -100,7 +121,10 @@ public class DiagnosticsCollectorDisposeTests
 	// If the service command completes before the thread pool picks up the Task.Run delegate,
 	// _readerStarted is still false when WaitForDrain runs. Previously this threw; now it
 	// waits briefly for the reader to start and then drains successfully.
+	// Runs alone: the reader starts on the thread pool and must come up within WaitForDrain's 2s
+	// deadline, which other tests blocking pool threads can push past on a busy runner.
 	[Test]
+	[NotInParallel]
 	public async Task WaitForDrain_AfterStartAsync_WaitsForReaderEvenIfNotStartedYet()
 	{
 		var output = new RecordingOutput();

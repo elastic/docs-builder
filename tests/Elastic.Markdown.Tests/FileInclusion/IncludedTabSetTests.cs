@@ -4,8 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
@@ -47,18 +49,9 @@ Content for second tab
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void EachIncludeHasUniqueIds()
-	{
-		// First include at line 2: (2 * 1000) + 0 = 2000
-		// Second include at line 7: (7 * 1000) + 0 = 7000
-		Html.Should().Contain("tabs-item-2000-0");
-		Html.Should().Contain("tabs-item-2000-1");
-		Html.Should().Contain("tabs-set-2000");
-
-		Html.Should().Contain("tabs-item-7000-0");
-		Html.Should().Contain("tabs-item-7000-1");
-		Html.Should().Contain("tabs-set-7000");
-	}
+	// First include at line 2: (2 * 1000) + 0 = 2000
+	// Second include at line 7: (7 * 1000) + 0 = 7000
+	public void EachIncludeHasUniqueIds() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -96,11 +89,27 @@ Second tab set
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void EachTabSetHasUniqueIds()
-	{
-		// Include at line 2, first tab-set at line 0: (2 * 1000) + 0 = 2000
-		// Include at line 2, second tab-set at line 8: (2 * 1000) + 8 = 2008
-		Html.Should().Contain("tabs-set-2000");
-		Html.Should().Contain("tabs-set-2008");
-	}
+	// Include at line 2, first tab-set at line 0: (2 * 1000) + 0 = 2000
+	// Include at line 2, second tab-set at line 8: (2 * 1000) + 8 = 2008
+	public void EachTabSetHasUniqueIds() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<div class="tabs">
+			<input class="tabs-input" checked="checked" id="tabs-item-2000-0" name="tabs-set-2000" type="radio" tabindex="0">
+			<label class="tabs-label" data-sync-id="" data-sync-group="" for="tabs-item-2000-0">First</label>
+			<div class="tabs-content" tabindex="0">
+				<p>First tab set</p>
+			</div>
+		</div>
+		<p>Some content between.</p>
+		<div class="tabs">
+			<input class="tabs-input" checked="checked" id="tabs-item-2008-0" name="tabs-set-2008" type="radio" tabindex="0">
+			<label class="tabs-label" data-sync-id="" data-sync-group="" for="tabs-item-2008-0">Second</label>
+			<div class="tabs-content" tabindex="0">
+				<p>Second tab set</p>
+			</div>
+		</div>
+		""",
+			DocsHtml.Body()
+		);
 }

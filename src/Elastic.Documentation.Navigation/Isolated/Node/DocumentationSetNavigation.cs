@@ -6,9 +6,11 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using ListingGroupRef = Elastic.Documentation.DocumentationSets.ListingGroupRef;
 using ListingRef = Elastic.Documentation.DocumentationSets.ListingRef;
@@ -34,10 +36,12 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		IRootNavigationItem<INavigationModel, INavigationItem>? parent = null,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
 		string? pathPrefix = null,
-		ICrossLinkResolver? crossLinkResolver = null
+		ICrossLinkResolver? crossLinkResolver = null,
+		FloatingSectionRegistry? floatingSections = null
 	)
 	{
 		_context = context;
+		_floatingSections = floatingSections ?? FloatingSectionRegistry.Empty;
 		_factory = factory;
 		_crossLinkResolver = crossLinkResolver ?? NoopCrossLinkResolver.Instance;
 		PathPrefix = pathPrefix ?? string.Empty;
@@ -63,6 +67,9 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 			if (navItem != null)
 				items.Add(navItem);
 		}
+
+		if (items.Count > 0)
+			MountImplicitFloatingSections(items);
 
 		// Handle empty TOC - emit errors and create a minimal structure
 		if (items.Count == 0)
@@ -104,6 +111,11 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 
 	private readonly Dictionary<Uri, IRootNavigationItem<TModel, INavigationItem>> _tableOfContentNodes = [];
 	private readonly IDocumentationSetContext _context;
+	private readonly FloatingSectionRegistry _floatingSections;
+	private readonly List<IFloatingSection> _mountedFloatingSections = [];
+
+	/// <summary>The floating sections mounted by the table of contents, in toc order.</summary>
+	public IReadOnlyList<IFloatingSection> FloatingSections => _mountedFloatingSections;
 	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes =>
 		_tableOfContentNodes.ToDictionary(kvp => kvp.Key, IRootNavigationItem<IDocumentationFile, INavigationItem> (kvp) => kvp.Value);
 
@@ -197,7 +209,15 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		if (documentationFile == null)
 		{
 			var reason = fileInfo.Exists ? "the file exists but is not a valid Markdown document" : "the file does not exist on disk";
-			context.EmitError(context.ConfigurationPath, $"Table of contents references '{relativePath}' but {reason}.");
+			// The same finding as the documentation set load reports (the toc-file-exists-and-markdown rule), under its id, so the collector
+			// drops it as a duplicate when both report it. This layer also reports it for a set that was never checked by the rules.
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Message = $"Table of contents references '{relativePath}' but {reason}.",
+				RuleId = DocumentationSetConstraints.TocFileExistsAndMarkdown.Name
+			});
 		}
 
 		return documentationFile;
@@ -291,7 +311,6 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 				context,
 				fileNavigation,
 				homeAccessor // Depth will be set by child
-
 			);
 			if (childNav != null)
 				children.Add(childNav);
@@ -317,15 +336,17 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		INavigationHomeAccessor homeAccessor
 	)
 	{
-		var title = crossLinkRef.Title ?? crossLinkRef.CrossLinkUri.OriginalString;
-		if (
-			!_crossLinkResolver.TryResolve(
-				s => _context.EmitError(_context.ConfigurationPath, s),
-				crossLinkRef.CrossLinkUri,
-				out var resolvedUri
-			)
-		)
+		var crossLinkUri = crossLinkRef.CrossLinkUri;
+		var title = crossLinkRef.Title ?? crossLinkUri.OriginalString;
+		var resolution = _crossLinkResolver.Resolve(crossLinkUri);
+		if (resolution is LinkResolutionUnavailable)
 			return null;
+		var resolvedUri = resolution.ResolvedUri();
+		if (resolvedUri is null)
+		{
+			_context.EmitError(_context.ConfigurationPath, resolution.ToDiagnosticMessage(crossLinkUri));
+			return null;
+		}
 		var model = new CrossLinkModel(resolvedUri, title);
 
 		return new CrossLinkNavigationLeaf(model, resolvedUri.ToString(), crossLinkRef.Hidden, parent, homeAccessor)
@@ -374,6 +395,23 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		return folderNavigation;
 	}
 
+	/// <summary>
+	/// Mounts the floating sections that the docset declares, such as its APIs, after the toc entries. They stay out of the
+	/// sidebar, so a docset needs no toc entry and no sidebar changes, and its <c>links.json</c> still lists their pages.
+	/// </summary>
+	private void MountImplicitFloatingSections(List<INavigationItem> items)
+	{
+		foreach (var section in _floatingSections.GetImplicitSections())
+		{
+			var root = section.CreateRoot(this, hidden: true);
+			root.Parent = this;
+			if (root is IAssignableIslandNavigation island)
+				island.IsIsland = true;
+			_mountedFloatingSections.Add(section);
+			items.Add(root);
+		}
+	}
+
 	private INavigationItem? CreateTocNavigation(
 		IsolatedTableOfContentsRef tocRef,
 		int index,
@@ -403,7 +441,6 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 			tocDirectory,
 			fullTocPath,
 			parent, // Temporary null parent
-
 			isolatedHomeProvider.PathPrefix,
 			Git,
 			_tableOfContentNodes,

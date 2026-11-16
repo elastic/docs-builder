@@ -197,6 +197,7 @@ internal class SiteTableOfContentsCollectionYamlConverter(
 	[
 		"section",
 		"external",
+		"floating",
 		"children",
 		"dropdown",
 		"toc",
@@ -297,9 +298,14 @@ internal class SiteTableOfContentsCollectionYamlConverter(
 				&& childrenObj is List<SiteTableOfContentsRef> refs ? refs : [];
 			IReadOnlyList<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj)
 				&& dropdownObj is List<SiteDropdownLinkRef> dLinks ? dLinks : [];
-			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks)
+			// floating: <kind> mounts the floating sections of that kind (for example every API) as the section's children
+			// when the build has any. Without them the section keeps its other behaviour, such as an external link.
+			var floatingKind = dictionary.TryGetValue("floating", out var floatingVal)
+				&& floatingVal is string f
+				&& !string.IsNullOrEmpty(f) ? f : null;
+			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks, floatingKind)
 			{
-				UnknownKeys = UnknownYamlKeys.Of(dictionary.Keys, "section", "external", "children", "dropdown"),
+				UnknownKeys = UnknownYamlKeys.Of(dictionary.Keys, "section", "external", "floating", "children", "dropdown"),
 				Position = PositionOf(mappingStart, mappingEnd)
 			};
 		}

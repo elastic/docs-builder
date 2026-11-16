@@ -61,7 +61,7 @@ dotnet run --project src/tooling/essc -- --help
 1. CLI flags (`--endpoint`, `--api-key`)
 2. Environment variables (see table below)
 3. Dotnet user-secrets store `docs-builder` (local development) — the same store the
-   rest of this repository uses, so aspire and essc share `Parameters:ElasticsearchUrl`
+   rest of this repository uses, so the integration tests and essc share `Parameters:ElasticsearchUrl`
    and `Parameters:ElasticsearchApiKey`
 
 ### Environment variables
@@ -214,8 +214,8 @@ widgets to plain log lines:
 
 `essc` ships as a **distroless container** only, published to
 `ghcr.io/elastic/website-search-essc` using the .NET SDK's native container
-support as part of the docs-builder release pipeline (`./build.sh publishcontainers`).
-Base image: `mcr.microsoft.com/dotnet/nightly/runtime-deps:10.0-noble-chiseled`.
+support as part of the docs-builder release pipeline (`./build.sh publish-containers`).
+Base image: `mcr.microsoft.com/dotnet/nightly/runtime-deps:11.0-noble-chiseled`.
 Tagged `edge;latest;<version>` on release, `edge` on every push to main.
 
 AOT compilation is validated on every CI run by building the container image and

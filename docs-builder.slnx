@@ -22,10 +22,10 @@
   </Folder>
   <Folder Name="/config/">
     <File Path="config/assembler.yml" />
-	<File Path="config/changelog.example.yml" />
+    <File Path="config/changelog.example.yml" />
     <File Path="config/legacy-url-mappings.yml" />
     <File Path="config/navigation.yml" />
-	<File Path="config/codex.example.yml" />
+    <File Path="config/codex.example.yml" />
     <File Path="config/products.yml" />
     <File Path="config/versions.yml" />
     <File Path="config/search.yml" />
@@ -60,16 +60,16 @@
   </Folder>
   <Folder Name="/src/api/">
     <Project Path="src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" />
-	<Project Path="src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" />
+    <Project Path="src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" />
   </Folder>
   <Folder Name="/src/authoring/">
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
     <Project Path="src/authoring/Elastic.LegacyDocs.Migration/Elastic.LegacyDocs.Migration.csproj" />
   </Folder>
   <Folder Name="/src/infra/">
-	  <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
-	  <Project Path="src/infra/docs-lambda-changelog-scrubber/docs-lambda-changelog-scrubber.csproj" />
-	  <Project Path="src/infra/docs-lambda-openapi-index/docs-lambda-openapi-index.csproj" />
+    <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
+    <Project Path="src/infra/docs-lambda-changelog-scrubber/docs-lambda-changelog-scrubber.csproj" />
+    <Project Path="src/infra/docs-lambda-openapi-index/docs-lambda-openapi-index.csproj" />
   </Folder>
   <Folder Name="/src/services/">
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
@@ -88,14 +88,18 @@
     <Project Path="src/tooling/docs-builder/docs-builder.csproj" />
     <Project Path="src/tooling/essc/essc.csproj" />
     <Project Path="src/tooling/docs-migrate/docs-migrate.csproj" />
+    <Project Path="src/tooling/docs-journeys/docs-journeys.csproj" />
     <Project Path="src/tooling/adoc-compare/adoc-compare.csproj" />
+  </Folder>
+  <Folder Name="/tests-shared/">
+    <File Path="tests-shared/Directory.Build.props" />
+    <Project Path="tests-shared/Elastic.Documentation.Testing/Elastic.Documentation.Testing.csproj" />
   </Folder>
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
-    <Project Path="tests-integration/Elastic.Documentation.IntegrationTests/Elastic.Documentation.IntegrationTests.csproj" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
-	  <Project Path="tests-integration/Mcp.Remote.IntegrationTests/Mcp.Remote.IntegrationTests.csproj" />
-	  <Project Path="tests-integration/Elastic.ContentDateEnrichment.IntegrationTests/Elastic.ContentDateEnrichment.IntegrationTests.csproj" />
+    <Project Path="tests-integration/Mcp.Remote.IntegrationTests/Mcp.Remote.IntegrationTests.csproj" />
+    <Project Path="tests-integration/Elastic.ContentDateEnrichment.IntegrationTests/Elastic.ContentDateEnrichment.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
@@ -110,6 +114,7 @@
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
     <Project Path="tests/Mcp.Remote.Tests/Mcp.Remote.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Journeys.Tests/Elastic.Documentation.Journeys.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Documentation.Builder.Tests/Documentation.Builder.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
@@ -122,7 +127,6 @@
   <Project Path=".github/.github.csproj">
     <Build Project="false" />
   </Project>
-  <Project Path="aspire/aspire.csproj" />
   <Project Path="build/build.fsproj">
     <Build Solution="Release|*" Project="false" />
   </Project>

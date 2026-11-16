@@ -19,7 +19,7 @@ function endpointMarkup(): string {
 }
 
 describe('endpoint path copy', () => {
-    const writeText = jest.fn().mockResolvedValue(undefined)
+    const writeText = vi.fn().mockResolvedValue(undefined)
 
     beforeAll(() => {
         Object.defineProperty(navigator, 'clipboard', {

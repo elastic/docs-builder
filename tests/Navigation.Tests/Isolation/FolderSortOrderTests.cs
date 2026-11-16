@@ -35,7 +35,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().BeNull();
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
@@ -67,7 +67,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be(SortOrder.Descending);
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
@@ -99,7 +99,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be(SortOrder.Descending);
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
@@ -131,7 +131,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be(SortOrder.Ascending);
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
@@ -164,7 +164,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().HaveCount(4);
@@ -194,7 +194,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be(SortOrder.Descending);
 	}
 
@@ -221,7 +221,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
@@ -276,7 +276,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
@@ -308,7 +308,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(

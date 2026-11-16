@@ -37,10 +37,9 @@ public enum SummaryStyle
 /// <summary>Collapsible Parameters / Query parameters heading with a one-line name summary written in <paramref name="Style"/>.</summary>
 public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, SummaryStyle Style = SummaryStyle.Fields)
 {
-	public static HtmlString WrapAttributes() => new("class=\"api-param-section collapsed\" data-param-section");
+	public static HtmlString WrapAttributes() => new("class=\"api-param-section expanded\" data-param-section");
 
-	public static HtmlString BodyAttributes(string listId) =>
-		new($"class=\"api-param-section-body\" id=\"{listId}\" hidden=\"until-found\"");
+	public static HtmlString BodyAttributes(string listId) => new($"class=\"api-param-section-body\" id=\"{listId}\"");
 }
 
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>
@@ -49,7 +48,7 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 		[
 			"paths",
-			"required-authorization",
+			"required-privileges",
 			"authentication",
 			"description",
 			"path-params",
@@ -71,16 +70,29 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 		if (sections.Count == 0)
 			return [];
 
-		var used = OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		var anchors = Anchors(sections);
 		var result = new List<ApiPostSection>(sections.Count);
-		foreach (var s in sections)
+		for (var i = 0; i < sections.Count; i++)
 		{
-			var (title, explicitId) = SplitHeading(s.Heading);
-			var anchor = ResolveAnchor(title, explicitId, used);
-			result.Add(new ApiPostSection(title, anchor, ApiMarkdown.Render(context, s.Body), s.Body));
+			var s = sections[i];
+			result.Add(new ApiPostSection(SplitHeading(s.Heading).Title, anchors[i], ApiMarkdown.Render(context, s.Body), s.Body));
 		}
 
 		return result;
+	}
+
+	/// <summary>The anchor of each section, without rendering the bodies. Group intro headings use it to avoid these anchors.</summary>
+	internal static IReadOnlyList<string> Anchors(IReadOnlyList<ApiSupplementalSection> sections)
+	{
+		var used = OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		var anchors = new List<string>(sections.Count);
+		foreach (var s in sections)
+		{
+			var (title, explicitId) = SplitHeading(s.Heading);
+			anchors.Add(ResolveAnchor(title, explicitId, used));
+		}
+
+		return anchors;
 	}
 
 	internal static (string Title, string? ExplicitId) SplitHeading(string heading)

@@ -16,15 +16,15 @@ namespace Elastic.Documentation.OpenApiIndex.Tests;
 public class VersionIndexProperties
 {
 	private static Gen<string> Key { get; } = Gen.Select(
-		Gen.OneOfConst("elastic/elasticsearch", "elastic/kibana", "acme/api"),
-		Gen.OneOfConst("main", "master", "8.16", "8.17", "9.0", "9.12", "9.3", "x.y", "8.", "", "8.1.2", "-1.2"),
-		Gen.OneOfConst("openapi.json", "other.json"),
+		Gen.OneOf("elastic/elasticsearch", "elastic/kibana", "acme/api"),
+		Gen.OneOf("main", "master", "8.16", "8.17", "9.0", "9.12", "9.3", "x.y", "8.", "", "8.1.2", "-1.2"),
+		Gen.OneOf("openapi.json", "other.json"),
 		(repo, version, file) => $"{repo}/{version}/{file}"
 	);
 
 	private static Gen<string[]> Keys { get; } = Gen.Select(
 		Key.Array[0, 12],
-		Gen.OneOfConst("", "a/b", "a/b/c/d/e", "/", "x//y/z").Array[0, 2],
+		Gen.OneOf("", "a/b", "a/b/c/d/e", "/", "x//y/z").Array[0, 2],
 		(keys, noise) => (string[])[.. keys, .. noise]
 	);
 

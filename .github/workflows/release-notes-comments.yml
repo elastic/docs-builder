@@ -18,4 +18,5 @@ jobs:
     permissions:
       pull-requests: write
       actions: read
+    cache-mode: read
     uses: elastic/docs-actions/.github/workflows/release-notes-comments.yml@v1

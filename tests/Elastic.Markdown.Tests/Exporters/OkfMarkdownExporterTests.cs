@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
+using Nullean.Snapshots;
 using SharpYaml;
 
 namespace Elastic.Markdown.Tests.Exporters;
@@ -233,7 +234,11 @@ public class OkfMarkdownExporterTests
 	{
 		var content = OkfMarkdownExporter.RenderIndexContent(directory: "", concepts: [], subdirectories: []);
 
-		content.Should().StartWith("---\nokf_version: \"0.1\"\n---");
+		content.Should().MatchInlineSnapshot("""
+			---
+			okf_version: "0.1"
+			---
+			""");
 	}
 
 	[Test]
@@ -241,8 +246,7 @@ public class OkfMarkdownExporterTests
 	{
 		var content = OkfMarkdownExporter.RenderIndexContent(directory: "reference", concepts: [], subdirectories: []);
 
-		content.Should().NotContain("---");
-		content.Should().NotContain("okf_version");
+		content.Should().MatchInlineSnapshot("");
 	}
 
 	[Test]
@@ -257,11 +261,18 @@ public class OkfMarkdownExporterTests
 
 		var content = OkfMarkdownExporter.RenderIndexContent(directory: "reference", concepts: concepts, subdirectories: ["reference/foo"]);
 
-		content.Should().Contain("# Documents");
-		content.Should().Contain("* [Bar](bar.md) - Bar description");
-		content.Should().Contain("* [Foo](foo.md) - Foo description");
-		content.Should().Contain("# Subdirectories");
-		content.Should().Contain("* [foo](foo/) - Foo description");
+		content.Should().MatchInlineSnapshot(
+			"""
+			# Documents
+
+			* [Bar](bar.md) - Bar description
+			* [Foo](foo.md) - Foo description
+
+			# Subdirectories
+
+			* [foo](foo/) - Foo description
+			"""
+		);
 	}
 
 	[Test]
@@ -269,8 +280,11 @@ public class OkfMarkdownExporterTests
 	{
 		var content = OkfMarkdownExporter.RenderIndexContent(directory: "reference", concepts: [], subdirectories: ["reference/foo"]);
 
-		content.Should().Contain("* [foo](foo/)");
-		content.Should().NotContain("* [foo](foo/) -");
+		content.Should().MatchInlineSnapshot("""
+			# Subdirectories
+
+			* [foo](foo/)
+			""");
 	}
 
 	[Test]

@@ -22,6 +22,10 @@ internal static class ChangelogTableRenderers
 	internal static string BuildProductLabelTable(IReadOnlyDictionary<string, string>? labelToProducts) =>
 		BuildMappingTable(labelToProducts, "Label", "Product");
 
+	/// <summary>A label can map to several areas, so the areas of one label share a cell.</summary>
+	internal static string BuildAreaLabelTable(IReadOnlyDictionary<string, IReadOnlyList<string>>? labelToAreas) =>
+		BuildMappingTable(labelToAreas?.ToDictionary(kvp => kvp.Key, kvp => string.Join(", ", kvp.Value)), "Label", "Area");
+
 	internal static string BuildMappingTable(IReadOnlyDictionary<string, string>? mapping, string keyHeader, string valueHeader)
 	{
 		if (mapping is not { Count: > 0 })

@@ -6,7 +6,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -372,7 +374,7 @@ public class BlockingLabelTests() : CreateChangelogTestBase()
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("returned false without emitting errors"));
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity != Severity.Error);
 		Logged.Should().Contain(l => l.Contains("entries: exclude"));
 		if (!FileSystem.Directory.Exists(outputDir))

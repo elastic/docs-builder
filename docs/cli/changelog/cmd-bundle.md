@@ -41,7 +41,7 @@ bundle:
 The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the GitHub repository (determined by `--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument.
 For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`.
 If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`.
-Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+Setting an explicit `output` pattern on a profile is deprecated (a warning at config load; the value is ignored). No two profiles may share a primary output product — they would collide on the same conventional target.
 
 A profile `output_directory` overrides `bundle.output_directory` (the same as option-mode `--output` when it is a directory): `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-2026-08-31.yaml`.
 
@@ -113,14 +113,14 @@ Both refs are always required together — the start ref is never inferred from 
 2. Resolves each commit to its merged pull request via GraphQL `associatedPullRequests`. Works for squash and merge commits on protected integration branches; commits with no associated PR are reported, never silently dropped. When a commit is associated with multiple merged PRs, the command warns and picks deterministically (merge-commit match first, then lowest PR number).
 3. Sources each PR's changelog entry with a fixed precedence:
    - **A checked-in entry from the entry pool wins.** Pool entries are matched by file-name-derived PR numbers (file names survive scrubbing, so this works for private repos whose `prs` references were removed from public copies) or by the entry's `prs` references.
-   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. Products follow the [resolution order](/data/release-notes/configure-ref.md#products-resolution) of `changelog add`: label-derived products with `products.implies`, then `products.default`, then the profile's output products. Without a default, a pull request with no product label is an error when `pivot.products` maps two or more distinct products. `rules.create` label rules decide inclusion.
+   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, the `## Impact` and `## Action` sections of the PR body fill `impact` and `action`, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. Products follow the [resolution order](/data/release-notes/configure-ref.md#products-resolution) of `changelog add`: label-derived products with `products.implies`, then `products.default`, then the profile's output products. Without a default, a pull request with no product label is an error when `pivot.products` maps two or more distinct products. `rules.create` label rules decide inclusion.
    - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
 4. Records the end ref in the bundle output as the `git_ref` metadata field.
 
-Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. The bundle name follows the `{repo}-{product}-{version}.yaml` convention.
+Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`product`, `description`, `hide_features`, and so on) — it must not set a `products` pattern. The bundle name follows the `{repo}-{product}-{version}.yaml` convention.
 
 Re-running the same range produces the same bundle content; bundling never overwrites changelog entries.
-Commit-range mode does not automatically add changelog notes whose `products[].versions` match `output_products`. Use `--files` or a path list if those files must be in the bundle.
+Commit-range mode does not automatically add changelog notes whose `products[].versions` match the profile's `product`. Use `--files` or a path list if those files must be in the bundle.
 
 :::{note}
 Commit-range mode requires a `GITHUB_TOKEN` environment variable: the GraphQL API used for commit→PR association does not accept anonymous requests.
@@ -186,11 +186,11 @@ For `--input-products` and profile `products`, a concrete version or date in the
 
 ## Lifecycle inference [lifecycle-inference]
 
-The way that lifecycle values are inferred varies between GitHub release profiles and standard profiles.
+The way that lifecycle values are inferred varies between `changelog gh-release` and bundle profiles.
 
-### GitHub release profiles
+### GitHub releases
 
-For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is derived from the full release tag name. For example:
+For `changelog gh-release`, the lifecycle is derived from the full release tag name. For example:
 
 | Release tag | `{version}` | `{lifecycle}` |
 |-------------|-------------|---------------|
@@ -221,7 +221,7 @@ For more information about acceptable product and lifecycle values, go to [Produ
 
 A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
 
-Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/repo` strings. When this key is present (including as an empty list), PR and issue references are filtered at bundle time: only links whose resolved repository is in the list are kept; others are rewritten to `# PRIVATE:` sentinel strings in the bundle YAML.
+`bundle.link_allow_repos` in `changelog.yml` is no longer read by `changelog bundle`; remove it. PR and issue references are not filtered at bundle time. When the bundle is published, the changelog scrubber Lambda scrubs links to repositories that are not on its allowlist, which it builds from the public repositories in `assembler.yml`. Use `changelog scrubber-allowlist` to resolve the identity of the allowlist the deployed scrubber runs with.
 
 ## Examples
 
@@ -231,7 +231,7 @@ You can use `--release-version` to fetch pull request references directly from G
 This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
 
 :::{important}
-Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+The command resolves the pull requests from the commit range between the previous release tag and the requested tag; it does not read the release notes text.
 :::
 
 ```sh

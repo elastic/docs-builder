@@ -81,3 +81,34 @@ public sealed class LinkRegistryEntriesComparer : IEqualityComparer<Dictionary<s
 		return hash;
 	}
 }
+
+/// <summary>
+/// <see cref="FloatingLinkSection.Aliases"/> (version to canonical page to aliases): equal when the versions and the canonical pages match and each
+/// holds the same aliases in the same order, with the versions and pages in any order.
+/// </summary>
+public sealed class FloatingAliasesComparer : IEqualityComparer<Dictionary<string, Dictionary<string, string[]>>>
+{
+	public static FloatingAliasesComparer Default { get; } = new();
+
+	public bool Equals(Dictionary<string, Dictionary<string, string[]>>? x, Dictionary<string, Dictionary<string, string[]>>? y) =>
+		ReferenceEquals(x, y)
+			|| (x is not null
+				&& y is not null
+				&& x.Count == y.Count
+				&& x.All(version => y.TryGetValue(version.Key, out var other) && PagesEqual(version.Value, other)));
+
+	private static bool PagesEqual(Dictionary<string, string[]>? x, Dictionary<string, string[]>? y) =>
+		ReferenceEquals(x, y)
+			|| (x is not null
+				&& y is not null
+				&& x.Count == y.Count
+				&& x.All(page => y.TryGetValue(page.Key, out var aliases) && page.Value.AsSpan().SequenceEqual(aliases)));
+
+	public int GetHashCode(Dictionary<string, Dictionary<string, string[]>> obj)
+	{
+		var hash = 0;
+		foreach (var (version, pages) in obj)
+			hash ^= HashCode.Combine(StringComparer.Ordinal.GetHashCode(version), pages?.Count ?? 0);
+		return hash;
+	}
+}

@@ -265,7 +265,6 @@ public class InMemoryBuildState : IDisposable
 				SkipCrossLinks = false
 			},
 			WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
-
 			ct
 		);
 	}

@@ -15,15 +15,7 @@ namespace Elastic.Documentation.DocumentationSets;
 /// Subtypes of a case (<see cref="IndexFileRef"/> under <see cref="FileRef"/>, <see cref="DeepLinkedFolderRef"/>
 /// under <see cref="FolderRef"/>) match their case's pattern too, so switch on the most specific type first.
 /// </summary>
-public readonly union TocItem(
-	FileRef,
-	FolderRef,
-	IsolatedTableOfContentsRef,
-	CrossLinkRef,
-	ListingRef,
-	ListingGroupRef,
-	CliReferenceRef
-);
+public readonly union TocItem(FileRef, FolderRef, IsolatedTableOfContentsRef, CrossLinkRef, ListingRef, ListingGroupRef, CliReferenceRef);
 
 /// <summary>The members every <see cref="TocItem"/> case shares.</summary>
 public interface ITableOfContentsItem

@@ -37,6 +37,9 @@ public class SchemaAnalyzer(
 	// Each page builds its own analyzer, so the set never crosses threads.
 	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
 
+	// Union $refs this instance is classifying through an allOf wrapper; a wrapper that refers back to one stays a plain named type.
+	private readonly HashSet<string> _expandingWrappedUnionRefs = [with(StringComparer.Ordinal)];
+
 	// Referenced maps this instance is classifying; a map whose values refer back to it stays a plain named type.
 	private readonly HashSet<string> _expandingMapRefs = [with(StringComparer.Ordinal)];
 
@@ -53,6 +56,17 @@ public class SchemaAnalyzer(
 	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
 	/// above its variants; one whose properties come only from an <c>allOf</c> lists just its variants, which carry them.
 	/// </summary>
+	/// <summary>
+	/// The union <c>$ref</c> that an <c>allOf</c> with that one member wraps, as OpenAPI 3.1 does to attach a description;
+	/// otherwise the schema itself. The union's fields, variants and discriminator are read from what this returns.
+	/// </summary>
+	public IOpenApiSchema UnwrapUnionRef(IOpenApiSchema schema) =>
+		schema is not OpenApiSchemaReference
+			&& schema.AllOf is [OpenApiSchemaReference reference]
+			&& schema.Properties is not { Count: > 0 }
+			&& !UnionSchemas.IsUnion(schema)
+			&& UnionSchemas.IsUnion(ResolveSchema(reference)) ? reference : schema;
+
 	public bool DeclaresProperties(IOpenApiSchema schema) => (ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
 
 	/// <summary>
@@ -167,6 +181,31 @@ public class SchemaAnalyzer(
 		// Resolve references to avoid proxy reads (each proxy access calls ResolveReference internally)
 		var target = ResolveSchema(schema) ?? schema;
 		return UnionSchemas.TryGet(target, out _, out var members) ? GetUnionOptions(members) : [];
+	}
+
+	/// <summary>
+	/// The union a schema is: its own <c>oneOf</c>/<c>anyOf</c>, or the union member of an <c>allOf</c> that wraps one with
+	/// other members. Those options are the union's own, not merged with the other members, which a caller lists as
+	/// fields. Every option stays, a primitive one included, so the list names every choice. Null when the schema is no union
+	/// or none of its options lists fields.
+	/// </summary>
+	public (UnionKeyword Keyword, List<UnionOption> Options)? GetListedUnion(IOpenApiSchema? schema)
+	{
+		var target = ResolveSchema(schema) ?? schema;
+		if (target is null)
+			return null;
+
+		if (UnionSchemas.TryGet(target, out var keyword, out var members))
+			return ListedUnion(keyword, members);
+		return target.AllOf is { Count: > 0 } allOf && AllOfUnion.TrySplit(allOf, this, out var split)
+			? ListedUnion(split.Keyword, split.Variants)
+			: null;
+	}
+
+	private (UnionKeyword Keyword, List<UnionOption> Options)? ListedUnion(UnionKeyword keyword, IEnumerable<IOpenApiSchema> members)
+	{
+		var options = GetUnionOptions(members);
+		return options.Any(UnionOptionHasProperties) ? (keyword, options) : null;
 	}
 
 	/// <summary>
@@ -590,6 +629,9 @@ public class SchemaAnalyzer(
 		var named = ClassifyNamedSchema(SchemaHelpers.FormatSchemaName(refId), resolvedTarget);
 		var isEnum = resolvedTarget.Enum is { Count: > 0 };
 		var (unionKeyword, unionOptions) = isEnum ? (null, null) : ReferencedUnion(refId, resolvedTarget);
+		// A named array of a union offers the union's variants for each item, as an inline array does (see ClassifyArray).
+		if (isArray && unionKeyword is null && ReferencedItemUnion(resolvedTarget.Items) is { } itemUnion)
+			(unionKeyword, unionOptions) = itemUnion;
 
 		return new TypeInfo
 		{
@@ -610,6 +652,15 @@ public class SchemaAnalyzer(
 			UnionKeyword = unionKeyword,
 			ArrayItemType = isArray ? PrimitiveItemType(resolvedTarget.Items) : null
 		};
+	}
+
+	/// <summary>The union the items of a referenced array are, if any. Items classify like an inline array's, so both read the same.</summary>
+	private (UnionKeyword Keyword, List<UnionOption> Options)? ReferencedItemUnion(IOpenApiSchema? items)
+	{
+		if (items is null)
+			return null;
+		var itemInfo = ClassifyType(items);
+		return itemInfo is { UnionKeyword: { } keyword, UnionOptions: { } options } ? (keyword, options) : null;
 	}
 
 	/// <summary>The item type of a referenced array, when the items are a plain primitive rather than a linked or named type.</summary>
@@ -660,6 +711,10 @@ public class SchemaAnalyzer(
 				SchemaRef = named.IsPrimitiveAlias ? null : refId,
 				IsEnum = true
 			};
+
+		// The same wrapper around a union $ref keeps the union and its options, so it reads as the $ref alone would.
+		if (allOf.Count == 1 && UnionSchemas.IsUnion(resolvedTarget) && ClassifyWrappedUnion(refSchemas[0], refId) is { } union)
+			return union;
 
 		return new TypeInfo
 		{
@@ -842,6 +897,22 @@ public class SchemaAnalyzer(
 		finally
 		{
 			_ = _expandingAllOfRefs.Remove(refId);
+		}
+	}
+
+	/// <summary>A union <c>$ref</c> behind an <c>allOf</c> wrapper; null when that union is already being classified.</summary>
+	private TypeInfo? ClassifyWrappedUnion(OpenApiSchemaReference reference, string refId)
+	{
+		if (!_expandingWrappedUnionRefs.Add(refId))
+			return null;
+
+		try
+		{
+			return ClassifyReference(reference, refId);
+		}
+		finally
+		{
+			_ = _expandingWrappedUnionRefs.Remove(refId);
 		}
 	}
 

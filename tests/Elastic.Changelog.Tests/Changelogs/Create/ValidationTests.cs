@@ -5,7 +5,9 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -50,8 +52,13 @@ public class ValidationTests() : CreateChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Cannot derive type from PR"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Cannot derive type from PR https://github.com/elastic/elasticsearch/pull/12345 labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml."
+			);
 	}
 
 	[Test]
@@ -73,8 +80,13 @@ public class ValidationTests() : CreateChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available products"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Product 'invalid-product' is not in the list of available products from config/products.yml. Available products: cloud-hosted, cloud-serverless, elasticsearch, kibana, security"
+			);
 	}
 
 	[Test]
@@ -96,8 +108,13 @@ public class ValidationTests() : CreateChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available types"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Type 'invalid-type' is not in the list of available types. Available types: invalid, feature, enhancement, security, bug-fix, breaking-change, deprecation, known-issue, docs, regression, other"
+			);
 	}
 
 	[Test]
@@ -140,11 +157,16 @@ public class ValidationTests() : CreateChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Message.Contains("invalid-product") && d.Message.Contains("not in available products"));
+			.MatchInlineSnapshot(
+				"""
+			error {repo}/Guid_1/changelog.yml rules.create.products: 'invalid-product' not in available products. Available: cloud-hosted, cloud-serverless, elasticsearch, kibana, security
+			error  Failed to load changelog configuration
+			"""
+			);
 	}
 
 	[Test]
@@ -182,7 +204,20 @@ public class ValidationTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- product: kibana");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: kibana
+			    lifecycle: ga
+			title: Test inference from repo name
+			"""
+			);
 	}
 
 	[Test]
@@ -205,8 +240,7 @@ public class ValidationTests() : CreateChangelogTestBase()
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("product"));
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("error  At least one product is required");
 	}
 
 	[Test]

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -71,7 +70,7 @@
     <NpmBuildInputFiles Include="package-lock.json" />
     <NpmBuildInputFiles Include="tsconfig.json" />
     <NpmBuildInputFiles Include="tailwind.config.js" />
-    <NpmBuildInputFiles Include="vite.config.ts" />
+    <NpmBuildInputFiles Include="vite.config.mts" />
   </ItemGroup>
   <!-- Tailwind scans these directories for utility class usage (see tailwind.config.js content paths).
        Resolved inside a target so external cshtml files don't appear in the IDE's project tree. -->
@@ -126,11 +125,11 @@
       <EmbeddedResource Include="_static/**/*.css.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
       <EmbeddedResource Include="_static/**/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/**/*.png" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.ico" Watch="false" />
       <EmbeddedResource Include="_static/**/*.ttf" Watch="false" />
       <EmbeddedResource Include="_static/**/*.woff" Watch="false" />
       <EmbeddedResource Include="_static/**/*.woff2" Watch="false" />
     </ItemGroup>
   </Target>
-
 
 </Project>

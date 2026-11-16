@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Markdown.IO;
@@ -41,7 +42,7 @@ public class LlmsNavigationEnhancer
 				foreach (var child in firstLevelChildren)
 				{
 					var title = GetBestTitle(child);
-					var url = LlmRenderingHelpers.MakeAbsoluteUrl(canonicalBaseUrl, child.Url);
+					var url = LlmRenderingHelpers.MakeAbsoluteUrl(canonicalBaseUrl, GetLinkTarget(child));
 					var description = GetDescription(child);
 
 					_ = !string.IsNullOrEmpty(description)
@@ -71,18 +72,6 @@ public class LlmsNavigationEnhancer
 		return content.ToString();
 	}
 
-	public string GenerateApiSection(IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
-	{
-		if (entries.Count == 0)
-			return string.Empty;
-
-		var content = new StringBuilder();
-		_ = content.AppendLine("## APIs");
-		_ = content.AppendLine();
-		AppendApiProductLinks(content, entries, canonicalBaseUrl);
-		return content.ToString();
-	}
-
 	private static void AppendApiProductLinks(StringBuilder content, IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
 	{
 		foreach (var entry in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
@@ -94,6 +83,10 @@ public class LlmsNavigationEnhancer
 
 		_ = content.AppendLine();
 	}
+
+	/// <summary>An API is listed by its Markdown export, as the API hub index does. Other pages are listed by their URL.</summary>
+	private static string GetLinkTarget(INavigationItem item) =>
+		item is IFloatingSectionRoot ? ApiOutputPaths.MarkdownUrl(item.Url) : item.Url;
 
 	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(
 		INodeNavigationItem<INavigationModel, INavigationItem> group
@@ -125,9 +118,8 @@ public class LlmsNavigationEnhancer
 		// we only know about MarkdownFiles for now
 		ILeafNavigationItem<IDocumentationFile> => null,
 		INodeNavigationItem<IDocumentationFile, INavigationItem> => null,
-		// API-related navigation items (these don't have markdown frontmatter)
-		// Check by namespace to avoid direct assembly references
-		{ } item when item.GetType().FullName?.StartsWith("Elastic.ApiExplorer.", StringComparison.Ordinal) == true => null,
+		// The root of a floating section, such as an API, has no Markdown frontmatter
+		IFloatingSectionRoot => null,
 		// Throw exception for any unhandled navigation item types
 		_ =>
 			throw new InvalidOperationException(

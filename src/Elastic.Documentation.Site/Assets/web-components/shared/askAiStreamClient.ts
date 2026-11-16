@@ -5,7 +5,6 @@
 import { config } from '../../config'
 import { logWarn } from '../../telemetry/logging'
 import { AskAiEvent, AskAiEventSchema } from '../AskAi/AskAiEvent'
-import { askAiConfig } from '../AskAi/askAi.config'
 import {
     ApiError,
     createApiErrorFromResponse,
@@ -16,10 +15,6 @@ import {
     EventSourceMessage,
     EventStreamContentType,
 } from '@microsoft/fetch-event-source'
-
-export type AiProvider = 'AgentBuilder' | 'LlmGateway'
-
-const defaultAiProvider: AiProvider = askAiConfig.defaultAiProvider
 
 /**
  * Compute SHA256 hash for CloudFront + Lambda Function URL with OAC
@@ -41,7 +36,6 @@ export interface StreamCallbacks {
 export interface StreamOptions {
     message: string
     conversationId?: string | null
-    aiProvider?: AiProvider
     signal?: AbortSignal
     callbacks: StreamCallbacks
 }
@@ -51,13 +45,7 @@ export interface StreamOptions {
  * Uses proper AWS headers and SSE handling.
  */
 export async function startAskAiStream(options: StreamOptions): Promise<void> {
-    const {
-        message,
-        conversationId,
-        aiProvider = defaultAiProvider,
-        signal,
-        callbacks,
-    } = options
+    const { message, conversationId, signal, callbacks } = options
 
     const payload = {
         message,
@@ -72,7 +60,6 @@ export async function startAskAiStream(options: StreamOptions): Promise<void> {
         headers: {
             'Content-Type': 'application/json',
             'x-amz-content-sha256': contentHash,
-            'X-AI-Provider': aiProvider,
         },
         body: bodyString,
         signal,

@@ -8,6 +8,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
@@ -20,6 +21,7 @@ using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.Renderers;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
@@ -60,6 +62,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	protected IDiagnosticsCollector Collector { get; }
 
 	public string? UrlPathPrefix { get; }
+
+	/// <summary>
+	/// False for merge fragments (API <c>op-*.md</c> / <c>tag-*.md</c>) whose title comes from elsewhere,
+	/// so a missing <c>#</c> heading is not reported.
+	/// </summary>
+	public bool WarnWhenTitleMissing { get; init; } = true;
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 
@@ -246,7 +254,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}
 
 		if (Title == RelativePath)
-			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
+		{
+			if (WarnWhenTitleMissing)
+				Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
+		}
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
@@ -350,19 +361,20 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}).ToArray();
 
 		// Collect headings from standard markdown (already have the list — no second traversal)
-		var headingTocs = headings
-			.Where(block => block is { Level: >= 2 })
-			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
-			.Where(h => h.Item1 is not null)
-			.Select(h =>
-			{
-				var header = h.Item1!.StripMarkdown();
-				return new
+		// Same slug as the id SectionedHeadingRenderer writes, so TOC links and anchor validation match the page.
+		var headingTocs = headings.Where(block => block is { Level: >= 2 } && block.GetData("header") is string).Select(
+			h =>
+				new
 				{
-					TocItem = new PageTocItem { Heading = header, Slug = (h.Item2 ?? h.Item1).Slugify(), Level = h.Level },
+					TocItem = new PageTocItem
+					{
+						Heading = RenderedHeadings.Title(h),
+						Slug = SectionedHeadingRenderer.Slug(h),
+						Level = h.Level
+					},
 					h.Line
-				};
-			});
+				}
+		);
 
 		// Collect headings from Stepper steps (filter from already-collected directives)
 		var stepperTocs = directives
@@ -384,7 +396,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 						Heading = processedTitle,
 						Slug = step.Anchor,
 						Level = step.HeadingLevel, // Use dynamic heading level
-
 						IsStepperStep = true
 					},
 					step.Line
@@ -542,7 +553,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		// We manually render title and optionally append an applies block embedded in yaml front matter.
 		if (stripFirstHeadingLevel1)
 		{
-			var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+			var h1 = RenderedHeadings.FirstLevel1(document);
 			if (h1 is not null)
 				_ = document.Remove(h1);
 		}

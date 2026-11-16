@@ -11,6 +11,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -33,10 +34,10 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folder = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folder = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 		folder.PathRelativeToDocumentationSet.Value.Should().Be("reference/1password");
 
-		var index = folder.Children.First().Value.Should().BeOfType<FolderIndexFileRef>().Subject;
+		var index = folder.Children[0].Value.Should().BeOfType<FolderIndexFileRef>().Subject;
 		index.PathRelativeToDocumentationSet.Value.Should().Be("reference/1password/index.md");
 	}
 
@@ -58,7 +59,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		// Bare index.md stays on the IndexFileRef path, never wrapped into a folder.
-		_ = docSet.TableOfContents.First().Value.Should().BeOfType<IndexFileRef>();
+		_ = docSet.TableOfContents[0].Value.Should().BeOfType<IndexFileRef>();
 		docSet.TableOfContents.OfCase<FolderRef>().Should().BeEmpty();
 	}
 
@@ -81,7 +82,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		// Entries that declare explicit children keep the existing virtual-file (deep-linking) semantics.
-		var fileRef = docSet.TableOfContents.First().Value.Should().BeOfType<FileRef>().Subject;
+		var fileRef = docSet.TableOfContents[0].Value.Should().BeOfType<FileRef>().Subject;
 		fileRef.Should().NotBeOfType<FolderRef>();
 		fileRef.PathRelativeToDocumentationSet.Value.Should().Be("reference/aws/index.md");
 		fileRef.Children.Should().ContainSingle();
@@ -109,10 +110,18 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var folder = navigation.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
-		folder.Url.Should().Be("/reference/1password");
-		// No other navigation items, so the frontend renders this as a plain link rather than an expandable folder.
-		folder.NavigationItems.Should().BeEmpty();
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /  "index"
+			  index: FileNavigationLeaf  /  "index"
+			  FolderNavigation  /reference/1password  "index"
+			    index: FileNavigationLeaf  /reference/1password  "index"
+			"""
+			);
+
 		context.Collector.Errors.Should().Be(0);
 	}
 
@@ -142,16 +151,24 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var reference = navigation.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
-		reference.Url.Should().Be("/reference");
-
-		// All three entries survive as their own subfolders; none is consumed as the parent's index.
-		var childFolders = reference.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().ToList();
-		childFolders
-			.Select(f => f.Url)
+		NavigationDump
+			.ToText(navigation)
 			.Should()
-			.BeEquivalentTo(["/reference/1password", "/reference/abnormal_security", "/reference/activemq"]);
-		childFolders.Should().AllSatisfy(f => f.NavigationItems.Should().BeEmpty());
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /reference  "index"
+			  index: FileNavigationLeaf  /reference  "index"
+			  FolderNavigation  /reference  "index"
+			    index: FileNavigationLeaf  /reference  "index"
+			    FolderNavigation  /reference/1password  "index"
+			      index: FileNavigationLeaf  /reference/1password  "index"
+			    FolderNavigation  /reference/abnormal_security  "index"
+			      index: FileNavigationLeaf  /reference/abnormal_security  "index"
+			    FolderNavigation  /reference/activemq  "index"
+			      index: FileNavigationLeaf  /reference/activemq  "index"
+			"""
+			);
+
 		context.Collector.Errors.Should().Be(0);
 	}
 
@@ -179,13 +196,22 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var intro = navigation.NavigationItems.OfType<VirtualFileNavigation<IDocumentationFile>>().Single();
-		intro.Url.Should().Be("/reference/apache-intro");
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /reference/apache-intro  "apache-intro"
+			  index: FileNavigationLeaf  /reference/apache-intro  "apache-intro"
+			  VirtualFileNavigation  /reference/apache-intro  "apache-intro"
+			    index: FileNavigationLeaf  /reference/apache-intro  "apache-intro"
+			    FolderNavigation  /reference/apache  "index"
+			      index: FileNavigationLeaf  /reference/apache  "index"
+			    FolderNavigation  /reference/apache_spark  "index"
+			      index: FileNavigationLeaf  /reference/apache_spark  "index"
+			"""
+			);
 
-		var childFolders = intro.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().ToList();
-		// Deep-linked index paths resolve relative to the virtual file's parent directory, exactly like
-		// a plain sibling file would (see ProbePlainFileChildUnderVirtualFileWithFullPath for the baseline).
-		childFolders.Select(f => f.Url).Should().BeEquivalentTo(["/reference/apache", "/reference/apache_spark"]);
 		context.Collector.Errors.Should().Be(0);
 	}
 
@@ -216,9 +242,20 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var reference = navigation.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
-		var nested = reference.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
-		nested.Url.Should().Be("/reference/integrations/aws");
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /reference  "index"
+			  index: FileNavigationLeaf  /reference  "index"
+			  FolderNavigation  /reference  "index"
+			    index: FileNavigationLeaf  /reference  "index"
+			    FolderNavigation  /reference/integrations/aws  "index"
+			      index: FileNavigationLeaf  /reference/integrations/aws  "index"
+			"""
+			);
+
 		context.Collector.Errors.Should().Be(0);
 	}
 
@@ -247,8 +284,17 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var intro = navigation.NavigationItems.OfType<VirtualFileNavigation<IDocumentationFile>>().Single();
-		var child = intro.NavigationItems.Single();
-		child.Url.Should().Be("/reference/reference/apache-other");
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /reference/apache-intro  "apache-intro"
+			  index: FileNavigationLeaf  /reference/apache-intro  "apache-intro"
+			  VirtualFileNavigation  /reference/apache-intro  "apache-intro"
+			    index: FileNavigationLeaf  /reference/apache-intro  "apache-intro"
+			    FileNavigationLeaf  /reference/reference/apache-other  "apache-other"
+			"""
+			);
 	}
 }

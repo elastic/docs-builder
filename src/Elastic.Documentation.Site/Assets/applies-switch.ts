@@ -4,7 +4,6 @@ import { $$optional } from 'select-dom'
 // Extra JS capability for selected applies switches to be synced
 // The selection is stored in local storage so that it persists across page loads.
 
-const as_id_to_elements: { [key: string]: HTMLElement[] } = {}
 const storageKeyPrefix = 'applies-switch-id-'
 
 function create_key(el: HTMLElement) {
@@ -27,16 +26,10 @@ function ready() {
         if (label instanceof HTMLElement) {
             const data = create_key(label)
             if (data) {
-                const [group, id, key] = data
+                const [group, id] = data
 
                 // add click event listener
                 label.addEventListener('click', onAppliesSwitchLabelClick)
-
-                // store map of key to elements
-                if (!as_id_to_elements[key]) {
-                    as_id_to_elements[key] = []
-                }
-                as_id_to_elements[key].push(label)
 
                 if (groups.indexOf(group) === -1) {
                     groups.push(group)
@@ -75,7 +68,11 @@ function onAppliesSwitchLabelClick(this: HTMLLabelElement) {
     const data = create_key(this)
     if (!data) return
     const [group, id, key] = data
-    for (const label of as_id_to_elements[key]) {
+    const labels = document.querySelectorAll<HTMLElement>(
+        '.applies-switch-label[data-sync-group][data-sync-id]'
+    )
+    for (const label of labels) {
+        if (create_key(label)?.[2] !== key) continue
         if (label === this) {
             continue
         }

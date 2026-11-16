@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation.Tests.Isolation;
@@ -67,10 +68,120 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 		html.IndexOf("ds.css", StringComparison.Ordinal).Should().BeLessThan(EntryIndex(html, "ds"));
 	}
 
+	[Test]
+	public async Task StateMeta_NoFlags_ListsNone()
+	{
+		var html = await RenderHead(new FeatureFlags([]), BuildType.Isolated);
+
+		StateMeta(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				<meta name="docs:features">
+				<meta name="docs:build-type" content="isolated">
+				"""
+			);
+	}
+
+	[Test]
+	public async Task StateMeta_Flags_AreListedSortedAndOnlyWhenEnabled()
+	{
+		var flags = new Dictionary<string, bool>
+		{
+			["page-feedback"] = true,
+			["assembler-api-explorer"] = true,
+			["navigation-preview"] = true,
+			["guide-nav"] = false
+		};
+
+		var html = await RenderHead(new FeatureFlags(flags), BuildType.Assembler);
+
+		StateMeta(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<meta name="docs:features" content="assembler-api-explorer navigation-preview page-feedback">
+			<meta name="docs:build-type" content="assembler">
+			"""
+			);
+	}
+
+	[Test]
+	[Arguments(BuildType.Isolated, "isolated")]
+	[Arguments(BuildType.Assembler, "assembler")]
+	[Arguments(BuildType.Codex, "codex")]
+	public async Task StateMeta_BuildType_MatchesTheBuild(BuildType buildType, string expected)
+	{
+		var html = await RenderHead(new FeatureFlags([]), buildType);
+
+		html.Should().Contain($"""<meta name="docs:build-type" content="{expected}">""");
+	}
+
+	[Test]
+	public async Task StateMeta_AirGappedAssembler_IsStillAnAssemblerBuild()
+	{
+		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }), BuildType.Assembler);
+
+		StateMeta(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<meta name="docs:features" content="air-gapped">
+			<meta name="docs:build-type" content="assembler">
+			"""
+			);
+	}
+
+	private const string WafIntegrationUrl = "https://waf.example/jsapi.js";
+
+	[Test]
+	public async Task WafSdk_AssemblerWithUrl_LoadsTheScriptAsync()
+	{
+		var html = await RenderHead(new FeatureFlags([]).WithWafIntegrationUrl(WafIntegrationUrl), BuildType.Assembler);
+
+		html.Should().Contain($"""<script src="{WafIntegrationUrl}" async></script>""");
+	}
+
+	[Test]
+	[Arguments(BuildType.Isolated)]
+	[Arguments(BuildType.Codex)]
+	public async Task WafSdk_OtherBuildTypes_LoadNoScript(BuildType buildType)
+	{
+		var html = await RenderHead(new FeatureFlags([]).WithWafIntegrationUrl(WafIntegrationUrl), buildType);
+
+		html.Should().NotContain(WafIntegrationUrl);
+	}
+
+	[Test]
+	public async Task WafSdk_AirGappedAssembler_LoadsNoScript()
+	{
+		var features = new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }).WithWafIntegrationUrl(WafIntegrationUrl);
+
+		var html = await RenderHead(features, BuildType.Assembler);
+
+		html.Should().NotContain(WafIntegrationUrl);
+	}
+
+	[Test]
+	public async Task WafSdk_AssemblerWithoutUrl_LoadsNoScript()
+	{
+		var html = await RenderHead(new FeatureFlags([]), BuildType.Assembler);
+
+		html.Should().NotContain("awswaf").And.NotContain("waf.example");
+	}
+
+	private static string StateMeta(string html) =>
+		string.Join(
+			'\n',
+			Regex.Matches(html, @"<meta name=""docs:(features|build-type)""[^>]*>", RegexOptions.None, RegexTimeouts.MatchTimeout).Select(
+				m => m.Value
+			)
+		);
+
 	// Vite writes an entry bundle as <name>-[hash].js and the head references it by that name, so match the name with or without a hash.
 	private static int EntryIndex(string html, string name)
 	{
-		var match = Regex.Match(html, $@"/{name}(-[\w-]+)?\.js");
+		var match = Regex.Match(html, $@"/{name}(-[\w-]+)?\.js", RegexOptions.None, RegexTimeouts.MatchTimeout);
 		return match.Success ? match.Index : -1;
 	}
 

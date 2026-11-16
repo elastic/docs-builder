@@ -21,14 +21,14 @@ public class SyncPlannerProperties
 	private sealed record Node(string Path, bool Local, string? RemoteETag, string LocalETag, bool Symlink);
 
 	private static Gen<string> Path { get; } = Gen.Select(
-		Gen.OneOfConst("a", "b", "docs", "x/y", "_preview/pr-1", "tmp"),
+		Gen.OneOf("a", "b", "docs", "x/y", "_preview/pr-1", "tmp"),
 		Gen.Int[0, 12],
-		Gen.OneOfConst("html", "tmp", "css"),
+		Gen.OneOf("html", "tmp", "css"),
 		(d, i, ext) => $"{d}/{i}.{ext}"
 	);
 
 	private static Gen<string[]> Excludes { get; } = Gen
-		.OneOfConst("*.tmp", "_preview/*", "tmp/*", "docs/1*")
+		.OneOf("*.tmp", "_preview/*", "tmp/*", "docs/1*")
 		.Array[0, 2]
 		.Select(a => a.Distinct().ToArray());
 
@@ -196,7 +196,7 @@ public class SyncPlannerProperties
 	public void DeleteThreshold_FollowsTheRatioRule() =>
 		Gen.Select(
 			Gen.Bool,
-			Gen.OneOfConst<float?>(null, 0f, 0.1f, 0.2f, 0.9f, 1f),
+			Gen.OneOf<float?>(null, 0f, 0.1f, 0.2f, 0.9f, 1f),
 			Gen.Int[0, 3000],
 			Gen.Int[0, 5000],
 			Gen.Int[0, 3000]

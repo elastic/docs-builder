@@ -676,6 +676,7 @@
       ],
       "Implies": null
     },
+    "RequiredPivots": "None",
     "Rules": {
       "$type": "RulesConfiguration",
       "Bundle": {

@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Cysharp.IO;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site;
 using Elastic.Markdown.Helpers;
@@ -199,7 +200,6 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseFootnotes() // Must match Pipeline to avoid inconsistent footnote handling
-
 				.UseInlineAnchors()
 				.UseHeadingsWithSlugs()
 				.UseDirectives();
@@ -225,7 +225,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				return field;
 			var builder = new MarkdownPipelineBuilder()
 				.UseFootnotes()
-				.UseAutoLinks()
+				.UseAutoLinks(checkApiLinks: false)
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
 				.UsePipeTables()
@@ -253,7 +253,6 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseInlineAnchors()
 				.UsePreciseSourceLocation()
 				.UseFootnotes() // Must be before UseDiagnosticLinks to ensure FootnoteLinkParser is inserted correctly
-
 				.UseDiagnosticLinks()
 				.UseAutoLinks()
 				.UseHeadingsWithSlugs()
@@ -325,7 +324,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		}
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex(@"\[([^\]]+)\]\(([^\)]+)\)", System.Text.RegularExpressions.RegexOptions.Multiline)]
+	[System.Text.RegularExpressions.GeneratedRegex(@"\[([^\]]+)\]\(([^\)]+)\)", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex LinkPattern();
 
 	/// <summary>

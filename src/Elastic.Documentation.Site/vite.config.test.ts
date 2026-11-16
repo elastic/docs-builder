@@ -1,22 +1,21 @@
 /**
- * @jest-environment node
+ * @vitest-environment node
  */
 import type { UserConfig } from 'vite'
 
-jest.mock('vite', () => ({ defineConfig: (config: unknown) => config }))
-jest.mock('@tailwindcss/vite', () => () => ({ name: 'tailwindcss' }))
-jest.mock('@vitejs/plugin-react', () => () => ({ name: 'react' }))
-jest.mock('vite-plugin-svgr', () => () => ({ name: 'svgr' }))
+vi.mock('vite', () => ({ defineConfig: (config: unknown) => config }))
+vi.mock('@tailwindcss/vite', () => ({
+    default: () => ({ name: 'tailwindcss' }),
+}))
+vi.mock('@vitejs/plugin-react', () => ({ default: () => ({ name: 'react' }) }))
+vi.mock('vite-plugin-svgr', () => ({ default: () => ({ name: 'svgr' }) }))
 
 const loadConfig = async (argv: string[]): Promise<UserConfig> => {
     const originalArgv = process.argv
     process.argv = ['node', 'vite', ...argv]
     try {
-        let config: UserConfig = {}
-        await jest.isolateModulesAsync(async () => {
-            config = (await import('./vite.config')).default as UserConfig
-        })
-        return config
+        vi.resetModules()
+        return (await import('./vite.config')).default as UserConfig
     } finally {
         process.argv = originalArgv
     }

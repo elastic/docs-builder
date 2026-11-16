@@ -11,7 +11,6 @@ phantoms:
   - toc: docs-content://release-notes/elasticsearch-clients
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
-  - toc: docs-content://products
   - toc: cloud://release-notes
   # Temporary: autoops-insights cloud docs (elastic/autoops-insights#186, #189) until their child mount is added.
   - toc: autoops-insights://cloud
@@ -24,10 +23,12 @@ toc:
   # NARRATIVE #
   #############
   - toc: get-started
+  # Product hub pages. elastic-stack.md is the parent, with the Elasticsearch, Kibana, and Logstash hubs as children.
+  - toc: products
+  - toc: deploy-manage
   - toc: solutions
   - toc: manage-data
   - toc: explore-analyze
-  - toc: deploy-manage
   - toc: cloud-account
     navigation_title: Manage your Cloud account
   - toc: troubleshoot
@@ -132,6 +133,10 @@ toc:
           # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-ios://release-notes
             path_prefix: release-notes/edot/sdks/ios
+          # EDOT React Native
+          # https://github.com/elastic/elastic-otel-react-native/blob/main/docs/release-notes/toc.yml
+          - toc: elastic-otel-react-native://release-notes
+            path_prefix: release-notes/edot/sdks/react-native
           # EDOT Java
           # https://github.com/elastic/elastic-otel-java/blob/main/docs/release-notes/toc.yml
           - toc: elastic-otel-java://release-notes
@@ -490,6 +495,8 @@ toc:
                 path_prefix: reference/opentelemetry/edot-sdks/dotnet
               - toc: apm-agent-ios://reference/edot-ios
                 path_prefix: reference/opentelemetry/edot-sdks/ios
+              - toc: elastic-otel-react-native://reference/edot-react-native
+                path_prefix: reference/opentelemetry/edot-sdks/react-native
               - toc: elastic-otel-java://reference/edot-java
                 path_prefix: reference/opentelemetry/edot-sdks/java
               - toc: elastic-otel-node://reference/edot-node
@@ -504,9 +511,14 @@ toc:
                 path_prefix: reference/opentelemetry/edot-sdks/browser
 
           # Managed inputs
-          # https://github.com/elastic/opentelemetry/blob/main/docs/reference/managed-inputs/toc.yml
-          - toc: opentelemetry://reference/managed-inputs
-            path_prefix: reference/opentelemetry/managed-inputs
+          # https://github.com/elastic/docs-content/blob/main/reference/managed-inputs/toc.yml
+          - toc: docs-content://reference/managed-inputs
+            path_prefix: reference/managed-inputs
+
+          # Elastic Managed integrations
+          # https://github.com/elastic/docs-content/blob/main/reference/managed-integrations/toc.yml
+          - toc: docs-content://reference/managed-integrations
+            path_prefix: reference/managed-integrations
 
           # Elastic Integrations
           # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
@@ -635,6 +647,12 @@ toc:
             path_prefix: reference/autoops-insights/elasticsearch
             navigation_title: Elasticsearch
 
+          # AutoOps insights rule ids (machine-readable catalog linked from the insights API spec)
+          # https://github.com/elastic/autoops-insights/blob/main/generated/docs/rules/toc.yml
+          - toc: autoops-insights://rules
+            path_prefix: reference/autoops-insights/rules
+            navigation_title: Rule ids
+
       # Search UI
       # https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
       - toc: search-ui://reference
@@ -666,3 +684,11 @@ toc:
   # CONTRIBUTE 2 DOCS #
   #############
   - toc: contribute-docs
+
+  ########
+  # APIs #
+  ########
+  # Every API that a content repository declares, when the build renders the API Explorer (the
+  # assembler-api-explorer feature flag). Without those APIs this entry adds nothing.
+  - section: APIs
+    floating: api

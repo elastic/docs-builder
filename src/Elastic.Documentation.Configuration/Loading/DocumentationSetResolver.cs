@@ -173,6 +173,7 @@ internal static class DocumentationSetResolver
 			ReleaseNotesProducts = releaseNotesProducts,
 			Extensions = new EnabledExtensions(docset.Extensions),
 			Redirects = docset.Redirects,
+			RedirectsFile = docset.RedirectsFile,
 			Products = products,
 			Substitutions = substitutions,
 			FeatureToggles = features,

@@ -91,5 +91,15 @@ public class ApiHubSwitcherTests
 		items.SelectMany(g => g.Products).Should().ContainSingle().Which.IconSvg.Should().Contain("<svg");
 	}
 
+	[Test]
+	public void Build_EntryWithLatestVersion_LinksToItAndOthersKeepTheirRoot()
+	{
+		var versioned = Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" };
+
+		var items = ApiHubSwitcher.Build([versioned, Entry("logstash", "Logstash")], currentApiKey: "kibana");
+
+		items.SelectMany(g => g.Products).Select(i => i.Url).Should().Equal("/api/doc/kibana/v9", "/api/doc/logstash/");
+	}
+
 	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");
 }

@@ -79,12 +79,10 @@ public partial record OperationPageModel
 			{
 				StatusCode = statusCode,
 				Response = response,
-				StatusClass = statusCode.StartsWith('2')
-					? "success"
-					: statusCode.StartsWith('4') || statusCode.StartsWith('5') ? "error" : "info",
+				StatusClass = StatusClassFor(statusCode),
 				Contents = BuildMediaContents(
 					response.Content,
-					new PropertyTreeScope { Prefix = $"res-{statusCode}", IsResponse = true },
+					new PropertyTreeScope { Prefix = $"res-{statusCode}", JsonPath = "", IsResponse = true },
 					analyzer,
 					builder
 				),
@@ -107,10 +105,14 @@ public partial record OperationPageModel
 		return responses;
 	}
 
-	/// <summary>
-	/// Every content entry, entries with a schema first so the first is the one the page leads with. Entries after the first
-	/// get their own scope prefix so their field ids stay unique on the page.
-	/// </summary>
+	/// <summary>The status chip's CSS modifier: success for 2xx, error for 4xx and 5xx, info for everything else.</summary>
+	internal static string StatusClassFor(string statusCode) => statusCode switch
+	{
+		['2', ..] => "success",
+		['4' or '5', ..] => "error",
+		_ => "info"
+	};
+
 	/// <summary>Content entries in spec order, those with a schema first, so the first is the one a page leads with.</summary>
 	internal static IEnumerable<KeyValuePair<string, IOpenApiMediaType>> SchemaFirst(IDictionary<string, IOpenApiMediaType> content) =>
 		content.OrderBy(static e => e.Value?.Schema is null);

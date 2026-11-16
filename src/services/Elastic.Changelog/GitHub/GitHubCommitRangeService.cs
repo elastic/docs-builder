@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Caching;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -35,10 +36,10 @@ public sealed partial class GitHubCommitRangeService(
 	private readonly GitHubApiTransport _transport = transport
 		?? new GitHubApiTransport(logger: logFactory.CreateLogger<GitHubCommitRangeService>());
 
-	[GeneratedRegex("^[0-9a-fA-F]{7,40}$")]
+	[GeneratedRegex("^[0-9a-fA-F]{7,40}$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CommitShaRegex();
 
-	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
+	[GeneratedRegex("^[A-Za-z0-9_.-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SafeGraphQlIdentifierRegex();
 
 	/// <inheritdoc />
@@ -197,7 +198,7 @@ public sealed partial class GitHubCommitRangeService(
 		var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/compare/{basehead}?per_page={ComparePageSize}&page={page}";
 		_logger.LogDebug("Fetching compare page {Page}: {Url}", page, url);
 
-		using var response = await _transport.GetAsync(url, ctx).ConfigureAwait(false);
+		using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
 		if (response.StatusCode == HttpStatusCode.NotFound)
 		{
 			collector.EmitError(

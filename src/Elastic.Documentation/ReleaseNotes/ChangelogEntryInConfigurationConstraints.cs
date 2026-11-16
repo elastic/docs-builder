@@ -21,16 +21,16 @@ public static partial class ChangelogEntryInConfigurationConstraints
 			: $"product '{p.ProductId}' is not in the list of available products from config/products.yml. Available products: {m.Configuration.AvailableProducts}"
 	).Describe("R41: Every product of a changelog entry is in products.yml (stage dependent: not checked at bundle or render).");
 
-	public static Constraint<ChangelogEntryInConfiguration> EntryProductsAvailable { get; } = Constraints<ChangelogEntryInConfiguration>
-		.Each(
-			Products,
-			(m, p) => m.Configuration.Configuration.ProductsConfiguration?.Available is { Count: > 0 } available &&
-				!string.IsNullOrWhiteSpace(p.ProductId) && !available.Contains(Normalize(p.ProductId), StringComparer.OrdinalIgnoreCase)
-				? $"product '{p.ProductId}' is not in products.available of changelog.yml ({string.Join(", ", available)}); 'products.available' restricts the products an entry may use."
-				: null
-		)
-		.WithSeverity(Severity.Warning)
-		.Describe("R6: Every product of a changelog entry is in the configuration's products.available, when that list is set.");
+	public static Constraint<ChangelogEntryInConfiguration> EntryProductsAvailable
+	{
+		get;
+	} = Constraints<ChangelogEntryInConfiguration>.Each(
+		Products,
+		(m, p) => m.Configuration.Configuration.ProductsConfiguration?.Available is { Count: > 0 } available &&
+			!string.IsNullOrWhiteSpace(p.ProductId) && !available.Contains(Normalize(p.ProductId), StringComparer.OrdinalIgnoreCase)
+			? $"product '{p.ProductId}' is not in products.available in changelog.yml. Allowed products: {string.Join(", ", available.Select(a => a.Replace('_', '-')).Order())}"
+			: null
+	).Describe("R6: Every product of a changelog entry is in the configuration's products.available, when that list is set.");
 
 	public static Constraint<ChangelogEntryInConfiguration> EntryTypeAllowed
 	{

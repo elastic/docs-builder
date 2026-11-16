@@ -54,7 +54,8 @@ public class DtoProjectionCoverageTests
 				nameof(PublishEnvironmentDto.GoogleTagManager),
 				nameof(PublishEnvironmentDto.Optimizely),
 				nameof(PublishEnvironmentDto.FeatureFlags),
-				nameof(PublishEnvironmentDto.WebsiteSearchScriptUrl)
+				nameof(PublishEnvironmentDto.WebsiteSearchScriptUrl),
+				nameof(PublishEnvironmentDto.WafIntegrationUrl)
 			)
 			.ShouldBeComplete();
 

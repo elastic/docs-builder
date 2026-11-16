@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -41,6 +40,19 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           		"solutions/observability/apps/apm-server-binary.md": {
 		           		  "anchors": [ "apm-deb" ]
 		           		}
+		           	  },
+		           	  "floating": {
+		           		"api/kibana": {
+		           		  "versions": [
+		           			{ "name": "8", "root": "api/doc/kibana/v8", "hidden": true },
+		           			{ "name": "main", "root": "api/doc/kibana", "current": true }
+		           		  ],
+		           		  "pages": {
+		           			"": 3,
+		           			"operation/operation-exists": 3,
+		           			"operation/operation-only-in-8": 1
+		           		  }
+		           		}
 		           	  }
 		           	}
 		           """;
@@ -71,8 +83,10 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		};
 	}
 
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+	public LinkResolution Resolve(Uri crossLinkUri) => CrossLinkResolver.Resolve(_crossLinks, UriResolver, crossLinkUri);
 
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
+
+	/// <summary>The fake link index has one API section, <c>kibana</c>, so every other API is unknown.</summary>
+	public ApiPageStatus CheckApiPage(string sitePath) => new CrossLinkResolver(_crossLinks).CheckApiPage(sitePath);
 }

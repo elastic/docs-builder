@@ -4,7 +4,11 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.Documentation.Site;
+using Nullean.Snapshots.Html;
 using RazorSlices;
+using DesignSystemPageActions = Elastic.Documentation.Site.Components.Navigation.PageActions;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -13,25 +17,64 @@ public class PageActionsRenderingTests
 	[Test]
 	public async Task Render_SplitButton_CopiesPageAndOpensMarkdown()
 	{
-		var html = await _PageActions.Create("/api/doc/elasticsearch/operation/operation-search.md").RenderAsync(
+		var html = await _PageActions.Create(
+			new ApiPageActionsModel("/api/doc/elasticsearch/operation/operation-search.md", null)
+		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Render_WithSpec_ListsJsonAndYamlDownloads()
+	{
+		var spec = new ApiSpecDownload("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml");
+		var html = await _PageActions.Create(new ApiPageActionsModel("/api/doc/elasticsearch.md", spec)).RenderAsync(
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
-		html.Should().Contain("class=\"api-page-actions\"");
-		html.Should().Contain("class=\"api-page-actions-split\"");
-		html.Should().Contain("class=\"api-page-actions-button\"");
-		html.Should().Contain("class=\"api-page-actions-chevron\"");
-		html.Should().Contain("class=\"api-page-actions-icon\"");
-		html.Should().Contain("class=\"api-page-actions-label\"");
-		html.Should().Contain("Copy page");
-		html.Should().Contain("View as Markdown");
-		html.Should().Contain("data-copy-page=\"/api/doc/elasticsearch/operation/operation-search.md\"");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/operation/operation-search.md\"");
-		html.Should().Contain("target=\"_blank\"");
-		html.Should().Contain("hx-boost=\"false\"");
-		html.Should().Contain("nav-select-dropdown");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
-		html.Should().NotContain("view-as-markdown");
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Render_WithoutSpec_HasNoDownloads()
+	{
+		var html = await _PageActions.Create(new ApiPageActionsModel("/api/doc/elasticsearch.md", null)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Render_WithoutMarkdown_OffersTheDownloadsAlone()
+	{
+		var spec = new ApiSpecDownload("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml");
+		var html = await _PageActions.Create(new ApiPageActionsModel(null, spec)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task DesignSystemRail_ListsTheDownloadsAsDownloadLinks()
+	{
+		var model = new DesignSystemPageActions.PageActionsModel
+		{
+			MarkdownUrl = "/api/doc/elasticsearch.md",
+			Downloads = [new("Download OpenAPI spec (JSON)", "/api/doc/elasticsearch.json")]
+		};
+
+		var html = await Elastic
+			.Documentation
+			.Site
+			.Components
+			.Navigation
+			.PageActions
+			._PageActions
+			.Create(model)
+			.RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchHtmlSnapshot();
 	}
 }

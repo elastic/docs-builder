@@ -1,0 +1,3 @@
+data: {"type":"conversation_start","conversationId":"Guid_1","id":"Guid_2","timestamp":{now}}
+
+data: {"type":"message_chunk","content":"test","id":"Guid_3","timestamp":{now}}

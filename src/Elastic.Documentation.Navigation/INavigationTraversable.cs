@@ -5,6 +5,9 @@
 using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 
+using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Floating;
+
 namespace Elastic.Documentation.Navigation;
 
 public static class NavigationExtensions
@@ -80,7 +83,7 @@ public interface INavigationTraversable
 		do
 		{
 			var previous = NavigationIndexedByOrder.GetValueOrDefault(index - 1);
-			if (previous is not null && !previous.Hidden && previous.Url != currentNavigation.Url)
+			if (previous is not null && !previous.Hidden && previous.Url != currentNavigation.Url && InReadingOrder(previous))
 				return previous;
 			index--;
 		}
@@ -101,7 +104,7 @@ public interface INavigationTraversable
 		do
 		{
 			var next = NavigationIndexedByOrder.GetValueOrDefault(index + 1);
-			if (next is not null && !next.Hidden && next.Url != currentNavigation.Url)
+			if (next is not null && !next.Hidden && next.Url != currentNavigation.Url && InReadingOrder(next))
 				return next;
 			index++;
 		}
@@ -109,6 +112,13 @@ public interface INavigationTraversable
 
 		return null;
 	}
+
+	/// <summary>
+	/// The floating sections, such as the APIs, and the hub that lists them are not pages of the docs, so paging through the
+	/// docs does not walk into them.
+	/// </summary>
+	private static bool InReadingOrder(INavigationItem item) =>
+		item is not (IFloatingSectionRoot or SectionNavigation { IsFloatingHub: true });
 
 	INavigationItem GetNavigationFor(IDocumentationFile file) =>
 		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation)

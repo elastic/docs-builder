@@ -121,5 +121,8 @@ internal class ListingFrontMatterConverter : YamlConverter<ListingFrontMatter>
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewConfig))]
 // Product is a domain record read by ProductConverter (which needs the product catalog, so it is registered with a real instance at runtime above);
 // the generator is told it is handled so it does not generate metadata for the domain types a Product holds.
-[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, Converters = [typeof(ProductConverter)])]
+// Pinned to the runtime default so the generator skips the Populate readers. See YamlStaticContext.
+[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace, Converters = [
+	typeof(ProductConverter)
+])]
 public partial class DocsBuilderYamlStaticContext : YamlSerializerContext;

@@ -40,7 +40,7 @@ public class ApplicableToConstraintsTests
 		DomainGen.Of<ApplicableTo>(o => o
 			.Use(
 				Gen.Select(
-					Gen.OneOfConst(Current),
+					Gen.OneOf(Current),
 					DomainGen.SemVersions,
 					(lifecycle, version) => Collection(new Applicability
 					{

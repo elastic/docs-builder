@@ -240,4 +240,39 @@ public class GithubDecisionMetadataTests
 		deserialized.CommitOutcome.Should().BeNull();
 		deserialized.CommittedFile.Should().BeNull();
 	}
+
+	[Test]
+	public void SerializationRoundTrip_WithOutcome_PreservesValues()
+	{
+		var metadata = new GithubDecisionMetadata
+		{
+			PrNumber = 1,
+			HeadRef = "r",
+			HeadSha = "s",
+			Status = "ok",
+			IsFork = false,
+			CanCommit = true,
+			MaintainerCanModify = false,
+			CommentOnSuccess = true,
+			Outcome = new ReleaseNoteOutcome { Included = false, Reason = "it has the label skip" }
+		};
+
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+		var deserialized = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+
+		deserialized!.CommentOnSuccess.Should().BeTrue();
+		deserialized.Outcome.Should().BeEquivalentTo(metadata.Outcome);
+	}
+
+	[Test]
+	public void Deserialize_ArtifactWithoutOutcomeFields_DefaultsToOptedOut()
+	{
+		const string json =
+			"""{"pr_number":1,"head_ref":"r","head_sha":"s","status":"ok","is_fork":false,"can_commit":true,"maintainer_can_modify":false}""";
+
+		var deserialized = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+
+		deserialized!.CommentOnSuccess.Should().BeFalse();
+		deserialized.Outcome.Should().BeNull();
+	}
 }

@@ -2,7 +2,7 @@ import { initApiDocs } from './api-docs'
 import type { Instance } from 'tippy.js'
 
 describe('property anchor copy', () => {
-    const writeText = jest.fn().mockResolvedValue(undefined)
+    const writeText = vi.fn().mockResolvedValue(undefined)
 
     beforeAll(() => {
         Object.defineProperty(navigator, 'clipboard', {
@@ -10,7 +10,7 @@ describe('property anchor copy', () => {
             configurable: true,
         })
         // The link still scrolls to the property, which jsdom cannot do
-        Element.prototype.scrollIntoView = jest.fn()
+        Element.prototype.scrollIntoView = vi.fn()
     })
 
     beforeEach(() => {

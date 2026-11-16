@@ -84,7 +84,6 @@ public static partial class GitCheckoutInformationFactory
 				gitRef = fileSystem.File.ReadAllText(refFilePath).Trim();
 			else if (TryResolvePackedRef(fileSystem, gitDir, refPath, out var packedSha))
 				gitRef = packedSha; // loose ref file absent — ref lives in packed-refs instead
-
 			else
 				gitRef = headText; // symbolic ref not yet written (new empty repo) — use the ref name itself
 		}
@@ -205,6 +204,6 @@ public static partial class GitCheckoutInformationFactory
 		return config.GetSetting(remoteSection, "url")?.Trim() ?? string.Empty;
 	}
 
-	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CutOffGitExtension();
 }

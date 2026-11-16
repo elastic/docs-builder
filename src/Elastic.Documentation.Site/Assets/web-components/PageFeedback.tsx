@@ -1,4 +1,5 @@
 import { config } from '../config'
+import { waitForWafSdk } from '../waf'
 import r2wc from '@r2wc/react-to-web-component'
 import * as React from 'react'
 import { FormEvent, useEffect, useId, useRef, useState } from 'react'
@@ -225,7 +226,8 @@ const submitFeedback = async (
     feedbackId: string,
     payload: PageFeedbackPayload
 ) => {
-    const response = await fetch(
+    const waf = await waitForWafSdk()
+    const response = await (waf?.fetch ?? fetch)(
         `${config.apiBasePath}/v1/page-feedback/${feedbackId}`,
         {
             method: 'PUT',

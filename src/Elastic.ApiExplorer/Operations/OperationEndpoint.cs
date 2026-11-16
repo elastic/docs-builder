@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -32,9 +33,17 @@ public sealed partial record OperationEndpoint(
 	IReadOnlyList<EndpointRow> Rows,
 	IReadOnlySet<string> OptionalPathParameters,
 	string ShortestRoute,
-	string? Description
+	string? Description,
+	string? SpaceParameter = null
 )
 {
+	/// <summary>What the Kibana specs say after the Spaces route listing; the page moves it into the description of the <c>space_id</c> path parameter.</summary>
+	public const string SpacesNote = "Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.";
+
+	/// <summary>The description of the <c>space_id</c> path parameter the page adds.</summary>
+	public const string SpaceParameterDescription = "An identifier for the space. If `space_id` is not provided in the URL, the default space is used. "
+		+ SpacesNote;
+
 	private static readonly string[] MethodRank = ["post", "put", "patch", "get", "delete", "head", "options", "trace"];
 
 	/// <summary>
@@ -100,7 +109,8 @@ public sealed partial record OperationEndpoint(
 			.Select(static s => s[1..^1])
 			.ToHashSet(StringComparer.Ordinal);
 		var shortest = routes.OrderBy(static r => Split(r).Length).ThenBy(static r => r.Length).First();
-		return new OperationEndpoint(rows, optionalParameters, shortest, description);
+		var spaceParameter = spaced.FirstOrDefault() is { } spaceRoute ? Split(spaceRoute)[1][1..^1] : null;
+		return new OperationEndpoint(rows, optionalParameters, shortest, description, spaceParameter);
 	}
 
 	/// <summary>
@@ -367,11 +377,11 @@ public sealed partial record OperationEndpoint(
 	internal static bool IsPlaceholder(string segment) => segment.Length > 2 && segment[0] == '{' && segment[^1] == '}';
 
 	[GeneratedRegex("""<span class="operation-verb\s+[^"]*">([^<]*)</span>\s*(?:&nbsp;)?\s*<span class="operation-path">([^<]+)</span>""", RegexOptions.IgnoreCase
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PathBadge();
 
-	[GeneratedRegex("""\*\*(?:All methods and paths|Spaces method and path) for this operation:\*\*\s*(?:<div\b[^>]*>.*?</div>\s*)+""", RegexOptions.IgnoreCase
+	[GeneratedRegex("""\*\*(?:All methods and paths|Spaces method and path) for this operation:\*\*\s*(?:<div\b[^>]*>.*?</div>\s*)+(?:Refer to (?:\[Spaces\]\([^)]*\)|Spaces) for more information\.\s*)?""", RegexOptions.IgnoreCase
 		| RegexOptions.Singleline
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PathListing();
 }

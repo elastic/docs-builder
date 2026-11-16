@@ -52,6 +52,21 @@ public class NavigationCurrentMarkerTests
 	}
 
 	[Test]
+	public void Apply_InPageHeadingLinks_AreNotCurrent()
+	{
+		const string html =
+			"""
+		                    <a href="/api/doc/kibana/group/endpoint-dashboards" class="sidebar-link nav-folder-link">Dashboards</a>
+		                    <a href="/api/doc/kibana/group/endpoint-dashboards#get-started" class="sidebar-link nav-link">Get started</a>
+		                    """;
+
+		var marked = NavigationCurrentMarker.Apply(html, "/api/doc/kibana/group/endpoint-dashboards");
+
+		marked.Should().Contain("class=\"sidebar-link nav-folder-link current\"");
+		marked.Should().Contain("#get-started\" class=\"sidebar-link nav-link\">");
+	}
+
+	[Test]
 	public void Apply_AlreadyCurrent_IsIdempotent()
 	{
 		const string html = """<a href="/guide" class="sidebar-link nav-link nav-v2-link current">Guide</a>""";

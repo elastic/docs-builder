@@ -1,0 +1,106 @@
+<dl class="property-list">
+	<div class="property-item depth-0    ">
+		<dt id="query-mode">
+			<a class="property-anchor" href="#query-mode" aria-label="Link to mode">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>mode</code>
+			<code class="schema-type">
+				<span class="type-wrapper enum-icon" data-tippy-content="">enum</span>
+			</code>
+		</dt>
+		<dd>
+			<p>Lookup mode, referenced via allOf so the description can be overridden.</p>
+		</dd>
+		<dd class="enum-values">
+			<span class="values-label">Values:</span>
+			<code class="enum-value">fast</code>
+			<code class="enum-value">accurate</code>
+		</dd>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="query-stored_states">
+			<a class="property-anchor" href="#query-stored_states" aria-label="Link to stored_states">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>stored_states</code>
+			<code class="schema-type">
+				<span class="type-wrapper enum-icon" data-tippy-content="">enum</span>
+				<span class="type-wrapper array-icon" data-tippy-content="">[]</span>
+			</code>
+		</dt>
+		<dd>
+			<p>States to include, each element one of the allowed values.</p>
+		</dd>
+		<dd class="enum-values">
+			<span class="values-label">Values:</span>
+			<code class="enum-value">open</code>
+			<code class="enum-value">closed</code>
+		</dd>
+	</div>
+	<div class="property-item depth-0 last-sibling has-children  ">
+		<dt id="query-tags">
+			<a class="property-anchor" href="#query-tags" aria-label="Link to tags">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>tags</code>
+			<code class="schema-type">
+				<span class="type-wrapper map-keyword" data-tippy-content="">map</span>
+				<span class="schema-type-sep">
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+				<span class="schema-type-sep">
+					to
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+				<span class="schema-type-group">
+					<span class="schema-type-sep">
+						·
+					</span>
+					<span class="type-constraint" data-tippy-content="">min properties: 1</span>
+				</span>
+				<span class="schema-type-group">
+					<span class="schema-type-sep">
+						·
+					</span>
+					<span class="type-constraint" data-tippy-content="">max properties: 64</span>
+				</span>
+			</code>
+		</dt>
+		<dd>
+			<p>Only documents with these tags and values.</p>
+		</dd>
+		<div class="nested-properties" id="query-tags--children">
+			<dl class="property-list">
+				<div class="property-item depth-1 last-sibling has-children ">
+					<dt id="query-tags-string">
+						<code data-tippy-content="tags.<string>" data-tippy-theme="mono">&lt;string&gt;</code>
+						<code class="schema-type">
+							<span class="type-primitive" data-tippy-content="">string</span>
+							<span class="schema-type-group">
+								<span class="schema-type-sep">
+									·
+								</span>
+								<span class="type-constraint" data-tippy-content="">min length: 1</span>
+							</span>
+							<span class="schema-type-group">
+								<span class="schema-type-sep">
+									·
+								</span>
+								<span class="type-constraint" data-tippy-content="">max length: 128</span>
+							</span>
+							<span class="schema-type-group">
+								<span class="schema-type-sep">
+									·
+								</span>
+								<span class="type-constraint" data-tippy-content="">pattern: ^[a-z0-9][a-z0-9_-]*$</span>
+							</span>
+						</code>
+					</dt>
+					<div class="nested-properties" id="query-tags-string--children">
+					</div>
+				</div>
+			</dl>
+		</div>
+	</div>
+</dl>

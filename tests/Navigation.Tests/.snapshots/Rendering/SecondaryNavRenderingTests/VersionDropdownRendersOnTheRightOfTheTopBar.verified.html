@@ -1,0 +1,70 @@
+<div id="secondary-nav-host" class="relative md:sticky md:top-0 md:z-30 bg-white">
+	<nav id="secondary-nav">
+		<div class="secondary-nav-bar secondary-nav-bar--desktop">
+			<div class="secondary-nav-scroll-container">
+				<a href="/docs/" class="secondary-nav-home">Docs</a>
+				<ul class="secondary-nav-list">
+					<li class="secondary-nav-item" data-section-ids="ref-section-id">
+						<a href="/docs/reference/" class="secondary-nav-item__hit">
+							<span class="secondary-nav-item__content">
+								<span class="secondary-nav-icon" aria-hidden="true">
+									<svg viewBox="0 0 16 16">
+										<use href="#icon-list-bullet"></use>
+									</svg>
+								</span>
+								<span>Reference</span>
+							</span>
+						</a>
+					</li>
+					<li class="secondary-nav-item" data-section-ids="">
+						<a href="https://www.elastic.co/docs/api/" target="_blank" rel="noopener noreferrer" class="secondary-nav-item__hit">
+							<span class="secondary-nav-item__content">
+								<span class="secondary-nav-icon" aria-hidden="true">
+									<svg viewBox="0 0 16 16">
+										<use href="#icon-code"></use>
+									</svg>
+								</span>
+								<span>APIs</span>
+								<span class="secondary-nav-icon secondary-nav-icon--sm secondary-nav-icon--external" aria-hidden="true">
+									<svg viewBox="0 0 16 16">
+										<use href="#icon-external"></use>
+									</svg>
+								</span>
+							</span>
+							<span class="sr-only">(opens in a new tab)</span>
+						</a>
+					</li>
+					<li class="secondary-nav-item">
+						<details class="secondary-nav-dropdown">
+							<summary class="secondary-nav-item__hit">
+								<span class="secondary-nav-item__content secondary-nav-item__content--dropdown">
+									<span class="secondary-nav-icon" aria-hidden="true">
+										<svg viewBox="0 0 16 16">
+											<use href="#icon-grid"></use>
+										</svg>
+									</span>
+									<span>Products</span>
+									<span class="secondary-nav-icon secondary-nav-icon--sm secondary-nav-dropdown-chevron" aria-hidden="true">
+										<svg viewBox="0 0 16 16">
+											<use href="#icon-chevron-down"></use>
+										</svg>
+									</span>
+								</span>
+							</summary>
+							<div class="secondary-nav-dropdown-menu" aria-label="Products">
+								<div class="secondary-nav-dropdown-group-label">Stack products</div>
+								<a class="secondary-nav-dropdown-link" href="/docs/products/elasticsearch/">Elasticsearch</a>
+								<a class="secondary-nav-dropdown-link" href="/docs/products/">All products</a>
+							</div>
+						</details>
+					</li>
+				</ul>
+			</div>
+			<div class="secondary-nav-actions">
+				<version-dropdown data-testid="docs-version-dropdown" all-versions-url="/docs/versions/" current-version="8.19" items="[]">
+					<div class="h-8"></div>
+				</version-dropdown>
+			</div>
+		</div>
+	</nav>
+</div>

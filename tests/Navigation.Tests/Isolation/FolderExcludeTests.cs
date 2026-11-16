@@ -34,7 +34,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/beta.md", "docs/gamma.md"], options => options.WithStrictOrdering());
@@ -63,7 +63,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/gamma.md"], options => options.WithStrictOrdering());
@@ -93,7 +93,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/beta.md"], options => options.WithStrictOrdering());
@@ -121,7 +121,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
@@ -151,7 +151,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		// index.md should be excluded too — the user explicitly asked for it

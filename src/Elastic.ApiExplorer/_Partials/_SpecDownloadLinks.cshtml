@@ -1,0 +1,10 @@
+@inherits RazorSlice<Elastic.Documentation.Site.ApiSpecDownload>
+@* The two menu rows that download the whole OpenAPI spec. *@
+<a class="api-page-actions-option" role="menuitem" href="@Model.JsonUrl" download hx-boost="false">
+	@await RenderPartialAsync(_DownloadIcon.Create())
+	Download OpenAPI spec (JSON)
+</a>
+<a class="api-page-actions-option" role="menuitem" href="@Model.YamlUrl" download hx-boost="false">
+	@await RenderPartialAsync(_DownloadIcon.Create())
+	Download OpenAPI spec (YAML)
+</a>

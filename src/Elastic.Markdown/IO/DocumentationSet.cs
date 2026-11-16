@@ -18,6 +18,7 @@ using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
@@ -66,7 +67,8 @@ public class DocumentationSet : INavigationTraversable
 		BuildContext context,
 		ILoggerFactory logFactory,
 		ICrossLinkResolver linkResolver,
-		IReleaseNotesResolver? releaseNotesResolver = null
+		IReleaseNotesResolver? releaseNotesResolver = null,
+		FloatingSectionRegistry? floatingSections = null
 	)
 	{
 		_logger = logFactory.CreateLogger<DocumentationSet>();
@@ -96,7 +98,8 @@ public class DocumentationSet : INavigationTraversable
 			null,
 			null,
 			context.UrlPathPrefix,
-			CrossLinkResolver
+			CrossLinkResolver,
+			floatingSections
 		);
 		VisitNavigation(Navigation);
 
@@ -134,6 +137,13 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
+
+	/// <summary>
+	/// Fills the children of every mounted floating section. <see cref="ResolveDirectoryTree"/> runs it,
+	/// so <c>links.json</c> and the exporters see the pages of each section.
+	/// </summary>
+	private Task ResolveFloatingSectionsAsync(Cancel ctx) =>
+		Task.WhenAll(Navigation.FloatingSections.Select(section => section.ResolveAsync(ctx)));
 
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
@@ -181,7 +191,15 @@ public class DocumentationSet : INavigationTraversable
 		{
 			// An external target that is not a URI, and a local target that does not exist, are reported by the DocumentationSetInCatalog constraints
 			if (to.Contains("://"))
+			{
+				if (
+					Uri.TryCreate(to, UriKind.Absolute, out _)
+					&& ApiLinkCheck.GetHint(CrossLinkResolver, to, Context.UrlPathPrefix, Configuration.SuppressDiagnostics) is { } hint
+				)
+					Context.Collector.EmitHint((Configuration.RedirectsFile ?? Configuration.SourceFile).FullName, hint);
+
 				return;
+			}
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
@@ -250,6 +268,7 @@ public class DocumentationSet : INavigationTraversable
 			options,
 			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token)
 		);
+		await ResolveFloatingSectionsAsync(ctx);
 
 		_resolved = true;
 	}
@@ -263,9 +282,14 @@ public class DocumentationSet : INavigationTraversable
 		var leafs = NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
 		var nodes = NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToArray();
 
-		var markdownInNavigation = leafs.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m)).Concat(
-			nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g))
-		);
+		var markdownInNavigation = leafs
+			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
+			.Concat(
+				nodes.Where(g => g.Index.Model is MarkdownFile).Select(
+					g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)
+				)
+			)
+			.ToList();
 
 		var pages = markdownInNavigation.Select(
 			tuple => new LinkPage(
@@ -278,7 +302,26 @@ public class DocumentationSet : INavigationTraversable
 			)
 		);
 
-		return LinkManifest.From(Context.Git, Context.UrlPathPrefix, pages, Context.Collector.CrossLinks, Configuration.Redirects);
+		return LinkManifest.From(
+			Context.Git,
+			Context.UrlPathPrefix,
+			pages,
+			Context.Collector.CrossLinks,
+			Configuration.Redirects,
+			CreateFloatingLinkSections()
+		);
+	}
+
+	private Dictionary<string, FloatingLinkSection>? CreateFloatingLinkSections()
+	{
+		Dictionary<string, FloatingLinkSection>? sections = null;
+		foreach (var section in Navigation.FloatingSections)
+		{
+			if (section.ToLinkSection() is { } linkSection)
+				(sections ??= [])[$"{section.Kind}/{section.Key}"] = linkSection;
+		}
+
+		return sections;
 	}
 
 	public void ClearOutputDirectory()

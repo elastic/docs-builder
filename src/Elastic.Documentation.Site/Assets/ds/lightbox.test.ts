@@ -6,8 +6,8 @@ describe('lightbox', () => {
 <a href="/a.png" data-lightbox="box"><img src="/a.png"></a>
 <dialog class="lightbox" id="box"><img src="/a.png"></dialog>`
         const dialog = document.getElementById('box') as HTMLDialogElement
-        dialog.showModal = jest.fn()
-        dialog.close = jest.fn()
+        dialog.showModal = vi.fn()
+        dialog.close = vi.fn()
         initLightboxes()
     })
 

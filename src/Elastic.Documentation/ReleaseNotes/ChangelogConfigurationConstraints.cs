@@ -281,7 +281,8 @@ public static partial class ChangelogConfigurationConstraints
 		d => IsYamlFilePath(d.Directory)
 			? d.Profile is null
 				? $"bundle.output_directory '{d.Directory}' must be a directory, not a file path. The bundle file name is derived by convention."
-				: $"Profile '{d.Profile}': 'output_directory' must be a directory, not a file path. The bundle file name is derived by convention as '{{repo}}-{{product}}-{{version}}.yaml'."
+				: $"Profile '{d.Profile}': 'output_directory' must be a directory, not a file path. The bundle file name is derived by convention as '{{repo}}-{{product}}-{{version}}.yaml'. " +
+					"To choose a folder, set output_directory the same way option-mode --output does when it is a directory."
 			: null
 	).Describe("R26: A bundle output_directory is a directory, not a .yml or .yaml file path.");
 
@@ -289,7 +290,7 @@ public static partial class ChangelogConfigurationConstraints
 		.Each(Profiles, ProfileOutputProblem)
 		.WithSeverity(Severity.Warning)
 		.Describe(
-			"R27: No bundle profile sets 'output': it is removed, and only rejected (as an error) when a bundle is made; as a model rule it warns so a config that loads today still loads."
+			"R27: No bundle profile sets 'output': it is deprecated and ignored (bundle output names are derived by convention), and warns so authors remove it."
 		);
 
 	public static Constraint<ChangelogConfigurationInCatalog> ProfilePrimaryProductUnique
@@ -302,8 +303,8 @@ public static partial class ChangelogConfigurationConstraints
 		describeGroup: (
 			product,
 			profiles
-		) => $"Profiles '{string.Join("', '", profiles.Select(p => p.Name).Order(StringComparer.Ordinal))}' all resolve to the same '{{repo}}-{product}-{{version}}.yaml' bundle target. " +
-			"Each profile must target a distinct product."
+		) => $"Profiles '{string.Join("', '", profiles.Select(p => p.Name).Order(StringComparer.Ordinal))}' all resolve to the same '{{repo}}-{product}-{{version}}.yaml' bundle target for any given version. " +
+			"Bundle names are derived by convention from the authoring repo and the profile's primary output product, so each profile must target a distinct product."
 	).Describe("R29: No two bundle profiles share a primary product, since the bundle file name is derived from it.");
 
 	private static IReadOnlyDictionary<string, TypeEntry?> PivotTypes(ChangelogConfigurationInCatalog m) =>
@@ -362,7 +363,7 @@ public static partial class ChangelogConfigurationConstraints
 	private static string? ProfileOutputProblem(KeyValuePair<string, BundleProfile> profile) =>
 		string.IsNullOrWhiteSpace(profile.Value.Output)
 			? null
-			: $"Profile '{profile.Key}': 'output' is no longer supported. Remove it: bundle output names are derived by convention as '{{repo}}-{{product}}-{{version}}.yaml'.";
+			: $"bundle.profiles.{profile.Key}.output is deprecated. Bundle output names are derived by convention as {{repo}}-{{product}}-{{version}}.yaml. Remove this field.";
 
 	// The primary product is `product`, else the first product id of the (deprecated) output_products or the products pattern.
 	private static string? PrimaryProduct(BundleProfile profile)

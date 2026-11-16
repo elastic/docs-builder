@@ -1,0 +1,103 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fixture",
+    "version": "1.0"
+  },
+  "paths": {
+    "/{index}/_search": {
+      "post": {
+        "operationId": "search",
+        "summary": "Search",
+        "tags": [
+          "search"
+        ],
+        "parameters": [
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "examples": {
+                "searchRequestExample1": {
+                  "summary": "A simple term search",
+                  "value": {
+                    "query": {
+                      "term": {
+                        "a": 1
+                      }
+                    }
+                  }
+                },
+                "searchRequestExample2": {
+                  "summary": "A point in time search",
+                  "value": {
+                    "pit": {
+                      "id": "x"
+                    }
+                  }
+                },
+                "searchSlicing": {
+                  "value": {
+                    "slice": {
+                      "id": 0,
+                      "max": 2
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Console",
+            "source": "POST /my-index/_search\n{\"query\":{\"term\":{\"a\":1}}}"
+          },
+          {
+            "lang": "Python",
+            "source": "client.search(query={\"term\":{\"a\":1}})"
+          },
+          {
+            "lang": "Console_A point in time search",
+            "source": "POST /_search\n{\"pit\":{\"id\":\"x\"}}"
+          },
+          {
+            "lang": "Python_A point in time search",
+            "source": "client.search(pit={\"id\":\"x\"})"
+          },
+          {
+            "lang": "Console_searchSlicing",
+            "source": "POST /my-index/_search\n{\"slice\":{\"id\":0,\"max\":2}}"
+          },
+          {
+            "lang": "Python_searchSlicing",
+            "source": "client.search(slice={})"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -38,7 +38,7 @@ internal sealed record ApiBodyContent(
 		var variants = typeInfo.IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
 		if (variants is null && typeInfo.IsArray && ArrayItemSchema(schema, analyzer) is { } itemSchema)
 		{
-			var itemProperties = builder.BuildPropertyList(itemSchema, scope with { Depth = scope.Depth + 1 });
+			var itemProperties = builder.BuildPropertyList(itemSchema, scope.IntoItems() with { Depth = scope.Depth + 1 });
 			if (itemProperties is not null)
 				return new ApiBodyContent(itemProperties, null, null, IsArray: true);
 		}
@@ -77,7 +77,9 @@ internal sealed record ApiBodyContent(
 			return null;
 
 		var options = typeInfo.UnionOptions.Where(static o => o.Schema is not null).ToList();
-		var variants = options.Count == 0 ? null : builder.BuildUnionVariants(options, scope, analyzer.GetUnionDiscriminator(bodySchema));
+		var variants = options.Count == 0
+			? null
+			: builder.BuildUnionVariants(options, typeInfo.IsArray ? scope.IntoItems() : scope, analyzer.GetUnionDiscriminator(bodySchema));
 		return variants is null ? null : variants with { Label = UnionLabel(typeInfo) };
 	}
 

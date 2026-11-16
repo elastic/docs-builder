@@ -685,7 +685,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture)
 	private sealed record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
 }
 
-file class TestLogger : ILogger
+sealed file class TestLogger : ILogger
 {
 	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 	public bool IsEnabled(LogLevel logLevel) => true;
@@ -698,7 +698,7 @@ file class TestLogger : ILogger
 	) => TestContext.Current?.Output.WriteLine($"[{logLevel}] {formatter(state, exception)}");
 }
 
-file class TestLoggerProvider : ILoggerProvider
+sealed file class TestLoggerProvider : ILoggerProvider
 {
 	public ILogger CreateLogger(string categoryName) => new TestLogger();
 	public void Dispose() { }

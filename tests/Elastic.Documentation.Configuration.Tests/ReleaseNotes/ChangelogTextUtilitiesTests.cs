@@ -110,7 +110,6 @@ public class ChangelogTextUtilitiesTests
 	[Arguments("https://github.com/elastic/elasticsearch/pull/123", 123)]
 	[Arguments("elastic/elasticsearch#456", 456)]
 	[Arguments("123", null)] // No default owner/repo
-
 	public void ExtractPrNumber_ExtractsNumber(string input, int? expected)
 	{
 		var result = ChangelogTextUtilities.ExtractPrNumber(input);
@@ -179,7 +178,6 @@ public class ChangelogTextUtilitiesTests
 	[Test]
 	[Arguments("Add new feature to API", "add-new-feature-to-api")]
 	[Arguments("Fix bug in the search API endpoint handler", "fix-bug-in-the-search-api")] // Takes first 6 words by default
-
 	[Arguments("", "untitled")]
 	public void GenerateSlug_GeneratesSlug(string input, string expected)
 	{

@@ -2,6 +2,11 @@ import { availableIcons } from '../../eui-icons-cache'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import {
+    GO_TO_LABELS,
+    groupSearchResults,
+    navigableRowCount,
+} from './apiPropertyResults'
+import {
     useSearchTerm,
     useSearchActions,
     useSelectedIndex,
@@ -22,7 +27,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useRef, useState, useEffect } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 
 interface Props {
     placeholder?: string
@@ -47,19 +52,101 @@ export const NavigationSearch = ({
     const { trackOpened, trackClosed } =
         useNavigationSearchTelemetry(typeFilter)
 
-    const results = data?.results ?? []
+    const groups = useMemo(
+        () => groupSearchResults(data?.results ?? []),
+        [data]
+    )
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
-    const handleResultClick = () => {
-        // Track navigation close (actual click tracking is in SearchResultsList)
-        trackClosed({
-            reason: 'navigate',
-            query: searchTerm,
-            hadResults: results.length > 0,
-            hadSelection: selectedIndex >= 0,
-        })
+    // Mirrors isPopoverOpen so a blur that fires before React re-renders sees the popover already closed.
+    const isOpenRef = useRef(false)
+    const setOpen = (open: boolean) => {
+        isOpenRef.current = open
+        setIsPopoverOpen(open)
     }
+
+    const close = (reason: 'navigate' | 'escape' | 'blur') => {
+        if (isOpenRef.current) {
+            trackClosed({
+                reason,
+                query: searchTerm,
+                hadResults: groups.length > 0,
+                hadSelection: selectedIndex >= 0,
+            })
+        }
+        setOpen(false)
+    }
+
+    // The result link whose htmx request is in flight. The dropdown stays up until that request ends, so the reader
+    // is not left on the old page with no cue. htmx sends from its listener on the link itself, ahead of React's
+    // delegated onClick, so the click handler already sees it. beforeSend, not beforeRequest: preloads and the
+    // new-tab and full-page-load paths in htmx-hooks cancel beforeRequest and never send.
+    const pendingRef = useRef<Element | null>(null)
+    const [isNavigating, setIsNavigating] = useState(false)
+    const setPending = (link: Element | null) => {
+        pendingRef.current = link
+        setIsNavigating(!!link)
+    }
+
+    const finishNavigation = () => {
+        setPending(null)
+        close('navigate')
+        inputRef.current?.blur()
+    }
+
+    const cancelNavigation = () => {
+        const link = pendingRef.current
+        if (!link) return
+        // Cleared first, so the afterRequest the abort fires is not taken for the end of a navigation.
+        setPending(null)
+        link.dispatchEvent(
+            new CustomEvent('htmx:abort', {
+                bubbles: true,
+                detail: { elt: link },
+            })
+        )
+    }
+
+    const handleResultClick = (opensElsewhere = false) => {
+        if (opensElsewhere) return
+        if (!pendingRef.current) finishNavigation()
+    }
+
+    const finishNavigationRef = useRef(finishNavigation)
+    finishNavigationRef.current = finishNavigation
+
+    useEffect(() => {
+        const resultLink = (event: Event) => {
+            const link = (event as CustomEvent<{ elt?: Element }>).detail?.elt
+            return link?.hasAttribute('data-search-result-index') &&
+                popoverContentRef.current?.contains(link)
+                ? link
+                : null
+        }
+        // Tab and Enter reach another result while one loads; its request would race the one in flight.
+        const onBeforeRequest = (event: Event) => {
+            if (pendingRef.current && resultLink(event)) event.preventDefault()
+        }
+        const onBeforeSend = (event: Event) => {
+            const link = resultLink(event)
+            if (link) setPending(link)
+        }
+        // Fires once the response is swapped in, and on an error, abort or timeout as well.
+        const onAfterRequest = (event: Event) => {
+            const link = (event as CustomEvent<{ elt?: Element }>).detail?.elt
+            if (link && link === pendingRef.current)
+                finishNavigationRef.current()
+        }
+        document.addEventListener('htmx:beforeRequest', onBeforeRequest)
+        document.addEventListener('htmx:beforeSend', onBeforeSend)
+        document.addEventListener('htmx:afterRequest', onAfterRequest)
+        return () => {
+            document.removeEventListener('htmx:beforeRequest', onBeforeRequest)
+            document.removeEventListener('htmx:beforeSend', onBeforeSend)
+            document.removeEventListener('htmx:afterRequest', onAfterRequest)
+        }
+    }, [])
 
     const {
         inputRef,
@@ -67,10 +154,9 @@ export const NavigationSearch = ({
         handleInputKeyDown,
         handleMouseMove,
     } = useNavigationSearchKeyboardNavigation({
-        resultsCount: results.length,
+        resultsCount: navigableRowCount(groups),
         isLoading: isSearching,
-        onClose: () => setIsPopoverOpen(false),
-        onNavigate: handleResultClick,
+        onClose: () => setOpen(false),
         typeFilter,
     })
 
@@ -81,31 +167,32 @@ export const NavigationSearch = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
+        cancelNavigation()
         setSearchTerm(value)
-        setIsPopoverOpen(!!value.trim())
+        setOpen(!!value.trim())
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Escape') {
             e.preventDefault()
-            trackClosed({
-                reason: 'escape',
-                query: searchTerm,
-                hadResults: results.length > 0,
-                hadSelection: selectedIndex >= 0,
-            })
+            cancelNavigation()
+            close('escape')
             setSearchTerm('')
-            setIsPopoverOpen(false)
             // After the re-render, so handleBlur doesn't log a second close for the same Escape.
             if (isApi) {
                 queueMicrotask(() => inputRef.current?.blur())
             }
             return
         }
+        if (e.key === 'Enter' && pendingRef.current) {
+            e.preventDefault()
+            return
+        }
         handleInputKeyDown(e)
     }
 
     const handleBlur = (e: React.FocusEvent) => {
+        if (pendingRef.current) return
         // Check if focus is moving to something inside the popover
         const relatedTarget = e.relatedTarget as Node | null
         if (
@@ -115,47 +202,20 @@ export const NavigationSearch = ({
             // Focus is moving inside the popover, don't close
             return
         }
-        if (isPopoverOpen) {
-            trackClosed({
-                reason: 'blur',
-                query: searchTerm,
-                hadResults: results.length > 0,
-                hadSelection: selectedIndex >= 0,
-            })
-        }
-        setIsPopoverOpen(false)
+        close('blur')
     }
-
-    // Close popover and blur input when htmx navigation starts from a search result
-    useEffect(() => {
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                setIsPopoverOpen(false)
-                inputRef.current?.blur()
-            }
-        }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
-        return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
-        }
-    }, [inputRef])
 
     return (
         <EuiInputPopover
             isOpen={hasContent}
-            closePopover={() => setIsPopoverOpen(false)}
+            closePopover={() => setOpen(false)}
             ownFocus={false}
             anchorPosition="downLeft"
+            // The panel stays mounted while hidden; an anchor jump scrolls the page under it.
+            repositionOnScroll
             disableFocusTrap={true}
-            panelMinWidth={isMobile ? undefined : 640}
+            // The landing box is already wide, so its results match it. The narrow sidebar box needs the wider panel.
+            panelMinWidth={isMobile || size === 'l' ? undefined : 640}
             panelPaddingSize="none"
             offset={12}
             panelProps={{
@@ -181,26 +241,37 @@ export const NavigationSearch = ({
                         onFocus={() => {
                             trackOpened('focus')
                             if (hasContent) {
-                                setIsPopoverOpen(true)
+                                setOpen(true)
                             }
                         }}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
                         disabled={isSearchCooldownActive}
-                        isLoading={isSearching}
-                        keyShortcuts={slashFocusEnabled ? '/' : undefined}
+                        isLoading={isSearching || isNavigating}
+                        keyShortcuts={slashFocusEnabled ? '/ s' : undefined}
+                        shortcutHint={slashFocusEnabled ? '/' : undefined}
+                        ariaLabel={isApi ? 'Explore APIs' : undefined}
+                        title={
+                            isApi
+                                ? 'Explore API operations. Type / to focus.'
+                                : undefined
+                        }
                     />
                 </>
             }
         >
             {hasContent && (
                 <div ref={popoverContentRef}>
-                    <SearchDropdownContent
+                    <SearchResultsList
+                        results={groups}
+                        isLoading={isSearching}
+                        isNavigating={isNavigating}
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
                         typeFilter={typeFilter}
                     />
+                    <SearchDropdownFooter />
                 </div>
             )}
         </EuiInputPopover>
@@ -208,48 +279,14 @@ export const NavigationSearch = ({
 }
 
 const KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'Jump to' },
+    { keys: ['returnKey'], label: GO_TO_LABELS.page },
     { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
     { keys: ['Esc'], label: 'Close' },
 ]
 
-const API_KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'Jump to API' },
-    { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
-    { keys: ['Esc'], label: 'Close' },
-]
-
-interface SearchDropdownContentProps {
-    isKeyboardNavigating: React.MutableRefObject<boolean>
-    onMouseMove: () => void
-    onResultClick: () => void
-    typeFilter: TypeFilter
-}
-
-const SearchDropdownContent = ({
-    isKeyboardNavigating,
-    onMouseMove,
-    onResultClick,
-    typeFilter,
-}: SearchDropdownContentProps) => {
-    return (
-        <>
-            <SearchResultsList
-                isKeyboardNavigating={isKeyboardNavigating}
-                onMouseMove={onMouseMove}
-                onResultClick={onResultClick}
-                typeFilter={typeFilter}
-            />
-            <SearchDropdownFooter typeFilter={typeFilter} />
-        </>
-    )
-}
-
-const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
+const SearchDropdownFooter = () => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const shortcuts =
-        typeFilter === 'api' ? API_KEYBOARD_SHORTCUTS : KEYBOARD_SHORTCUTS
 
     if (isMobile) {
         return null
@@ -272,7 +309,7 @@ const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
                 gap: ${euiTheme.size.base};
             `}
         >
-            {shortcuts.map((shortcut, index) => (
+            {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
                 <KeyboardShortcutItem
                     key={index}
                     keys={shortcut.keys}

@@ -36,15 +36,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("class=\"nav-side\"");
-		html.Should().Contain("nav-side__scroll");
-		html.Should().Contain("link-menu", "a build with several sections gets a section menu");
-		html.Should().Contain("nav-side__back");
-		html.Should().Contain("nav-tree__link");
-		html.Should().Contain("Guides");
-		html.Should().NotContain("pages-nav-v2");
-		html.Should().NotContain("navigation-search");
-		html.Should().NotContain("hx-preserve");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -85,12 +77,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		var linkStart = html.IndexOf("href=\"/docs/contribute\"", StringComparison.Ordinal);
-		linkStart.Should().BeGreaterThanOrEqualTo(0);
-		var linkEnd = html.IndexOf("</a>", linkStart, StringComparison.Ordinal);
-		html[linkStart..linkEnd].Should().NotContain("chevron", "the page link and the expand control are separate targets");
-		html.Should().Contain("<label class=\"nav-tree__chevron\" for=\"contribute\"");
-		html.Should().Contain("id=\"contribute\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -131,10 +118,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<label class=\"nav-tree__row nav-tree__row--heading\" for=\"search-docs\"");
-		html.Should().Contain("Search &amp; Document APIs");
-		html.Should().NotContain("href=\"/api/doc/es/\"");
-		html.Should().Contain("href=\"/api/doc/es/operation/operation-search\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -163,8 +147,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("nav-tree__link--island");
-		html.Should().NotContain("nav-tree__chevron", "an island opens its own tree, so it has no expand control");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -202,15 +185,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("nav-side__back");
-		html.Should().Contain("data-nav-heading=\"Elasticsearch\"");
-		html.Should().Contain("nav-side__heading");
-		html.Should().Contain("Overview");
-		html.Should().Contain("REST APIs");
-		html.Should().Contain("href=\"/docs/reference/elasticsearch\"");
-		html.Should().NotContain("id=\"elasticsearch\"");
-		html.Should().NotContain("nav-tree__separator");
-		html.Should().NotContain("hx-preserve");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -245,8 +220,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().NotContain("api-version-switcher");
-		html.Should().NotContain("link-menu", "the version control comes from the layout, not from the tree");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -292,18 +266,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("Api Overview");
-		html.Should().Contain("Authentication");
-		html.Should().Contain("search");
-		CountSeparators(html).Should().Be(1);
-
-		var overview = html.IndexOf("Api Overview", StringComparison.Ordinal);
-		var auth = html.IndexOf("Authentication", StringComparison.Ordinal);
-		var separator = html.IndexOf("nav-tree__separator", StringComparison.Ordinal);
-		var search = html.IndexOf(">search<", StringComparison.Ordinal);
-		overview.Should().BeLessThan(auth);
-		auth.Should().BeLessThan(separator);
-		separator.Should().BeLessThan(search);
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -339,9 +302,7 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("Home");
-		html.Should().Contain("Setup");
-		CountSeparators(html).Should().Be(1);
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -382,23 +343,6 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("Search &amp; Document APIs");
-		html.Should().NotContain("href=\"\"");
-		html.Should().Contain("href=\"/api/doc/es/operation/operation-search\"");
-		var titleAt = html.IndexOf("Search &amp; Document APIs", StringComparison.Ordinal);
-		html[..titleAt].Should().NotContain("<a ");
-	}
-
-	private static int CountSeparators(string html)
-	{
-		var count = 0;
-		var index = 0;
-		while ((index = html.IndexOf("nav-tree__separator\"", index, StringComparison.Ordinal)) >= 0)
-		{
-			count++;
-			index += "nav-tree__separator".Length;
-		}
-
-		return count;
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 }

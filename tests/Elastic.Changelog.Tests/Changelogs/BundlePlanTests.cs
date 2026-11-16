@@ -7,6 +7,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -93,7 +95,9 @@ public class BundlePlanTests : ChangelogTestBase
 		result
 			.OutputPath
 			.Should()
-			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+			.EndWith(
+				FileSystem.Path.Join("docs", "releases", "elasticsearch", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace()
+			);
 		// The bundle-PR action polls this URL for the scrubbed copy: {base}/bundle/{product}/{file}.
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-elasticsearch-9.2.0.yaml");
 	}
@@ -163,10 +167,7 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a repository name"));
+		Collector.Diagnostics.WithoutAmbient().ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 
 	[Test]
@@ -288,7 +289,10 @@ public class BundlePlanTests : ChangelogTestBase
 			.OutputPath
 			.Should()
 			.EndWith(
-				FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-apm-agent-dotnet-1.0.0-beta.1.yaml").OptionalWindowsReplace()
+				FileSystem
+					.Path
+					.Join("docs", "releases", "apm-agent-dotnet", "apm-agent-dotnet-apm-agent-dotnet-1.0.0-beta.1.yaml")
+					.OptionalWindowsReplace()
 			);
 	}
 
@@ -342,7 +346,12 @@ public class BundlePlanTests : ChangelogTestBase
 		result
 			.OutputPath
 			.Should()
-			.EndWith(FileSystem.Path.Join("docs", "releases", "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
+			.EndWith(
+				FileSystem
+					.Path
+					.Join("docs", "releases", "cloud-serverless", "kibana-cloud-serverless-2026-08-27.yaml")
+					.OptionalWindowsReplace()
+			);
 	}
 
 	[Test]
@@ -403,8 +412,13 @@ public class BundlePlanTests : ChangelogTestBase
 		);
 
 		result.Should().BeNull();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. Remove the CLI description, or remove the description from changelog.yml."
+			);
 	}
 
 	[Test]

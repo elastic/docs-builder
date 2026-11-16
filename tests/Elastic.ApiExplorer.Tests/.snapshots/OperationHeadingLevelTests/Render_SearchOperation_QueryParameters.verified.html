@@ -1,0 +1,96 @@
+<dl class="property-list">
+	<div class="property-item depth-0    ">
+		<dt id="query-expand_wildcards">
+			<a class="property-anchor" href="#query-expand_wildcards" aria-label="Link to expand_wildcards">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>expand_wildcards</code>
+			<code class="schema-type">
+				<span class="type-wrapper enum-icon" data-tippy-content="">enum</span>
+			</code>
+		</dt>
+		<dd>
+			<p>The type of index that wildcard patterns can match.</p>
+		</dd>
+		<dd class="enum-values">
+			<span class="values-label">Values:</span>
+			<code class="enum-value">all</code>
+			<code class="enum-value">open</code>
+			<code class="enum-value">closed</code>
+			<code class="enum-value">hidden</code>
+		</dd>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="query-q">
+			<a class="property-anchor" href="#query-q" aria-label="Link to q">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>q</code>
+			<code class="schema-type">
+				<span class="type-primitive" data-tippy-content="">string</span>
+				<span class="schema-type-group">
+					<span class="schema-type-sep">
+						·
+					</span>
+					<span class="type-constraint" data-tippy-content="">min length: 1</span>
+				</span>
+				<span class="schema-type-group">
+					<span class="schema-type-sep">
+						·
+					</span>
+					<span class="type-constraint" data-tippy-content="">max length: 2048</span>
+				</span>
+			</code>
+		</dt>
+		<dd>
+			<p>A query in the Lucene query string syntax.</p>
+		</dd>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="query-routing">
+			<a class="property-anchor" href="#query-routing" aria-label="Link to routing">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>routing</code>
+			<code class="schema-type">
+				<span class="type-primitive" data-tippy-content="">string</span>
+			</code>
+		</dt>
+		<dd>
+			<p>A custom value used to route operations to a specific shard.</p>
+		</dd>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="query-timeout">
+			<a class="property-anchor" href="#query-timeout" aria-label="Link to timeout">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>timeout</code>
+			<code class="schema-type">
+				<span class="type-primitive" data-tippy-content="">integer</span>
+				<span class="schema-type-sep">
+					|
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+			</code>
+		</dt>
+		<dd>
+			<p>The period to wait for a response, as an integer number of milliseconds or a duration string.</p>
+		</dd>
+	</div>
+	<div class="property-item depth-0 last-sibling   deprecated">
+		<dt id="query-pretty">
+			<a class="property-anchor" href="#query-pretty" aria-label="Link to pretty">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>pretty</code>
+			<code class="schema-type">
+				<span class="type-primitive" data-tippy-content="">boolean</span>
+			</code>
+			<span class="deprecated-badge type-status">deprecated</span>
+		</dt>
+		<dd>
+			<p>Pretty-print the response body.</p>
+		</dd>
+	</div>
+</dl>

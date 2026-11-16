@@ -60,6 +60,12 @@ public static class AuthoringConfiguration
 			Current = AllVersions.Instance,
 			Base = AllVersions.Instance
 		};
+		systems[VersioningSystemId.EdotReactNative] = new VersioningSystem
+		{
+			Id = VersioningSystemId.EdotReactNative,
+			Current = new SemVersion(0, 1, 0),
+			Base = new SemVersion(0, 1, 0)
+		};
 		return new VersioningSystemCatalog { VersioningSystems = systems };
 	}
 

@@ -163,6 +163,6 @@ public static class AssemblyConfigurationMatching
 
 internal static partial class ContentSourceRegex
 {
-	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex MatchVersionBranch();
 }

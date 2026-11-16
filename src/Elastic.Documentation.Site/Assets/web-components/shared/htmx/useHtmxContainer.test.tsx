@@ -2,9 +2,10 @@ import { useHtmxContainer } from './useHtmxContainer'
 import { render, screen } from '@testing-library/react'
 import htmx from 'htmx.org'
 import { useRef } from 'react'
+import type { Mocked } from 'vitest'
 
 // Mock config to use assembler build type (tests were written for assembler behavior)
-jest.mock('../../../config', () => ({
+vi.mock('../../../config', () => ({
     config: {
         buildType: 'assembler',
         serviceName: 'docs-frontend',
@@ -13,15 +14,7 @@ jest.mock('../../../config', () => ({
     },
 }))
 
-// Mock htmx - it uses XPath which jsdom doesn't support properly
-jest.mock('htmx.org', () => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    process: jest.fn(),
-    ajax: jest.fn(),
-}))
-
-const mockHtmx = htmx as jest.Mocked<typeof htmx>
+const mockHtmx = htmx as Mocked<typeof htmx>
 
 // Test component that uses the hook
 const TestContainer = ({ html }: { html: string }) => {
@@ -37,10 +30,6 @@ const TestContainer = ({ html }: { html: string }) => {
 }
 
 describe('useHtmxContainer', () => {
-    beforeEach(() => {
-        jest.clearAllMocks()
-    })
-
     describe('internal docs links', () => {
         it('should apply htmx attributes and call htmx.process for internal links', () => {
             render(

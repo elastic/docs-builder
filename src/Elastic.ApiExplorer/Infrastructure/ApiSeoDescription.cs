@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -20,6 +21,70 @@ internal static partial class ApiSeoDescription
 		var paragraph = FirstParagraph(markdown) ?? markdown;
 		var plain = ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
+	}
+
+	/// <summary>
+	/// The operation's own text for a meta description. Drops the leading "all methods and paths" block (a bold
+	/// sentence ending in a colon, the method and path lines, an optional "Refer to ..." line), then falls back to the summary.
+	/// </summary>
+	internal static string? OperationText(string? description, string? summary)
+	{
+		var own = SkipPathPreamble(description);
+		if (!string.IsNullOrWhiteSpace(own))
+			return own;
+
+		return string.IsNullOrWhiteSpace(summary) ? null : summary.Trim();
+	}
+
+	internal static string? SkipPathPreamble(string? markdown)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return null;
+
+		var paragraphs = markdown.Split(["\r\n\r\n", "\n\n"], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+		var index = 0;
+		var sawListing = false;
+		while (index < paragraphs.Length)
+		{
+			var paragraph = paragraphs[index];
+			var isIntro = index == 0 && IsPathIntro(paragraph);
+			var isListing = IsMethodPathListing(paragraph);
+			var isReference = sawListing && IsReferenceLine(paragraph);
+			if (!isIntro && !isListing && !isReference)
+				break;
+
+			sawListing |= isListing;
+			index++;
+		}
+
+		return index == 0 ? markdown : string.Join("\n\n", paragraphs.Skip(index));
+	}
+
+	private static bool IsPathIntro(string paragraph) =>
+		paragraph.StartsWith("**", StringComparison.Ordinal)
+			&& paragraph.EndsWith(":**", StringComparison.Ordinal)
+			&& PathWordPattern().IsMatch(paragraph);
+
+	private static bool IsReferenceLine(string paragraph) =>
+		paragraph.StartsWith("Refer to ", StringComparison.OrdinalIgnoreCase)
+			&& paragraph.EndsWith("for more information.", StringComparison.OrdinalIgnoreCase);
+
+	private static bool IsMethodPathListing(string paragraph)
+	{
+		if (!paragraph.Contains('/'))
+			return false;
+
+		var tokens = ApiMarkdown.StripHtml(paragraph).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+		if (tokens.Length == 0 || tokens.Length % 2 != 0)
+			return false;
+
+		for (var i = 0; i < tokens.Length; i += 2)
+		{
+			if (!HttpMethodPattern().IsMatch(tokens[i]) || !tokens[i + 1].StartsWith('/'))
+				return false;
+		}
+
+		return true;
 	}
 
 	internal static string? FirstParagraph(string markdown)
@@ -74,30 +139,36 @@ internal static partial class ApiSeoDescription
 		return string.Concat(text.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 	}
 
-	[GeneratedRegex(@"!\[([^\]]*)\]\([^)]+\)")]
+	[GeneratedRegex(@"\bpaths?\b", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex PathWordPattern();
+
+	[GeneratedRegex(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex HttpMethodPattern();
+
+	[GeneratedRegex(@"!\[([^\]]*)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ImagePattern();
 
-	[GeneratedRegex(@"\[([^\]]+)\]\([^)]+\)")]
+	[GeneratedRegex(@"\[([^\]]+)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkPattern();
 
-	[GeneratedRegex(@"\*\*([^*]+)\*\*")]
+	[GeneratedRegex(@"\*\*([^*]+)\*\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BoldStarPattern();
 
-	[GeneratedRegex(@"__([^_]+)__")]
+	[GeneratedRegex(@"__([^_]+)__", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BoldUnderscorePattern();
 
-	[GeneratedRegex(@"\*([^*]+)\*")]
+	[GeneratedRegex(@"\*([^*]+)\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ItalicStarPattern();
 
-	[GeneratedRegex(@"_([^_]+)_")]
+	[GeneratedRegex(@"_([^_]+)_", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ItalicUnderscorePattern();
 
-	[GeneratedRegex(@"`([^`]+)`")]
+	[GeneratedRegex(@"`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodePattern();
 
-	[GeneratedRegex(@"^#{1,6}\s+", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^#{1,6}\s+", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingPattern();
 
-	[GeneratedRegex(@"\s+")]
+	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespacePattern();
 }

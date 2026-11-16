@@ -1,0 +1,55 @@
+<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+	<nav id="pages-nav" class="sidebar-nav h-full simple-scrollbar">
+		<div class="api-sidebar-chrome sticky top-0 z-10 bg-white px-4 pt-4 pb-3 flex flex-col gap-3 border-b border-grey-20">
+			<div class="api-sidebar-identity">
+				<div class="api-identity-product" id="api-hub-switcher">
+					<button type="button" class="api-identity-product-trigger" popovertarget="api-hub-menu" aria-label="API: Elasticsearch API, version main">
+						<span class="api-identity-name">
+							<span class="api-identity-title">Elasticsearch API</span>
+							<span class="api-identity-version-label">main</span>
+						</span>
+						<span class="api-identity-updown" aria-hidden="true">
+							<svg viewBox="0 0 16 16">
+								<use href="#icon-chevron-updown"></use>
+							</svg>
+						</span>
+					</button>
+					<div id="api-hub-menu" class="api-menu" popover="" data-placement="bottom-start" aria-label="API and version">
+						<div id="api-version-switcher" role="group" aria-labelledby="api-version-group-label">
+							<div id="api-version-group-label" class="api-menu-group-label">Version</div>
+							<a class="secondary-nav-dropdown-link secondary-nav-dropdown-link--selected" href="/api/doc/elasticsearch/" aria-current="true">main</a>
+							<a class="secondary-nav-dropdown-link" href="/api/doc/elasticsearch/v8/">v8</a>
+						</div>
+						<div class="api-menu-sep" role="separator"></div>
+						<div role="group">
+							<a class="secondary-nav-dropdown-link api-identity-product-link secondary-nav-dropdown-link--selected" href="/api/doc/elasticsearch/" aria-current="true" preload="mousedown">
+								<span>Elasticsearch</span>
+							</a>
+							<a class="secondary-nav-dropdown-link api-identity-product-link" href="/api/doc/kibana/" preload="mousedown">
+								<span>Kibana</span>
+							</a>
+						</div>
+						<div class="api-menu-sep" role="separator"></div>
+						<a class="secondary-nav-dropdown-link api-identity-product-link" href="/api/" preload="mousedown">
+							<span class="api-identity-logo api-identity-logo--sm api-identity-logo--muted" aria-hidden="true">
+								<svg viewBox="0 0 16 16">
+									<use href="#icon-grid"></use>
+								</svg>
+							</span>
+							<span>All APIs</span>
+						</a>
+					</div>
+				</div>
+			</div>
+			<navigation-search type="api" variant="sidebar"></navigation-search>
+		</div>
+		<nav>tree</nav>
+	</nav>
+	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
+		</svg>
+	</label>
+</aside>
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+</label>

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Elastic.Documentation.Navigation.Tests</RootNamespace>
@@ -22,6 +21,9 @@
   <ItemGroup>
     <!-- The fixed-seed convention of the property tests: one definition, linked where it is used. -->
     <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Props.cs" />
+    <Using Include="Elastic.Documentation.Testing" />
+    <Using Include="Nullean.Snapshots" />
+    <Using Include="Nullean.Snapshots.Html" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +33,5 @@
     <PackageReference Include="Markdig" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>
-
 
 </Project>

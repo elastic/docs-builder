@@ -220,11 +220,11 @@ public class ReaderFindingStaysUnderM98AndIsNotRepeated : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("the unsupported key is an error from the YAML reader, reported once, and the block is not also reported as empty")]
+	[Test, DisplayName("the unsupported key is a hint from the YAML reader, reported once, and the block is not also reported as empty")]
 	public async Task ReportedOnce() =>
 		await Docs.HasRuleDiagnosticOnce(
 			ApplicableToConstraints.ApplicabilityDiagnosticsReported.Name,
-			Severity.Error,
+			Severity.Hint,
 			"Unknown key 'hosted' in applies_to"
 		);
 }

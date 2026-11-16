@@ -296,7 +296,10 @@ public class MermaidCodeBlock : DocumentTest
 	[Test, DisplayName("renders mermaid as code content")]
 	public async Task RendersMermaidAsCodeContent() =>
 		// Mermaid code blocks render like any code block
-		await Docs.ConvertsToPlainText("flowchart LR\nA --> B");
+		await Docs.ConvertsToPlainText("""
+			flowchart LR
+			    A --> B
+			""");
 }
 
 public class CsvIncludeDirective : GeneratorTest

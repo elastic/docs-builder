@@ -10,11 +10,13 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
+using Elastic.Documentation;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OperationExamplesPanelRenderingTests
+public partial class OperationExamplesPanelRenderingTests
 {
 	private static Cancel Ct => TestContext.Current!.Execution.CancellationToken;
 
@@ -26,7 +28,7 @@ public class OperationExamplesPanelRenderingTests
 		Title = "A simple term search",
 		TabId = "term",
 		CodeSamples = [Sample("Console", "GET /_search"), Sample("curl"), Sample("Python"), Sample("Java", "client.search(s -> s)")],
-		Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+		Responses = [new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] }]
 	};
 
 	private static readonly ExampleScenario Slicing = new()
@@ -43,29 +45,40 @@ public class OperationExamplesPanelRenderingTests
 		_ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
 
 	[Test]
-	public async Task Render_MultipleScenarios_ShowsChipsAndKeepsOthersFindable()
+	public async Task Render_GeneratedResponseMedia_ShowsProvenanceAndSeparateCopyActions()
 	{
-		var html = await RenderPanel(TermSearch, Slicing);
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "Subscription",
+			TabId = "subscription",
+			Responses =
+			[
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					Examples =
+					[
+						new ExampleDisplay("200", null, "{}", null) { MediaType = "application/json", Generated = true },
+						new ExampleDisplay("200", null, "false", null) { MediaType = "application/problem+json" }
+					]
+				}
+			]
+		});
 
-		html.Should().Contain("api-example-chips");
-		html.Should().Contain("data-scenario=\"term\"");
-		html.Should().Contain(">Search slicing</span>");
-		// The chip shows just the number; the words are a tooltip and screen-reader text.
-		html.Should().Contain("data-tippy-content=\"4 languages\"");
-		html.Should().Contain("<span class=\"sr-only\"> languages</span>");
-		html.Should().Contain("hidden=\"until-found\"");
-		html.Should().NotContain("api-select");
+		html.Should().MatchHtmlSnapshot();
+		CodeCardRegex().Count(html).Should().Be(3);
+		CodeActionsRegex().Count(html).Should().Be(3);
+		Status200Regex().Count(html).Should().Be(2);
 	}
 
 	[Test]
-	public async Task Render_MultipleScenarios_ListsEveryScenarioInTheMoreMenu()
+	public async Task Render_MultipleScenarios_ShowsChipsHeadingAndMoreMenuAndKeepsOthersFindable()
 	{
 		var html = await RenderPanel(TermSearch, Slicing);
 
-		html.Should().Contain("data-example-more");
-		html.Should().Contain("popover=\"auto\"");
-		html.Should().Contain("class=\"api-example-menu-item\" data-scenario=\"slicing\"");
-		html.Should().NotContain("data-example-filter");
+		// The chip shows just the number; the words are a tooltip and screen-reader text. The heading labels the chips,
+		// every scenario is listed in the more menu, and the other scenarios stay findable (hidden=until-found).
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Remove(".api-code-carousel"));
 	}
 
 	[Test]
@@ -111,8 +124,9 @@ public class OperationExamplesPanelRenderingTests
 	{
 		var html = await RenderScenario(TermSearch with { HttpMethod = "post", Route = "/_search" });
 
-		html.Should().Contain("api-code-carousel-card-client\">Elasticsearch Java Client</span>");
-		html.Should().Contain("api-code-carousel-card-client\">Kibana Dev Tools</span>");
+		html.Should().MatchHtmlSnapshot(
+			new HtmlSnapshotOptions().Select(".api-code-carousel-strip").Remove(".api-code-carousel-card-body")
+		);
 		html.Should().NotContain("api-method-post");
 	}
 
@@ -152,15 +166,7 @@ public class OperationExamplesPanelRenderingTests
 
 		html.Should().Contain("data-generated");
 		// One note per generated card, inside the card after its code, so it is about this sample and no other.
-		var cards = System
-			.Text
-			.RegularExpressions
-			.Regex
-			.Matches(
-				html,
-				"<section class=\"api-code-card api-code-carousel-card.*?</section>",
-				System.Text.RegularExpressions.RegexOptions.Singleline
-			);
+		var cards = CarouselCardRegex().Matches(html);
 		cards.Should().HaveCount(2);
 		foreach (var card in cards.Select(static c => c.Value))
 		{
@@ -196,10 +202,8 @@ public class OperationExamplesPanelRenderingTests
 			RequestDescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Splits the search into slices.</p>")
 		});
 
-		html.Should().Contain("data-example-description");
-		html.Should().Contain("Splits the search into slices.");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Remove(".api-code-carousel-strip"));
 		html.Should().MatchRegex("data-description-toggle[^>]*\\shidden>");
-		html.Should().NotContain("api-example-description");
 		var caption = html.IndexOf("Splits the search into slices.", StringComparison.Ordinal);
 		caption.Should().BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
 		caption.Should().BeLessThan(html.IndexOf("api-code-carousel-strip", StringComparison.Ordinal));
@@ -216,12 +220,7 @@ public class OperationExamplesPanelRenderingTests
 			RequestExternalValue = "https://example.test/request.json"
 		});
 
-		html.Should().Contain("Posted from a file.");
-		html.Should().Contain("https://example.test/request.json");
-		html
-			.IndexOf("Posted from a file.", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -236,24 +235,17 @@ public class OperationExamplesPanelRenderingTests
 				new ExampleResponse
 				{
 					StatusCode = "200",
-					JsonValue = "{}",
-					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>")
+					Examples = [new ExampleDisplay("200", new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>"), "{}", null)]
 				},
 				new ExampleResponse
 				{
 					StatusCode = "404",
-					JsonValue = "{}",
-					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>")
+					Examples = [new ExampleDisplay("404", new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>"), "{}", null)]
 				}
 			]
 		});
 
-		var found = html.IndexOf("Found it.", StringComparison.Ordinal);
-		found.Should().BeGreaterThan(html.IndexOf(">Response</span>", StringComparison.Ordinal));
-		found.Should().BeLessThan(html.IndexOf("data-api-response-samples", StringComparison.Ordinal));
-		html.Should().Contain("<div data-caption-status=\"200\">");
-		html.Should().Contain("<div data-caption-status=\"404\" hidden=\"hidden\">");
-		html.Should().NotContain(">Request</span>");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -265,28 +257,20 @@ public class OperationExamplesPanelRenderingTests
 			TabId = "get",
 			Responses =
 			[
-				new ExampleResponse { StatusCode = "200", JsonValue = "{}", StatusDescription = "Unauthorized" },
-				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					Examples = [new ExampleDisplay("200", null, "{}", null)],
+					StatusDescription = "Unauthorized"
+				},
+				new ExampleResponse { StatusCode = "404", Examples = [new ExampleDisplay("200", null, "{}", null)] }
 			]
 		});
 
 		// A tab without one renders an empty value, which the tooltip script skips.
 		html.Should().Contain("data-status=\"200\"");
-		Regex.Matches(html, "data-tippy-content=\"Unauthorized\"").Should().ContainSingle();
-		Regex.Matches(html, "data-status=\"404\"[^>]*data-tippy-content=\"\"").Should().ContainSingle();
-	}
-
-	[Test]
-	public async Task Render_Panel_LabelsTheChipsWithAnExamplesHeading()
-	{
-		var html = await RenderPanel(TermSearch, Slicing);
-
-		html.Should().Contain("id=\"api-examples-heading\" role=\"heading\" aria-level=\"2\">Examples</p>");
-		html.Should().Contain("aria-labelledby=\"api-examples-heading\"");
-		html
-			.IndexOf("id=\"api-examples-heading\"", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("api-example-chips", StringComparison.Ordinal));
+		UnauthorizedTooltipRegex().Matches(html).Should().ContainSingle();
+		EmptyTooltipOn404Regex().Matches(html).Should().ContainSingle();
 	}
 
 	[Test]
@@ -297,7 +281,7 @@ public class OperationExamplesPanelRenderingTests
 		{
 			Title = "Match all",
 			TabId = "match-all",
-			Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+			Responses = [new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] }]
 		});
 
 		request.Should().Contain("api-code-card");
@@ -314,15 +298,12 @@ public class OperationExamplesPanelRenderingTests
 			TabId = "match-all",
 			Responses =
 			[
-				new ExampleResponse { StatusCode = "200", JsonValue = "{}" },
-				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+				new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] },
+				new ExampleResponse { StatusCode = "404", Examples = [new ExampleDisplay("200", null, "{}", null)] }
 			]
 		});
 
-		html.Should().Contain("data-code-card");
-		html.Should().Contain("data-code-actions");
-		html.Should().Contain("data-code-panel=\"200\"");
-		html.Should().Contain("data-code-panel=\"404\"");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -334,12 +315,10 @@ public class OperationExamplesPanelRenderingTests
 			TabId = "create",
 			HttpMethod = "post",
 			Route = "/_search",
-			RequestJson = /*lang=json,strict*/  """{"query":{}}"""
+			RequestJson = /*lang=json,strict*/ """{"query":{}}"""
 		});
 
-		html.Should().Contain("api-method-post");
-		html.Should().Contain("class=\"api-url\">/_search</span>");
-		html.Should().NotContain("data-api-carousel");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -349,15 +328,11 @@ public class OperationExamplesPanelRenderingTests
 		{
 			Title = "createAgentRequestExample",
 			TabId = "create",
-			RequestJson = /*lang=json,strict*/  """{"id":"created-agent-id"}""",
+			RequestJson = /*lang=json,strict*/ """{"id":"created-agent-id"}""",
 			CodeSamples = [Sample("curl", "curl -X POST")]
 		});
 
-		html.Should().Contain(">Request example</span>");
-		html
-			.IndexOf("created-agent-id", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf("curl -X POST", StringComparison.Ordinal));
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -367,12 +342,12 @@ public class OperationExamplesPanelRenderingTests
 		{
 			Title = "Match all",
 			TabId = "match-all",
-			RequestJson = /*lang=json,strict*/  """{"query":{}}""",
+			RequestJson = /*lang=json,strict*/ """{"query":{}}""",
 			CodeSamples = [Sample("Console", "POST /_search\n{\"query\":{}}")],
 			CodeSamplesIncludeRequest = true
 		});
 
-		html.Should().NotContain("api-code-sample-heading");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -383,4 +358,25 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().Contain("<span class=\"api-rail-label\">Request</span>");
 		html.Should().Contain("<span class=\"api-rail-label\">Response</span>");
 	}
+
+	[GeneratedRegex("data-code-card", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex CodeCardRegex();
+
+	[GeneratedRegex("data-code-actions", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex CodeActionsRegex();
+
+	[GeneratedRegex("data-status=\"200\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex Status200Regex();
+
+	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
+	private static partial Regex CarouselCardRegex();
+
+	[GeneratedRegex("data-tippy-content=\"Unauthorized\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex UnauthorizedTooltipRegex();
+
+	[GeneratedRegex("data-status=\"404\"[^>]*data-tippy-content=\"\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex EmptyTooltipOn404Regex();
 }

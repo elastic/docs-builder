@@ -43,7 +43,7 @@ public partial record OperationPageModel
 		ParameterRowSource source
 	)
 	{
-		var rows = parameters
+		var rows = WithSpaceParameter(parameters, location, source.Endpoint)
 			.Where(p => p.In == location && !(location == ParameterLocation.Header && IgnoredHeaders.Contains(p.Name ?? "")))
 			.Select(
 				p => new ParameterRowInput(
@@ -55,8 +55,36 @@ public partial record OperationPageModel
 			.ToArray();
 		return source.Builder.BuildParameterList(
 			rows,
-			new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), IsRequest = true }
+			new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), JsonPath = "", IsRequest = true }
 		);
+	}
+
+	/// <summary>
+	/// Kibana specs declare the <c>/s/{space_id}</c> route only in the description, so the page lists the parameter itself,
+	/// first as it is the route's first segment, unless the spec declares it.
+	/// </summary>
+	private static IEnumerable<IOpenApiParameter> WithSpaceParameter(
+		IEnumerable<IOpenApiParameter> parameters,
+		ParameterLocation location,
+		OperationEndpoint endpoint
+	)
+	{
+		if (
+			location != ParameterLocation.Path
+			|| endpoint.SpaceParameter is not { } name
+			|| parameters.Any(p => p.In == location && p.Name == name)
+		)
+			return parameters;
+
+		IOpenApiParameter space = new OpenApiParameter
+		{
+			Name = name,
+			In = ParameterLocation.Path,
+			Required = false,
+			Description = OperationEndpoint.SpaceParameterDescription,
+			Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+		};
+		return parameters.Prepend(space);
 	}
 
 	/// <summary>The route to use without a path parameter that some routes leave out (a sibling route has none); null for any other parameter.</summary>

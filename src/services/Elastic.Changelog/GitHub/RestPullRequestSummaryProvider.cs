@@ -37,7 +37,9 @@ public sealed class RestPullRequestSummaryProvider(IGitHubPrService prService) :
 						info.Title,
 						info.Labels,
 						ReleaseNotesExtractor.ExtractReleaseNote(info.Body),
-						info.LinkedIssues
+						info.LinkedIssues,
+						ReleaseNotesExtractor.FindImpact(info.Body),
+						ReleaseNotesExtractor.FindAction(info.Body)
 					);
 			}
 			finally

@@ -94,7 +94,8 @@ public class ChangelogDtoProjectionCoverageTests
 				nameof(ChangelogPivotDto.Areas),
 				nameof(ChangelogPivotDto.Products),
 				nameof(ChangelogPivotDto.Features),
-				nameof(ChangelogPivotDto.Highlight)
+				nameof(ChangelogPivotDto.Highlight),
+				nameof(ChangelogPivotDto.Required)
 			)
 			.ShouldBeComplete();
 

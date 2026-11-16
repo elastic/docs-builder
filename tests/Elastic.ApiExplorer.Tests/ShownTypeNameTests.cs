@@ -77,7 +77,7 @@ public class ShownTypeNameTests
 
 	[Test]
 	[Arguments("vector", "number[]")]
-	[Arguments("source", "union")]
+	[Arguments("source", "union oneOf")]
 	[Arguments("ids", "union string")]
 	[Arguments("mixed", "(string | object)[]")]
 	[Arguments("alias", "string")]

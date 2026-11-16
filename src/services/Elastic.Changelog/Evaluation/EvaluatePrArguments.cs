@@ -42,4 +42,6 @@ public record EvaluatePrArguments
 	public bool CanCommit { get; init; }
 	public bool MaintainerCanModify { get; init; }
 	public string? HeadRepo { get; init; }
+	/// <summary>Opt-in: record the release-note outcome so the comment job says whether the PR will be part of the release notes.</summary>
+	public bool CommentOnSuccess { get; init; }
 }

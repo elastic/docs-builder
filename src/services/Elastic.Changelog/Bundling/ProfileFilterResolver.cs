@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -58,10 +59,10 @@ internal record ListFileResult(string[]? Prs, string[]? Issues, string[]? Files)
 
 public static partial class ProfileFilterResolver
 {
-	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/pull/\d+/?$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubPrUrlRegex();
 
-	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/issues/\d+/?$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^https?://github\.com/[^/]+/[^/]+/issues/\d+/?$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubIssueUrlRegex();
 
 	/// <summary>
@@ -174,6 +175,12 @@ public static partial class ProfileFilterResolver
 		// Substitute {version} and {lifecycle} in the products pattern
 		var lifecycle = VersionLifecycleInference.InferLifecycle(version);
 		var productsPattern = profile.Products?.Replace("{version}", version).Replace("{lifecycle}", lifecycle);
+
+		// When no products: pattern is configured but product: is set, synthesize the filter from it.
+		// This lets a profile with only product: cloud-serverless work end-to-end without requiring
+		// a redundant products: "cloud-serverless {version} {lifecycle}" line.
+		if (string.IsNullOrWhiteSpace(productsPattern) && !string.IsNullOrWhiteSpace(profile.Product))
+			productsPattern = $"{profile.Product} {version} {lifecycle}";
 
 		// If we have PRs, issues, or file paths from a file/report, return those directly
 		if (prsFromReport != null)

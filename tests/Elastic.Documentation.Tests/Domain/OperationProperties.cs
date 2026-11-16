@@ -18,8 +18,8 @@ public class LinkOperationProperties
 	);
 
 	private static Gen<LinkRegistryEntry> Entries { get; } = Gen.Select(
-		Gen.OneOfConst("kibana", "elasticsearch", "docs-content", "newcomer"),
-		Gen.OneOfConst("main", "9.0", "8.19", "release-x"),
+		Gen.OneOf("kibana", "elasticsearch", "docs-content", "newcomer"),
+		Gen.OneOf("main", "9.0", "8.19", "release-x"),
 		Gen.Int[0, 5000],
 		(repository, branch, days) => LinkExamples.Entry(repository, branch) with { UpdatedAt = LinkExamples.Published.AddDays(days) }
 	);
@@ -99,13 +99,13 @@ public class LinkOperationProperties
 	[Test]
 	public void ManifestFrom_HasOnePageOfEachPath_AndNeverThrows() =>
 		Gen.Select(
-			Gen.OneOfConst("a.md", "b/c.md", "d.md", "e/f/g.md", "").Select(
+			Gen.OneOf("a.md", "b/c.md", "d.md", "e/f/g.md", "").Select(
 				Gen.Bool,
-				Gen.OneOfConst("x", "y", "x").Array[0, 3],
+				Gen.OneOf("x", "y", "x").Array[0, 3],
 				(p, h, a) => new LinkPage(p, a, h, [])
 			).Array[0, 8],
-			Gen.OneOfConst("scheme://page.md", "other://page.md").Array[0, 4],
-			Gen.OneOfConst<string?>(null, "", "/docs")
+			Gen.OneOf("scheme://page.md", "other://page.md").Array[0, 4],
+			Gen.OneOf<string?>(null, "", "/docs")
 		).Check(x =>
 		{
 			var (pages, crossLinks, prefix) = x;

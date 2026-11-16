@@ -115,4 +115,14 @@ public partial record LinkManifest
 	[JsonInclude]
 	[UnorderedEquality]
 	public Dictionary<string, LinkRedirect>? Redirects { get; internal init; }
+
+	/// <summary>
+	/// The pages of floating sections, such as APIs, keyed by <c>{kind}/{key}</c> (<c>api/elasticsearch</c>).
+	/// They are not Markdown files, so they are not in <see cref="Links"/>.
+	/// </summary>
+	[JsonPropertyName("floating")]
+	[JsonInclude]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	[UnorderedEquality]
+	public Dictionary<string, FloatingLinkSection>? Floating { get; internal init; }
 }

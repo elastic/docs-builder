@@ -10,6 +10,22 @@ namespace Elastic.Documentation.Tests;
 public class StringExtensionsTests
 {
 	[Test]
+	[Arguments(null, null)]
+	[Arguments("", null)]
+	[Arguments("a", "a")]
+	[Arguments(" ", " ")]
+	public void NullIfEmpty_EmptyOrNull_ReturnsNull(string? value, string? expected) => value.NullIfEmpty().Should().Be(expected);
+
+	[Test]
+	public void JoinOrNull_NoValues_ReturnsNull() => Array.Empty<string>().JoinOrNull(' ').Should().BeNull();
+
+	[Test]
+	public void JoinOrNull_OnlyEmptyValues_ReturnsNull() => new[] { "" }.JoinOrNull(' ').Should().BeNull();
+
+	[Test]
+	public void JoinOrNull_Values_JoinsWithTheSeparator() => new[] { "a", "b" }.JoinOrNull(' ').Should().Be("a b");
+
+	[Test]
 	[Arguments("get-actions-connector-oauth-callback-script", "Get Actions Connector Oauth Callback Script")]
 	[Arguments("async_search_delete", "Async Search Delete")]
 	[Arguments("GET-Script", "Get Script")]
@@ -35,4 +51,7 @@ public class StringExtensionsTests
 	[Arguments("", "")]
 	public void CapitalizeFirstLetter_CapitalizesPlainWordsAndKeepsCodeLikeNames(string input, string expected) =>
 		input.CapitalizeFirstLetter().Should().Be(expected);
+
+	[Test]
+	public void Slugify_NullInput_ReturnsEmptyString() => ((string?)null).Slugify().Should().BeEmpty();
 }

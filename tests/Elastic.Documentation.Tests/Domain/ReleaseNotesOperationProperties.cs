@@ -53,7 +53,7 @@ internal static class ReleaseNotesGen
 
 	/// <summary>A PR or issue reference in a form a file carries: a GitHub URL, <c>owner/repo#n</c> or a bare number.</summary>
 	public static Gen<string> Reference { get; } = Gen.Select(
-		Gen.OneOfConst(Repositories),
+		Gen.OneOf(Repositories),
 		Gen.Int[1, 500],
 		Gen.Int[0, 2],
 		(repo, number, form) =>
@@ -67,7 +67,7 @@ internal static class ReleaseNotesGen
 
 	/// <summary>A reference that carries its repository (a bare number does not, and is read against the default).</summary>
 	private static Gen<string> QualifiedReference { get; } = Gen.Select(
-		Gen.OneOfConst(Repositories),
+		Gen.OneOf(Repositories),
 		Gen.Int[1, 500],
 		Gen.Bool,
 		(repo, number, url) => url ? $"https://github.com/{repo}/issues/{number}" : $"{repo}#{number}"
@@ -110,15 +110,15 @@ internal static class ReleaseNotesGen
 	public static Gen<PullRequestFacts> Facts { get; } = Gen.Select(
 		DomainGen.Of<PullRequestFacts>(),
 		Reference,
-		Gen.OneOfConst<string?>(null, "feature", "bug-fix", "breaking-change", "not-a-type", ""),
+		Gen.OneOf<string?>(null, "feature", "bug-fix", "breaking-change", "not-a-type", ""),
 		(f, url, type) => f with { Url = url, Type = type }
 	);
 
 	/// <summary>Arbitrary text for every free field: blanks, long text, anything the CLI could be handed.</summary>
 	public static Gen<CreateEntryFacts> AnyCreateFacts { get; } = Gen.Select(
 		Props.OptionalString,
-		Gen.OneOfConst<string?>(null, "", "feature", "breaking-change", "nope"),
-		Gen.OneOfConst<string?>(null, "", "api", "nope"),
+		Gen.OneOf<string?>(null, "", "feature", "breaking-change", "nope"),
+		Gen.OneOf<string?>(null, "", "api", "nope"),
 		Props.OptionalString,
 		Props.OptionalString.Array[0, 3],
 		(title, type, subtype, description, any) => new CreateEntryFacts(

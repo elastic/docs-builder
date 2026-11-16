@@ -176,7 +176,8 @@ public static class AssemblyLoader
 			},
 			Optimizely = new Optimizely { Enabled = dto.Optimizely.Enabled, Id = dto.Optimizely.Id },
 			FeatureFlags = dto.FeatureFlags ?? [],
-			WebsiteSearchScriptUrl = dto.WebsiteSearchScriptUrl
+			WebsiteSearchScriptUrl = dto.WebsiteSearchScriptUrl,
+			WafIntegrationUrl = dto.WafIntegrationUrl
 		};
 
 	private static Repository RepositoryDefaults(Repository repository, IEnvironmentVariables environment)

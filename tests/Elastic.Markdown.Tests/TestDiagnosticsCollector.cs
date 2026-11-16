@@ -26,8 +26,9 @@ public class TestDiagnosticsCollector() : DiagnosticsCollector([new TestDiagnost
 	/// <inheritdoc />
 	public override void Write(Diagnostic diagnostic)
 	{
-		IncrementSeverityCount(diagnostic);
-		_diagnostics.Add(diagnostic);
+		// Accept drops an exact duplicate of a rule's diagnostic, as the production collector does, so a finding two layers report is seen once.
+		if (Accept(diagnostic))
+			_diagnostics.Add(diagnostic);
 	}
 
 	/// <inheritdoc />

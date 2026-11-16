@@ -51,11 +51,11 @@ public static partial class SiteNavigationConstraints
 	public static Constraint<SiteNavigationDefinition> SectionNotEmpty { get; } = Constraints<SiteNavigationDefinition>
 		.Each(
 			Sections,
-			s => s.IsExternal || s.Children.Count > 0 || s.IsDropdown,
+			s => s.IsExternal || s.Children.Count > 0 || s.IsDropdown || s.FloatingKind is not null,
 			s => $"Section '{s.Title}' has no children, dropdown or external url, so it is dropped."
 		)
 		.WithSeverity(Severity.Warning)
-		.Describe("G57: A section has an external url, children or a dropdown; an empty section is dropped.");
+		.Describe("G57: A section has an external url, children or a dropdown (or mounts floating sections); an empty section is dropped.");
 
 	public static Constraint<SiteNavigationDefinition> DropdownLinkComplete { get; } = Constraints<SiteNavigationDefinition>
 		.Each(

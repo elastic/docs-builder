@@ -34,7 +34,10 @@ public class AssembledSiteConstraintsTests
 	{
 		IReadOnlyList<AssembledRepository> source = site.Repositories.Count >= 2
 			? site.Repositories
-			: [.. site.Repositories, .. Enumerable.Repeat(site.Repositories.FirstOrDefault() ?? Kibana(), 2 - site.Repositories.Count)];
+			: [
+				.. site.Repositories,
+				.. Enumerable.Repeat(site.Repositories is [var first, ..] ? first : Kibana(), 2 - site.Repositories.Count)
+			];
 		var repositories = source.Select(
 			(r, i) =>
 				r with

@@ -7,8 +7,11 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Codex;
 
@@ -30,24 +33,17 @@ public class CodexHtmxCrossLinkTests() : LinkTestBase("Go to [test](kibana://ind
 	protected override ICrossLinkResolver CreateCrossLinkResolver() => new TestCodexCrossLinkResolver(useRelativePaths: true);
 
 	[Test]
-	public void CrossLink_ProducesPathOnlyHref()
-	{
-		Html.Should().Contain("href=\"/r/kibana/\"");
-		Html.Should().NotContain("https://codex.elastic.dev");
-	}
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Go to
+			<a href="/r/kibana/" preload="mousedown">test</a>
+		</p>
+		"""
+		);
 
 	[Test]
-	public void CrossLink_HasNoSelectOobButKeepsPreload()
-	{
-		Html.Should().NotContain("hx-select-oob");
-		Html.Should().Contain("preload=\"mousedown\"");
-	}
-
-	[Test]
-	public void CrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
-
-	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -68,14 +64,15 @@ public class IsolatedCodexCrossLinkTests() : LinkTestBase("Go to [test](kibana:/
 	protected override ICrossLinkResolver CreateCrossLinkResolver() => new TestCodexCrossLinkResolver(useRelativePaths: false);
 
 	[Test]
-	public void IsolatedCrossLink_HasAbsoluteHref() => Html.Should().Contain("https://codex.elastic.dev/r/kibana/");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Go to
+			<a href="https://codex.elastic.dev/r/kibana/" target="_blank" rel="noopener noreferrer">test</a>
+		</p>
+		"""
+		);
 
 	[Test]
-	public void IsolatedCrossLink_HasTargetBlank() => Html.Should().Contain("target=\"_blank\"");
-
-	[Test]
-	public void IsolatedCrossLink_NoHtmx() => Html.Should().NotContain("hx-select-oob");
-
-	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }

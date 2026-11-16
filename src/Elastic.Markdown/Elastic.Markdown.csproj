@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -24,7 +23,6 @@
     <PackageReference Include="RazorSlices" />
     <PackageReference Include="Sep" />
     <PackageReference Include="SharpYaml" />
-    <PackageReference Include="Slugify.Core" />
     <PackageReference Include="Utf8StreamReader" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="NetEscapades.EnumGenerators" />

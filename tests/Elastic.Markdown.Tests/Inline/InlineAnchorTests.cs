@@ -4,10 +4,13 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.InlineParsers;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -27,8 +30,9 @@ public class InlineAnchorTests() : LeafTest<InlineAnchor>(
 
 	[Test]
 	public void GeneratesAttributesInHtml() =>
-		Html.ShouldContainHtml(
-			"""<p>this is regular text and this <a id="is-an-inline-anchor"></a> and this continues to be regular text</p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p>this is regular text and this <a id="is-an-inline-anchor"></a> and this continues to be regular text</p>""",
+			DocsHtml.Body()
 		);
 }
 
@@ -49,7 +53,10 @@ public class InlineAnchorAtStartTests() : LeafTest<InlineAnchor>(
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Be("""<p><a id="is-an-inline-anchor"></a> and this continues to be regular text</p>""");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><a id="is-an-inline-anchor"></a> and this continues to be regular text</p>""",
+			DocsHtml.Body()
+		);
 }
 
 [InheritsTests]
@@ -67,7 +74,7 @@ public class InlineAnchorAtEndTests() : LeafTest<InlineAnchor>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml("""<p>this is regular text and this <a id="is-an-inline-anchor"></a></p>""");
+		Html.Should().MatchInlineHtmlSnapshot("""<p>this is regular text and this <a id="is-an-inline-anchor"></a></p>""", DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -77,8 +84,7 @@ public class BadStartInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 {
 	[Test]
 	public void GeneratesAttributesInHtml() =>
-		// language=html
-		Html.Should().Contain("""<p>this is regular text and this $$is-an-inline-anchor$$$</p>""");
+		Html.Should().MatchInlineHtmlSnapshot("<p>this is regular text and this $$is-an-inline-anchor$$$</p>", DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -89,7 +95,7 @@ public class BadEndInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml("""<p>this is regular text and this $$$is-an-inline-anchor$$</p>""");
+		Html.Should().MatchInlineHtmlSnapshot("""<p>this is regular text and this $$$is-an-inline-anchor$$</p>""", DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -100,12 +106,20 @@ public class InlineAnchorInHeading() : BlockTest<HeadingBlock>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldBeHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<div class="heading-wrapper" id="hello-world"><h2><a class="headerlink" href="#hello-world">Hello world <a id="my-anchor"></a></a></h2>
 			</div>
-			"""
+			""",
+			DocsHtml.Body()
 		);
+
+	[Test]
+	public void TableOfContentsLinksToTheRenderedHeadingId()
+	{
+		File.PageTableOfContent.Keys.Should().Equal("hello-world");
+		File.PageTableOfContent["hello-world"].Heading.Should().Be("Hello world");
+	}
 }
 
 [InheritsTests]
@@ -116,12 +130,13 @@ public class ExplicitSlugInHeader() : BlockTest<HeadingBlock>("""
 	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldBeHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<div class="heading-wrapper" id="my-anchor">
 				<h2><a class="headerlink" href="#my-anchor">Hello world</a></h2>
 			</div>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 }
 
@@ -155,6 +170,10 @@ To follow this tutorial you will need to install the following components:
 These are new requirements
 
 With a custom anchor that exists temporarily. $$$custom-anchor$$$
+
+## Install steps $$$install-anchor$$$
+
+Steps.
 """;
 		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/_static/img/observability.png", new MockFileData(""));
@@ -169,10 +188,26 @@ public class InlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase("""
 	[Test]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.ShouldContainHtml("""<p><a href="#same-page-anchor">Hello</a></p>""");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="hello-world">
+				<h2>
+					<a class="headerlink" href="#hello-world">Hello world</a>
+				</h2>
+			</div>
+			<p>A paragraph</p>
+			<p>
+				<a href="#same-page-anchor">Hello</a>
+			</p>
+			<p>
+				<a id="same-page-anchor"></a>
+			</p>
+			""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -182,10 +217,63 @@ public class ExternalPageInlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req#custom-anchor" hx-get="/docs/testing/req#custom-anchor" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="hello-world">
+				<h2>
+					<a class="headerlink" href="#hello-world">Hello world</a>
+				</h2>
+			</div>
+			<p>A paragraph</p>
+			<p>
+				<a href="/docs/testing/req#custom-anchor">Sub Requirements</a>
+			</p>
+			<p>
+				<a id="same-page-anchor"></a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+}
+
+[InheritsTests]
+public class ExternalPageHeadingWithInlineAnchorCanBeLinked() : InlineAnchorLinkTestBase(
+	"""
+[Install steps](testing/req.md#install-steps)
+"""
+)
+{
+	[Test]
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+}
+
+[InheritsTests]
+public class ExternalPageHeadingSlugWithInlineAnchorTextIsNotAnAnchor() : InlineAnchorLinkTestBase(
+	"""
+[Install steps](testing/req.md#install-steps-install-anchor)
+"""
+)
+{
+	// The heading renders as id="install-steps"; the inline anchor text is not part of its slug.
+	[Test]
+	public void HasAnError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:7 `install-steps-install-anchor` does not exist in testing/req.md.");
+}
+
+[InheritsTests]
+public class ExternalPageInlineAnchorInHeadingCanBeLinked() : InlineAnchorLinkTestBase(
+	"""
+[Install steps](testing/req.md#install-anchor)
+"""
+)
+{
+	[Test]
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }

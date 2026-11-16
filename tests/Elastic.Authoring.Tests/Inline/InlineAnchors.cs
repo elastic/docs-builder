@@ -62,11 +62,52 @@ public class InlineAnchorsEmbeddedInDefinitionLists : GeneratorTest
 			)
 		];
 
-	[Test, DisplayName("emits nested inline anchor")]
-	public async Task EmitsNestedInlineAnchor() => await Docs.ConvertsToContainingHtml("""<a id="dfs-query-then-fetch"></a>""");
-
-	[Test, DisplayName("emits definition list block anchor")]
-	public async Task EmitsDefinitionListBlockAnchor() => await Docs.ConvertsToContainingHtml("""<a id="search-type"></a>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<p>
+			<a id="search-type"></a>
+		</p>
+		<dl>
+			<dt>
+				<code>search_type</code>
+			</dt>
+			<dd>
+				<p>(Optional, string) How distributed term frequencies are calculated for relevance scoring.</p>
+				<details class="dropdown">
+					<summary class="dropdown-title">
+						<div class="dropdown-title__container">
+							<span class="dropdown-title__summary-text">Valid values for search_type</span>
+						</div>
+						<div class="dropdown-title__icon">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+							</svg>
+						</div>
+					</summary>
+					<div class="dropdown-content">
+						<dl>
+							<dt>
+								<code>query_then_fetch</code>
+							</dt>
+							<dd>(Default) Distributed term frequencies are calculated locally for each shard running the search. We recommend this option for faster searches with potentially less accurate scoring.</dd>
+						</dl>
+					</div>
+				</details>
+				<p>
+					<a id="dfs-query-then-fetch"></a>
+				</p>
+				<dl>
+					<dt>
+						<code>dfs_query_then_fetch</code>
+					</dt>
+					<dd>Distributed term frequencies are calculated globally, using information gathered from all shards running the search.</dd>
+				</dl>
+			</dd>
+		</dl>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -105,11 +146,20 @@ public class InlineAnchorsEmbeddedInIndentedCode : GeneratorTest
 			)
 		];
 
-	[Test, DisplayName("emits nested inline anchor")]
-	public async Task EmitsNestedInlineAnchor() => await Docs.ConvertsToContainingHtml("""<a id="dfs-query-then-fetch"></a>""");
-
-	[Test, DisplayName("emits definition list block anchor")]
-	public async Task EmitsDefinitionListBlockAnchor() => await Docs.ConvertsToContainingHtml("""<a id="search-type"></a>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<p>
+			<a id="search-type"></a>
+		</p>
+		<p>indented codeblock</p>
+		<p>
+			<a id="dfs-query-then-fetch"></a>
+		</p>
+		<p>block</p>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();

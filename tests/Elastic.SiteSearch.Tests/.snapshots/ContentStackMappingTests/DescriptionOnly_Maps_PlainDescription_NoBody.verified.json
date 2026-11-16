@@ -1,0 +1,28 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "og": {
+    "title": "Cohere RAG and Rerank with Elasticsearch",
+    "description": "Learn how to build a RAG system using the Cohere Inference API."
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Using Cohere for RAG and Rerank in Elasticsearch",
+  "search_title": "Using Cohere for RAG and Rerank in Elasticsearch",
+  "content_type": "site",
+  "path": "/search-labs/tutorials/examples/cohere-rag-rerank-elasticsearch-tutorial",
+  "url": "/search-labs/tutorials/examples/cohere-rag-rerank-elasticsearch-tutorial",
+  "hash": "1ead94c577f4f8eb",
+  "description": "Learn how to build a RAG system using the Cohere Inference API and Elasticsearch with embeddings, hybrid search, and advanced reranking.",
+  "headings": [],
+  "body": "Learn how to build a RAG system using the Cohere Inference API and Elasticsearch with embeddings, hybrid search, and advanced reranking.",
+  "summary": "Learn how to build a RAG system using the Cohere Inference API and Elasticsearch with embeddings, hybrid search, and advanced reranking.",
+  "parents": [],
+  "translated": true,
+  "section": "search-labs",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 5,
+    "table_of_contents": 100
+  }
+}

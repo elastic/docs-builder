@@ -3,17 +3,19 @@ import {
     groupResults,
     initSearch,
     bindSearchShortcut,
+    querySearch,
 } from './search'
+import type { Mock } from 'vitest'
 
-jest.mock('../config', () => ({
+vi.mock('../config', () => ({
     config: {
         buildType: 'assembler',
         apiBasePath: '/docs/_api',
         rootPath: '/docs',
     },
 }))
-jest.mock('../web-components/ModalSearch/pagefind', () => ({
-    searchPagefind: jest.fn(),
+vi.mock('../web-components/ModalSearch/pagefind', () => ({
+    searchPagefind: vi.fn(),
 }))
 
 const markup = `
@@ -25,7 +27,7 @@ const markup = `
   <p data-search-status role="status">Type to search.</p>
   <ol data-search-results role="listbox"></ol>
   <template data-search-result>
-    <li role="option"><a href="#"><span data-search-path></span><span data-search-title></span><span data-search-excerpt></span></a></li>
+    <li role="option"><a href="#"><span data-search-path></span><span data-search-title></span><span data-search-deprecated hidden>Deprecated</span><span data-search-excerpt></span></a></li>
   </template>
 </dialog>`
 
@@ -42,6 +44,7 @@ const results = {
             title: 'Beta',
             description: 'plain text',
             parents: [],
+            deprecated: true,
         },
     ],
 }
@@ -79,10 +82,10 @@ describe('appendExcerpt', () => {
 })
 
 describe('search dialog', () => {
-    let fetchMock: jest.Mock
+    let fetchMock: Mock
 
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         document.body.innerHTML = markup
         const dialog = document.querySelector('dialog') as HTMLDialogElement
         dialog.showModal = function () {
@@ -92,7 +95,7 @@ describe('search dialog', () => {
             this.removeAttribute('open')
             this.dispatchEvent(new Event('close'))
         }
-        fetchMock = jest.fn(async () => ({
+        fetchMock = vi.fn(async () => ({
             ok: true,
             json: async () => results,
         }))
@@ -101,7 +104,7 @@ describe('search dialog', () => {
         bindSearchShortcut()
     })
 
-    afterEach(() => jest.useRealTimers())
+    afterEach(() => vi.useRealTimers())
 
     const type = async (value: string) => {
         const input = document.querySelector<HTMLInputElement>(
@@ -109,7 +112,7 @@ describe('search dialog', () => {
         )!
         input.value = value
         input.dispatchEvent(new Event('input'))
-        await jest.advanceTimersByTimeAsync(350)
+        await vi.advanceTimersByTimeAsync(350)
     }
 
     it('reveals the trigger and opens the dialog from it', () => {
@@ -156,6 +159,16 @@ describe('search dialog', () => {
         expect(items[0].querySelector('a')!.getAttribute('href')).toBe(
             '/docs/a'
         )
+        expect(items[0].hasAttribute('data-deprecated')).toBe(false)
+        expect(
+            items[0].querySelector<HTMLElement>('[data-search-deprecated]')!
+                .hidden
+        ).toBe(true)
+        expect(items[1].hasAttribute('data-deprecated')).toBe(true)
+        expect(
+            items[1].querySelector<HTMLElement>('[data-search-deprecated]')!
+                .hidden
+        ).toBe(false)
         expect(
             document.querySelector('[data-search-status]')!.textContent
         ).toBe('2 results.')
@@ -238,5 +251,47 @@ describe('groupResults', () => {
             'Results',
         ])
         expect(groups[0].results.map((r) => r.title)).toEqual(['a', 'c'])
+    })
+})
+
+describe('querySearch scope', () => {
+    let fetchMock: Mock
+
+    beforeEach(() => {
+        fetchMock = vi.fn(async () => ({
+            ok: true,
+            json: async () => results,
+        }))
+        global.fetch = fetchMock as unknown as typeof fetch
+    })
+
+    const urlOn = async (path: string) => {
+        history.pushState(null, '', path)
+        await querySearch('alpha')
+        return fetchMock.mock.calls[0][0]
+    }
+
+    it('sends the api key and version tree on a versioned API path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/v8/operation/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=8'
+        )
+    })
+
+    it('sends the main tree on a main path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/main/group/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=main'
+        )
+    })
+
+    it('sends the api key alone on the unversioned API path', async () => {
+        expect(await urlOn('/docs/api/doc/elasticsearch/operation/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch'
+        )
+    })
+
+    it('sends no scope on a markdown page', async () => {
+        expect(await urlOn('/docs/get-started')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1'
+        )
     })
 })

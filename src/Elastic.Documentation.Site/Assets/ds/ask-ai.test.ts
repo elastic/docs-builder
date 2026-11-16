@@ -7,8 +7,9 @@ import {
     streamAnswer,
     type AskAiStream,
 } from './ask-ai'
+import type { Mock } from 'vitest'
 
-jest.mock('../config', () => ({
+vi.mock('../config', () => ({
     config: {
         buildType: 'assembler',
         apiBasePath: '/docs/_api',
@@ -35,8 +36,8 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 function setup(stream: AskAiStream) {
     document.body.innerHTML = markup
     const dialog = document.getElementById('a') as HTMLDialogElement
-    dialog.showModal = jest.fn()
-    dialog.close = jest.fn()
+    dialog.showModal = vi.fn()
+    dialog.close = vi.fn()
     initAskAi(document, stream)
     return dialog
 }
@@ -242,7 +243,7 @@ describe('references and feedback', () => {
     })
 
     it('lists references as links and sends a reaction once', async () => {
-        global.fetch = jest
+        global.fetch = vi
             .fn()
             .mockResolvedValue({ ok: true }) as unknown as typeof fetch
         setup(async (request) => {
@@ -273,8 +274,7 @@ describe('references and feedback', () => {
         expect(up.getAttribute('aria-pressed')).toBe('true')
         expect(global.fetch).toHaveBeenCalledTimes(1)
         expect(
-            JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
-                .reaction
+            JSON.parse((global.fetch as Mock).mock.calls[0][1].body).reaction
         ).toBe('thumbsUp')
     })
     it('links only http(s) and site-relative references', async () => {

@@ -17,6 +17,8 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <param name="FeatureId">The feature id derived from labels.</param>
 /// <param name="Highlight">Whether a highlight label was present.</param>
 /// <param name="Issues">The issues the PR links; an empty list is the same as none.</param>
+/// <param name="Impact">The <c>## Impact</c> section of the PR body, if any.</param>
+/// <param name="Action">The <c>## Action</c> section of the PR body, if any.</param>
 [Equatable]
 public sealed partial record PullRequestFacts(
 	string Url,
@@ -26,7 +28,9 @@ public sealed partial record PullRequestFacts(
 	[property: OrderedEquality] IReadOnlyList<string>? Areas = null,
 	string? FeatureId = null,
 	bool? Highlight = null,
-	[property: OrderedEquality] IReadOnlyList<string>? Issues = null
+	[property: OrderedEquality] IReadOnlyList<string>? Issues = null,
+	string? Impact = null,
+	string? Action = null
 );
 
 /// <summary>What the CLI's <c>changelog add</c> and <c>changelog note</c> collect, before it is an entry.</summary>
@@ -81,6 +85,8 @@ public partial record ChangelogEntry
 				Title = facts.Title,
 				Type = TypeOrOther(facts.Type),
 				Description = facts.Description,
+				Impact = facts.Impact,
+				Action = facts.Action,
 				Products = products,
 				Areas = facts.Areas is { Count: > 0 } ? facts.Areas : null,
 				FeatureId = facts.FeatureId,

@@ -185,6 +185,9 @@ public sealed class CapturingDiagnosticsCollector() : DiagnosticsCollector([])
 		}
 	}
 
+	/// <summary>The same list as <see cref="Diagnostics"/>, under the name the snapshot tests read it by.</summary>
+	public IReadOnlyList<Diagnostic> Captured => Diagnostics;
+
 	public override void Write(Diagnostic diagnostic)
 	{
 		if (Accept(diagnostic))

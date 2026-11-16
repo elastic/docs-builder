@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Caching;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -35,7 +36,7 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 	private readonly GitHubApiTransport _transport = transport
 		?? new GitHubApiTransport(logger: logFactory.CreateLogger<GraphQlPullRequestSummaryProvider>());
 
-	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
+	[GeneratedRegex("^[A-Za-z0-9_.-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SafeIdentifierRegex();
 
 	public async Task<IReadOnlyDictionary<int, PullRequestSummary?>?> GetAsync(
@@ -160,11 +161,25 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 	{
 		var body = node.Body ?? string.Empty;
 		var note = ReleaseNotesExtractor.ExtractReleaseNote(body);
-		return new CachedPullRequestText(note.Content, note.WasTruncated, LinkedIssueExtractor.Extract(body, owner, repo));
+		return new CachedPullRequestText(
+			note.Content,
+			note.WasTruncated,
+			LinkedIssueExtractor.Extract(body, owner, repo),
+			ReleaseNotesExtractor.FindImpact(body),
+			ReleaseNotesExtractor.FindAction(body)
+		);
 	}
 
 	private static PullRequestSummary Summarize(int number, string title, IReadOnlyList<string> labels, CachedPullRequestText text) =>
-		new(number, title, labels, new ReleaseNoteExtractionResult(text.ReleaseNote, text.ReleaseNoteTruncated), text.LinkedIssues);
+		new(
+			number,
+			title,
+			labels,
+			new ReleaseNoteExtractionResult(text.ReleaseNote, text.ReleaseNoteTruncated),
+			text.LinkedIssues,
+			text.Impact,
+			text.Action
+		);
 
 	/// <summary>Reads the pull requests 50 at a time: their body, or their title, labels and update time.</summary>
 	private async Task<Dictionary<int, Node>?> ReadAsync(

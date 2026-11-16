@@ -1,0 +1,34 @@
+<aside class="sidebar font-sans bg-white md:bg-transparent fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 md:border-0 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1 flex flex-col min-h-0">
+	<nav id="pages-nav" hx-preserve="" class="sidebar-nav min-h-0 flex-1 flex flex-col">
+		<div class="md:hidden border-b border-grey-20 px-4 py-4">
+			<div class="font-sans">
+				<div class="mb-2 text-xs font-bold uppercase tracking-wide text-grey-70">Section</div>
+				<details class="secondary-nav-mobile-menu">
+					<summary class="flex w-full cursor-pointer select-none items-center justify-between rounded-md border border-grey-20 bg-white px-3 py-2 text-sm font-semibold text-ink">
+						<span>Docs Home</span>
+						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="secondary-nav-mobile-chevron">
+							<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+						</svg>
+					</summary>
+					<div class="mt-2 rounded-md border border-grey-20 bg-white py-1 text-sm font-semibold shadow-sm">
+						<a href="/docs/" class="block px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
+						<a href="/docs/guides/" class="block px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">Guides</a>
+						<a href="/docs/reference/" class="block px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">Reference</a>
+						<a href="https://www.elastic.co/docs/api/" target="_blank" rel="noopener noreferrer" class="block px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">
+							APIs
+							<span class="sr-only">(opens in a new tab)</span>
+						</a>
+					</div>
+				</details>
+			</div>
+		</div>
+		<ul id="nav-tree-test"></ul>
+	</nav>
+	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
+		</svg>
+	</label>
+</aside>
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+</label>

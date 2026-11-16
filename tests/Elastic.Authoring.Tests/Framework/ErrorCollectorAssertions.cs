@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -23,6 +24,10 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 internal static class ErrorCollectorAssertions
 {
+	[DebuggerStepThrough]
+	internal static void HasDiagnostics(string? expected, GeneratorResults results, CallSite site) =>
+		InlineSnapshots.Text(results.Context.Collector.Diagnostics.ToSnapshotText(), expected, nameof(Scenario.HasDiagnostics), site);
+
 	[DebuggerStepThrough]
 	internal static void HasNoErrors(GeneratorResults results)
 	{
@@ -60,8 +65,8 @@ internal static class ErrorCollectorAssertions
 	// which the redirect constraints report as warnings in every scenario. They are not what these assertions are about.
 	private static bool IsFixtureRedirectWarning(Diagnostic d) =>
 		// the fixture has no git origin: the link-manifest rule that surfaces as a warning for now
-		d.RuleId
-			== LinkManifestConstraints.LinkManifestOriginNamed.Name
+			d.RuleId
+				== LinkManifestConstraints.LinkManifestOriginNamed.Name
 			|| d.Message.StartsWith("Redirect 'testing/redirects/", StringComparison.Ordinal)
 				&& (d.Message.EndsWith("points to itself and is dropped.", StringComparison.Ordinal)
 					|| d.Message.EndsWith("only the first with a 'to' is used.", StringComparison.Ordinal));

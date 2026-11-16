@@ -47,10 +47,10 @@ internal sealed partial class ChangelogCommands(
 	IEnvironmentVariables environmentVariables
 )
 {
-	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BundleDirectoryRegex();
 
-	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
 	private readonly ChangelogFileSystem _fileSystem = ChangelogFileSystem.FromWorkingDirectory();
@@ -1903,6 +1903,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="requireChangelogFile">Fail when no changelog entry file exists for the PR</param>
 	/// <param name="requireImpactAction">Fail when a breaking-change PR description lacks an Impact and/or Action section</param>
 	/// <param name="botName">Bot login name for loop detection</param>
+	/// <param name="commentOnSuccess">Also comment when the check passes, saying whether the PR will be part of the release notes</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> EvaluatePr(
@@ -1925,6 +1926,7 @@ internal sealed partial class ChangelogCommands(
 		bool canCommit = false,
 		bool maintainerCanModify = false,
 		string? headRepo = null,
+		bool commentOnSuccess = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1968,7 +1970,8 @@ internal sealed partial class ChangelogCommands(
 			IsFork = isFork,
 			CanCommit = canCommit,
 			MaintainerCanModify = maintainerCanModify,
-			HeadRepo = headRepo
+			HeadRepo = headRepo,
+			CommentOnSuccess = commentOnSuccess
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx));
@@ -1998,6 +2001,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
 	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
 	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
+	/// <param name="commentOnSuccess">Also comment when the check passes, saying whether the PR will be part of the release notes.</param>
 	/// <param name="ct">Cancellation token</param>
 	[NoOptionsInjection]
 	public async Task<int> ValidateLabels(
@@ -2010,6 +2014,7 @@ internal sealed partial class ChangelogCommands(
 		bool canCommit = false,
 		bool maintainerCanModify = false,
 		string? headRepo = null,
+		bool commentOnSuccess = false,
 		CancellationToken ct = default
 	)
 	{
@@ -2036,7 +2041,8 @@ internal sealed partial class ChangelogCommands(
 			CanCommit = canCommit,
 			MaintainerCanModify = maintainerCanModify,
 			HeadRepo = headRepo,
-			ConfigFile = config.FullName
+			ConfigFile = config.FullName,
+			CommentOnSuccess = commentOnSuccess
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateLabels(collector, state, ctx));
@@ -2061,6 +2067,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
 	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
 	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
+	/// <param name="commentOnSuccess">Keep the release-note outcome comment when entry validation passes.</param>
 	/// <param name="ct">Cancellation token.</param>
 	[NoOptionsInjection]
 	public async Task<int> Validate(
@@ -2077,6 +2084,7 @@ internal sealed partial class ChangelogCommands(
 		bool canCommit = false,
 		bool maintainerCanModify = false,
 		string? headRepo = null,
+		bool commentOnSuccess = false,
 		CancellationToken ct = default
 	)
 	{
@@ -2114,7 +2122,8 @@ internal sealed partial class ChangelogCommands(
 			IsFork = isFork,
 			CanCommit = canCommit,
 			MaintainerCanModify = maintainerCanModify,
-			HeadRepo = headRepo
+			HeadRepo = headRepo,
+			CommentOnSuccess = commentOnSuccess
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateEntries(collector, state, ctx));
@@ -2243,7 +2252,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="metadata">Path to the decision metadata.json file</param>
 	/// <param name="commitOutcome">Outcome of the changelog commit step</param>
 	/// <param name="committedFile">Repo-relative path to the committed file (when <paramref name="commitOutcome"/> is Committed)</param>
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> GithubDecision(
 		string metadata,
@@ -2273,7 +2282,7 @@ internal sealed partial class ChangelogCommands(
 	/// <c>GITHUB_ACTIONS</c> and must only be invoked from a job with <c>pull-requests: write</c>.
 	/// </remarks>
 	/// <param name="metadata">Path to the decision metadata.json file</param>
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> GithubComment(string metadata, CancellationToken ct = default)
 	{

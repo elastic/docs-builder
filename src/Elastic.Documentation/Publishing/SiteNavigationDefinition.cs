@@ -239,17 +239,25 @@ public partial record SiteSectionRef
 		string title,
 		string? externalUrl,
 		IReadOnlyList<SiteTableOfContentsRef> children,
-		IReadOnlyList<SiteDropdownLinkRef> dropdownLinks
+		IReadOnlyList<SiteDropdownLinkRef> dropdownLinks,
+		string? floatingKind = null
 	)
 	{
 		Title = title;
 		ExternalUrl = externalUrl;
 		Children = children;
 		DropdownLinks = dropdownLinks;
+		FloatingKind = floatingKind;
 	}
 
 	public string Title { get; internal init; }
 	public string? ExternalUrl { get; internal init; }
+
+	/// <summary>
+	/// <c>floating: &lt;kind&gt;</c> mounts the floating sections of that kind (for example every API) as the section's children
+	/// when the build has any. Without them the section keeps its other behaviour, such as an external link.
+	/// </summary>
+	public string? FloatingKind { get; internal init; }
 
 	[OrderedEquality]
 	public IReadOnlyList<SiteTableOfContentsRef> Children { get; internal init; }

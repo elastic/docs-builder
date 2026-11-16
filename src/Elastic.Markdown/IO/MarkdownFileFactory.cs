@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
@@ -43,6 +44,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 {
 	private readonly BuildContext _context;
 	private readonly MarkdownParser _markdownParser;
+	private readonly HashSet<string> _apiMarkdownExcludePaths;
 
 	public MarkdownFileFactory(
 		BuildContext context,
@@ -53,6 +55,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		_context = context;
 		_markdownParser = markdownParser;
 		EnabledExtensions = enabledExtensions;
+		_apiMarkdownExcludePaths = context.Configuration.GetApiMarkdownExcludePaths(context.DocumentationSourceDirectory.FullName);
 
 		var files = ScanDocumentationFiles(context, context.DocumentationSourceDirectory);
 		var additionalSources = enabledExtensions.SelectMany(extension => extension.ScanDocumentationFiles(DefaultFileHandling)).ToArray();
@@ -191,7 +194,10 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 				if (documentationFile is not null)
 					return documentationFile;
 			}
-			return new MarkdownFile(file, sourceDirectory, _markdownParser, context);
+			return new MarkdownFile(file, sourceDirectory, _markdownParser, context)
+			{
+				WarnWhenTitleMissing = !_apiMarkdownExcludePaths.Contains(relativePath.Replace(Path.DirectorySeparatorChar, '/'))
+			};
 		}
 	}
 

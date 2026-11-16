@@ -427,5 +427,7 @@ This `code` is inline.
 
 ## Supported languages
 
-Refer to [hljs.ts](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Site/Assets/hljs.ts)
+Refer to [hljs-languages.ts](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Site/Assets/hljs-languages.ts)
 for a complete list of supported languages.
+
+An unknown language is reported as a warning in isolated and assembler builds, and as a hint in codex builds.

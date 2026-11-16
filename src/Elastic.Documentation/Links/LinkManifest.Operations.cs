@@ -37,7 +37,8 @@ public partial record LinkManifest
 		string? urlPathPrefix,
 		IEnumerable<LinkPage> pages,
 		IEnumerable<string> crossLinks,
-		IReadOnlyDictionary<string, LinkRedirect>? redirects
+		IReadOnlyDictionary<string, LinkRedirect>? redirects,
+		IReadOnlyDictionary<string, FloatingLinkSection>? floating = null
 	)
 	{
 		var links = pages
@@ -53,7 +54,8 @@ public partial record LinkManifest
 			UrlPathPrefix = urlPathPrefix,
 			Origin = origin,
 			Links = links,
-			CrossLinks = [.. crossLinks.ToHashSet().OrderBy(l => l)]
+			CrossLinks = [.. crossLinks.ToHashSet().OrderBy(l => l)],
+			Floating = floating is { Count: > 0 } ? [with(floating)] : null
 		};
 		return DomainOperation.Built(LinkManifestConstraints.All, manifest);
 	}

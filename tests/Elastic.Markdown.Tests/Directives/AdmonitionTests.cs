@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -120,11 +122,27 @@ Dropdown body content.
 	public void StripsBackticksFromTitle() => Block!.Title.Should().Be("Deprecate elastic.apm settings");
 
 	[Test]
-	public void RendersPlainTextTitleInHtml()
-	{
-		Html.Should().Contain("Deprecate elastic.apm settings");
-		Html.Should().NotContain("`elastic.apm`");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<details class="dropdown">
+			<summary class="dropdown-title">
+				<div class="dropdown-title__container">
+					<span class="dropdown-title__summary-text">Deprecate elastic.apm settings</span>
+				</div>
+				<div class="dropdown-title__icon">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+					</svg>
+				</div>
+			</summary>
+			<div class="dropdown-content">
+				<p>Dropdown body content.</p>
+			</div>
+		</details>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -140,11 +158,27 @@ Dropdown body content.
 	public void StripsBoldMarkersFromTitle() => Block!.Title.Should().Be("Disable Save button");
 
 	[Test]
-	public void RendersBoldTitleAsPlainTextInHtml()
-	{
-		Html.Should().Contain("Disable Save button");
-		Html.Should().NotContain("**Save**");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<details class="dropdown">
+			<summary class="dropdown-title">
+				<div class="dropdown-title__container">
+					<span class="dropdown-title__summary-text">Disable Save button</span>
+				</div>
+				<div class="dropdown-title__icon">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+					</svg>
+				</div>
+			</summary>
+			<div class="dropdown-content">
+				<p>Dropdown body content.</p>
+			</div>
+		</details>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -160,11 +194,27 @@ Dropdown body content.
 	public void StripsItalicMarkersFromTitle() => Block!.Title.Should().Be("Use italic emphasis");
 
 	[Test]
-	public void RendersItalicTitleAsPlainTextInHtml()
-	{
-		Html.Should().Contain("Use italic emphasis");
-		Html.Should().NotContain("_italic_");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<details class="dropdown">
+			<summary class="dropdown-title">
+				<div class="dropdown-title__container">
+					<span class="dropdown-title__summary-text">Use italic emphasis</span>
+				</div>
+				<div class="dropdown-title__icon">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+					</svg>
+				</div>
+			</summary>
+			<div class="dropdown-content">
+				<p>Dropdown body content.</p>
+			</div>
+		</details>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -250,35 +300,7 @@ A regular paragraph.
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 
 	[Test]
-	public void ContainsContentWithColons()
-	{
-		var html = Html;
-		html.Should().Contain("Time: 10:30 AM");
-		// URL with port is NOT autolinked (excluded by autolink rules)
-		html.Should().Contain("URL: https://example.com:8080/path");
-		html.Should().NotContain("""<a href="https://example.com:8080/path""");
-		html.Should().Contain("Configuration: key:value pairs");
-		html.Should().Contain("function test() { return &quot;hello:world&quot;; }");
-	}
-
-	[Test]
-	public void ContainsNestedDirective()
-	{
-		var html = Html;
-		html.Should().Contain("Nested Note");
-		html.Should().Contain("This is a nested note with colons: 10:30 AM");
-		// Verify the nested note was actually parsed as a directive, not just plain text
-		html.Should().Contain("class=\"admonition note\"");
-		html.Should().Contain("admonition-title");
-		html.Should().Contain("admonition-content");
-	}
-
-	[Test]
-	public void ContainsContentAfterNestedDirective()
-	{
-		var html = Html;
-		html.Should().Contain("More content after nested directive");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -330,13 +352,7 @@ A regular paragraph.
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
 	[Test]
-	public void RendersAppliesToInHtml()
-	{
-		var html = Html;
-		html.Should().Contain("applies applies-admonition");
-		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applies-to-popover");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -363,13 +379,7 @@ A regular paragraph.
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
 	[Test]
-	public void RendersAppliesToInHtml()
-	{
-		var html = Html;
-		html.Should().Contain("applies applies-admonition");
-		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applies-to-popover");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -396,13 +406,7 @@ A regular paragraph.
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
 	[Test]
-	public void RendersAppliesToInHtml()
-	{
-		var html = Html;
-		html.Should().Contain("applies applies-admonition");
-		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applies-to-popover");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -429,13 +433,7 @@ A regular paragraph.
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
 	[Test]
-	public void RendersAppliesToInHtml()
-	{
-		var html = Html;
-		html.Should().Contain("applies applies-admonition");
-		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applies-to-popover");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -462,11 +460,5 @@ A regular paragraph.
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
 	[Test]
-	public void RendersAppliesToInHtml()
-	{
-		var html = Html;
-		html.Should().Contain("applies applies-admonition");
-		html.Should().Contain("admonition-title__separator");
-		html.Should().Contain("applies-to-popover");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

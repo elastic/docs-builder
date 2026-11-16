@@ -899,6 +899,53 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	/// Helper to reduce boilerplate in lenient list tests.
 	/// Creates a temporary config file and loads the configuration.
 	/// </summary>
+	[Test]
+	public async Task LoadChangelogConfiguration_InitTemplate_LoadsWithoutErrors()
+	{
+		// The template is the file `changelog init` writes. A value the loader rejects would break every new config.
+		var template = await ReadInitTemplate();
+
+		var config = await LoadConfig(template);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Filename.Should().Be(FilenameStrategy.Pr);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_SeededInitTemplate_LoadsWithoutErrors()
+	{
+		var template = await ReadInitTemplate();
+		var seeded = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
+			template,
+			ownerCli: "elastic",
+			repoCli: "docs-builder",
+			gitOwner: null,
+			gitRepo: null
+		);
+		seeded.Should().NotBe(template);
+
+		var config = await LoadConfig(seeded);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle.Should().NotBeNull();
+#pragma warning disable CS0618
+		config.Bundle!.Repo.Should().Be("docs-builder");
+		config.Bundle.Owner.Should().Be("elastic");
+#pragma warning restore CS0618
+	}
+
+	private static async Task<string> ReadInitTemplate()
+	{
+		await using var stream = typeof(ChangelogConfigurationTests).Assembly.GetManifestResourceStream(
+			"Elastic.Changelog.Tests.changelog.example.yml"
+		);
+		stream.Should().NotBeNull();
+		using var reader = new StreamReader(stream!);
+		return await reader.ReadToEndAsync(TestContext.Current!.Execution.CancellationToken);
+	}
+
 	private async Task<ChangelogConfiguration?> LoadConfig(string yamlContent)
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
@@ -1931,6 +1978,40 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task LoadChangelogConfiguration_ProfileOutput_Deprecated_IgnoredAndWarningEmitted()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: docs/changelog
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
+
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.Profiles.Should().ContainKey("es-release");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains(
+					"bundle.profiles.es-release.output is deprecated"
+				) && d.Message.Contains("{repo}-{product}-{version}.yaml")
+			);
+	}
+
+	[Test]
 	public async Task LoadChangelogConfiguration_UseLocalChangelogs_True_Parses()
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
@@ -2053,5 +2134,136 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("bundle.backports.labels") && d.Message.Contains("exact label name")
 			);
+	}
+
+	private const string RequiredPivotTypes =
+		"""
+		  types:
+		    feature:
+		    bug-fix:
+		    breaking-change:
+		""";
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredAreasAndProducts_SetsRequiredPivots()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: [areas, products]
+			{RequiredPivotTypes}
+			  areas:
+			    Search: ":Search"
+			  products:
+			    'elasticsearch': ":stack/es"
+			    'kibana': ":stack/kibana"
+			"""
+		);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.RequiredPivots.Should().Be(RequiredPivot.Areas | RequiredPivot.Products);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredTypesOnly_RequiresNoOtherPivot()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: types
+			{RequiredPivotTypes}
+			"""
+		);
+
+		config.Should().NotBeNull();
+		config.RequiredPivots.Should().Be(RequiredPivot.None);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredAbsent_RequiresNoOtherPivot()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			{RequiredPivotTypes}
+			  areas:
+			    Search: ":Search"
+			"""
+		);
+
+		config.Should().NotBeNull();
+		config.RequiredPivots.Should().Be(RequiredPivot.None);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredUnknownValue_ReturnsError()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: [features]
+			{RequiredPivotTypes}
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("'features' in pivot.required"));
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredAreasWithoutPivotAreas_ReturnsError()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: [areas]
+			{RequiredPivotTypes}
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pivot.areas maps no labels"));
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredProductsWithoutLabels_ReturnsError()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: [products]
+			{RequiredPivotTypes}
+			  products:
+			    'elasticsearch':
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pivot.products maps no labels"));
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredAreasWithoutLabels_ReturnsError()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: [areas]
+			{RequiredPivotTypes}
+			  areas:
+			    Search:
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pivot.areas maps no labels"));
 	}
 }

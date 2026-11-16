@@ -27,7 +27,7 @@ jobs:
         validates cross-repo references, and ships as native AOT binaries for CI.
 
         ## Language and frameworks
-        - C# (.NET) with xUnit v3 + AwesomeAssertions for tests. Do NOT suggest TUnit APIs — the migration hasn't happened yet.
+        - C# (.NET) with TUnit + AwesomeAssertions for tests. Expected output lives in Nullean.Snapshots snapshots (inline literals and `.snapshots/` files); never suggest accepting snapshots in code or CI.
         - TypeScript/React frontend under src/Elastic.Documentation.Site/.
         - Test naming convention: Method_Scenario_Expected.
 

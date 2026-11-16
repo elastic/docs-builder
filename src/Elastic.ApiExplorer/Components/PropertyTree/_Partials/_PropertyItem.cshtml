@@ -4,16 +4,23 @@
 }
 <div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "") @(Model.ShowDeprecatedBadge ? "deprecated" : "")">
 	<dt id="@Model.AnchorId">
-		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.Name">
+		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel">
 			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 		</a>
-		<code>@Model.Name</code>
+		@if (Model.TooltipPath is { } path)
+		{
+			<code data-tippy-content="@path" data-tippy-theme="mono">@Model.Name</code>
+		}
+		else
+		{
+			<code>@Model.Name</code>
+		}
 		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
 		@if (Model.IsRequired)
 		{
 			<span class="required @SchemaHelpers.StatusCssClass">required</span>
 		}
-		@if (Model.OptionalRoute is not null)
+		@if (Model.IsOptionalPath)
 		{
 			<span class="optional @SchemaHelpers.StatusCssClass">optional</span>
 		}
@@ -84,6 +91,13 @@
 			<code>@example</code>
 		</dd>
 	}
+	@if (Model.DefaultValue is { } defaultValue)
+	{
+		<dd class="example-value">
+			<span class="values-label">Default:</span>
+			<code>@defaultValue</code>
+		</dd>
+	}
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)
@@ -146,9 +160,9 @@
 	@if (Model.IsCollapsible)
 	{
 		<dd class="expand-toggle-row">
-			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId">
+			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId" data-count="@Model.NestedCount">
 				<span class="toggle-icon">@(Model.DefaultExpanded ? "−" : "+")</span>
-				<span class="toggle-label">@(Model.DefaultExpanded ? "hide" : "show") properties</span>
+				<span class="toggle-label">@PropertyToggle.Label(Model.DefaultExpanded, Model.NestedCount)</span>
 			</button>
 		</dd>
 	}
@@ -159,16 +173,23 @@
 				<dl class="property-list">
 					<div class="property-item depth-@dict.Depth last-sibling has-children @(dict.IsCollapsible ? (dict.DefaultExpanded ? "expanded" : "collapsed") : "")">
 						<dt id="@dict.KeyAnchorId">
-							<code>&lt;string&gt;</code>
+							@if (dict.JsonPath is { } keyPath)
+							{
+								<code data-tippy-content="@keyPath" data-tippy-theme="mono">&lt;string&gt;</code>
+							}
+							else
+							{
+								<code>&lt;string&gt;</code>
+							}
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
 						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))
 						@if (dict.IsCollapsible)
 						{
 							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId">
+								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId" data-count="@dict.NestedCount">
 									<span class="toggle-icon">@(dict.DefaultExpanded ? "−" : "+")</span>
-									<span class="toggle-label">@(dict.DefaultExpanded ? "hide" : "show") properties</span>
+									<span class="toggle-label">@PropertyToggle.Label(dict.DefaultExpanded, dict.NestedCount)</span>
 								</button>
 							</dd>
 						}
@@ -176,12 +197,14 @@
 						{
 							<div class="nested-properties" id="@dict.ChildrenId" hidden="until-found">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 						else
 						{
 							<div class="nested-properties" id="@dict.ChildrenId">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 					</div>

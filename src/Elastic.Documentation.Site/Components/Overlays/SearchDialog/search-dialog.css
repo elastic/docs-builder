@@ -96,9 +96,33 @@
 	font-size: var(--text-xs);
 }
 
+.search-result__heading {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2);
+}
+
 .search-result__title {
 	color: var(--color-heading);
 	font-weight: var(--weight-semibold);
+}
+
+/* The same state as a deprecated sidebar row: struck, dimmed title and the Deprecated badge beside it. */
+.search-result[data-deprecated] .search-result__title {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+.search-result__deprecated {
+	height: 1.125rem;
+	padding: 0 var(--space-1);
+	font-size: 0.625rem;
+}
+
+/* .badge sets its own display, which would override the hidden attribute. */
+.search-result__deprecated[hidden] {
+	display: none;
 }
 
 .search-result__excerpt {

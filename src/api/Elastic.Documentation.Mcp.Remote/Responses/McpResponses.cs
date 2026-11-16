@@ -22,6 +22,7 @@ public sealed record SearchResultDto
 {
 	public required string Url { get; init; }
 	public required string Title { get; init; }
+	public string? ContentType { get; init; }
 	public required string Description { get; init; }
 	public required float Score { get; init; }
 	public string? AiShortSummary { get; init; }
@@ -115,8 +116,19 @@ public sealed record DocumentResponse
 	public required List<string> Headings { get; init; }
 	public ProductDto? Product { get; init; }
 	public List<ProductDto>? RelatedProducts { get; init; }
+	public ApiOperationDto? Api { get; init; }
 	public string? Body { get; init; }
 	public int BodyLength { get; init; }
+	public string? BodyNote { get; init; }
+}
+
+public sealed record ApiOperationDto
+{
+	public required string Method { get; init; }
+	public required string Path { get; init; }
+	public required string[] Endpoints { get; init; }
+	public required string OperationId { get; init; }
+	public bool Deprecated { get; init; }
 }
 
 public sealed record ParentDto
@@ -164,6 +176,7 @@ public sealed record AiEnrichmentStatusDto
 [JsonSerializable(typeof(InconsistencyDto))]
 [JsonSerializable(typeof(InconsistencyDocDto))]
 [JsonSerializable(typeof(DocumentResponse))]
+[JsonSerializable(typeof(ApiOperationDto))]
 [JsonSerializable(typeof(ParentDto))]
 [JsonSerializable(typeof(ProductDto))]
 [JsonSerializable(typeof(DocumentStructureResponse))]

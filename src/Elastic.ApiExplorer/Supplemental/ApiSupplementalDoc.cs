@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Supplemental;
 
@@ -240,9 +241,9 @@ internal sealed partial record ApiSupplementalDoc(
 		return s.Trim();
 	}
 
-	[GeneratedRegex(@"^:\s+(`[^`]+`|[A-Za-z0-9_.-]+)")]
+	[GeneratedRegex(@"^:\s+(`[^`]+`|[A-Za-z0-9_.-]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TermLineRegex();
 
-	[GeneratedRegex(@"\A---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)")]
+	[GeneratedRegex(@"\A---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FrontMatterRegex();
 }

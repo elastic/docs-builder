@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Loading;
@@ -22,7 +21,7 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 public sealed class TestCrossLinkResolver : ICrossLinkResolver
 {
-	private readonly Dictionary<string, LinkManifest> _references = new();
+	private readonly Dictionary<string, LinkManifest> _references = [];
 	private readonly HashSet<string> _declared = [];
 	private readonly IsolatedBuildEnvironmentUriResolver _uriResolver = new();
 	private readonly FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
@@ -94,11 +93,9 @@ public sealed class TestCrossLinkResolver : ICrossLinkResolver
 
 	public IUriEnvironmentResolver UriResolver => _uriResolver;
 
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
+	public LinkResolution Resolve(Uri crossLinkUri) => CrossLinkResolver.Resolve(_crossLinks, _uriResolver, crossLinkUri);
 
-	public bool TryResolve(Action<string, string?> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
+	public FetchedCrossLinks FetchedCrossLinks => _crossLinks;
 
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _declared.Contains(scheme);
 }

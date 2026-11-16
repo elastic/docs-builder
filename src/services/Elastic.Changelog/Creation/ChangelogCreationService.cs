@@ -135,7 +135,8 @@ public class ChangelogCreationService(
 				var typeProvided = !string.IsNullOrWhiteSpace(input.Type);
 				// A configuration that requires a product label still needs the issue: its labels name the product.
 				var productsProvided = input.Products.Count > 0 || !ProductResolution.RequiresProductLabel(config);
-				if (titleProvided && typeProvided && productsProvided)
+				var areasProvided = input.Areas is { Length: > 0 } || !AreaResolution.RequiresAreaLabel(config);
+				if (titleProvided && typeProvided && productsProvided && areasProvided)
 					return await CreateSingleChangelogAsync(collector, input, config, ctx);
 
 				if (input.Issues.Length > 1)
@@ -423,10 +424,12 @@ public class ChangelogCreationService(
 			return false;
 
 		// Fetch PR info when any derivable field is still missing (title, type, or products),
-		// or when a breaking change could still pick up Impact and Action from the PR description.
+		// when a breaking change could still pick up Impact and Action from the PR description,
+		// or when pivot.required lists areas and none was given: the PR labels name the area.
 		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
 			|| string.IsNullOrWhiteSpace(input.Type)
 			|| input.Products.Count == 0
+			|| IsAreaMissing(input, config)
 			|| NeedsImpactActionFromPr(input);
 		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{
@@ -451,6 +454,10 @@ public class ChangelogCreationService(
 		return await WriteValidatedChangelog(collector, input, config, ctx, prFetchFailed);
 	}
 
+	// pivot.required lists areas: by now the labels of the PR or issue have filled input.Areas, or --areas did.
+	private static bool IsAreaMissing(CreateChangelogArguments input, ChangelogConfiguration config) =>
+		AreaResolution.RequiresAreaLabel(config) && input.Areas is not { Length: > 0 };
+
 	private async Task<bool> WriteValidatedChangelog(
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
@@ -474,6 +481,12 @@ public class ChangelogCreationService(
 			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
 			if (inferredProducts != null)
 				input = input with { Products = inferredProducts };
+		}
+
+		if (!prFetchFailed && input.Prs is { Length: > 0 } && IsAreaMissing(input, config))
+		{
+			collector.EmitError(string.Empty, AreaResolution.MissingAreaLabelMessage($"PR {input.Prs[0]}", config) + " Or pass --areas.");
+			return false;
 		}
 
 		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
@@ -605,6 +618,12 @@ public class ChangelogCreationService(
 				input = input with { Products = inferredProducts };
 		}
 
+		if (!issueResult.FetchFailed && IsAreaMissing(input, config))
+		{
+			collector.EmitError(string.Empty, AreaResolution.MissingAreaLabelMessage($"issue {issueUrl}", config) + " Or pass --areas.");
+			return false;
+		}
+
 		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
 			return false;
 
@@ -655,6 +674,9 @@ public class ChangelogCreationService(
 				"Verify GITHUB_TOKEN is set and can access the repository, then re-run."
 		);
 
+	// An env var that is declared but empty (as GitHub Actions passes unset outputs) must not serialize as `impact: ''`.
+	private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
 	private CreateChangelogArguments DropCiExtractedFieldsWhenDisabled(
 		CreateChangelogArguments input,
 		string? cliDescription,
@@ -682,8 +704,8 @@ public class ChangelogCreationService(
 		// Values that the PR's existing entry file already holds are not extracted from anywhere, so disabling extraction keeps them.
 		return input with
 		{
-			Impact = string.IsNullOrWhiteSpace(input.Impact) ? input.CiEntryImpact : input.Impact,
-			Action = string.IsNullOrWhiteSpace(input.Action) ? input.CiEntryAction : input.Action
+			Impact = string.IsNullOrWhiteSpace(input.Impact) ? NullIfBlank(input.CiEntryImpact) : input.Impact,
+			Action = string.IsNullOrWhiteSpace(input.Action) ? NullIfBlank(input.CiEntryAction) : input.Action
 		};
 	}
 

@@ -1,0 +1,221 @@
+/*
+ * The API identity at the top of the API sidebar: product and version in one trigger and one menu.
+ * Used on API pages in the current layout, so nothing here is scoped to body.navigation-preview.
+ * The menu is a popover placed by api-menu.ts; the rows reuse .secondary-nav-dropdown-link from
+ * secondary-nav-dropdown.css.
+ */
+
+@layer components {
+	/* Product identity: the largest thing in the sidebar header. */
+	.api-identity-product {
+		flex-shrink: 1;
+		min-width: 0;
+		height: 36px;
+	}
+
+	.api-identity-product-trigger,
+	.api-identity-product--static {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		height: 36px;
+		padding-inline: 8px;
+		border-radius: 6px;
+		color: #1d2a3e;
+	}
+
+	.api-identity-product-trigger {
+		margin: 0;
+		border: 0;
+		background: none;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+	.api-identity-product-trigger:hover,
+	.api-identity-product-trigger[aria-expanded='true'] {
+		background: #f6f9fc;
+	}
+	.api-identity-product-trigger:focus-visible {
+		outline: 2px solid #0b64dd;
+		outline-offset: 2px;
+	}
+
+	.api-identity-logo {
+		display: inline-flex;
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
+	}
+	.api-identity-logo svg,
+	.api-identity-updown svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+	.api-identity-logo--sm {
+		width: 16px;
+		height: 16px;
+	}
+	.api-identity-logo--muted {
+		color: #516381;
+	}
+
+	.api-identity-title {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 16px;
+		font-weight: 600;
+		line-height: 24px;
+	}
+
+	.api-identity-updown {
+		display: flex;
+		flex-shrink: 0;
+		width: 12px;
+		height: 12px;
+		color: #516381;
+	}
+
+	.api-identity-product-link {
+		gap: 8px;
+	}
+
+	/* The chosen API and version read blue, like the current page in the sidebar. */
+	.api-menu .secondary-nav-dropdown-link--selected,
+	.api-menu .secondary-nav-dropdown-link--selected:hover,
+	.api-menu .secondary-nav-dropdown-link--selected:focus-visible {
+		color: #0b64dd;
+	}
+
+	.api-menu-group-label {
+		padding: 4px 8px;
+		font-size: 11px;
+		font-weight: 500;
+		letter-spacing: 0.04em;
+		line-height: 16px;
+		text-transform: uppercase;
+		color: #637290;
+		user-select: none;
+	}
+
+	.api-menu-sep {
+		height: 1px;
+		margin: 6px 0;
+		background: #eeeff1;
+	}
+
+	/*
+	 * Menus. A popover sits in the top layer, so no ancestor can clip it. Floating UI sets
+	 * left/top (api-menu.ts); everything the browser puts on [popover] is reset here.
+	 */
+	.api-menu {
+		position: fixed;
+		inset: auto;
+		box-sizing: border-box;
+		min-width: 160px;
+		max-width: min(20rem, calc(100vw - 16px));
+		margin: 0;
+		padding: 8px;
+		overflow-y: auto;
+		border: 0;
+		border-radius: 4px;
+		background: #fff;
+		color: #1d2a3e;
+		font-family: var(--font-body);
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 20px;
+		/* Borealis euiShadowMedium as filter, like the other menus. */
+		filter: drop-shadow(0 0 2px rgb(43 57 79 / 0.16))
+			drop-shadow(0 3px 10px rgb(43 57 79 / 0.1))
+			drop-shadow(0 6px 14px rgb(43 57 79 / 0.06));
+		transition: opacity 0.15s ease;
+	}
+	/* Hidden until api-menu.ts has placed it, so it never flashes at the wrong spot. */
+	.api-menu:not([data-placed]) {
+		visibility: hidden;
+	}
+	@starting-style {
+		.api-menu:popover-open {
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.api-menu {
+			transition: none;
+		}
+	}
+
+	/* The version sits beside the name, on its first line. A long name wraps and the version stays put. */
+	.api-identity-name {
+		display: flex;
+		flex: 1 1 auto;
+		align-items: flex-start;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.api-identity-version-label {
+		flex-shrink: 0;
+		padding: 0 6px;
+		border-radius: 4px;
+		background: #eeeff1;
+		color: #516381;
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 12px;
+		font-weight: 500;
+		line-height: 20px;
+	}
+
+	.api-identity-product-trigger[aria-expanded='true'] .api-identity-updown {
+		transform: rotate(180deg);
+	}
+
+	/* Stacked so the name fits. */
+	.api-sidebar-identity {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		min-width: 0;
+	}
+	.api-sidebar-identity .api-identity-product {
+		flex-shrink: 0;
+		height: auto;
+	}
+	/* API names are long ("Elastic Cloud Connected API"), so the name wraps instead of truncating. */
+	.api-sidebar-identity .api-identity-product-trigger {
+		align-items: flex-start;
+		/* Padding gives the hover background room around the logo. The negative margin keeps the
+		   logo lined up with the filter box below. */
+		width: calc(100% + 16px);
+		height: auto;
+		min-height: 36px;
+		margin-inline: -8px;
+		padding: 6px 8px;
+	}
+	.api-sidebar-identity .api-identity-logo {
+		margin-top: 2px;
+	}
+	.api-sidebar-identity .api-identity-title {
+		flex: 1 1 auto;
+		overflow: visible;
+		text-overflow: clip;
+		white-space: normal;
+		text-wrap: balance;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+	}
+	/* The version hugs the name instead of sitting at the far edge. */
+	.api-sidebar-identity .api-identity-name .api-identity-title {
+		flex: 0 1 auto;
+	}
+	.api-sidebar-identity .api-identity-updown {
+		margin-top: 4px;
+	}
+}

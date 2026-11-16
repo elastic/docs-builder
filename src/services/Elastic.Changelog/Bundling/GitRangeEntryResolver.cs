@@ -298,9 +298,10 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 
 	/// <summary>
 	/// Synthesizes an in-memory changelog entry from PR metadata — the same extraction path
-	/// <c>changelog add</c> uses: release-note text from the PR body as the description, labels
-	/// mapped to type/areas/products/feature-id/highlight via the config pivots, and
-	/// <c>rules.create</c> label rules deciding inclusion.
+	/// <c>changelog add</c> uses: release-note text from the PR body as the description, its
+	/// <c>## Impact</c> and <c>## Action</c> sections as impact and action, labels mapped to
+	/// type/areas/products/feature-id/highlight via the config pivots, and <c>rules.create</c>
+	/// label rules deciding inclusion.
 	/// </summary>
 	private (GitRangePrReportRow Row, MatchedChangelogFile? Entry, bool Failed) SynthesizeFromPrMetadata(
 		IDiagnosticsCollector collector,
@@ -332,9 +333,19 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
 
 			// Two or more mapped products and no default: the pull request must name its product with a label.
-			if (labelProducts.Count == 0 && ProductResolution.Defaults(config).Count == 0 && ProductResolution.RequiresProductLabel(config))
+			// pivot.required lists products: the label is required even when products.default is set.
+			var productLabelMissing = labelProducts.Count == 0
+				&& ProductResolution.RequiresProductLabel(config)
+				&& (ProductResolution.RequiresProductLabelExplicitly(config) || ProductResolution.Defaults(config).Count == 0);
+			if (productLabelMissing)
 			{
 				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
+				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+			}
+
+			if (AreaResolution.RequiresAreaLabel(config) && AreaResolution.FromLabels(labels, config).Count == 0)
+			{
+				collector.EmitError(pr.Url, AreaResolution.MissingAreaLabelMessage($"PR {pr.Url}", config));
 				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 			}
 		}
@@ -358,11 +369,16 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
 		string? description = null;
+		string? impact = null;
+		string? action = null;
 		if (config?.Extract.ReleaseNotes != false)
 		{
 			var extraction = summary.ReleaseNote;
 			description = extraction.Content;
 			ReleaseNoteExtractionDiagnostics.Record(decisions, pr.Number, extraction);
+			// The same sections changelog add reads: a breaking change written in the PR keeps its Impact and Action.
+			impact = summary.Impact;
+			action = summary.Action;
 		}
 
 		var areas = config?.LabelToAreas != null ? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas) : [];
@@ -377,7 +393,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var issues = config?.Extract.Issues != false && summary.LinkedIssues.Count > 0 ? summary.LinkedIssues.ToList() : null;
 
 		var entryResult = ChangelogEntry.FromPullRequest(
-			new PullRequestFacts(pr.Url, title, typeString, description, areas, featureId, highlight, issues),
+			new PullRequestFacts(pr.Url, title, typeString, description, areas, featureId, highlight, issues, impact, action),
 			products
 		);
 		if (entryResult.EmitErrorsTo(collector) is not { } entryData)

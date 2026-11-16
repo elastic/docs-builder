@@ -62,7 +62,7 @@ describe('responses accordion and examples rail sync', () => {
     beforeAll(() => {
         initApiDocs()
         // jsdom does not implement scrollIntoView
-        Element.prototype.scrollIntoView = jest.fn()
+        Element.prototype.scrollIntoView = vi.fn()
     })
 
     const byStatus = (cls: string, s: string) =>

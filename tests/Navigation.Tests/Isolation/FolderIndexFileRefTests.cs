@@ -11,6 +11,7 @@ using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -42,14 +43,20 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Should create a FolderNavigation with the file as index
-		navigation.NavigationItems.Should().HaveCount(1);
-		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /getting-started/getting-started  "getting-started"
+			  index: FileNavigationLeaf  /getting-started/getting-started  "getting-started"
+			  FolderNavigation  /getting-started/getting-started  "getting-started"
+			    index: FileNavigationLeaf  /getting-started/getting-started  "getting-started"
+			    FileNavigationLeaf  /getting-started/install  "install"
+			    FileNavigationLeaf  /getting-started/configure  "configure"
+			"""
+			);
 
-		// Children should be scoped to the folder
-		folder.Url.Should().Be("/getting-started/getting-started");
-		folder.NavigationItems.Should().HaveCount(2); // install.md, configure.md
-
-		// Verify no errors
 		context.Collector.Errors.Should().Be(0);
 	}
 
@@ -78,10 +85,10 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that the FileRef for getting-started.md is a FolderIndexFileRef
-		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents[0].Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Children.Should().HaveCount(2); // getting-started.md and install.md
 
-		var indexFile = folderItem.Children.First().Value.Should().BeOfType<FolderIndexFileRef>().Subject;
+		var indexFile = folderItem.Children[0].Value.Should().BeOfType<FolderIndexFileRef>().Subject;
 		indexFile.PathRelativeToDocumentationSet.Value.Should().Be("getting-started/getting-started.md");
 
 		var childFile = folderItem.Children.ElementAt(1).Value.Should().BeOfType<FileRef>().Subject;

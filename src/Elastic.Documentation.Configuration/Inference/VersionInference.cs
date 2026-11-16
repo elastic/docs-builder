@@ -57,10 +57,8 @@ public class ProductVersionInferrerService(
 
 		var versioning = ProductsConfiguration.Products.TryGetValue(repositoryName, out var belonging)
 			? belonging.VersioningSystem! //If the page's docset has a name with a direct product match, use the versioning system of the product
-
 			: repositoryMatches is [{ } repositoryMatch]
 				? repositoryMatch.VersioningSystem! // Verify if the page belongs to a repository linked to exactly one product, and if so, use the versioning system of the product
-
 				: VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack]; // Fallback to the stack versioning system
 
 		return versioning;

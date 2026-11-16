@@ -24,7 +24,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
 	/// </summary>
-	[McpServerTool, McpToolName("search_{resource}"), Description("Searches all published {docs} by meaning. "
+	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("search_{resource}"), Description("Searches all published {docs} by meaning. "
 		+ "Use when the user asks about Elastic product features, needs to find existing docs pages, "
 		+ "verify published content, or research what documentation exists on a topic. "
 		+ "Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
@@ -32,8 +32,9 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		[Description("The search query - can be a question or keywords")] string query,
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
-		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana')")] string? productFilter = null,
-		[Description("Filter by navigation section (e.g., 'reference', 'getting-started')")] string? sectionFilter = null,
+		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')")] string? productFilter = null,
+		[Description("Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)")] string? sectionFilter =
+			null,
 		CancellationToken cancellationToken = default
 	)
 	{
@@ -83,6 +84,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 						{
 							Url = r.Url,
 							Title = r.Title,
+							ContentType = r.Type,
 							Description = r.Description,
 							Score = r.Score,
 							AiShortSummary = r.AiShortSummary,
@@ -128,7 +130,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Finds documents related to a given topic or document URL.
 	/// </summary>
-	[McpServerTool, McpToolName("find_related_{resource}"), Description("Finds {docs} pages related to a given topic. "
+	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("find_related_{resource}"), Description("Finds {docs} pages related to a given topic. "
 		+ "Use when exploring what documentation exists around a subject, building context for writing, "
 		+ "or discovering related content the user should be aware of.")]
 	public async Task<string> FindRelatedDocs(

@@ -100,6 +100,7 @@
       ],
       "Implies": null
     },
+    "RequiredPivots": "None",
     "Rules": {
       "$type": "RulesConfiguration",
       "Bundle": null,
@@ -147,7 +148,7 @@
       "line": null,
       "column": null,
       "ruleId": "profile-output-removed",
-      "message": "Profile 'docs-release': 'output' is no longer supported. Remove it: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml'."
+      "message": "bundle.profiles.docs-release.output is deprecated. Bundle output names are derived by convention as {repo}-{product}-{version}.yaml. Remove this field."
     }
   ]
 }

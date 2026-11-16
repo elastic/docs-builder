@@ -1,23 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <IsAotCompatible>true</IsAotCompatible>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Nullean.Entities" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Nullean.Entities" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <InternalsVisibleTo Include="Elastic.Documentation.OpenApiIndex.Tests" />
-    </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Elastic.Documentation.OpenApiIndex.Tests" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="AWSSDK.CloudFront" />
-      <PackageReference Include="AWSSDK.S3" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.CloudFront" />
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
 
 </Project>

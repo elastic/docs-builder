@@ -1,0 +1,30 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "modified_date": "2023-11-02T10:00:00+00:00",
+  "og": {
+    "title": "",
+    "description": ""
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Reports",
+  "search_title": "Reports",
+  "content_type": "site",
+  "path": "/security-labs/reports",
+  "url": "/security-labs/reports",
+  "hash": "f7cfede52f5f3ab7",
+  "last_updated": "2023-11-02T10:00:00+00:00",
+  "description": "In-depth research reports from the Elastic Security Labs team.",
+  "headings": [],
+  "body": "In-depth research reports from the Elastic Security Labs team.",
+  "summary": "In-depth research reports from the Elastic Security Labs team.",
+  "parents": [],
+  "translated": true,
+  "section": "security-labs",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 3,
+    "table_of_contents": 100
+  }
+}

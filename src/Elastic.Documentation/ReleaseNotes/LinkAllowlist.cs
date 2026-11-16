@@ -19,10 +19,10 @@ public static partial class LinkAllowlist
 {
 	public const string SentinelPrefix = "# PRIVATE:";
 
-	[GeneratedRegex(@"https?://github\.com/(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)/(?:pull|issues)/\d+", RegexOptions.None)]
+	[GeneratedRegex(@"https?://github\.com/(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)/(?:pull|issues)/\d+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubUrlRegex();
 
-	[GeneratedRegex(@"(?<![/\w])(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)#\d+", RegexOptions.None)]
+	[GeneratedRegex(@"(?<![/\w])(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)#\d+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ShortFormRefRegex();
 
 	/// <summary>The entry with every reference to a repository outside <paramref name="allowRepos"/> removed (<c>prs</c>, <c>issues</c>, and the links in <c>description</c>, <c>impact</c>, <c>action</c>).</summary>

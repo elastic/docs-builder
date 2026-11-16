@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
@@ -96,7 +98,10 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			_ => codeBlock.Language
 		};
 		if (!string.IsNullOrEmpty(codeBlock.Language) && !CodeBlock.Languages.Contains(codeBlock.Language))
-			codeBlock.EmitWarning($"Unknown language: {codeBlock.Language}");
+			codeBlock.Emit(
+				codeBlock.Build.BuildType == BuildType.Codex ? Severity.Hint : Severity.Warning,
+				$"Unknown language: {codeBlock.Language}"
+			);
 
 		var lines = codeBlock.Lines;
 		// ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract

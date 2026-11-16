@@ -200,6 +200,8 @@ public sealed partial record PublishEnvironment
 	public IReadOnlyDictionary<string, bool> FeatureFlags { get; internal init; } = new Dictionary<string, bool>();
 
 	public string? WebsiteSearchScriptUrl { get; internal init; }
+
+	public string? WafIntegrationUrl { get; internal init; }
 }
 
 /// <summary>The Google Tag Manager id of a publish environment.</summary>

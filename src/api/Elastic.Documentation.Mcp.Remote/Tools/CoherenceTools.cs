@@ -23,7 +23,7 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
 	/// </summary>
-	[McpServerTool, McpToolName("check_{resource}_coherence"), Description("Checks how coherently a topic is covered across all {docs}. "
+	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("check_{resource}_coherence"), Description("Checks how coherently a topic is covered across all {docs}. "
 		+ "Use when reviewing documentation quality, auditing coverage of a feature or concept, "
 		+ "or checking whether a topic is documented consistently across products and sections.")]
 	public async Task<string> CheckCoherence(
@@ -117,7 +117,7 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Finds potential inconsistencies in documentation for a given topic.
 	/// </summary>
-	[McpServerTool, McpToolName("find_{resource}_inconsistencies"), Description("Finds potential inconsistencies across {docs} pages covering the same topic. "
+	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("find_{resource}_inconsistencies"), Description("Finds potential inconsistencies across {docs} pages covering the same topic. "
 		+ "Use when auditing docs quality, verifying that instructions don't contradict each other, "
 		+ "or checking for overlapping content within a product area.")]
 	public async Task<string> FindInconsistencies(

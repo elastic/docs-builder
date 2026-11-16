@@ -9,6 +9,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Tests.Golden;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
@@ -43,7 +44,7 @@ public class ConfigurationFileStorybookRegistryTests
 	[Test]
 	public void DisallowedVariable_IsLeftLiteral_AndWarns()
 	{
-		var collector = new DiagnosticsCollector([]);
+		var collector = new CapturingDiagnosticsCollector();
 		var config = CreateConfiguration(
 			"${AWS_SECRET_ACCESS_KEY:-fallback}",
 			new MockEnvironment { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" },
@@ -52,7 +53,13 @@ public class ConfigurationFileStorybookRegistryTests
 
 		config.StorybookRegistry.Should().Be("${AWS_SECRET_ACCESS_KEY:-fallback}");
 		config.StorybookRegistry.Should().NotContain("super-secret");
-		collector.Warnings.Should().Be(1, "a disallowed interpolation variable must emit exactly one warning");
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/_docset.yml 'storybook.registry' references environment variable 'AWS_SECRET_ACCESS_KEY' which is not allow-listed for interpolation and is left literal. Allowed: KIBANA_STORYBOOK_REGISTRY."
+			);
 	}
 
 	private static ResolvedDocumentationSet CreateConfiguration(
@@ -79,6 +86,7 @@ public class ConfigurationFileStorybookRegistryTests
 			TableOfContents = [],
 			Storybook = new StorybookDto { Registry = registry }
 		};
+		TocFixtures.EnsureTableOfContents(docSet, fileSystem, Path.Join(root, "docs"));
 
 		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}

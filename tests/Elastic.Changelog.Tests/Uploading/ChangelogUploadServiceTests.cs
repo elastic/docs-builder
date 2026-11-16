@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -737,6 +738,135 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		targets.Should().Contain(t => t.S3Key == "bundle/kibana/kibana-kibana-9.3.0.yaml");
 	}
 
+	/// <summary>
+	/// When profiles migrate to <c>product:</c> (no deprecated <c>output_directory</c>), bundles land in
+	/// <c>{output_directory}/{product}/</c>. <see cref="ChangelogUploadService.CollectBundleScanDirectories"/>
+	/// must discover these subdirectories automatically — without a profile <c>output_directory</c> entry —
+	/// by enumerating immediate children of <c>bundle.output_directory</c>.
+	/// </summary>
+	[Test]
+	public void CollectBundleScanDirectories_AutomaticallyIncludesProductSubdirectories()
+	{
+		var root = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var globalDir = _mockFileSystem.Path.Join(root, "docs", "releases");
+		var esDir = _mockFileSystem.Path.Join(globalDir, "elasticsearch");
+		var serverlessDir = _mockFileSystem.Path.Join(globalDir, "cloud-serverless");
+		_mockFileSystem.Directory.CreateDirectory(globalDir);
+		_mockFileSystem.Directory.CreateDirectory(esDir);
+		_mockFileSystem.Directory.CreateDirectory(serverlessDir);
+
+		var config = new ChangelogConfiguration
+		{
+			Bundle = new BundleConfiguration
+			{
+				OutputDirectory = globalDir,
+				// No profile output_directory — migrated profiles use product: only
+				Profiles = new Dictionary<string, BundleProfile>
+				{
+					["elasticsearch-release"] = new() { Product = "elasticsearch" },
+					["serverless-release"] = new() { Product = "cloud-serverless" }
+				}
+			}
+		};
+
+		var dirs = ChangelogUploadService.CollectBundleScanDirectories(null, config, _fileSystem);
+
+		dirs.Should().Contain(globalDir);
+		dirs.Should().Contain(esDir);
+		dirs.Should().Contain(serverlessDir);
+	}
+
+	/// <summary>
+	/// Without <c>bundle.output_directory</c>, bundling writes to <c>{bundle.directory}/{product}/</c>, so the
+	/// upload scans that directory and its product folders.
+	/// </summary>
+	[Test]
+	public void CollectBundleScanDirectories_NoOutputDirectory_IncludesBundleDirectoryProductFolders()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "docs", "changelog");
+		var esDir = _mockFileSystem.Path.Join(bundleDir, "elasticsearch");
+		_mockFileSystem.Directory.CreateDirectory(esDir);
+
+		var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { Directory = bundleDir } };
+
+		ChangelogUploadService.CollectBundleScanDirectories(null, config, _fileSystem).Should().Equal(bundleDir, esDir);
+	}
+
+	/// <summary>
+	/// The upload guard only checks the path below a scan root, so a symlinked product folder would let it read
+	/// files outside the bundle directory. Symlinked and hidden folders are not scanned.
+	/// </summary>
+	[Test]
+	public void CollectBundleScanDirectories_SymlinkedOrHiddenProductFolder_IsSkipped()
+	{
+		var fileSystem = new System.IO.Abstractions.FileSystem();
+		var root = fileSystem.Directory.CreateTempSubdirectory("bundle-scan-");
+		try
+		{
+			var outputDir = fileSystem.Path.Join(root.FullName, "releases");
+			var esDir = fileSystem.Path.Join(outputDir, "elasticsearch");
+			var drafts = fileSystem.Path.Join(root.FullName, "drafts");
+			var linked = fileSystem.Path.Join(outputDir, "kibana");
+			var hidden = fileSystem.Path.Join(outputDir, ".cache");
+			_ = fileSystem.Directory.CreateDirectory(esDir);
+			_ = fileSystem.Directory.CreateDirectory(drafts);
+			_ = fileSystem.Directory.CreateDirectory(hidden);
+			_ = fileSystem.Directory.CreateSymbolicLink(linked, drafts);
+
+			var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { OutputDirectory = outputDir } };
+
+			ChangelogUploadService.CollectBundleScanDirectories(null, config, fileSystem).Should().Equal(outputDir, esDir);
+		}
+		finally
+		{
+			root.Delete(recursive: true);
+		}
+	}
+
+	/// <summary>
+	/// During the move to <c>{output_directory}/{product}/</c>, a stale flat bundle in the root and the new
+	/// bundle in the product folder map to the same S3 key. Only the product-folder file is uploaded.
+	/// </summary>
+	[Test]
+	public void CollapseByS3Key_StaleFlatBundleAndProductFolderBundle_KeepsProductFolderFile()
+	{
+		var globalDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "docs", "releases");
+		var esDir = _mockFileSystem.Path.Join(globalDir, "elasticsearch");
+		// language=yaml
+		var bundleYaml =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries: []
+			""";
+		var flatPath = _mockFileSystem.Path.Join(globalDir, "elasticsearch-elasticsearch-9.3.0.yaml");
+		var productPath = _mockFileSystem.Path.Join(esDir, "elasticsearch-elasticsearch-9.3.0.yaml");
+		_mockFileSystem.AddFile(flatPath, new MockFileData(bundleYaml));
+		_mockFileSystem.AddFile(productPath, new MockFileData(bundleYaml));
+
+		var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { OutputDirectory = globalDir } };
+		var scanDirs = ChangelogUploadService.CollectBundleScanDirectories(null, config, _fileSystem);
+		var discovered = scanDirs.SelectMany(d => _service.DiscoverBundleUploadTargets(_collector, d)).ToList();
+		discovered.Should().HaveCount(2, "both copies are discovered before the collapse");
+
+		var targets = ChangelogUploadService.CollapseByS3Key(_collector, discovered);
+
+		targets.Should().ContainSingle();
+		targets[0].LocalPath.Should().Be(productPath);
+		targets[0].S3Key.Should().Be("bundle/elasticsearch/elasticsearch-elasticsearch-9.3.0.yaml");
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping") && d.Message.Contains(flatPath));
+	}
+
+	[Test]
+	public void CollapseByS3Key_DistinctKeys_KeepsAllInOrder()
+	{
+		UploadTarget[] targets = [new("a/one.yaml", "bundle/a/one.yaml"), new("b/two.yaml", "bundle/b/two.yaml")];
+
+		ChangelogUploadService.CollapseByS3Key(_collector, targets).Should().Equal(targets);
+		_collector.Warnings.Should().Be(0);
+	}
+
 	[Test]
 	public void DiscoverBundleUploadTargets_MultipleProducts_CreatesTargetPerProduct()
 	{
@@ -1175,7 +1305,7 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(remoteYaml))
+			ResponseStream = new ReadOnlyMemoryStream(System.Text.Encoding.UTF8.GetBytes(remoteYaml))
 		});
 
 		var args = new ChangelogUploadArguments
@@ -1251,7 +1381,7 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		).Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream("title: remote elasticsearch\n"u8.ToArray())
+			ResponseStream = new ReadOnlyMemoryStream("title: remote elasticsearch\n"u8.ToArray())
 		});
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).Returns(new PutObjectResponse());
 
@@ -1314,7 +1444,7 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		).Returns(new GetObjectMetadataResponse { ETag = "\"marker-etag\"" });
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream("""
+			ResponseStream = new ReadOnlyMemoryStream("""
 				link: "100"
 				"""u8.ToArray())
 		});

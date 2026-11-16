@@ -9,7 +9,9 @@ using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -159,7 +161,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		).Returns(new GitHubPrInfo
 		{
 			Title = "Sharper autocomplete",
-			Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+			Body =
+				"Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.\n\n## Impact\nSaved searches that relied on alphabetical order change position.\n\n## Action\nPin the indices you need at the top.",
 			Labels = [">feature"],
 			LinkedIssues = []
 		});
@@ -186,31 +189,28 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// No profile output pattern → {repo}-{product}-{version}.yaml when bundle.repo is set.
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Pool entries win over inference.
-		bundle.Should().Contain("Faster hosted search");
-		bundle.Should().Contain("Sturdier snapshots");
+		bundle.Should().MatchSnapshot();
 
-		// The synthesized entry carries PR-body release-note text, the label-derived type, and the
-		// profile's output products.
-		bundle.Should().Contain("Sharper autocomplete");
-		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
-		bundle.Should().Contain("name: 300.yaml");
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
-
-		// The published endpoint ref is recorded as bundle metadata.
-		bundle.Should().Contain($"git_ref: {EndRef}");
 
 		// PR 400 is reported, not silently dropped.
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("pull/400") && d.Message.Contains("could not be fetched"));
+			.MatchInlineSnapshot(
+				"""
+			warning  No checked-in changelog entry was found for PR https://github.com/elastic/widget/pull/400 and its metadata could not be fetched from GitHub. The bundle will not include an entry for this PR.
+			"""
+			);
 	}
 
 	[Test]
@@ -265,11 +265,31 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
-		bundle.Should().Contain("Faster hosted search");
-		bundle.Should().NotContain("300");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Faster hosted search
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			        lifecycle: ga
+			"""
+		);
 		A.CallTo(prService).MustNotHaveHappened();
 	}
 
@@ -349,10 +369,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		result.Should().BeTrue();
 		lines.Should().Contain("entries: pool #100 #200 · inferred (PR body) #300 · inferred (title) #301");
 		lines.Should().Contain("notes: first paragraph only #300 · no release note #301");
-		Collector
-			.Diagnostics
-			.Should()
-			.NotContain(d => d.Message.Contains("No release note description") || d.Message.Contains("Only the first paragraph"));
+		Collector.Diagnostics.WithoutAmbient().ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 
 	private sealed class LineLogger(List<string> lines) : Microsoft.Extensions.Logging.ILogger
@@ -405,7 +422,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Should()
 			.Be(1, "the second target reads the pool the first one read");
 		pool.RequestedPaths.Count(r => r.EndsWith("100.yaml", StringComparison.Ordinal)).Should().Be(1);
-		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().HaveCount(2);
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Should().HaveCount(2);
 	}
 
 	[Test]
@@ -505,11 +522,41 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
-		bundle.Should().Contain("Faster hosted search");
-		bundle.Should().Contain("Heads up for the August release");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			entries:
+			  - file:
+			      name: 100.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Faster hosted search
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			        lifecycle: ga
+			  - file:
+			      name: main/note-heads-up.yml
+			      checksum: {sha1}
+			    type: known-issue
+			    title: Heads up for the August release
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	[Test]
@@ -535,7 +582,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty("dry-run must not write a bundle");
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Should().BeEmpty("dry-run must not write a bundle");
 	}
 
 	[Test]
@@ -548,7 +595,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("must be provided together"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  --start-git-ref and --end-git-ref must be provided together; the start ref is never inferred from previous bundles."
+			);
 	}
 
 	[Test]
@@ -569,8 +622,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("cannot be combined with other filter sources"));
+			.MatchInlineSnapshot(
+				"error  --start-git-ref/--end-git-ref cannot be combined with other filter sources: --prs. The PR list is derived from the commit range itself."
+			);
 	}
 
 	[Test]
@@ -610,7 +666,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("products pattern"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Profile 'filtered' has a 'products' pattern configured. A git commit range cannot be combined with a products pattern filter; use 'output_products' and 'rules' to shape the bundle."
+			);
 	}
 
 	[Test]
@@ -646,12 +708,42 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Unlabeled change");
-		bundle.Should().Contain("type: other");
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			entries:
+			  - file:
+			      name: 999.yaml
+			      checksum: {sha1}
+			    type: other
+			    title: Unlabeled change
+			    products:
+			      - product: cloud-hosted
+			        versions:
+			          - 2026-08-13
+			    prs:
+			      - "https://github.com/elastic/widget/pull/999"
+			"""
+		);
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning https://github.com/elastic/widget/pull/999 Could not derive a changelog type from the labels of PR #999; defaulting to 'other'. Configure pivot.types in changelog.yml to map labels to types.
+			"""
+			);
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("no release note"));
 	}
 
@@ -724,7 +816,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		if (files.Length == 0)
 			return (result, null);
 		var content = await FileSystem.File.ReadAllTextAsync(files.Single(), TestContext.Current!.Execution.CancellationToken);
@@ -795,7 +887,19 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		// The only entry carries elasticsearch alone, so rules.bundle drops it and the range bundle fails.
 		result.Should().BeFalse();
 		bundle.Should().BeNull();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.elasticsearch: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.cloud-serverless: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				hint  Applied rules - excluded_disjoint: 1 entries
+				error  No changelog entries remained after applying rules.bundle filter
+				"""
+			);
 	}
 
 	[Test]
@@ -812,12 +916,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().BeNull();
 		Collector
 			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"No matching product label found on PR https://github.com/elastic/widget/pull/300",
-					StringComparison.Ordinal
-				) && d.Message.Contains("stateful, serverless", StringComparison.Ordinal)
+			.MatchInlineSnapshot(
+				"""
+			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
+			"""
 			);
 	}
 
@@ -832,7 +937,16 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			"cloud-serverless"
 		);
 
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
+			"""
+			);
 	}
 
 	[Test]
@@ -847,8 +961,16 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			"*"
 		);
 
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Cannot determine products", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
+			"""
+			);
 	}
 
 	[Test]
@@ -955,5 +1077,241 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
 			Task.FromResult(Send(request, cancellationToken));
+	}
+
+	private const string RequiredAreaPivot =
+		"  required: [areas]\n  areas:\n    Search: \":Search\"\n  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless";
+
+	[Test]
+	public async Task InferredEntry_Areas_RequiredAndNoAreaLabel_FailAPullRequest()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature", "serverless"],
+			RequiredAreaPivot,
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.elasticsearch: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.cloud-serverless: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				error https://github.com/elastic/widget/pull/300 No matching area label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: :Search.
+				"""
+			);
+	}
+
+	[Test]
+	public async Task InferredEntry_Areas_RequiredAndAreaLabelPresent_KeepThePullRequestInTheBundle()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature", "serverless", ":Search"],
+			RequiredAreaPivot,
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeTrue();
+		bundle.Should().Contain("Faster entity resolution");
+	}
+
+	[Test]
+	public async Task InferredEntry_Products_RequiredDespiteProductsDefault_FailAPullRequestWithoutAProductLabel()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature"],
+			"  required: [products]\n  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless",
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.elasticsearch: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.cloud-serverless: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
+				"""
+			);
+	}
+
+	// ── Empty releases (release serverless) ────────────
+
+	private const string ParentBundle = "widget-cloud-hosted-2026-08-13.yaml";
+
+	private async Task<(bool Success, string[] Files, string OutputDir)> BundleRange(
+		IGitHubCommitRangeService range,
+		bool writeEmptyRange = true,
+		IGitHubPrService? prService = null,
+		string topLevel = "",
+		string? existingOutputDir = null,
+		Action<string>? onBundlePathResolved = null
+	)
+	{
+		var outputDir = existingOutputDir ?? FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, topLevel: topLevel);
+		var service = Service(PoolHandler(), range, prService);
+
+		var success = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef,
+				WriteEmptyRange = writeEmptyRange,
+				OnBundlePathResolved = onBundlePathResolved
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var files =
+			FileSystem
+				.Directory
+				.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories)
+				.Select(FileSystem.Path.GetFileName)
+				.Order()
+				.ToArray()!;
+		return (success, files!, outputDir);
+	}
+
+	// Bundles are written into a per-product subdirectory of the output directory.
+	private string ReadOutput(string outputDir, string fileName) =>
+		FileSystem.File.ReadAllText(FileSystem.Directory.GetFiles(outputDir, fileName, SearchOption.AllDirectories).Single());
+
+	[Test]
+	public async Task EmptyRange_WithWriteEmptyRange_WritesABundleWithNoEntries()
+	{
+		var (success, files, outputDir) = await BundleRange(RangeService());
+
+		success.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		files.Should().Equal(ParentBundle);
+		ReadOutput(outputDir, ParentBundle)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			"""
+			);
+	}
+
+	[Test]
+	public async Task Bundle_TheNameIsTaken_ReportsThePathItWasWrittenTo()
+	{
+		// An earlier run left the unsuffixed bundle in the directory, so the new release is written to a timestamped name.
+		// The path the caller is told about must be that file, or a caller that renames it moves the older bundle.
+		var (_, firstFiles, outputDir) = await BundleRange(RangeService(100));
+		var original = FileSystem.Directory.GetFiles(outputDir, ParentBundle, SearchOption.AllDirectories).Single();
+		var originalText = FileSystem.File.ReadAllText(original);
+		firstFiles.Should().Equal(ParentBundle);
+
+		string? reported = null;
+		var (success, _, _) = await BundleRange(
+			RangeService(),
+			existingOutputDir: outputDir,
+			onBundlePathResolved: path => reported = path
+		);
+
+		success.Should().BeTrue();
+		reported.Should().NotBeNull().And.NotBe(original);
+		FileSystem.File.Exists(reported!).Should().BeTrue("the reported path is the file that was written");
+		FileSystem.File.ReadAllText(reported!).Should().NotContain("title:");
+		FileSystem.File.ReadAllText(original).Should().Be(originalText, "the earlier bundle is not touched");
+	}
+
+	[Test]
+	public async Task EmptyRange_WithoutTheOption_StillFails()
+	{
+		var (success, files, _) = await BundleRange(RangeService(), writeEmptyRange: false);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries could be resolved for commit range"));
+	}
+
+	[Test]
+	public async Task EmptyRange_APullRequestWhoseMetadataCannotBeRead_StillFails()
+	{
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
+
+		var (success, files, _) = await BundleRange(RangeService(400), prService: prService);
+
+		// A failed fetch is not an empty release: nothing is written and nothing is recorded as "no notes".
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+	}
+
+	// language=yaml
+	private const string ExcludeEveryFeature =
+		"""
+		rules:
+		  bundle:
+		    products:
+		      cloud-hosted:
+		        exclude_types: [feature]
+		""";
+
+	[Test]
+	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WritesABundleWithNoEntries()
+	{
+		// PR 100 resolves to a feature entry, and the bundle rules drop every feature: the release has no notes.
+		var (success, files, outputDir) = await BundleRange(RangeService(100), topLevel: ExcludeEveryFeature);
+
+		success.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		files.Should().Equal(ParentBundle);
+		ReadOutput(outputDir, ParentBundle).Should().NotContain("title:");
+	}
+
+	[Test]
+	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WithoutTheOption_StillFails()
+	{
+		var (success, files, _) = await BundleRange(RangeService(100), writeEmptyRange: false, topLevel: ExcludeEveryFeature);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+	}
+
+	[Test]
+	public async Task EmptyRange_BundleRulesRemoveTheEntriesButAPullRequestCannotBeRead_StillFails()
+	{
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
+
+		// PR 100 is dropped by the rules and PR 400 is unreadable: PR 400 may have held the notes, so this is not "no notes".
+		var (success, files, _) = await BundleRange(RangeService(100, 400), prService: prService, topLevel: ExcludeEveryFeature);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be read"));
 	}
 }

@@ -518,6 +518,34 @@
 	color: var(--color-accent);
 }
 
+.landing__resource--hubs {
+	justify-content: flex-start;
+}
+
+.landing__resource-title {
+	font-weight: var(--weight-bold);
+}
+
+.landing__resource-text {
+	margin-top: var(--space-2);
+}
+
+.landing__resource-links {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin-top: auto;
+}
+
+.landing__resource-links a {
+	color: var(--color-heading);
+	text-decoration: none;
+}
+
+.landing__resource-links a:hover {
+	text-decoration: underline;
+}
+
 .landing__promo {
 	position: relative;
 	display: flex;

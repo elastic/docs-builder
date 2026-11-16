@@ -4,20 +4,13 @@
 
 using System.Xml.Linq;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Build.Tests;
 
 // TODO: Delete this class once the API Explorer migration (elastic/docs-eng-team#436) is finalised.
 public class ApiSitemapParityTests
 {
-	// Mirrors modules/elastic-docs-v3/api-root-redirects.json in elastic/docs-infra (#459).
-	private const string ApiDocPrefix = "/docs/api/doc/";
-	private static readonly IReadOnlyDictionary<string, string> RedirectedRoots = new Dictionary<string, string>
-	{
-		["serverless"] = "kibana-serverless",
-		["elastic-cloud-serverless"] = "cloud-serverless"
-	};
-	private static readonly IReadOnlySet<string> GoneRoots = new HashSet<string> { "observability-serverless" };
 	private static readonly Uri SitemapIndex = new("https://www.elastic.co/docs/api/sitemap_index.xml");
 	private static readonly XNamespace SitemapNamespace = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
@@ -34,10 +27,10 @@ public class ApiSitemapParityTests
 
 		var productionUrls = await DownloadPageUrls(client, SitemapIndex, cancellationToken);
 		await Assert.That(productionUrls).IsNotEmpty();
-		var gone = productionUrls.Where(url => GoneRoots.Contains(RootOf(url))).ToArray();
-		var redirected = productionUrls.Where(url => RedirectedRoots.ContainsKey(RootOf(url))).ToArray();
-		// Redirected pages are served by a prefix redirect, so verify the page exists at its redirect target.
-		var auditedPaths = productionUrls.Except(gone).Select(RedirectTarget).Distinct().ToArray();
+		var gone = productionUrls.Where(url => ApiLegacyRedirects.IsGone(url.AbsolutePath)).ToArray();
+		var redirected = productionUrls.Where(url => ApiLegacyRedirects.IsRedirected(url.AbsolutePath)).ToArray();
+		// Redirected pages are served by an exact or prefix redirect, so verify the page exists at its redirect target.
+		var auditedPaths = productionUrls.Except(gone).Select(url => ApiLegacyRedirects.Resolve(url.AbsolutePath)).Distinct().ToArray();
 		var outputRoot = Environment.GetEnvironmentVariable("API_SITEMAP_PARITY_OUTPUT")
 			?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var missing = auditedPaths
@@ -56,24 +49,6 @@ public class ApiSitemapParityTests
 		}
 
 		File.Delete(reportPath);
-	}
-
-	private static string RootOf(Uri url)
-	{
-		var path = url.AbsolutePath;
-		if (!path.StartsWith(ApiDocPrefix, StringComparison.Ordinal))
-			return string.Empty;
-		var rest = path[ApiDocPrefix.Length..];
-		var slash = rest.IndexOf('/');
-		return slash < 0 ? rest : rest[..slash];
-	}
-
-	private static string RedirectTarget(Uri url)
-	{
-		var root = RootOf(url);
-		return RedirectedRoots.TryGetValue(root, out var newRoot)
-			? string.Concat(ApiDocPrefix, newRoot, url.AbsolutePath.AsSpan(ApiDocPrefix.Length + root.Length))
-			: url.AbsolutePath;
 	}
 
 	private static async Task<IReadOnlySet<Uri>> DownloadPageUrls(HttpClient client, Uri sitemap, CancellationToken ctx)

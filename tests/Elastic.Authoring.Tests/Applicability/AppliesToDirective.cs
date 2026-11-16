@@ -79,14 +79,12 @@ public class WarnsOnOldSyntax : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("has no errors")]
-	public async Task HasNoErrors() => await Docs.HasNoErrors();
-
-	[Test, DisplayName("warns on bad syntax")]
-	public async Task WarnsOnBadSyntax() => await Docs.HasWarning("Applies block does not use valid yaml keys: :hosted");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("warning {repo}/docs/index.md:2 Applies block does not use valid yaml keys: :hosted");
 }
 
-public class ErrorsOnInvalidKeys : MarkdownTest
+public class HintsOnInvalidKeys : MarkdownTest
 {
 	protected override string Markdown => """
 		```{applies_to}
@@ -94,6 +92,9 @@ public class ErrorsOnInvalidKeys : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("errors on unknown key")]
-	public async Task ErrorsOnUnknownKey() => await Docs.HasError("Unknown key 'hosted' in applies_to.");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"hint {repo}/docs/index.md:2 Unknown key 'hosted' in applies_to. Valid keys: apm_agent_dotnet, deployment, ecctl, ece, ech, eck, elasticsearch, ess, observability, product, security, self, …."
+		);
 }

@@ -52,9 +52,9 @@ public class ChangelogMatchingProperties
 	);
 
 	private static Gen<ProductFilter> Filters { get; } = Gen.Select(
-		Gen.OneOfConst<string?>(null, "*", "elasticsearch", "kibana", "ELASTICSEARCH", "elastic*", "cloud*"),
-		Gen.OneOfConst<string?>(null, "*", "9.3.0", "9.4.0", "10.0.0", "9.*"),
-		Gen.OneOfConst<string?>(null, "*", "ga", "beta", "GA"),
+		Gen.OneOf<string?>(null, "*", "elasticsearch", "kibana", "ELASTICSEARCH", "elastic*", "cloud*"),
+		Gen.OneOf<string?>(null, "*", "9.3.0", "9.4.0", "10.0.0", "9.*"),
+		Gen.OneOf<string?>(null, "*", "ga", "beta", "GA"),
 		(product, target, lifecycle) => new ProductFilter { ProductPattern = product, TargetPattern = target, LifecyclePattern = lifecycle }
 	);
 
@@ -218,9 +218,9 @@ public class ChangelogMatchingProperties
 		});
 
 	private static Gen<ProductArgument[]> Arguments { get; } = Gen.Select(
-		Gen.OneOfConst("elasticsearch", "kibana", "cloud-hosted", "*"),
-		Gen.OneOfConst<string?>(null, "9.3.0", "*", "9.3.0|9.4.0"),
-		Gen.OneOfConst<string?>(null, "ga", "beta", "*"),
+		Gen.OneOf("elasticsearch", "kibana", "cloud-hosted", "*"),
+		Gen.OneOf<string?>(null, "9.3.0", "*", "9.3.0|9.4.0"),
+		Gen.OneOf<string?>(null, "ga", "beta", "*"),
 		(p, t, l) => new ProductArgument { Product = p, Target = t, Lifecycle = l is not null && t is null ? null : l }
 	).Array[0, 4];
 

@@ -166,6 +166,28 @@ internal class ApiProductSequenceDto
 public static class ResolvedApiConfigurationFiles
 {
 	/// <summary>
+	/// Markdown paths (relative to <paramref name="documentationSourceDirectoryFullName"/>, <c>/</c> separated) that the
+	/// API pipeline owns: <c>children:</c> pages and <c>op-*.md</c> / <c>tag-*.md</c> supplemental files.
+	/// </summary>
+	public static HashSet<string> GetApiMarkdownExcludePaths(
+		this ResolvedDocumentationSet docset,
+		string documentationSourceDirectoryFullName
+	)
+	{
+		var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (docset.ApiConfigurations is null)
+			return set;
+
+		foreach (var apiConfig in docset.ApiConfigurations.Values)
+		{
+			foreach (var path in apiConfig.GetMarkdownPathsToExclude(documentationSourceDirectoryFullName))
+				_ = set.Add(path);
+		}
+
+		return set;
+	}
+
+	/// <summary>
 	/// Markdown paths that must not be rendered by the normal HTML pipeline:
 	/// explicit <c>children:</c> pages and convention supplemental files.
 	/// </summary>

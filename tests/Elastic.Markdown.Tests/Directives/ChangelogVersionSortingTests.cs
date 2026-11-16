@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -97,20 +99,7 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersAllDateVersions()
-	{
-		Html.Should().Contain("August 15, 2025");
-		Html.Should().Contain("August 5, 2025");
-		Html.Should().Contain("August 1, 2025");
-	}
-
-	[Test]
-	public void RendersEntriesForDateVersions()
-	{
-		Html.Should().Contain("August 15th feature");
-		Html.Should().Contain("August 5th feature");
-		Html.Should().Contain("August 1st feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -230,22 +219,7 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersAllVersions()
-	{
-		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("9.2.0");
-		Html.Should().Contain("August 5, 2025");
-		Html.Should().Contain("July 1, 2025");
-	}
-
-	[Test]
-	public void RendersAllEntries()
-	{
-		Html.Should().Contain("Semver 9.3.0 feature");
-		Html.Should().Contain("Semver 9.2.0 feature");
-		Html.Should().Contain("Date-based feature");
-		Html.Should().Contain("Earlier date feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -336,21 +310,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
 
 	[Test]
-	public void RendersHeadingsAsMonthYear()
-	{
-		Html.Should().Contain("December 2025");
-		Html.Should().Contain("October 2025");
-		Html.Should().Contain("August 2025");
-	}
-
-	[Test]
-	public void DoesNotRenderRawYearMonthInHeadings()
-	{
-		// The raw yyyy-MM format should only appear in slugs/anchors, not in visible headings
-		Html.Should().NotContain(">2025-12<");
-		Html.Should().NotContain(">2025-10<");
-		Html.Should().NotContain(">2025-08<");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void RendersInDescendingMonthOrder()
@@ -361,24 +321,6 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 
 		idxDec.Should().BeLessThan(idxOct, "December 2025 should appear before October 2025");
 		idxOct.Should().BeLessThan(idxAug, "October 2025 should appear before August 2025");
-	}
-
-	[Test]
-	public void PreservesOriginalSlugsForAnchors()
-	{
-		// Anchors should use the original yyyy-MM format, not the display format
-		Html.Should().Contain("2025-12");
-		Html.Should().Contain("2025-10");
-		Html.Should().Contain("2025-08");
-	}
-
-	[Test]
-	public void RendersAllEntries()
-	{
-		Html.Should().Contain("December feature");
-		Html.Should().Contain("October feature");
-		Html.Should().Contain("August feature");
-		Html.Should().Contain("August bugfix");
 	}
 
 	[Test]
@@ -463,14 +405,7 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(2);
 
 	[Test]
-	public void RendersNonStandardVersions()
-	{
-		// Both non-standard versions should be rendered (sorted lexicographically)
-		Html.Should().Contain("release-alpha");
-		Html.Should().Contain("release-beta");
-		Html.Should().Contain("Alpha release feature");
-		Html.Should().Contain("Beta release feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void SortsLexicographically()

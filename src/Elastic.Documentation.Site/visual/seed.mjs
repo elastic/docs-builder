@@ -5,22 +5,21 @@ import { cleanEnv } from './host.mjs'
 import { git, withWorktree } from './worktree.mjs'
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
+import { parseArgs } from 'node:util'
 
-const here = dirname(fileURLToPath(import.meta.url))
+const here = import.meta.dirname
 const siteDir = resolve(here, '..')
 const repoRoot = resolve(here, '../../..')
 const siteRelative = 'src/Elastic.Documentation.Site'
 
-const args = process.argv.slice(2)
-const refIndex = args.indexOf('--ref')
-const ref = refIndex === -1 ? 'origin/main' : args[refIndex + 1]
-// Drop `--ref` and its value, and only those: without the option there is nothing to drop (an index of -1 would drop the first host).
-const requested =
-	refIndex === -1
-		? args
-		: args.filter((_, i) => i !== refIndex && i !== refIndex + 1)
+const {
+	values: { ref },
+	positionals: requested,
+} = parseArgs({
+	options: { ref: { type: 'string', default: 'origin/main' } },
+	allowPositionals: true,
+})
 const hosts =
 	requested.length > 0
 		? requested

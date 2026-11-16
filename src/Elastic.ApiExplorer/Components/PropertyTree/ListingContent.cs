@@ -25,39 +25,46 @@ internal static class ListingContent
 	{
 		_ = text.Append(children.Kind).Append('[');
 		Append(text, children.Properties, shapes);
-		if (children.Variants is { } variants)
-		{
-			_ = text.Append(variants.Label);
-			foreach (var variant in variants.Variants)
-			{
-				_ = text
-					.Append("<v ")
-					.Append(variant.DisplayName)
-					.Append('|')
-					.Append(variant.IsArrayVariant)
-					.Append('|')
-					.Append(variant.IsObjectType)
-					.Append('|')
-					.Append(variant.PageUrl)
-					.Append('|')
-					.Append(variant.DiscriminatorLabel)
-					.Append('|')
-					.Append(variant.DescriptionHtml.Value)
-					.Append('|')
-					.Append(variant.ShowProperties);
-				Append(text, variant.Properties, shapes);
-				_ = text.Append('>');
-			}
-		}
+		AppendVariants(text, children.Variants, shapes);
 
 		if (children.Dictionary is { } dictionary)
 		{
 			_ = text.Append("<map ").Append(dictionary.ValueType.Text);
 			Append(text, dictionary.Properties, shapes);
+			AppendVariants(text, dictionary.Variants, shapes);
 			_ = text.Append('>');
 		}
 
 		_ = text.Append(']');
+	}
+
+	private static void AppendVariants(StringBuilder text, ApiUnionVariants? variants, PageShapes shapes)
+	{
+		if (variants is null)
+			return;
+
+		_ = text.Append(variants.Label);
+		foreach (var variant in variants.Variants)
+		{
+			_ = text
+				.Append("<v ")
+				.Append(variant.DisplayName)
+				.Append('|')
+				.Append(variant.IsArrayVariant)
+				.Append('|')
+				.Append(variant.IsObjectType)
+				.Append('|')
+				.Append(variant.PageUrl)
+				.Append('|')
+				.Append(variant.DiscriminatorLabel)
+				.Append('|')
+				.Append(variant.DescriptionMarkdown)
+				.Append('|')
+				.Append(variant.ShowProperties);
+			Append(text, variant.Properties, shapes);
+			AppendVariants(text, variant.Variants, shapes);
+			_ = text.Append('>');
+		}
 	}
 
 	private static void Append(StringBuilder text, ApiPropertyList? properties, PageShapes shapes)
@@ -81,7 +88,7 @@ internal static class ListingContent
 				.Append('|')
 				.Append(property.ExternalDocs?.Url)
 				.Append('|')
-				.Append(property.DescriptionHtml.Value)
+				.Append(property.DescriptionMarkdown)
 				.Append('|')
 				.AppendJoin(',', property.EnumValues)
 				.Append('|')
@@ -97,6 +104,8 @@ internal static class ListingContent
 				.AppendJoin(',', property.Requires?.Options ?? [])
 				.Append('|')
 				.Append(property.TypeLink?.Url)
+				.Append('|')
+				.Append(property.DefaultValue)
 				.Append('|');
 			// Children count by their hash, so a full listing and a link to an identical listing contribute the same.
 			_ = property.Repeats is { } repeats

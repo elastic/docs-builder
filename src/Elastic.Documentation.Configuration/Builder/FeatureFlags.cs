@@ -25,11 +25,17 @@ public sealed class FeatureFlags
 		_environment = environment ?? SystemEnvironmentVariables.Instance;
 	}
 
-	private FeatureFlags(Dictionary<string, bool> featureFlags, IEnvironmentVariables environment, string? websiteSearchScriptUrl)
+	private FeatureFlags(
+		Dictionary<string, bool> featureFlags,
+		IEnvironmentVariables environment,
+		string? websiteSearchScriptUrl,
+		string? wafIntegrationUrl
+	)
 	{
 		_featureFlags = featureFlags;
 		_environment = environment;
 		WebsiteSearchScriptUrl = websiteSearchScriptUrl;
+		WafIntegrationUrl = wafIntegrationUrl;
 	}
 
 	/// <summary>A copy with <paramref name="key"/> set; the key normalizes to kebab-case (<c>API_NAV_GROUPING</c> is <c>api-nav-grouping</c>).</summary>
@@ -39,16 +45,20 @@ public sealed class FeatureFlags
 		{
 			[key.ToLowerInvariant().Replace('_', '-')] = value
 		};
-		return new FeatureFlags(flags, _environment, WebsiteSearchScriptUrl);
+		return new FeatureFlags(flags, _environment, WebsiteSearchScriptUrl, WafIntegrationUrl);
 	}
 
 	/// <summary>A copy with every flag in <paramref name="flags"/> set, in order.</summary>
 	public FeatureFlags With(IEnumerable<KeyValuePair<string, bool>> flags) =>
 		flags.Aggregate(this, (current, flag) => current.With(flag.Key, flag.Value));
 
-	public FeatureFlags WithWebsiteSearchScriptUrl(string? url) => new(_featureFlags, _environment, url);
+	public FeatureFlags WithWebsiteSearchScriptUrl(string? url) => new(_featureFlags, _environment, url, WafIntegrationUrl);
+
+	public FeatureFlags WithWafIntegrationUrl(string? url) => new(_featureFlags, _environment, WebsiteSearchScriptUrl, url);
 
 	public string? WebsiteSearchScriptUrl { get; }
+
+	public string? WafIntegrationUrl { get; }
 
 	public bool PrimaryNavEnabled => IsEnabled("primary-nav");
 
@@ -69,6 +79,24 @@ public sealed class FeatureFlags
 	public bool NavigationPreviewEnabled => IsEnabled("navigation-preview");
 
 	public bool PageFeedbackEnabled => IsEnabled("page-feedback");
+
+	/// <summary>Keys of the typed flags, in kebab-case. Keep in step with the properties above: a test enforces it.</summary>
+	public static IReadOnlyList<string> KnownKeys { get; } =
+	[
+		"air-gapped",
+		"assembler-api-explorer",
+		"diagnostics-panel",
+		"disable-github-edit-link",
+		"guide-nav",
+		"navigation-preview",
+		"page-feedback",
+		"primary-nav",
+		"staging-elastic-nav",
+		"website-search"
+	];
+
+	/// <summary>The enabled typed flags, sorted, with environment overrides applied.</summary>
+	public IReadOnlyList<string> EnabledKeys() => [.. KnownKeys.Where(IsEnabled)];
 
 	private bool IsEnabled(string key)
 	{

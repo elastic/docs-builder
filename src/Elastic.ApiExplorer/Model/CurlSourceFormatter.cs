@@ -105,7 +105,6 @@ public static class CurlSourceFormatter
 		return bare.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
 			|| bare.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
 			|| bare.StartsWith('$') // "$ELASTICSEARCH_URL/..."
-
 			|| bare.Contains("/_", StringComparison.Ordinal)
 			|| bare.Contains("/.", StringComparison.Ordinal);
 	}

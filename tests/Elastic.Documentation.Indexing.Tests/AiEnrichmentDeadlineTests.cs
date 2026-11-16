@@ -36,8 +36,11 @@ public class AiEnrichmentDeadlineTests
 	{
 		using var deadline = AiEnrichmentDeadline.Create(TimeSpan.FromMilliseconds(1), CancellationToken.None);
 
-		// Give the internal CancellationTokenSource timer a moment to fire.
-		await Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current!.Execution.CancellationToken);
+		// Wait for the timer to fire instead of sleeping a fixed time: a loaded CI runner can delay a 1 ms timer
+		// past any short sleep. Registering on an already cancelled token runs the callback immediately.
+		var fired = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+		using var registration = deadline.Token.Register(() => fired.TrySetResult());
+		await fired.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current!.Execution.CancellationToken);
 
 		deadline.Token.IsCancellationRequested.Should().BeTrue();
 		deadline.TimedOut.Should().BeTrue();

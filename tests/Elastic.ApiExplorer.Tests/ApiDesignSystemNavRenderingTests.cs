@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.Documentation.Configuration.Builder;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -28,12 +29,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("class=\"link-menu\"");
-		html.Should().Contain("aria-label=\"API version: v9\"");
-		html.Should().Contain("aria-label=\"API product: Elasticsearch\"");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/v8/\"");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("onchange");
+		html.Should().MatchHtmlSnapshot();
 		html
 			.IndexOf("class=\"link-menu\"", StringComparison.Ordinal)
 			.Should()
@@ -52,8 +48,7 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("data-nav-filter hidden");
-		html.Should().NotContain("<navigation-search");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]

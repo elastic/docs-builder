@@ -1,7 +1,7 @@
 ## Description
 
 Create a changelog file that describes a single item in the release documentation.
-For details and examples, go to [](/data/release-notes/create.md).
+For details and examples, go to [](/data/release-notes/index.md).
 
 For changelogs that don't need a PR link (for example, known issues or security advisories), use [`changelog note`](/cli/changelog/note.md) instead.
 
@@ -22,45 +22,38 @@ For changelogs that don't need a PR link (for example, known issues or security 
   Refer to [Fetch failures](#fetch-failures).
 
 : `--use-pr-number`
-  Use PR numbers for filenames instead of the configured `filename` strategy.
-  Requires `--prs`, `--issues`, or `--report`. Mutually exclusive with `--use-issue-number`.
+  Use PR numbers for filenames. This is also the default `filename` strategy.
+  Requires `--prs`, `--issues`, or `--report`.
   Refer to [Filenames](#filenames).
 
 : `--use-issue-number`
-  Use issue numbers for filenames instead of the configured `filename` strategy.
-  Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
-  Refer to [Filenames](#filenames).
+  No longer supported. The command stops with an error. Changelog entries are keyed by PR number; for items with no PR use `changelog note`.
 
 ## Filenames
 
-By default, output files are named according to the `filename` strategy in `changelog.yml`:
+Output files are named according to the `filename` strategy in `changelog.yml`. `pr` is the only supported value:
 
 | Strategy | Example filename | Description |
 |---|---|---|
-| `timestamp` (default) | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
-| `pr` | `137431.yaml` | Uses the PR number. |
-| `issue` | `2571.yaml` | Uses the issue number. |
+| `pr` (default) | `137431.yaml` | Uses the PR number. |
+
+`timestamp` and `issue` are no longer supported: the configuration fails to load with either value. Changelog entries are keyed by PR number. For items with no PR, use [`changelog note`](/cli/changelog/note.md).
 
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/data/release-notes/configure-ref.md).
 
-You can override those settings with the `--use-pr-number` or `--use-issue-number` flags:
+You can pass the `--use-pr-number` flag explicitly:
 
 ```sh
 docs-builder changelog add \
   --prs 1234 \
   --products "elasticsearch ga" \
   --use-pr-number
-
-docs-builder changelog add \
-  --issues 4567 \
-  --products "elasticsearch" \
-  --use-issue-number
 ```
 
 :::{important}
-`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. `--use-pr-number` requires `--prs`, `--issues`, or `--report`. `--use-issue-number` requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
+`--use-pr-number` requires `--prs`, `--issues`, or `--report`. `--use-issue-number` is no longer supported: the command stops with an error. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
 
-**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
+**Precedence**: `--use-pr-number` > `filename` in `changelog.yml` > default (`pr`).
 :::
 
 ## Product format and resolution
@@ -82,7 +75,7 @@ The `changelog add` command resolves product values in the following order:
 
 1. The `--products` CLI option always takes priority.
 1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied. Products listed in `products.implies` for a matched product are added.
-1. If `products.default` is defined in the changelog configuration file, those default products are used.
+1. If `products.default` is defined in the changelog configuration file, those default products are used. This does not apply when `pivot.required` lists `products`: a PR or issue with no matching label is then an error.
 1. If `products.default` is not defined and `pivot.products` maps two or more distinct products, a PR or issue with no matching label is an error. The error names the PR or issue and lists the labels to add.
 1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuration file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
 
@@ -110,12 +103,13 @@ If a configuration file exists, the command validates its values before generati
 
 - If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the known valid values, validation fails.
 - If the configuration file contains `areas` values and they don't match what you specify in `--areas`, validation fails.
+- If `pivot.required` lists `areas`, a PR or issue with no matching area label is an error unless you pass `--areas`.
 - If the configuration file contains `lifecycles` or `products` values that are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
 
 In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
-For more information, refer to [](/data/release-notes/create.md#rules).
+For more information, refer to [](/data/release-notes/index.md).
 
 ## Fetch failures
 

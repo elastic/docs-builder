@@ -117,13 +117,9 @@ public class IsolatedBuildServiceTests : IDisposable
 
 	[Test]
 	[Arguments(true, true)] // CI + force=true -> force should be true
-
 	[Arguments(true, false)] // CI + force=false -> force should be true (CI override)
-
 	[Arguments(false, true)] // Local + force=true -> force should be true
-
 	[Arguments(false, false)] // Local + force=false -> force should be false
-
 	public void Build_CIOverridesForceParameter_AsExpected(bool isCI, bool forceParam)
 	{
 		// This test validates the truth table rows for the 'Effective Force' column.

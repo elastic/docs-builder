@@ -1,0 +1,17 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.TitleBadgeModel>
+@* A text badge that looks like the availability badge beside it, so it takes that badge's own classes in each look instead of styling its own. *@
+@{
+	var tone = Model.Danger ? " api-badge--danger" : "";
+	var badgeClass = (Model.DesignSystem ? "applies-badge" : "applicable-info") + tone;
+	var textClass = Model.DesignSystem ? "applies-badge__product" : "applicable-name";
+}
+<span class="applies applies-inline">
+	@if (Model.Href is { } href)
+	{
+		<a class="@badgeClass" href="@href"><span class="@textClass">@Model.Text</span></a>
+	}
+	else
+	{
+		<span class="@badgeClass"><span class="@textClass">@Model.Text</span></span>
+	}
+</span>

@@ -10,11 +10,16 @@
   </PropertyGroup>
   
   <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
     <IsPackable>False</IsPackable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>
     <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
     <LangVersion>preview</LangVersion>
+    <!-- Opt all async methods into the Runtime Async codegen path (stable in RC 1, GA November 2026).
+         The BCL itself ships compiled runtime-async=on; this flag extends coverage to user code.
+         Produces cleaner live stack traces, lower async overhead, and NativeAOT-compatible suspension. -->
+    <Features>runtime-async=on</Features>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <SolutionRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), build.sh))</SolutionRoot>
@@ -22,7 +27,10 @@
 
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnforceCodeStyleInBuild Condition="'$(EnforceCodeStyleInBuild)' == ''">true</EnforceCodeStyleInBuild>
+    <!-- Nothing here uses static web assets: _static is served from embedded resources and there is no wwwroot or scoped CSS.
+         The pipeline made Site, Api and Mcp.Remote wait 25-50 s for their referenced projects on CI runners. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
     <PagefindFrontendDisableExtract>true</PagefindFrontendDisableExtract>
 
     <!-- Static graph evaluation speeds up restore by evaluating the dependency graph once up front -->

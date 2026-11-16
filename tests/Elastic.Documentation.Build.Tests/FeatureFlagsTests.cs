@@ -11,6 +11,8 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Build.Tests;
 
+// The environment-variable override test mutates process-wide state that every flag-reading test here depends on
+[NotInParallel(nameof(FeatureFlagsTests))]
 public class FeatureFlagsTests
 {
 	[Test]
@@ -50,11 +52,53 @@ public class FeatureFlagsTests
 	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
 
 	[Test]
+	public void DemoEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("demo");
+
+	[Test]
+	public void AirGappedEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("air-gapped");
+
+	[Test]
 	public void EdgeEnvironment_DoesNotAllowIndexing()
 	{
 		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["edge"].AllowIndexing.Should().BeFalse();
+	}
+
+	[Test]
+	public void EdgeEnvironment_DisablesNavigationPreview()
+	{
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_DoesNotAllowIndexing()
+	{
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].AllowIndexing.Should().BeFalse();
+	}
+
+	[Test]
+	public void DemoEnvironment_EnablesNavigationPreview()
+	{
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["demo"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeTrue();
+	}
+
+	[Test]
+	[Arguments("prod")]
+	[Arguments("staging")]
+	[Arguments("dev")]
+	[Arguments("local")]
+	public void OtherEnvironments_DoNotEnableNavigationPreview(string environmentName)
+	{
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments[environmentName].FeatureFlags.GetValueOrDefault("NAVIGATION_PREVIEW").Should().BeFalse();
 	}
 
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
@@ -66,6 +110,48 @@ public class FeatureFlagsTests
 
 		var features = new FeatureFlags([]).With(environment.FeatureFlags);
 		features.AssemblerApiExplorerEnabled.Should().BeTrue();
+	}
+
+	[Test]
+	public void EnabledKeys_CoversEveryTypedFlag()
+	{
+		var flagProperties = typeof(FeatureFlags).GetProperties().Where(p => p.PropertyType == typeof(bool)).ToList();
+		flagProperties.Should().NotBeEmpty();
+		FeatureFlags.KnownKeys.Should().HaveCount(flagProperties.Count, "a typed flag missing from KnownKeys would never reach the page");
+
+		var seen = new List<string>();
+		foreach (var key in FeatureFlags.KnownKeys)
+		{
+			var flags = new FeatureFlags([]).With(key, true);
+
+			var enabled = flags.EnabledKeys();
+			enabled.Should().ContainSingle($"{key} is one flag and enables one key").Which.Should().Be(key);
+			flagProperties.Count(p => (bool)p.GetValue(flags)!).Should().Be(1, $"{key} sets exactly one typed flag");
+			seen.AddRange(enabled);
+		}
+
+		seen.Should().BeEquivalentTo(FeatureFlags.KnownKeys);
+		FeatureFlags.KnownKeys.Should().BeInAscendingOrder(StringComparer.Ordinal);
+	}
+
+	[Test]
+	public void EnabledKeys_DefaultsToNone() => new FeatureFlags([]).EnabledKeys().Should().BeEmpty();
+
+	[Test]
+	public void EnabledKeys_EnvironmentVariableOverridesYaml()
+	{
+		var previous = Environment.GetEnvironmentVariable("FEATURE_PAGE_FEEDBACK");
+		try
+		{
+			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", "false");
+			var flags = new FeatureFlags(new Dictionary<string, bool> { ["page-feedback"] = true, ["guide-nav"] = true });
+
+			flags.EnabledKeys().Should().Equal("guide-nav");
+		}
+		finally
+		{
+			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", previous);
+		}
 	}
 
 	[Test]

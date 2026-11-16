@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
@@ -16,105 +17,68 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
-/// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
+/// Converts the OpenAPI specifications the API explorer renders into DocumentationDocument instances.
 /// </summary>
 public partial class OpenApiDocumentExporter(
 	VersioningSystemCatalog versionsConfiguration,
 	IDocumentInferrerService? documentInferrer = null
 )
 {
-	private static readonly HttpClient HttpClient = new();
-
-	private const string ElasticsearchOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json";
-	private const string KibanaOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json";
-
-	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationListIntroRegex();
 
+	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex OperationPathSpanRegex();
+
 	/// <summary>
-	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
+	/// Converts every version tree of every API the generators render, one document per operation and distinct rendering
+	/// (<see cref="ApiTreeCollapse"/>). When two generators declare the same API key, the first one owns all its trees.
 	/// </summary>
-	/// <param name="limitPerSource">Optional limit of documents to return per source (Elasticsearch and Kibana)</param>
-	/// <param name="ctx">Cancellation token</param>
-	/// <returns>Enumerable of DocumentationDocument instances for all endpoints</returns>
 	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
-		int? limitPerSource = null,
+		IEnumerable<OpenApiGenerator> generators,
 		[EnumeratorCancellation] Cancel ctx = default
 	)
 	{
-		// Process Elasticsearch API
-		var elasticsearchCount = 0;
-		await foreach (var doc in ExportFromUrl(ElasticsearchOpenApiUrl, "elasticsearch", ctx))
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var generator in generators)
 		{
-			yield return doc;
-			elasticsearchCount++;
-			if (limitPerSource.HasValue && elasticsearchCount >= limitPerSource.Value)
-				break;
-		}
+			var trees = await generator.ResolveIndexedTrees(ctx).ConfigureAwait(false);
+			foreach (var api in trees.GroupBy(static t => t.ApiKey, StringComparer.OrdinalIgnoreCase))
+			{
+				if (!seenKeys.Add(api.Key))
+					continue;
 
-		// Process Kibana API
-		var kibanaCount = 0;
-		await foreach (var doc in ExportFromUrl(KibanaOpenApiUrl, "kibana", ctx))
-		{
-			yield return doc;
-			kibanaCount++;
-			if (limitPerSource.HasValue && kibanaCount >= limitPerSource.Value)
-				break;
+				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker))!;
+				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToIndexedDocuments), defaultTree))
+					yield return doc;
+			}
 		}
 	}
 
-	/// <summary>
-	/// Fetches OpenAPI spec from a URL and converts it to DocumentationDocument instances.
-	/// </summary>
-	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(string url, string product, [EnumeratorCancellation] Cancel ctx)
-	{
-		var openApiDocument = await FetchOpenApiDocument(url, ctx);
-		if (openApiDocument == null)
-			yield break;
-
-		foreach (var doc in ConvertToDocuments(openApiDocument, product))
-			yield return doc;
-	}
+	/// <summary>Everything one version tree adds to the index: the API's landing page, then each operation.</summary>
+	private IEnumerable<DocumentationDocument> ConvertToIndexedDocuments(IndexedTree tree) =>
+		[ConvertToLandingDocument(tree), .. ConvertToDocuments(tree)];
 
 	/// <summary>
-	/// Fetches and parses an OpenAPI document from a URL.
+	/// Converts one version tree of an API to one document per operation, with URLs into that tree. The API key builds
+	/// URLs and labels; the product id drives product metadata.
 	/// </summary>
-	private static async Task<OpenApiDocument?> FetchOpenApiDocument(string url, Cancel ctx)
+	public IEnumerable<DocumentationDocument> ConvertToDocuments(IndexedTree tree)
 	{
-		try
-		{
-			var response = await HttpClient.GetAsync(url, ctx);
-			_ = response.EnsureSuccessStatusCode();
-
-			await using var stream = await response.Content.ReadAsStreamAsync(ctx);
-			var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-			var openApiDocument = await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx);
-
-			return openApiDocument.Document;
-		}
-		catch (Exception ex)
-		{
-			Console.Error.WriteLine($"Failed to fetch OpenAPI document from {url}: {ex.Message}");
-			return null;
-		}
-	}
-
-	/// <summary>
-	/// Converts an OpenAPI document to DocumentationDocument instances.
-	/// Internal (rather than private) so tests can exercise it against an in-memory spec.
-	/// </summary>
-	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
-	{
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
+		var (product, productId, moniker, openApiDocument) = tree;
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(product, moniker));
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
+		var tagMetadata = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
 
+		var plainDescriptions = new Dictionary<string, string>();
 		foreach (var path in openApiDocument.Paths)
 		{
 			if (path.Value.Operations == null)
@@ -138,7 +102,6 @@ public partial class OpenApiDocumentExporter(
 				var summary = operation.Value.Summary?.Trim();
 				var title = string.IsNullOrEmpty(summary) ? operationId : summary;
 				var method = operation.Key.ToString().ToUpperInvariant();
-				var searchTitle = BuildSearchTitle(title, productLabel, operationId, $"{method} {path.Key}");
 				var description = IndexedHitText(summary, operation.Value.Description, operationId);
 
 				// Build body content from operation details
@@ -166,41 +129,146 @@ public partial class OpenApiDocumentExporter(
 				}
 
 				var body = bodyBuilder.ToString();
+				var apiOperation = new ApiOperation(operation.Key, operation.Value, path.Key, path.Value, product);
+				var builder = new ApiPropertyTreeBuilder(
+					openApiDocument,
+					new PropertyDisplayOptions
+					{
+						// Listing identity keys on the markdown and the index stores plain text, so nothing here needs the HTML.
+						RenderMarkdown = _ => HtmlString.Empty,
+						ApiRootUrl = productUrl,
+						VersionsConfiguration = versionsConfiguration
+					}
+				);
+				var endpoint = OperationEndpoint.Build(apiOperation, operation.Value.Description, []);
+				var trees = OperationPageModel.BuildPropertyTrees(
+					apiOperation,
+					new SchemaAnalyzer(openApiDocument),
+					new ParameterRowSource(builder, null, endpoint)
+				);
 
-				// Extract tags as headings
-				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
-					?? [];
+				var headings = operation.Value.Tags?.Select(OpenApiExtensionReader.TagName).OfType<string>().ToArray() ?? [];
 
 				// Infer product and repository metadata
-				var inference = documentInferrer?.InferForOpenApi(product);
+				var inference = documentInferrer?.InferForOpenApi(productId);
+
+				var groupParent = GroupParent(headings, tagMetadata, productUrl);
+				ParentDocument[] parents =
+				[
+					new ParentDocument { Title = "API", Path = "/docs/api" },
+					new ParentDocument { Title = productLabel, Path = productUrl }
+				];
+
+				var endpointKeys = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]);
+				var api = new ApiOperationMetadata
+				{
+					Key = product,
+					Trees = [new ApiTreeEntry { Tree = moniker, Root = productUrl }],
+					Properties = trees.IndexEntries(plainDescriptions),
+					Routes = endpoint
+						.Rows
+						.Select(
+							row => new ApiRouteEntry
+							{
+								Path = row.Route,
+								Methods = [row.Method.ToUpperInvariant(), .. row.AlsoMethods.Select(m => m.ToUpperInvariant())]
+							}
+						)
+						.ToArray(),
+					Endpoints = endpointKeys,
+					EndpointsBare = ApiEndpointPath.BareKeys(endpointKeys),
+					Method = method,
+					Path = path.Key,
+					OperationId = operationId,
+					Deprecated = apiOperation.Deprecated,
+					Words = ApiSearchWords.Of(operationId, path.Key),
+					Group = groupParent?.Title ?? "",
+					IdWords = ApiSearchWords.OfOperationId(operationId).Length
+				};
 
 				yield return new DocumentationDocument
 				{
 					ContentType = "api",
 					Path = url,
 					Title = title,
-					SearchTitle = searchTitle,
+					SearchTitle = BuildSearchTitle(title, productLabel, groupParent?.Title, api),
 					Description = description,
 					Body = body,
 					Headings = headings,
 					Links = [],
 					Applies = applies?.ToAppliesTo(),
-					Parents =
-					[
-						new ParentDocument { Title = "API", Path = "/docs/api" },
-						new ParentDocument { Title = productLabel, Path = productUrl }
-					],
+					Parents = groupParent is null ? parents : [.. parents, groupParent],
+					Api = api,
 					Product = inference?.Product?.Id,
-					RelatedProducts = inference?.RelatedProducts.Count > 0
-						? inference
-							.RelatedProducts
-							.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
-							.ToArray()
-						: null
+					RelatedProducts = IndexedRelatedProducts(inference)
 				};
 			}
 		}
 	}
+
+	/// <summary>
+	/// The API's landing page as a search document, so a reader typing the API's name finds its front door. It has no
+	/// operation, so those members stay empty and <see cref="ApiOperationMetadata.Landing"/> marks it.
+	/// </summary>
+	public DocumentationDocument ConvertToLandingDocument(IndexedTree tree)
+	{
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(tree.ApiKey, tree.Moniker));
+		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
+		// The title the landing page renders as its heading, so a reader who types the name on the page finds it.
+		var label = tree.Document.Info?.Title is { Length: > 0 } specTitle ? specTitle.Trim() : ProductApiLabel(tree.ApiKey);
+		var description = ApiSeoDescription.Excerpt(tree.Document.Info?.Description) ?? "";
+		return new DocumentationDocument
+		{
+			ContentType = "api",
+			Path = productUrl,
+			Title = label,
+			SearchTitle = label,
+			Description = description,
+			Body = description,
+			Headings = [],
+			Links = [],
+			Parents = [new ParentDocument { Title = "API", Path = "/docs/api" }],
+			Api = new ApiOperationMetadata
+			{
+				Key = tree.ApiKey,
+				Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
+				Endpoints = [],
+				Method = "",
+				Path = "",
+				OperationId = "",
+				Landing = true
+			},
+			Product = inference?.Product?.Id,
+			RelatedProducts = IndexedRelatedProducts(inference)
+		};
+	}
+
+	/// <summary>The products a document is filed under, so a product filter keeps an API's landing page with its operations.</summary>
+	private static IndexedProduct[]? IndexedRelatedProducts(DocumentInferenceResult? inference) =>
+		inference?.RelatedProducts.Count > 0
+			? [
+				.. inference.RelatedProducts.Select(
+					p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository }
+				)
+			]
+			: null;
+
+	/// <summary>
+	/// The breadcrumb entry for the operation's first tag, matching the group page the operation page links to;
+	/// null when untagged.
+	/// </summary>
+	private static ParentDocument? GroupParent(
+		string[] tags,
+		IReadOnlyDictionary<string, OpenApiTagMetadata> tagMetadata,
+		string productUrl
+	) =>
+		tags is [var tag, ..]
+			? new ParentDocument
+			{
+				Title = OpenApiExtensionReader.TagMetadataFor(tag, tagMetadata).DisplayName,
+				Path = $"{productUrl}/group/{ApiUrlBuilder.TagMoniker(tag)}"
+			}
+			: null;
 
 	/// <summary>
 	/// Display label for the product crumb, e.g. <c>elasticsearch</c> → <c>Elasticsearch API</c>.
@@ -209,16 +277,20 @@ public partial class OpenApiDocumentExporter(
 		$"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product.Replace('-', ' '))} API";
 
 	/// <summary>
-	/// Search tokens users type for an operation: the product label, the raw operation id
-	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), and the HTTP method plus path
-	/// (e.g. <c>PUT /_bulk</c>). Keep ids and paths verbatim — no case or punctuation
-	/// rewriting — because that is what people paste. The product label lives here rather
-	/// than in <c>Title</c>, so result rows do not repeat "Elasticsearch API" on every hit.
+	/// Search tokens users type for an operation: the title, the product label, the raw operation id
+	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), the HTTP method plus path (e.g. <c>PUT /_bulk</c>),
+	/// the group, and the plain words of the id and path (<see cref="ApiSearchWords"/>). The raw id
+	/// and path stay verbatim because that is what people paste; the words serve people who type
+	/// <c>ml flush</c>. The product label lives here rather than in <c>Title</c>, so result rows do
+	/// not repeat "Elasticsearch API" on every hit.
 	/// </summary>
-	internal static string BuildSearchTitle(string title, string productLabel, string operationId, string methodAndPath)
+	internal static string BuildSearchTitle(string title, string productLabel, string? group, ApiOperationMetadata api)
 	{
-		var searchTitle = $"{title} - {productLabel} - {operationId} - {methodAndPath}";
-		return operationId.Contains('.', StringComparison.Ordinal) ? $"{searchTitle} - {operationId.Replace('.', ' ')}" : searchTitle;
+		var searchTitle = $"{title} - {productLabel} - {api.OperationId} - {api.Method} {api.Path}";
+		if (!string.IsNullOrWhiteSpace(group))
+			searchTitle += $" - {group}";
+		var words = ApiSearchWords.Of(api.OperationId, api.Path);
+		return words.Length == 0 ? searchTitle : $"{searchTitle} - {string.Join(' ', words)}";
 	}
 
 	/// <summary>
@@ -253,6 +325,24 @@ public partial class OpenApiDocumentExporter(
 		if (after.Length == 0)
 			return before;
 		return $"{before}\n\n{after}";
+	}
+
+	/// <summary>
+	/// Paths listed in the description's "All methods and paths for this operation" block, verbatim.
+	/// Locates the block exactly as <see cref="RemoveOperationListIntro"/> does.
+	/// </summary>
+	internal static IEnumerable<string> AlternatePaths(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return [];
+
+		var match = OperationListIntroRegex().Match(description);
+		if (!match.Success)
+			return [];
+
+		var start = match.Index + match.Length;
+		var block = description[start..EndOfOperationList(description, start)];
+		return OperationPathSpanRegex().Matches(block).Select(m => m.Groups["path"].Value.Trim());
 	}
 
 	private static int EndOfOperationList(string description, int afterHeader)

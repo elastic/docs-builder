@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Model;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -21,7 +22,13 @@ public class SchemaTypeRenderingTests
 
 		var html = await _SchemaType.Create(annotation).RenderAsync(cancellationToken: Ct);
 
-		html.Should().Contain("tabindex=\"0\"");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<code class="schema-type">
+				<span class="type-constraint" data-tippy-content="pattern: long" tabindex="0">pattern: long</span>
+			</code>
+			"""
+		);
 	}
 
 	[Test]
@@ -31,6 +38,12 @@ public class SchemaTypeRenderingTests
 
 		var html = await _SchemaType.Create(annotation).RenderAsync(cancellationToken: Ct);
 
-		html.Should().NotContain("tabindex");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<code class="schema-type">
+				<span class="type-constraint" data-tippy-content="">min: 1</span>
+			</code>
+			"""
+		);
 	}
 }

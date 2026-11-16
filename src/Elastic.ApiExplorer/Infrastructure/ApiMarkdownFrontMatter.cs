@@ -4,9 +4,11 @@
 
 using System.Text;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -138,8 +140,18 @@ internal static class ApiMarkdownFrontMatter
 			ApiCatalog => ApiCatalog.PageDescription,
 			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.Model.Info?.Description, apiBaseUrl)),
 			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
-			ApiOperation operation => FirstLine(ApiMarkdown.Prepare(OperationDescription(operation, context), apiBaseUrl)),
+			ApiOperation operation =>
+				FirstLine(
+					ApiMarkdown.Prepare(
+						ApiSeoDescription.OperationText(
+							OperationDescription(operation, context),
+							OpenApiExtensionReader.GetSummary(operation.Operation)
+						),
+						apiBaseUrl
+					)
+				),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
+			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
 			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
 			_ => null
 		};

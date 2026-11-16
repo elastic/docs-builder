@@ -1,0 +1,50 @@
+<div id="secondary-nav-host" class="relative md:sticky md:top-0 md:z-30 bg-white">
+	<nav id="secondary-nav">
+		<div class="secondary-nav-bar secondary-nav-bar--desktop">
+			<a href="/docs/" class="secondary-nav-home">Docs</a>
+			<ul class="secondary-nav-list">
+				<li class="secondary-nav-item">
+					<a href="/docs/release-notes" class="secondary-nav-item__hit">
+						<span class="secondary-nav-item__content">
+							<span class="secondary-nav-icon" aria-hidden="true">
+								<svg viewBox="0 0 16 16">
+									<use href="#icon-refresh-time"></use>
+								</svg>
+							</span>
+							<span>Release notes</span>
+						</span>
+					</a>
+				</li>
+				<li class="secondary-nav-item">
+					<a href="/docs/troubleshoot" class="secondary-nav-item__hit">
+						<span class="secondary-nav-item__content">
+							<span class="secondary-nav-icon" aria-hidden="true">
+								<svg viewBox="0 0 16 16">
+									<use href="#icon-wrench"></use>
+								</svg>
+							</span>
+							<span>Troubleshoot</span>
+						</span>
+					</a>
+				</li>
+				<li class="secondary-nav-item">
+					<a href="/docs/reference" class="secondary-nav-item__hit">
+						<span class="secondary-nav-item__content">
+							<span class="secondary-nav-icon" aria-hidden="true">
+								<svg viewBox="0 0 16 16">
+									<use href="#icon-list-bullet"></use>
+								</svg>
+							</span>
+							<span>Reference</span>
+						</span>
+					</a>
+				</li>
+			</ul>
+			<div class="secondary-nav-actions">
+				<version-dropdown data-testid="docs-version-dropdown" all-versions-url="/docs/versions/" current-version="8.19" items="[]">
+					<div class="h-8"></div>
+				</version-dropdown>
+			</div>
+		</div>
+	</nav>
+</div>

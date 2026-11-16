@@ -83,7 +83,11 @@ public class CdnChangelogEntryFetcherParallelTests
 			var path = request.RequestUri!.AbsolutePath;
 			var now = Interlocked.Increment(ref _current);
 			int seen;
-			while (now > (seen = Volatile.Read(ref _max)) && Interlocked.CompareExchange(ref _max, now, seen) != seen) { }
+			while (now > (seen = Volatile.Read(ref _max)))
+			{
+				if (Interlocked.CompareExchange(ref _max, now, seen) == seen)
+					break;
+			}
 
 			try
 			{

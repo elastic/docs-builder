@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Elastic.Channels;
+using Elastic.Documentation;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Ingest.Elasticsearch;
@@ -454,7 +455,6 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			_ = await PruneOldIndicesAsync(transport, $"ws-catalog.semantic-{state.Env}-*", keepCount: 3, logger, ct);
 		}
 		else // Reindex mode — incremental
-
 		{
 			// Global cutoff: max(last_updated) across all docs currently in semantic.
 			// Changed/new source docs have newer last_updated from their sync → caught by inference step.
@@ -536,7 +536,6 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	private static string ResolveTemplateName(string writeAlias) =>
 		(writeAlias.EndsWith("-latest", StringComparison.Ordinal)
 			? writeAlias[..^7] // strip "-latest"
-
 			: writeAlias)
 			+ "-template";
 
@@ -719,7 +718,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		CancellationToken ct
 	)
 	{
-		var body = /*lang=json,strict*/  "{\"size\":0,\"aggs\":{\"max_lu\":{\"max\":{\"field\":\"last_updated\"}}}}";
+		var body = /*lang=json,strict*/ "{\"size\":0,\"aggs\":{\"max_lu\":{\"max\":{\"field\":\"last_updated\"}}}}";
 		var resp = await transport.RequestAsync<JsonResponse>(
 			Transport.HttpMethod.POST,
 			$"{semanticIndex}/_search",
@@ -926,7 +925,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// argument is null or empty.
 	/// </summary>
 	private static string ApplyRename(string indexName, string? from, string? to) =>
-		!string.IsNullOrEmpty(from) && !string.IsNullOrEmpty(to) ? Regex.Replace(indexName, from, to) : indexName;
+		!string.IsNullOrEmpty(from) && !string.IsNullOrEmpty(to)
+			? Regex.Replace(indexName, from, to, RegexOptions.None, RegexTimeouts.MatchTimeout)
+			: indexName;
 
 	/// <summary>
 	/// Derives a date-stamped backing index name from an alias on first run.
@@ -1099,7 +1100,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		}
 
 		var destIndex = await ResolveAliasIndexAsync(transport, alias, ct) ?? alias;
-		var sourceCount = await CountAsync(transport, alias, /*match_all*/  null, ct);
+		var sourceCount = await CountAsync(transport, alias, /*match_all*/ null, ct);
 
 		AnsiConsole.MarkupLine("[aqua bold]Indices sync-remote[/]");
 		AnsiConsole.MarkupLine($"[dim]From (source):[/]   {Markup.Escape(fromEndpoint.Uri.ToString())}");

@@ -22,7 +22,7 @@ internal static class SlugGens
 	/// </summary>
 	public static Gen<string> ChildFileName { get; } = Gen.Select(
 		Gen.String[Gen.Char["a-zA-Z0-9 _.-"], 1, 12],
-		Gen.OneOfConst("", ".v2", ".V10", ".v0", ".vx", ".v"),
+		Gen.OneOf("", ".v2", ".V10", ".v0", ".vx", ".v"),
 		(stem, version) => $"{stem}{version}.md"
 	);
 }

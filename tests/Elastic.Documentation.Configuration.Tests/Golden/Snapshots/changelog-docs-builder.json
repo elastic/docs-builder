@@ -81,6 +81,7 @@
     },
     "Products": null,
     "ProductsConfiguration": null,
+    "RequiredPivots": "None",
     "Rules": {
       "$type": "RulesConfiguration",
       "Bundle": {

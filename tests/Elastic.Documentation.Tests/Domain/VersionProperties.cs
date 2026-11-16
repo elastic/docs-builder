@@ -19,8 +19,8 @@ public class VersionProperties
 		Gen.Int[0, 12],
 		Gen.Int[0, 12],
 		Gen.Int[0, 12],
-		Gen.OneOfConst("", "", "alpha", "alpha.1", "alpha.beta", "beta.2", "beta.11", "rc.1", "1", "2", "x-y"),
-		Gen.OneOfConst("", "", "", "build.1", "sha.abc"),
+		Gen.OneOf("", "", "alpha", "alpha.1", "alpha.beta", "beta.2", "beta.11", "rc.1", "1", "2", "x-y"),
+		Gen.OneOf("", "", "", "build.1", "sha.abc"),
 		(major, minor, patch, prerelease, metadata) => new SemVersion(major, minor, patch, prerelease, metadata)
 	);
 
@@ -99,7 +99,7 @@ public class VersionProperties
 				Sign(a.CompareTo(b)).Should().Be(Sign((a.Major, a.Minor, a.Patch).CompareTo((b.Major, b.Minor, b.Patch))));
 		});
 
-	private static Gen<string> VersionOrDateTexts { get; } = Gen.OneOfConst(
+	private static Gen<string> VersionOrDateTexts { get; } = Gen.OneOf(
 		"9.3.0",
 		"9.10.1",
 		"9.3.0-beta.1",
@@ -171,7 +171,7 @@ public class VersionProperties
 			parsed!.ToString().Should().Be(text);
 		});
 
-	private static Gen<string> SpecTexts { get; } = Gen.OneOfConst(
+	private static Gen<string> SpecTexts { get; } = Gen.OneOf(
 		"9.0",
 		"9.0+",
 		"9.0.4",

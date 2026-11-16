@@ -36,7 +36,13 @@ public sealed record CachedAssociation(
 /// <param name="ReleaseNote">The release note section of the body, when it has one.</param>
 /// <param name="ReleaseNoteTruncated">Whether more than that section followed it.</param>
 /// <param name="LinkedIssues">The issues the body says the pull request fixes, as URLs.</param>
-public sealed record CachedPullRequestText(string? ReleaseNote, bool ReleaseNoteTruncated, IReadOnlyList<string> LinkedIssues);
+public sealed record CachedPullRequestText(
+	string? ReleaseNote,
+	bool ReleaseNoteTruncated,
+	IReadOnlyList<string> LinkedIssues,
+	string? Impact = null,
+	string? Action = null
+);
 
 /// <summary>
 /// Where a backport came from, as found from its text, its commits and GitHub. A backport that no original was found for is
@@ -57,7 +63,8 @@ public sealed record CachedBackport(BackportRoots? Roots);
 /// </summary>
 public sealed partial class ChangelogCache(string directory, ILogger logger, TimeProvider? time = null, TimeSpan? maxAge = null)
 {
-	public const int SchemaVersion = 1;
+	// 2: pull request texts gained the Impact and Action sections.
+	public const int SchemaVersion = 2;
 	public static readonly TimeSpan DefaultMaxAge = TimeSpan.FromDays(30);
 
 	private static readonly TimeSpan TouchAfter = TimeSpan.FromDays(1);

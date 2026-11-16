@@ -14,6 +14,31 @@ namespace Mcp.Remote.IntegrationTests;
 public class DocumentToolsIntegrationTests : McpToolsIntegrationTestsBase
 {
 	[Test]
+	public async Task GetDocumentByUrl_ApiPage_ReturnsApiTypeAndMetadata()
+	{
+		var (documentTools, clientAccessor) = CreateDocumentTools();
+		Skip.Unless(documentTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
+		var canConnect = await clientAccessor!.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var resultJson = await documentTools.GetDocumentByUrl(
+			"/docs/api/doc/logstash/operation/operation-nodestats",
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
+		if (resultJson.Contains("\"error\""))
+			Skip.Test("API test document not found in the target index");
+
+		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.DocumentResponse);
+		response.Should().NotBeNull();
+		response!.Type.Should().Be("api");
+		response.Api.Should().NotBeNull();
+		response.Api!.Method.Should().Be("GET");
+	}
+
+	[Test]
 	public async Task GetDocumentByUrl_ReturnsDocument()
 	{
 		// Arrange

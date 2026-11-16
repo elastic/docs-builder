@@ -1,0 +1,15 @@
+@inherits RazorSlice<Elastic.Documentation.Site.ApiSpecDownload>
+@* For a page with no Markdown export, so no Copy page: the spec download is the whole menu. *@
+<div class="api-page-actions" role="group" aria-label="Page actions">
+	<div class="api-page-actions-split">
+		<details class="api-page-actions-dropdown nav-select-dropdown">
+			<summary class="api-page-actions-chevron api-page-actions-chevron--labeled" aria-haspopup="menu">
+				@await RenderPartialAsync(_DownloadIcon.Create())
+				<span class="api-page-actions-label">Download spec</span>
+			</summary>
+			<div class="api-page-actions-menu" role="menu">
+				@await RenderPartialAsync(_SpecDownloadLinks.Create(Model))
+			</div>
+		</details>
+	</div>
+</div>

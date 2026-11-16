@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -61,7 +62,7 @@ public class LinkReferenceSerializationTests
 		};
 		var json = LinkJson.Serialize(linkReference);
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			{
 			  "origin": {

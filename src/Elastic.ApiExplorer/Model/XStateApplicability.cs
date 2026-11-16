@@ -18,7 +18,7 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public static partial class XStateApplicability
 {
-	[GeneratedRegex(@"(\d+\.\d+\.\d+)")]
+	[GeneratedRegex(@"(\d+\.\d+\.\d+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SemVersionRegex();
 
 	/// <summary>The applicability an operation, a parameter or a schema declares in its <c>x-state</c>.</summary>

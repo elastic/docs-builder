@@ -1,0 +1,27 @@
+### valid feedback is stored
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+Cookie: euid=test-euid
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": ["accurate"],
+  "reasonSetVersion": 2,
+  "comment": " Useful page "
+}
+
+### a thumbs down needs a reason
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsDown",
+  "comment": "Missing a required reason"
+}
+
+### feedback is deleted
+DELETE /docs/_api/v1/page-feedback/{{$guid}}

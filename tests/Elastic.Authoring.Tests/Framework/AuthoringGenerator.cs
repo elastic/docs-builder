@@ -32,7 +32,7 @@ public static class AuthoringGenerator
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
 
-		DocSetYamlGenerator.Generate(mockFileSystem, options.DocsetProducts);
+		DocSetYamlGenerator.Generate(mockFileSystem, options.DocsetProducts, options.IncludeRedirectFixtures);
 
 		var collector = new TestDiagnosticsCollector();
 		var versionsConfig = AuthoringConfiguration.CreateVersionsConfiguration();
@@ -65,7 +65,9 @@ public static class AuthoringGenerator
 		var context = new BuildContext(collector, docFs, configurationContext)
 		{
 			UrlPathPrefix = options.UrlPathPrefix,
-			CanonicalBaseUrl = new Uri("https://www.elastic.co/")
+			CanonicalBaseUrl = new Uri("https://www.elastic.co/"),
+			// Authoring tests assert on rendered pages, never on the _static bundle; copying it per scenario costs megabytes of MockFileSystem writes.
+			SkipStaticAssetExtraction = true
 		};
 
 		context.OverrideFeatures(features => features.With("navigation-preview", options.NavigationPreview));

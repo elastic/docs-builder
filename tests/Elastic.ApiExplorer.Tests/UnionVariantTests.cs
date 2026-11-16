@@ -18,30 +18,24 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_UnionWithOwnProperties_ListsTheSharedPropertiesThenTheVariants()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
-			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
-			      "Holder": {
+			  "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			  "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "pet": {
 			        "type": "object",
-			        "properties": {
-			          "pet": {
-			            "type": "object",
-			            "properties": { "kind": { "type": "string" } },
-			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
-			          }
-			        }
+			        "properties": { "kind": { "type": "string" } },
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -59,29 +53,23 @@ public class UnionVariantTests
 	public async Task BuildPropertyList_VariantSelectedByProperty_ListsThatPropertyFirst(bool declared)
 	{
 		var discriminator = declared ? "\"discriminator\": { \"propertyName\": \"type\" }," : "";
-		var json =
+		var json = WithSchemas(
 			$$"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
-			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "pet": {
-			            {{discriminator}}
-			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
-			          }
-			        }
+			  "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			  "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "pet": {
+			        {{discriminator}}
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -97,103 +85,85 @@ public class UnionVariantTests
 	[Arguments("""{ "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }""", "pet")]
 	public async Task BuildPropertyList_UnionOfObjectsWithOtherForms_ListsTheSelectingPropertyFirst(string extra, string property)
 	{
-		var json =
+		var json = WithSchemas(
 			$$"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
-			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "pet": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" }, {{extra}} ] }
-			        }
-			      }
+			  "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			  "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "pet": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" }, {{extra}} ] }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var variants = list!.Items.Single(p => p.Name == property).Children.Variants!.Variants;
-		variants.Where(v => v.Properties is not null).Should().OnlyContain(v => v.Properties!.Items.First().Name == "type");
+		variants.Where(v => v.Properties is not null).Should().OnlyContain(v => v.Properties!.Items[0].Name == "type");
 	}
 
 	[Test]
 	public async Task BuildPropertyList_UnionOfObjectArrays_ListsTheSelectingPropertyFirst()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
-			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "pets": {
-			            "oneOf": [
-			              { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
-			              { "type": "array", "items": { "$ref": "#/components/schemas/Dog" } }
-			            ]
-			          }
-			        }
+			  "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			  "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "pets": {
+			        "oneOf": [
+			          { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/Dog" } }
+			        ]
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var variants = list!.Items.Single(p => p.Name == "pets").Children.Variants!.Variants;
-		variants.Should().HaveCount(2).And.OnlyContain(v => v.Properties!.Items.First().Name == "type");
+		variants.Should().HaveCount(2).And.OnlyContain(v => v.Properties!.Items[0].Name == "type");
 	}
 
 	[Test]
 	public async Task BuildPropertyList_AnyOfRequiredOnlyMembers_SaysWhichFieldsAreRequired()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "WindowRequired": { "required": ["window"] },
-			      "Holder": {
+			  "WindowRequired": { "required": ["window"] },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "incident": {
 			        "type": "object",
-			        "properties": {
-			          "incident": {
-			            "type": "object",
-			            "anyOf": [ { "required": ["correlation_id"] }, { "required": ["externalId"] } ],
-			            "properties": { "correlation_id": { "type": "string" }, "externalId": { "type": "string" } }
-			          },
-			          "range": {
-			            "type": "object",
-			            "oneOf": [ { "type": "object", "required": ["from", "to"] }, { "$ref": "#/components/schemas/WindowRequired" } ],
-			            "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "window": { "type": "string" } }
-			          }
-			        }
+			        "anyOf": [ { "required": ["correlation_id"] }, { "required": ["externalId"] } ],
+			        "properties": { "correlation_id": { "type": "string" }, "externalId": { "type": "string" } }
+			      },
+			      "range": {
+			        "type": "object",
+			        "oneOf": [ { "type": "object", "required": ["from", "to"] }, { "$ref": "#/components/schemas/WindowRequired" } ],
+			        "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "window": { "type": "string" } }
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
@@ -217,57 +187,51 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_DiscriminatedOneOf_LabelsVariantsWithTheirDiscriminatorValue()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Base": { "type": "object", "properties": { "id": { "type": "string" } } },
-			      "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
-			      "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
-			      "Fish": { "type": "object", "properties": { "kind": { "type": "string" }, "fins": { "type": "integer" } } },
-			      "Pet": {
+			  "Base": { "type": "object", "properties": { "id": { "type": "string" } } },
+			  "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
+			  "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
+			  "Fish": { "type": "object", "properties": { "kind": { "type": "string" }, "fins": { "type": "integer" } } },
+			  "Pet": {
+			    "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			    "discriminator": { "propertyName": "kind", "mapping": { "tomcat": "#/components/schemas/Cat" } }
+			  },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "mapped": {
 			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
-			        "discriminator": { "propertyName": "kind", "mapping": { "tomcat": "#/components/schemas/Cat" } }
+			        "discriminator": {
+			          "propertyName": "kind",
+			          "mapping": { "feline": "#/components/schemas/Cat", "canine": "#/components/schemas/Dog" }
+			        }
 			      },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "mapped": {
+			      "implicit": {
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Fish" } ],
+			        "discriminator": { "propertyName": "kind" }
+			      },
+			      "composed": {
+			        "allOf": [
+			          { "$ref": "#/components/schemas/Base" },
+			          {
 			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
 			            "discriminator": {
 			              "propertyName": "kind",
 			              "mapping": { "feline": "#/components/schemas/Cat", "canine": "#/components/schemas/Dog" }
 			            }
-			          },
-			          "implicit": {
-			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Fish" } ],
-			            "discriminator": { "propertyName": "kind" }
-			          },
-			          "composed": {
-			            "allOf": [
-			              { "$ref": "#/components/schemas/Base" },
-			              {
-			                "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
-			                "discriminator": {
-			                  "propertyName": "kind",
-			                  "mapping": { "feline": "#/components/schemas/Cat", "canine": "#/components/schemas/Dog" }
-			                }
-			              }
-			            ]
-			          },
-			          "plain": {
-			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
 			          }
-			        }
+			        ]
+			      },
+			      "plain": {
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -295,29 +259,23 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_AnyOfUnion_LabelsTheRowAnyOfAndOneOfUnionsOneOf()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
-			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
-			      "Flexible": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "inlineAny": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
-			          "inlineOne": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
-			          "refAny": { "$ref": "#/components/schemas/Flexible" }
-			        }
-			      }
+			  "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			  "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			  "Flexible": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "inlineAny": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
+			      "inlineOne": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
+			      "refAny": { "$ref": "#/components/schemas/Flexible" }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -333,33 +291,27 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_UnionMemberThatIsAMap_ListsTheValuePropertiesUnderAKeyRow()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" }, "vars": { "type": "object" } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "inputs": {
-			            "anyOf": [
-			              { "type": "array", "items": { "$ref": "#/components/schemas/Input" } },
-			              { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Input" } }
-			            ]
-			          },
-			          "query": {
-			            "anyOf": [ { "type": "string" }, { "type": "object", "additionalProperties": {} } ]
-			          }
-			        }
+			  "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" }, "vars": { "type": "object" } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "inputs": {
+			        "anyOf": [
+			          { "type": "array", "items": { "$ref": "#/components/schemas/Input" } },
+			          { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Input" } }
+			        ]
+			      },
+			      "query": {
+			        "anyOf": [ { "type": "string" }, { "type": "object", "additionalProperties": {} } ]
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -378,30 +330,24 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_UnionOfArrays_ListsThePropertiesOfTheObjectItems()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Policy": { "type": "object", "properties": { "name": { "type": "string" }, "inputs": { "type": "object" } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "policies": {
-			            "anyOf": [
-			              { "type": "array", "items": { "type": "string" } },
-			              { "type": "array", "items": { "$ref": "#/components/schemas/Policy" } }
-			            ]
-			          }
-			        }
+			  "Policy": { "type": "object", "properties": { "name": { "type": "string" }, "inputs": { "type": "object" } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "policies": {
+			        "anyOf": [
+			          { "type": "array", "items": { "type": "string" } },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/Policy" } }
+			        ]
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -418,30 +364,24 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_UnionWithInlineObjectMembers_ExpandsEachOneSeparately()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Named": {
-			        "oneOf": [
-			          { "type": "string" },
-			          { "type": "object", "title": "ByQuery", "properties": { "query": { "type": "string" } } },
-			          { "type": "object", "properties": { "ids": { "type": "array", "items": { "type": "string" } } } },
-			          { "type": "object", "properties": { "all": { "type": "boolean" } } }
-			        ]
-			      },
-			      "Holder": {
-			        "type": "object",
-			        "properties": { "selector": { "$ref": "#/components/schemas/Named" } }
-			      }
-			    }
+			  "Named": {
+			    "oneOf": [
+			      { "type": "string" },
+			      { "type": "object", "title": "ByQuery", "properties": { "query": { "type": "string" } } },
+			      { "type": "object", "properties": { "ids": { "type": "array", "items": { "type": "string" } } } },
+			      { "type": "object", "properties": { "all": { "type": "boolean" } } }
+			    ]
+			  },
+			  "Holder": {
+			    "type": "object",
+			    "properties": { "selector": { "$ref": "#/components/schemas/Named" } }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -462,38 +402,32 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_DiscriminatorWithoutMappingOrEnum_LabelsVariantsWithTheirSchemaName()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Cat": { "type": "object", "properties": { "kind": { "type": "string" }, "lives": { "type": "integer" } } },
-			      "Dog": { "type": "object", "properties": { "kind": { "type": "string" }, "barks": { "type": "boolean" } } },
-			      "Pup": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog", "puppy"] } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "enumerated": {
-			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Pup" } ],
-			            "discriminator": { "propertyName": "kind" }
-			          },
-			          "implicit": {
-			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
-			            "discriminator": { "propertyName": "kind" }
-			          },
-			          "partial": {
-			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
-			            "discriminator": { "propertyName": "kind", "mapping": { "feline": "#/components/schemas/Cat" } }
-			          }
-			        }
+			  "Cat": { "type": "object", "properties": { "kind": { "type": "string" }, "lives": { "type": "integer" } } },
+			  "Dog": { "type": "object", "properties": { "kind": { "type": "string" }, "barks": { "type": "boolean" } } },
+			  "Pup": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog", "puppy"] } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "enumerated": {
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Pup" } ],
+			        "discriminator": { "propertyName": "kind" }
+			      },
+			      "implicit": {
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			        "discriminator": { "propertyName": "kind" }
+			      },
+			      "partial": {
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			        "discriminator": { "propertyName": "kind", "mapping": { "feline": "#/components/schemas/Cat" } }
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
@@ -509,36 +443,31 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_ArrayOfUnion_ExpandsTheItemVariants()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.1.0",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "and": {
-			            "type": "array",
-			            "maxItems": 50,
-			            "items": {
-			              "anyOf": [
-			                { "anyOf": [
-			                  { "type": "object", "required": ["field"], "properties": { "field": { "type": "string" }, "eq": { "type": "string" } } },
-			                  { "type": "object", "properties": { "field": { "type": "string" }, "exists": { "type": "boolean" } } }
-			                ] },
-			                { "type": "object", "properties": { "always": { "type": "object" } } }
-			              ]
-			            }
-			          }
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "and": {
+			        "type": "array",
+			        "maxItems": 50,
+			        "items": {
+			          "anyOf": [
+			            { "anyOf": [
+			              { "type": "object", "required": ["field"], "properties": { "field": { "type": "string" }, "eq": { "type": "string" } } },
+			              { "type": "object", "properties": { "field": { "type": "string" }, "exists": { "type": "boolean" } } }
+			            ] },
+			            { "type": "object", "properties": { "always": { "type": "object" } } }
+			          ]
 			        }
 			      }
 			    }
 			  }
 			}
-			""";
+			""",
+			openApiVersion: "3.1.0"
+		);
 		var document = await LoadSpecAsync(json);
 
 		var and = BuilderFor(document).BuildPropertyList(
@@ -558,33 +487,27 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_UnionOfLiteralsAndAnObject_ListsTheLiteralsAsOptionsBesideTheVariant()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "SortObject": { "type": "object", "properties": { "order": { "type": "string" }, "missing": { "type": "string" } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "sort": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "$ref": "#/components/schemas/SortObject" } ] },
-			          "order": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "type": "integer" } ] },
-			          "rank": {
-			            "oneOf": [
-			              { "type": "string", "enum": ["asc", "desc"] },
-			              { "type": "integer" },
-			              { "$ref": "#/components/schemas/SortObject" }
-			            ]
-			          }
-			        }
+			  "SortObject": { "type": "object", "properties": { "order": { "type": "string" }, "missing": { "type": "string" } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "sort": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "$ref": "#/components/schemas/SortObject" } ] },
+			      "order": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "type": "integer" } ] },
+			      "rank": {
+			        "oneOf": [
+			          { "type": "string", "enum": ["asc", "desc"] },
+			          { "type": "integer" },
+			          { "$ref": "#/components/schemas/SortObject" }
+			        ]
 			      }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
@@ -610,34 +533,28 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_SingleOrArrayRowListingFields_SaysAnArrayIsAccepted()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Rescore": { "type": "object", "properties": { "window_size": { "type": "integer" }, "query": { "type": "string" } } },
-			      "Field": { "type": "object", "properties": { "type": { "type": "string" }, "order": { "type": "string" } } },
-			      "NodeIds": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "rescore": { "oneOf": [ { "$ref": "#/components/schemas/Rescore" }, { "type": "array", "items": { "$ref": "#/components/schemas/Rescore" } } ] },
-			          "fields": {
-			            "oneOf": [
-			              { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } },
-			              { "type": "array", "items": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } } }
-			            ]
-			          },
-			          "nodes": { "$ref": "#/components/schemas/NodeIds" }
-			        }
-			      }
+			  "Rescore": { "type": "object", "properties": { "window_size": { "type": "integer" }, "query": { "type": "string" } } },
+			  "Field": { "type": "object", "properties": { "type": { "type": "string" }, "order": { "type": "string" } } },
+			  "NodeIds": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "rescore": { "oneOf": [ { "$ref": "#/components/schemas/Rescore" }, { "type": "array", "items": { "$ref": "#/components/schemas/Rescore" } } ] },
+			      "fields": {
+			        "oneOf": [
+			          { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } },
+			          { "type": "array", "items": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } } }
+			        ]
+			      },
+			      "nodes": { "$ref": "#/components/schemas/NodeIds" }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
@@ -665,30 +582,24 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_ArrayUnionOfAUnion_LabelsTheVariantsWithTheInnerType()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "LikeDocument": { "type": "object", "properties": { "kind": { "type": "string" }, "_id": { "type": "string" } } },
-			      "LikeText": { "type": "object", "properties": { "kind": { "type": "string" }, "text": { "type": "string" } } },
-			      "Like": {
-			        "anyOf": [ { "$ref": "#/components/schemas/LikeDocument" }, { "$ref": "#/components/schemas/LikeText" } ],
-			        "discriminator": { "propertyName": "kind", "mapping": { "doc": "#/components/schemas/LikeDocument" } }
-			      },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "like": { "oneOf": [ { "$ref": "#/components/schemas/Like" }, { "type": "array", "items": { "$ref": "#/components/schemas/Like" } } ] }
-			        }
-			      }
+			  "LikeDocument": { "type": "object", "properties": { "kind": { "type": "string" }, "_id": { "type": "string" } } },
+			  "LikeText": { "type": "object", "properties": { "kind": { "type": "string" }, "text": { "type": "string" } } },
+			  "Like": {
+			    "anyOf": [ { "$ref": "#/components/schemas/LikeDocument" }, { "$ref": "#/components/schemas/LikeText" } ],
+			    "discriminator": { "propertyName": "kind", "mapping": { "doc": "#/components/schemas/LikeDocument" } }
+			  },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "like": { "oneOf": [ { "$ref": "#/components/schemas/Like" }, { "type": "array", "items": { "$ref": "#/components/schemas/Like" } } ] }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var like = BuilderFor(document).BuildPropertyList(
@@ -708,33 +619,27 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_ArrayAndPlainPairBehindChips_BothShowTheFields()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Cat": { "type": "object", "description": "A cat.", "properties": { "lives": { "type": "integer" } } },
-			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "chips": {
-			            "oneOf": [
-			              { "$ref": "#/components/schemas/Cat" },
-			              { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
-			              { "$ref": "#/components/schemas/Dog" }
-			            ]
-			          }
-			        }
-			      },
-			      "Pair": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } } ] }
+			  "Cat": { "type": "object", "description": "A cat.", "properties": { "lives": { "type": "integer" } } },
+			  "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "chips": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/Cat" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
+			          { "$ref": "#/components/schemas/Dog" }
+			        ]
+			      }
 			    }
-			  }
+			  },
+			  "Pair": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } } ] }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
@@ -765,21 +670,15 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildUnionVariants_ArrayAndPlainPairSharingALargeField_PlainVariantKeepsTheListing()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Big": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "f10": { "type": "string" }, "f11": { "type": "string" } } },
-			      "Cat": { "type": "object", "properties": { "owner": { "$ref": "#/components/schemas/Big" } } },
-			      "Pair": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }, { "$ref": "#/components/schemas/Cat" } ] }
-			    }
-			  }
+			  "Big": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "f10": { "type": "string" }, "f11": { "type": "string" } } },
+			  "Cat": { "type": "object", "properties": { "owner": { "$ref": "#/components/schemas/Big" } } },
+			  "Pair": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }, { "$ref": "#/components/schemas/Cat" } ] }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var variants = ApiBodyContent.BuildUnionVariants(
@@ -800,32 +699,26 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_OptionWithItsOwnPage_LinksToThatPage()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
-			      "local.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "filter": {
-			            "oneOf": [
-			              { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" },
-			              { "type": "array", "items": { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" } }
-			            ]
-			          },
-			          "local": { "$ref": "#/components/schemas/local.QueryContainer" }
-			        }
-			      }
+			  "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
+			  "local.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "filter": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" } }
+			        ]
+			      },
+			      "local": { "$ref": "#/components/schemas/local.QueryContainer" }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
@@ -851,27 +744,21 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_SameNameInAnotherNamespace_IsNotARecursion()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "ml.Settings": { "type": "object", "properties": { "inner": { "$ref": "#/components/schemas/indices.Settings" } } },
-			      "indices.Settings": { "type": "object", "properties": { "shards": { "type": "integer" } } },
-			      "Node": {
-			        "type": "object",
-			        "properties": {
-			          "child": { "oneOf": [ { "$ref": "#/components/schemas/Node" }, { "type": "string" } ] },
-			          "children": { "type": "array", "items": { "$ref": "#/components/schemas/Node" } }
-			        }
-			      }
+			  "ml.Settings": { "type": "object", "properties": { "inner": { "$ref": "#/components/schemas/indices.Settings" } } },
+			  "indices.Settings": { "type": "object", "properties": { "shards": { "type": "integer" } } },
+			  "Node": {
+			    "type": "object",
+			    "properties": {
+			      "child": { "oneOf": [ { "$ref": "#/components/schemas/Node" }, { "type": "string" } ] },
+			      "children": { "type": "array", "items": { "$ref": "#/components/schemas/Node" } }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
@@ -900,30 +787,25 @@ public class UnionVariantTests
 		var leaf = $$"""{ "anyOf": [ { "anyOf": [ {{condition}} ] }, {{always}} ] }""";
 		var level2 =
 			$$"""{ "anyOf": [ { "anyOf": [ {{condition}} ] }, { "type": "object", "properties": { "and": { "type": "array", "items": {{leaf}} } } }, {{always}} ] }""";
-		var json =
+		var json = WithSchemas(
 			$$"""
 			{
-			  "openapi": "3.1.0",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "where": {
-			            "anyOf": [
-			              { "anyOf": [ {{condition}} ] },
-			              { "type": "object", "properties": { "and": { "type": "array", "items": {{level2}} } } },
-			              {{always}}
-			            ]
-			          }
-			        }
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "where": {
+			        "anyOf": [
+			          { "anyOf": [ {{condition}} ] },
+			          { "type": "object", "properties": { "and": { "type": "array", "items": {{level2}} } } },
+			          {{always}}
+			        ]
 			      }
 			    }
 			  }
 			}
-			""";
+			""",
+			openApiVersion: "3.1.0"
+		);
 		var document = await LoadSpecAsync(json);
 
 		var where = BuilderFor(document).BuildPropertyList(
@@ -950,33 +832,27 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_ArrayOfUnionWithALinkedType_LinksTheVariantInsteadOfExpandingIt()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "match": { "type": "object" }, "term": { "type": "object" } } },
-			      "security._types.RoleTemplateQuery": { "type": "object", "properties": { "template": { "type": "object" } } },
-			      "security._types.IndicesPrivilegesQuery": {
-			        "oneOf": [
-			          { "type": "string" },
-			          { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" },
-			          { "$ref": "#/components/schemas/security._types.RoleTemplateQuery" }
-			        ]
-			      },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "query": { "type": "array", "items": { "$ref": "#/components/schemas/security._types.IndicesPrivilegesQuery" } }
-			        }
-			      }
+			  "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "match": { "type": "object" }, "term": { "type": "object" } } },
+			  "security._types.RoleTemplateQuery": { "type": "object", "properties": { "template": { "type": "object" } } },
+			  "security._types.IndicesPrivilegesQuery": {
+			    "oneOf": [
+			      { "type": "string" },
+			      { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" },
+			      { "$ref": "#/components/schemas/security._types.RoleTemplateQuery" }
+			    ]
+			  },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "query": { "type": "array", "items": { "$ref": "#/components/schemas/security._types.IndicesPrivilegesQuery" } }
 			    }
 			  }
 			}
-			""";
+			"""
+		);
 		var document = await LoadSpecAsync(json);
 
 		var query = BuilderFor(document).BuildPropertyList(
@@ -994,27 +870,22 @@ public class UnionVariantTests
 	[Test]
 	public async Task BuildPropertyList_MapVariantWithARealStringProperty_KeepsDistinctAnchors()
 	{
-		var json =
+		var json = WithSchemas(
 			"""
 			{
-			  "openapi": "3.1.0",
-			  "info": { "title": "t", "version": "1" },
-			  "paths": {},
-			  "components": {
-			    "schemas": {
-			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
-			      "Holder": {
-			        "type": "object",
-			        "properties": {
-			          "inputs": { "anyOf": [
-			            { "type": "string" },
-			            { "type": "object", "properties": { "string": { "type": "string" } }, "additionalProperties": { "$ref": "#/components/schemas/Input" } } ] }
-			        }
-			      }
+			  "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+			  "Holder": {
+			    "type": "object",
+			    "properties": {
+			      "inputs": { "anyOf": [
+			        { "type": "string" },
+			        { "type": "object", "properties": { "string": { "type": "string" } }, "additionalProperties": { "$ref": "#/components/schemas/Input" } } ] }
 			    }
 			  }
 			}
-			""";
+			""",
+			openApiVersion: "3.1.0"
+		);
 		var document = await LoadSpecAsync(json);
 
 		var map = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!

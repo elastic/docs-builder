@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
+using AngleSharp.Html.Parser;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 
@@ -119,7 +121,7 @@ public class StackPlannedDeprecation : MarkdownTest
 		await Docs.ConvertsToHtml(
 			@"
 <p class=""applies applies-block"">
-	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Deprecation planned"" lifecycle-class=""deprecated"" lifecycle-name=""Deprecated"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for deprecation&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be deprecated in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Deprecation planned"" lifecycle-class=""deprecated"" lifecycle-name=""Deprecated"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for deprecation&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be deprecated in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
 </applies-to-popover>
 </p>
 "
@@ -139,7 +141,7 @@ public class StackRemovalPlanned : MarkdownTest
 		await Docs.ConvertsToHtml(
 			@"
 <p class=""applies applies-block"">
-	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Removal planned"" lifecycle-class=""removed"" lifecycle-name=""Removed"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for removal&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be removed in an upcoming Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Removal planned"" lifecycle-class=""removed"" lifecycle-name=""Removed"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for removal&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be removed in an upcoming Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
 </applies-to-popover>
 </p>
 "
@@ -371,6 +373,48 @@ public class EdotAgentsFutureVersions : MarkdownTest
 		);
 }
 
+public class EdotReactNativePreview : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		```{applies_to}
+		product:
+		  edot_react_native: preview 0.1.0
+		```
+		""";
+
+	[Test]
+	public async Task ParsesProductPreviewVersion()
+	{
+		var directives = Docs.Converts("index.md").Parses<AppliesToDirectiveType>();
+		(await directives).Should().HaveCount(1);
+		await directives.AppliesToDirective(new ApplicableTo
+		{
+			ProductApplicability = new ProductApplicability { EdotReactNative = Applies("preview 0.1.0") }
+		});
+	}
+
+	[Test]
+	public async Task RendersReleasedPreviewBadge()
+	{
+		var document = new HtmlParser().ParseDocument(await Docs.IndexHtmlAsync());
+		var badge = document.QuerySelector("applies-to-popover");
+		badge.Should().NotBeNull();
+		badge.GetAttribute("badge-key").Should().Be("EDOT React Native");
+		badge.GetAttribute("lifecycle-name").Should().Be("Preview");
+		badge.GetAttribute("badge-version").Should().Be("0.1+");
+		badge.GetAttribute("show-version").Should().Be("true");
+		badge.GetAttribute("badge-lifecycle-text").Should().NotBe("Planned");
+		using var popover = JsonDocument.Parse(badge.GetAttribute("popover-data")!);
+		popover
+			.RootElement
+			.GetProperty("productDescription")
+			.GetString()
+			.Should()
+			.Contain("Elastic Distribution of OpenTelemetry (EDOT) React Native SDK");
+	}
+}
+
 public class MixedUnreleasedLifecyclesFallsBackToPlanned : MarkdownTest
 {
 	protected override string Markdown => """
@@ -404,7 +448,7 @@ public class DeprecationPlanned : MarkdownTest
 		await Docs.ConvertsToHtml(
 			@"
 <p class=""applies applies-block"">
-	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Deprecation planned"" lifecycle-class=""deprecated"" lifecycle-name=""Deprecated"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for deprecation&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be deprecated in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Deprecation planned"" lifecycle-class=""deprecated"" lifecycle-name=""Deprecated"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for deprecation&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be deprecated in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
 </applies-to-popover>
 </p>
 "
@@ -424,7 +468,7 @@ public class RemovalPlanned : MarkdownTest
 		await Docs.ConvertsToHtml(
 			@"
 <p class=""applies applies-block"">
-	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Removal planned"" lifecycle-class=""removed"" lifecycle-name=""Removed"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for removal&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be removed in an upcoming Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+	<applies-to-popover badge-key=""Stack"" badge-lifecycle-text=""Removal planned"" lifecycle-class=""removed"" lifecycle-name=""Removed"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned for removal&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is planned to be removed in an upcoming Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
 </applies-to-popover>
 </p>
 "
@@ -444,7 +488,7 @@ public class UnavailableLifecycle : MarkdownTest
 		await Docs.ConvertsToHtml(
 			@"
 <p class=""applies applies-block"">
-	<applies-to-popover badge-key=""Stack"" lifecycle-class=""unavailable"" lifecycle-name=""Unavailable"" show-lifecycle-name=""true"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Unavailable&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is not available in Elastic Stack.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+	<applies-to-popover badge-key=""Stack"" lifecycle-class=""unavailable"" lifecycle-name=""Unavailable"" show-lifecycle-name=""true"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Unavailable&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is not available in Elastic Stack.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
 </applies-to-popover>
 </p>
 "
@@ -702,7 +746,7 @@ public class StackDeprecatedReleasedVersion : MarkdownTest
 		await Docs.ConvertsToHtml(
 			@"
 <p class=""applies applies-block"">
-	<applies-to-popover badge-key=""Stack"" badge-version=""7.0+"" lifecycle-class=""deprecated"" lifecycle-name=""Deprecated"" show-lifecycle-name=""true"" show-version=""true"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Deprecated since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is deprecated. You can still use it, but it\u0027ll be removed in a future Elastic Stack update.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+	<applies-to-popover badge-key=""Stack"" badge-version=""7.0+"" lifecycle-class=""deprecated"" lifecycle-name=""Deprecated"" show-lifecycle-name=""true"" show-version=""true"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Deprecated since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is deprecated. You can still use it, but it\u0027ll be removed in a future Elastic Stack update.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
 </applies-to-popover>
 </p>
 "
@@ -722,7 +766,7 @@ public class StackRemovedReleasedVersion : MarkdownTest
 		await Docs.ConvertsToHtml(
 			@"
 <p class=""applies applies-block"">
-	<applies-to-popover badge-key=""Stack"" badge-version=""7.0"" lifecycle-class=""removed"" lifecycle-name=""Removed"" show-lifecycle-name=""true"" show-version=""true"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Removed in 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality was removed. You can no longer use it if you\u0027re running on this version or a later one.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+	<applies-to-popover badge-key=""Stack"" badge-version=""7.0"" lifecycle-class=""removed"" lifecycle-name=""Removed"" show-lifecycle-name=""true"" show-version=""true"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Removed in 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality was removed. You can no longer use it if you\u0027re running on this version or a later one.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
 </applies-to-popover>
 </p>
 "
@@ -927,4 +971,40 @@ public class ExactVersionWithExplicitPatch : MarkdownTest
 </p>
 "
 		);
+}
+
+public class StackGaThenDeprecatedKeepsAdditionalInfo : MarkdownTest
+{
+	protected override string Markdown => """
+		```{applies_to}
+		stack: ga 8.0.0, deprecated 9.0.0
+		```
+		""";
+
+	[Test, DisplayName("keeps the additional info when only some lifecycles are negative")]
+	public async Task KeepsAdditionalInfoWhenOnlySomeLifecyclesAreNegative()
+	{
+		var html = await Docs.IndexHtmlAsync();
+
+		html.Should().Contain("Unless stated otherwise on the page, this functionality is available when your Elastic Stack");
+		html.Should().NotContain("\"additionalInfo\":null");
+	}
+}
+
+public class StackRemovedThenDeprecatedDropsAdditionalInfo : MarkdownTest
+{
+	protected override string Markdown => """
+		```{applies_to}
+		stack: deprecated 8.0.0, removed 9.0.0
+		```
+		""";
+
+	[Test, DisplayName("drops the additional info when every lifecycle is negative")]
+	public async Task DropsAdditionalInfoWhenEveryLifecycleIsNegative()
+	{
+		var html = await Docs.IndexHtmlAsync();
+
+		html.Should().Contain("\"additionalInfo\":null");
+		html.Should().NotContain("Unless stated otherwise on the page, this functionality is available when your Elastic Stack");
+	}
 }

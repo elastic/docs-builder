@@ -32,7 +32,8 @@ public record FrontendConfig(
 	bool TelemetryEnabled,
 	string RootPath,
 	string ApiBasePath,
-	bool AirGapped = false
+	bool AirGapped = false,
+	string? WafIntegrationUrl = null
 );
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
@@ -41,17 +42,17 @@ public record CodexBreadcrumb(string Title, string? Url);
 /// <summary>JSON and YAML downloads for the whole OpenAPI spec of the current API.</summary>
 public sealed record ApiSpecDownload(string JsonUrl, string YamlUrl);
 
-/// <summary>One API product in the context bar's product menu.</summary>
-public sealed record ApiContextProduct(string Label, string Url, bool Selected, string? IconSvg);
+/// <summary>One API product in the identity menu.</summary>
+public sealed record ApiIdentityProduct(string Label, string Url, bool Selected, string? IconSvg);
 
 /// <summary>A labelled band of the product menu. <see cref="Title"/> is null for a group that needs no label.</summary>
-public sealed record ApiContextProductGroup(string? Title, IReadOnlyList<ApiContextProduct> Products);
+public sealed record ApiIdentityProductGroup(string? Title, IReadOnlyList<ApiIdentityProduct> Products);
 
-/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads.</summary>
-public sealed record ApiContextBar(
+/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads. Rendered as the sidebar selector.</summary>
+public sealed record ApiIdentity(
 	string Title,
 	string? IconSvg,
-	IReadOnlyList<ApiContextProductGroup> ProductGroups,
+	IReadOnlyList<ApiIdentityProductGroup> ProductGroups,
 	string? HubUrl,
 	IReadOnlyList<NavigationSelectOption> Versions,
 	ApiSpecDownload Spec
@@ -133,7 +134,7 @@ public record GlobalLayoutViewModel
 	/// Which API the reader is looking at: product, versions and spec downloads. Null on Docs
 	/// pages and on the API catalog.
 	/// </summary>
-	public ApiContextBar? ApiContext { get; init; }
+	public ApiIdentity? ApiContext { get; init; }
 
 	/// <summary>API catalog URL used by the API header's home link.</summary>
 	public string? ApiCatalogUrl { get; init; }
@@ -166,7 +167,26 @@ public record GlobalLayoutViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	/// <summary>Assembler environment name; null for isolated builds and production.</summary>
+	public string? EnvironmentName { get; init; }
+
+	/// <summary>The default favicon: the Elastic glyph, with a coloured label for every environment except production.</summary>
+	public string FaviconStaticPath => Static(EnvironmentFavicon.FileName(BuildType, EnvironmentName));
+
 	public string PageFeedbackSurface { get; init; } = "docs";
+
+	/// <summary>Page feedback runs when its flag is on, the site is not air-gapped and the build type has the feedback API behind it.</summary>
+	public bool ShowPageFeedback
+	{
+		get
+		{
+			var supportedBuildType = BuildType is BuildType.Assembler or BuildType.Codex;
+#if DEBUG
+			supportedBuildType |= BuildType is BuildType.Isolated;
+#endif
+			return Features.PageFeedbackEnabled && !Features.AirGappedEnabled && supportedBuildType;
+		}
+	}
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 
@@ -185,6 +205,38 @@ public record GlobalLayoutViewModel
 	/// <summary>Static URL of the OG image, if configured.</summary>
 	public string? BrandingOgImageStaticPath => Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
 
+	/// <summary>The origin this build is served from; null when unknown (isolated builds).</summary>
+	public Uri? PublicBaseUrl { get; init; }
+
+	/// <summary>
+	/// The default social image. Self-hosted when the build knows its origin: the serving origin for assembler builds (the
+	/// canonical origin is always production and would miss a preview's path prefix), the canonical origin for Codex. Otherwise
+	/// the absolute elastic.co image, as social crawlers need an absolute URL.
+	/// </summary>
+	public string DefaultOgImageUrl
+	{
+		get
+		{
+			const string fallback = "https://www.elastic.co/static-res/images/social_media_default.png";
+			var origin = BuildType == BuildType.Codex ? CanonicalBaseUrl : PublicBaseUrl;
+			return EnvironmentFavicon.OgImageFileName(BuildType, EnvironmentName) is { } file && origin is not null
+				? new Uri(origin, OgImagePath(file)).ToString()
+				: fallback;
+		}
+	}
+
+	// Codex publishes _static under its site prefix. Repository pages sit below it (/prefix/r/repo), but landing and group pages
+	// have the site prefix itself as their path prefix, which Static() reads as no prefix at all.
+	private string OgImagePath(string file) =>
+		BuildType != BuildType.Codex ? Static(file) : StaticFileContentHashProvider.GetUrl(file, CodexSitePrefix());
+
+	private string CodexSitePrefix()
+	{
+		var prefix = UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
+		var repositorySegment = prefix.IndexOf("/r/", StringComparison.Ordinal);
+		return repositorySegment >= 0 ? prefix[..repositorySegment] : prefix;
+	}
+
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
 	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;
 
@@ -200,7 +252,15 @@ public record GlobalLayoutViewModel
 	{
 		BuildType.Assembler when Features.AirGappedEnabled =>
 			new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
-		BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+		BuildType.Assembler =>
+			new FrontendConfig(
+				"assembler",
+				"docs-frontend",
+				true,
+				StaticPathPrefix,
+				ApiBasePath,
+				WafIntegrationUrl: Features.WafIntegrationUrl
+			),
 		BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
 		_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 	};

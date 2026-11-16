@@ -150,7 +150,7 @@ public sealed partial class PreviewDocset : IAsyncDisposable
 				: $"{match.Groups["attribute"].Value}=\"data:image/svg+xml;base64,{Convert.ToBase64String(System.IO.File.ReadAllBytes(file))}\"";
 		});
 
-	[GeneratedRegex(@"(?<attribute>data-src|src)=""[^""]*/(?<file>[^""/]+\.svg)""")]
+	[GeneratedRegex(@"(?<attribute>data-src|src)=""[^""]*/(?<file>[^""/]+\.svg)""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex DiagramSource();
 
 	/// <summary>Only the article, as the Markdown renderer writes it, for dropping into another build's layout.</summary>

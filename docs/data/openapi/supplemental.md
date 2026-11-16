@@ -34,7 +34,7 @@ api/docs-builder-elasticsearch/
 
 A top-level `.md` file that is not `op-*.md` or `tag-*.md` is not a supplemental file. If you want that file as its own page, list it under `children:`.
 
-If the file lives under the documentation source directory, give it a `#` title so the docset scanner has a page title. That heading is not the operation description. Use `## Description` for the generated API page.
+Supplemental files need no `#` title. Start them at `## Description`. docs-builder skips the missing-title warning for them.
 
 ## Heading rules
 
@@ -86,6 +86,10 @@ On a **tag** file, those headings are not shown. Tag files use the description a
 ### Additional sections
 
 Any other `##` heading is appended after the generated reference content. Headings stay in document order.
+
+### Sidebar entries for tag intros
+
+A group's intro lists its top-level sections in the sidebar, above the endpoints. Only the shallowest heading level in the intro gets an entry, which is `##` when the intro follows the rules above. A `###` heading stays on the page as a subsection of its parent `##` and has no sidebar entry. Use the heading structure to keep the sidebar short.
 
 ## Version-specific files
 

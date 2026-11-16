@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Configuration.RelatedLearning;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 

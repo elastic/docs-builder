@@ -6,15 +6,18 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -52,6 +55,42 @@ public static class TestHelpers
 			SearchTuning = search
 		};
 	}
+
+	/// <summary>A build context rooted at the working directory with the default test configuration.</summary>
+	public static BuildContext CreateBuildContext(
+		DiagnosticsCollector? collector = null,
+		BuildType buildType = BuildType.Isolated,
+		string? urlPathPrefix = null
+	) =>
+		new(
+			collector ?? new DiagnosticsCollector([]),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			CreateConfigurationContext(new FileSystem())
+		)
+		{ BuildType = buildType, UrlPathPrefix = urlPathPrefix };
+
+	/// <summary>A build context like <see cref="CreateBuildContext"/>, with the git scope and the versions and products configuration under test.</summary>
+	public static BuildContext CreateScopedBuildContext(
+		DiagnosticsCollector collector,
+		VersioningSystemCatalog? versionsConfiguration = null,
+		ProductCatalog? productsConfiguration = null,
+		GitCheckoutInformation? git = null
+	) =>
+		new(
+			collector,
+			DocumentationFileSystem.Resolve(
+				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+				new DocumentationScopeOptions { Git = git }
+			),
+			CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration)
+		);
+
+	/// <summary>An exporter whose Stack current version matches <c>config/versions.yml</c> (9.5.6).</summary>
+	public static OpenApiDocumentExporter CurrentStackExporter() =>
+		new(CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 5, patch: 6));
+
+	/// <summary>One Elasticsearch version tree of <paramref name="spec"/>, for the exporter.</summary>
+	public static IndexedTree EsTree(string moniker, OpenApiDocument spec) => new("elasticsearch", "elasticsearch", moniker, spec);
 
 	public static VersioningSystemCatalog CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
 		new()

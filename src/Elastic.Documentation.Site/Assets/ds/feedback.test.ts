@@ -1,4 +1,5 @@
 import { initFeedback } from './feedback'
+import type { Mock } from 'vitest'
 
 const widget = `
 <section data-feedback hidden data-feedback-page-url="/docs/page" data-feedback-page-title="Page" data-feedback-api="/docs/_api/v1/page-feedback" data-feedback-reason-version="2">
@@ -36,12 +37,12 @@ const submit = () =>
     )
 
 describe('initFeedback', () => {
-    let fetchMock: jest.Mock
+    let fetchMock: Mock
 
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         sessionStorage.clear()
-        fetchMock = jest.fn(async () => ({ ok: true, status: 200 }))
+        fetchMock = vi.fn(async () => ({ ok: true, status: 200 }))
         global.fetch = fetchMock as unknown as typeof fetch
         Object.defineProperty(globalThis, 'crypto', {
             value: { randomUUID: () => 'feedback-1' },
@@ -51,7 +52,7 @@ describe('initFeedback', () => {
         initFeedback()
     })
 
-    afterEach(() => jest.useRealTimers())
+    afterEach(() => vi.useRealTimers())
 
     it('reveals the widget once the script runs', () => {
         expect($<HTMLElement>('[data-feedback]').hidden).toBe(false)
@@ -98,7 +99,7 @@ describe('initFeedback', () => {
     it('saves the reaction alone after a short pause, and only the last one', async () => {
         click('[data-feedback-reaction="thumbsUp"]')
         click('[data-feedback-reaction="thumbsDown"]')
-        await jest.advanceTimersByTimeAsync(450)
+        await vi.advanceTimersByTimeAsync(450)
 
         expect(fetchMock).toHaveBeenCalledTimes(1)
         const [url, init] = fetchMock.mock.calls[0]
@@ -118,7 +119,7 @@ describe('initFeedback', () => {
             new Event('input', { bubbles: true })
         )
         submit()
-        await jest.advanceTimersByTimeAsync(450)
+        await vi.advanceTimersByTimeAsync(450)
 
         expect(
             JSON.parse(
@@ -144,7 +145,7 @@ describe('initFeedback', () => {
         check('accurate')
         fetchMock.mockImplementation(async () => ({ ok: false, status: 500 }))
         submit()
-        await jest.advanceTimersByTimeAsync(450)
+        await vi.advanceTimersByTimeAsync(450)
 
         expect($<HTMLElement>('[data-feedback-error]').hidden).toBe(false)
         expect($<HTMLButtonElement>('[data-feedback-submit]').textContent).toBe(

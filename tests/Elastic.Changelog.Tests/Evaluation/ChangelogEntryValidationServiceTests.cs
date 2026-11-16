@@ -368,7 +368,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 			.ContainSingle()
 			.Which
 			.Should()
-			.Match<Diagnostic>(d => d.Severity == Severity.Warning && d.Message.Contains("is not in products.available of changelog.yml"));
+			.Match<Diagnostic>(d => d.Severity == Severity.Error && d.Message.Contains("is not in products.available in changelog.yml"));
 	}
 
 	[Test]

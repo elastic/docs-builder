@@ -17,6 +17,12 @@ public record DocumentationDocument : SearchDocumentBase
 	[JsonIgnore]
 	public override string Type { get; } = "docs";
 
+	/// <summary>OpenAPI operation attributes. Null on Markdown pages.</summary>
+	[Object]
+	[JsonPropertyName("api")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public ApiOperationMetadata? Api { get; set; }
+
 	/// <summary>Canonical product id for this page (the product the page is primarily about).</summary>
 	[Keyword(Normalizer = "keyword_normalizer")]
 	[JsonPropertyName("product")]

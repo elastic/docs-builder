@@ -94,8 +94,9 @@ public class AgentSkillMissingUrl : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("has error")]
-	public async Task HasError() => await Docs.HasError("requires a :url: property");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 agent-skill directive requires a :url: property");
 }
 
 public class AgentSkillRelativeUrl : MarkdownTest
@@ -106,6 +107,7 @@ public class AgentSkillRelativeUrl : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("has error")]
-	public async Task HasError() => await Docs.HasError("must be an absolute URL");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 agent-skill :url: must be an absolute URL, got '/relative/path'");
 }

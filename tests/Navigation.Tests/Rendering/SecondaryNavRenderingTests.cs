@@ -46,29 +46,15 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	{
 		var html = await Render(topNav: null, currentUrl: "/docs/");
 
-		// Built-in links present
-		html.Should().Contain("Release notes").And.Contain("Troubleshoot").And.Contain("Reference");
-		html.Should().Contain("href=\"#icon-refresh-time\"");
-		html.Should().Contain("href=\"#icon-wrench\"");
-		html.Should().Contain("href=\"#icon-list-bullet\"");
-		html.Should().NotContain("secondary-nav-dropdown");
-		html.Should().NotContain("id=\"htmx-indicator\"");
-		html.Should().Contain("id=\"secondary-nav-host\"");
-		html.Should().NotContain("hx-preserve");
-		html.Should().Contain("secondary-nav-home").And.Contain(">Docs<");
-		html.Should().Contain("href=\"/docs/\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
-	public async Task ConfiguredLinksReplaceTheBuiltInOnes()
+	public async Task ConfiguredTopNavRendersTheDesktopBar()
 	{
 		var html = await Render(TopNav, currentUrl: "/docs/");
 
-		html.Should().Contain("href=\"/docs/reference/\"");
-		// the built-in links are gone once top_nav is configured
-		html.Should().NotContain("Release notes").And.NotContain("Troubleshoot");
-		html.Should().NotContain("id=\"htmx-indicator\"");
-		html.Should().Contain("data-section-ids=\"ref-section-id\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -80,22 +66,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 			root: new MockSectionRoot(ReferenceSectionId)
 		);
 
-		html.Should().Contain("secondary-nav-mobile-menu");
-		html.Should().Contain(">Section<");
-		html.Should().Contain("<span>Reference</span>");
-		html.Should().Contain("href=\"/docs/guides/\"");
-		html.Should().Contain("href=\"/docs/reference/\"");
-		html.Should().Contain("href=\"https://www.elastic.co/docs/api/\"");
-		html.Should().Contain("target=\"_blank\"");
-		html.Should().Contain("(opens in a new tab)");
-	}
-
-	[Test]
-	public async Task TopNavMobileDrawerUsesDocsHomeFallback()
-	{
-		var html = await RenderPagesNav(LinkOnlyTopNav, currentUrl: "/docs/");
-
-		html.Should().Contain("<span>Docs Home</span>");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -103,12 +74,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	{
 		var html = await RenderPagesNav(topNav: null, currentUrl: "/docs/", showVersionDropdown: true);
 
-		html.Should().Contain(">Version<");
-		html.Should().Contain("<version-dropdown");
-		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("all-versions-url=\"/docs/versions/\"");
-		html.Should().Contain("8.19");
-		html.Should().Contain("items='[]'");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -116,24 +82,15 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	{
 		var html = await RenderPagesNav(LinkOnlyTopNav, currentUrl: "/docs/");
 
-		html.Should().Contain("secondary-nav-mobile-menu");
-		html.Should().Contain("href=\"/docs/\"");
-		html.Should().Contain(">Docs<");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
-	public async Task ConfiguredItemsRenderEuiIcons()
+	public async Task LinkOnlyTopNavRendersItsLinks()
 	{
-		var html = await Render(TopNav, currentUrl: "/docs/");
+		var html = await Render(LinkOnlyTopNav, currentUrl: "/docs/");
 
-		html.Should().Contain("href=\"#icon-list-bullet\"");
-		html.Should().Contain("href=\"#icon-code\"");
-		html.Should().Contain("href=\"#icon-grid\"");
-		html.Should().Contain("href=\"#icon-chevron-down\"");
-		html.Should().Contain("href=\"#icon-external\"");
-
-		var linkOnly = await Render(LinkOnlyTopNav, currentUrl: "/docs/");
-		linkOnly.Should().Contain("href=\"#icon-documentation\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -141,15 +98,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	{
 		var html = await Render(TopNav, currentUrl: "/docs/", showVersionDropdown: true);
 
-		html.Should().Contain("secondary-nav-actions");
-		html.Should().Contain("<version-dropdown");
-		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("all-versions-url=\"/docs/versions/\"");
-		html.Should().Contain("8.19");
-		html
-			.IndexOf("secondary-nav-list", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("secondary-nav-actions", StringComparison.Ordinal));
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -157,10 +106,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	{
 		var html = await Render(topNav: null, currentUrl: "/docs/", showVersionDropdown: true);
 
-		html.Should().Contain("secondary-nav-actions");
-		html.Should().Contain("<version-dropdown");
-		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("secondary-nav-bar secondary-nav-bar--desktop");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -168,26 +114,24 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	{
 		var html = await Render(TopNav, currentUrl: "/docs/", showVersionDropdown: true, navigationPreviewEnabled: false);
 
-		html.Should().NotContain("<version-dropdown");
-		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
-		html.Should().NotContain("secondary-nav-legacy-actions");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
-	public async Task ApiContextBarShowsTheApiAndItsSpecDownload()
+	public async Task ApiIdentityShowsTheApiAndItsVersionsInOneMenu()
 	{
-		var bar = new ApiContextBar(
+		var bar = new ApiIdentity(
 			"Elasticsearch API",
 			"<svg></svg>",
 			[
-				new ApiContextProductGroup(
+				new ApiIdentityProductGroup(
 					"Elastic Stack",
 					[
-						new ApiContextProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
-						new ApiContextProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
+						new ApiIdentityProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
+						new ApiIdentityProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
 					]
 				),
-				new ApiContextProductGroup(null, [new ApiContextProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
+				new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
 			],
 			"/docs/api/",
 			[
@@ -197,29 +141,57 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 			new ApiSpecDownload("/docs/api/doc/elasticsearch.json", "/docs/api/doc/elasticsearch.yaml")
 		);
 
-		var html = await _ApiContextBar.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		// Product and version together on the left, the spec download alone on the right.
-		html.Should().Contain("id=\"api-hub-switcher\"").And.Contain("popovertarget=\"api-hub-menu\"");
-		html.Should().Contain("api-context-menu-group-label\">Elastic Stack</div>").And.Contain("role=\"group\"");
-		// A group without a title gets no label, and the separator sits between the groups.
-		html.Should().NotContain("id=\"api-hub-group-1\"");
-		var groupOrder = new[] { "Kibana APIs", "api-context-menu-sep", "Alpha API" }.Select(
-			t => html.IndexOf(t, StringComparison.Ordinal)
-		).ToArray();
-		groupOrder.Should().OnlyContain(p => p >= 0).And.BeInAscendingOrder();
-		html.Should().Contain("id=\"api-version-switcher\"").And.Contain("popovertarget=\"api-version-menu\"");
-		html.Should().Contain("Download OpenAPI spec").And.Contain("popovertarget=\"api-spec-menu\"");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\"").And.Contain("download");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.yaml\"");
-		var order = new[] { "id=\"api-hub-switcher\"", "id=\"api-version-switcher\"", "id=\"api-download-source\"" }.Select(
-			t => html.IndexOf(t, StringComparison.Ordinal)
-		).ToArray();
-		order.Should().OnlyContain(p => p >= 0).And.BeInAscendingOrder();
-		// The breadcrumb is the page's own, so the bar carries no trail. Its ids stay clear of the docs bar's.
-		html.Should().NotContain(">Docs</a>").And.NotContain(">APIs</a>");
-		html.Should().Contain("id=\"api-context-bar-host\"").And.Contain("id=\"api-context-bar\"");
-		html.Should().NotContain("id=\"secondary-nav");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
+	}
+
+	[Test]
+	public async Task ApiIdentityTriggerDropsTheLatestSuffixButTheMenuKeepsIt()
+	{
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[],
+			"/docs/api/",
+			[
+				new NavigationSelectOption("main", "/a/", false),
+				new NavigationSelectOption("v9 (latest)", "/a/v9/", true, "v9"),
+				new NavigationSelectOption("v8", "/a/v8/", false)
+			],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
+	}
+
+	[Test]
+	public async Task ApiIdentityWithoutVersionsOrOtherApisIsPlainText()
+	{
+		var bar = new ApiIdentity("Alpha API", null, [], null, [], new ApiSpecDownload("/a.json", "/a.yaml"));
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
+	}
+
+	[Test]
+	public async Task ApiIdentityWithVersionsOnlyListsTheVersions()
+	{
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[],
+			"/docs/api/",
+			[new NavigationSelectOption("main", "/a/", true), new NavigationSelectOption("v8", "/a/v8/", false)],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -229,54 +201,9 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		{
 			var html = await Render(TopNav, "/docs/", navigationPreviewEnabled: navigationPreviewEnabled);
 
-			html.Should().NotContain("api-context");
+			html.Should().NotContain("api-identity");
 			html.Should().NotContain("api-hub-switcher");
 		}
-	}
-
-	[Test]
-	public async Task WithTopNavTheBarIsLeftAlignedAndIncludesDocsHome()
-	{
-		var html = await Render(TopNav, "/docs/");
-
-		html.Should().Contain("secondary-nav-home").And.Contain(">Docs<");
-		html.Should().Contain("href=\"/docs/\"");
-		html.Should().Contain("secondary-nav-bar--desktop");
-		html.Should().Contain("secondary-nav-scroll-container");
-		html.Should().Contain("secondary-nav-bar");
-	}
-
-	[Test]
-	public async Task WithoutTopNavTheBarHasDocsBrandLink()
-	{
-		var html = await Render(null, "/docs/");
-
-		html.Should().Contain("secondary-nav-home").And.Contain(">Docs<");
-		html.Should().Contain("href=\"/docs/\"");
-	}
-
-	[Test]
-	public async Task ExternalLinksOpenInANewTab()
-	{
-		var html = await Render(TopNav, currentUrl: "/docs/");
-
-		html.Should().Contain("href=\"https://www.elastic.co/docs/api/\"");
-		html.Should().Contain("target=\"_blank\"");
-		html.Should().Contain("rel=\"noopener noreferrer\"");
-		html.Should().Contain("(opens in a new tab)");
-	}
-
-	[Test]
-	public async Task DropdownRendersItsGroupsAndLinks()
-	{
-		var html = await Render(TopNav, currentUrl: "/docs/");
-
-		html.Should().Contain("<details class=\"secondary-nav-dropdown\">");
-		html.Should().Contain("secondary-nav-dropdown-group-label\">Stack products");
-		html.Should().Contain("href=\"/docs/products/elasticsearch/\"");
-		html.Should().Contain("href=\"/docs/products/\"");
-		// the label toggles the panel, it is never a link itself
-		html.Should().NotContain("<summary><a");
 	}
 
 	[Test]

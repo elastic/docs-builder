@@ -39,7 +39,7 @@ public static class ChangelogEntryReadConstraints
 /// <c>validate-entries</c> reads the file's own text, which sees what a record cannot (an unrecognized type or lifecycle, the authored spelling of a
 /// subtype or area), so it reports the product, subtype, lifecycle and area membership itself under those rules' ids with its pinned wording; asking
 /// the same rules of the record would say each problem twice. What the text cannot answer stays: a recognized type the configuration does not list
-/// (R37) and a product outside <c>products.available</c> (R6).
+/// (R37). The product outside <c>products.available</c> (R6) is the text's too, in the wording the validator always had.
 /// </summary>
 public static class ChangelogEntryValidateConstraints
 {
@@ -49,6 +49,7 @@ public static class ChangelogEntryValidateConstraints
 		get;
 	} = ChangelogEntryInConfigurationConstraints.All.Without(
 		ChangelogEntryInConfigurationConstraints.EntryProductsKnown,
+		ChangelogEntryInConfigurationConstraints.EntryProductsAvailable,
 		ChangelogEntryInConfigurationConstraints.EntrySubtypeAllowed,
 		ChangelogEntryInConfigurationConstraints.EntryLifecycleAllowed,
 		ChangelogEntryInConfigurationConstraints.EntryAreasAllowed

@@ -47,6 +47,30 @@ public class SearchToolsIntegrationTests : McpToolsIntegrationTestsBase
 	}
 
 	[Test]
+	public async Task SemanticSearch_WithApiSection_ReturnsOnlyApiPages()
+	{
+		var (searchTools, clientAccessor) = CreateSearchTools();
+		Skip.Unless(searchTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
+		var canConnect = await clientAccessor!.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var resultJson = await searchTools.SemanticSearch(
+			"logstash node stats",
+			sectionFilter: "api",
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
+		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
+
+		response.Should().NotBeNull();
+		if (response!.Results.Count == 0)
+			Skip.Test("No API reference pages in the target index");
+		response.Results.Should().OnlyContain(r => r.ContentType == "api" && r.NavigationSection == "api");
+	}
+
+	[Test]
 	public async Task SemanticSearch_WithProductFilter()
 	{
 		// Arrange

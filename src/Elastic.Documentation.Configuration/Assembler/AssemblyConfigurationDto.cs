@@ -84,6 +84,9 @@ internal sealed class PublishEnvironmentDto
 
 	[YamlPropertyName("website_search_url")]
 	public string? WebsiteSearchScriptUrl { get; set; }
+
+	[YamlPropertyName("waf_integration_url")]
+	public string? WafIntegrationUrl { get; set; }
 }
 
 internal sealed class GoogleTagManagerDto

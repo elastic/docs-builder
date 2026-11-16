@@ -69,6 +69,10 @@ public sealed partial record ResolvedDocumentationSet
 	[UnorderedEquality]
 	public IReadOnlyDictionary<string, LinkRedirect>? Redirects { get; internal init; }
 
+	/// <summary>The redirects file <see cref="Redirects"/> were read from, when there is one.</summary>
+	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
+	public IFileInfo? RedirectsFile { get; internal init; }
+
 	// Product is a record of scalars, so compiler record equality is already structural; it needs no [Equatable].
 #pragma warning disable GE003
 	[SetEquality]

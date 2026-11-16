@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.LegacyDocs.Migration.Asciidoc.Ast;
 
 namespace Elastic.LegacyDocs.Migration.Asciidoc;
@@ -382,43 +383,42 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			"=" => new ExampleNode { Children = children },
 			"*" => new SidebarNode { Children = children },
 			"+" => new PassthroughNode(string.Join('\n', contentLines)),
-			"-" when openingDelim == "--" =>
-				style switch
-				{
-					"source" => new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines) },
-					_ when IsAdmonitionStyle(style) =>
-						new AdmonitionNode
-						{
-							Type = ParseAdmonitionType(style!),
-							Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
-						},
-					"sidebar" => new SidebarNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) },
-					_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
-				},
+			"-" when openingDelim == "--" => style switch
+			{
+				"source" => new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines) },
+				_ when IsAdmonitionStyle(style) =>
+					new AdmonitionNode
+					{
+						Type = ParseAdmonitionType(style!),
+						Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
+					},
+				"sidebar" => new SidebarNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) },
+				_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
+			},
 			"/" => null,
 			_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
 		};
 	}
 
-	[GeneratedRegex(@"^<(\d+)>\s+(.+)$")]
+	[GeneratedRegex(@"^<(\d+)>\s+(.+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CalloutItemRegex();
 
-	[GeneratedRegex(@"^include::([^\[]+)\[([^\]]*)\]\s*$")]
+	[GeneratedRegex(@"^include::([^\[]+)\[([^\]]*)\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TableIncludeRegex();
 
-	[GeneratedRegex(@"^include-tagged::(.+?)\[([^\]]*)\]\s*$")]
+	[GeneratedRegex(@"^include-tagged::(.+?)\[([^\]]*)\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex IncludeTaggedInVerbatimRegex();
 
 	// Standard AsciiDoc tagged include inside a verbatim block: include::path[tag=name]
-	[GeneratedRegex(@"^include::(.+?)\[tag=([^\]]+)\]\s*$")]
+	[GeneratedRegex(@"^include::(.+?)\[tag=([^\]]+)\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex IncludeTaggedStandardInVerbatimRegex();
 
 	// Full-file include inside a verbatim block: include::path[] or include::path[indent=0] etc.
-	[GeneratedRegex(@"^include::(.+?)\[[^\]]*\]\s*$")]
+	[GeneratedRegex(@"^include::(.+?)\[[^\]]*\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex IncludeFullFileInVerbatimRegex();
 
 	// Conditional markers that can appear inside verbatim blocks (e.g. ifeval::[...]/endif::[])
-	[GeneratedRegex(@"^(?:ifdef|ifndef|ifeval|endif)::[^\[]*\[.*?\]\s*$")]
+	[GeneratedRegex(@"^(?:ifdef|ifndef|ifeval|endif)::[^\[]*\[.*?\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex VerbatimConditionalRegex();
 
 	/// <summary>
@@ -516,8 +516,8 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		int? dedentWidth = null;
 
 		var escapedTag = Regex.Escape(tag);
-		var startPattern = new Regex($@"tag::{escapedTag}\[\]");
-		var endPattern = new Regex($@"end::{escapedTag}\[\]");
+		var startPattern = new Regex($@"tag::{escapedTag}\[\]", RegexOptions.None, RegexTimeouts.MatchTimeout);
+		var endPattern = new Regex($@"end::{escapedTag}\[\]", RegexOptions.None, RegexTimeouts.MatchTimeout);
 
 		foreach (var line in lines)
 		{
@@ -1473,14 +1473,14 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		return string.Join('\n', lines);
 	}
 
-	[GeneratedRegex(@"^(={1,6})\s+(.+)$")]
+	[GeneratedRegex(@"^(={1,6})\s+(.+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LevelOffsetRegex();
 
 	// Allow hyphens in tag names (e.g. tag::my-tag[]) and any comment prefix (// # --)
-	[GeneratedRegex(@"tag::([\w-]+)\[\]")]
+	[GeneratedRegex(@"tag::([\w-]+)\[\]", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TagStartRegex();
 
-	[GeneratedRegex(@"end::([\w-]+)\[\]")]
+	[GeneratedRegex(@"end::([\w-]+)\[\]", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TagEndRegex();
 
 	private string? ReadFile(string path)
@@ -1501,49 +1501,49 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	[GeneratedRegex(@"link:([^\[]+)\[([^\]]*)\]|"
 		+ // groups 1,2: link
-		 @"<<([^,>]+)(?:,([\s\S]+?))?>>>|"
+		@"<<([^,>]+)(?:,([\s\S]+?))?>>>|"
 		+ // groups 3,4: triple-xref (allow newlines in text)
-		 @"<<([^,>]+)(?:,([\s\S]+?))?>>"
+		@"<<([^,>]+)(?:,([\s\S]+?))?>>"
 		+ "|"
 		+ // groups 5,6: xref (allow newlines in text)
-		 @"image:([^\[]+)\[([^\]]*)\]|"
+		@"image:([^\[]+)\[([^\]]*)\]|"
 		+ // groups 7,8: image
-		 @"footnote:\[([^\]]*)\]|"
+		@"footnote:\[([^\]]*)\]|"
 		+ // group 9: footnote
-		 @"pass:\[([^\]]*)\]|"
+		@"pass:\[([^\]]*)\]|"
 		+ // group 10: pass:[] passthrough
-		 @"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|"
+		@"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|"
 		+ // groups 11,12: [role]#text#
-		 @"\*\*([^\*<]+)\*\*|"
+		@"\*\*([^\*<]+)\*\*|"
 		+ // group 13: unconstrained bold (no < prevents spanning xref markers)
-		 @"\*([^\*<]+)\*|"
+		@"\*([^\*<]+)\*|"
 		+ // group 14: constrained bold (no < prevents spanning xref markers)
-		 @"_([^_<]+)_|"
+		@"_([^_<]+)_|"
 		+ // group 15: italic (no < prevents spanning xref markers)
-		 @"(?<!`)`([^`]+)`|"
+		@"(?<!`)`([^`]+)`|"
 		+ // group 16: mono (lookbehind prevents ``curly-quote'' from opening a code span)
-		 @"\^([^\^]+)\^|"
+		@"\^([^\^]+)\^|"
 		+ // group 17: superscript
-		 @"~([^~]+)~|"
+		@"~([^~]+)~|"
 		+ // group 18: subscript
-		 @"\{([a-zA-Z0-9_-]+)\}|"
+		@"\{([a-zA-Z0-9_-]+)\}|"
 		+ // group 19: attr-ref
-		 @"(https?://[^\[\s]+)\[([^\]]*)\]|"
+		@"(https?://[^\[\s]+)\[([^\]]*)\]|"
 		+ // groups 20,21: url
-		 @"(?<![a-zA-Z0-9.])\+([^\+]+)\+"
+		@"(?<![a-zA-Z0-9.])\+([^\+]+)\+"
 		+ "|"
 		+ // group 22: +inline+ passthrough (constrained: not after alphanum)
-		 @"``([^`']+)''|"
+		@"``([^`']+)''|"
 		+ // group 23: AsciiDoc typographic quotes -> "text"
-		 @"\s*\+\s*$" // line-break (no capture)
-		)]
+		@"\s*\+\s*$" // line-break (no capture)
+		, RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex InlineCombinedRegex();
 
-	[GeneratedRegex(@"\{([a-zA-Z0-9_-]+)\}")]
+	[GeneratedRegex(@"\{([a-zA-Z0-9_-]+)\}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex InlineAttrRefRegex();
 
 	// Normalize `<<<<target>>, text>>` (double `<<` source bug) → `<<target, text>>`
-	[GeneratedRegex(@"<<<<([^,>]+)>>(,[^>]*)?>")]
+	[GeneratedRegex(@"<<<<([^,>]+)>>(,[^>]*)?>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex DoubleXrefRegex();
 
 	public List<IInlineNode> ParseInlines(string text)
@@ -1627,6 +1627,6 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	private static string NormalizeWhitespace(string value) =>
 		string.IsNullOrEmpty(value) ? value : WhitespaceCollapseRegex().Replace(value.Trim(), " ");
 
-	[GeneratedRegex(@"\s*\n\s*")]
+	[GeneratedRegex(@"\s*\n\s*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespaceCollapseRegex();
 }

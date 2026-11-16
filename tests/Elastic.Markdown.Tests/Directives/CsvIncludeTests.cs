@@ -6,7 +6,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -161,7 +164,30 @@ public class CsvIncludeRenderLinksTests() : DirectiveTest("""
 Search,[Text](https://www.google.com)"));
 
 	[Test]
-	public void RendersMarkdownLinkAsLink() => Html.Should().Contain(">Text</a>");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Link</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>Search</td>
+						<td>
+							<a href="https://www.google.com" target="_blank" rel="noopener noreferrer">Text</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 public class CsvIncludeWithHtmlBreaksTests() : DirectiveTest("""
@@ -181,14 +207,7 @@ public class CsvIncludeWithHtmlBreaksTests() : DirectiveTest("""
 		);
 
 	[Test]
-	public void RendersHtmlBreaksInCsvCells() => Html.Should().Contain("<br");
-
-	[Test]
-	public void RendersLinksWithBreaks()
-	{
-		Html.Should().Contain(">Terms A</a>");
-		Html.Should().Contain(">Terms B</a>");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -201,11 +220,12 @@ public class CsvIncludeNotFoundTests() : DirectiveTest<CsvIncludeBlock>("""
 	public void ReportsFileNotFound() => Block!.Found.Should().BeFalse();
 
 	[Test]
-	public void EmitsErrorForMissingFile()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("does not exist"));
-	}
+	public void EmitsErrorForMissingFile() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 CSV file `{repo}/docs/missing-file.csv` does not exist.");
 }
 
 [InheritsTests]
@@ -215,9 +235,10 @@ public class CsvIncludeNoArgumentTests() : DirectiveTest<CsvIncludeBlock>("""
 """)
 {
 	[Test]
-	public void EmitsErrorForMissingArgument()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("requires an argument"));
-	}
+	public void EmitsErrorForMissingArgument() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 csv-include requires an argument specifying the path to the CSV file.");
 }

@@ -221,6 +221,50 @@ public class SharedListingTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_UnionsWhoseVariantDescriptionsDifferOnlyInMarkdown_AreNotShared()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "first": { "oneOf": [
+			            { "type": "object", "description": "*Code it*", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "second": { "oneOf": [
+			            { "type": "object", "description": "_Code it_", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "third": { "oneOf": [
+			            { "type": "object", "description": "*Code it*", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		// Both spellings render alike; the index builds the same tree with a renderer of its own, so identity must not depend on one.
+		var builder = new ApiPropertyTreeBuilder(
+			document,
+			new PropertyDisplayOptions { RenderMarkdown = _ => new HtmlString("<p><em>Code it</em></p>"), ApiRootUrl = "/api/doc/fixture" }
+		);
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
+
+		Row("second").Repeats.Should().BeNull("its variant description is spelled differently, however it renders");
+		Row("third").Repeats!.Name.Should().Be("first");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_CopyWhoseNestedFieldsWereLinked_StillSharesTheWholeListing()
 	{
 		var json =

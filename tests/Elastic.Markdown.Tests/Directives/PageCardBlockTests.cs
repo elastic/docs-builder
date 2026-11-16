@@ -6,7 +6,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Testing;
+using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives.PageCard;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -29,7 +32,7 @@ public class PageCardRelativeMdLinkTests() : DirectiveTest<PageCardBlock>("""
 	public void ResolvesUrlViaNavigationLookup() => Block!.ResolvedUrl.Should().Be("/other-page");
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Error);
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 /// <summary>
@@ -48,17 +51,14 @@ public class PageCardRehomedDocsetLinkTests() : DirectiveTest<PageCardBlock>(
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/other-page.md", new MockFileData("# Other Page\n\nSome content."));
 
-	public override async Task InitializeAsync()
-	{
-		((INavigationHomeAccessor)Set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", Set.Navigation);
-		await base.InitializeAsync();
-	}
+	protected override void ConfigureDocumentationSet(DocumentationSet set) =>
+		((INavigationHomeAccessor)set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", set.Navigation);
 
 	[Test]
 	public void ResolvesUrlWithRehomedPrefix() => Block!.ResolvedUrl.Should().Be("/reference/rehomed/other-page");
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Error);
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 /// <summary>
@@ -76,17 +76,14 @@ public class PageCardRehomedAnchoredLinkTests() : DirectiveTest<PageCardBlock>(
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/other-page.md", new MockFileData("# Other Page\n\n## Install\n\nContent."));
 
-	public override async Task InitializeAsync()
-	{
-		((INavigationHomeAccessor)Set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", Set.Navigation);
-		await base.InitializeAsync();
-	}
+	protected override void ConfigureDocumentationSet(DocumentationSet set) =>
+		((INavigationHomeAccessor)set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", set.Navigation);
 
 	[Test]
 	public void ResolvesUrlWithRehomedPrefixAndAnchor() => Block!.ResolvedUrl.Should().Be("/reference/rehomed/other-page#install");
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Error);
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 /// <summary>Namespace-style link (no .md extension) probes for /index.md variant.</summary>
@@ -103,7 +100,7 @@ public class PageCardRelativeFolderLinkTests() : DirectiveTest<PageCardBlock>(""
 	public void ResolvesIndexPageUrl() => Block!.ResolvedUrl.Should().Be("/subdir");
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Error);
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 /// <summary>Absolute HTTP URLs are rejected with an error.</summary>
@@ -117,5 +114,11 @@ public class PageCardAbsoluteUrlErrorTests() : DirectiveTest<PageCardBlock>(
 {
 	[Test]
 	public void EmitsErrorForAbsoluteUrl() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("absolute URL"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 page-card url must be a local .md path or crosslink, not an absolute URL: https://example.com/page"
+			);
 }

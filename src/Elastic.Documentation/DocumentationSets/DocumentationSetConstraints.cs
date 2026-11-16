@@ -864,10 +864,10 @@ public static partial class DocumentationSetConstraints
 	}
 
 	// Output file names are validated against these when a page is written; some long-standing files are exempt.
-	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FilePathRegex();
 
-	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FileNameRegex();
 
 	private static bool IsValidPageFileName(string path) => path switch
@@ -890,7 +890,7 @@ public static partial class DocumentationSetConstraints
 	// ── docset.yml ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 	/// <summary>A CSS colour value: hex, a keyword such as <c>navy</c>, or a function such as <c>rgb(0 0 0 / 50%)</c>.</summary>
-	[GeneratedRegex(@"^(#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|[a-zA-Z]+|[a-zA-Z-]+\([0-9a-zA-Z\s.,%/+-]*\))$")]
+	[GeneratedRegex(@"^(#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|[a-zA-Z]+|[a-zA-Z-]+\([0-9a-zA-Z\s.,%/+-]*\))$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CssColour();
 
 	// Substitution keys the resolver generates and so overwrites: version.*, and product.{id} and .{id} for every public-reference product in either spelling of its id.
@@ -1039,7 +1039,7 @@ public static partial class DocumentationSetConstraints
 	// ── api ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 	/// <summary>An api key is used as <c>api/&lt;key&gt;/</c> and in URLs: letters, digits, <c>.</c>, <c>_</c> and <c>-</c>, starting with a letter or digit.</summary>
-	[GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._-]*$")]
+	[GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._-]*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ApiKeySegment();
 
 	// API Explorer reserves the other child slugs by failing the build; 'tags' is only documented as reserved, so it warns.

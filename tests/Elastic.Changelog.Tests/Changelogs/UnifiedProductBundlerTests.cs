@@ -12,7 +12,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.ReleaseSchedule;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -175,7 +177,13 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 		var outcome = await BundleAsync(Bundler(Cdn()), failWhenNotOnboarded: true);
 
 		outcome.Should().Be(ProductBundleOutcome.Failed);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("has no changelog.yml"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Product 'widget' (repo: elastic/widget@aaaaaaaa) has no changelog.yml — add docs/changelog.yml or changelog.yml to the repository, or provide a prototype in --changelog-configs."
+			);
 	}
 
 	[Test]
@@ -222,7 +230,16 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 		var outcome = await BundleAsync(Bundler(Cdn(poolBranch: "elsewhere")), failWhenNotOnboarded: true);
 
 		outcome.Should().Be(ProductBundleOutcome.Failed);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("registry"));
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			error  Could not fetch changelog entry registry for 'elastic/widget/main' from https://d10xozp44eyz7q.cloudfront.net/changelog/elastic/widget/main/registry.json: Response status code does not indicate success: 404 (Not Found).
+			"""
+			);
 	}
 
 	[Test]
@@ -341,7 +358,17 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 		var outcome = await BundleAsync(Bundler(Cdn(), resolution: OnePullRequest(), summaries: summaries));
 
 		outcome.Should().Be(ProductBundleOutcome.Failed);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could be resolved"));
+		Collector
+			.Diagnostics
+			.WithoutAmbient()
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  No checked-in changelog entry was found for PR https://github.com/elastic/widget/pull/100 and its metadata could not be fetched from GitHub. The bundle will not include an entry for this PR.
+			error  No changelog entries could be resolved for commit range aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2 of elastic/widget.
+			"""
+			);
 	}
 
 	private string LocalChangelogDirectory()

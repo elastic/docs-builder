@@ -27,8 +27,15 @@
 					@if (row.Endpoint is { Rows.Count: > 0 } endpoint)
 					{
 						@(await RenderPartialAsync<_HttpMethodBadge, string>(endpoint.Rows[0].Method))
+						<span class="api-index-item-text">
+							<span class="api-index-item-title">@row.Title</span>
+							<code class="api-index-item-path">@endpoint.Rows[0].Route</code>
+						</span>
 					}
-					<span class="api-index-item-title">@row.Title</span>
+					else
+					{
+						<span class="api-index-item-title">@row.Title</span>
+					}
 				</a>
 			</li>
 		}

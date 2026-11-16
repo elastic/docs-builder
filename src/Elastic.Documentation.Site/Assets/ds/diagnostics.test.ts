@@ -103,7 +103,7 @@ describe('diagnostics panel', () => {
     beforeEach(() => {
         document.body.innerHTML = markup
         sessionStorage.clear()
-        global.fetch = jest.fn().mockResolvedValue({
+        global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
                 type: 'state',
@@ -166,25 +166,25 @@ describe('diagnostics panel', () => {
         ).toHaveLength(1)
     })
     it('says it is disconnected once a poll fails after a clean build', async () => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         try {
-            global.fetch = jest.fn().mockResolvedValueOnce({
+            global.fetch = vi.fn().mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({ type: 'state', status: 'complete' }),
             }) as unknown as typeof fetch
             initDiagnostics()
-            await jest.advanceTimersByTimeAsync(0)
+            await vi.advanceTimersByTimeAsync(0)
             const summary = document.querySelector(
                 '[data-diagnostics-summary]'
             )!
             expect(summary.textContent).toContain('All clear')
 
-            global.fetch = jest
+            global.fetch = vi
                 .fn()
                 .mockRejectedValue(
                     new Error('offline')
                 ) as unknown as typeof fetch
-            await jest.advanceTimersByTimeAsync(2000)
+            await vi.advanceTimersByTimeAsync(2000)
 
             expect(summary.textContent).toContain('Disconnected')
             expect(
@@ -192,7 +192,7 @@ describe('diagnostics panel', () => {
                     .dataset.state
             ).toBe('disconnected')
         } finally {
-            jest.useRealTimers()
+            vi.useRealTimers()
         }
     })
 })

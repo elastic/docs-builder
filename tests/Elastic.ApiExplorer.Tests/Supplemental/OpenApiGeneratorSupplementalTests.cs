@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
@@ -69,9 +70,18 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture)
 		var nav9 = generator.CreateNavigation("fixture", fixture.Document, apiConfig, versionMajor: 9);
 		var nav8 = generator.CreateNavigation("fixture", fixture.Document, apiConfig, versionMajor: 8);
 
-		nav9.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started", "knn-guide");
-		nav8.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started");
+		ChildSlugs(nav9).Should().Equal("getting-started", "knn-guide");
+		ChildSlugs(nav8).Should().Equal("getting-started");
 	}
+
+	private static IEnumerable<string> ChildSlugs(LandingNavigationItem navigation) =>
+		navigation
+			.NavigationItems
+			.OfType<TopicsNavigationItem>()
+			.Single()
+			.NavigationItems
+			.OfType<SimpleMarkdownNavigationItem>()
+			.Select(n => n.Slug);
 
 	[Test]
 	[Arguments("8", 9, 8)]

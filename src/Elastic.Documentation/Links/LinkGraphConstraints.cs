@@ -186,7 +186,7 @@ public static partial class LinkGraphConstraints
 /// <summary>
 /// The rules of <see cref="LinkGraphConstraints"/> run on the graph of one repository built on its own (a documentation set built in isolation).
 /// <c>CrossLinkSchemeDeclared</c> (M34), <c>CrossLinkResolves</c> (M30) and <c>CrossLinkRedirectResolves</c> (M31) are not in it: the cross-link
-/// resolver reports them while it resolves each link, at the line and column of the link, with the rules' ids (<c>CrossLinkResolver.TryResolve</c>),
+/// resolver reports them while it resolves each link, at the line and column of the link, with the rules' ids (<c>CrossLinkResolver.Resolve</c> and <c>LinkResolutionExtensions.RuleId</c>),
 /// which the graph's manifest-level violation cannot say. <c>CrossLinkRepositoryIsMounted</c> (N15) is not in it either: a single repository has no
 /// site navigation; the assembler is where it can run.
 /// </summary>

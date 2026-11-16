@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -55,11 +54,8 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	public static TestCrossLinkResolver Instance { get; } = new();
 
 	/// <inheritdoc />
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
-	{
-		resolvedUri = new Uri("https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main");
-		return true;
-	}
+	public LinkResolution Resolve(Uri crossLinkUri) =>
+		new LinkResolved(new Uri("https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main"));
 
 	/// <inheritdoc />
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();

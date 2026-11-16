@@ -1,0 +1,23 @@
+### initialize
+# What most MCP clients send today. The other protocol versions are in mcp-protocol-versions.http.
+POST /docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {},
+    "clientInfo": { "name": "test-client", "version": "1.0.0" }
+  }
+}
+
+### tools/list
+POST /docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }

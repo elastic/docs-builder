@@ -33,7 +33,12 @@ public class GitHubApiTransportRateLimitTests
 		return response;
 	}
 
+	private static Task<(HttpStatusCode Status, int Requests, List<TimeSpan> Waits)> GetAsync(
+		params Func<HttpResponseMessage>[] responses
+	) => GetAsync(retryTransient: false, responses);
+
 	private static async Task<(HttpStatusCode Status, int Requests, List<TimeSpan> Waits)> GetAsync(
+		bool retryTransient,
 		params Func<HttpResponseMessage>[] responses
 	)
 	{
@@ -47,7 +52,9 @@ public class GitHubApiTransportRateLimitTests
 			return Task.CompletedTask;
 		});
 
-		using var response = await transport.GetAsync("https://api.github.com/x", TestContext.Current!.Execution.CancellationToken);
+		using var response = retryTransient
+			? await transport.GetWithTransientRetryAsync("https://api.github.com/x", TestContext.Current!.Execution.CancellationToken)
+			: await transport.GetAsync("https://api.github.com/x", TestContext.Current!.Execution.CancellationToken);
 		return (response.StatusCode, requests, waits);
 	}
 
@@ -188,6 +195,49 @@ public class GitHubApiTransportRateLimitTests
 		var (status, requests, _) = await GetAsync(() => new HttpResponseMessage(HttpStatusCode.BadGateway));
 
 		status.Should().Be(HttpStatusCode.BadGateway);
+		requests.Should().Be(1);
+	}
+
+	[Test]
+	public async Task Get_GatewayErrorWhenAskedToRetry_IsRetriedWithBackoff()
+	{
+		var (status, requests, waits) = await GetAsync(
+			retryTransient: true,
+			() => new HttpResponseMessage(HttpStatusCode.BadGateway),
+			() => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
+			() => new HttpResponseMessage(HttpStatusCode.OK)
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		requests.Should().Be(3);
+		waits.Should().Equal(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4));
+	}
+
+	[Test]
+	public async Task Get_GatewayErrorThatNeverClears_GivesUpAfterFourAttempts()
+	{
+		var (status, requests, waits) = await GetAsync(retryTransient: true, () => new HttpResponseMessage(HttpStatusCode.BadGateway));
+
+		status.Should().Be(HttpStatusCode.BadGateway);
+		requests.Should().Be(4);
+		waits.Should().HaveCount(3);
+	}
+
+	[Test]
+	public async Task Get_InternalServerErrorWhenAskedToRetry_IsNotRetried()
+	{
+		var (status, requests, _) = await GetAsync(retryTransient: true, () => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+
+		status.Should().Be(HttpStatusCode.InternalServerError);
+		requests.Should().Be(1);
+	}
+
+	[Test]
+	public async Task Get_EmptyBodyWhenAskedToRetry_IsNotRetried()
+	{
+		var (status, requests, _) = await GetAsync(retryTransient: true, () => new HttpResponseMessage(HttpStatusCode.OK));
+
+		status.Should().Be(HttpStatusCode.OK);
 		requests.Should().Be(1);
 	}
 

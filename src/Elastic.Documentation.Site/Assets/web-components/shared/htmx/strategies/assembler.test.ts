@@ -2,7 +2,7 @@ import { assemblerStrategy } from './assembler'
 
 // PR previews serve assembler under a prefix like '/elastic/docs-builder/docs/3634'
 // instead of '/docs' — the strategy must key off config.rootPath, not a hardcoded '/docs'.
-jest.mock('../../../../config', () => ({
+vi.mock('../../../../config', () => ({
     config: { rootPath: '/elastic/docs-builder/docs/3634' },
 }))
 

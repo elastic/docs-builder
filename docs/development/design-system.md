@@ -35,6 +35,15 @@ When the flag is on, the page head loads `ds-layers.css`, `ds.css` and `ds.js` a
 `ds.js` carries its own runtime in `Assets/ds/runtime.ts`, the framework-free parts of `main.ts`: htmx navigation, telemetry, code highlighting, math, diagrams and tables.
 `Assets/ds/bundle.test.ts` fails when anything in the `ds.ts` import graph pulls in React, EUI or Emotion.
 
+Every page, with the flag on or off, says how it was built in two meta tags in its head:
+
+```html
+<meta name="docs:features" content="assembler-api-explorer navigation-preview page-feedback">
+<meta name="docs:build-type" content="assembler">
+```
+
+`docs:features` lists the enabled feature flags in kebab-case, sorted, with environment overrides applied. The attribute is left out when no flag is on. `docs:build-type` is `isolated`, `assembler` or `codex`. Browser journey tests and monitors read them to decide which steps apply to the site they are running against.
+
 ## Tokens
 
 All design-system CSS lives in `src/Elastic.Documentation.Site/Assets/ds/` and is bundled from `Assets/ds.css`.

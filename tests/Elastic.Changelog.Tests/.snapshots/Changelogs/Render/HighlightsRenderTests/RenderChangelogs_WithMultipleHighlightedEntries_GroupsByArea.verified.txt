@@ -1,0 +1,32 @@
+=== 9.3.0/breaking-changes.md ===
+## 9.3.0 [elastic-9.3.0-breaking-changes]
+_There are no breaking changes associated with this release._
+=== 9.3.0/deprecations.md ===
+## 9.3.0 [elastic-9.3.0-deprecations]
+_There are no deprecations associated with this release._
+=== 9.3.0/highlights.md ===
+## 9.3.0 [elastic-9.3.0-highlights]
+
+**Indexing**
+
+* Indexing highlight.
+  For more information, check [#200](https://github.com/elastic/elastic/pull/200).
+
+
+**Search**
+
+* Search highlight.
+  For more information, check [#100](https://github.com/elastic/elastic/pull/100).
+
+=== 9.3.0/index.md ===
+## 9.3.0 [elastic-release-notes-9.3.0]
+### Features and enhancements [elastic-9.3.0-features-enhancements]
+
+**Indexing**
+* Indexing highlight. [#200](https://github.com/elastic/elastic/pull/200)
+
+**Search**
+* Search highlight. [#100](https://github.com/elastic/elastic/pull/100)
+=== 9.3.0/known-issues.md ===
+## 9.3.0 [elastic-9.3.0-known-issues]
+_There are no known issues associated with this release._

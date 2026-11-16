@@ -1,0 +1,27 @@
+{
+  "$type": "site",
+  "locale": "ko",
+  "modified_date": "2022-10-01T08:00:00+00:00",
+  "og": {},
+  "twitter": {},
+  "http": {},
+  "title": "TechCo Industries",
+  "search_title": "Customer Story: TechCo Industries",
+  "content_type": "site",
+  "path": "/kr/videos/techco-elasticsearch-case-study",
+  "url": "/kr/videos/techco-elasticsearch-case-study",
+  "hash": "9f3e869e9b215109",
+  "last_updated": "2022-10-01T08:00:00+00:00",
+  "description": null,
+  "headings": [],
+  "body": "TechCo uses Elasticsearch to power search across their global e-commerce platform.",
+  "summary": "TechCo uses Elasticsearch to power search across their global e-commerce platform.",
+  "parents": [],
+  "translated": true,
+  "section": "customer-story",
+  "content_tier": "supplementary",
+  "navigation": {
+    "depth": 4,
+    "table_of_contents": 100
+  }
+}

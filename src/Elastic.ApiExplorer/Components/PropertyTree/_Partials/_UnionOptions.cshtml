@@ -12,7 +12,7 @@
 }
 @if (Model.Label is { Length: > 0 } unionLabel)
 {
-	<span class="values-label">@unionLabel</span>
+	<span class="values-label union-variants-label">@unionLabel</span>
 }
 @* Two or more variants show one at a time: chips pick the variant, as on the examples rail (chip-row.ts), and the
    others use hidden="until-found", so find-in-page and links to their fields still reach them (api-union-chips.ts). *@
@@ -110,9 +110,9 @@
 				if (collapsible)
 				{
 					<div class="expand-toggle-row union-expand-toggle">
-						<button class="expand-toggle">
+						<button class="expand-toggle" data-count="@variant.NestedCount">
 							<span class="toggle-icon">@(expanded ? "−" : "+")</span>
-							<span class="toggle-label">@(expanded ? "hide" : "show") properties</span>
+							<span class="toggle-label">@PropertyToggle.Label(expanded, variant.NestedCount)</span>
 						</button>
 					</div>
 				}
@@ -120,12 +120,14 @@
 				{
 					<div class="nested-properties" id="@variant.ChildrenId" hidden="until-found">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
+						@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(variant.Variants ?? ApiUnionVariants.Empty))
 					</div>
 				}
 				else
 				{
 					<div class="nested-properties" id="@variant.ChildrenId">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
+						@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(variant.Variants ?? ApiUnionVariants.Empty))
 					</div>
 				}
 			}

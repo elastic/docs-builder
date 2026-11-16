@@ -14,7 +14,7 @@ using Elastic.Documentation.Tests.Domain;
 namespace Elastic.Markdown.Tests.CrossLinks;
 
 /// <summary>
-/// Service-algorithm laws of cross-link resolution through redirects (<see cref="CrossLinkResolver.TryResolve(Action{string}, FetchedCrossLinks, IUriEnvironmentResolver, Uri, out Uri?)"/>),
+/// Service-algorithm laws of cross-link resolution through redirects (<see cref="CrossLinkResolver.Resolve(FetchedCrossLinks, IUriEnvironmentResolver, Uri)"/>),
 /// over generated link manifests whose redirects include chains, cycles, self redirects, anchors, 'many' rules and targets in other repositories. A fixed seed, 200 iterations.
 /// </summary>
 public class CrossLinkResolutionProperties
@@ -26,7 +26,7 @@ public class CrossLinkResolutionProperties
 	/// <summary>One redirect as written: the target (null for an anchors-only redirect), an anchors map, and 'many' rules.</summary>
 	private sealed record Redirect(string Source, string? To, string? Anchors, (string To, string Anchors)[] Many);
 
-	private static Gen<string?> Targets { get; } = Gen.OneOfConst<string?>(
+	private static Gen<string?> Targets { get; } = Gen.OneOf<string?>(
 		"a.md",
 		"b.md",
 		"c/index.md",
@@ -41,13 +41,13 @@ public class CrossLinkResolutionProperties
 		null
 	);
 
-	private static Gen<string?> AnchorMaps { get; } = Gen.OneOfConst<string?>(null, "{}", """{ "x": "y" }""", """{ "!": "!" }""");
+	private static Gen<string?> AnchorMaps { get; } = Gen.OneOf<string?>(null, "{}", """{ "x": "y" }""", """{ "!": "!" }""");
 
 	private static Gen<Redirect> Redirects { get; } = Gen.Select(
-		Gen.OneOfConst(Sources),
+		Gen.OneOf(Sources),
 		Targets,
 		AnchorMaps,
-		Gen.Select(Gen.OneOfConst("a.md", "d.md", "r2://a.md"), Gen.OneOfConst("""{ "x": "y" }""", """{ "!": "!" }""")).Array[0, 2],
+		Gen.Select(Gen.OneOf("a.md", "d.md", "r2://a.md"), Gen.OneOf("""{ "x": "y" }""", """{ "!": "!" }""")).Array[0, 2],
 		(source, to, anchors, many) => new Redirect(source, to, anchors, many)
 	);
 
@@ -98,9 +98,9 @@ public class CrossLinkResolutionProperties
 	}
 
 	private static Gen<(string Scheme, string Path, string? Fragment)> Links { get; } = Gen.Select(
-		Gen.OneOfConst("r1", "r2", "zz"),
-		Gen.OneOfConst(Sources),
-		Gen.OneOfConst<string?>(null, "x", "y", "q"),
+		Gen.OneOf("r1", "r2", "zz"),
+		Gen.OneOf(Sources),
+		Gen.OneOf<string?>(null, "x", "y", "q"),
 		(s, p, f) => (s, p, f)
 	);
 
@@ -112,9 +112,14 @@ public class CrossLinkResolutionProperties
 		var errors = new List<string>();
 		var resolved = false;
 		Uri? uri = null;
-		var finished = Task.Run(
-			() => resolved = CrossLinkResolver.TryResolve(errors.Add, fetched, new IsolatedBuildEnvironmentUriResolver(), link, out uri)
-		).Wait(TimeSpan.FromSeconds(5));
+		var finished = Task.Run(() =>
+		{
+			var resolution = CrossLinkResolver.Resolve(fetched, new IsolatedBuildEnvironmentUriResolver(), link);
+			uri = resolution.ResolvedUri();
+			resolved = uri is not null;
+			if (!resolved)
+				errors.Add(resolution.ToDiagnosticMessage(link));
+		}).Wait(TimeSpan.FromSeconds(5));
 		finished.Should().BeTrue($"resolving {link} terminates");
 		return (resolved, uri, errors);
 	}
@@ -155,7 +160,7 @@ public class CrossLinkResolutionProperties
 	/// </summary>
 	[Test]
 	public void Resolve_FollowsExactlyOneHop_ForAnyChainOrCycle() =>
-		Gen.Select(RedirectLists, Gen.OneOfConst(Sources)).Check(x =>
+		Gen.Select(RedirectLists, Gen.OneOf(Sources)).Check(x =>
 		{
 			var (redirects, source) = x;
 			var redirect = redirects.FirstOrDefault(r => r.Source == source);

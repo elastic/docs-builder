@@ -1,0 +1,6 @@
+# @requires build-type:isolated
+set viewport 1280 800
+open /syntax/code
+expect visible find role button --name "Copy code to clipboard"
+find nth 0 .copybtn click
+expect attr ".copybtn.success" class

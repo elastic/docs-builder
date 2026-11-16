@@ -12,9 +12,11 @@ public class SpaceDetection : MarkdownTest
 	[Test, DisplayName("validate HTML: should not contain bad space character")]
 	public async Task ValidateHtml() => await Docs.ConvertsToHtml("<p>not a space</p>");
 
-	[Test, DisplayName("emits a hint when a bad space is used")]
-	public async Task EmitsHint() =>
-		await Docs.HasHint("Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances.");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"hint {repo}/docs/index.md:1 Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances."
+		);
 }
 
 public class MultipleIrregularSpaces : MarkdownTest

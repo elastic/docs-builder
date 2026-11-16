@@ -84,16 +84,22 @@ public sealed class GitHubApiTransport : IDisposable
 	/// The caller owns the response and its status-code policy.
 	/// </summary>
 	public async Task<HttpResponseMessage> GetAsync(string url, Cancel ctx = default) =>
-		await SendWithRateLimitRetryAsync(
-			() =>
-			{
-				var request = new HttpRequestMessage(HttpMethod.Get, url);
-				request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-				AttachAuthorization(request);
-				return request;
-			},
-			ctx
-		).ConfigureAwait(false);
+		await SendWithRateLimitRetryAsync(() => CreateGet(url), ctx).ConfigureAwait(false);
+
+	/// <summary>
+	/// Like <see cref="GetAsync"/>, and also rides out a gateway error (502, 503, 504) or a dropped connection with backoff.
+	/// For a caller without retries of its own; one that has them would be retried twice.
+	/// </summary>
+	public async Task<HttpResponseMessage> GetWithTransientRetryAsync(string url, Cancel ctx = default) =>
+		await SendWithRateLimitRetryAsync(() => CreateGet(url), ctx, retryTransient: true).ConfigureAwait(false);
+
+	private HttpRequestMessage CreateGet(string url)
+	{
+		var request = new HttpRequestMessage(HttpMethod.Get, url);
+		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+		AttachAuthorization(request);
+		return request;
+	}
 
 	/// <summary>
 	/// Issues an authenticated POST against a GitHub REST API endpoint with a JSON body.
@@ -149,7 +155,8 @@ public sealed class GitHubApiTransport : IDisposable
 				return request;
 			},
 			ctx,
-			retryTransient: true
+			retryTransient: true,
+			graphQl: true
 		).ConfigureAwait(false);
 
 	/// <summary>
@@ -177,7 +184,8 @@ public sealed class GitHubApiTransport : IDisposable
 	private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(
 		Func<HttpRequestMessage> create,
 		Cancel ctx,
-		bool retryTransient = false
+		bool retryTransient = false,
+		bool graphQl = false
 	)
 	{
 		for (var attempt = 1; ; attempt++)
@@ -204,7 +212,7 @@ public sealed class GitHubApiTransport : IDisposable
 			}
 
 			var wait = attempt < MaxRateLimitAttempts
-				? await RetryWaitAsync(response, attempt, retryTransient, ctx).ConfigureAwait(false)
+				? await RetryWaitAsync(response, attempt, retryTransient, graphQl, ctx).ConfigureAwait(false)
 				: null;
 			if (wait is null)
 				return response;
@@ -226,19 +234,27 @@ public sealed class GitHubApiTransport : IDisposable
 		e is HttpRequestException || (e is TaskCanceledException && !ctx.IsCancellationRequested);
 
 	/// <summary>How long to wait before retrying a response, or <c>null</c> when it is final: a rate limit, then a transient failure.</summary>
-	private static async Task<TimeSpan?> RetryWaitAsync(HttpResponseMessage response, int attempt, bool retryTransient, Cancel ctx) =>
+	private static async Task<TimeSpan?> RetryWaitAsync(
+		HttpResponseMessage response,
+		int attempt,
+		bool retryTransient,
+		bool graphQl,
+		Cancel ctx
+	) =>
 		await RateLimitWaitAsync(response, attempt, ctx).ConfigureAwait(false)
-			?? await TransientFailureWaitAsync(response, attempt, retryTransient, ctx).ConfigureAwait(false);
+			?? await TransientFailureWaitAsync(response, attempt, retryTransient, graphQl, ctx).ConfigureAwait(false);
 
 	/// <summary>
 	/// For GraphQL, a gateway error (502, 503, 504), a dropped connection, a successful response with no body, and GitHub's
 	/// "Something went wrong while executing your query" error, which it sends under load, are retried. Without this a long run over thousands of commits dies on one bad response.
-	/// REST reads keep the retries of their callers, so they are not retried twice.
+	/// A REST read retries only the gateway errors and dropped connections, and only when the caller asks, so a caller
+	/// with retries of its own is not retried twice.
 	/// </summary>
 	private static async Task<TimeSpan?> TransientFailureWaitAsync(
 		HttpResponseMessage response,
 		int attempt,
 		bool retryTransient,
+		bool graphQl,
 		Cancel ctx
 	)
 	{
@@ -248,7 +264,7 @@ public sealed class GitHubApiTransport : IDisposable
 		if ((int)response.StatusCode is 502 or 503 or 504)
 			return TransientWait(attempt);
 
-		if (!response.IsSuccessStatusCode)
+		if (!graphQl || !response.IsSuccessStatusCode)
 			return null;
 
 		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);

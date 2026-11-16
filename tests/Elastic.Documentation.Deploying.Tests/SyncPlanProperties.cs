@@ -15,11 +15,7 @@ namespace Elastic.Documentation.Deploying.Tests;
 /// </summary>
 public class SyncPlanProperties
 {
-	private static Gen<string> Path { get; } = Gen.Select(
-		Gen.OneOfConst("a", "b", "docs", "x/y"),
-		Gen.Int[0, 99],
-		(d, i) => $"{d}/{i}.html"
-	);
+	private static Gen<string> Path { get; } = Gen.Select(Gen.OneOf("a", "b", "docs", "x/y"), Gen.Int[0, 99], (d, i) => $"{d}/{i}.html");
 
 	private static Gen<IReadOnlyList<DeleteRequest>> Deletes { get; } = Path
 		.Select(p => new DeleteRequest { DestinationPath = p })
@@ -41,7 +37,7 @@ public class SyncPlanProperties
 		.Array[0, 6]
 		.Select(a => (IReadOnlyList<SkipRequest>)a);
 
-	private static Gen<float?> Threshold { get; } = Gen.OneOfConst<float?>(null, 0.1f, 0.2f, 0.9f);
+	private static Gen<float?> Threshold { get; } = Gen.OneOf<float?>(null, 0.1f, 0.2f, 0.9f);
 
 	/// <summary>A plan as the planner states it, over any counts and any lists.</summary>
 	private static Gen<SyncPlan> Plans { get; } = Gen.Select(
