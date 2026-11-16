@@ -44,9 +44,9 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="11.0.0" />
-    <PackageVersion Include="Nullean.ScopedFileSystem" Version="0.6.0" />
-    <PackageVersion Include="Pagefind.Net" Version="0.5.0" />
-    <PackageVersion Include="Pagefind.Net.Frontend" Version="0.5.0" />
+    <PackageVersion Include="Nullean.ScopedFileSystem" Version="0.7.2" />
+    <PackageVersion Include="Pagefind.Net" Version="0.6.0" />
+    <PackageVersion Include="Pagefind.Net.Frontend" Version="0.6.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.21.0" />
     <PackageVersion Include="Generator.Equals" Version="4.1.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.5.3" />
@@ -95,7 +95,7 @@
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="Spectre.Console" Version="0.57.2" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="3.1.2" />
-    <PackageVersion Include="System.IO.Abstractions" Version="22.3.0" />
+    <PackageVersion Include="System.IO.Abstractions" Version="23.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0" />
     <PackageVersion Include="SharpYaml" Version="3.17.0" />
@@ -123,18 +123,18 @@
   </ItemGroup>
   <!-- Test packages -->
   <ItemGroup>
-    <PackageVersion Include="Nullean.Snapshots" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.AwesomeAssertions" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Http" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Http.Assertions" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Json" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.11.0" />
-    <PackageVersion Include="Nullean.HttpFileParser" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Browser" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Browser.Console" Version="0.11.0" />
-    <PackageVersion Include="Nullean.Snapshots.Browser.Assertions" Version="0.11.0" />
+    <PackageVersion Include="Nullean.Snapshots" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.AwesomeAssertions" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Http" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Http.Assertions" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Json" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.14.0" />
+    <PackageVersion Include="Nullean.HttpFileParser" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser.Console" Version="0.14.0" />
+    <PackageVersion Include="Nullean.Snapshots.Browser.Assertions" Version="0.14.0" />
     <PackageVersion Include="Nullean.Cdp" Version="0.11.1" />
     <PackageVersion Include="Nullean.Cdp.Journeys" Version="0.11.1" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
@@ -148,7 +148,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.21.0" />
-    <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.3.0" />
+    <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="23.0.0" />
     <PackageVersion Include="Testcontainers.Elasticsearch" Version="4.16.0" />
   </ItemGroup>
 </Project>
