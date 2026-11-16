@@ -110,8 +110,11 @@ public class SyncPlanSnapshotTests
 		};
 		var json = SyncPlan
 			.Serialize(normalised)
+			.Replace("\r\n", "\n", StringComparison.Ordinal)
 			.Replace(OutputDirectory.Replace('\\', '/'), "{output}", StringComparison.Ordinal)
-			.Replace(OutputDirectory.Replace("\\", "\\\\"), "{output}", StringComparison.Ordinal);
+			.Replace(OutputDirectory.Replace("\\", "\\\\"), "{output}", StringComparison.Ordinal)
+			// JSON escapes the platform separator of a local path
+			.Replace("\\\\", "/", StringComparison.Ordinal);
 		var sb = new StringBuilder(json);
 		_ = sb.Append(
 			$"\n--- validation: valid={validation.Valid} ratio={validation.DeleteRatio:0.####} threshold={validation.DeleteThreshold:0.####}\n"
