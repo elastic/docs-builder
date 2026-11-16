@@ -33,7 +33,7 @@
     <PackageVersion Include="AngleSharp" Version="1.7.2" />
     <PackageVersion Include="HtmlSanitizer" Version="9.2.1039" />
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.0.5" />
-    <PackageVersion Include="Elastic.Transport" Version="0.17.3" />
+    <PackageVersion Include="Elastic.Transport" Version="1.1.0" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.9.7" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.18.5" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.3.8" />
