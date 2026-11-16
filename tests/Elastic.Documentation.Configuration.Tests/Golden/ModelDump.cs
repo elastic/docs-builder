@@ -186,24 +186,20 @@ internal static class ModelDump
 		_ => value.ToString() ?? string.Empty
 	};
 
-	private static bool IsKeyValuePair(Type t) => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
+	// generic types are matched by name: the unbound form `typeof(X<,>)` is formatted differently by different curb versions
+	private static bool IsKeyValuePair(Type t) => t.IsGenericType && t.GetGenericTypeDefinition().Name == "KeyValuePair`2";
 
 	private static bool IsMapType(Type t) =>
 		t
 			.GetInterfaces()
 			.Concat([t])
-			.Any(
-				i => i.IsGenericType &&
-					(i.GetGenericTypeDefinition() == typeof(IDictionary<,>) || i.GetGenericTypeDefinition() ==
-						typeof(IReadOnlyDictionary<,>))
-			);
+			.Any(i => i.IsGenericType && i.GetGenericTypeDefinition().Name is "IDictionary`2" or "IReadOnlyDictionary`2");
 
 	private static bool IsHashed(IEnumerable e)
 	{
 		var t = e.GetType();
 		return t.Name.Contains("Frozen", StringComparison.Ordinal)
-			|| t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISet<>))
-			|| t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlySet<>));
+			|| t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition().Name is "ISet`1" or "IReadOnlySet`1");
 	}
 
 	private static string KeyOf(object? kvp) => Scalar(kvp!.GetType().GetProperty("Key")!.GetValue(kvp)).Trim('"');
