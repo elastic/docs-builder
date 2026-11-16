@@ -687,6 +687,7 @@ public partial class AssemblerGoldenTests
 		"""
 			);
 
+	// `path` is left out: the loader drops it when CI is set, so it reads differently on a build server
 	[Test]
 	public void ReferenceWithEveryKey_Loaded_Outcome() =>
 		Load(
@@ -696,7 +697,6 @@ public partial class AssemblerGoldenTests
 			    repo: git@github.com:example/some-repo.git
 			    checkout_strategy: full
 			    skip: true
-			    path: /somewhere/some-repo
 			    current: '9.1'
 			    next: '9.2'
 			    edge: main
@@ -708,38 +708,38 @@ public partial class AssemblerGoldenTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			model <AssemblyConfiguration>:
-			  Narrative <NarrativeRepository>:
-			    Origin: <default origin>
-			    CheckoutStrategy: Partial
-			    Skip: False
-			    Path: null
-			    GitReferenceCurrent: "main"
-			    GitReferenceNext: "main"
-			    GitReferenceEdge: "main"
-			    SparsePaths:
-			      - "docs"
-			    Private: False
-			    CloneTimeout: null
-			    Name: "docs-content"
-			  ReferenceRepositories:
-			    some-repo <Repository>:
-			      Name: "some-repo"
-			      Origin: "git@github.com:example/some-repo.git"
-			      CheckoutStrategy: Full
-			      Skip: True
-			      Path: "/somewhere/some-repo"
-			      GitReferenceCurrent: "9.1"
-			      GitReferenceNext: "9.2"
-			      GitReferenceEdge: "main"
-			      SparsePaths:
-			        - "docs"
-			        - "config"
-			      Private: False
-			      CloneTimeout: 00:00:30
-			  Environments: {}
-			  SharedConfigurations: {}
-			"""
+				model <AssemblyConfiguration>:
+				  Narrative <NarrativeRepository>:
+				    Origin: <default origin>
+				    CheckoutStrategy: Partial
+				    Skip: False
+				    Path: null
+				    GitReferenceCurrent: "main"
+				    GitReferenceNext: "main"
+				    GitReferenceEdge: "main"
+				    SparsePaths:
+				      - "docs"
+				    Private: False
+				    CloneTimeout: null
+				    Name: "docs-content"
+				  ReferenceRepositories:
+				    some-repo <Repository>:
+				      Name: "some-repo"
+				      Origin: "git@github.com:example/some-repo.git"
+				      CheckoutStrategy: Full
+				      Skip: True
+				      Path: null
+				      GitReferenceCurrent: "9.1"
+				      GitReferenceNext: "9.2"
+				      GitReferenceEdge: "main"
+				      SparsePaths:
+				        - "docs"
+				        - "config"
+				      Private: False
+				      CloneTimeout: 00:00:30
+				  Environments: {}
+				  SharedConfigurations: {}
+				"""
 			);
 
 	[Test]

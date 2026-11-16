@@ -178,13 +178,7 @@ internal static class ModelDump
 	private static string Scalar(object? value) => value switch
 	{
 		null => "null",
-		string s =>
-			"\""
-				+ s
-					.Replace("\\", "\\\\", StringComparison.Ordinal)
-					.Replace("\"", "\\\"", StringComparison.Ordinal)
-					.Replace("\n", "\\n", StringComparison.Ordinal)
-				+ "\"",
+		string s => "\"" + s.Replace("\"", "\\\"", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal) + "\"",
 		Enum e => e.ToString(),
 		Type t => "<type " + t.Name + ">",
 		Delegate => "<delegate>",
