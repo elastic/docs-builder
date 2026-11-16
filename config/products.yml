@@ -175,6 +175,12 @@ products:
     dra_artifact: 'elastic-agent-core'
     features:
       release-notes: dra
+  elastic-agent-complete:
+    display: 'Elastic Agent Complete'
+    versioning: 'stack'
+    repository: 'elastic-agent'
+    features:
+      public-reference: false
   elastic-agent-package:
     display: 'Elastic Agent Package'
     versioning: 'stack'
