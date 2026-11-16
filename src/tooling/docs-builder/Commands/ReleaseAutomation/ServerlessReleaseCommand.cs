@@ -47,9 +47,7 @@ internal sealed class ServerlessReleaseCommand(
 	/// </para>
 	/// <para>
 	/// A range with no notes (for example only dependency bumps) is not an error: it writes a bundle with no entries, so
-	/// the release stays on record, and the renderer skips it. A bundle of the same name that is already published on the
-	/// CDN (a second release on the same day) is not replaced: the release is written as its next <c>.amend-N</c> sidecar.
-	/// An unreadable CDN registry fails the run, so an outage never turns into an overwrite.
+	/// the release stays on record, and the renderer skips it. A pull request whose metadata could not be read is still an error.
 	/// </para>
 	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the service repositories.</para>
 	/// </remarks>
@@ -196,7 +194,6 @@ internal sealed class ServerlessReleaseCommand(
 				EndGitRef = endRef,
 				BaseRef = svc.BaseBranch,
 				WriteEmptyRange = true,
-				AmendPublishedBundle = true,
 				DryRun = dryRun,
 				OnBundlePathResolved = path => paths.Add(path)
 			};

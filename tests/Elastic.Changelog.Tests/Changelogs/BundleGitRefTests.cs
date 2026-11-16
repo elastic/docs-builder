@@ -132,8 +132,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		IGitHubCommitRangeService rangeService,
 		IGitHubPrService? prService = null,
 		IGitHubBackportService? backportService = null,
-		DecisionLog? decisions = null,
-		StubHandler? registryHandler = null
+		DecisionLog? decisions = null
 	) =>
 		new(
 			LoggerFactory,
@@ -143,8 +142,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			prService ?? A.Fake<IGitHubPrService>(),
 			rangeService,
 			backportService: backportService,
-			decisions: decisions,
-			bundleFetcher: registryHandler is null ? null : new CdnChangelogFetcher(LoggerFactory, FileSystem, registryHandler)
+			decisions: decisions
 		);
 
 	[Test]
@@ -1144,26 +1142,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			);
 	}
 
-	// ── Empty releases and same-day releases (release serverless) ────────────
+	// ── Empty releases (release serverless) ────────────
 
 	private const string ParentBundle = "widget-cloud-hosted-2026-08-13.yaml";
 
-	private static StubHandler Registry(params string[] files) =>
-		new(
-			req => req.RequestUri!.AbsolutePath.EndsWith("/bundle/cloud-hosted/registry.json", StringComparison.Ordinal)
-				? Json(
-					$$"""{ "schema_version": 1, "product": "cloud-hosted", "bundles": [ {{string.Join(", ", files.Select(f => $$"""{ "file": "{{f}}" }"""))}} ] }"""
-				)
-				: new HttpResponseMessage(HttpStatusCode.NotFound)
-		);
-
-	private static StubHandler RegistryReturning(HttpStatusCode status) => new(_ => new HttpResponseMessage(status));
-
 	private async Task<(bool Success, string[] Files, string OutputDir)> BundleRange(
 		IGitHubCommitRangeService range,
-		StubHandler? registry = null,
 		bool writeEmptyRange = true,
-		bool amendPublishedBundle = true,
 		IGitHubPrService? prService = null,
 		string topLevel = ""
 	)
@@ -1171,7 +1156,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 		var configPath = await WriteProfileConfig(outputDir, topLevel: topLevel);
-		var service = Service(PoolHandler(), range, prService, registryHandler: registry);
+		var service = Service(PoolHandler(), range, prService);
 
 		var success = await service.BundleChangelogs(
 			Collector,
@@ -1182,8 +1167,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 				Config = configPath,
 				StartGitRef = StartRef,
 				EndGitRef = EndRef,
-				WriteEmptyRange = writeEmptyRange,
-				AmendPublishedBundle = amendPublishedBundle
+				WriteEmptyRange = writeEmptyRange
 			},
 			TestContext.Current!.Execution.CancellationToken
 		);
@@ -1205,7 +1189,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	[Test]
 	public async Task EmptyRange_WithWriteEmptyRange_WritesABundleWithNoEntries()
 	{
-		var (success, files, outputDir) = await BundleRange(RangeService(), Registry());
+		var (success, files, outputDir) = await BundleRange(RangeService());
 
 		success.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -1228,7 +1212,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	[Test]
 	public async Task EmptyRange_WithoutTheOption_StillFails()
 	{
-		var (success, files, _) = await BundleRange(RangeService(), writeEmptyRange: false, amendPublishedBundle: false);
+		var (success, files, _) = await BundleRange(RangeService(), writeEmptyRange: false);
 
 		success.Should().BeFalse();
 		files.Should().BeEmpty();
@@ -1243,7 +1227,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
 		).Returns((GitHubPrInfo?)null);
 
-		var (success, files, _) = await BundleRange(RangeService(400), Registry(), prService: prService);
+		var (success, files, _) = await BundleRange(RangeService(400), prService: prService);
 
 		// A failed fetch is not an empty release: nothing is written and nothing is recorded as "no notes".
 		success.Should().BeFalse();
@@ -1264,7 +1248,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WritesABundleWithNoEntries()
 	{
 		// PR 100 resolves to a feature entry, and the bundle rules drop every feature: the release has no notes.
-		var (success, files, outputDir) = await BundleRange(RangeService(100), Registry(), topLevel: ExcludeEveryFeature);
+		var (success, files, outputDir) = await BundleRange(RangeService(100), topLevel: ExcludeEveryFeature);
 
 		success.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -1275,12 +1259,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	[Test]
 	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WithoutTheOption_StillFails()
 	{
-		var (success, files, _) = await BundleRange(
-			RangeService(100),
-			writeEmptyRange: false,
-			amendPublishedBundle: false,
-			topLevel: ExcludeEveryFeature
-		);
+		var (success, files, _) = await BundleRange(RangeService(100), writeEmptyRange: false, topLevel: ExcludeEveryFeature);
 
 		success.Should().BeFalse();
 		files.Should().BeEmpty();
@@ -1296,90 +1275,10 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		).Returns((GitHubPrInfo?)null);
 
 		// PR 100 is dropped by the rules and PR 400 is unreadable: PR 400 may have held the notes, so this is not "no notes".
-		var (success, files, _) = await BundleRange(
-			RangeService(100, 400),
-			Registry(),
-			prService: prService,
-			topLevel: ExcludeEveryFeature
-		);
+		var (success, files, _) = await BundleRange(RangeService(100, 400), prService: prService, topLevel: ExcludeEveryFeature);
 
 		success.Should().BeFalse();
 		files.Should().BeEmpty();
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be read"));
-	}
-
-	[Test]
-	public async Task SameDay_NothingPublishedYet_WritesTheBundle()
-	{
-		var (success, files, outputDir) = await BundleRange(RangeService(100), Registry("another-product-2026-08-13.yaml"));
-
-		success.Should().BeTrue();
-		files.Should().Equal(ParentBundle);
-		ReadOutput(outputDir, ParentBundle).Should().Contain("title: Faster hosted search");
-	}
-
-	[Test]
-	public async Task SameDay_TheProductHasNoRegistryYet_WritesTheBundle()
-	{
-		var (success, files, _) = await BundleRange(RangeService(100), RegistryReturning(HttpStatusCode.NotFound));
-
-		success.Should().BeTrue();
-		files.Should().Equal(ParentBundle);
-	}
-
-	[Test]
-	public async Task SameDay_TheBundleIsPublished_WritesTheNextAmendAndNotASecondBundle()
-	{
-		var (success, files, outputDir) = await BundleRange(RangeService(100), Registry(ParentBundle));
-
-		success.Should().BeTrue();
-		Collector.Errors.Should().Be(0);
-		files.Should().Equal("widget-cloud-hosted-2026-08-13.amend-1.yaml");
-		var amend = ReadOutput(outputDir, "widget-cloud-hosted-2026-08-13.amend-1.yaml");
-		amend.Should().Contain("title: Faster hosted search");
-		amend.Should().Contain($"git_ref: {EndRef}");
-		amend.Should().NotContain("release-date");
-	}
-
-	[Test]
-	public async Task SameDay_AnAmendIsPublished_WritesTheNextNumber()
-	{
-		var (success, files, _) = await BundleRange(
-			RangeService(100),
-			Registry(ParentBundle, "widget-cloud-hosted-2026-08-13.amend-1.yaml", "widget-cloud-hosted-2026-08-13.amend-2.yaml")
-		);
-
-		success.Should().BeTrue();
-		files.Should().Equal("widget-cloud-hosted-2026-08-13.amend-3.yaml");
-	}
-
-	[Test]
-	public async Task SameDay_AnEmptyRangeAfterAPublishedBundle_WritesAnEmptyAmend()
-	{
-		var (success, files, outputDir) = await BundleRange(RangeService(), Registry(ParentBundle));
-
-		success.Should().BeTrue();
-		files.Should().Equal("widget-cloud-hosted-2026-08-13.amend-1.yaml");
-		ReadOutput(outputDir, "widget-cloud-hosted-2026-08-13.amend-1.yaml").Should().NotContain("title:");
-	}
-
-	[Test]
-	public async Task SameDay_WithoutTheOption_KeepsTheBundleName()
-	{
-		var (success, files, _) = await BundleRange(RangeService(100), Registry(ParentBundle), amendPublishedBundle: false);
-
-		success.Should().BeTrue();
-		files.Should().Equal(ParentBundle);
-	}
-
-	[Test]
-	public async Task SameDay_TheRegistryIsUnreachable_FailsAndWritesNothing()
-	{
-		var (success, files, _) = await BundleRange(RangeService(100), RegistryReturning(HttpStatusCode.InternalServerError));
-
-		// Writing the bundle anyway could replace the one that is published, so the run stops.
-		success.Should().BeFalse();
-		files.Should().BeEmpty();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Could not fetch the changelog registry"));
 	}
 }

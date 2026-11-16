@@ -51,13 +51,6 @@ public record BundleChangelogsArguments
 	public bool WriteEmptyRange { get; init; }
 
 	/// <summary>
-	/// When true and a bundle of the resolved name is already published on the CDN (a second release on the same day), the
-	/// release is written as that bundle's next <c>.amend-N</c> sidecar instead of a second bundle that would replace it.
-	/// An unreadable registry is an error, so an outage never turns into an overwrite.
-	/// </summary>
-	public bool AmendPublishedBundle { get; init; }
-
-	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
 	public string? Directory { get; init; }
@@ -234,15 +227,13 @@ public partial class ChangelogBundlingService(
 	IGitHubBackportService? backportService = null,
 	DecisionLog? decisions = null,
 	IPullRequestSummaryProvider? summaries = null,
-	ChangelogCache? cache = null,
-	CdnChangelogFetcher? bundleFetcher = null
+	ChangelogCache? cache = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IEnvironmentVariables? _env = env;
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
-	private readonly CdnChangelogFetcher _bundleFetcher = bundleFetcher ?? new CdnChangelogFetcher(logFactory, fileSystem);
 
 	// Tests and callers that bring their own IGitHubPrService keep reading pull requests one at a time through it.
 	// Otherwise the pull requests of a range are read in batches.
@@ -667,19 +658,6 @@ public partial class ChangelogBundlingService(
 		if (!string.IsNullOrWhiteSpace(input.EndGitRef))
 			bundleData = bundleData with { GitRef = input.EndGitRef };
 
-		var target = await ResolveWriteTarget(collector, input, bundleData, outputPath, ctx);
-		if (target is TargetLookupFailed)
-			return false;
-
-		// A release published on the same day as an earlier one becomes that bundle's next amend.
-		if (target is AmendTarget(var amendPath))
-		{
-			var amend = AmendDocumentBuilder.Build(bundleData.Products, bundleData.Entries, []) with { GitRef = bundleData.GitRef };
-			await WriteBundleFileAsync(amend, amendPath, ctx);
-			input.OnBundlePathResolved?.Invoke(amendPath);
-			return true;
-		}
-
 		// Write bundle file
 		await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
@@ -688,67 +666,6 @@ public partial class ChangelogBundlingService(
 		input.OnBundlePathResolved?.Invoke(outputPath);
 
 		return true;
-	}
-
-	/// <summary>
-	/// Decides where a release goes. Bundle file names are <c>{repo}-{product}-{date}</c>, so a second release on the same
-	/// day has the name of the first, and publishing both would replace the first. When the caller asks for it
-	/// (<see cref="BundleChangelogsArguments.AmendPublishedBundle"/>) the published registry says whether the bundle exists.
-	/// </summary>
-	private async Task<BundleWriteTarget> ResolveWriteTarget(
-		IDiagnosticsCollector collector,
-		BundleChangelogsArguments input,
-		Bundle bundle,
-		string outputPath,
-		Cancel ctx
-	)
-	{
-		if (!input.AmendPublishedBundle)
-			return new NewBundleTarget();
-
-		var product = bundle.Products.Count > 0 ? bundle.Products[0].ProductId : null;
-		var baseUri = ChangelogCdn.ResolveBaseUri();
-		if (string.IsNullOrWhiteSpace(product) || baseUri is null)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Cannot check whether '{_fileSystem.Path.GetFileName(outputPath)}' is already published: " +
-					$"the bundle has no product, or no changelog CDN base URL is configured (set {ChangelogCdn.BaseUrlEnvironmentVariable})."
-			);
-			return new TargetLookupFailed();
-		}
-
-		var fileName = _fileSystem.Path.GetFileName(outputPath);
-		var lookup = await _bundleFetcher.LookupBundleAsync(baseUri, product, fileName, ctx);
-		return lookup switch
-		{
-			BundleNotPublished => new NewBundleTarget(),
-			BundlePublished(var amendFiles) => AmendTargetFor(outputPath, amendFiles),
-			BundleRegistryUnavailable(var reason) => FailLookup(collector, reason),
-		};
-	}
-
-	private AmendTarget AmendTargetFor(string outputPath, IReadOnlyList<string> amendFiles)
-	{
-		var next = amendFiles.Select(BundleAmendMerger.GetAmendFileNumber).DefaultIfEmpty(0).Max() + 1;
-		var directory = _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty;
-		var baseName = _fileSystem.Path.GetFileNameWithoutExtension(outputPath);
-		var extension = _fileSystem.Path.GetExtension(outputPath);
-		_logger.LogInformation(
-			"{Bundle} is already published; writing this release as amend {Number} of it",
-			_fileSystem.Path.GetFileName(outputPath),
-			next
-		);
-		return new AmendTarget(_fileSystem.Path.Join(directory, $"{baseName}.amend-{next}{extension}"));
-	}
-
-	private static TargetLookupFailed FailLookup(IDiagnosticsCollector collector, string reason)
-	{
-		collector.EmitError(
-			string.Empty,
-			$"{reason} The release was not written, so an earlier bundle of the same name is not replaced. Run again."
-		);
-		return new TargetLookupFailed();
 	}
 
 	private async Task<BundleChangelogsArguments?> ProcessProfile(
