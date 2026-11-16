@@ -659,11 +659,11 @@ public partial class ChangelogBundlingService(
 			bundleData = bundleData with { GitRef = input.EndGitRef };
 
 		// Write bundle file
-		await WriteBundleFileAsync(bundleData, outputPath, ctx);
+		var writtenPath = await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
 		// Notify the caller of the resolved output path (used by ChangelogCommand.Bundle to emit
 		// bundle_path as a GitHub Actions step output so callers don't need to predict the path).
-		input.OnBundlePathResolved?.Invoke(outputPath);
+		input.OnBundlePathResolved?.Invoke(writtenPath);
 
 		return true;
 	}
@@ -2282,7 +2282,8 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
+	/// <summary>Writes the bundle and returns the path it was written to, which is not <paramref name="outputPath"/> when that file already exists.</summary>
+	private async Task<string> WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
 		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
@@ -2309,6 +2310,7 @@ public partial class ChangelogBundlingService(
 		var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(bundledYaml);
 		await _fileSystem.File.WriteAllTextAsync(outputPath, normalizedYaml, Utf8NoBom, ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
+		return outputPath;
 	}
 
 	/// <summary>

@@ -1150,10 +1150,12 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		IGitHubCommitRangeService range,
 		bool writeEmptyRange = true,
 		IGitHubPrService? prService = null,
-		string topLevel = ""
+		string topLevel = "",
+		string? existingOutputDir = null,
+		Action<string>? onBundlePathResolved = null
 	)
 	{
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = existingOutputDir ?? FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 		var configPath = await WriteProfileConfig(outputDir, topLevel: topLevel);
 		var service = Service(PoolHandler(), range, prService);
@@ -1167,7 +1169,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 				Config = configPath,
 				StartGitRef = StartRef,
 				EndGitRef = EndRef,
-				WriteEmptyRange = writeEmptyRange
+				WriteEmptyRange = writeEmptyRange,
+				OnBundlePathResolved = onBundlePathResolved
 			},
 			TestContext.Current!.Execution.CancellationToken
 		);
@@ -1207,6 +1210,30 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
 			"""
 			);
+	}
+
+	[Test]
+	public async Task Bundle_TheNameIsTaken_ReportsThePathItWasWrittenTo()
+	{
+		// An earlier run left the unsuffixed bundle in the directory, so the new release is written to a timestamped name.
+		// The path the caller is told about must be that file, or a caller that renames it moves the older bundle.
+		var (_, firstFiles, outputDir) = await BundleRange(RangeService(100));
+		var original = FileSystem.Directory.GetFiles(outputDir, ParentBundle, SearchOption.AllDirectories).Single();
+		var originalText = FileSystem.File.ReadAllText(original);
+		firstFiles.Should().Equal(ParentBundle);
+
+		string? reported = null;
+		var (success, _, _) = await BundleRange(
+			RangeService(),
+			existingOutputDir: outputDir,
+			onBundlePathResolved: path => reported = path
+		);
+
+		success.Should().BeTrue();
+		reported.Should().NotBeNull().And.NotBe(original);
+		FileSystem.File.Exists(reported!).Should().BeTrue("the reported path is the file that was written");
+		FileSystem.File.ReadAllText(reported!).Should().NotContain("title:");
+		FileSystem.File.ReadAllText(original).Should().Be(originalText, "the earlier bundle is not touched");
 	}
 
 	[Test]
