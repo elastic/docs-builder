@@ -276,6 +276,71 @@ public sealed class CdnChangelogFetcher : IDisposable
 	}
 
 	/// <summary>
+	/// Whether the published registry of a product lists a bundle, and which amend sidecars of it exist.
+	/// A missing registry (404) means nothing is published for the product yet. Any other failure is reported as
+	/// unavailable, so a caller never mistakes a CDN outage for a bundle that is not published.
+	/// </summary>
+	public async Task<BundleRegistryLookup> LookupBundleAsync(Uri baseUri, string product, string fileName, Cancel ctx)
+	{
+		if (!ChangelogKeys.IsValidProduct(product))
+			return new BundleRegistryUnavailable(
+				$"Invalid changelog product '{product}': must be non-empty ASCII letters, digits, '_' or '-'."
+			);
+
+		if (!ChangelogKeys.IsSafeFileName(fileName))
+			return new BundleRegistryUnavailable($"Invalid changelog bundle file name '{fileName}'.");
+
+		var registryUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), ChangelogKeys.RegistryFileName]);
+		ChangelogRegistry? registry;
+		try
+		{
+			var registryText = await FetchTextAsync(registryUri, ctx).ConfigureAwait(false);
+			registry = JsonSerializer.Deserialize(registryText, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
+		}
+		catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+		{
+			return new BundleNotPublished();
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException || !ctx.IsCancellationRequested)
+		{
+			return new BundleRegistryUnavailable(
+				$"Could not fetch the changelog registry for product '{product}' from {registryUri}: {ex.Message}"
+			);
+		}
+
+		if (registry is null)
+			return new BundleRegistryUnavailable(
+				$"The changelog registry for product '{product}' at {registryUri} was empty or unparseable."
+			);
+
+		if (registry.SchemaVersion > SupportedSchemaVersion)
+			return new BundleRegistryUnavailable(
+				$"The changelog registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder."
+			);
+
+		var files = registry
+			.Bundles
+			.Select(b => b.File)
+			.Where(f => f is not null && ChangelogKeys.IsSafeFileName(f))
+			.Select(f => f!)
+			.ToList();
+		if (!files.Exists(f => string.Equals(f, fileName, StringComparison.OrdinalIgnoreCase)))
+			return new BundleNotPublished();
+
+		var amends = files
+			.Where(
+				f => BundleAmendMerger.IsAmendFile(f) && string.Equals(
+					BundleAmendMerger.GetParentBundlePath(f),
+					fileName,
+					StringComparison.OrdinalIgnoreCase
+				)
+			)
+			.OrderBy(BundleAmendMerger.GetAmendFileNumber)
+			.ToList();
+		return new BundlePublished(amends);
+	}
+
+	/// <summary>
 	/// The product's opaque change token from the tree's shallow map, or null when the map is
 	/// unavailable or does not list the product — in which case the caller fetches the per-product
 	/// registry exactly as it did before the map existed.

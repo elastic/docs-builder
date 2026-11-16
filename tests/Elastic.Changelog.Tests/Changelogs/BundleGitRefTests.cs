@@ -132,7 +132,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		IGitHubCommitRangeService rangeService,
 		IGitHubPrService? prService = null,
 		IGitHubBackportService? backportService = null,
-		DecisionLog? decisions = null
+		DecisionLog? decisions = null,
+		StubHandler? registryHandler = null
 	) =>
 		new(
 			LoggerFactory,
@@ -142,7 +143,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			prService ?? A.Fake<IGitHubPrService>(),
 			rangeService,
 			backportService: backportService,
-			decisions: decisions
+			decisions: decisions,
+			bundleFetcher: registryHandler is null ? null : new CdnChangelogFetcher(LoggerFactory, FileSystem, registryHandler)
 		);
 
 	[Test]
@@ -1140,5 +1142,185 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
 			"""
 			);
+	}
+
+	// ── Empty releases and same-day releases (release serverless) ────────────
+
+	private const string ParentBundle = "widget-cloud-hosted-2026-08-13.yaml";
+
+	private static StubHandler Registry(params string[] files) =>
+		new(
+			req => req.RequestUri!.AbsolutePath.EndsWith("/bundle/cloud-hosted/registry.json", StringComparison.Ordinal)
+				? Json(
+					$$"""{ "schema_version": 1, "product": "cloud-hosted", "bundles": [ {{string.Join(", ", files.Select(f => $$"""{ "file": "{{f}}" }"""))}} ] }"""
+				)
+				: new HttpResponseMessage(HttpStatusCode.NotFound)
+		);
+
+	private static StubHandler RegistryReturning(HttpStatusCode status) => new(_ => new HttpResponseMessage(status));
+
+	private async Task<(bool Success, string[] Files, string OutputDir)> BundleRange(
+		IGitHubCommitRangeService range,
+		StubHandler? registry = null,
+		bool writeEmptyRange = true,
+		bool amendPublishedBundle = true,
+		IGitHubPrService? prService = null
+	)
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+		var service = Service(PoolHandler(), range, prService, registryHandler: registry);
+
+		var success = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef,
+				WriteEmptyRange = writeEmptyRange,
+				AmendPublishedBundle = amendPublishedBundle
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var files =
+			FileSystem
+				.Directory
+				.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories)
+				.Select(FileSystem.Path.GetFileName)
+				.Order()
+				.ToArray()!;
+		return (success, files!, outputDir);
+	}
+
+	// Bundles are written into a per-product subdirectory of the output directory.
+	private string ReadOutput(string outputDir, string fileName) =>
+		FileSystem.File.ReadAllText(FileSystem.Directory.GetFiles(outputDir, fileName, SearchOption.AllDirectories).Single());
+
+	[Test]
+	public async Task EmptyRange_WithWriteEmptyRange_WritesABundleWithNoEntries()
+	{
+		var (success, files, outputDir) = await BundleRange(RangeService(), Registry());
+
+		success.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		files.Should().Equal(ParentBundle);
+		ReadOutput(outputDir, ParentBundle)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			"""
+			);
+	}
+
+	[Test]
+	public async Task EmptyRange_WithoutTheOption_StillFails()
+	{
+		var (success, files, _) = await BundleRange(RangeService(), writeEmptyRange: false, amendPublishedBundle: false);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries could be resolved for commit range"));
+	}
+
+	[Test]
+	public async Task EmptyRange_APullRequestWhoseMetadataCannotBeRead_StillFails()
+	{
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
+
+		var (success, files, _) = await BundleRange(RangeService(400), Registry(), prService: prService);
+
+		// A failed fetch is not an empty release: nothing is written and nothing is recorded as "no notes".
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task SameDay_NothingPublishedYet_WritesTheBundle()
+	{
+		var (success, files, outputDir) = await BundleRange(RangeService(100), Registry("another-product-2026-08-13.yaml"));
+
+		success.Should().BeTrue();
+		files.Should().Equal(ParentBundle);
+		ReadOutput(outputDir, ParentBundle).Should().Contain("title: Faster hosted search");
+	}
+
+	[Test]
+	public async Task SameDay_TheProductHasNoRegistryYet_WritesTheBundle()
+	{
+		var (success, files, _) = await BundleRange(RangeService(100), RegistryReturning(HttpStatusCode.NotFound));
+
+		success.Should().BeTrue();
+		files.Should().Equal(ParentBundle);
+	}
+
+	[Test]
+	public async Task SameDay_TheBundleIsPublished_WritesTheNextAmendAndNotASecondBundle()
+	{
+		var (success, files, outputDir) = await BundleRange(RangeService(100), Registry(ParentBundle));
+
+		success.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		files.Should().Equal("widget-cloud-hosted-2026-08-13.amend-1.yaml");
+		var amend = ReadOutput(outputDir, "widget-cloud-hosted-2026-08-13.amend-1.yaml");
+		amend.Should().Contain("title: Faster hosted search");
+		amend.Should().Contain($"git_ref: {EndRef}");
+		amend.Should().NotContain("release-date");
+	}
+
+	[Test]
+	public async Task SameDay_AnAmendIsPublished_WritesTheNextNumber()
+	{
+		var (success, files, _) = await BundleRange(
+			RangeService(100),
+			Registry(ParentBundle, "widget-cloud-hosted-2026-08-13.amend-1.yaml", "widget-cloud-hosted-2026-08-13.amend-2.yaml")
+		);
+
+		success.Should().BeTrue();
+		files.Should().Equal("widget-cloud-hosted-2026-08-13.amend-3.yaml");
+	}
+
+	[Test]
+	public async Task SameDay_AnEmptyRangeAfterAPublishedBundle_WritesAnEmptyAmend()
+	{
+		var (success, files, outputDir) = await BundleRange(RangeService(), Registry(ParentBundle));
+
+		success.Should().BeTrue();
+		files.Should().Equal("widget-cloud-hosted-2026-08-13.amend-1.yaml");
+		ReadOutput(outputDir, "widget-cloud-hosted-2026-08-13.amend-1.yaml").Should().NotContain("title:");
+	}
+
+	[Test]
+	public async Task SameDay_WithoutTheOption_KeepsTheBundleName()
+	{
+		var (success, files, _) = await BundleRange(RangeService(100), Registry(ParentBundle), amendPublishedBundle: false);
+
+		success.Should().BeTrue();
+		files.Should().Equal(ParentBundle);
+	}
+
+	[Test]
+	public async Task SameDay_TheRegistryIsUnreachable_FailsAndWritesNothing()
+	{
+		var (success, files, _) = await BundleRange(RangeService(100), RegistryReturning(HttpStatusCode.InternalServerError));
+
+		// Writing the bundle anyway could replace the one that is published, so the run stops.
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Could not fetch the changelog registry"));
 	}
 }

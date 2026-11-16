@@ -956,6 +956,184 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+/// <summary>
+/// A release that shipped without notes is recorded as a bundle with no entries (<c>release serverless</c> writes one, with no
+/// <c>entries</c> key at all). It stays in the ledger and does not render: no heading, no anchor, no diagnostics.
+/// </summary>
+[InheritsTests]
+public class ChangelogEmptyReleaseBundleTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogEmptyReleaseBundleTests() : base(
+			// language=markdown
+			"""
+		:::{changelog}
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+		products:
+		- product: cloud-hosted
+		  target: 2026-11-16
+		  repo: cloud
+		  owner: elastic
+		release-date: 2026-11-16
+		git_ref: d3124c7dda836280f00d8c4b1259f7a2b96ec765
+		"""
+			)
+		);
+
+	[Test]
+	public void LoadsTheBundleAndRendersNothing()
+	{
+		Block!.LoadedBundles.Should().HaveCount(1);
+		Block.LoadedBundles[0].Entries.Should().BeEmpty();
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	}
+}
+
+/// <summary>
+/// A second release on the same day is an amend of the first. When it has no notes, the amend has no entries and the
+/// first release renders exactly as before.
+/// </summary>
+[InheritsTests]
+public class ChangelogEmptyAmendKeepsTheReleaseTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogEmptyAmendKeepsTheReleaseTests() : base(
+			// language=markdown
+			"""
+		:::{changelog}
+		:::
+		"""
+		)
+	{
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: cloud-hosted
+			  target: 2026-11-16
+			  repo: cloud
+			  owner: elastic
+			release-date: 2026-11-16
+			git_ref: 1111111111111111111111111111111111111111
+			entries:
+			- title: Faster hosted search
+			  type: feature
+			  products:
+			  - product: cloud-hosted
+			    target: 2026-11-16
+			  file:
+			    name: faster.yaml
+			    checksum: faster-checksum
+			  prs:
+			  - "123456"
+			"""
+			)
+		);
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16.amend-1.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: cloud-hosted
+			  target: 2026-11-16
+			  repo: cloud
+			  owner: elastic
+			git_ref: 2222222222222222222222222222222222222222
+			"""
+			)
+		);
+	}
+
+	[Test]
+	public void RendersTheReleaseOnce()
+	{
+		Block!.LoadedBundles.Should().HaveCount(1);
+		Block.LoadedBundles[0].Entries.Should().ContainSingle().Which.Title.Should().Be("Faster hosted search");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	}
+
+	[Test]
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="november-16-2026">
+			<h2>
+				<a class="headerlink" href="#november-16-2026">November 16, 2026</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="cloud-2026-11-16-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#cloud-2026-11-16-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Faster hosted search.</li>
+		</ul>
+		"""
+		);
+}
+
+/// <summary>An empty release followed by an empty amend of it is still nothing to render.</summary>
+[InheritsTests]
+public class ChangelogEmptyReleaseWithEmptyAmendTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogEmptyReleaseWithEmptyAmendTests() : base(
+			// language=markdown
+			"""
+		:::{changelog}
+		:::
+		"""
+		)
+	{
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: cloud-hosted
+			  target: 2026-11-16
+			  repo: cloud
+			  owner: elastic
+			release-date: 2026-11-16
+			git_ref: 1111111111111111111111111111111111111111
+			"""
+			)
+		);
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16.amend-1.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: cloud-hosted
+			  target: 2026-11-16
+			  repo: cloud
+			  owner: elastic
+			git_ref: 2222222222222222222222222222222222222222
+			"""
+			)
+		);
+	}
+
+	[Test]
+	public void RendersNothing()
+	{
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	}
+}
+
 [InheritsTests]
 public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 {

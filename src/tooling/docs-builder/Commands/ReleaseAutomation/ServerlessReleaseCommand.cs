@@ -45,6 +45,12 @@ internal sealed class ServerlessReleaseCommand(
 	/// Elasticsearch produces two: <c>elasticsearch-serverless</c> over the serverless range, and
 	/// <c>elasticsearch</c>, a submodule of it, over the range of submodule commits pinned at the two refs.
 	/// </para>
+	/// <para>
+	/// A range with no notes (for example only dependency bumps) is not an error: it writes a bundle with no entries, so
+	/// the release stays on record, and the renderer skips it. A bundle of the same name that is already published on the
+	/// CDN (a second release on the same day) is not replaced: the release is written as its next <c>.amend-N</c> sidecar.
+	/// An unreadable CDN registry fails the run, so an outage never turns into an overwrite.
+	/// </para>
 	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the service repositories.</para>
 	/// </remarks>
 	/// <param name="service">Serverless service, as emitted by gpctl (for example <c>kibana</c>).</param>
@@ -189,6 +195,8 @@ internal sealed class ServerlessReleaseCommand(
 				StartGitRef = startRef,
 				EndGitRef = endRef,
 				BaseRef = svc.BaseBranch,
+				WriteEmptyRange = true,
+				AmendPublishedBundle = true,
 				DryRun = dryRun,
 				OnBundlePathResolved = path => paths.Add(path)
 			};
