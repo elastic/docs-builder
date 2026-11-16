@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml pivot.required lists 'areas', but pivot.areas maps no labels, so no PR could satisfy it. Add labels to pivot.areas."
+  ]
+}

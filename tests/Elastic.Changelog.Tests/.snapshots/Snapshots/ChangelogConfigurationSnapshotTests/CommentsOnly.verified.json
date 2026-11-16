@@ -1,0 +1,5 @@
+{
+  "configuration": null,
+  "diagnostics": [],
+  "exception": "InvalidOperationException: Failed to deserialize changelog configuration YAML."
+}

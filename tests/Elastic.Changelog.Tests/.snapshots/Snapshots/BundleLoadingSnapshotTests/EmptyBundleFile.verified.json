@@ -1,0 +1,56 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "empty",
+        "repo": "elastic",
+        "owner": "elastic",
+        "filePath": "/docs/releases/empty.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [],
+        "rawEntryFiles": [],
+        "entries": []
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "empty",
+        "repo": "elastic",
+        "owner": "elastic",
+        "filePath": "empty.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [],
+        "rawEntryFiles": [],
+        "entries": []
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "empty",
+        "repo": "elastic",
+        "owner": "elastic",
+        "filePath": "/docs/releases/empty.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [],
+        "rawEntryFiles": [],
+        "entries": []
+      }
+    ]
+  }
+}

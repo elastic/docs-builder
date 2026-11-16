@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml Required type 'breaking-change' is missing from pivot.types. Required types: feature, bug-fix, breaking-change"
+  ]
+}

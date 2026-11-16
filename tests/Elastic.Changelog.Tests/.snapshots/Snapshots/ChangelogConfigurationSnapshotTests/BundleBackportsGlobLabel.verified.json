@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml bundle.backports.labels: 'backport*' must be an exact label name. Globs are not supported, because 'backport*' would also match opt-out labels such as 'backport-skip'."
+  ]
+}

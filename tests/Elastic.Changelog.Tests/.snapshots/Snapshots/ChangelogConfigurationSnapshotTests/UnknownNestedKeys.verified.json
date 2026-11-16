@@ -1,0 +1,7 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml:3 Unknown key 'example_unknown' in $.extract. Valid keys: issues, release_notes, strip_title_prefix.",
+    "error {root}/docs/changelog.yml:5 Unknown key 'example_nested' in $.pivot. Valid keys: areas, features, highlight, products, required, subtypes, types."
+  ]
+}

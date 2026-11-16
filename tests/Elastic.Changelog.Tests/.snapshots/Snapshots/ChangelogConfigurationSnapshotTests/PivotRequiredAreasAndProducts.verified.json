@@ -1,0 +1,71 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": null,
+      "Subtypes": null,
+      "Areas": {
+        "Search": ":Search"
+      },
+      "Products": {
+        "elasticsearch": ":es"
+      },
+      "Features": null,
+      "Highlight": null
+    },
+    "RequiredPivots": "Areas, Products",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": [
+      "Search"
+    ],
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": {
+      ":Search": [
+        "Search"
+      ]
+    },
+    "LabelToProducts": {
+      ":es": "elasticsearch"
+    },
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

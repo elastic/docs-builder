@@ -1,0 +1,92 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "example-repo",
+        "owner": "example-owner",
+        "filePath": "/docs/releases/repo.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo",
+            "Owner": "example-owner"
+          }
+        ],
+        "rawEntryFiles": [
+          "Entry"
+        ],
+        "entries": [
+          "Feature: Entry prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "example-repo",
+        "owner": "example-owner",
+        "filePath": "repo.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo",
+            "Owner": "example-owner"
+          }
+        ],
+        "rawEntryFiles": [
+          "Entry"
+        ],
+        "entries": [
+          "Feature: Entry prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "example-repo",
+        "owner": "example-owner",
+        "filePath": "/docs/releases/repo.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo",
+            "Owner": "example-owner"
+          }
+        ],
+        "rawEntryFiles": [
+          "Entry"
+        ],
+        "entries": [
+          "Feature: Entry prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}
