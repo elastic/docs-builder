@@ -23,6 +23,9 @@ namespace Mcp.Remote.Tests;
 /// metadata while all unit tests still pass. Each <c>http/*.http</c> file is one test; its responses
 /// are in <c>.snapshots/http/*.verified.responses</c>.
 /// </summary>
+// Every case sets the process-wide MCP_SERVER_PROFILE and restores it afterwards, so two cases at once would restore the
+// variable while the other host starts.
+[NotInParallel(nameof(McpHandshakeTests))]
 public class McpHandshakeTests
 {
 	[Test]
