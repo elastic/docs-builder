@@ -24,7 +24,11 @@ public class ChangelogConfigurationSnapshotTests : ChangelogTestBase
 		var docsDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, ConfigName);
-		await FileSystem.File.WriteAllTextAsync(configPath, yaml, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			yaml.ReplaceLineEndings("\n"),
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var loader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
 		ChangelogConfiguration? config = null;

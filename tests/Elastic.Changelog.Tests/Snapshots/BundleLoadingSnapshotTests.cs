@@ -25,7 +25,7 @@ public class BundleLoadingSnapshotTests
 		var fileSystem = new MockFileSystem();
 		fileSystem.Directory.CreateDirectory(Folder);
 		foreach (var (name, yaml) in files)
-			fileSystem.File.WriteAllText($"{Folder}/{name}", yaml);
+			fileSystem.File.WriteAllText($"{Folder}/{name}", yaml.ReplaceLineEndings("\n"));
 
 		var loader = new BundleLoader(fileSystem);
 
@@ -33,7 +33,10 @@ public class BundleLoadingSnapshotTests
 		var fromFolder = loader.LoadBundles(Folder, folderWarnings.Add);
 
 		var contentWarnings = new List<string>();
-		var fromContent = loader.LoadBundlesFromContent([.. files.Select(f => (f.Name, f.Yaml))], contentWarnings.Add);
+		var fromContent = loader.LoadBundlesFromContent(
+			[.. files.Select(f => (f.Name, f.Yaml.ReplaceLineEndings("\n")))],
+			contentWarnings.Add
+		);
 
 		var root = new JsonObject
 		{
@@ -42,6 +45,13 @@ public class BundleLoadingSnapshotTests
 			["mergedByTarget"] = Describe(BundleLoader.MergeBundlesByTarget(fromFolder), [])
 		};
 		return root.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+	}
+
+	// The mock file system roots paths at the current drive on Windows and separates them with backslashes.
+	private static string NormalisePath(string path)
+	{
+		var normalised = path.Replace('\\', '/');
+		return normalised.Length > 2 && normalised[1] == ':' ? normalised[2..] : normalised;
 	}
 
 	private static JsonObject Describe(IReadOnlyList<LoadedBundle> bundles, List<string> warnings) =>
@@ -56,7 +66,7 @@ public class BundleLoadingSnapshotTests
 							["version"] = b.Version,
 							["repo"] = b.Repo,
 							["owner"] = b.Owner,
-							["filePath"] = b.FilePath,
+							["filePath"] = NormalisePath(b.FilePath),
 							["description"] = b.Data.Description,
 							["releaseDate"] = b.Data.ReleaseDate?.ToString("yyyy-MM-dd"),
 							["gitRef"] = b.Data.GitRef,
