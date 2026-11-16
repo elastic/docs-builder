@@ -265,3 +265,30 @@ data:
   "id": 3,
   "jsonrpc": "2.0"
 }
+
+## tools/call, 2026-07-28: POST /docs/_mcp
+status: 200 OK
+content-type: text/event-stream
+
+events:
+event: message
+data:
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"error\":\"Document not found for URL: \",\"details\":null}"
+      }
+    ],
+    "resultType": "complete",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "docs-mcp",
+        "version": "{server-version}"
+      }
+    }
+  },
+  "id": 4,
+  "jsonrpc": "2.0"
+}
