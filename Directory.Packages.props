@@ -68,7 +68,7 @@
   </ItemGroup>
   <!-- Build -->
   <ItemGroup>
-    <PackageVersion Include="Nullean.Make.Fs" Version="0.30.0" />
+    <PackageVersion Include="Runna.Fs" Version="0.2.0" />
     <PackageVersion Include="Proc.Fs" Version="0.22.1" />
     <PackageVersion Include="FSharp.Core" Version="11.0.101" />
   </ItemGroup>
