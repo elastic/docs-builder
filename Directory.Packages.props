@@ -53,7 +53,7 @@
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.55.0" />
     <PackageVersion Include="Elastic.Mapping" Version="0.55.0" />
-    <PackageVersion Include="Elastic.Transport.VirtualizedCluster" Version="0.17.3" />
+    <PackageVersion Include="Elastic.Transport.VirtualizedCluster" Version="1.1.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
     <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.31" />
