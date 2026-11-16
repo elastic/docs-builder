@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Builder;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 using RazorSlices;
@@ -32,12 +34,32 @@ public class ApiBetaBannerTests
 			.MatchInlineSnapshot("""https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&labels=source:web""");
 
 	[Test]
-	public async Task Render_LabelsTheNoticeAndLinksToFeedback()
-	{
-		var html = await _ApiBetaBanner.Create(
-			ApiBetaBanner.For(new Uri("https://www.elastic.co"), "/docs/api/doc/elasticsearch")
-		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+	public async Task Render_FeedbackOff_LinksToTheIssueForm() =>
+		(await RenderAsync(buildType: BuildType.Assembler)).Should().MatchHtmlSnapshot();
 
-		html.Should().MatchHtmlSnapshot();
+	[Test]
+	public async Task Render_AirGapped_LinksToTheIssueForm() =>
+		(await RenderAsync(["page-feedback", "air-gapped"], BuildType.Assembler)).Should().MatchHtmlSnapshot();
+
+	[Test]
+	public async Task Render_FeedbackOn_OpensThePageFeedbackInADialog() =>
+		(await RenderAsync(["page-feedback"], BuildType.Assembler)).Should().MatchHtmlSnapshot();
+
+	[Test]
+	public async Task Render_FeedbackOnWithTheDesignSystem_OpensTheDesignSystemWidgetInADialog() =>
+		(await RenderAsync(["page-feedback", "navigation-preview"], BuildType.Assembler)).Should().MatchHtmlSnapshot();
+
+	private static async Task<string> RenderAsync(string[]? enabledFlags = null, BuildType buildType = BuildType.Isolated)
+	{
+		var features = new FeatureFlags((enabledFlags ?? []).ToDictionary(static f => f, static _ => true));
+		var model = ApiPagesNavRenderingTests.CreateLayoutModel(
+			"/docs/api/doc/elasticsearch",
+			"/docs/api/doc/elasticsearch.md",
+			null,
+			features,
+			buildType
+		) with
+		{ PageFeedbackSurface = "api" };
+		return await _ApiBetaBanner.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 }
