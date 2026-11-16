@@ -40,6 +40,14 @@ public class ServerlessPromotionTests
 		ServerlessPromotion.IsFinalSlicePromotion(message, Ds5).Should().Be(expected);
 
 	[Test]
+	[Arguments("cloud-cloud-hosted-2026-11-16.yaml", "D3124C7DDA836280F00D8C4B1259F7A2B96EC765", "cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml")]
+	[Arguments("cloud-cloud-hosted-2026-11-16.yaml", "d3124c7dda83", "cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml")]
+	[Arguments("cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml", "d3124c7dda83", "cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml")]
+	[Arguments("kibana-cloud-serverless-2026-11-12.yml", "5b129b1ba7c8", "kibana-cloud-serverless-2026-11-12-5b129b1ba7c8.yml")]
+	public void WithShortRef_MakesTheNameUniquePerPromotion(string fileName, string serviceVersion, string expected) =>
+		ServerlessPromotion.WithShortRef(fileName, serviceVersion).Should().Be(expected);
+
+	[Test]
 	[Arguments("7dd981dcd7d3", "7dd981dcd7d3", true)]
 	[Arguments("7dd981dcd7d3", "7DD981DCD7D3AAAAAAAAAAAAAAAAAAAAAAAAAAAA", true)]
 	[Arguments("7dd981dcd7d3", "03c0df903631", false)]

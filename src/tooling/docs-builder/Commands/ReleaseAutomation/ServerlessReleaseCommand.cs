@@ -48,6 +48,8 @@ internal sealed class ServerlessReleaseCommand(
 	/// <para>
 	/// A range with no notes (for example only dependency bumps) is not an error: it writes a bundle with no entries, so
 	/// the release stays on record, and the renderer skips it. A pull request whose metadata could not be read is still an error.
+	/// Bundle files end with the short ref of the promotion (<c>{repo}-{product}-{date}-{short ref}.yaml</c>), so a later release on the
+	/// same day, with or without notes, never has the name of an earlier one.
 	/// </para>
 	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the service repositories.</para>
 	/// </remarks>
@@ -117,7 +119,18 @@ internal sealed class ServerlessReleaseCommand(
 		// One bundle per repository: the service repository over the serverless range, then each
 		// submodule over the range of commits the service repository pins at the two refs.
 		var bundles = new List<string>();
-		var primary = await BundleRangeAsync(http, svc.Repository, svc, startRef, serviceVersion, bundleVersion, rootOutput, dryRun, ctx);
+		var primary = await BundleRangeAsync(
+			http,
+			svc.Repository,
+			svc,
+			startRef,
+			serviceVersion,
+			bundleVersion,
+			rootOutput,
+			dryRun,
+			serviceVersion,
+			ctx
+		);
 		if (!primary.Success)
 			return 1;
 		bundles.AddRange(primary.Paths);
@@ -145,7 +158,18 @@ internal sealed class ServerlessReleaseCommand(
 				continue;
 			}
 			_logger.LogInformation("Submodule {Repository}: {Start}..{End}", submodule.Repository, startSha, endSha);
-			var result = await BundleRangeAsync(http, submodule.Repository, svc, startSha, endSha, bundleVersion, rootOutput, dryRun, ctx);
+			var result = await BundleRangeAsync(
+				http,
+				submodule.Repository,
+				svc,
+				startSha,
+				endSha,
+				bundleVersion,
+				rootOutput,
+				dryRun,
+				serviceVersion,
+				ctx
+			);
 			if (!result.Success)
 				return 1;
 			bundles.AddRange(result.Paths);
@@ -169,6 +193,7 @@ internal sealed class ServerlessReleaseCommand(
 		string bundleVersion,
 		DirectoryInfo rootOutput,
 		bool dryRun,
+		string serviceVersion,
 		CancellationToken ctx
 	)
 	{
@@ -207,12 +232,21 @@ internal sealed class ServerlessReleaseCommand(
 			);
 			var bundleService = new ChangelogBundlingService(logFactory, ChangelogFileSystem.FromWorkingDirectory(), configurationContext);
 			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
-			return (success, paths);
+			return (success, success ? [.. paths.Select(path => AddShortRef(path, serviceVersion))] : paths);
 		}
 		finally
 		{
 			File.Delete(tempConfig);
 		}
+	}
+
+	// A bundle is named {repo}-{product}-{date}. The short ref of the promotion keeps two promotions on one day apart.
+	private static string AddShortRef(string path, string serviceVersion)
+	{
+		var target = Path.Join(Path.GetDirectoryName(path), ServerlessPromotion.WithShortRef(Path.GetFileName(path), serviceVersion));
+		if (target != path)
+			File.Move(path, target, overwrite: true);
+		return target;
 	}
 
 	private async Task<string?> GetSubmoduleShaAsync(
