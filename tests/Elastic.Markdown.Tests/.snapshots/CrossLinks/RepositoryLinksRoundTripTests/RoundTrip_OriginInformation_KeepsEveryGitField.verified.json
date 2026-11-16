@@ -1,0 +1,13 @@
+{
+  "origin": {
+    "branch": "feature/x",
+    "remote": "git@github.com:example-org/example-repo.git",
+    "ref": "fedcba9876543210fedcba9876543210fedcba98",
+    "name": "example-repo",
+    "github_ref": "refs/pull/12/merge"
+  },
+  "url_path_prefix": null,
+  "links": {},
+  "cross_links": [],
+  "redirects": null
+}

@@ -1,0 +1,18 @@
+empty-object: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'origin', 'url_path_prefix', 'links', 'cross_links'.
+no-origin: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'origin'.
+no-url-path-prefix: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'url_path_prefix'.
+no-links: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'links'.
+no-cross-links: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'cross_links'.
+origin-without-ref: throws JsonException: JSON deserialization for type 'Elastic.Documentation.GitCheckoutInformation' was missing required properties including: 'ref'.
+origin-without-branch: throws JsonException: JSON deserialization for type 'Elastic.Documentation.GitCheckoutInformation' was missing required properties including: 'branch'.
+origin-without-remote: throws JsonException: JSON deserialization for type 'Elastic.Documentation.GitCheckoutInformation' was missing required properties including: 'remote'.
+links-is-array: throws JsonException: The JSON value could not be converted to System.Collections.Generic.Dictionary`2[System.String,Elastic.Documentation.Links.LinkMetadata]. Path: $.links | LineNumber: 1 | BytePositionInLine: 82.
+anchors-is-string: throws JsonException: The JSON value could not be converted to System.String[]. Path: $.links['a.md'].anchors | LineNumber: 1 | BytePositionInLine: 107.
+hidden-is-string: throws JsonException: The JSON value could not be converted to System.Boolean. Path: $.links['a.md'].hidden | LineNumber: 1 | BytePositionInLine: 108.
+floating-version-without-root: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.FloatingLinkVersion' was missing required properties including: 'root'.
+floating-pages-not-numbers: throws JsonException: The JSON value could not be converted to System.UInt64. Path: $.floating['api/x'].pages.a | LineNumber: 1 | BytePositionInLine: 152.
+floating-without-pages: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.FloatingLinkSection' was missing required properties including: 'pages'.
+trailing-comma: throws JsonException: The JSON object contains a trailing comma at the end which is not supported in this mode. Change the reader options. Path: $ | LineNumber: 1 | BytePositionInLine: 84.
+not-json: throws JsonException: 'l' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
+empty-string: throws JsonException: The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
+null-literal: reads

@@ -1,0 +1,60 @@
+unknown-repo://index.md
+  isolated                LinkSchemeNotDeclared: 'unknown-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  codex-absolute          LinkSchemeNotDeclared: 'unknown-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  publish                 LinkSchemeNotDeclared: 'unknown-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+unknown-repo://get-started/index.md#intro
+  isolated                LinkSchemeNotDeclared: 'unknown-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  codex-absolute          LinkSchemeNotDeclared: 'unknown-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  publish                 LinkSchemeNotDeclared: 'unknown-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+cursor://file/path
+  isolated                LinkSchemeNotDeclared: 'cursor' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  codex-absolute          LinkSchemeNotDeclared: 'cursor' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  publish                 LinkSchemeNotDeclared: 'cursor' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+vscode://settings
+  isolated                LinkSchemeNotDeclared: 'vscode' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  codex-absolute          LinkSchemeNotDeclared: 'vscode' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  publish                 LinkSchemeNotDeclared: 'vscode' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+https://example.test/page
+  isolated                LinkSchemeNotDeclared: 'https' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  codex-absolute          LinkSchemeNotDeclared: 'https' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  publish                 LinkSchemeNotDeclared: 'https' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+mailto:someone@example.test
+  isolated                LinkSchemeNotDeclared: 'mailto' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  codex-absolute          LinkSchemeNotDeclared: 'mailto' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+  publish                 LinkSchemeNotDeclared: 'mailto' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+declared-only://index.md
+  isolated                synthesized https://docs-v3-preview.elastic.dev/elastic/declared-only/tree/main/ (declared-only)
+  codex-absolute          synthesized https://docs-v3-preview.elastic.dev/elastic/declared-only/tree/main/ (declared-only)
+  publish                 synthesized https://docs.example.test/ (declared-only)
+declared-only://some/page.md#anchor
+  isolated                synthesized https://docs-v3-preview.elastic.dev/elastic/declared-only/tree/main/some/page (declared-only)
+  codex-absolute          synthesized https://docs-v3-preview.elastic.dev/elastic/declared-only/tree/main/some/page (declared-only)
+  publish                 synthesized https://docs.example.test/some/page (declared-only)
+declared-only://
+  isolated                synthesized https://docs-v3-preview.elastic.dev/elastic/declared-only/tree/main/ (declared-only)
+  codex-absolute          synthesized https://docs-v3-preview.elastic.dev/elastic/declared-only/tree/main/ (declared-only)
+  publish                 synthesized https://docs.example.test/ (declared-only)
+example-repo://missing.md
+  isolated                LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://guide/missing.md
+  isolated                LinkNotInIndex: 'guide/missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'guide/missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'guide/missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://guide/missing.md#anchor
+  isolated                LinkNotInIndex: 'guide/missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'guide/missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'guide/missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://get-started/missing/index.md
+  isolated                LinkNotInIndex: 'get-started/missing/index.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'get-started/missing/index.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'get-started/missing/index.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://get-started/index
+  isolated                LinkNotInIndex: 'get-started/index' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'get-started/index' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'get-started/index' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://get-started/index.md/extra
+  isolated                LinkNotInIndex: 'get-started/index.md/extra' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'get-started/index.md/extra' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'get-started/index.md/extra' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json

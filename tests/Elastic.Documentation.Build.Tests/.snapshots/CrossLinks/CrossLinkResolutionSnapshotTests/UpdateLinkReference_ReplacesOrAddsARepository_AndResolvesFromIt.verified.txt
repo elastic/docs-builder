@@ -1,0 +1,7 @@
+example-repo://guide/page.md             resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+example-repo://only-now.md               LinkNotInIndex: 'only-now.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+references after: codex-repo, example-repo, other-repo
+example-repo://guide/page.md             LinkNotInIndex: 'guide/page.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://only-now.md               resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/only-now
+brand-new://only-now.md                  resolved https://docs-v3-preview.elastic.dev/elastic/brand-new/tree/main/only-now
+declared after: codex-repo, declared-only, example-repo, other-repo

@@ -1,0 +1,63 @@
+example-repo://old/cross.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  publish                 resolved https://docs.example.test/docs/other/target/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/other/target/page
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/other/target/page
+example-repo://old/cross.md#ignored
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#ignored
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#ignored
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#ignored
+  publish                 resolved https://docs.example.test/docs/other/target/page#ignored
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/other/target/page#ignored
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/other/target/page#ignored
+example-repo://old/cross-anchors.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  publish                 resolved https://docs.example.test/docs/other/target/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/other/target/page
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/other/target/page
+example-repo://old/cross-anchors.md#a
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#target-anchor
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#target-anchor
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#target-anchor
+  publish                 resolved https://docs.example.test/docs/other/target/page#target-anchor
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/other/target/page#target-anchor
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/other/target/page#target-anchor
+example-repo://old/cross-anchors.md#b
+  isolated                LinkRedirectAnchorUnhandled: Redirect rule for 'old/cross-anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#b'.
+  codex-absolute          LinkRedirectAnchorUnhandled: Redirect rule for 'old/cross-anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#b'.
+  codex-relative          LinkRedirectAnchorUnhandled: Redirect rule for 'old/cross-anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#b'.
+  publish                 LinkRedirectAnchorUnhandled: Redirect rule for 'old/cross-anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#b'.
+  publish-prefixed        LinkRedirectAnchorUnhandled: Redirect rule for 'old/cross-anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#b'.
+  publish-prefixed-slash  LinkRedirectAnchorUnhandled: Redirect rule for 'old/cross-anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#b'.
+example-repo://old/cross-missing-target.md
+  isolated                LinkRedirectTargetMissing: Redirect target 'other-repo://nope.md' points to file 'nope.md/' which was not found in repository 'other-repo's links.json.
+  codex-absolute          LinkRedirectTargetMissing: Redirect target 'other-repo://nope.md' points to file 'nope.md/' which was not found in repository 'other-repo's links.json.
+  codex-relative          LinkRedirectTargetMissing: Redirect target 'other-repo://nope.md' points to file 'nope.md/' which was not found in repository 'other-repo's links.json.
+  publish                 LinkRedirectTargetMissing: Redirect target 'other-repo://nope.md' points to file 'nope.md/' which was not found in repository 'other-repo's links.json.
+  publish-prefixed        LinkRedirectTargetMissing: Redirect target 'other-repo://nope.md' points to file 'nope.md/' which was not found in repository 'other-repo's links.json.
+  publish-prefixed-slash  LinkRedirectTargetMissing: Redirect target 'other-repo://nope.md' points to file 'nope.md/' which was not found in repository 'other-repo's links.json.
+example-repo://old/cross-missing-repo.md
+  isolated                LinkRedirectRepositoryMissing: Redirect target 'unknown-repo://x.md' points to repository 'unknown-repo' for which no links.json was found.
+  codex-absolute          LinkRedirectRepositoryMissing: Redirect target 'unknown-repo://x.md' points to repository 'unknown-repo' for which no links.json was found.
+  codex-relative          LinkRedirectRepositoryMissing: Redirect target 'unknown-repo://x.md' points to repository 'unknown-repo' for which no links.json was found.
+  publish                 LinkRedirectRepositoryMissing: Redirect target 'unknown-repo://x.md' points to repository 'unknown-repo' for which no links.json was found.
+  publish-prefixed        LinkRedirectRepositoryMissing: Redirect target 'unknown-repo://x.md' points to repository 'unknown-repo' for which no links.json was found.
+  publish-prefixed-slash  LinkRedirectRepositoryMissing: Redirect target 'unknown-repo://x.md' points to repository 'unknown-repo' for which no links.json was found.
+example-repo://old/cross-declared-only.md
+  isolated                LinkRedirectRepositoryMissing: Redirect target 'declared-only://x.md' points to repository 'declared-only' for which no links.json was found.
+  codex-absolute          LinkRedirectRepositoryMissing: Redirect target 'declared-only://x.md' points to repository 'declared-only' for which no links.json was found.
+  codex-relative          LinkRedirectRepositoryMissing: Redirect target 'declared-only://x.md' points to repository 'declared-only' for which no links.json was found.
+  publish                 LinkRedirectRepositoryMissing: Redirect target 'declared-only://x.md' points to repository 'declared-only' for which no links.json was found.
+  publish-prefixed        LinkRedirectRepositoryMissing: Redirect target 'declared-only://x.md' points to repository 'declared-only' for which no links.json was found.
+  publish-prefixed-slash  LinkRedirectRepositoryMissing: Redirect target 'declared-only://x.md' points to repository 'declared-only' for which no links.json was found.
+example-repo://old/external.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/https://example.test/elsewhere
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/https://example.test/elsewhere
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/https://example.test/elsewhere
+  publish                 resolved https://example.test/elsewhere
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/https://example.test/elsewhere
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/https://example.test/elsewhere
