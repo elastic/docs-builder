@@ -143,7 +143,7 @@
     <PackageVersion Include="Microsoft.Testing.Platform" Version="2.5.3" />
     <PackageVersion Include="Microsoft.Testing.Extensions.GitHubActionsReport" Version="2.5.3" />
     <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.5.3" />
-    <PackageVersion Include="JetBrains.Annotations" Version="2025.2.4" />
+    <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
