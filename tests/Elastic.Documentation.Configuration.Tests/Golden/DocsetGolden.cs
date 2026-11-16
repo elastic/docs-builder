@@ -26,7 +26,8 @@ internal readonly record struct DocFile(string Path, string Content = "# Page\n"
 /// </summary>
 internal static partial class DocsetGolden
 {
-	public const string Root = "/docs";
+	// rooted on the current drive, so the scoped file system recognises it on Windows too
+	public static readonly string Root = Path.GetFullPath("/docs");
 
 	/// <summary>The diagnostics, the resolved table of contents, then the whole resolved model.</summary>
 	public static string Resolve(string docsetYaml, params DocFile[] files)
@@ -214,7 +215,8 @@ internal static partial class DocsetGolden
 	{
 		for (var current = e; current is not null; current = current.InnerException)
 		{
-			var message = current.Message.Replace('\\', '/').Split('\n')[0].TrimEnd();
+			// the text of an argument exception comes from the runtime and differs between operating systems
+			var message = current is ArgumentException ? "(message omitted)" : current.Message.Replace('\\', '/').Split('\n')[0].TrimEnd();
 			_ = sb.Append(current == e ? "throws " : "inner ").Append(current.GetType().Name).Append(": ").AppendLine(message);
 		}
 	}

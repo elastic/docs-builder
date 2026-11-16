@@ -368,9 +368,9 @@ public class DocsetDiagnosticsGoldenTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			diagnostics:
-			throws ArgumentOutOfRangeException: startIndex cannot be larger than length of string. (Parameter 'startIndex')
-			"""
+				diagnostics:
+				throws ArgumentOutOfRangeException: (message omitted)
+				"""
 			);
 
 	[Test]
@@ -380,7 +380,7 @@ public class DocsetDiagnosticsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				diagnostics:
-				throws ArgumentOutOfRangeException: startIndex cannot be larger than length of string. (Parameter 'startIndex')
+				throws ArgumentOutOfRangeException: (message omitted)
 				"""
 			);
 
@@ -391,7 +391,7 @@ public class DocsetDiagnosticsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				diagnostics:
-				throws ArgumentOutOfRangeException: startIndex cannot be larger than length of string. (Parameter 'startIndex')
+				throws ArgumentOutOfRangeException: (message omitted)
 				"""
 			);
 
@@ -401,9 +401,9 @@ public class DocsetDiagnosticsGoldenTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			diagnostics:
-			throws ArgumentOutOfRangeException: startIndex cannot be larger than length of string. (Parameter 'startIndex')
-			"""
+				diagnostics:
+				throws ArgumentOutOfRangeException: (message omitted)
+				"""
 			);
 
 	[Test]
@@ -1089,10 +1089,10 @@ public class DocsetDiagnosticsGoldenTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			diagnostics:
-			error /docs/redirects.yml Could not load docset.yml
-			throws ArgumentException: An item with the same key has already been added. Key: a.md
-			"""
+				diagnostics:
+				error /docs/redirects.yml Could not load docset.yml
+				throws ArgumentException: (message omitted)
+				"""
 			);
 
 	[Test]
@@ -1101,7 +1101,7 @@ public class DocsetDiagnosticsGoldenTests
 		var collector = new CapturingDiagnosticsCollector();
 		var fileSystem = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
 			new Dictionary<string, System.IO.Abstractions.TestingHelpers.MockFileData>(),
-			"/docs"
+			DocsetGolden.Root
 		);
 		var docSet = new Elastic.Documentation.Configuration.Toc.DocumentationSetFile();
 		var config = DocsetGolden.CreateConfiguration(docSet, collector, fileSystem, withGlobalConfig: false);
