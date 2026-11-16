@@ -38,7 +38,7 @@
       "rollForward": true
     },
     "curb-cli": {
-      "version": "0.14.3",
+      "version": "0.15.1",
       "commands": [
         "curb"
       ],
