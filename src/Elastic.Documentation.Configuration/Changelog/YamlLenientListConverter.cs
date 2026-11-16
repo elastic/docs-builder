@@ -70,7 +70,7 @@ public class YamlLenientListConverter : YamlConverter<YamlLenientList>
 
 	/// <summary>
 	/// Reads a scalar-or-sequence value from the reader and returns a joined comma-separated string.
-	/// Useful for fields that stay as <c>string?</c> in the domain model (e.g., TypeEntryYaml.Labels).
+	/// Useful for fields that stay as <c>string?</c> in the domain model (e.g., ChangelogTypeEntryDto.Labels).
 	/// </summary>
 	internal static string? ReadAsString(YamlReader reader)
 	{

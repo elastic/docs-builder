@@ -126,7 +126,7 @@ public class NavigationSearchServiceTests
 			{
 				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200"), ApiKey = "test" }
 			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning.None
 		);
 		using var service = new NavigationSearchService(inner, accessor, NullLogger<NavigationSearchService>.Instance);
 

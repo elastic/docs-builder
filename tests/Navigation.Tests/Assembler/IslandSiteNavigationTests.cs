@@ -6,12 +6,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -33,11 +36,11 @@ public class IslandSiteNavigationTests()
 		                      path_prefix: observability
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -70,11 +73,11 @@ public class IslandSiteNavigationTests()
 		                      island: true
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -108,7 +111,7 @@ public class IslandSiteNavigationTests()
 		                      path_prefix: observability
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Inject island: true into the observability docset.yml
@@ -135,7 +138,7 @@ public class IslandSiteNavigationTests()
 		);
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -199,7 +202,7 @@ public class IslandSiteNavigationTests()
 		);
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -208,7 +211,7 @@ public class IslandSiteNavigationTests()
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(
-			SiteNavigationFile.Deserialize(siteNavNoIsland),
+			SiteNavigationLoader.Deserialize(siteNavNoIsland),
 			siteContext,
 			documentationSets,
 			sitePrefix: null
@@ -243,11 +246,11 @@ public class IslandSiteNavigationTests()
 		                          path_prefix: reference/search
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -255,7 +258,7 @@ public class IslandSiteNavigationTests()
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
 
 		var searchContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search");
-		var searchDocset = DocumentationSetFile.LoadAndResolve(
+		var searchDocset = DocumentationSetLoader.LoadAndResolve(
 			searchContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -290,12 +293,12 @@ public class IslandSiteNavigationTests()
 		                    - toc: observability://
 		                      path_prefix: observability
 		                  """;
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		const string docsetPath = "/checkouts/current/observability/docs/docset.yml";
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsContext.Collector,
 			fileSystem.FileInfo.New(docsetPath),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -325,7 +328,7 @@ public class IslandSiteNavigationTests()
 		                    - toc: observability://
 		                      path_prefix: observability
 		                  """;
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		const string narrativeDir = "/checkouts/current/docs-content";
 		const string docsetPath = $"{narrativeDir}/docs/docset.yml";
@@ -334,7 +337,7 @@ public class IslandSiteNavigationTests()
 		fileSystem.AddFile($"{narrativeDir}/docs/index.md", new MockFileData("# Docs\n"));
 
 		var narrativeContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, narrativeDir);
-		var narrativeDocset = DocumentationSetFile.LoadAndResolve(
+		var narrativeDocset = DocumentationSetLoader.LoadAndResolve(
 			narrativeContext.Collector,
 			fileSystem.FileInfo.New(docsetPath),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)

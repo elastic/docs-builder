@@ -2,56 +2,67 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Generator.Equals;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Domain type representing a changelog entry.
 /// Uses strongly typed enums for Type, Subtype, and Lifecycle.
 /// </summary>
-public record ChangelogEntry
+/// <remarks>
+/// Constructed with <c>ReleaseNotesLoader.LoadEntry</c> or <see cref="ChangelogEntry.FromPullRequest"/> and <see cref="ChangelogEntry.Create"/>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+[Equatable]
+public partial record ChangelogEntry
 {
 	/// <summary>Pull request URLs or references.</summary>
-	public IReadOnlyList<string>? Prs { get; init; }
+	[OrderedEquality]
+	public IReadOnlyList<string>? Prs { get; internal init; }
 
 	/// <summary>Related issue URLs or references.</summary>
-	public IReadOnlyList<string>? Issues { get; init; }
+	[OrderedEquality]
+	public IReadOnlyList<string>? Issues { get; internal init; }
 
 	/// <summary>The type of changelog entry (feature, bug-fix, etc.).</summary>
-	public ChangelogEntryType Type { get; init; } = ChangelogEntryType.Invalid;
+	public ChangelogEntryType Type { get; internal init; } = ChangelogEntryType.Invalid;
 
 	/// <summary>The subtype of changelog entry (only applicable to breaking changes).</summary>
-	public ChangelogEntrySubtype? Subtype { get; init; }
+	public ChangelogEntrySubtype? Subtype { get; internal init; }
 
 	/// <summary>Products affected by this changelog entry.</summary>
-	public IReadOnlyList<ProductReference>? Products { get; init; }
+	[OrderedEquality]
+	public IReadOnlyList<ProductReference>? Products { get; internal init; }
 
 	/// <summary>Areas affected by this changelog entry.</summary>
-	public IReadOnlyList<string>? Areas { get; init; }
+	[OrderedEquality]
+	public IReadOnlyList<string>? Areas { get; internal init; }
 
 	/// <summary>The title of the changelog entry.</summary>
-	public string Title { get; init; } = "";
+	public string Title { get; internal init; } = "";
 
 	/// <summary>Optional description with more details.</summary>
-	public string? Description { get; init; }
+	public string? Description { get; internal init; }
 
 	/// <summary>Impact statement for breaking changes.</summary>
-	public string? Impact { get; init; }
+	public string? Impact { get; internal init; }
 
 	/// <summary>Required action for breaking changes.</summary>
-	public string? Action { get; init; }
+	public string? Action { get; internal init; }
 
 	/// <summary>Optional feature ID for tracking.</summary>
-	public string? FeatureId { get; init; }
+	public string? FeatureId { get; internal init; }
 
 	/// <summary>Whether this entry should be highlighted.</summary>
-	public bool? Highlight { get; init; }
+	public bool? Highlight { get; internal init; }
 
 	/// <summary>
 	/// Marker reference: a bare PR number pointing to the authoritative entry in the same pool.
 	/// Non-null only on machine-written marker objects emitted by the pipeline for non-primary PRs
 	/// in a multi-PR entry. A marker carries <c>link:</c> and nothing else.
 	/// </summary>
-	public string? Link { get; init; }
+	public string? Link { get; internal init; }
 
 	/// <summary>True when this entry is a pipeline-written marker that redirects to another PR's entry.</summary>
 	public bool IsMarker => Link is not null;
@@ -60,7 +71,15 @@ public record ChangelogEntry
 	/// When true, this entry is a scrubber-written source pointer in the public bucket that traces
 	/// to a canonical key. Distinguishes source pointers from ordinary link-only PR markers.
 	/// </summary>
-	public bool SourceRedirect { get; init; }
+	public bool SourceRedirect { get; internal init; }
+
+	/// <summary>The singular <c>pr:</c> as written, or null when absent; the loader merges it into <see cref="Prs"/>.</summary>
+	[IgnoreEquality]
+	public string? Pr { get; internal init; }
+
+	/// <summary>The file the entry was read from (name only), or null when it was not read from a file.</summary>
+	[IgnoreEquality]
+	public string? FileName { get; internal init; }
 
 	/// <summary>
 	/// Converts this ChangelogEntry to a BundledEntry for embedding in bundles.

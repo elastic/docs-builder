@@ -236,7 +236,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				link.SetData("isCrossLink", false);
 		}
 		else
-			processor.EmitError(link, resolution.ToDiagnosticMessage(uri));
+			processor.Emit(
+				Elastic.Documentation.Diagnostics.Severity.Error,
+				link,
+				link.Url?.Length ?? 1,
+				resolution.ToDiagnosticMessage(uri),
+				ruleId: resolution.RuleId()
+			);
 
 		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)

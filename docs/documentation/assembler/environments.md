@@ -31,7 +31,7 @@ environments:
 |-------|-------------|
 | `uri` | The base URL for the environment |
 | `path_prefix` | URL path prefix for all documentation |
-| `content_source` | Which content source phase to use (`current` or `next`) |
+| `content_source` | Which content source phase to use: `current`, `next` or `edge`. Omitting it publishes `next` and reports a warning |
 | `allow_indexing` | Whether search engines should index this environment |
 
 ## Content sources

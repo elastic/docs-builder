@@ -5,17 +5,16 @@
 using System.Collections.Frozen;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Inference;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
 public class DocumentInferrerServiceTests
 {
-	private static VersionsConfiguration CreateVersionsConfiguration()
+	private static VersioningSystemCatalog CreateVersionsConfiguration()
 	{
 		var versioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>();
 
@@ -35,10 +34,10 @@ public class DocumentInferrerServiceTests
 			};
 		}
 
-		return new VersionsConfiguration { VersioningSystems = versioningSystems };
+		return new VersioningSystemCatalog { VersioningSystems = versioningSystems };
 	}
 
-	private static ProductsConfiguration CreateProductsConfiguration(VersionsConfiguration versionsConfiguration)
+	private static ProductCatalog CreateProductsConfiguration(VersioningSystemCatalog versionsConfiguration)
 	{
 		var products = new Dictionary<string, Product>
 		{
@@ -75,15 +74,10 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		return new ProductsConfiguration
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
+		return ProductCatalog.FromPublicProducts(products);
 	}
 
-	private static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(ProductsConfiguration productsConfig)
+	private static LegacyUrlMappingCatalog CreateLegacyUrlMappings(ProductCatalog productsConfig)
 	{
 		var mappings = new List<LegacyUrlMapping>
 		{
@@ -107,7 +101,7 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		return new LegacyUrlMappingConfiguration { Mappings = mappings };
+		return new LegacyUrlMappingCatalog { Mappings = mappings };
 	}
 
 	[Test]
@@ -122,7 +116,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elasticsearch",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -142,11 +136,11 @@ public class DocumentInferrerServiceTests
 
 		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);
 
-		// "elastic-otel-java" is the Repository field of "apm-agent-java" product
+		// "elastic-otel-java" is the RepositoryDto field of "apm-agent-java" product
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elastic-otel-java",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -170,7 +164,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: mappedPages,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -196,7 +190,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -223,7 +217,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: mappedPages,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -250,7 +244,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elasticsearch",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -278,7 +272,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "kibana",
 			mappedPages: mappedPages,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -304,7 +298,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: frontmatterProducts,
 			applicableTo: null
 		);
@@ -376,7 +370,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "unknown-repo",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -402,20 +396,15 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		var productsConfig = new ProductsConfiguration
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
-		var legacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] };
+		var productsConfig = ProductCatalog.FromPublicProducts(products);
+		var legacyUrlMappings = LegacyUrlMappingCatalog.None;
 
 		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);
 
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "serverless-es",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -498,7 +487,7 @@ public class DocumentInferrerServiceTests
 	{
 		var inferrer = new NoopDocumentInferrer();
 
-		var markdownResult = inferrer.InferForMarkdown("repo", null, [], null, null);
+		var markdownResult = inferrer.InferForMarkdown("repo", null, new HashSet<Product>(), null, null);
 		var openApiResult = inferrer.InferForOpenApi("product");
 
 		markdownResult.Product.Should().BeNull();

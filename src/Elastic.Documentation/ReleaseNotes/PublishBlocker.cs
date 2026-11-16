@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Generator.Equals;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
@@ -35,32 +37,39 @@ public enum FieldMode
 /// Configuration for blocking changelog entries from publishing based on type or area.
 /// Supports both exclude (block if matches) and include (block if doesn't match) modes.
 /// </summary>
-public record PublishBlocker
+/// <remarks>
+/// Constructed through <c>PublishRules</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+[Equatable]
+public partial record PublishBlocker
 {
 	/// <summary>
 	/// Types to filter (either exclude or include based on <see cref="TypesMode"/>).
 	/// </summary>
-	public IReadOnlyList<string>? Types { get; init; }
+	[OrderedEquality]
+	public IReadOnlyList<string>? Types { get; internal init; }
 
 	/// <summary>
 	/// Whether types uses exclude or include semantics.
 	/// </summary>
-	public FieldMode TypesMode { get; init; } = FieldMode.Exclude;
+	public FieldMode TypesMode { get; internal init; } = FieldMode.Exclude;
 
 	/// <summary>
 	/// Areas to filter (either exclude or include based on <see cref="AreasMode"/>).
 	/// </summary>
-	public IReadOnlyList<string>? Areas { get; init; }
+	[OrderedEquality]
+	public IReadOnlyList<string>? Areas { get; internal init; }
 
 	/// <summary>
 	/// Whether areas uses exclude or include semantics.
 	/// </summary>
-	public FieldMode AreasMode { get; init; } = FieldMode.Exclude;
+	public FieldMode AreasMode { get; internal init; } = FieldMode.Exclude;
 
 	/// <summary>
 	/// How to match areas: Any (default), All, or Conjunction.
 	/// </summary>
-	public MatchMode MatchAreas { get; init; } = MatchMode.Any;
+	public MatchMode MatchAreas { get; internal init; } = MatchMode.Any;
 
 	/// <summary>
 	/// Returns true if this blocker has any blocking rules configured.

@@ -12,7 +12,6 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using SharpYaml;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -25,11 +24,12 @@ public class ChangelogEntryValidationService(
 	IConfigurationContext configurationContext,
 	IGitHubPrService gitHubPrService,
 	IRunnerTempFileSystem fileSystem,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogEntryValidationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly GithubDecisionMetadataWriter _metadataWriter = new(logFactory, fileSystem);
 
 	/// <summary>
@@ -38,14 +38,14 @@ public class ChangelogEntryValidationService(
 	/// </summary>
 	public async Task<bool> ValidateEntries(IDiagnosticsCollector collector, ValidateEntriesArguments input, Cancel ctx)
 	{
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.ConfigFile, ctx) ?? ChangelogConfiguration.Default;
+		var config = (await _configLoader.Load(input.ConfigFile, ctx)).EmitTo(collector) ?? ChangelogConfiguration.Default;
 		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
 		var defaultBranch = config.Bundle?.Branch ?? "main";
 
 		// ── Onboarding pre-flight ──────────────────────────────────────────────────────────────
 		// Fail fast when the repository is not registered in products.yml — file discovery is
 		// pointless if the pipeline cannot run regardless of what the PR contains.
-		var matchedProducts = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(input.Repo);
+		var matchedProducts = configurationContext.Catalog.Products.GetProductsByRepositoryName(input.Repo);
 		if (matchedProducts.Count == 0)
 		{
 			collector.EmitError(
@@ -128,13 +128,16 @@ public class ChangelogEntryValidationService(
 
 		// ── Known products ────────────────────────────────────────────────────────────────────
 		IReadOnlySet<string>? knownProducts = null;
-		var availableProducts = configurationContext.ProductsConfiguration.Products;
+		var availableProducts = configurationContext.Catalog.Products.Products;
 		if (availableProducts is { Count: > 0 })
-			knownProducts = new HashSet<string>(availableProducts.Keys.Select(k => k.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
+			knownProducts = new HashSet<string>(
+				availableProducts.Keys.Select(k => ProductNames.Normalize(k)),
+				StringComparer.OrdinalIgnoreCase
+			);
 
 		// ── Parse files, validate filenames, run field-level rules ───────────────────────────
 		var allFindings = new List<EntryFileFinding>();
-		var entriesByFile = new Dictionary<string, ChangelogEntryDto?>(StringComparer.OrdinalIgnoreCase);
+		var productIdsByFile = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
 		var filenamePrNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		foreach (var relPath in filesToValidate)
 		{
@@ -152,46 +155,35 @@ public class ChangelogEntryValidationService(
 			}
 
 			var rawYaml = await fileSystem.File.ReadAllTextAsync(fullPath, ctx);
-			ChangelogEntryDto? dto = null;
-			try
-			{
-				var normalized = ReleaseNotesSerialization.NormalizeYaml(rawYaml);
-				dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
-					normalized,
-					ReleaseNotesSerialization.GetEntryDeserializerOptions(relPath)
-				);
-				if (dto is not null)
-				{
-					var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
-					var findings = ChangelogEntryValidator.Validate(relPath, dto, config, labelDerivedType, knownProducts, fnNum);
-					allFindings.AddRange(findings);
-				}
-			}
-			catch (YamlException ex)
-			{
-				allFindings.Add(new EntryFileFinding(relPath, FindingSeverity.Error, $"YAML parse error: {ex.Message}"));
-			}
-
-			entriesByFile[relPath] = dto;
+			var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
+			var validation = ChangelogEntryValidator.Check(
+				relPath,
+				rawYaml,
+				config,
+				labelDerivedType,
+				knownProducts,
+				fnNum,
+				configurationContext.Catalog.Products
+			);
+			allFindings.AddRange(validation.Findings);
+			productIdsByFile[relPath] = validation.ProductIds;
 		}
 
 		// ── Cross-repo PR existence check ────────────────────────────────────────────────────
 		// For each filename PR number, derive candidate repos from the entry's products field.
-		// Falls back to the submitting repo when products carry no Repository link.
+		// Falls back to the submitting repo when products carry no RepositoryDto link.
 		var fileCheckRepos = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 		foreach (var (relPath, _) in filenamePrNumbers)
 		{
 			var candidateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-			if (entriesByFile.TryGetValue(relPath, out var dto) && dto?.Products is { Count: > 0 })
+			if (productIdsByFile.TryGetValue(relPath, out var productIds) && productIds.Count > 0)
 			{
-				foreach (var ep in dto.Products)
+				foreach (var id in productIds)
 				{
-					if (string.IsNullOrWhiteSpace(ep.Product))
-						continue;
-					var productId = ep.Product.Replace('_', '-').ToLowerInvariant();
+					var productId = ProductNames.Normalize(id).ToLowerInvariant();
 					if (availableProducts.TryGetValue(productId, out var product) && !string.IsNullOrWhiteSpace(product.Repository))
 					{
-						// Repository values are bare names (e.g. "elasticsearch") — qualify with owner.
+						// RepositoryDto values are bare names (e.g. "elasticsearch") — qualify with owner.
 						var repoRef = product.Repository.Contains('/') ? product.Repository : $"{input.Owner}/{product.Repository}";
 						_ = candidateRepos.Add(repoRef);
 					}
@@ -281,24 +273,23 @@ public class ChangelogEntryValidationService(
 		// ── Write metadata and return ─────────────────────────────────────────────────────────
 		var hasErrors = allFindings.Any(f => f.Severity == FindingSeverity.Error);
 
+		// each finding is reported once, under the id of the rule that covers it (the validate stage's wording is the pinned one)
 		if (hasErrors)
 		{
 			foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Error))
-				collector.EmitError(finding.File, finding.Message);
-			foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Warning))
-				collector.EmitWarning(finding.File, finding.Message);
+				Write(collector, finding, Severity.Error);
 		}
-		else
-		{
-			foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Warning))
-				collector.EmitWarning(finding.File, finding.Message);
-		}
+		foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Warning))
+			Write(collector, finding, Severity.Warning);
 
 		var entryFindings = allFindings.Count > 0 ? allFindings : null;
 		await WriteMetadataAsync(input, hasErrors ? "entries-invalid" : "ok", entryFindings, defaultBranch, ctx);
 
 		return !hasErrors;
 	}
+
+	private static void Write(IDiagnosticsCollector collector, EntryFileFinding finding, Severity severity) =>
+		collector.Write(new Diagnostic { Severity = severity, File = finding.File, Message = finding.Message, RuleId = finding.RuleId });
 
 	/// <summary>Filters a list of file paths to changelog entry files in the changelog dir (top level only, no note-* files).</summary>
 	private static IReadOnlyList<string> FilterChangelogFiles(IEnumerable<string> files, string changelogDir)

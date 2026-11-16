@@ -894,9 +894,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			hint  Applied rules - excluded_disjoint: 1 entries
-			error  No changelog entries remained after applying rules.bundle filter
-			"""
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.elasticsearch: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.cloud-serverless: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				hint  Applied rules - excluded_disjoint: 1 entries
+				error  No changelog entries remained after applying rules.bundle filter
+				"""
 			);
 	}
 
@@ -1099,8 +1101,10 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			error https://github.com/elastic/widget/pull/300 No matching area label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: :Search.
-			"""
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.elasticsearch: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.cloud-serverless: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				error https://github.com/elastic/widget/pull/300 No matching area label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: :Search.
+				"""
 			);
 	}
 
@@ -1137,8 +1141,10 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
-			"""
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.elasticsearch: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				warning {repo}/Guid_1/changelog.yml rules.bundle.products.cloud-serverless: type 'docs' is not a configured type. Configured types: feature, bug-fix, breaking-change
+				error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
+				"""
 			);
 	}
 

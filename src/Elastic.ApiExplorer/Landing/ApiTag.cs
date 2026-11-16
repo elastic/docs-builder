@@ -25,8 +25,8 @@ public record ApiTag(
 	public object? CreatePageModel(ApiRenderContext context) =>
 		ApiOverviewBuilder.BuildTagChildren(
 			context.CurrentNavigation,
-			context.BuildContext.VersionsConfiguration,
-			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			context.BuildContext.Catalog.VersioningSystems,
+			context.BuildContext.Features.NavigationPreviewEnabled
 		);
 
 	/// <inheritdoc />
@@ -35,8 +35,8 @@ public record ApiTag(
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.BuildTagChildren(
 				context.CurrentNavigation,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+				context.BuildContext.Catalog.VersioningSystems,
+				context.BuildContext.Features.NavigationPreviewEnabled
 			);
 		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };
 		var slice = TagLandingView.Create(viewModel);
@@ -51,8 +51,8 @@ public record ApiTag(
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.BuildTagChildren(
 				context.CurrentNavigation,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+				context.BuildContext.Catalog.VersioningSystems,
+				context.BuildContext.Features.NavigationPreviewEnabled
 			);
 		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };
 		return Task.FromResult<string?>(LandingCommonMark.Tag(viewModel));

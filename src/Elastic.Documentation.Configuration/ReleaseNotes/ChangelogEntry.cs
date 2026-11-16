@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// Maps directly to the YAML file structure.
 /// Used by bundling service for direct deserialization with error handling.
 /// </summary>
-public record ChangelogEntryDto
+internal record ChangelogEntryDto
 {
 	public string? Pr { get; set; }
 	public List<string>? Prs { get; set; }
@@ -48,7 +48,7 @@ public record ChangelogEntryDto
 /// DTO for product info in YAML.
 /// Used by bundling service for direct deserialization with error handling.
 /// </summary>
-public record ProductInfoDto
+internal record ProductInfoDto
 {
 	public string? Product { get; set; }
 

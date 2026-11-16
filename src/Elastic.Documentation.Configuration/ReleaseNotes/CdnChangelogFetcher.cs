@@ -177,7 +177,11 @@ public sealed class CdnChangelogFetcher : IDisposable
 			return [];
 		}
 
-		return _bundleLoader.LoadBundlesFromContent(contents, emitWarning);
+		// the CDN reports every finding (an unparseable bundle, an entry without inline content, a broken rule) as a warning: an inferred product must not fail the build
+		var loaded = _bundleLoader.LoadBundlesFromContent(contents);
+		foreach (var diagnostic in loaded.Diagnostics)
+			emitWarning(diagnostic.Message);
+		return loaded.Value ?? [];
 	}
 
 	/// <summary>

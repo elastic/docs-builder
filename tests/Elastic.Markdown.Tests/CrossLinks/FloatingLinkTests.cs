@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using AwesomeAssertions;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
@@ -39,7 +40,7 @@ public class FloatingLinkTests
 
 	private static FetchedCrossLinks CrossLinks()
 	{
-		var links = new RepositoryLinks
+		var links = new LinkManifest
 		{
 			Origin = GitCheckoutInformation.Unavailable,
 			UrlPathPrefix = "/elastic/elasticsearch/tree/main",
@@ -50,7 +51,7 @@ public class FloatingLinkTests
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = ["elasticsearch"],
-			LinkReferences = new Dictionary<string, RepositoryLinks> { ["elasticsearch"] = links }.ToFrozenDictionary(),
+			LinkReferences = new Dictionary<string, LinkManifest> { ["elasticsearch"] = links }.ToFrozenDictionary(),
 			LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
 		};
 	}
@@ -203,7 +204,7 @@ public class FloatingLinkTests
 	}
 
 	[Test]
-	public void CrossLink_ToAMarkdownPage_StillResolvesThroughTheRepositoryLinks()
+	public void CrossLink_ToAMarkdownPage_StillResolvesThroughTheLinkManifest()
 	{
 		var (resolved, url, _) = Resolve("elasticsearch://index.md");
 
@@ -212,11 +213,11 @@ public class FloatingLinkTests
 	}
 
 	[Test]
-	public void RepositoryLinks_WithAFloatingSection_RoundTripsThroughJson()
+	public void LinkManifest_WithAFloatingSection_RoundTripsThroughJson()
 	{
 		var links = CrossLinks().LinkReferences["elasticsearch"];
 
-		var roundTripped = RepositoryLinks.Deserialize(RepositoryLinks.Serialize(links));
+		var roundTripped = LinkLoader.LoadManifest(LinkLoader.Serialize(links), "links.json").Value!;
 
 		var section = roundTripped.Floating.Should().ContainKey("api/elasticsearch").WhoseValue;
 		section.Versions.Should().BeEquivalentTo(Api.Versions, options => options.WithStrictOrdering());
@@ -227,19 +228,19 @@ public class FloatingLinkTests
 	}
 
 	[Test]
-	public void RepositoryLinks_WithAFloatingSection_StatesTheRootOfEachVersionInTheJson()
+	public void LinkManifest_WithAFloatingSection_StatesTheRootOfEachVersionInTheJson()
 	{
-		var json = RepositoryLinks.Serialize(CrossLinks().LinkReferences["elasticsearch"]);
+		var json = LinkLoader.Serialize(CrossLinks().LinkReferences["elasticsearch"]);
 
 		json.Should().Contain("\"root\": \"api/doc/elasticsearch/legacy-8\"");
 		json.Should().NotContain("url_root", "the routing is data, not a section-level pattern");
 	}
 
 	[Test]
-	public void RepositoryLinks_WithoutFloatingSections_OmitsThePropertyFromTheJson()
+	public void LinkManifest_WithoutFloatingSections_OmitsThePropertyFromTheJson()
 	{
 		var links = CrossLinks().LinkReferences["elasticsearch"] with { Floating = null };
 
-		RepositoryLinks.Serialize(links).Should().NotContain("floating");
+		LinkLoader.Serialize(links).Should().NotContain("floating");
 	}
 }

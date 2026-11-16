@@ -2,63 +2,44 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Deploying.Synchronization;
 
+/// <summary>The verdict on a <see cref="SyncPlan"/>, from the findings of <see cref="SyncPlanConstraints"/>, logged.</summary>
 public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 {
 	private readonly ILogger<DocsSyncPlanValidator> _logger = logFactory.CreateLogger<DocsSyncPlanValidator>();
 
-	public PlanValidationResult Validate(SyncPlan plan)
+	/// <summary>Checks a plan the planner just built (once, through <see cref="SyncPlanLoader.Check"/>) and logs what is wrong with it.</summary>
+	public PlanValidationResult Validate(SyncPlan plan) => Validate(SyncPlanLoader.Check(plan));
+
+	/// <summary>
+	/// The verdict on a plan that was already checked (by <see cref="SyncPlanLoader.Load"/> or <see cref="SyncPlanLoader.Check"/>): reads its findings,
+	/// does not run the rules again, so a bad plan is reported once with all of its violations.
+	/// </summary>
+	public PlanValidationResult Validate(Result<SyncPlan> checkedPlan)
 	{
+		var plan = checkedPlan.Value ?? throw new ArgumentException("A plan that did not load has no verdict.", nameof(checkedPlan));
 		if (plan.DeleteThresholdDefault is not null)
 			_logger.LogInformation("Using user-specified delete threshold of {Threshold}", plan.DeleteThresholdDefault);
 
-		var deleteThreshold = plan.DeleteThresholdDefault ?? 0.2f;
-		if (!plan.RemoteListingCompleted)
+		// the plan was checked once, by the loader: this validator turns its findings into the verdict in front of a sync
+		var errors = checkedPlan.Diagnostics.Where(d => d.Severity == Severity.Error).ToList();
+		if (!plan.RemoteListingCompleted || plan.TotalSourceFiles == 0)
 		{
-			_logger.LogError("Remote files were not read to completion, cannot validate deployment plan");
-			return new(false, 1.0f, deleteThreshold);
+			foreach (var error in errors.Take(1))
+				_logger.LogError("{Message}", error.Message);
+			return new(false, 1.0f, plan.DeleteThresholdDefault ?? SyncPlan.DefaultDeleteThreshold);
 		}
 
-		if (plan.TotalSourceFiles == 0)
-		{
-			_logger.LogError("No files to sync");
-			return new(false, 1.0f, deleteThreshold);
-		}
+		var deleteThreshold = plan.EffectiveDeleteThreshold(out var reason);
+		if (reason is not null)
+			_logger.LogInformation("{Reason}", reason);
 
-		var deleteRatio = (float)plan.DeleteRequests.Count / plan.TotalRemoteFiles;
-		if (plan.TotalRemoteFiles == 0)
-		{
-			_logger.LogInformation(
-				"No files discovered in S3, assuming a clean bucket resetting delete threshold to `0.0' as our plan should not have ANY deletions"
-			);
-			deleteThreshold = 0.0f;
-		}
-		// if the total remote files are less than or equal to 100, we enforce a higher ratio of 0.8
-		// this allows newer assembled documentation to be in a higher state of flux
-		else if (plan.TotalRemoteFiles <= 100)
-		{
-			_logger.LogInformation("Plan has less than 100 total remote files ensuring delete threshold is at minimum 0.8");
-			deleteThreshold = Math.Max(deleteThreshold, 0.8f);
-		}
-		// if the total remote files are less than or equal to 1000, we enforce a higher ratio of 0.5
-		// this allows newer assembled documentation to be in a higher state of flux
-		else if (plan.TotalRemoteFiles <= 1000)
-		{
-			_logger.LogInformation(
-				"Plan has less than 1000 but more than a 100 total remote files ensuring delete threshold is at minimum 0.5"
-			);
-			deleteThreshold = Math.Max(deleteThreshold, 0.5f);
-		}
-
-		if (deleteRatio > deleteThreshold)
-		{
-			_logger.LogError("Delete ratio is {Ratio} which is greater than the threshold of {Threshold}", deleteRatio, deleteThreshold);
-			return new(false, deleteRatio, deleteThreshold);
-		}
-
-		return new(true, deleteRatio, deleteThreshold);
+		foreach (var error in errors)
+			_logger.LogError("{Message}", error.Message);
+		return new(errors.Count == 0, plan.DeleteRatio, deleteThreshold);
 	}
 }

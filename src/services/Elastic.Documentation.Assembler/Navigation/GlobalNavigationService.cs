@@ -8,29 +8,22 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
-public class GlobalNavigationService(
-	ILoggerFactory logFactory,
-	AssemblyConfiguration configuration,
-	IConfigurationContext configurationContext,
-	CheckoutsFileSystem fileSystem
-) : IService
+public class GlobalNavigationService(ILoggerFactory logFactory, AssembleContextProvider contexts, CheckoutsFileSystem fileSystem) : IService
 {
 	public async Task<bool> Validate(IDiagnosticsCollector collector, Cancel ctx)
 	{
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
+		var assembleContext = contexts.Get("dev", collector, fileSystem);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
-		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
-		var navigationYaml = await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx);
-		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml, collector, navigationFileInfo.FullName);
-
-		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!SiteNavigationFile.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo) || collector.Errors > 0)
+		// loading the navigation checks it (path prefixes are unique, ...); early exit if it has errors
+		_ = assembleContext.Navigation;
+		if (collector.Errors > 0)
 			return false;
 
 		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);
@@ -40,7 +33,7 @@ public class GlobalNavigationService(
 	public async Task<bool> ValidateLocalLinkReference(IDiagnosticsCollector collector, string? file, Cancel ctx)
 	{
 		file ??= ".artifacts/docs/html/links.json";
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
+		var assembleContext = contexts.Get("dev", collector, fileSystem);
 
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformationFactory.Create(

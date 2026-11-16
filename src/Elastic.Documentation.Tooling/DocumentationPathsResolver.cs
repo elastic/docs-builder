@@ -49,6 +49,12 @@ public sealed record ResolvedDocumentationPaths
 	public required IFileInfo ConfigurationPath { get; init; }
 
 	/// <summary>
+	/// When the docset was found by scanning rather than given: every docset file at a known location, in discovery order.
+	/// Empty when the configuration file was given.
+	/// </summary>
+	public IReadOnlyList<IFileInfo> DiscoveredDocsets { get; init; } = [];
+
+	/// <summary>
 	/// The repository checkout root — the directory whose immediate child is <c>.git</c>
 	/// (or whose immediate child is a worktree <c>.git</c> pointer file).
 	/// Always non-<see langword="null"/>: the resolver emits a hard error when no <c>.git</c>
@@ -157,8 +163,8 @@ public static class DocumentationPathsResolver
 	public static ResolvedDocumentationPaths Resolve(IDirectoryInfo invocation, DocumentationScopeOptions options, IFileSystem inner)
 	{
 		// 1-2. Anchor. Scoped to the invocation path only; skipped when the docset is already known.
-		var (source, configuration) = options.ConfigurationFile is { } known
-			? (inner.NewFileInfo(known).Directory!, inner.NewFileInfo(known))
+		var (source, configuration, discovered) = options.ConfigurationFile is { } known
+			? (inner.NewFileInfo(known).Directory!, inner.NewFileInfo(known), [])
 			: ScanForDocset(invocation, inner);
 
 		// 2b. Widen the depth guard to at least the distance between the invocation root and the
@@ -203,6 +209,7 @@ public static class DocumentationPathsResolver
 			InvocationPath = invocation,
 			SourceDirectory = source,
 			ConfigurationPath = configuration,
+			DiscoveredDocsets = discovered,
 			CheckoutDirectory = checkout,
 			GitDirectories = gitDirectories,
 			Git = git,
@@ -211,12 +218,14 @@ public static class DocumentationPathsResolver
 		};
 	}
 
-	private static (IDirectoryInfo, IFileInfo) ScanForDocset(IDirectoryInfo invocation, IFileSystem inner)
+	private static (IDirectoryInfo, IFileInfo, IReadOnlyList<IFileInfo>) ScanForDocset(IDirectoryInfo invocation, IFileSystem inner)
 	{
 		var scan = new DocsetScanFileSystem(invocation, inner);
-		if (!Paths.TryFindDocsFolderFromRoot(scan, scan.DirectoryInfo.New(invocation.FullName), out var dir, out var file))
+		var root = scan.DirectoryInfo.New(invocation.FullName);
+		if (!Paths.TryFindDocsFolderFromRoot(scan, root, out var dir, out var file))
 			throw new DocumentationPathException($"No docset.yml or _docset.yml found in '{invocation.FullName}' or any subfolder.");
-		return (dir, file);
+		var atKnownLocations = Paths.DocsetsAtKnownLocations(scan, root).Select(f => inner.NewFileInfo(f.FullName)).ToList();
+		return (dir, file, atKnownLocations.Count > 0 ? atKnownLocations : [inner.NewFileInfo(file.FullName)]);
 	}
 
 	/// <summary>

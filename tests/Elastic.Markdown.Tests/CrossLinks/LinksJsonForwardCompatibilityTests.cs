@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
@@ -65,7 +66,9 @@ public class LinksJsonForwardCompatibilityTests
 			"\"future_object\": { \"api/elasticsearch\": { \"versions\": [ { \"name\": \"main\", \"unheard_of\": [ 1 ] } ], \"something_new\": {} } }"
 		];
 
-	private static void AssertReadsTheDocumentedProperties(RepositoryLinks links)
+	private static LinkManifest Load(string json) => LinkLoader.LoadManifest(json, "links.json").Value!;
+
+	private static void AssertReadsTheDocumentedProperties(LinkManifest links)
 	{
 		links.Origin.Branch.Should().Be("main");
 		links.UrlPathPrefix.Should().Be("/elastic/docs-content/tree/main");
@@ -79,13 +82,13 @@ public class LinksJsonForwardCompatibilityTests
 	[Test]
 	[MethodDataSource(nameof(FutureProperties))]
 	public void Deserialize_WithAPropertyAnOlderReaderDoesNotKnow_ReadsTheRestUnchanged(string property) =>
-		AssertReadsTheDocumentedProperties(RepositoryLinks.Deserialize(WithProperty(property)));
+		AssertReadsTheDocumentedProperties(Load(WithProperty(property)));
 
 	[Test]
 	public void Deserialize_WithAndWithoutAFloatingSection_GivesTheSameLinks()
 	{
-		var without = RepositoryLinks.Deserialize("{" + Core + "}");
-		var with = RepositoryLinks.Deserialize(WithProperty(FloatingSection));
+		var without = Load("{" + Core + "}");
+		var with = Load(WithProperty(FloatingSection));
 
 		with.Links.Should().BeEquivalentTo(without.Links);
 		with.Redirects.Should().BeEquivalentTo(without.Redirects);
@@ -95,7 +98,7 @@ public class LinksJsonForwardCompatibilityTests
 
 	[Test]
 	public void CrossLinkFetcher_Deserialize_WithAFloatingSection_ReadsTheRest() =>
-		AssertReadsTheDocumentedProperties(CrossLinkFetcher.Deserialize(WithProperty(FloatingSection)));
+		AssertReadsTheDocumentedProperties(Load(WithProperty(FloatingSection)));
 
 	[Test]
 	[Arguments("docs-content://index.md", true)]
@@ -104,20 +107,20 @@ public class LinksJsonForwardCompatibilityTests
 	[Arguments("docs-content://does-not-exist.md", false)]
 	public void CrossLinks_WithAFloatingSectionInTheTargetLinks_ResolveAsBefore(string crossLink, bool expected)
 	{
-		var resolve = (RepositoryLinks links) =>
+		var resolve = (LinkManifest links) =>
 		{
 			var fetched = new FetchedCrossLinks
 			{
 				DeclaredRepositories = ["docs-content"],
-				LinkReferences = new Dictionary<string, RepositoryLinks> { ["docs-content"] = links }.ToFrozenDictionary(),
+				LinkReferences = new Dictionary<string, LinkManifest> { ["docs-content"] = links }.ToFrozenDictionary(),
 				LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
 			};
 			var uri = CrossLinkResolver.Resolve(fetched, new IsolatedBuildEnvironmentUriResolver(), new Uri(crossLink)).ResolvedUri();
 			return (resolved: uri is not null, uri?.ToString());
 		};
 
-		var without = resolve(RepositoryLinks.Deserialize("{" + Core + "}"));
-		var with = resolve(RepositoryLinks.Deserialize(WithProperty(FloatingSection)));
+		var without = resolve(Load("{" + Core + "}"));
+		var with = resolve(Load(WithProperty(FloatingSection)));
 
 		with.resolved.Should().Be(expected);
 		with.Should().Be(without, "a floating section changes nothing for pages that are not part of it");

@@ -6,11 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -41,7 +42,7 @@ public class ConfigurationFileReleaseNotesTests
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("elasticsearch", "elasticsearch"));
 
 		config.ReleaseNotesProducts.Should().ContainSingle().Which.Should().Be("elasticsearch");
-		diagnostics.Should().BeEmpty();
+		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Warning).Which.Message.Should().Contain("declared more than once");
 	}
 
 	[Test]
@@ -80,16 +81,16 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("missing a 'product' value"));
 	}
 
-	private static DocumentationSetFile DocSetWithReleaseNotes(params string[] products) =>
+	private static DocumentationSetDto DocSetWithReleaseNotes(params string[] products) =>
 		new()
 		{
 			Project = "test",
 			TableOfContents = [],
-			ReleaseNotes = [.. products.Select(p => new ReleaseNotesProductReference { Product = p })]
+			ReleaseNotes = [.. products.Select(p => new ReleaseNotesProductDto { Product = p })]
 		};
 
-	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfiguration(
-		DocumentationSetFile docSet
+	private static async Task<(ResolvedDocumentationSet Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfiguration(
+		DocumentationSetDto docSet
 	)
 	{
 		var recorder = new RecordingDiagnosticsOutput();
@@ -99,15 +100,16 @@ public class ConfigurationFileReleaseNotesTests
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
+		TocFixtures.EnsureTableOfContents(docSet, fileSystem, Path.Join(root, "docs"));
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = CreateProductsConfiguration();
 
-		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		var config = DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 		return (config, recorder.Diagnostics);
 	}
@@ -118,7 +120,7 @@ public class ConfigurationFileReleaseNotesTests
 		public void Write(Diagnostic diagnostic) => Diagnostics.Add(diagnostic);
 	}
 
-	private static ProductsConfiguration CreateProductsConfiguration()
+	private static ProductCatalog CreateProductsConfiguration()
 	{
 		var products = new Dictionary<string, Product>
 		{
@@ -132,12 +134,7 @@ public class ConfigurationFileReleaseNotesTests
 			}
 		};
 
-		return new ProductsConfiguration
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToFrozenDictionary(kv => kv.Key, kv => kv.Value.DisplayName)
-		};
+		return new ProductCatalog { Products = products.ToFrozenDictionary() };
 	}
 
 	private sealed class MockDocumentationSetContext(

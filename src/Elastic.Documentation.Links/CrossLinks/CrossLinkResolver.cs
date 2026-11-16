@@ -6,12 +6,17 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Links.CrossLinks;
 
 public interface ICrossLinkResolver
 {
 	LinkResolution Resolve(Uri crossLinkUri);
+
+	/// <summary>What was fetched for the declared repositories, when the resolver keeps it (the cross-link graph of the build is checked against it).</summary>
+	FetchedCrossLinks? FetchedCrossLinks => null;
+
 	IUriEnvironmentResolver UriResolver { get; }
 
 	/// <summary>
@@ -55,13 +60,14 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 
 public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
 {
-	private FetchedCrossLinks _crossLinks = crossLinks;
+	/// <inheritdoc />
+	public FetchedCrossLinks FetchedCrossLinks { get; private set; } = crossLinks;
 	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
-	public LinkResolution Resolve(Uri crossLinkUri) => Resolve(_crossLinks, UriResolver, crossLinkUri);
+	public LinkResolution Resolve(Uri crossLinkUri) => Resolve(FetchedCrossLinks, UriResolver, crossLinkUri);
 
 	/// <inheritdoc />
-	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
+	public bool IsDeclaredCrossLinkScheme(string scheme) => FetchedCrossLinks.DeclaredRepositories.Contains(scheme);
 
 	/// <inheritdoc />
 	public ApiPageStatus CheckApiPage(string sitePath)
@@ -73,7 +79,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			return ApiPageStatus.Unknown;
 
 		var key = rest["api/doc/".Length..].Split('/', 2)[0];
-		foreach (var links in _crossLinks.LinkReferences.Values)
+		foreach (var links in FetchedCrossLinks.LinkReferences.Values)
 		{
 			if (links.Floating is { Count: > 0 } floating && floating.TryGetValue($"api/{key}", out var section))
 				return section.ContainsSitePath(rest) ? ApiPageStatus.Exists : ApiPageStatus.Missing;
@@ -82,12 +88,12 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		return ApiPageStatus.Unknown;
 	}
 
-	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
+	public FetchedCrossLinks UpdateLinkReference(string repository, LinkManifest repositoryLinks)
 	{
-		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		var dictionary = FetchedCrossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		dictionary[repository] = repositoryLinks;
-		_crossLinks = _crossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
-		return _crossLinks;
+		FetchedCrossLinks = FetchedCrossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
+		return FetchedCrossLinks;
 	}
 
 	public static LinkResolution Resolve(FetchedCrossLinks fetchedCrossLinks, IUriEnvironmentResolver uriResolver, Uri crossLinkUri)

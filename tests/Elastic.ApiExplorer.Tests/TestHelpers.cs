@@ -10,13 +10,11 @@ using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
@@ -27,8 +25,8 @@ public static class TestHelpers
 {
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null
+		VersioningSystemCatalog? versionsConfiguration = null,
+		ProductCatalog? productsConfiguration = null
 	)
 	{
 		versionsConfiguration ??= CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 0);
@@ -46,22 +44,15 @@ public static class TestHelpers
 					}
 				}
 			};
-			productsConfiguration = new ProductsConfiguration
-			{
-				Products = products.ToFrozenDictionary(),
-				PublicReferenceProducts = products.ToFrozenDictionary(),
-				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-			};
+			productsConfiguration = ProductCatalog.FromPublicProducts(products);
 		}
-		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
+		var search = SearchTuning.None;
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem)),
-			VersionsConfiguration = versionsConfiguration,
-			ProductsConfiguration = productsConfiguration,
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
-			SearchConfiguration = search
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, LegacyUrlMappingCatalog.None),
+			SearchTuning = search
 		};
 	}
 
@@ -81,8 +72,8 @@ public static class TestHelpers
 	/// <summary>A build context like <see cref="CreateBuildContext"/>, with the git scope and the versions and products configuration under test.</summary>
 	public static BuildContext CreateScopedBuildContext(
 		DiagnosticsCollector collector,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null,
+		VersioningSystemCatalog? versionsConfiguration = null,
+		ProductCatalog? productsConfiguration = null,
 		GitCheckoutInformation? git = null
 	) =>
 		new(
@@ -101,7 +92,7 @@ public static class TestHelpers
 	/// <summary>One Elasticsearch version tree of <paramref name="spec"/>, for the exporter.</summary>
 	public static IndexedTree EsTree(string moniker, OpenApiDocument spec) => new("elasticsearch", "elasticsearch", moniker, spec);
 
-	public static VersionsConfiguration CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
+	public static VersioningSystemCatalog CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
 		new()
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
@@ -118,7 +109,7 @@ public static class TestHelpers
 			},
 		};
 
-	public static VersionsConfiguration CreateVersionlessConfiguration() =>
+	public static VersioningSystemCatalog CreateVersionlessConfiguration() =>
 		new()
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>

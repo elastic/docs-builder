@@ -368,7 +368,10 @@ public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<Change
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"warning {repo}/docs/index.md:3 Invalid :description-visibility: value 'nonsense-value'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, hide-descriptions. Using auto."
+				"""
+				warning {repo}/docs/index.md:3 Invalid :description-visibility: value 'nonsense-value'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, hide-descriptions. Using auto.
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				"""
 			);
 
 	[Test]

@@ -454,7 +454,10 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"warning {repo}/docs/index.md:3 Invalid :type: value 'invalid-value'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior."
+				"""
+				warning {repo}/docs/index.md:3 Invalid :type: value 'invalid-value'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior.
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				"""
 			);
 
 	[Test]
@@ -746,7 +749,13 @@ public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBl
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 
@@ -788,7 +797,13 @@ public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<Changel
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 
@@ -830,7 +845,13 @@ public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogB
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 
@@ -874,7 +895,13 @@ public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 
@@ -909,7 +936,13 @@ public class ChangelogTypeFilterEmptyAllTests : DirectiveTest<ChangelogBlock>
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 
@@ -1074,7 +1107,13 @@ public class ChangelogEmptyBundleWithReleaseDateOnlyTests : DirectiveTest<Change
 	public void OmitsVersionBlockWhenOnlyReleaseDate()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 
@@ -1118,7 +1157,13 @@ public class ChangelogDedicatedPageIgnoresDescriptionTests : DirectiveTest<Chang
 	public void OmitsVersionBlockWhenNoMatchingEntries()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 

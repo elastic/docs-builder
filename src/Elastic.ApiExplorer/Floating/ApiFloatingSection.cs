@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Floating;

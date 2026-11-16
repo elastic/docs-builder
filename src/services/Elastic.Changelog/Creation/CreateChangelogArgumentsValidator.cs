@@ -6,6 +6,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Creation;
 
@@ -220,11 +221,11 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		}
 
 		// Validate products against products.yml
-		var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var validProductIds = configurationContext.Catalog.Products.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 		foreach (var product in input.Products)
 		{
 			// Normalize product ID (replace underscores with hyphens for comparison)
-			var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+			var normalizedProductId = ProductNames.Normalize(product.Product);
 			if (!validProductIds.Contains(normalizedProductId))
 			{
 				var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));

@@ -7,6 +7,7 @@ using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Testing;
 using Nullean.Snapshots;
 
@@ -66,16 +67,35 @@ public class DuplicateHandlingTests() : RenderChangelogTestBase()
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
-			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot(
-				"""
-			warning  Changelog file '1755268130-duplicate.yaml' appears in multiple bundles: {repo}/Guid_1/bundle1.yaml, {repo}/Guid_1/bundle2.yaml
-			warning  PR '100' appears in multiple bundles: {repo}/Guid_1/bundle1.yaml, {repo}/Guid_1/bundle2.yaml
-			"""
-			);
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("PR '100' appears in multiple bundles"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
+
+		// the rule across bundles is the only emitter: the old message, once, under the rule's id
+		Collector
+			.Diagnostics
+			.Where(d => d.Message.Contains($"Changelog file '{fileName}' appears in multiple bundles", StringComparison.Ordinal))
+			.Should()
+			.ContainSingle()
+			.Which
+			.RuleId
+			.Should()
+			.Be(LoadedBundlesConstraints.BundlesEntryFilesUnique.Name);
+
+		// both bundles name the same target version: reported once, as a hint (merging bundles of one release is legitimate)
+		Collector
+			.Diagnostics
+			.Where(d => d.RuleId == LoadedBundlesConstraints.BundlesTargetUnique.Name)
+			.Should()
+			.ContainSingle()
+			.Which
+			.Severity
+			.Should()
+			.Be(Severity.Hint);
+		Collector.DuplicatesDropped.Should().BeEmpty();
 	}
 
 	[Test]
@@ -194,6 +214,11 @@ public class DuplicateHandlingTests() : RenderChangelogTestBase()
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("warning  PR '100' appears in multiple bundles: {repo}/Guid_1/bundle1.yaml, {repo}/Guid_1/bundle2.yaml");
+			.MatchInlineSnapshot(
+				"""
+				hint  Several bundles share a target version; they are merged into one release (descriptions joined, the earliest release date wins).
+				warning  PR '100' appears in multiple bundles: {repo}/Guid_1/bundle1.yaml, {repo}/Guid_1/bundle2.yaml
+				"""
+			);
 	}
 }

@@ -23,56 +23,43 @@ namespace Mcp.Remote.Tests;
 /// metadata while all unit tests still pass. Each <c>http/*.http</c> file is one test; its responses
 /// are in <c>.snapshots/http/*.verified.responses</c>.
 /// </summary>
-// Every case sets the process-wide MCP_SERVER_PROFILE and restores it afterwards, so two cases at once would restore the
-// variable while the other host starts.
-[NotInParallel(nameof(McpHandshakeTests))]
 public class McpHandshakeTests
 {
 	[Test]
 	[HttpFiles("http")]
 	public async Task Run(SnapshotFile file)
 	{
-		// Program.cs reads MCP_SERVER_PROFILE via Environment.GetEnvironmentVariable before
-		// any DI override can run, so we set and restore the actual process variable to keep
-		// the test deterministic when a developer's environment has the variable set differently.
-		var previousProfile = Environment.GetEnvironmentVariable("MCP_SERVER_PROFILE");
-		Environment.SetEnvironmentVariable("MCP_SERVER_PROFILE", "public");
-		try
+		// Program.cs reads MCP_SERVER_PROFILE from configuration, so pin it per host instead of mutating the process
+		// environment. That keeps the test deterministic whatever the developer's environment says, and safe in parallel.
+		using var baseFactory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseSetting("MCP_SERVER_PROFILE", "public"));
+		// Tool calls in the .http files must not reach Elasticsearch: a developer's credentials would query a real
+		// cluster and an unreachable one would stall the test until the transport times out.
+		using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
 		{
-			// Tool calls in the .http files must not reach Elasticsearch: a developer's credentials would query a real
-			// cluster and an unreachable one would stall the test until the transport times out.
-			using var baseFactory = new WebApplicationFactory<Program>();
-			using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-			{
-				_ = services.RemoveAll<IDocumentGateway>();
-				_ = services.AddScoped<IDocumentGateway, EchoDocumentGateway>();
-			}));
-			using var client = factory.CreateClient();
+			_ = services.RemoveAll<IDocumentGateway>();
+			_ = services.AddScoped<IDocumentGateway, EchoDocumentGateway>();
+		}));
+		using var client = factory.CreateClient();
 
-			var transcript = await HttpFileSnapshot.RunAsync(
-				file.Path,
-				new HttpFileSnapshotOptions { Client = client },
-				TestContext.Current!.Execution.CancellationToken
-			);
+		var transcript = await HttpFileSnapshot.RunAsync(
+			file.Path,
+			new HttpFileSnapshotOptions { Client = client },
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-			// Computed the same way Program.cs does, so a regression to the default assembly version (1.0.0.0)
-			// or the fallback ("0.0.0") leaves a different value in the snapshot instead of the placeholder.
-			var expectedVersion = typeof(Program)
-				.Assembly
-				.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
-				.FirstOrDefault()?.InformationalVersion
-				?? "0.0.0";
+		// Computed the same way Program.cs does, so a regression to the default assembly version (1.0.0.0)
+		// or the fallback ("0.0.0") leaves a different value in the snapshot instead of the placeholder.
+		var expectedVersion = typeof(Program)
+			.Assembly
+			.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+			.FirstOrDefault()?.InformationalVersion
+			?? "0.0.0";
 
-			transcript.Should().MatchHttpFileSnapshot(
-				new SnapshotOptions().Scrub(SseScrubbers.PrettyPrintDataLines).Scrub(
-					text => text.Replace(expectedVersion, "{server-version}", StringComparison.Ordinal)
-				)
-			);
-		}
-		finally
-		{
-			Environment.SetEnvironmentVariable("MCP_SERVER_PROFILE", previousProfile);
-		}
+		transcript.Should().MatchHttpFileSnapshot(
+			new SnapshotOptions().Scrub(SseScrubbers.PrettyPrintDataLines).Scrub(
+				text => text.Replace(expectedVersion, "{server-version}", StringComparison.Ordinal)
+			)
+		);
 	}
 
 	/// <summary>Answers every URL with a document at that URL, so a snapshot shows the tool's argument arrived.</summary>

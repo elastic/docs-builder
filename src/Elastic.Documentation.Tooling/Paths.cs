@@ -163,15 +163,20 @@ public static class Paths
 		return true;
 	}
 
-	private static string? GetDocsetPathFromKnownLocations(IFileSystem readFileSystem, IDirectoryInfo rootPath)
+	private static string? GetDocsetPathFromKnownLocations(IFileSystem readFileSystem, IDirectoryInfo rootPath) =>
+		KnownDocsetLocations(rootPath).FirstOrDefault(readFileSystem.File.Exists);
+
+	/// <summary>Every docset file at a known location under <paramref name="rootPath"/>, in the order discovery looks.</summary>
+	public static IReadOnlyList<IFileInfo> DocsetsAtKnownLocations(IFileSystem readFileSystem, IDirectoryInfo rootPath) =>
+		[.. KnownDocsetLocations(rootPath).Where(readFileSystem.File.Exists).Select(p => readFileSystem.FileInfo.New(p))];
+
+	private static IEnumerable<string> KnownDocsetLocations(IDirectoryInfo rootPath)
 	{
 		string[] files = ["docset.yml", "_docset.yml"];
 		string[] knownFolders = [rootPath.FullName, Path.Join(rootPath.FullName, "docs")];
-		var mostLikelyTargets = from file in files
-								from folder in knownFolders
-								select Path.Join(folder, file);
-
-		return mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
+		return from file in files
+			   from folder in knownFolders
+			   select Path.Join(folder, file);
 	}
 
 	public static (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IFileSystem readFileSystem, IDirectoryInfo rootPath)

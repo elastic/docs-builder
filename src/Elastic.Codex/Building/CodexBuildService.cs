@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.LinkIndex;
@@ -167,14 +168,13 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			var pathPrefix = string.IsNullOrEmpty(sitePrefix) ? $"/r/{repoName}" : $"/{sitePrefix}/r/{repoName}";
 
 			// Create git checkout information
-			var git = new GitCheckoutInformation
-			{
-				Branch = checkout.Reference.Branch,
-				Remote = checkout.Reference.ResolvedOrigin,
-				Ref = checkout.CommitHash,
-				RepositoryName = checkout.Reference.Name,
-				GitHubRef = Environment.GetEnvironmentVariable("GITHUB_REF")
-			};
+			var git = GitCheckoutInformation.ForClonedRepository(
+				checkout.Reference.Name,
+				checkout.Reference.ResolvedOrigin,
+				checkout.Reference.Branch,
+				checkout.CommitHash,
+				Environment.GetEnvironmentVariable("GITHUB_REF")
+			);
 
 			// Pre-compute codex site root for HTMX (no URL parsing in providers)
 			var siteRootPath = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix.Trim('/')}/";
@@ -183,7 +183,7 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			var canonicalBaseUrl = !string.IsNullOrWhiteSpace(context.Configuration.CanonicalBaseUrl)
 				&& Uri.TryCreate(context.Configuration.CanonicalBaseUrl, UriKind.Absolute, out var parsed) ? parsed : null;
 
-			// Repository clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
+			// RepositoryDto clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
 			// discovers .git inside that ceiling (#3115). Using DocsDirectory alone would cap the ceiling
 			// at the docs subtree and return null above repo/.git, breaking GithubEditUrl generation.
 			// The docset file itself is passed explicitly so build reuses the docset clone discovery already
@@ -206,7 +206,7 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			ICrossLinkResolver crossLinkResolver;
 			var codexRepos = new HashSet<string> { repoName };
 
-			if (buildContext.Configuration.CrossLinkEntries.Length > 0)
+			if (buildContext.Configuration.CrossLinkEntries.Count > 0)
 			{
 				var fetcher = new DocSetConfigurationCrossLinkFetcher(
 					logFactory,

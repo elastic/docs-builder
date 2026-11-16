@@ -8,6 +8,7 @@ using Elastic.Codex.Landing;
 using Elastic.Codex.Navigation;
 using Elastic.Codex.Page;
 using Elastic.Documentation;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
@@ -104,14 +105,14 @@ public static class CodexStyleGuidePreviews
 
 			var context = docsets[0].Context;
 			var references = Sets.Select(
-				s => new CodexDocumentationSetReference { Name = s.Name, Branch = "main", Group = s.Group, Icon = s.Icon }
+				s => CodexDocumentationSetReference.ForRepository(s.Name, "main", "docs", s.Group, s.Icon)
 			).ToList();
 			var navigations = Sets.Zip(docsets, (set, docset) => (set.Name, docset.Navigation)).ToDictionary(
 				pair => pair.Name,
 				pair => pair.Navigation
 			);
 			var navigation = new CodexNavigation(
-				CodexConfiguration.Deserialize(ConfigurationYaml),
+				CodexSiteLoader.LoadYaml(ConfigurationYaml, "codex style guide preview").OrThrow(),
 				references,
 				new PreviewCodexContext(context),
 				navigations

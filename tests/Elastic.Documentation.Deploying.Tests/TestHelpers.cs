@@ -5,12 +5,10 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -20,9 +18,9 @@ public static class TestHelpers
 {
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
-		VersionsConfiguration? versionsConfiguration = null,
+		VersioningSystemCatalog? versionsConfiguration = null,
 		ConfigurationFileProvider? configurationFileProvider = null,
-		ProductsConfiguration? productsConfiguration = null
+		ProductCatalog? productsConfiguration = null
 	)
 	{
 		configurationFileProvider ??= new ConfigurationFileProvider(
@@ -30,7 +28,7 @@ public static class TestHelpers
 			new ConfigurationFileSystem(fileSystem),
 			skipPrivateRepositories: true
 		);
-		versionsConfiguration ??= new VersionsConfiguration
+		versionsConfiguration ??= new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
@@ -59,22 +57,15 @@ public static class TestHelpers
 					}
 				}
 			};
-			productsConfiguration = new ProductsConfiguration
-			{
-				Products = products.ToFrozenDictionary(),
-				PublicReferenceProducts = products.ToFrozenDictionary(),
-				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-			};
+			productsConfiguration = ProductCatalog.FromPublicProducts(products);
 		}
-		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
+		var search = SearchTuning.None;
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = configurationFileProvider,
-			VersionsConfiguration = versionsConfiguration,
-			ProductsConfiguration = productsConfiguration,
-			SearchConfiguration = search,
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, LegacyUrlMappingCatalog.None),
+			SearchTuning = search,
 		};
 	}
 }

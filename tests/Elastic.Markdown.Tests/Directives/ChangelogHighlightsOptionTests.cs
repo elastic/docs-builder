@@ -182,7 +182,10 @@ public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<Changel
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"warning {repo}/docs/index.md:3 Invalid :type: value 'highlight'. Highlights are controlled with :highlights: (not :type:). Using default behavior."
+				"""
+				warning {repo}/docs/index.md:3 Invalid :type: value 'highlight'. Highlights are controlled with :highlights: (not :type:). Using default behavior.
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				"""
 			);
 
 	[Test]

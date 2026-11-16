@@ -338,7 +338,9 @@ public class ParsesProductComingDeprecated : AuthoringTest
 
 	[Test, DisplayName("reports diagnostics")]
 	public async Task ReportsDiagnostics() =>
-		await Docs.HasDiagnostics("hint {repo}/docs/index.md The 'coming' lifecycle is deprecated and will be removed in a future release.");
+		await Docs.HasDiagnostics(
+			"hint {repo}/docs/index.md The 'coming' lifecycle is deprecated and will be removed in a future release (key 'product')."
+		);
 }
 
 public class ParsesProductPlanned : AuthoringTest
@@ -352,7 +354,7 @@ public class ParsesProductPlanned : AuthoringTest
 	[Test, DisplayName("reports diagnostics")]
 	public async Task ReportsDiagnostics() =>
 		await Docs.HasDiagnostics(
-			"hint {repo}/docs/index.md The 'planned' lifecycle is deprecated and will be removed in a future release."
+			"hint {repo}/docs/index.md The 'planned' lifecycle is deprecated and will be removed in a future release (key 'product')."
 		);
 }
 

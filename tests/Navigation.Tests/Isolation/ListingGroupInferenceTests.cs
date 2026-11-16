@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
@@ -27,24 +29,24 @@ public class ListingGroupInferenceTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/rules/index.md", new MockFileData("# Rules"));
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, Yaml, fileSystem.NewDirInfo("docs"));
-		return docSet.TableOfContents.OfType<ListingRef>().Should().ContainSingle().Subject;
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, Yaml, fileSystem.NewDirInfo("docs"));
+		return docSet.TableOfContents.OfCase<ListingRef>().Should().ContainSingle().Subject;
 	}
 
 	private static IEnumerable<string> PagesIn(ListingRef listing, string groupKey) =>
 		listing
 			.Children
-			.OfType<ListingGroupRef>()
+			.OfCase<ListingGroupRef>()
 			.Should()
 			.ContainSingle(g => g.GroupKey == groupKey)
 			.Subject
 			.Children
-			.OfType<FileRef>()
+			.OfCase<FileRef>()
 			.Where(f => f is not IndexFileRef)
-			.Select(f => f.PathRelativeToDocumentationSet);
+			.Select(f => f.PathRelativeToDocumentationSet.Value);
 
 	private static IEnumerable<string> UngroupedPages(ListingRef listing) =>
-		listing.Children.OfType<FileRef>().Where(f => f is not IndexFileRef).Select(f => f.PathRelativeToDocumentationSet);
+		listing.Children.OfCase<FileRef>().Where(f => f is not IndexFileRef).Select(f => f.PathRelativeToDocumentationSet.Value);
 
 	[Test]
 	public void FileInGroupFolderWithoutFrontMatter_IsGroupedByItsFolder()
@@ -70,7 +72,7 @@ public class ListingGroupInferenceTests() : DocumentationSetNavigationTestBase()
 		var listing = ResolveListing(fileSystem);
 
 		PagesIn(listing, "gcp").Should().Equal("rules/aws/rule1.md");
-		listing.Children.OfType<ListingGroupRef>().Should().NotContain(g => g.GroupKey == "aws");
+		listing.Children.OfCase<ListingGroupRef>().Should().NotContain(g => g.GroupKey == "aws");
 	}
 
 	[Test]
@@ -81,7 +83,7 @@ public class ListingGroupInferenceTests() : DocumentationSetNavigationTestBase()
 
 		var listing = ResolveListing(fileSystem);
 
-		listing.Children.OfType<ListingGroupRef>().Should().BeEmpty();
+		listing.Children.OfCase<ListingGroupRef>().Should().BeEmpty();
 		UngroupedPages(listing).Should().Equal("rules/misc/rule1.md");
 	}
 }

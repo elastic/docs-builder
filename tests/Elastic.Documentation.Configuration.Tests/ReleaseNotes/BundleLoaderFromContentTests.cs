@@ -5,12 +5,20 @@
 using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
 public class BundleLoaderFromContentTests
 {
 	private readonly BundleLoader _loader = new(new FileSystem());
+
+	private IReadOnlyList<LoadedBundle> Load(IReadOnlyList<(string FileName, string Content)> contents, List<string> warnings)
+	{
+		var result = _loader.LoadBundlesFromContent(contents);
+		warnings.AddRange(result.Diagnostics.Where(d => d.RuleId is null).Select(d => d.Message));
+		return result.Value!;
+	}
 
 	private static (string FileName, string Content) Bundle(string fileName, string content) => (fileName, content);
 
@@ -36,7 +44,7 @@ public class BundleLoaderFromContentTests
 			"""
 		);
 
-		var bundles = _loader.LoadBundlesFromContent([bundle], warnings.Add);
+		var bundles = Load([bundle], warnings);
 
 		warnings.Should().BeEmpty();
 		bundles.Should().ContainSingle();
@@ -65,7 +73,7 @@ public class BundleLoaderFromContentTests
 			"""
 		);
 
-		var bundles = _loader.LoadBundlesFromContent([bundle], warnings.Add);
+		var bundles = Load([bundle], warnings);
 
 		bundles.Should().ContainSingle();
 		bundles[0].Entries.Should().BeEmpty();
@@ -81,7 +89,7 @@ public class BundleLoaderFromContentTests
 		var warnings = new List<string>();
 		var bundle = Bundle("broken.yaml", "products: [unterminated");
 
-		var bundles = _loader.LoadBundlesFromContent([bundle], warnings.Add);
+		var bundles = Load([bundle], warnings);
 
 		bundles.Should().BeEmpty();
 		warnings.Should().ContainSingle().Which.Should().Contain("broken.yaml");
@@ -116,7 +124,7 @@ public class BundleLoaderFromContentTests
 			"""
 		);
 
-		var bundles = _loader.LoadBundlesFromContent([parent, amend], warnings.Add);
+		var bundles = Load([parent, amend], warnings);
 
 		bundles.Should().ContainSingle("the amend file merges into its parent");
 		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo("Base entry", "Amended fix");
@@ -151,7 +159,7 @@ public class BundleLoaderFromContentTests
 			"""
 		);
 
-		var bundles = _loader.LoadBundlesFromContent([parent, amendNotes], warnings.Add);
+		var bundles = Load([parent, amendNotes], warnings);
 
 		bundles.Should().ContainSingle("the amend-notes sidecar merges into its parent");
 		bundles[0].Version.Should().Be("4.2.0");
@@ -212,7 +220,7 @@ public class BundleLoaderFromContentTests
 			"""
 		);
 
-		var bundles = _loader.LoadBundlesFromContent([parent, numbered, amendNotes], warnings.Add);
+		var bundles = Load([parent, numbered, amendNotes], warnings);
 
 		bundles.Should().ContainSingle();
 		bundles[0].Entries.Select(e => e.Title).Should().Equal("Keep", "Numbered addition", "Notes addition");

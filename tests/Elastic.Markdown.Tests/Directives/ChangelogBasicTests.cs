@@ -393,7 +393,12 @@ public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 No changelog bundle matches :version: '1.2.3'.");
+			.MatchInlineSnapshot(
+				"""
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				warning {repo}/docs/index.md:3 No changelog bundle matches :version: '1.2.3'.
+				"""
+			);
 }
 
 [InheritsTests]
@@ -787,7 +792,7 @@ internal static class ChangelogCdnTestResolver
 {
 	public static IReleaseNotesResolver For(string product, params (string FileName, string Content)[] bundleContents)
 	{
-		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(bundleContents, _ => { });
+		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(bundleContents).Value!;
 		return new ReleaseNotesResolver(new FetchedReleaseNotes
 		{
 			BundlesByProduct = new Dictionary<string, IReadOnlyList<LoadedBundle>>(StringComparer.Ordinal)
@@ -952,7 +957,13 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 	}
 }
 
@@ -1059,7 +1070,16 @@ public class ChangelogEmptyReleaseBesideAReleaseTests : DirectiveTest<ChangelogB
 	{
 		Block!.LoadedBundles.Should().HaveCount(1);
 		Block.LoadedBundles[0].Entries.Should().ContainSingle().Which.Title.Should().Be("Faster hosted search");
-		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/docs/index.md:3 Bundle file 'cloud-cloud-hosted-2026-11-16-1111111.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'cloud-hosted' ('cloud-cloud-hosted-2026-11-16.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+			warning {repo}/docs/index.md:3 Bundle file 'cloud-cloud-hosted-2026-11-16-2222222.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'cloud-hosted' ('cloud-cloud-hosted-2026-11-16.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+			"""
+			);
 	}
 
 	[Test]
@@ -1621,7 +1641,14 @@ public class ChangelogDoubleBraceEscapeTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void RendersWithoutErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	public void RendersWithoutErrors() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 
 	[Test]
 	public void RendersHtml() =>

@@ -47,7 +47,12 @@ public class RootIndexValidationTests()
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("error {repo}/docs/docset.yml Non-public documentation sets require a root index.md file");
+			.MatchInlineSnapshot(
+				"""
+				warning {repo}/docs/docset.yml Discovery picked {repo}/docs/docset.yml, which belongs to the 'internal' codex registry. Isolated and assembler builds build the default docset; pass the docset's path explicitly.
+				error {repo}/docs/docset.yml Non-public documentation sets require a root index.md file
+				"""
+			);
 	}
 
 	[Test]

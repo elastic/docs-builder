@@ -6,11 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -20,7 +21,7 @@ public class ConfigurationFileExcludeTests
 	[Test]
 	public void IsExcluded_DocsetGlob_MatchesNestedKibanaDocsPath()
 	{
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			TableOfContents = [],
@@ -34,7 +35,7 @@ public class ConfigurationFileExcludeTests
 	[Test]
 	public void IsExcluded_DocsetGlob_DoesNotMatchOutsideTree()
 	{
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			TableOfContents = [],
@@ -45,7 +46,7 @@ public class ConfigurationFileExcludeTests
 		config.IsExcluded("reference/query-languages/esql/guide.md").Should().BeFalse();
 	}
 
-	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -56,15 +57,10 @@ public class ConfigurationFileExcludeTests
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
-		var productsConfig = new ProductsConfiguration
-		{
-			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-		};
+		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+		var productsConfig = new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary(), };
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}
 
 	private sealed class MockDocumentationSetContext(

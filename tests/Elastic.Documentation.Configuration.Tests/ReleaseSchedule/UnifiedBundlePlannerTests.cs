@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.ReleaseSchedule;
 
 namespace Elastic.Documentation.Configuration.Tests.ReleaseSchedule;

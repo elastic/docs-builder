@@ -189,8 +189,10 @@ internal static class DirectiveLinkValidator
 			// Custom passthrough protocols (cursor:, vscode:) are left alone.
 			if (IsPassthroughCustomProtocolScheme(uri.Scheme))
 				return original;
-			block.EmitError(
-				$"Directive link `{original}` uses cross-link scheme `{uri.Scheme}://` which is not declared under `cross_links` in docset.yml."
+			block.Emit(
+				Elastic.Documentation.Diagnostics.Severity.Error,
+				$"Directive link `{original}` uses cross-link scheme `{uri.Scheme}://` which is not declared under `cross_links` in docset.yml.",
+				ruleId: LinkGraphConstraints.CrossLinkSchemeDeclared.Name
 			);
 			return original;
 		}
@@ -202,7 +204,7 @@ internal static class DirectiveLinkValidator
 		var resolvedUri = resolution.ResolvedUri();
 		if (resolvedUri is null)
 		{
-			block.EmitError(resolution.ToDiagnosticMessage(uri));
+			block.Emit(Elastic.Documentation.Diagnostics.Severity.Error, resolution.ToDiagnosticMessage(uri), ruleId: resolution.RuleId());
 			return original;
 		}
 

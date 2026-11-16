@@ -5,10 +5,12 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.Testing;
 
@@ -28,11 +30,11 @@ public class SectionNavigationTests()
 		string siteNavYaml
 	)
 	{
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -40,7 +42,7 @@ public class SectionNavigationTests()
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsCtx, GenericDocumentationFileFactory.Instance);
 
 		var searchCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search");
-		var searchDocset = DocumentationSetFile.LoadAndResolve(
+		var searchDocset = DocumentationSetLoader.LoadAndResolve(
 			searchCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -324,7 +326,7 @@ public class SectionNavigationTests()
 		fileSystem.AddFile("/checkouts/current/observability/docs/kibana.md", new MockFileData("# Kibana"));
 		fileSystem.AddFile("/checkouts/current/observability/docs/discover.md", new MockFileData("# Discover"));
 
-		var siteNavFile = SiteNavigationFile.Deserialize(
+		var siteNavFile = SiteNavigationLoader.Deserialize(
 			"""
 			toc:
 			  - section: Troubleshoot
@@ -334,7 +336,7 @@ public class SectionNavigationTests()
 			"""
 		);
 		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -461,9 +463,9 @@ public class SectionNavigationTests()
 
 		string[] GetLeafUrls(string siteNavYaml)
 		{
-			var navFile = SiteNavigationFile.Deserialize(siteNavYaml);
+			var navFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 			var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-			var obsDocset = DocumentationSetFile.LoadAndResolve(
+			var obsDocset = DocumentationSetLoader.LoadAndResolve(
 				obsCtx.Collector,
 				fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -471,7 +473,7 @@ public class SectionNavigationTests()
 			var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsCtx, GenericDocumentationFileFactory.Instance);
 
 			var searchCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search");
-			var searchDocset = DocumentationSetFile.LoadAndResolve(
+			var searchDocset = DocumentationSetLoader.LoadAndResolve(
 				searchCtx.Collector,
 				fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
 				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -523,7 +525,7 @@ public class SectionNavigationTests()
 		           """;
 
 		var (navigation, _, _) = BuildTwoChildSection(yaml);
-		var navFile = SiteNavigationFile.Deserialize(yaml);
+		var navFile = SiteNavigationLoader.Deserialize(yaml);
 
 		var renderModel = SectionTopNavBuilder.Build(navigation, navFile);
 
@@ -562,7 +564,7 @@ public class SectionNavigationTests()
 		           """;
 
 		var (navigation, _, _) = BuildTwoChildSection(yaml);
-		var renderModel = SectionTopNavBuilder.Build(navigation, SiteNavigationFile.Deserialize(yaml));
+		var renderModel = SectionTopNavBuilder.Build(navigation, SiteNavigationLoader.Deserialize(yaml));
 
 		var apis = renderModel!.Items[1].Should().BeOfType<TopNavLinkItem>().Subject;
 		apis.Url.Should().Be("/docs/api/", "the site prefix is added");
@@ -588,7 +590,7 @@ public class SectionNavigationTests()
 		           """;
 
 		var (nav, _, _) = BuildTwoChildSection(yaml);
-		var navFile = SiteNavigationFile.Deserialize(yaml);
+		var navFile = SiteNavigationLoader.Deserialize(yaml);
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
@@ -620,7 +622,7 @@ public class SectionNavigationTests()
 		           """;
 
 		var (nav, _, _) = BuildTwoChildSection(yaml);
-		var navFile = SiteNavigationFile.Deserialize(yaml);
+		var navFile = SiteNavigationLoader.Deserialize(yaml);
 
 		var renderModel = SectionTopNavBuilder.Build(nav, navFile);
 
@@ -663,10 +665,10 @@ public class SectionNavigationTests()
 		               navigation_title: Manage your Cloud account
 		           """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		var platformCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)

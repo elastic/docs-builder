@@ -2,21 +2,24 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncContext
 {
+	private readonly IConfigurationContext _configurationContext;
+
 	public CheckoutsFileSystem ReadFileSystem { get; }
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 
@@ -25,16 +28,16 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 	public AssemblyConfiguration Configuration { get; }
 
 	/// <inheritdoc />
-	public VersionsConfiguration VersionsConfiguration { get; }
+	public GlobalCatalog Catalog { get; }
+
+	public RelatedLearningCatalog RelatedLearning => _configurationContext.RelatedLearning;
 
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 
 	/// <inheritdoc />
 	public DocumentationEndpoints Endpoints { get; }
 
-	public ProductsConfiguration ProductsConfiguration { get; }
-	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	public SearchConfiguration SearchConfiguration { get; }
+	public SearchTuning SearchTuning { get; }
 
 	// Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 	/// <inheritdoc />
@@ -58,6 +61,27 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 
 	public PublishEnvironment Environment { get; }
 
+	/// <summary>The navigation file this environment builds from: <c>navigation_preview.yml</c> under the navigation-preview flag.</summary>
+	public IFileInfo NavigationFile { get; }
+
+	/// <summary>
+	/// The site navigation this assembly builds: <c>navigation.yml</c> (or <c>navigation_preview.yml</c>) as the
+	/// domain filters it, without the mounts and phantoms of private repositories when those are skipped.
+	/// </summary>
+	/// <remarks>
+	/// Loaded and checked on first use; this is the one place the navigation's constraint violations are reported
+	/// (to <see cref="Collector"/>), so they appear once per run. Callers that must stop on an invalid navigation check the collector's errors.
+	/// </remarks>
+	[field: AllowNull, MaybeNull]
+	public SiteNavigationDefinition Navigation =>
+		field ??=
+			SiteNavigationLoader.Load(
+				NavigationFile.FileSystem.File.ReadAllText(NavigationFile.FullName),
+				NavigationFile,
+				Configuration,
+				ConfigurationFileProvider.SkipPrivateRepositories
+			).EmitTo(Collector)!;
+
 	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
 	public string EnvironmentName => Environment.Name;
 
@@ -78,19 +102,19 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		Configuration = configuration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ConfigurationPath = ConfigurationFileProvider.AssemblerFile;
-		VersionsConfiguration = configurationContext.VersionsConfiguration;
-		SearchConfiguration = configurationContext.SearchConfiguration;
+		_configurationContext = configurationContext;
+		Catalog = configurationContext.Catalog;
+		SearchTuning = configurationContext.SearchTuning;
 		Endpoints = configurationContext.Endpoints;
 		Endpoints.BuildType = "assembler";
-		ProductsConfiguration = configurationContext.ProductsConfiguration;
-		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 
 		if (!Configuration.Environments.TryGetValue(environment, out var env))
 			throw new Exception($"Could not find environment {environment}");
 		Environment = env;
 
-		if (Environment.ToFeatureFlags().NavigationPreviewEnabled)
-			_ = ConfigurationFileProvider.UseNavigationPreview();
+		NavigationFile = Environment.ToFeatureFlags().NavigationPreviewEnabled
+			? ConfigurationFileProvider.NavigationPreviewFile
+			: ConfigurationFileProvider.NavigationFile;
 
 		Endpoints.Environment = environment;
 

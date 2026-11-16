@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -61,7 +61,7 @@ public class UnifiedReleaseNotesBuildService(
 
 	public async Task<bool> Build(IDiagnosticsCollector collector, UnifiedReleaseNotesBuildOptions options, Cancel ctx = default)
 	{
-		var products = UnifiedReleaseNotesDocset.SelectProducts(configurationContext.ProductsConfiguration.Products.Values);
+		var products = UnifiedReleaseNotesDocset.SelectProducts(configurationContext.Catalog.Products.Products.Values);
 		if (products.Count == 0)
 		{
 			collector.EmitError(string.Empty, "No products with 'release-notes: dra' found in products.yml. There is nothing to build.");
@@ -135,7 +135,11 @@ public class UnifiedReleaseNotesBuildService(
 				continue;
 			}
 
-			var loaded = loader.LoadBundles(folder, warning => collector.EmitWarning(folder, warning));
+			// what the loader finds is reported as warnings here, as it was when the loader took a warning callback: one broken bundle must not fail the whole site
+			var read = loader.LoadBundles(folder);
+			foreach (var diagnostic in read.Diagnostics)
+				collector.EmitWarning(folder, diagnostic.Message);
+			var loaded = read.Value ?? [];
 			if (loaded.Count == 0)
 			{
 				_logger.LogInformation("'{Product}' has no bundles and is left out of the site.", product.Id);

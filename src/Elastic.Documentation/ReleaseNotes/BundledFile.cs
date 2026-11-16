@@ -7,6 +7,9 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <summary>
 /// File information in a bundled changelog entry.
 /// </summary>
+/// <remarks>
+/// Constructed through <c>Bundle</c>.
+/// </remarks>
 public record BundledFile
 {
 	/// <summary>The filename.</summary>
@@ -14,4 +17,7 @@ public record BundledFile
 
 	/// <summary>The file checksum.</summary>
 	public required string Checksum { get; init; }
+
+	/// <summary>The file a bundle entry was read from.</summary>
+	public static BundledFile Of(string name, string checksum) => new() { Name = name, Checksum = checksum };
 }

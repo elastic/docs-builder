@@ -19,8 +19,8 @@ public class ApiLanding : IApiGroupingModel
 	public object? CreatePageModel(ApiRenderContext context) =>
 		ApiOverviewBuilder.Build(
 			context.CurrentNavigation.NavigationRoot,
-			context.BuildContext.VersionsConfiguration,
-			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			context.BuildContext.Catalog.VersioningSystems,
+			context.BuildContext.Features.NavigationPreviewEnabled
 		);
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
@@ -28,8 +28,8 @@ public class ApiLanding : IApiGroupingModel
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.Build(
 				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+				context.BuildContext.Catalog.VersioningSystems,
+				context.BuildContext.Features.NavigationPreviewEnabled
 			);
 		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
 		var slice = LandingView.Create(viewModel);
@@ -44,8 +44,8 @@ public class ApiLanding : IApiGroupingModel
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.Build(
 				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+				context.BuildContext.Catalog.VersioningSystems,
+				context.BuildContext.Features.NavigationPreviewEnabled
 			);
 		return Task.FromResult<string?>(
 			LandingCommonMark.Product(
@@ -188,7 +188,7 @@ public class TagNavigationItem(
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
 
-	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
+	internal void ApplyIntroHeadings(IReadOnlyList<HeadingItem> introHeadings)
 	{
 		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
 		// Only the top-level sections get a nav entry; deeper headings stay on the page as subsections of their parent.

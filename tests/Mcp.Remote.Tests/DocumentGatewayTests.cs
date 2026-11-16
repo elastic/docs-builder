@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Mcp.Remote.Gateways;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -171,7 +172,7 @@ public class DocumentGatewayTests
 				Elasticsearch = new ElasticsearchEndpoint { Uri = stub.Uri, ApiKey = "test" },
 				SearchIndexOverride = "test-index"
 			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning.None
 		);
 
 	private sealed class ElasticsearchStub : IDisposable

@@ -5,9 +5,12 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Tests.Golden;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 
@@ -16,7 +19,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class DocumentationSetFileTests
 {
 	// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
-	private DocumentationSetFile Deserialize(string yaml) => ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
+	private DocumentationSetDto Deserialize(string yaml) => ConfigurationFileProvider.Deserialize<DocumentationSetDto>(yaml);
 
 	[Test]
 	public void DeserializesBasicProperties()
@@ -119,7 +122,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot("""
 			IndexFileRef  index.md
@@ -143,7 +146,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -171,7 +174,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -197,7 +200,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot("""
 			IndexFileRef  index.md
@@ -223,7 +226,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -255,7 +258,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -326,7 +329,7 @@ public class DocumentationSetFileTests
 		result.Api.Should().HaveCount(2);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -363,7 +366,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -392,7 +395,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -436,7 +439,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().BeEmpty();
+		result.TocEntries.Should().BeEmpty();
 	}
 
 	[Test]
@@ -455,7 +458,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot("""
 			IndexFileRef  index.md
@@ -480,7 +483,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -512,7 +515,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -587,7 +590,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		TocDump
-			.ToText(result.TableOfContents)
+			.ToText(result.TocEntries)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -619,7 +622,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new CapturingDiagnosticsCollector();
-		_ = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		_ = DocumentationSetDto.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		collector
 			.Captured
@@ -657,7 +660,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new CapturingDiagnosticsCollector();
-		_ = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		_ = DocumentationSetDto.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		collector
 			.Captured
@@ -691,9 +694,9 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		var result = DocumentationSetLoader.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
-		var cliRef = result.TableOfContents.OfType<CliReferenceRef>().Single();
+		var cliRef = result.TableOfContents.OfCase<CliReferenceRef>().Single();
 		cliRef.AppliesTo.Should().NotBeNull();
 		cliRef.AppliesTo.Stack.Should().NotBeNull();
 		cliRef.AppliesTo.Serverless.Should().NotBeNull();
@@ -746,7 +749,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		var result = DocumentationSetLoader.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		// Verify TOC references have been preserved (not flattened)
 		// We have 3 top-level items: index.md, development TOC, and guides folder
@@ -795,7 +798,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		var result = DocumentationSetLoader.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		TocDump
 			.ToText(result.TableOfContents)
@@ -842,24 +845,57 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		var result = DocumentationSetLoader.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		var docset = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "C:/docs/docset.yml" : "/docs/docset.yml";
 		var toc = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "C:/docs/development/toc.yml" : "/docs/development/toc.yml";
 
 		// All items from docset.yml should have context = /docs/docset.yml
-		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.Context.OptionalWindowsReplace().Should().Be(docset);
+		result
+			.TableOfContents
+			.ElementAt(0)
+			.Value
+			.Should()
+			.BeOfType<IndexFileRef>()
+			.Which
+			.Context
+			.Value
+			.OptionalWindowsReplace()
+			.Should()
+			.Be(docset);
 
-		var guidesFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		guidesFolder.Context.Should().Be(docset);
-		guidesFolder.Children.ElementAt(0).Should().BeOfType<FileRef>().Which.Context.OptionalWindowsReplace().Should().Be(docset);
+		var guidesFolder = result.TableOfContents.ElementAt(1).Value.Should().BeOfType<FolderRef>().Subject;
+		guidesFolder.Context.Value.Should().Be(docset);
+		guidesFolder
+			.Children
+			.ElementAt(0)
+			.Value
+			.Should()
+			.BeOfType<FileRef>()
+			.Which
+			.Context
+			.Value
+			.OptionalWindowsReplace()
+			.Should()
+			.Be(docset);
 
 		// The TOC ref itself has context = /docs/docset.yml (where it was referenced)
-		var developmentToc = result.TableOfContents.ElementAt(2).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		developmentToc.Context.OptionalWindowsReplace().Should().Be(docset);
+		var developmentToc = result.TableOfContents.ElementAt(2).Value.Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		developmentToc.Context.Value.OptionalWindowsReplace().Should().Be(docset);
 
 		// But children of the TOC ref should have context = /docs/development/toc.yml (where they were defined)
-		developmentToc.Children.ElementAt(0).Should().BeOfType<FileRef>().Which.Context.OptionalWindowsReplace().Should().Be(toc);
+		developmentToc
+			.Children
+			.ElementAt(0)
+			.Value
+			.Should()
+			.BeOfType<FileRef>()
+			.Which
+			.Context
+			.Value
+			.OptionalWindowsReplace()
+			.Should()
+			.Be(toc);
 	}
 
 	// ──────────────────────────────────────────────────────────────
@@ -914,9 +950,9 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var tocRef = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		tocRef.PathRelativeToDocumentationSet.Should().Be("reference");
-		tocRef.Island.Should().BeTrue("inline island: true must be captured on IsolatedTableOfContentsRef");
+		var tocRef = result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntryDto>().Subject;
+		tocRef.Path.Should().Be("reference");
+		tocRef.Island.Should().BeTrue("inline island: true must be captured on NestedTocEntry");
 	}
 
 	[Test]
@@ -933,7 +969,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var tocRef = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		var tocRef = result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntryDto>().Subject;
 		tocRef.Island.Should().BeFalse("inline island defaults to false when omitted");
 	}
 
@@ -966,9 +1002,9 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		var result = DocumentationSetLoader.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
-		var tocRef = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		var tocRef = result.TableOfContents.ElementAt(1).Value.Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
 		tocRef.Island.Should().BeTrue("island: true in the nested toc.yml root propagates to the resolved IsolatedTableOfContentsRef");
 	}
 
@@ -1018,8 +1054,8 @@ public class DocumentationSetFileTests
 			fs.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
 			fs.AddFile("/docs/reference/toc.yml", new MockFileData(tocYml));
 			var c = new DiagnosticsCollector([]);
-			var r = DocumentationSetFile.LoadAndResolve(c, fs.FileInfo.New("/docs/docset.yml"), new ScopedFileSystem(fs, "/docs"));
-			return r.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+			var r = DocumentationSetLoader.LoadAndResolve(c, fs.FileInfo.New("/docs/docset.yml"), new ScopedFileSystem(fs, "/docs"));
+			return r.TableOfContents.ElementAt(1).Value.Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
 		}
 
 		// Only inline island: true → Island = true
@@ -1079,102 +1115,118 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		var result = DocumentationSetLoader.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		// Items in docset.yml: PathRelativeToContainer should equal PathRelativeToDocumentationSet
 		result
 			.TableOfContents
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<IndexFileRef>()
 			.Which
 			.PathRelativeToContainer
+			.Value
 			.Should()
 			.Be("index.md", "file in root docset.yml");
 
-		var guidesFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		guidesFolder.PathRelativeToContainer.Should().Be("guides", "folder in root docset.yml");
+		var guidesFolder = result.TableOfContents.ElementAt(1).Value.Should().BeOfType<FolderRef>().Subject;
+		guidesFolder.PathRelativeToContainer.Value.Should().Be("guides", "folder in root docset.yml");
 		guidesFolder
 			.Children
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<FileRef>()
 			.Which
 			.PathRelativeToContainer
+			.Value
 			.Should()
 			.Be("guides/getting-started.md", "file's full path from container (docset.yml)");
 
 		// Development TOC in docset.yml
-		var developmentToc = result.TableOfContents.ElementAt(2).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		developmentToc.PathRelativeToContainer.Should().Be("development", "toc ref in root docset.yml");
+		var developmentToc = result.TableOfContents.ElementAt(2).Value.Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		developmentToc.PathRelativeToContainer.Value.Should().Be("development", "toc ref in root docset.yml");
 
 		// Items in development/toc.yml: PathRelativeToContainer should be relative to development/
 		developmentToc
 			.Children
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<FileRef>()
 			.Which
 			.PathRelativeToContainer
+			.Value
 			.Should()
 			.Be("overview.md", "file in development/toc.yml");
 
-		var advancedFolder = developmentToc.Children.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		advancedFolder.PathRelativeToContainer.Should().Be("advanced", "folder in development/toc.yml");
+		var advancedFolder = developmentToc.Children.ElementAt(1).Value.Should().BeOfType<FolderRef>().Subject;
+		advancedFolder.PathRelativeToContainer.Value.Should().Be("advanced", "folder in development/toc.yml");
 		advancedFolder
 			.Children
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<FileRef>()
 			.Which
 			.PathRelativeToContainer
+			.Value
 			.Should()
 			.Be("advanced/patterns.md", "file's full path from container (development/toc.yml)");
 
 		// Internals TOC in development/toc.yml
-		var internalsToc = developmentToc.Children.ElementAt(2).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		internalsToc.PathRelativeToContainer.Should().Be("internals", "toc ref in development/toc.yml");
+		var internalsToc = developmentToc.Children.ElementAt(2).Value.Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		internalsToc.PathRelativeToContainer.Value.Should().Be("internals", "toc ref in development/toc.yml");
 
 		// Items in development/internals/toc.yml: PathRelativeToContainer should be relative to development/internals/
 		internalsToc
 			.Children
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<FileRef>()
 			.Which
 			.PathRelativeToContainer
+			.Value
 			.Should()
 			.Be("architecture.md", "file in development/internals/toc.yml");
 
 		// Verify PathRelativeToDocumentationSet is still correct (full paths from docset root)
-		guidesFolder.PathRelativeToDocumentationSet.Should().Be("guides");
+		guidesFolder.PathRelativeToDocumentationSet.Value.Should().Be("guides");
 		guidesFolder
 			.Children
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<FileRef>()
 			.Which
 			.PathRelativeToDocumentationSet
+			.Value
 			.Should()
 			.Be("guides/getting-started.md");
 
 		developmentToc
 			.Children
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<FileRef>()
 			.Which
 			.PathRelativeToDocumentationSet
+			.Value
 			.Should()
 			.Be("development/overview.md");
 
 		internalsToc
 			.Children
 			.ElementAt(0)
+			.Value
 			.Should()
 			.BeOfType<FileRef>()
 			.Which
 			.PathRelativeToDocumentationSet
+			.Value
 			.Should()
 			.Be("development/internals/architecture.md");
 	}

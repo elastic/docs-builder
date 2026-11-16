@@ -5,11 +5,14 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -102,7 +105,7 @@ public class HtmlWriter(
 	}
 
 	/// <inheritdoc />
-	public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
+	public IReadOnlyList<HeadingItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);
@@ -193,7 +196,7 @@ public class HtmlWriter(
 
 		// Get versioning from inference result's product
 		var pageVersioning = inference.Product?.VersioningSystem
-			?? DocumentationSet.Context.VersionsConfiguration?.GetVersioningSystem(VersioningSystemId.Stack)
+			?? DocumentationSet.Context.Catalog.VersioningSystems?.GetVersioningSystem(VersioningSystemId.Stack)
 			?? throw new InvalidOperationException(
 				$"No versioning system available for page '{markdown.RelativePath}'. " +
 					"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined."
@@ -251,7 +254,7 @@ public class HtmlWriter(
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Optimizely = DocumentationSet.Context.Optimizely,
-			Features = DocumentationSet.Configuration.Features,
+			Features = DocumentationSet.Context.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
 			CurrentVersion = currentBaseVersion,
@@ -260,7 +263,7 @@ public class HtmlWriter(
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
+			VersionsConfig = DocumentationSet.Context.Catalog.VersioningSystems,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString,
 			// Git info for isolated header
 			GitBranch = gitBranch != "unavailable" ? gitBranch : null,

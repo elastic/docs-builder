@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -16,8 +17,7 @@ namespace Elastic.Documentation.Assembler.ContentSources;
 
 public class RepositoryPublishValidationService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration configuration,
-	IConfigurationContext configurationContext,
+	AssembleContextProvider contexts,
 	CheckoutsFileSystem fileSystem
 ) : IService
 {
@@ -27,7 +27,7 @@ public class RepositoryPublishValidationService(
 	public async Task<bool> ValidatePublishStatus(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		// environment does not matter to check the configuration, defaulting to dev
-		var context = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
+		var context = contexts.Get("dev", collector, fileSystem);
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader);
 		var links = await fetcher.FetchLinkRegistry(ctx);

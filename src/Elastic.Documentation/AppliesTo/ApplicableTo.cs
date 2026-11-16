@@ -13,16 +13,32 @@ using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
-/// Use to collect diagnostics during YAML parsing where we do not have access to the current diagnostics collector
-public class ApplicabilityDiagnosticsCollection : IEquatable<ApplicabilityDiagnosticsCollection>, IReadOnlyCollection<(Severity, string)>
+/// <summary>
+/// A finding the applies_to reader made while reading a block, where it had no collector. <see cref="RuleId"/> is the id of the constraint that
+/// covers the same problem, when one does: the finding is then reported under that id.
+/// </summary>
+public readonly record struct ApplicabilityDiagnostic(Severity Severity, string Message, string? RuleId = null)
 {
-	private readonly List<(Severity, string)> _list = [];
+	public void Deconstruct(out Severity severity, out string message)
+	{
+		severity = Severity;
+		message = Message;
+	}
 
-	public ApplicabilityDiagnosticsCollection(IEnumerable<(Severity, string)> warnings) => _list.AddRange(warnings);
+	public static implicit operator ApplicabilityDiagnostic((Severity Severity, string Message) value) =>
+		new(value.Severity, value.Message);
+}
+
+/// Use to collect diagnostics during YAML parsing where we do not have access to the current diagnostics collector
+public class ApplicabilityDiagnosticsCollection : IEquatable<ApplicabilityDiagnosticsCollection>, IReadOnlyCollection<ApplicabilityDiagnostic>
+{
+	private readonly List<ApplicabilityDiagnostic> _list = [];
+
+	public ApplicabilityDiagnosticsCollection(IEnumerable<ApplicabilityDiagnostic> warnings) => _list.AddRange(warnings);
 
 	public bool Equals(ApplicabilityDiagnosticsCollection? other) => other != null && _list.SequenceEqual(other._list);
 
-	public IEnumerator<(Severity, string)> GetEnumerator() => _list.GetEnumerator();
+	public IEnumerator<ApplicabilityDiagnostic> GetEnumerator() => _list.GetEnumerator();
 
 	public override bool Equals(object? obj) => Equals(obj as ApplicabilityDiagnosticsCollection);
 
@@ -37,21 +53,49 @@ public interface IApplicableToElement
 	ApplicableTo? AppliesTo { get; }
 }
 
+/// <summary>The <c>applies_to</c> block of a page, section or toc entry: which stack, serverless, deployment and product versions a piece of documentation applies to, and in which lifecycle.</summary>
+/// <remarks>
+/// Constructed with <c>ApplicableToYamlConverter</c> or <c>ApplicableToJsonConverter</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 [JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
 {
-	public AppliesCollection? Stack { get; set; }
+	public AppliesCollection? Stack { get; internal init; }
 
-	public DeploymentApplicability? Deployment { get; set; }
+	public DeploymentApplicability? Deployment { get; internal init; }
 
-	public ServerlessProjectApplicability? Serverless { get; set; }
+	public ServerlessProjectApplicability? Serverless { get; internal init; }
 
-	public AppliesCollection? Product { get; set; }
+	public AppliesCollection? Product { get; internal init; }
 
-	public ProductApplicability? ProductApplicability { get; set; }
+	public ProductApplicability? ProductApplicability { get; internal init; }
 
 	[JsonIgnore]
-	public ApplicabilityDiagnosticsCollection? Diagnostics { get; set; }
+	public ApplicabilityDiagnosticsCollection? Diagnostics { get; internal init; }
+
+	/// <summary>
+	/// Keys the block wrote that the reader never maps, in the order written: nested ones as <c>deployment.x</c>, and top-level keys that pass the
+	/// known-key check but are not the exact key a reader maps (<c>apm-agent-java</c>). Top-level unknown keys are in <see cref="Diagnostics"/>.
+	/// </summary>
+	[JsonIgnore]
+	public IReadOnlyList<string> UnknownKeys { get; internal init; } = [];
+
+	/// <summary>Keys (nested as <c>deployment.x</c>) whose value was not text, which the reader ignores.</summary>
+	[JsonIgnore]
+	public IReadOnlyList<string> IgnoredValues { get; internal init; } = [];
+
+	// UnknownKeys and IgnoredValues record how the block was written, not what it means: they take no part in equality.
+	public virtual bool Equals(ApplicableTo? other) =>
+		other is not null
+			&& EqualityComparer<AppliesCollection?>.Default.Equals(Stack, other.Stack)
+			&& EqualityComparer<DeploymentApplicability?>.Default.Equals(Deployment, other.Deployment)
+			&& EqualityComparer<ServerlessProjectApplicability?>.Default.Equals(Serverless, other.Serverless)
+			&& EqualityComparer<AppliesCollection?>.Default.Equals(Product, other.Product)
+			&& EqualityComparer<ProductApplicability?>.Default.Equals(ProductApplicability, other.ProductApplicability)
+			&& EqualityComparer<ApplicabilityDiagnosticsCollection?>.Default.Equals(Diagnostics, other.Diagnostics);
+
+	public override int GetHashCode() => HashCode.Combine(Stack, Deployment, Serverless, Product, ProductApplicability, Diagnostics);
 
 	// Static singletons, not YAML members — the source generator doesn't filter static properties
 	// on its own, so these must be explicitly ignored to avoid CS0176 in the generated (de)serializer.
@@ -63,6 +107,19 @@ public record ApplicableTo
 		Deployment = DeploymentApplicability.All,
 		Product = AppliesCollection.GenerallyAvailable
 	};
+
+	/// <summary>Only the stack applicability: the block <c>stack: &lt;lifecycle&gt; &lt;version&gt;</c> declares.</summary>
+	public static ApplicableTo ForStack(AppliesCollection stack) => new() { Stack = stack };
+
+	/// <summary>Only the stack applicability, of one lifecycle (<paramref name="version"/> null means every version).</summary>
+	public static ApplicableTo ForStack(ProductLifecycle lifecycle, VersionSpec? version) =>
+		ForStack(AppliesCollection.Of([new Applicability { Lifecycle = lifecycle, Version = version }]));
+
+	/// <summary>
+	/// The same applicability once its parse diagnostics were reported: a reader collects them where it has no collector, the renderer reports them
+	/// and drops them so they are not reported again.
+	/// </summary>
+	public ApplicableTo WithoutDiagnostics() => this with { Diagnostics = null };
 
 	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v : AllVersionsSpec.Instance;
 
@@ -200,15 +257,20 @@ public record ApplicableTo
 	}
 }
 
+/// <summary>The <c>deployment</c> part of an <c>applies_to</c> block: self-managed, ECE, ECK and Elastic Cloud Hosted.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record DeploymentApplicability
 {
-	public AppliesCollection? Self { get; set; }
+	public AppliesCollection? Self { get; internal init; }
 
-	public AppliesCollection? Ece { get; set; }
+	public AppliesCollection? Ece { get; internal init; }
 
-	public AppliesCollection? Eck { get; set; }
+	public AppliesCollection? Eck { get; internal init; }
 
-	public AppliesCollection? Ess { get; set; }
+	public AppliesCollection? Ess { get; internal init; }
 
 	[YamlIgnore]
 	public static DeploymentApplicability All { get; } = new()
@@ -258,15 +320,20 @@ public record DeploymentApplicability
 	}
 }
 
+/// <summary>The <c>serverless</c> part of an <c>applies_to</c> block, one entry per project type.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record ServerlessProjectApplicability
 {
-	public AppliesCollection? Elasticsearch { get; set; }
+	public AppliesCollection? Elasticsearch { get; internal init; }
 
-	public AppliesCollection? Observability { get; set; }
+	public AppliesCollection? Observability { get; internal init; }
 
-	public AppliesCollection? Security { get; set; }
+	public AppliesCollection? Security { get; internal init; }
 
-	public AppliesCollection? VectorDatabase { get; set; }
+	public AppliesCollection? VectorDatabase { get; internal init; }
 
 	/// <summary>
 	/// Returns if all serverless project types share the same applicability.

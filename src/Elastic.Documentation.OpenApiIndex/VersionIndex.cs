@@ -12,6 +12,9 @@ using System.Text.Json.Serialization;
 namespace Elastic.Documentation.OpenApiIndex;
 
 /// <summary>One entry in a <see cref="RootVersionIndex"/>.</summary>
+/// <remarks>
+/// Constructed with <c>VersionIndexLoader.Load</c> or <c>VersionIndexBuilder.Build</c>.
+/// </remarks>
 public sealed record VersionIndexEntry
 {
 	/// <summary>The version this key resolves to: <c>main</c>, or the highest minor of its major, e.g. <c>9.5</c>.</summary>

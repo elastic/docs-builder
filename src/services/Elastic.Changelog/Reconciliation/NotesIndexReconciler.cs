@@ -270,20 +270,24 @@ public sealed class NotesIndexReconciler(
 			using var reader = new StreamReader(stream);
 			var yaml = await reader.ReadToEndAsync(ctx);
 
-			var normalized = ReleaseNotesSerialization.NormalizeYaml(yaml);
-			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
-				normalized,
-				ReleaseNotesSerialization.GetEntryDeserializerOptions(key)
-			)
-				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
+			var loaded = ReleaseNotesLoader.LoadEntry(yaml, key);
+			if (loaded.Value is not { } entry)
+			{
+				_logger.LogWarning(
+					"Could not read versions from note {Key}: {Message}; skipping",
+					key,
+					loaded.Diagnostics.Select(d => d.Message).FirstOrDefault()
+				);
+				return [];
+			}
 
-			if (dto.Products is not { Count: > 0 })
+			if (entry.Products is not { Count: > 0 })
 				return [];
 
 			var valid = new List<(string Product, string Version)>();
-			foreach (var productInfo in dto.Products)
+			foreach (var productInfo in entry.Products)
 			{
-				var productId = productInfo.Product?.Trim();
+				var productId = productInfo.ProductId.Trim();
 				if (
 					string.IsNullOrEmpty(productId)
 					|| productId.Contains('/', StringComparison.Ordinal)
@@ -301,16 +305,10 @@ public sealed class NotesIndexReconciler(
 					continue;
 				}
 
-				// Prefer the new `versions` list; fall back to the legacy `target` field for compat.
-#pragma warning disable CS0618 // reading obsolete Target for backward compat
-				IEnumerable<string?> rawVersions = productInfo.Versions is { Count: > 0 }
-					? productInfo.Versions
-					: productInfo.Target is not null ? [productInfo.Target] : [];
-#pragma warning restore CS0618
-
-				foreach (var raw in rawVersions.Where(v => !string.IsNullOrWhiteSpace(v)))
+				// The loader reads the `versions` list, falling back to the legacy `target` field for already-published notes.
+				foreach (var raw in productInfo.Versions.Where(v => !string.IsNullOrWhiteSpace(v)))
 				{
-					var v = raw!.Trim();
+					var v = raw.Trim();
 					if (v.Contains('/', StringComparison.Ordinal) || !ChangelogKeys.IsValidRepo(v))
 					{
 						_logger.LogWarning("Note {Key} has version '{Version}' that is not a valid single path segment; skipping", key, v);

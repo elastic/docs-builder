@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -75,8 +75,8 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 	{
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.ProductsConfiguration);
-			return applicableTo;
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.Catalog.Products);
+			return this.ReportApplicableToAsHints(applicableTo);
 		}
 		catch (Exception e) when (e is FormatException or InvalidOperationException or YamlException)
 		{
@@ -85,7 +85,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		}
 	}
 
-	public static string GenerateSyncKey(string appliesToDefinition, ProductsConfiguration productsConfiguration)
+	public static string GenerateSyncKey(string appliesToDefinition, ProductCatalog productsConfiguration)
 	{
 		var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition, productsConfiguration);
 		// Use ShortId.Create for a stable, deterministic hash based on the normalized ToString()

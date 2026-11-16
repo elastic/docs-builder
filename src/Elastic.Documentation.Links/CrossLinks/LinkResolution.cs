@@ -102,6 +102,19 @@ public static class LinkResolutionExtensions
 	};
 
 	/// <summary>
+	/// The id of the <see cref="LinkGraphConstraints"/> rule that covers a failed resolution, so the diagnostic carries the rule's id;
+	/// <c>null</c> when the resolution succeeded or no rule covers it.
+	/// </summary>
+	public static string? RuleId(this LinkResolution resolution) => resolution switch
+	{
+		LinkSchemeNotDeclared => LinkGraphConstraints.CrossLinkSchemeDeclared.Name,
+		LinkNotInIndex or LinkAnchorNotFound or LinkFloatingPageNotFound => LinkGraphConstraints.CrossLinkResolves.Name,
+		LinkRedirectAnchorUnhandled or LinkRedirectRepositoryMissing or LinkRedirectTargetMissing =>
+			LinkGraphConstraints.CrossLinkRedirectResolves.Name,
+		LinkResolved or LinkSynthesized or LinkResolutionUnavailable => null
+	};
+
+	/// <summary>
 	/// Returns a human-readable diagnostic message for failure cases. Call only when
 	/// <see cref="ResolvedUri"/> returned <c>null</c>.
 	/// </summary>

@@ -5,7 +5,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Tests.Golden;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -37,7 +39,7 @@ public class UnknownYamlKeyTests
 		fileSystem.AddFile("/docs/other.md", new MockFileData("# Other"));
 
 		var collector = new CapturingDiagnosticsCollector();
-		_ = DocumentationSetFile.LoadAndResolve(
+		_ = DocumentationSetLoader.LoadAndResolve(
 			collector,
 			fileSystem.FileInfo.New("/docs/docset.yml"),
 			new ScopedFileSystem(fileSystem, "/docs")
@@ -62,7 +64,7 @@ public class UnknownYamlKeyTests
 			""";
 		var collector = new CapturingDiagnosticsCollector();
 
-		_ = SiteNavigationFile.Deserialize(yaml, collector, "/config/navigation.yml");
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, "/config/navigation.yml");
 
 		collector
 			.Captured
@@ -82,7 +84,7 @@ public class UnknownYamlKeyTests
 			""";
 		var collector = new CapturingDiagnosticsCollector();
 
-		_ = SiteNavigationFile.Deserialize(yaml, collector, "/config/navigation.yml");
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, "/config/navigation.yml");
 
 		collector
 			.Captured
@@ -132,7 +134,7 @@ public class UnknownYamlKeyTests
 			  prodcut_id: typo
 			""";
 
-		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, options)!;
+		var sequence = YamlSerializer.Deserialize<ApiProductSequenceDto>(yaml, options)!;
 
 		sequence.SingleEntry!.Product.Should().Be("elasticsearch");
 		collector
@@ -173,7 +175,7 @@ public class UnknownYamlKeyTests
 			  other: 3
 			""";
 
-		_ = YamlSerializer.Deserialize<ApiProductSequence>(yaml, options);
+		_ = YamlSerializer.Deserialize<ApiProductSequenceDto>(yaml, options);
 
 		collector
 			.Captured
@@ -192,7 +194,7 @@ public class UnknownYamlKeyTests
 	{
 		var path = System.IO.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "codex.example.yml");
 
-		var config = CodexConfiguration.Deserialize(File.ReadAllText(path), path);
+		var config = CodexSiteLoader.Deserialize(File.ReadAllText(path), path);
 
 		config.Groups.Should().ContainSingle().Which.Id.Should().Be("docs");
 	}

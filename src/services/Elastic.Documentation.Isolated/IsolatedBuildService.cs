@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.LinkIndex;
@@ -214,9 +215,9 @@ public class IsolatedBuildService(
 			set.ClearOutputDirectory();
 
 		var documentInferrer = new DocumentInferrerService(
-			context.ProductsConfiguration,
-			context.VersionsConfiguration,
-			context.LegacyUrlMappings,
+			context.Catalog.Products,
+			context.Catalog.VersioningSystems,
+			context.Catalog.LegacyUrlMappings,
 			set.Configuration,
 			context.Git
 		);

@@ -97,6 +97,7 @@ public static class DocSetYamlGenerator
 		}
 
 		yaml.WriteLine("toc:");
+		var listed = new HashSet<string>(StringComparer.Ordinal);
 		foreach (var markdownFile in fileSystem.Directory.EnumerateFiles(mockDocsRoot.FullName, "*.md", SearchOption.AllDirectories))
 		{
 			var relative = fileSystem.Path.GetRelativePath(mockDocsRoot.FullName, markdownFile);
@@ -104,7 +105,8 @@ public static class DocSetYamlGenerator
 			var segments = relative.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
 			if (segments.Any(s => s.StartsWith('_')))
 				continue;
-			yaml.WriteLine($" - file: {relative}");
+			if (listed.Add(relative.Replace('\\', '/')))
+				yaml.WriteLine($" - file: {relative}");
 		}
 
 		// Add the docs-tests redirect target pages.
@@ -112,7 +114,8 @@ public static class DocSetYamlGenerator
 		{
 			foreach (var (relative, contents) in redirects.TestingPages)
 			{
-				yaml.WriteLine($" - file: {relative}");
+				if (listed.Add(relative))
+					yaml.WriteLine($" - file: {relative}");
 				fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, relative), new MockFileData(contents));
 			}
 		}

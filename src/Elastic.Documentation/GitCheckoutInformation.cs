@@ -6,6 +6,11 @@ using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation;
 
+/// <summary>The git checkout a build ran in: branch, remote and ref (and the GitHub ref when known).</summary>
+/// <remarks>
+/// Constructed with <c>GitCheckoutInformation.Resolved</c>, <c>ForClonedRepository</c> or <c>ForElasticRepository</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record GitCheckoutInformation
 {
 	public static GitCheckoutInformation Unavailable { get; } = new()
@@ -15,6 +20,45 @@ public record GitCheckoutInformation
 		Ref = "unavailable",
 		RepositoryName = "unavailable"
 	};
+
+	/// <summary>
+	/// The canned checkout tests that seed no layout get from <c>GitCheckoutInformationFactory</c> (a mock filesystem with no <c>.git</c>), so
+	/// they do not each have to build one.
+	/// </summary>
+	public static GitCheckoutInformation LegacyTestCheckout { get; } = new()
+	{
+		Branch = "test-e35fcb27-5f60-4e",
+		Remote = "elastic/docs-builder",
+		Ref = "e35fcb27-5f60-4e",
+		RepositoryName = "docs-builder"
+	};
+
+	/// <summary>
+	/// The checkout read from a <c>.git</c> folder: the repository is named by the last segment of <paramref name="remote"/>, and an empty
+	/// <paramref name="gitHubRef"/> (the <c>GITHUB_REF</c> of a build outside CI) is no ref.
+	/// </summary>
+	public static GitCheckoutInformation Resolved(string gitRef, string branch, string remote, string? gitHubRef) =>
+		new()
+		{
+			Ref = gitRef,
+			Branch = branch,
+			Remote = remote,
+			RepositoryName = remote.Split('/').Last(),
+			GitHubRef = string.IsNullOrEmpty(gitHubRef) ? null : gitHubRef
+		};
+
+	/// <summary>The checkout of an elastic repository an assembler build cloned: its remote is <c>elastic/{repositoryName}</c>.</summary>
+	public static GitCheckoutInformation ForElasticRepository(string repositoryName, string gitRef, string branch) =>
+		new() { RepositoryName = repositoryName, Ref = gitRef, Remote = $"elastic/{repositoryName}", Branch = branch };
+
+	/// <summary>The checkout of a repository a codex build cloned, named and located as its reference says.</summary>
+	public static GitCheckoutInformation ForClonedRepository(
+		string repositoryName,
+		string remote,
+		string branch,
+		string commitHash,
+		string? gitHubRef
+	) => new() { Branch = branch, Remote = remote, Ref = commitHash, RepositoryName = repositoryName, GitHubRef = gitHubRef };
 
 	[JsonPropertyName("branch")]
 	public required string Branch { get; init; }
@@ -26,7 +70,8 @@ public record GitCheckoutInformation
 	public required string Ref { get; init; }
 
 	[JsonPropertyName("name")]
-	public string RepositoryName { get; init; } = "unavailable";
+	[JsonInclude]
+	public string RepositoryName { get; internal init; } = "unavailable";
 
 	/// <summary>Whether git checkout information was resolved (false for the <see cref="Unavailable"/> sentinel).</summary>
 	[JsonIgnore]
@@ -36,7 +81,8 @@ public record GitCheckoutInformation
 	/// The full git ref from GitHub Actions (e.g. refs/pull/123/merge). Set from GITHUB_REF when running in CI.
 	/// </summary>
 	[JsonPropertyName("github_ref")]
-	public string? GitHubRef { get; init; }
+	[JsonInclude]
+	public string? GitHubRef { get; internal init; }
 
 	/// <summary>
 	/// The GitHub repository in <c>org/repo</c> format, derived from the git remote URL.

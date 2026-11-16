@@ -2,28 +2,37 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Configuration;
 
 public interface IConfigurationContext
 {
-	VersionsConfiguration VersionsConfiguration { get; }
+	/// <summary>Versioning systems, products and legacy URL mappings. Loaded once per process.</summary>
+	GlobalCatalog Catalog { get; }
+
+	/// <summary>Named learning destinations for the <c>{related-learning}</c> directive. Loaded on first use.</summary>
+	RelatedLearningCatalog RelatedLearning { get; }
 	ConfigurationFileProvider ConfigurationFileProvider { get; }
 	DocumentationEndpoints Endpoints { get; }
-	ProductsConfiguration ProductsConfiguration { get; }
-	LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	SearchConfiguration SearchConfiguration { get; }
+	SearchTuning SearchTuning { get; }
 }
 
 /// Used only to seed <see cref="IConfigurationContext"/> in DI, you primarily want to depend on <see cref="IDocumentationConfigurationContext"/>
 public class ConfigurationContext : IConfigurationContext
 {
 	/// <inheritdoc />
-	public required VersionsConfiguration VersionsConfiguration { get; init; }
+	public required GlobalCatalog Catalog { get; init; }
+
+	/// <inheritdoc />
+	/// <remarks>Read from the provider the first time it is needed, unless set explicitly.</remarks>
+	public RelatedLearningCatalog RelatedLearning
+	{
+		get => field ??= RelatedLearningLoader.Load(ConfigurationFileProvider).OrThrow();
+		init;
+	}
 
 	/// <inheritdoc />
 	public required ConfigurationFileProvider ConfigurationFileProvider { get; init; }
@@ -32,13 +41,7 @@ public class ConfigurationContext : IConfigurationContext
 	public required DocumentationEndpoints Endpoints { get; init; }
 
 	/// <inheritdoc />
-	public required ProductsConfiguration ProductsConfiguration { get; init; }
-
-	/// <inheritdoc />
-	public required LegacyUrlMappingConfiguration LegacyUrlMappings { get; init; }
-
-	/// <inheritdoc />
-	public required SearchConfiguration SearchConfiguration { get; init; }
+	public required SearchTuning SearchTuning { get; init; }
 }
 
 public interface IDocumentationConfigurationContext : IDocumentationContext, IConfigurationContext

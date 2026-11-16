@@ -269,7 +269,14 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	public void NoErrorsEmittedForMissingConfig() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'."
+			);
 }
 
 [InheritsTests]
@@ -312,7 +319,12 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 Specified changelog config path 'nonexistent/config.yml' not found.");
+			.MatchInlineSnapshot(
+				"""
+				warning {repo}/docs/index.md:3 Specified changelog config path 'nonexistent/config.yml' not found.
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				"""
+			);
 
 	[Test]
 	public void RendersHtml() =>
@@ -835,7 +847,10 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests() : DirectiveTes
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"warning {repo}/docs/index.md:3 The :product: option is deprecated and has no effect. The directive does not apply rules.publish. Move type/area filtering to rules.bundle so it applies at bundle time."
+				"""
+				warning {repo}/docs/index.md:3 The :product: option is deprecated and has no effect. The directive does not apply rules.publish. Move type/area filtering to rules.bundle so it applies at bundle time.
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				"""
 			);
 
 	[Test]

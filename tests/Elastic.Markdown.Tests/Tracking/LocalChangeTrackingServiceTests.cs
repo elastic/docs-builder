@@ -75,6 +75,9 @@ public sealed class LocalChangeTrackingServiceTests
 				  troubleshoot/deployments/serverless.md: troubleshoot/deployments.md
 				"""
 		);
+		// The loaded docset reports a redirect whose target does not exist, so the target has to.
+		_ = Directory.CreateDirectory(Path.Combine(source, "troubleshoot"));
+		File.WriteAllText(Path.Combine(source, "troubleshoot", "deployments.md"), "# Deployments");
 
 		var ok = await service.ValidateRedirects(collector, source, fs);
 

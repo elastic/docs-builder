@@ -1,0 +1,743 @@
+#############################################
+# This file defines the global navigation structure
+# and content sources for the documentation site.
+#############################################
+
+
+# Use sparingly, makes assembler aware of toc container folders
+# That are not linked in the global toc but all the children toc they define are.
+phantoms:
+  - toc: elasticsearch://reference
+  - toc: docs-content://release-notes
+  - toc: docs-content://release-notes/elasticsearch-clients
+  - toc: docs-content://release-notes/apm-agents
+  - toc: docs-content://
+  - toc: docs-content://products
+  - toc: cloud://release-notes
+  # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
+  # Remove this phantom and update the nav entry below once that PR merges.
+  - toc: elastic-agent://reference/otel-collector
+
+toc:
+  ##########
+  # GUIDES #
+  ##########
+  - section: Guides
+    children:
+      - toc: get-started
+      - toc: solutions
+      - toc: manage-data
+      - toc: explore-analyze
+      - toc: deploy-manage
+      - toc: cloud-account
+        navigation_title: Manage your Cloud account
+      - toc: extend
+        children:
+          - toc: kibana://extend
+            path_prefix: extend/kibana
+          - toc: logstash://extend
+            path_prefix: extend/logstash
+          - toc: beats://extend
+            path_prefix: extend/beats
+          - toc: elasticsearch://extend
+            path_prefix: extend/elasticsearch
+          - toc: integrations://extend
+            path_prefix: extend/integrations
+      - toc: contribute-docs
+
+  ########
+  # APIs #
+  ########
+  - section: APIs
+    external: https://www.elastic.co/docs/api/
+
+  ###########
+  # PRODUCTS #
+  ###########
+  - section: Products
+    dropdown:
+      - title: Elasticsearch
+        url: solutions/search/elasticsearch
+      - title: Observability
+        url: solutions/observability
+      - title: Security
+        url: solutions/security
+      - title: Elastic Cloud
+        url: deploy-manage/deploy/elastic-cloud
+
+  #############
+  # REFERENCE #
+  #############
+  - section: Reference
+    children:
+      - toc: reference
+        path_prefix: reference
+        children:
+
+          # Elasticsearch
+          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
+          - toc: elasticsearch://reference/elasticsearch
+            path_prefix: reference/elasticsearch
+            island: true
+            # Children include: Configuration, JVM settings, Roles,
+            # Elasticsearch privileges, Index settings, Index lifecycle actions,
+            # REST APIs, Mapping, Elasticsearch audit events, Command line tools
+            children:
+
+              # Query languages
+              # https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
+              - toc: elasticsearch://reference/query-languages
+                path_prefix: reference/query-languages
+                island: true
+
+              # Text analysis
+              # https://github.com/elastic/elasticsearch/blob/main/docs/reference/text-analysis/toc.yml
+              - toc: elasticsearch://reference/text-analysis
+                path_prefix: reference/text-analysis
+
+              # https://github.com/elastic/elasticsearch/blob/main/docs/reference/aggregations/toc.yml
+              - toc: elasticsearch://reference/aggregations
+                path_prefix: reference/aggregations
+
+              # Processor reference
+              # https://github.com/elastic/elasticsearch/blob/main/docs/reference/ingest-processor/toc.yml
+              - toc: elasticsearch://reference/ingest-processor
+                path_prefix: reference/ingest-processor
+
+              # Curator
+              # https://github.com/elastic/curator/blob/master/docs/reference/toc.yml
+              - toc: curator://reference
+                path_prefix: reference/elasticsearch/curator
+                island: true
+                # Children include the entire AsciiDoc book
+
+              # Clients
+              # https://github.com/elastic/docs-content/blob/main/reference/elasticsearch-clients/toc.yml
+              - toc: docs-content://reference/elasticsearch-clients
+                path_prefix: reference/elasticsearch-clients
+                island: true
+                children:
+
+                  # Eland
+                  # https://github.com/elastic/eland/blob/main/docs/reference/toc.yml
+                  - toc: eland://reference
+                    path_prefix: reference/elasticsearch/clients/eland
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # Go
+                  # https://github.com/elastic/go-elasticsearch/blob/main/docs/reference/toc.yml
+                  - toc: go-elasticsearch://reference
+                    path_prefix: reference/elasticsearch/clients/go
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # Java
+                  # https://github.com/elastic/elasticsearch-java/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-java://reference
+                    path_prefix: reference/elasticsearch/clients/java
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # JavaScript
+                  # https://github.com/elastic/elasticsearch-js/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-js://reference
+                    path_prefix: reference/elasticsearch/clients/javascript
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # JavaScript/TypeScript DSL
+                  # https://github.com/elastic/elasticsearch-dsl-js/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-dsl-js://reference
+                    path_prefix: reference/elasticsearch/clients/javascript-dsl
+                    island: true
+
+                  # .NET
+                  # https://github.com/elastic/elasticsearch-net/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-net://reference
+                    path_prefix: reference/elasticsearch/clients/dotnet
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # PHP
+                  # https://github.com/elastic/elasticsearch-php/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-php://reference
+                    path_prefix: reference/elasticsearch/clients/php
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # Python
+                  # https://github.com/elastic/elasticsearch-py/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-py://reference
+                    path_prefix: reference/elasticsearch/clients/python
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # Ruby
+                  # https://github.com/elastic/elasticsearch-ruby/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-ruby://reference
+                    path_prefix: reference/elasticsearch/clients/ruby
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # Rust
+                  # https://github.com/elastic/elasticsearch-rs/blob/main/docs/reference/toc.yml
+                  - toc: elasticsearch-rs://reference
+                    path_prefix: reference/elasticsearch/clients/rust
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # Community-contributed clients
+                  # https://github.com/elastic/elasticsearch/blob/main/docs/reference/community-contributed/toc.yml
+                  - toc: elasticsearch://reference/community-contributed
+                    path_prefix: reference/elasticsearch/clients/community
+
+              # Elasticsearch plugins
+              # https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch-plugins/toc.yml
+              - toc: elasticsearch://reference/elasticsearch-plugins
+                path_prefix: reference/elasticsearch/plugins
+                island: true
+
+              # Painless scripting language
+              # https://github.com/elastic/elasticsearch/blob/main/docs/reference/scripting-languages/toc.yml
+              - toc: elasticsearch://reference/scripting-languages
+                path_prefix: reference/scripting-languages
+                island: true
+
+          # Kibana
+          # https://github.com/elastic/kibana/blob/main/docs/reference/toc.yml
+          - toc: kibana://reference
+            path_prefix: reference/kibana
+            island: true
+            # Children include the entire AsciiDoc book
+            # (minus pages moved to docs-content)
+
+          # Cloud
+          # https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
+          - toc: cloud://reference
+            path_prefix: reference/cloud
+            island: true
+            # Children include Elastic Cloud Enterprise, Elastic Cloud Hosted
+            children:
+              # Elastic Cloud on Kubernetes
+              # https://github.com/elastic/cloud-on-k8s/blob/main/docs/reference/toc.yml
+              - toc: cloud-on-k8s://reference
+                path_prefix: reference/cloud-on-k8s
+                island: true
+                # Children include the entire AsciiDoc book
+                # (minus pages moved to docs-content)
+
+              # Elastic cloud control (ECCTL)
+              # https://github.com/elastic/ecctl/blob/master/docs/reference/toc.yml
+              - toc: ecctl://reference
+                path_prefix: reference/ecctl
+                island: true
+                # Children include the entire AsciiDoc book
+                # (minus pages moved to docs-content)
+
+          # Security
+          # https://github.com/elastic/docs-content/blob/main/reference/security/toc.yml
+          - toc: docs-content://reference/security
+            path_prefix: reference/security
+            island: true
+            # Children include: Endpoint command reference, Elastic Defend,
+            # Fields and object schemas
+            children:
+             - toc: detection-rules://
+               path_prefix: reference/security/prebuilt-rules
+               island: true
+
+          # Observability
+          # https://github.com/elastic/docs-content/blob/main/reference/observability/toc.yml
+          - toc: docs-content://reference/observability
+            path_prefix: reference/observability
+            island: true
+            # Children include: Fields and object schemas, Elastic Entity Model,
+            # Infrastructure app fields
+
+          # Ingestion tools
+          # https://github.com/elastic/docs-content/blob/main/reference/ingestion-tools/toc.yml
+          - toc: docs-content://reference/ingestion-tools
+            path_prefix: reference/ingestion-tools
+            island: true
+            children:
+              # APM
+              # https://github.com/elastic/docs-content/blob/main/reference/apm/toc.yml
+              - toc: docs-content://reference/apm
+                path_prefix: reference/apm
+                island: true
+                # Children include: APM settings, APM settings for Elastic Cloud,
+                # APM settings for Elastic Cloud Enterprise
+                children:
+                  # APM Attacher for Kubernetes
+                  # https://github.com/elastic/apm-k8s-attacher/blob/main/docs/reference/toc.yml
+                  - toc: apm-k8s-attacher://reference
+                    path_prefix: reference/apm/k8s-attacher
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # APM Architecture for AWS Lambda
+                  # https://github.com/elastic/apm-aws-lambda/blob/main/docs/reference/toc.yml
+                  - toc: apm-aws-lambda://reference
+                    path_prefix: reference/apm/aws-lambda
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # APM agents
+                  # https://github.com/elastic/docs-content/blob/main/reference/apm-agents/toc.yml
+                  - toc: docs-content://reference/apm-agents
+                    path_prefix: reference/apm-agents
+                    island: true
+                    children:
+
+                      # APM .NET agent
+                      # https://github.com/elastic/apm-agent-dotnet/blob/main/docs/reference/toc.yml
+                      - toc: apm-agent-dotnet://reference
+                        path_prefix: reference/apm/agents/dotnet
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+                      # APM Go agent
+                      # https://github.com/elastic/apm-agent-go/blob/main/docs/reference/toc.yml
+                      - toc: apm-agent-go://reference
+                        path_prefix: reference/apm/agents/go
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+                      # APM Java agent
+                      # https://github.com/elastic/apm-agent-java/blob/main/docs/reference/toc.yml
+                      - toc: apm-agent-java://reference
+                        path_prefix: reference/apm/agents/java
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+                      # APM Node.js agent
+                      # https://github.com/elastic/apm-agent-nodejs/blob/main/docs/reference/toc.yml
+                      - toc: apm-agent-nodejs://reference
+                        path_prefix: reference/apm/agents/nodejs
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+                      # APM PHP agent
+                      # https://github.com/elastic/apm-agent-php/blob/main/docs/reference/toc.yml
+                      - toc: apm-agent-php://reference
+                        path_prefix: reference/apm/agents/php
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+                      # APM Python agent
+                      # https://github.com/elastic/apm-agent-python/blob/main/docs/release-notes/toc.yml
+                      - toc: apm-agent-python://reference
+                        path_prefix: reference/apm/agents/python
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+                      # APM Ruby agent
+                      # https://github.com/elastic/apm-agent-ruby/blob/main/docs/reference/toc.yml
+                      - toc: apm-agent-ruby://reference
+                        path_prefix: reference/apm/agents/ruby
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+                      # APM RUM JavaScript agent
+                      # https://github.com/elastic/apm-agent-rum-js/blob/main/docs/reference/toc.yml
+                      - toc: apm-agent-rum-js://reference
+                        path_prefix: reference/apm/agents/rum-js
+                        island: true
+                        # Children include the entire AsciiDoc book
+
+              # Beats
+              # https://github.com/elastic/beats/blob/main/docs/reference/toc.yml
+              - toc: beats://reference
+                path_prefix: reference/beats
+                island: true
+                # Children include all entire AsciiDoc books: Beats, Auditbeat,
+                # Filebeat, Heartbeat, Metricbeat, Packetbeat, Winlogbeat,
+                # Elastic logging plugin for Docker
+
+              # Search connectors
+              # https://github.com/elastic/elasticsearch/blob/main/docs/reference/search-connectors/toc.yml
+              - toc: elasticsearch://reference/search-connectors
+                path_prefix: reference/search-connectors
+                island: true
+
+              # Elastic Distributions of OpenTelemetry (EDOT)
+              # https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
+              - toc: opentelemetry://reference
+                path_prefix: reference/opentelemetry
+                island: true
+                children:
+                  - toc: opentelemetry://reference/edot-cloud-forwarder
+                    path_prefix: reference/opentelemetry/edot-cloud-forwarder
+                    island: true
+                    children:
+                      - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
+                        path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
+                      - toc: edot-cloud-forwarder-azure://reference/edot-cf-azure
+                        path_prefix: reference/opentelemetry/edot-cloud-forwarder/azure
+                      - toc: opentelemetry://reference/edot-cloud-forwarder/gcp
+                        path_prefix: reference/opentelemetry/edot-cloud-forwarder/gcp
+                  - toc: elastic-agent://reference/edot-collector
+                    path_prefix: reference/edot-collector
+                    island: true
+                  - toc: apm-agent-android://reference/edot-android
+                    path_prefix: reference/opentelemetry/edot-sdks/android
+                    island: true
+                  - toc: elastic-otel-dotnet://reference/edot-dotnet
+                    path_prefix: reference/opentelemetry/edot-sdks/dotnet
+                    island: true
+                  - toc: apm-agent-ios://reference/edot-ios
+                    path_prefix: reference/opentelemetry/edot-sdks/ios
+                    island: true
+                  - toc: elastic-otel-java://reference/edot-java
+                    path_prefix: reference/opentelemetry/edot-sdks/java
+                    island: true
+                  - toc: elastic-otel-node://reference/edot-node
+                    path_prefix: reference/opentelemetry/edot-sdks/node
+                    island: true
+                  - toc: elastic-otel-php://reference/edot-php
+                    path_prefix: reference/opentelemetry/edot-sdks/php
+                    island: true
+                  - toc: elastic-otel-python://reference/edot-python
+                    path_prefix: reference/opentelemetry/edot-sdks/python
+                    island: true
+                  # EDOT Browser (RUM)
+                  # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/reference/edot-browser/toc.yml
+                  - toc: elastic-otel-rum-js://reference/edot-browser
+                    path_prefix: reference/opentelemetry/edot-sdks/browser
+                    island: true
+
+              # Managed inputs
+              # https://github.com/elastic/opentelemetry/blob/main/docs/reference/managed-inputs/toc.yml
+              - toc: opentelemetry://reference/managed-inputs
+                path_prefix: reference/opentelemetry/managed-inputs
+
+              # Elastic Integrations
+              # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
+              - toc: integration-docs://reference
+                path_prefix: reference/integrations
+                island: true
+                # Children include the entire AsciiDoc book
+
+              # Elastic Serverless Forwarder for AWS
+              # https://github.com/elastic/elastic-serverless-forwarder/blob/main/docs/reference/toc.yml
+              - toc: elastic-serverless-forwarder://reference
+                path_prefix: reference/aws-forwarder
+                island: true
+                # Children include the entire AsciiDoc book
+
+              # Elasticsearch Hadoop
+              # https://github.com/elastic/elasticsearch-hadoop/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-hadoop://reference
+                path_prefix: reference/elasticsearch-hadoop
+                island: true
+                # Children include the entire AsciiDoc book
+
+              # Fleet and Elastic Agent
+              # https://github.com/elastic/docs-content/blob/main/reference/fleet/toc.yml
+              - toc: docs-content://reference/fleet
+                path_prefix: reference/fleet
+                island: true
+                # Children include the entire AsciiDoc book
+
+              # Logstash
+              # https://github.com/elastic/logstash/blob/main/docs/reference/toc.yml
+              - toc: logstash://reference
+                path_prefix: reference/logstash
+                island: true
+                # Children include the entire AsciiDoc book
+
+              # # Logstash plugins (LSR)
+              - toc: logstash-docs-md://lsr
+                path_prefix: reference/logstash/plugins
+                island: true
+              #   # Children include the entire AsciiDoc book
+
+              # # Logstash versioned plugins (VPR)
+              - toc: logstash-docs-md://vpr
+                path_prefix: reference/logstash/versioned-plugins
+                island: true
+                # Children include the entire AsciiDoc book
+
+          # ECS
+          # https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
+          - toc: ecs://reference
+            path_prefix: reference/ecs
+            island: true
+            # Children include the entire AsciiDoc book
+            children:
+              # ECS logging libraries
+              # https://github.com/elastic/ecs-logging/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging://reference
+                path_prefix: reference/ecs/logging
+                island: true
+                children:
+                  # ECS Logging .NET
+                  # https://github.com/elastic/ecs-dotnet/blob/main/docs/reference/toc.yml
+                  - toc: ecs-dotnet://reference
+                    path_prefix: reference/ecs/logging/dotnet
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging Go (Logrus)
+                  # https://github.com/elastic/ecs-logging-go-logrus/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-go-logrus://reference
+                    path_prefix: reference/ecs/logging/go-logrus
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging Go (Zap)
+                  # https://github.com/elastic/ecs-logging-go-zap/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-go-zap://reference
+                    path_prefix: reference/ecs/logging/go-zap
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging Go (Zerolog)
+                  # https://github.com/elastic/ecs-logging-go-zerolog/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-go-zerolog://reference
+                    path_prefix: reference/ecs/logging/go-zerolog
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging Java
+                  # https://github.com/elastic/ecs-logging-java/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-java://reference
+                    path_prefix: reference/ecs/logging/java
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging Node.js
+                  # https://github.com/elastic/ecs-logging-nodejs/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-nodejs://reference
+                    path_prefix: reference/ecs/logging/nodejs
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging PHP
+                  # https://github.com/elastic/ecs-logging-php/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-php://reference
+                    path_prefix: reference/ecs/logging/php
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging Python
+                  # https://github.com/elastic/ecs-logging-python/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-python://reference
+                    path_prefix: reference/ecs/logging/python
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+                  # ECS Logging Ruby
+                  # https://github.com/elastic/ecs-logging-ruby/blob/main/docs/reference/toc.yml
+                  - toc: ecs-logging-ruby://reference
+                    path_prefix: reference/ecs/logging/ruby
+                    island: true
+                    # Children include the entire AsciiDoc book
+
+          # Machine learning (FKA Data analysis)
+          # https://github.com/elastic/docs-content/blob/main/reference/machine-learning/toc.yml
+          - toc: docs-content://reference/machine-learning
+            path_prefix: reference/machine-learning
+            island: true
+
+          # Search UI
+          # https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
+          - toc: search-ui://reference
+            path_prefix: reference/search-ui
+            island: true
+            # Children include the entire AsciiDoc book
+
+          # Glossary
+          # https://github.com/elastic/docs-content/blob/main/reference/glossary/toc.yml
+          - toc: docs-content://reference/glossary
+            path_prefix: reference/glossary
+
+  ###############
+  # TROUBLESHOOT #
+  ###############
+  - section: Troubleshoot
+    children:
+      - toc: troubleshoot
+
+  #################
+  # RELEASE NOTES #
+  #################
+  - section: Release notes
+    children:
+      - toc: docs-content://release-notes/intro
+        path_prefix: release-notes
+        children:
+          # Elasticsearch
+          # https://github.com/elastic/elasticsearch/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch://release-notes
+            path_prefix: release-notes/elasticsearch
+            children:
+              # Elasticsearch Clients
+              # https://github.com/elastic/elasticsearch-java/blob/main/docs/release-notes/toc.yml
+              - toc: elasticsearch-java://release-notes
+                path_prefix: release-notes/elasticsearch/clients/java
+              # https://github.com/elastic/elasticsearch-js/blob/main/docs/release-notes/toc.yml
+              - toc: elasticsearch-js://release-notes
+                path_prefix: release-notes/elasticsearch/clients/javascript
+              # https://github.com/elastic/elasticsearch-net/blob/main/docs/release-notes/toc.yml
+              - toc: elasticsearch-net://release-notes
+                path_prefix: release-notes/elasticsearch/clients/dotnet
+              # https://github.com/elastic/elasticsearch-php/blob/main/docs/release-notes/toc.yml
+              - toc: elasticsearch-php://release-notes
+                path_prefix: release-notes/elasticsearch/clients/php
+              # https://github.com/elastic/elasticsearch-py/blob/main/docs/release-notes/toc.yml
+              - toc: elasticsearch-py://release-notes
+                path_prefix: release-notes/elasticsearch/clients/python
+              # https://github.com/elastic/elasticsearch-ruby/blob/main/docs/release-notes/toc.yml
+              - toc: elasticsearch-ruby://release-notes
+                path_prefix: release-notes/elasticsearch/clients/ruby
+              # Elasticsearch Hadoop
+              # https://github.com/elastic/elasticsearch-hadoop/blob/main/docs/release-notes/toc.yml
+              - toc: elasticsearch-hadoop://release-notes
+                path_prefix: release-notes/elasticsearch-hadoop
+
+          # Kibana
+          # https://github.com/elastic/kibana/blob/main/docs/release-notes/toc.yml
+          - toc: kibana://release-notes
+            path_prefix: release-notes/kibana
+
+          # Elastic Agent
+          - toc: elastic-agent://release-notes
+            path_prefix: release-notes/elastic-agent
+
+          # Fleet Server
+          - toc: fleet-server://release-notes
+            path_prefix: release-notes/fleet-server
+
+          # Logstash
+          # https://github.com/elastic/logstash/blob/main/docs/release-notes/toc.yml
+          - toc: logstash://release-notes
+            path_prefix: release-notes/logstash
+
+          # Beats
+          # https://github.com/elastic/beats/blob/main/docs/release-notes/toc.yml
+          - toc: beats://release-notes
+            path_prefix: release-notes/beats
+
+          # Serverless
+          # Comes from docs-content
+          # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-cloud-serverless/toc.yml
+          - toc: docs-content://release-notes/elastic-cloud-serverless
+            path_prefix: release-notes/cloud-serverless
+
+          # Cloud Hosted
+          # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-hosted/toc.yml
+          # We probably need to add `max_toc_depth: 2` to
+          # https://github.com/elastic/cloud/blob/master/docs/docset.yml
+          - toc: cloud://release-notes/cloud-hosted
+            path_prefix: release-notes/cloud-hosted
+
+          # Cloud Enterprise
+          # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-enterprise/toc.yml
+          - toc: cloud://release-notes/cloud-enterprise
+            path_prefix: release-notes/cloud-enterprise
+
+          # K8s
+          # https://github.com/elastic/cloud-on-k8s/blob/main/docs/release-notes/toc.yml
+          - toc: cloud-on-k8s://release-notes
+            path_prefix: release-notes/cloud-on-k8s
+
+          # Observability
+          # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-observability/toc.yml
+          # Comes from docs-content
+          - toc: docs-content://release-notes/elastic-observability
+            path_prefix: release-notes/observability
+            children:
+              # EDOT Android
+              # https://github.com/elastic/apm-agent-android/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-android://release-notes
+                path_prefix: release-notes/edot/sdks/android
+              # Elastic Cloud Forwarder for AWS
+              # https://github.com/elastic/edot-cloud-forwarder-aws/blob/main/docs/release-notes/toc.yml
+              - toc: edot-cloud-forwarder-aws://release-notes
+                path_prefix: release-notes/edot/cloud-forwarder/aws
+              # EDOT iOS / Swift
+              # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-ios://release-notes
+                path_prefix: release-notes/edot/sdks/ios
+              # EDOT Java
+              # https://github.com/elastic/elastic-otel-java/blob/main/docs/release-notes/toc.yml
+              - toc: elastic-otel-java://release-notes
+                path_prefix: release-notes/edot/sdks/java
+              # EDOT .NET
+              # https://github.com/elastic/elastic-otel-dotnet/blob/main/docs/release-notes/toc.yml
+              - toc: elastic-otel-dotnet://release-notes
+                path_prefix: release-notes/edot/sdks/dotnet
+              # EDOT Node
+              # https://github.com/elastic/elastic-otel-node/blob/main/docs/release-notes/toc.yml
+              - toc: elastic-otel-node://release-notes
+                path_prefix: release-notes/edot/sdks/node
+              # EDOT Python
+              # https://github.com/elastic/elastic-otel-python/blob/main/docs/release-notes/toc.yml
+              - toc: elastic-otel-python://release-notes
+                path_prefix: release-notes/edot/sdks/python
+              # EDOT PHP
+              # https://github.com/elastic/elastic-otel-php/blob/main/docs/release-notes/toc.yml
+              - toc: elastic-otel-php://release-notes
+                path_prefix: release-notes/edot/sdks/php
+              # EDOT Browser (RUM)
+              # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/release-notes/toc.yml
+              - toc: elastic-otel-rum-js://release-notes
+                path_prefix: release-notes/edot/sdks/rum
+              # APM
+              # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-apm/toc.yml
+              - toc: apm-server://release-notes
+                path_prefix: release-notes/apm
+              # APM .NET agent
+              # https://github.com/elastic/apm-agent-dotnet/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-dotnet://release-notes
+                path_prefix: release-notes/apm/agents/dotnet
+              # APM Go agent
+              # https://github.com/elastic/apm-agent-go/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-go://release-notes
+                path_prefix: release-notes/apm/agents/go
+              # APM Java agent
+              # https://github.com/elastic/apm-agent-java/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-java://release-notes
+                path_prefix: release-notes/apm/agents/java
+              # APM Node.js agent
+              # https://github.com/elastic/apm-agent-nodejs/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-nodejs://release-notes
+                path_prefix: release-notes/apm/agents/nodejs
+              # APM PHP agent
+              # https://github.com/elastic/apm-agent-php/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-php://release-notes
+                path_prefix: release-notes/apm/agents/php
+              # APM Python agent
+              # https://github.com/elastic/apm-agent-python/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-python://release-notes
+                path_prefix: release-notes/apm/agents/python
+              # APM Ruby agent
+              # https://github.com/elastic/apm-agent-ruby/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-ruby://release-notes
+                path_prefix: release-notes/apm/agents/ruby
+              # APM RUM JavaScript Agent
+              # https://github.com/elastic/apm-agent-rum-js/blob/main/docs/release-notes/toc.yml
+              - toc: apm-agent-rum-js://release-notes
+                path_prefix: release-notes/apm/agents/rum-js
+              # APM AWS Lambda Extension
+              # https://github.com/elastic/apm-aws-lambda/blob/main/docs/release-notes/toc.yml
+              - toc: apm-aws-lambda://release-notes
+                path_prefix: release-notes/apm/aws-lambda
+
+          # Security
+          # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-security/toc.yml
+          - toc: docs-content://release-notes/elastic-security
+            path_prefix: release-notes/security
+
+          # ECS
+          # https://github.com/elastic/ecs/blob/main/docs/release-notes/toc.yml
+          - toc: ecs://release-notes
+            path_prefix: release-notes/ecs
+
+          # ECCTL
+          # https://github.com/elastic/ecctl/blob/master/docs/release-notes/toc.yml
+          - toc: ecctl://release-notes
+            path_prefix: release-notes/ecctl
+

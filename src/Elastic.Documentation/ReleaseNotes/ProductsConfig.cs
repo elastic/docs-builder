@@ -1,0 +1,60 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Documentation.Equality;
+using Generator.Equals;
+
+namespace Elastic.Documentation.ReleaseNotes;
+
+/// <summary>
+/// Products configuration for changelog
+/// </summary>
+/// <remarks>
+/// Constructed through <c>ChangelogConfiguration</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+[Equatable]
+public partial record ProductsConfig
+{
+	/// <summary>
+	/// List of available product IDs (empty = all from products.yml).
+	/// Use this to restrict which products can be used.
+	/// </summary>
+	[OrderedEquality]
+	public IReadOnlyList<string>? Available { get; internal init; }
+
+	/// <summary>
+	/// Default products to use when --products is not specified.
+	/// Each entry has product ID and optional lifecycle.
+	/// </summary>
+	[OrderedEquality]
+	public IReadOnlyList<DefaultProduct>? Default { get; internal init; }
+
+	/// <summary>
+	/// Products that a label-derived product implies, keyed by product ID. When a label maps an entry to a
+	/// product, the entry also gets the products listed here for it. Keys compare case-insensitively.
+	/// </summary>
+	[UnorderedEquality(typeof(StringListEntryComparer))]
+	public IReadOnlyDictionary<string, IReadOnlyList<string>>? Implies { get; internal init; }
+}
+
+/// <summary>
+/// Default product specification
+/// </summary>
+/// <remarks>
+/// Constructed through <c>ProductsConfig</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+public record DefaultProduct
+{
+	/// <summary>
+	/// Product ID
+	/// </summary>
+	public required string Product { get; init; }
+
+	/// <summary>
+	/// Default lifecycle (defaults to "ga")
+	/// </summary>
+	public string Lifecycle { get; internal init; } = "ga";
+}

@@ -14,7 +14,7 @@ public static class ApiLinkCheck
 	/// <c>null</c> for any other link, and for an API it holds no section for. A link to a root with no pages at all always hints. Old bump.sh URLs are checked at the
 	/// page the edge redirects them to.
 	/// </summary>
-	public static string? GetHint(ICrossLinkResolver resolver, string? url, string? urlPathPrefix, HashSet<HintType>? suppressions)
+	public static string? GetHint(ICrossLinkResolver resolver, string? url, string? urlPathPrefix, IReadOnlySet<HintType>? suppressions)
 	{
 		if (suppressions.ShouldSuppress(HintType.ApiLinkMissingPage))
 			return null;

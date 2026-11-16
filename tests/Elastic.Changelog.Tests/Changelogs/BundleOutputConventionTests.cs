@@ -154,9 +154,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"""
-			error  Profiles 'es-all', 'es-ga' all resolve to the same '{repo}-elasticsearch-{version}.yaml' bundle target for any given version. Bundle names are derived by convention from the authoring repo and the profile's primary output product, so each profile must target a distinct product.
-			"""
+				"error {repo}/Guid_1/changelog.yml Profiles 'es-all', 'es-ga' all resolve to the same '{repo}-elasticsearch-{version}.yaml' bundle target for any given version. Bundle names are derived by convention from the authoring repo and the profile's primary output product, so each profile must target a distinct product."
 			);
 	}
 
@@ -737,9 +735,9 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}.
-			error  Profile 'es-release': 'output_directory' must be a directory, not a file path. The bundle file name is derived by convention as '{repo}-{product}-{version}.yaml'. To choose a folder, set output_directory the same way option-mode --output does when it is a directory.
-			"""
+				warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}.
+				error {repo}/Guid_1/changelog.yml Profile 'es-release': 'output_directory' must be a directory, not a file path. The bundle file name is derived by convention as '{repo}-{product}-{version}.yaml'. To choose a folder, set output_directory the same way option-mode --output does when it is a directory.
+				"""
 			);
 	}
 

@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Exporter;
 
@@ -16,11 +17,11 @@ namespace Elastic.Documentation.Assembler.Indexing;
 
 public class AssemblerIndexService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
-) : AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables)
+) : AssemblerBuildService(logFactory, contexts, configurationContext, githubActionsService, environmentVariables)
 {
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 

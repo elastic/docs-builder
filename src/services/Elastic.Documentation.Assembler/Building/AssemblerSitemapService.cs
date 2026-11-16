@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Services;
@@ -18,7 +19,7 @@ namespace Elastic.Documentation.Assembler.Building;
 
 public class AssemblerSitemapService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService
 ) : IService
@@ -38,7 +39,7 @@ public class AssemblerSitemapService(
 
 		_logger.LogInformation("Generating sitemap from ES index for environment {Environment}", environment);
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
+		var assembleContext = contexts.Get(environment, collector, fileSystem);
 
 		var cfg = configurationContext.Endpoints.Elasticsearch;
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);

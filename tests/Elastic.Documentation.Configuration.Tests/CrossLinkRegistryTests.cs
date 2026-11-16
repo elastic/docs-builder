@@ -6,11 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -81,6 +82,16 @@ public class CrossLinkRegistryTests
 	}
 
 	[Test]
+	public void CrossLinkEntry_RejectedEntryIsDroppedByItsTrimmedText_AndKeptEntriesAreTrimmed()
+	{
+		// the rule reports the trimmed text as evidence, so an entry with surrounding whitespace is still dropped (or kept) by what the rule saw
+		var docSet = CreateDocSet(null, ["  elasticsearch  ", "  internal://docs-eng-team ", "  "]);
+		var config = CreateConfiguration(docSet);
+
+		config.CrossLinkEntries.Should().ContainSingle().Which.Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
+	}
+
+	[Test]
 	public void CrossLinkRepositories_MatchesCrossLinkEntries()
 	{
 		var docSet = CreateDocSet("internal", ["repo-a", "public://repo-b"]);
@@ -89,9 +100,9 @@ public class CrossLinkRegistryTests
 		config.CrossLinkRepositories.Should().BeEquivalentTo(["repo-a", "repo-b"]);
 	}
 
-	private static DocumentationSetFile CreateDocSet(string? registry, IReadOnlyList<string> crossLinks)
+	private static DocumentationSetDto CreateDocSet(string? registry, IReadOnlyList<string> crossLinks)
 	{
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			CrossLinks = crossLinks.ToList(),
@@ -101,7 +112,7 @@ public class CrossLinkRegistryTests
 		return docSet;
 	}
 
-	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -112,15 +123,10 @@ public class CrossLinkRegistryTests
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
-		var productsConfig = new ProductsConfiguration
-		{
-			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-		};
+		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+		var productsConfig = new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary(), };
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}
 
 	private sealed class MockDocumentationSetContext(

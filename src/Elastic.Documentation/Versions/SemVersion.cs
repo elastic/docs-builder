@@ -216,7 +216,7 @@ public partial class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion
 			return result;
 
 		result = CompareComponent(Prerelease, other.Prerelease, true);
-		return result != 0 ? result : CompareComponent(Prerelease, other.Metadata, true);
+		return result != 0 ? result : CompareComponent(Metadata, other.Metadata);
 	}
 
 	/// <inheritdoc cref="IComparable{T}.CompareTo"/>

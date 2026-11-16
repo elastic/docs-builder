@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.Exporters;
@@ -19,12 +19,12 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	private BuildContext Build => build;
 	private bool _versionLockInitialized;
 
-	private IReadOnlySet<string> DeprecatedOverviewFileNames { get; } = GetAllDetectionRuleOverviewRefs(
-		build.ConfigurationYaml.TableOfContents
-	).Select(r => r.DeprecatedFile ?? "deprecated-detection-rules.md").ToHashSet();
+	private IReadOnlySet<string> DeprecatedOverviewFileNames { get; } = GetAllDetectionRuleOverviewRefs(build.Definition.TableOfContents)
+		.Select(r => r.DeprecatedFile ?? "deprecated-detection-rules.md")
+		.ToHashSet();
 
 	public IEnumerable<string> ExternalScopeRoots =>
-		GetAllDetectionRuleOverviewRefs(Build.ConfigurationYaml.TableOfContents)
+		GetAllDetectionRuleOverviewRefs(Build.Definition.TableOfContents)
 			.SelectMany(r => r.DetectionRuleFolders)
 			.Select(f => Path.GetFullPath(f, Build.DocumentationSourceDirectory.FullName))
 			.Distinct();
@@ -97,7 +97,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
 	)
 	{
-		var overviewRefs = GetAllDetectionRuleOverviewRefs(Build.ConfigurationYaml.TableOfContents).ToArray();
+		var overviewRefs = GetAllDetectionRuleOverviewRefs(Build.Definition.TableOfContents).ToArray();
 
 		// Pass each overviewRef as a single-element sequence so the switch case that
 		// checks DeprecatedSiblingRef is triggered, picking up both active and deprecated rules.
@@ -117,7 +117,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 				continue; // physical file handled by normal scan
 
 			// Only register if this overview actually has deprecated rule children (now in DeprecatedSiblingRef)
-			var hasDeprecatedChildren = overviewRef.DeprecatedSiblingRef?.Children.OfType<DetectionRuleRef>().Any() == true;
+			var hasDeprecatedChildren = overviewRef.DeprecatedSiblingRef?.Children.OfCase<DetectionRuleRef>().Any() == true;
 
 			if (!hasDeprecatedChildren)
 				continue;
@@ -134,7 +134,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	}
 
 	// Finds all DetectionRuleOverviewRef instances at any depth in the TOC tree
-	private static IEnumerable<DetectionRuleOverviewRef> GetAllDetectionRuleOverviewRefs(IEnumerable<ITableOfContentsItem> items) =>
+	private static IEnumerable<DetectionRuleOverviewRef> GetAllDetectionRuleOverviewRefs(IEnumerable<TocItem> items) =>
 		items.SelectMany(
 			item =>
 				item switch
@@ -148,7 +148,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	// Finds all DetectionRuleRef instances at any depth within a set of TOC items.
 	// Also scans DeprecatedSiblingRef on DetectionRuleOverviewRef since deprecated rules
 	// are no longer nested in Children — they live in the sibling's Children instead.
-	private static IEnumerable<DetectionRuleRef> GetAllDetectionRuleRefs(IEnumerable<ITableOfContentsItem> items) =>
+	private static IEnumerable<DetectionRuleRef> GetAllDetectionRuleRefs(IEnumerable<TocItem> items) =>
 		items.SelectMany(
 			item =>
 				item switch

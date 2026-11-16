@@ -250,7 +250,12 @@ public class EmptyFileWarnsNeedingATitle() : DirectiveTest("")
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("warning {repo}/docs/index.md Document has no title, using file name as title.");
+			.MatchInlineSnapshot(
+				"""
+				warning {repo}/docs/docset.yml Table of contents references 'index.md' but the file is empty.
+				warning {repo}/docs/index.md Document has no title, using file name as title.
+				"""
+			);
 }
 
 public class NavigationTitleSupportReplacements() : DirectiveTest(

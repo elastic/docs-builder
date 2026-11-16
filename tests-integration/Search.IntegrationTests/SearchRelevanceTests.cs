@@ -8,7 +8,7 @@ using AwesomeAssertions;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
@@ -614,7 +614,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			new ConfigurationFileSystem(),
 			configurationSource: ConfigurationSource.Embedded
 		);
-		var searchConfig = configProvider.CreateSearchConfiguration();
+		var searchConfig = SearchTuningLoader.Load(configProvider).OrThrow();
 
 		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
 

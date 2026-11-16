@@ -5,12 +5,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
-using System.Text.Json;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
 
@@ -18,11 +18,17 @@ namespace Elastic.Documentation.Links.CrossLinks;
 
 public record FetchedCrossLinks
 {
-	public required FrozenDictionary<string, RepositoryLinks> LinkReferences { get; init; }
+	public required FrozenDictionary<string, LinkManifest> LinkReferences { get; init; }
 
 	public required HashSet<string> DeclaredRepositories { get; init; }
 
 	public required FrozenDictionary<string, LinkRegistryEntry> LinkIndexEntries { get; init; }
+
+	/// <summary>
+	/// The link registry the declared repositories were looked up in, when there was one registry and it was fetched (null for a build against a
+	/// codex registry as well as the public one, and when the fetch failed). The cross-link graph is checked against it.
+	/// </summary>
+	public LinkRegistry? Registry { get; init; }
 
 	/// <summary>
 	/// Optional map of repository name to link index registry URL for error messages.
@@ -51,7 +57,7 @@ public record FetchedCrossLinks
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],
-		LinkReferences = new Dictionary<string, RepositoryLinks>().ToFrozenDictionary(),
+		LinkReferences = new Dictionary<string, LinkManifest>().ToFrozenDictionary(),
 		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
 		RegistryUrlsByRepository = null,
 		RegistryByRepository = null,
@@ -69,9 +75,6 @@ public abstract class CrossLinkFetcher(
 	private readonly IFileSystem _fileSystem = fileSystem ?? new ApplicationDataFileSystem();
 	private LinkRegistry? _linkIndex;
 
-	public static RepositoryLinks Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.RepositoryLinks)!;
-
 	public abstract Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx);
 
 	private int _logOnce;
@@ -86,7 +89,7 @@ public abstract class CrossLinkFetcher(
 		}
 
 		Logger.LogInformation("Fetching link index registry (link-index.json)");
-		_linkIndex = await linkIndexProvider.GetRegistry(ctx);
+		_linkIndex = (await linkIndexProvider.GetRegistry(ctx)).Unwrap(Logger, "link-index.json");
 		return _linkIndex;
 	}
 
@@ -110,7 +113,7 @@ public abstract class CrossLinkFetcher(
 		return linkIndexEntry;
 	}
 
-	protected async Task<RepositoryLinks> FetchCrossLinks(string repository, string[] keys, Cancel ctx)
+	protected async Task<LinkManifest> FetchCrossLinks(string repository, string[] keys, Cancel ctx)
 	{
 		var linkIndex = await FetchLinkRegistry(ctx);
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
@@ -125,13 +128,13 @@ public abstract class CrossLinkFetcher(
 		throw new Exception($"Repository found in link index however none of: '{string.Join(", ", keys)}' branches found");
 	}
 
-	protected Task<RepositoryLinks> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx) =>
+	protected Task<LinkManifest> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx) =>
 		FetchLinkIndexEntryFromReader(linkIndexProvider, repository, linkRegistryEntry, ctx);
 
 	/// <summary>
 	/// Fetches repository links from a specific reader. Used for dual-registry (public + codex) fetching.
 	/// </summary>
-	protected async Task<RepositoryLinks> FetchLinkIndexEntryFromReader(
+	protected async Task<LinkManifest> FetchLinkIndexEntryFromReader(
 		ILinkIndexReader reader,
 		string repository,
 		LinkRegistryEntry linkRegistryEntry,
@@ -146,7 +149,8 @@ public abstract class CrossLinkFetcher(
 		}
 
 		Logger.LogInformation("Fetching links.json for '{Repository}' from {RegistryUrl}", repository, reader.RegistryUrl);
-		linkReference = await reader.GetRepositoryLinks(linkRegistryEntry.Path, ctx);
+		// checked once by the reader's loader; what it breaks is logged, never thrown (the file is another repository's)
+		linkReference = (await reader.GetRepositoryLinks(linkRegistryEntry.Path, ctx)).Unwrap(Logger, $"links.json of '{repository}'");
 		WriteLinksJsonCachedFile(repository, linkRegistryEntry, linkReference);
 		return linkReference;
 	}
@@ -154,21 +158,21 @@ public abstract class CrossLinkFetcher(
 	/// <summary>
 	/// Fetches cross-links for a repository from a specific reader. Used for dual-registry fetching.
 	/// </summary>
-	protected static async Task<RepositoryLinks> FetchCrossLinksFromReader(
+	protected static async Task<LinkManifest> FetchCrossLinksFromReader(
 		ILinkIndexReader reader,
 		string repository,
 		CrossLinkFetcher fetcher,
 		Cancel ctx
 	)
 	{
-		var linkIndex = await reader.GetRegistry(ctx);
+		var linkIndex = (await reader.GetRegistry(ctx)).Unwrap(fetcher.Logger, "link-index.json");
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
 			throw new Exception($"Repository {repository} not found in link index");
 		var entry = GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);
 		return await fetcher.FetchLinkIndexEntryFromReader(reader, repository, entry, ctx);
 	}
 
-	private void WriteLinksJsonCachedFile(string repository, LinkRegistryEntry linkRegistryEntry, RepositoryLinks linkReference)
+	private void WriteLinksJsonCachedFile(string repository, LinkRegistryEntry linkRegistryEntry, LinkManifest linkReference)
 	{
 		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
 		var cachedPath = Path.Join(Paths.ApplicationData.FullName, "links", cachedFileName);
@@ -177,7 +181,7 @@ public abstract class CrossLinkFetcher(
 		try
 		{
 			_ = _fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(cachedPath)!);
-			_fileSystem.File.WriteAllText(cachedPath, RepositoryLinks.Serialize(linkReference));
+			_fileSystem.File.WriteAllText(cachedPath, LinkLoader.Serialize(linkReference));
 		}
 		catch (Exception e)
 		{
@@ -185,9 +189,9 @@ public abstract class CrossLinkFetcher(
 		}
 	}
 
-	private readonly ConcurrentDictionary<string, RepositoryLinks> _cachedLinkReferences = new();
+	private readonly ConcurrentDictionary<string, LinkManifest> _cachedLinkReferences = new();
 
-	private async Task<RepositoryLinks?> TryGetCachedLinkReference(string repository, LinkRegistryEntry linkRegistryEntry)
+	private async Task<LinkManifest?> TryGetCachedLinkReference(string repository, LinkRegistryEntry linkRegistryEntry)
 	{
 		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
 		var cachedPath = Path.Join(Paths.ApplicationData.FullName, "links", cachedFileName);
@@ -199,7 +203,8 @@ public abstract class CrossLinkFetcher(
 			try
 			{
 				var json = await _fileSystem.File.ReadAllTextAsync(cachedPath);
-				var linkReference = Deserialize(json);
+				// the cached copy is checked like a fetched one
+				var linkReference = LinkLoader.LoadManifest(json, cachedPath).Unwrap(Logger, $"cached links.json of '{repository}'");
 				_ = _cachedLinkReferences.TryAdd(cachedFileName, linkReference);
 				return linkReference;
 			}

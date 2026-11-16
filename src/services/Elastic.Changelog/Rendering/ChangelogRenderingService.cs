@@ -70,11 +70,13 @@ public enum ChangelogFileType
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
-	IConfigurationContext? configurationContext = null
+	IConfigurationContext? configurationContext = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext!, fileSystem);
 
 	public async Task<bool> RenderChangelogs(IDiagnosticsCollector collector, RenderChangelogsArguments input, Cancel ctx)
 	{
@@ -108,8 +110,7 @@ public class ChangelogRenderingService(
 			var outputSetup = SetupOutput(collector, input, resolvedResult.AllProducts);
 
 			// Load changelog configuration
-			var configLoader = new ChangelogConfigurationLoader(logFactory, configurationContext!, _fileSystem);
-			var config = await configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
@@ -341,11 +342,12 @@ public class ChangelogRenderingService(
 			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToArray().AsReadOnly())
 			.AsReadOnly();
 
-		// Create mappings from entries to their metadata
-		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
-		var entryToRepo = new Dictionary<ChangelogEntry, string>();
-		var entryToOwner = new Dictionary<ChangelogEntry, string>();
-		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
+		// Create mappings from entries to their metadata. Keyed by instance: two bundles can carry equal entries that
+		// still render with their own bundle's repo, owner and link visibility.
+		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>(ReferenceEqualityComparer.Instance);
+		var entryToRepo = new Dictionary<ChangelogEntry, string>(ReferenceEqualityComparer.Instance);
+		var entryToOwner = new Dictionary<ChangelogEntry, string>(ReferenceEqualityComparer.Instance);
+		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>(ReferenceEqualityComparer.Instance);
 
 		foreach (var entry in resolved.Entries)
 		{

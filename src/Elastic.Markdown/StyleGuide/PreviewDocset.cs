@@ -78,30 +78,28 @@ public sealed partial class PreviewDocset : IAsyncDisposable
 
 		var configuration = new ConfigurationContext
 		{
-			VersionsConfiguration = template.VersionsConfiguration,
+			Catalog = template.Catalog,
+			RelatedLearning = template.RelatedLearning,
 			ConfigurationFileProvider = template.ConfigurationFileProvider,
 			Endpoints = template.Endpoints,
-			ProductsConfiguration = template.ProductsConfiguration,
-			LegacyUrlMappings = template.LegacyUrlMappings,
-			SearchConfiguration = template.SearchConfiguration
+			SearchTuning = template.SearchTuning
 		};
 		var docFs = DocumentationFileSystem.Resolve(
 			fileSystem.DirectoryInfo.New(docs),
 			new DocumentationScopeOptions
 			{
 				Inner = fileSystem,
-				Git = new GitCheckoutInformation
-				{
-					Branch = "main",
-					Remote = "https://github.com/acme/lorem-ipsum.git",
-					Ref = "45954b6e0b1d4b0d8f5c6c0c3f1b4a5d9a7c2e11",
-					RepositoryName = options.RepositoryName,
-					GitHubRef = "refs/pull/42/merge"
-				}
+				Git = GitCheckoutInformation.ForClonedRepository(
+					options.RepositoryName,
+					"https://github.com/acme/lorem-ipsum.git",
+					"main",
+					"45954b6e0b1d4b0d8f5c6c0c3f1b4a5d9a7c2e11",
+					"refs/pull/42/merge"
+				)
 			}
 		);
 		var context = new BuildContext(new DiagnosticsCollector([]), docFs, configuration) { BuildType = options.BuildType };
-		context.Configuration.Features.NavigationPreviewEnabled = true;
+		context.OverrideFeatures(features => features.With("navigation-preview", true));
 
 		var set = new DocumentationSet(context, NullLoggerFactory.Instance, NoopCrossLinkResolver.Instance);
 		if (options.BuildType == BuildType.Assembler && options.NavigationHtml is null)

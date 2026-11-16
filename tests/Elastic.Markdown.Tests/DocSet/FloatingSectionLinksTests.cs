@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Floating;
@@ -21,7 +22,7 @@ public class FloatingSectionLinksTests
 		var set = CreateSet(provider);
 		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
 
-		var reference = set.CreateLinkReference();
+		var reference = set.CreateLinkReference().OrThrowIfMissing();
 
 		reference.Links.Keys.Should().BeEquivalentTo("index.md", "page.md");
 		reference
@@ -46,10 +47,10 @@ public class FloatingSectionLinksTests
 		var set = CreateSet(new DemoProvider { LinkSection = false });
 		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
 
-		var reference = set.CreateLinkReference();
+		var reference = set.CreateLinkReference().OrThrowIfMissing();
 
 		reference.Floating.Should().BeNull("a docset with nothing to publish keeps the same links.json as before");
-		RepositoryLinks.Serialize(reference).Should().NotContain("floating");
+		LinkLoader.Serialize(reference).Should().NotContain("floating");
 	}
 
 	private static DocumentationSet CreateSet(DemoProvider provider)

@@ -5,12 +5,14 @@
 using System.Collections.Immutable;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Links.InboundLinks;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
@@ -41,11 +43,7 @@ public class NavigationPrefixChecker
 	/// <inheritdoc cref="NavigationPrefixChecker"/>
 	public NavigationPrefixChecker(ILoggerFactory logFactory, AssembleContext context)
 	{
-		var navigationFileInfo = context.ConfigurationFileProvider.NavigationFile;
-		var navigationYaml = context.ReadFileSystem.File.ReadAllText(navigationFileInfo.FullName);
-		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml, context.Collector, navigationFileInfo.FullName);
-
-		_phantoms = SiteNavigationFile.GetPhantomPrefixes(siteNavigationFile);
+		_phantoms = SiteNavigationDefinition.GetPhantomPrefixes(context.Navigation);
 
 		_repositories = context.Configuration.AvailableRepositories.Values.Select(r => r.Name).ToImmutableHashSet();
 
@@ -98,7 +96,7 @@ public class NavigationPrefixChecker
 	private async Task FetchAndValidateCrossLinks(
 		IDiagnosticsCollector collector,
 		string? updateRepository,
-		RepositoryLinks? updateReference,
+		LinkManifest? updateReference,
 		Cancel ctx
 	)
 	{
@@ -172,12 +170,12 @@ public class NavigationPrefixChecker
 			&& (candidate.AbsolutePath == phantom.AbsolutePath
 				|| candidate.AbsolutePath.StartsWith(phantom.AbsolutePath.TrimEnd('/') + '/', StringComparison.Ordinal));
 
-	private async Task<RepositoryLinks> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
+	private async Task<LinkManifest> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
 	{
 		try
 		{
 			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
-			return RepositoryLinks.Deserialize(json);
+			return LinkLoader.LoadManifest(json, localLinksJson).Unwrap(_logger, "local links.json");
 		}
 		catch (Exception e)
 		{

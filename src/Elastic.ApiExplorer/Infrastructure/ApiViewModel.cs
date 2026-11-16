@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Components.Navigation.PageActions;
 using Elastic.Documentation.Site.FileProviders;
@@ -19,7 +20,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
-	public required IReadOnlyList<TocItem> TocItems { get; init; }
+	public required IReadOnlyList<HeadingItem> TocItems { get; init; }
 
 	public required INavigationItem[] Breadcrumbs { get; init; }
 
@@ -67,9 +68,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
-	public IReadOnlyList<TocItem> TocItems => field ??= GetTocItems();
+	public IReadOnlyList<HeadingItem> TocItems => field ??= GetTocItems();
 
-	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
+	protected virtual IReadOnlyList<HeadingItem> GetTocItems() => [];
 
 	protected virtual bool ShowPageActions => true;
 
@@ -127,7 +128,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = BuildContext.GoogleTagManager,
 			Optimizely = BuildContext.Optimizely,
-			Features = BuildContext.Configuration.Features,
+			Features = BuildContext.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			EnvironmentName = BuildContext.EnvironmentName,

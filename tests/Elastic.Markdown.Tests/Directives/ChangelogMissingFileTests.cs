@@ -70,7 +70,10 @@ public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBl
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"error {repo}/docs/index.md:3 Bundle '9.3.0.yaml' entry '1234-referenced-entry.yaml' has no inline content (title and type are required); bundles must inline their entries. Skipping."
+				"""
+				error {repo}/docs/index.md:3 Bundle '9.3.0.yaml' entry '1234-referenced-entry.yaml' has no inline content (title and type are required); bundles must inline their entries. Skipping.
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				"""
 			);
 
 	[Test]
@@ -91,9 +94,9 @@ public class ChangelogInlineEntriesNoErrorTests : DirectiveTest<ChangelogBlock>
 		:::
 		"""
 		) =>
-		// Bundle has fully inline/resolved entry — no file reference needed
+		// Bundle has fully inline/resolved entry — no file reference needed (named by the convention, so the loader has nothing to say about it)
 		FileSystem.AddFile(
-			"docs/changelog/bundles/9.3.0.yaml",
+			"docs/changelog/bundles/elasticsearch-elasticsearch-9.3.0.yaml",
 			new MockFileData(
 				// language=yaml
 				"""

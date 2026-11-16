@@ -4,12 +4,13 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Documentation.Deploying.Synchronization;
 
 public interface IDocsSyncPlanStrategy
 {
-	Task<SyncPlan> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default);
+	Task<Result<SyncPlan>> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default);
 }
 
 public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteThreshold);
@@ -49,7 +50,11 @@ public record SkipRequest : SyncRequest
 	public required string DestinationPath { get; init; }
 }
 
-public record SyncPlan
+/// <summary>What an incremental deploy will do: the add, update, delete and skip requests the planner worked out, with the counts and the thresholds it used.</summary>
+/// <remarks>
+/// Constructed with <c>SyncPlanLoader.Planned</c> or <c>SyncPlanLoader.Load</c>.
+/// </remarks>
+public sealed record SyncPlan
 {
 	/// The user-specified delete threshold
 	[JsonPropertyName("deletion_threshold_default")]
@@ -87,13 +92,54 @@ public record SyncPlan
 	[JsonPropertyName("skip")]
 	public required IReadOnlyList<SkipRequest> SkipRequests { get; init; }
 
-	/// Stale hashed frontend assets kept by <see cref="StaticAssetRetention"/>; not counted in <see cref="TotalSyncRequests"/>
+	/// <summary>The delete threshold when none was given: no more than a fifth of the remote files may be deleted.</summary>
+	public const float DefaultDeleteThreshold = 0.2f;
+
+	/// <summary>
+	/// The fraction of the remote files this plan may delete: <see cref="DeleteThresholdDefault"/> (or 0.2), raised to 0.8 for at most 100 remote
+	/// files and to 0.5 for at most 1,000 so a young bucket can change quickly, and 0 for an empty bucket, which has nothing to delete.
+	/// </summary>
+	[JsonIgnore]
+	public float DeleteThreshold => EffectiveDeleteThreshold(out _);
+
+	/// <summary>The fraction of the remote files this plan deletes.</summary>
+	[JsonIgnore]
+	public float DeleteRatio => (float)DeleteRequests.Count / TotalRemoteFiles;
+
+	/// <summary><see cref="DeleteThreshold"/>, with the reason it was changed from the default, or null when it was not.</summary>
+	public float EffectiveDeleteThreshold(out string? reason)
+	{
+		var threshold = DeleteThresholdDefault ?? DefaultDeleteThreshold;
+		reason = null;
+		if (TotalRemoteFiles == 0)
+		{
+			reason =
+				"No files discovered in S3, assuming a clean bucket resetting delete threshold to `0.0' as our plan should not have ANY deletions";
+			return 0.0f;
+		}
+		// a plan against 100 remote files or fewer is in flux, so it may delete up to 0.8
+		if (TotalRemoteFiles <= 100)
+		{
+			reason = "Plan has less than 100 total remote files ensuring delete threshold is at minimum 0.8";
+			return Math.Max(threshold, 0.8f);
+		}
+		if (TotalRemoteFiles <= 1000)
+		{
+			reason = "Plan has less than 1000 but more than a 100 total remote files ensuring delete threshold is at minimum 0.5";
+			return Math.Max(threshold, 0.5f);
+		}
+		return threshold;
+	}
+
+	/// <summary>Stale hashed frontend assets kept by <see cref="StaticAssetRetention"/>; not counted in <see cref="TotalSyncRequests"/>.</summary>
 	[JsonPropertyName("retain")]
-	public IReadOnlyList<string> RetainedPaths { get; init; } = [];
+	[JsonInclude]
+	public IReadOnlyList<string> RetainedPaths { get; internal init; } = [];
 
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 
-	public static SyncPlan Deserialize(string json) =>
+	/// <summary>The raw reader of the plan's wire format; internal: <see cref="SyncPlanLoader.Load"/> checks what it reads.</summary>
+	internal static SyncPlan Deserialize(string json) =>
 		JsonSerializer.Deserialize(json, SyncSerializerContext.Default.SyncPlan)
 			?? throw new JsonException("Failed to deserialize SyncPlan from JSON");
 }

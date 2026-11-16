@@ -1,0 +1,523 @@
+{
+  "value": {
+    "mappings": {
+      "apm-agent-android://reference/edot-android/": {
+        "source": "apm-agent-android://reference/edot-android/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/android"
+      },
+      "apm-agent-android://release-notes/": {
+        "source": "apm-agent-android://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/android"
+      },
+      "apm-agent-dotnet://reference/": {
+        "source": "apm-agent-dotnet://reference/",
+        "pathPrefix": "reference/apm/agents/dotnet"
+      },
+      "apm-agent-dotnet://release-notes/": {
+        "source": "apm-agent-dotnet://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/dotnet"
+      },
+      "apm-agent-go://reference/": {
+        "source": "apm-agent-go://reference/",
+        "pathPrefix": "reference/apm/agents/go"
+      },
+      "apm-agent-go://release-notes/": {
+        "source": "apm-agent-go://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/go"
+      },
+      "apm-agent-ios://reference/edot-ios/": {
+        "source": "apm-agent-ios://reference/edot-ios/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/ios"
+      },
+      "apm-agent-ios://release-notes/": {
+        "source": "apm-agent-ios://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/ios"
+      },
+      "apm-agent-java://reference/": {
+        "source": "apm-agent-java://reference/",
+        "pathPrefix": "reference/apm/agents/java"
+      },
+      "apm-agent-java://release-notes/": {
+        "source": "apm-agent-java://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/java"
+      },
+      "apm-agent-nodejs://reference/": {
+        "source": "apm-agent-nodejs://reference/",
+        "pathPrefix": "reference/apm/agents/nodejs"
+      },
+      "apm-agent-nodejs://release-notes/": {
+        "source": "apm-agent-nodejs://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/nodejs"
+      },
+      "apm-agent-php://reference/": {
+        "source": "apm-agent-php://reference/",
+        "pathPrefix": "reference/apm/agents/php"
+      },
+      "apm-agent-php://release-notes/": {
+        "source": "apm-agent-php://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/php"
+      },
+      "apm-agent-python://reference/": {
+        "source": "apm-agent-python://reference/",
+        "pathPrefix": "reference/apm/agents/python"
+      },
+      "apm-agent-python://release-notes/": {
+        "source": "apm-agent-python://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/python"
+      },
+      "apm-agent-ruby://reference/": {
+        "source": "apm-agent-ruby://reference/",
+        "pathPrefix": "reference/apm/agents/ruby"
+      },
+      "apm-agent-ruby://release-notes/": {
+        "source": "apm-agent-ruby://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/ruby"
+      },
+      "apm-agent-rum-js://reference/": {
+        "source": "apm-agent-rum-js://reference/",
+        "pathPrefix": "reference/apm/agents/rum-js"
+      },
+      "apm-agent-rum-js://release-notes/": {
+        "source": "apm-agent-rum-js://release-notes/",
+        "pathPrefix": "release-notes/apm/agents/rum-js"
+      },
+      "apm-aws-lambda://reference/": {
+        "source": "apm-aws-lambda://reference/",
+        "pathPrefix": "reference/apm/aws-lambda"
+      },
+      "apm-aws-lambda://release-notes/": {
+        "source": "apm-aws-lambda://release-notes/",
+        "pathPrefix": "release-notes/apm/aws-lambda"
+      },
+      "apm-k8s-attacher://reference/": {
+        "source": "apm-k8s-attacher://reference/",
+        "pathPrefix": "reference/apm/k8s-attacher"
+      },
+      "apm-server://release-notes/": {
+        "source": "apm-server://release-notes/",
+        "pathPrefix": "release-notes/apm"
+      },
+      "beats://extend/": {
+        "source": "beats://extend/",
+        "pathPrefix": "extend/beats"
+      },
+      "beats://reference/": {
+        "source": "beats://reference/",
+        "pathPrefix": "reference/beats"
+      },
+      "beats://release-notes/": {
+        "source": "beats://release-notes/",
+        "pathPrefix": "release-notes/beats"
+      },
+      "cli:///": {
+        "source": "cli:///",
+        "pathPrefix": "reference/elastic-cli"
+      },
+      "cloud-on-k8s://reference/": {
+        "source": "cloud-on-k8s://reference/",
+        "pathPrefix": "reference/cloud-on-k8s"
+      },
+      "cloud-on-k8s://release-notes/": {
+        "source": "cloud-on-k8s://release-notes/",
+        "pathPrefix": "release-notes/cloud-on-k8s"
+      },
+      "curator://reference/": {
+        "source": "curator://reference/",
+        "pathPrefix": "reference/elasticsearch/curator"
+      },
+      "detection-rules:///": {
+        "source": "detection-rules:///",
+        "pathPrefix": "reference/security/prebuilt-rules"
+      },
+      "docs-builder:///": {
+        "source": "docs-builder:///",
+        "pathPrefix": "reference/docs-builder"
+      },
+      "docs-builder://development/": {
+        "source": "docs-builder://development/",
+        "pathPrefix": "reference/docs-builder/dev"
+      },
+      "docs-builder://development/link-validation/": {
+        "source": "docs-builder://development/link-validation/",
+        "pathPrefix": "reference/docs-builder/dev/link-val"
+      },
+      "docs-content://cloud-account/": {
+        "source": "docs-content://cloud-account/",
+        "pathPrefix": "cloud-account"
+      },
+      "docs-content://contribute-docs/": {
+        "source": "docs-content://contribute-docs/",
+        "pathPrefix": "contribute-docs"
+      },
+      "docs-content://deploy-manage/": {
+        "source": "docs-content://deploy-manage/",
+        "pathPrefix": "deploy-manage"
+      },
+      "docs-content://explore-analyze/": {
+        "source": "docs-content://explore-analyze/",
+        "pathPrefix": "explore-analyze"
+      },
+      "docs-content://extend/": {
+        "source": "docs-content://extend/",
+        "pathPrefix": "extend"
+      },
+      "docs-content://get-started/": {
+        "source": "docs-content://get-started/",
+        "pathPrefix": "get-started"
+      },
+      "docs-content://manage-data/": {
+        "source": "docs-content://manage-data/",
+        "pathPrefix": "manage-data"
+      },
+      "docs-content://reference/": {
+        "source": "docs-content://reference/",
+        "pathPrefix": "reference"
+      },
+      "docs-content://reference/apm-agents/": {
+        "source": "docs-content://reference/apm-agents/",
+        "pathPrefix": "reference/apm-agents"
+      },
+      "docs-content://reference/apm/": {
+        "source": "docs-content://reference/apm/",
+        "pathPrefix": "reference/apm"
+      },
+      "docs-content://reference/elasticsearch-clients/": {
+        "source": "docs-content://reference/elasticsearch-clients/",
+        "pathPrefix": "reference/elasticsearch-clients"
+      },
+      "docs-content://reference/fleet/": {
+        "source": "docs-content://reference/fleet/",
+        "pathPrefix": "reference/fleet"
+      },
+      "docs-content://reference/glossary/": {
+        "source": "docs-content://reference/glossary/",
+        "pathPrefix": "reference/glossary"
+      },
+      "docs-content://reference/ingestion-tools/": {
+        "source": "docs-content://reference/ingestion-tools/",
+        "pathPrefix": "reference/ingestion-tools"
+      },
+      "docs-content://reference/machine-learning/": {
+        "source": "docs-content://reference/machine-learning/",
+        "pathPrefix": "reference/machine-learning"
+      },
+      "docs-content://reference/observability/": {
+        "source": "docs-content://reference/observability/",
+        "pathPrefix": "reference/observability"
+      },
+      "docs-content://reference/security/": {
+        "source": "docs-content://reference/security/",
+        "pathPrefix": "reference/security"
+      },
+      "docs-content://release-notes/elastic-cloud-serverless/": {
+        "source": "docs-content://release-notes/elastic-cloud-serverless/",
+        "pathPrefix": "release-notes/cloud-serverless"
+      },
+      "docs-content://release-notes/elastic-observability/": {
+        "source": "docs-content://release-notes/elastic-observability/",
+        "pathPrefix": "release-notes/observability"
+      },
+      "docs-content://release-notes/elastic-security/": {
+        "source": "docs-content://release-notes/elastic-security/",
+        "pathPrefix": "release-notes/security"
+      },
+      "docs-content://release-notes/intro/": {
+        "source": "docs-content://release-notes/intro/",
+        "pathPrefix": "release-notes"
+      },
+      "docs-content://solutions/": {
+        "source": "docs-content://solutions/",
+        "pathPrefix": "solutions"
+      },
+      "docs-content://troubleshoot/": {
+        "source": "docs-content://troubleshoot/",
+        "pathPrefix": "troubleshoot"
+      },
+      "ecctl://reference/": {
+        "source": "ecctl://reference/",
+        "pathPrefix": "reference/ecctl"
+      },
+      "ecctl://release-notes/": {
+        "source": "ecctl://release-notes/",
+        "pathPrefix": "release-notes/ecctl"
+      },
+      "ecs-dotnet://reference/": {
+        "source": "ecs-dotnet://reference/",
+        "pathPrefix": "reference/ecs/logging/dotnet"
+      },
+      "ecs-logging-go-logrus://reference/": {
+        "source": "ecs-logging-go-logrus://reference/",
+        "pathPrefix": "reference/ecs/logging/go-logrus"
+      },
+      "ecs-logging-go-zap://reference/": {
+        "source": "ecs-logging-go-zap://reference/",
+        "pathPrefix": "reference/ecs/logging/go-zap"
+      },
+      "ecs-logging-go-zerolog://reference/": {
+        "source": "ecs-logging-go-zerolog://reference/",
+        "pathPrefix": "reference/ecs/logging/go-zerolog"
+      },
+      "ecs-logging-java://reference/": {
+        "source": "ecs-logging-java://reference/",
+        "pathPrefix": "reference/ecs/logging/java"
+      },
+      "ecs-logging-nodejs://reference/": {
+        "source": "ecs-logging-nodejs://reference/",
+        "pathPrefix": "reference/ecs/logging/nodejs"
+      },
+      "ecs-logging-php://reference/": {
+        "source": "ecs-logging-php://reference/",
+        "pathPrefix": "reference/ecs/logging/php"
+      },
+      "ecs-logging-python://reference/": {
+        "source": "ecs-logging-python://reference/",
+        "pathPrefix": "reference/ecs/logging/python"
+      },
+      "ecs-logging-ruby://reference/": {
+        "source": "ecs-logging-ruby://reference/",
+        "pathPrefix": "reference/ecs/logging/ruby"
+      },
+      "ecs-logging://reference/": {
+        "source": "ecs-logging://reference/",
+        "pathPrefix": "reference/ecs/logging"
+      },
+      "ecs://reference/": {
+        "source": "ecs://reference/",
+        "pathPrefix": "reference/ecs"
+      },
+      "ecs://release-notes/": {
+        "source": "ecs://release-notes/",
+        "pathPrefix": "release-notes/ecs"
+      },
+      "eland://reference/": {
+        "source": "eland://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/eland"
+      },
+      "elastic-agent://reference/edot-collector/": {
+        "source": "elastic-agent://reference/edot-collector/",
+        "pathPrefix": "reference/edot-collector"
+      },
+      "elastic-agent://release-notes/": {
+        "source": "elastic-agent://release-notes/",
+        "pathPrefix": "release-notes/elastic-agent"
+      },
+      "elastic-otel-dotnet://reference/edot-dotnet/": {
+        "source": "elastic-otel-dotnet://reference/edot-dotnet/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/dotnet"
+      },
+      "elastic-otel-dotnet://release-notes/": {
+        "source": "elastic-otel-dotnet://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/dotnet"
+      },
+      "elastic-otel-java://reference/edot-java/": {
+        "source": "elastic-otel-java://reference/edot-java/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/java"
+      },
+      "elastic-otel-java://release-notes/": {
+        "source": "elastic-otel-java://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/java"
+      },
+      "elastic-otel-node://reference/edot-node/": {
+        "source": "elastic-otel-node://reference/edot-node/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/node"
+      },
+      "elastic-otel-node://release-notes/": {
+        "source": "elastic-otel-node://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/node"
+      },
+      "elastic-otel-php://reference/edot-php/": {
+        "source": "elastic-otel-php://reference/edot-php/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/php"
+      },
+      "elastic-otel-php://release-notes/": {
+        "source": "elastic-otel-php://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/php"
+      },
+      "elastic-otel-python://reference/edot-python/": {
+        "source": "elastic-otel-python://reference/edot-python/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/python"
+      },
+      "elastic-otel-python://release-notes/": {
+        "source": "elastic-otel-python://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/python"
+      },
+      "elastic-otel-rum-js://reference/edot-browser/": {
+        "source": "elastic-otel-rum-js://reference/edot-browser/",
+        "pathPrefix": "reference/opentelemetry/edot-sdks/browser"
+      },
+      "elastic-otel-rum-js://release-notes/": {
+        "source": "elastic-otel-rum-js://release-notes/",
+        "pathPrefix": "release-notes/edot/sdks/rum"
+      },
+      "elastic-serverless-forwarder://reference/": {
+        "source": "elastic-serverless-forwarder://reference/",
+        "pathPrefix": "reference/aws-forwarder"
+      },
+      "elasticsearch-dsl-js://reference/": {
+        "source": "elasticsearch-dsl-js://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/javascript-dsl"
+      },
+      "elasticsearch-hadoop://reference/": {
+        "source": "elasticsearch-hadoop://reference/",
+        "pathPrefix": "reference/elasticsearch-hadoop"
+      },
+      "elasticsearch-hadoop://release-notes/": {
+        "source": "elasticsearch-hadoop://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch-hadoop"
+      },
+      "elasticsearch-java://reference/": {
+        "source": "elasticsearch-java://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/java"
+      },
+      "elasticsearch-java://release-notes/": {
+        "source": "elasticsearch-java://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch/clients/java"
+      },
+      "elasticsearch-js://reference/": {
+        "source": "elasticsearch-js://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/javascript"
+      },
+      "elasticsearch-js://release-notes/": {
+        "source": "elasticsearch-js://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch/clients/javascript"
+      },
+      "elasticsearch-net://reference/": {
+        "source": "elasticsearch-net://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/dotnet"
+      },
+      "elasticsearch-net://release-notes/": {
+        "source": "elasticsearch-net://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch/clients/dotnet"
+      },
+      "elasticsearch-php://reference/": {
+        "source": "elasticsearch-php://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/php"
+      },
+      "elasticsearch-php://release-notes/": {
+        "source": "elasticsearch-php://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch/clients/php"
+      },
+      "elasticsearch-py://reference/": {
+        "source": "elasticsearch-py://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/python"
+      },
+      "elasticsearch-py://release-notes/": {
+        "source": "elasticsearch-py://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch/clients/python"
+      },
+      "elasticsearch-rs://reference/": {
+        "source": "elasticsearch-rs://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/rust"
+      },
+      "elasticsearch-ruby://reference/": {
+        "source": "elasticsearch-ruby://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/ruby"
+      },
+      "elasticsearch-ruby://release-notes/": {
+        "source": "elasticsearch-ruby://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch/clients/ruby"
+      },
+      "elasticsearch://extend/": {
+        "source": "elasticsearch://extend/",
+        "pathPrefix": "extend/elasticsearch"
+      },
+      "elasticsearch://reference/aggregations/": {
+        "source": "elasticsearch://reference/aggregations/",
+        "pathPrefix": "reference/aggregations"
+      },
+      "elasticsearch://reference/community-contributed/": {
+        "source": "elasticsearch://reference/community-contributed/",
+        "pathPrefix": "reference/elasticsearch/clients/community"
+      },
+      "elasticsearch://reference/elasticsearch-plugins/": {
+        "source": "elasticsearch://reference/elasticsearch-plugins/",
+        "pathPrefix": "reference/elasticsearch/plugins"
+      },
+      "elasticsearch://reference/elasticsearch/": {
+        "source": "elasticsearch://reference/elasticsearch/",
+        "pathPrefix": "reference/elasticsearch"
+      },
+      "elasticsearch://reference/ingest-processor/": {
+        "source": "elasticsearch://reference/ingest-processor/",
+        "pathPrefix": "reference/ingest-processor"
+      },
+      "elasticsearch://reference/query-languages/": {
+        "source": "elasticsearch://reference/query-languages/",
+        "pathPrefix": "reference/query-languages"
+      },
+      "elasticsearch://reference/scripting-languages/": {
+        "source": "elasticsearch://reference/scripting-languages/",
+        "pathPrefix": "reference/scripting-languages"
+      },
+      "elasticsearch://reference/search-connectors/": {
+        "source": "elasticsearch://reference/search-connectors/",
+        "pathPrefix": "reference/search-connectors"
+      },
+      "elasticsearch://reference/text-analysis/": {
+        "source": "elasticsearch://reference/text-analysis/",
+        "pathPrefix": "reference/text-analysis"
+      },
+      "elasticsearch://release-notes/": {
+        "source": "elasticsearch://release-notes/",
+        "pathPrefix": "release-notes/elasticsearch"
+      },
+      "fleet-server://release-notes/": {
+        "source": "fleet-server://release-notes/",
+        "pathPrefix": "release-notes/fleet-server"
+      },
+      "go-elasticsearch://reference/": {
+        "source": "go-elasticsearch://reference/",
+        "pathPrefix": "reference/elasticsearch/clients/go"
+      },
+      "integrations://extend/": {
+        "source": "integrations://extend/",
+        "pathPrefix": "extend/integrations"
+      },
+      "kibana://extend/": {
+        "source": "kibana://extend/",
+        "pathPrefix": "extend/kibana"
+      },
+      "kibana://reference/": {
+        "source": "kibana://reference/",
+        "pathPrefix": "reference/kibana"
+      },
+      "kibana://release-notes/": {
+        "source": "kibana://release-notes/",
+        "pathPrefix": "release-notes/kibana"
+      },
+      "logstash://extend/": {
+        "source": "logstash://extend/",
+        "pathPrefix": "extend/logstash"
+      },
+      "logstash://reference/": {
+        "source": "logstash://reference/",
+        "pathPrefix": "reference/logstash"
+      },
+      "logstash://release-notes/": {
+        "source": "logstash://release-notes/",
+        "pathPrefix": "release-notes/logstash"
+      },
+      "opentelemetry://reference/": {
+        "source": "opentelemetry://reference/",
+        "pathPrefix": "reference/opentelemetry"
+      },
+      "opentelemetry://reference/edot-cloud-forwarder/": {
+        "source": "opentelemetry://reference/edot-cloud-forwarder/",
+        "pathPrefix": "reference/opentelemetry/edot-cloud-forwarder"
+      },
+      "opentelemetry://reference/edot-cloud-forwarder/gcp/": {
+        "source": "opentelemetry://reference/edot-cloud-forwarder/gcp/",
+        "pathPrefix": "reference/opentelemetry/edot-cloud-forwarder/gcp"
+      },
+      "opentelemetry://reference/managed-inputs/": {
+        "source": "opentelemetry://reference/managed-inputs/",
+        "pathPrefix": "reference/opentelemetry/managed-inputs"
+      },
+      "search-ui://reference/": {
+        "source": "search-ui://reference/",
+        "pathPrefix": "reference/search-ui"
+      }
+    },
+    "diagnostics": []
+  }
+}

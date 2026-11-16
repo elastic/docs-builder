@@ -342,7 +342,7 @@ public class ApiLookupResultTests
 			{
 				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200"), ApiKey = "test" }
 			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning.None
 		);
 		return accessor.Client.RequestResponseSerializer.Deserialize<Clients.Elasticsearch.SearchResponse<DocumentationDocument>>(stream);
 	}

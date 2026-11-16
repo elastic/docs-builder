@@ -32,15 +32,15 @@ internal sealed class CodexIndexCommand(
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	[RequiresAuth]
 	public async Task<int> Index(
-		GlobalCliOptions _,
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		GlobalCliOptions _,
 		[AsParameters] ElasticsearchIndexOptions es,
 		CancellationToken ct = default
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new CodexFileSystem(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
+		if (!CodexConfigurationLoader.Load(fs.ConfigurationFile, config.FullName, collector, CodexLoadPurpose.Publish, out var codexConfig))
 			return 1;
 
 		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs);

@@ -4,11 +4,39 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
 public class SiteNavigationFileTests
 {
+	/// <summary>The loader reads a non-boolean island as false; the model keeps what was written (G56, G69). Keys it does not read are an error at the reader.</summary>
+	[Test]
+	public void KeepsANonBooleanIslandAsWritten()
+	{
+		// language=yaml
+		var yaml =
+			"""
+			toc:
+			  - toc: kibana://reference
+			    path_prefix: reference/kibana
+			    island: yes
+			    children:
+			      - toc: kibana://reference/extra
+			        path_prefix: reference/kibana/extra
+			""";
+
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
+
+		var kibana = siteNav.TableOfContents[0].Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
+		kibana.Island.Should().BeFalse();
+		kibana.IslandRaw.Should().Be("yes");
+		kibana.Children[0].IslandRaw.Should().BeNull();
+
+		var messages = SiteNavigationConstraints.All.Validate(siteNav).Select(v => v.Message).ToList();
+		messages.Should().Contain(m => m.Contains("island 'yes'"));
+	}
+
 	[Test]
 	public void DeserializesSiteNavigationFile()
 	{
@@ -27,7 +55,7 @@ public class SiteNavigationFileTests
 		               path_prefix: /serverless/security
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		SiteNavDump
 			.ToText(siteNav)
@@ -59,7 +87,7 @@ public class SiteNavigationFileTests
 		                   path_prefix: /platform/cloud
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		SiteNavDump
 			.ToText(siteNav)
@@ -82,7 +110,7 @@ public class SiteNavigationFileTests
 		             - toc: elasticsearch/reference
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		SiteNavDump.ToText(siteNav).Should().MatchInlineSnapshot("toc  docs-content://elasticsearch/reference  path_prefix=\"\"");
 	}
@@ -99,7 +127,7 @@ public class SiteNavigationFileTests
 		             - toc: serverless/observability
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		SiteNavDump
 			.ToText(siteNav)
@@ -127,7 +155,7 @@ public class SiteNavigationFileTests
 		               path_prefix: security
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		SiteNavDump
 			.ToText(siteNav)
@@ -149,7 +177,7 @@ public class SiteNavigationFileTests
 		             - toc: ://invalid
 		           """;
 
-		var act = () => SiteNavigationFile.Deserialize(yaml);
+		var act = () => SiteNavigationLoader.Deserialize(yaml);
 
 		act
 			.Should()
@@ -168,7 +196,7 @@ public class SiteNavigationFileTests
 		           """;
 
 		// A typo (no 'toc:' or 'section:' key) must throw rather than silently drop the entry.
-		var act = () => SiteNavigationFile.Deserialize(yaml);
+		var act = () => SiteNavigationLoader.Deserialize(yaml);
 
 		act.Should().Throw<SharpYaml.YamlException>().WithMessage("*has no 'toc:' key*");
 	}
@@ -188,7 +216,7 @@ public class SiteNavigationFileTests
 		               path_prefix: reference
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		SiteNavDump
 			.ToText(siteNav)
@@ -214,7 +242,7 @@ public class SiteNavigationFileTests
 		               external: https://www.elastic.co/docs/api/
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		SiteNavDump.ToText(siteNav).Should().MatchInlineSnapshot("section  \"APIs\" external=https://www.elastic.co/docs/api/");
 	}
@@ -229,7 +257,7 @@ public class SiteNavigationFileTests
 		var path = Path.Combine(root.FullName, "config", "navigation.yml");
 		File.Exists(path).Should().BeTrue();
 
-		var siteNav = SiteNavigationFile.Deserialize(File.ReadAllText(path));
+		var siteNav = SiteNavigationLoader.Deserialize(File.ReadAllText(path));
 
 		siteNav.TableOfContents.Should().NotBeEmpty();
 		foreach (var entry in siteNav.TableOfContents)

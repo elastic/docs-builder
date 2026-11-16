@@ -48,15 +48,14 @@ public sealed class ChangelogUnpackService(
 			return false;
 		}
 
-		Bundle bundle;
-		try
+		var yaml = await fileSystem.File.ReadAllTextAsync(input.BundleFile, ctx);
+		var loadedBundle = ReleaseNotesLoader.LoadBundle(yaml, input.BundleFile);
+		if (loadedBundle.Value is not { } bundle)
 		{
-			var yaml = await fileSystem.File.ReadAllTextAsync(input.BundleFile, ctx);
-			bundle = ReleaseNotesSerialization.DeserializeBundle(yaml);
-		}
-		catch (YamlException yamlEx)
-		{
-			collector.EmitError(input.BundleFile, $"Failed to deserialize bundle file: {yamlEx.Message}", yamlEx);
+			collector.EmitError(
+				input.BundleFile,
+				$"Failed to deserialize bundle file: {loadedBundle.Diagnostics.Select(d => d.Message).FirstOrDefault()}"
+			);
 			return false;
 		}
 
@@ -111,26 +110,27 @@ public sealed class ChangelogUnpackService(
 		var amendBundles = new List<Bundle>();
 		foreach (var amendFile in amendFiles)
 		{
-			try
+			var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
+			var loadedAmend = ReleaseNotesLoader.LoadBundle(amendContent, amendFile);
+			if (loadedAmend.Value is not { } amendBundle)
 			{
-				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
-				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
-				amendBundles.Add(amendBundle);
-				_logger.LogInformation(
-					"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+				collector.EmitError(
 					amendFile,
-					amendBundle.Entries.Count,
-					amendBundle.ExcludeEntries.Count
+					$"Failed to deserialize amend file: {loadedAmend.Diagnostics.Select(d => d.Message).FirstOrDefault()}"
 				);
-			}
-			catch (YamlException yamlEx)
-			{
-				collector.EmitError(amendFile, $"Failed to deserialize amend file: {yamlEx.Message}", yamlEx);
 				return null;
 			}
+
+			amendBundles.Add(amendBundle);
+			_logger.LogInformation(
+				"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+				amendFile,
+				amendBundle.Entries.Count,
+				amendBundle.ExcludeEntries.Count
+			);
 		}
 
-		return BundleAmendMerger.MergeEntries(bundle.Entries, amendBundles);
+		return bundle.ApplyAmends([.. amendBundles.Select(a => new BundleAmend(a))]).Value!.Entries;
 	}
 
 	private async Task<bool> UnpackEntry(IDiagnosticsCollector collector, UnpackEntryContext context, BundledEntry entry, Cancel ctx)

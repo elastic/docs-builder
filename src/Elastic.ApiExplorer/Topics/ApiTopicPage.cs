@@ -88,13 +88,13 @@ public class TopicViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiTopicPage Page { get; init; }
 	public required HtmlString ContentHtml { get; init; }
-	public required IReadOnlyList<TocItem> Headings { get; init; }
+	public required IReadOnlyList<HeadingItem> Headings { get; init; }
 
 	protected override string? LayoutPageTitle => Page.Title;
 
 	protected override string? LayoutPageDescription => Page.Content;
 
-	protected override IReadOnlyList<TocItem> GetTocItems() => Headings;
+	protected override IReadOnlyList<HeadingItem> GetTocItems() => Headings;
 
 	public static TopicViewModel Create(ApiTopicPage page, ApiRenderContext context)
 	{

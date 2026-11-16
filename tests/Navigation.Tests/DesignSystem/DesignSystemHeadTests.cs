@@ -137,7 +137,7 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	[Test]
 	public async Task WafSdk_AssemblerWithUrl_LoadsTheScriptAsync()
 	{
-		var html = await RenderHead(new FeatureFlags([]) { WafIntegrationUrl = WafIntegrationUrl }, BuildType.Assembler);
+		var html = await RenderHead(new FeatureFlags([]).WithWafIntegrationUrl(WafIntegrationUrl), BuildType.Assembler);
 
 		html.Should().Contain($"""<script src="{WafIntegrationUrl}" async></script>""");
 	}
@@ -147,7 +147,7 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	[Arguments(BuildType.Codex)]
 	public async Task WafSdk_OtherBuildTypes_LoadNoScript(BuildType buildType)
 	{
-		var html = await RenderHead(new FeatureFlags([]) { WafIntegrationUrl = WafIntegrationUrl }, buildType);
+		var html = await RenderHead(new FeatureFlags([]).WithWafIntegrationUrl(WafIntegrationUrl), buildType);
 
 		html.Should().NotContain(WafIntegrationUrl);
 	}
@@ -155,7 +155,7 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	[Test]
 	public async Task WafSdk_AirGappedAssembler_LoadsNoScript()
 	{
-		var features = new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }) { WafIntegrationUrl = WafIntegrationUrl };
+		var features = new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }).WithWafIntegrationUrl(WafIntegrationUrl);
 
 		var html = await RenderHead(features, BuildType.Assembler);
 

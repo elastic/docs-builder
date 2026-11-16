@@ -9,6 +9,7 @@ using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Caching;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
@@ -113,7 +114,7 @@ internal sealed class UnifiedReleaseCommands(
 	)
 	{
 		var (selected, unknown) = UnifiedBundlePlanner.FilterProducts(
-			UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
+			UnifiedBundlePlanner.SelectDraProducts(configurationContext.Catalog.Products.Products.Values),
 			products
 		);
 		if (unknown.Count > 0)

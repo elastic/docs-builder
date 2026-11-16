@@ -40,14 +40,13 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			var bundleContent = await fileSystem.File.ReadAllTextAsync(bundleInput.BundleFile, ctx);
 
 			// Validate bundle structure
-			Bundle? bundledData;
-			try
+			var loadedBundle = ReleaseNotesLoader.LoadBundle(bundleContent, bundleInput.BundleFile);
+			if (loadedBundle.Value is not { } bundledData)
 			{
-				bundledData = ReleaseNotesSerialization.DeserializeBundle(bundleContent);
-			}
-			catch (YamlException yamlEx)
-			{
-				collector.EmitError(bundleInput.BundleFile, $"Failed to deserialize bundle file: {yamlEx.Message}", yamlEx);
+				collector.EmitError(
+					bundleInput.BundleFile,
+					$"Failed to deserialize bundle file: {loadedBundle.Diagnostics.Select(d => d.Message).FirstOrDefault()}"
+				);
 				return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
 			}
 
@@ -70,8 +69,22 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			bundleDataList.Add(new ValidatedBundle { Data = bundledData, Input = bundleInput });
 		}
 
-		// Check for duplicate file names across bundles
-		EmitDuplicateWarnings(collector, seenFileNames, seenPrs);
+		// The bundles together are checked once, by the rules across bundles (R88 one bundle per target, R89 a changelog file in one bundle): the
+		// duplicate file names were this service's own warning before, now the rule says it, under its id.
+		var loaded = new LoadedBundles([
+			.. bundleDataList.Select(
+				b => LoadedBundle.Of(
+					b.Data,
+					b.Input.BundleFile,
+					fileSystem.Path.GetFileNameWithoutExtension(b.Input.BundleFile),
+					[.. b.Data.Entries.Where(e => !string.IsNullOrWhiteSpace(e.Title) && e.Type != null).Select(ReleaseNotesLoader.ToEntry)]
+				)
+			)
+		]);
+		_ = collector.Write(LoadedBundlesConstraints.All.Report(loaded), string.Empty);
+
+		// Duplicate PRs across bundles have no rule yet
+		EmitDuplicateWarnings(collector, seenPrs);
 
 		return new BundleValidationResult
 		{
@@ -93,35 +106,29 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 
 		foreach (var amendFile in amendFiles)
 		{
-			try
+			var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
+			var loadedAmend = ReleaseNotesLoader.LoadBundle(amendContent, amendFile);
+			if (loadedAmend.Value is not { } amendBundle)
 			{
-				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
-				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
-				amendBundles.Add(amendBundle);
-				_logger.LogInformation(
-					"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+				collector.EmitError(
 					amendFile,
-					amendBundle.Entries.Count,
-					amendBundle.ExcludeEntries.Count
+					$"Failed to deserialize amend file: {loadedAmend.Diagnostics.Select(d => d.Message).FirstOrDefault()}"
 				);
-			}
-			catch (YamlException yamlEx)
-			{
-				collector.EmitError(amendFile, $"Failed to deserialize amend file: {yamlEx.Message}", yamlEx);
 				return null;
 			}
+
+			amendBundles.Add(amendBundle);
+			_logger.LogInformation(
+				"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+				amendFile,
+				amendBundle.Entries.Count,
+				amendBundle.ExcludeEntries.Count
+			);
 		}
 
-		var mergedEntries = BundleAmendMerger.MergeEntries(mainBundle.Entries, amendBundles);
-
-		return new Bundle
-		{
-			Products = mainBundle.Products,
-			Description = mainBundle.Description,
-			ReleaseDate = mainBundle.ReleaseDate,
-			HideFeatures = mainBundle.HideFeatures,
-			Entries = mergedEntries
-		};
+		// the one way a bundle takes its amends (the entries are what is validated; the intro is patched too, as everywhere)
+		var merged = mainBundle.ApplyAmends([.. amendBundles.Select(a => new BundleAmend(a))]);
+		return merged.EmitErrorsTo(collector);
 	}
 
 	private bool ValidateBundleInput(IDiagnosticsCollector collector, BundleInput bundleInput)
@@ -149,8 +156,10 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		Dictionary<string, List<string>> seenPrs
 	)
 	{
-		var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var allValid = true;
+		// The bundle is checked once, here: entries without inline content and repeated file names are the rules' findings.
+		var report = BundleConstraints.All.Report(bundledData);
+		var allValid = collector.Write(report, bundleInput.BundleFile);
+		var notInlined = report.Rejected(BundleConstraints.BundleEntriesInlined);
 
 		foreach (var entry in bundledData.Entries)
 		{
@@ -158,10 +167,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
 				var fileName = entry.File.Name;
-
-				// Check for duplicates within the same bundle
-				if (!fileNamesInThisBundle.Add(fileName))
-					collector.EmitWarning(bundleInput.BundleFile, $"Changelog file '{fileName}' appears multiple times in the same bundle");
 
 				// Track across bundles
 				if (!seenFileNames.TryGetValue(fileName, out var bundleList))
@@ -173,7 +178,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 
 			// Continue past invalid entries so every problem in the bundle is reported in one pass.
-			if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
+			if (!notInlined.Contains(entry) && !ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
 				allValid = false;
 		}
 
@@ -187,18 +192,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		Dictionary<string, List<string>> seenPrs
 	)
 	{
-		// Bundles are always self-contained: an entry without inline content is invalid.
-		if (string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null)
-		{
-			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
-			collector.EmitError(
-				bundleFile,
-				$"Entry '{entryName}' in bundle has no inline content: title and type are required. " +
-					"Re-create the bundle with 'changelog bundle'."
-			);
-			return false;
-		}
-
 		if (entry.Products == null || entry.Products.Count == 0)
 		{
 			collector.EmitError(bundleFile, $"Entry '{entry.Title}' in bundle is missing required field: products");
@@ -222,23 +215,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		return true;
 	}
 
-	private static void EmitDuplicateWarnings(
-		IDiagnosticsCollector collector,
-		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs
-	)
+	private static void EmitDuplicateWarnings(IDiagnosticsCollector collector, Dictionary<string, List<string>> seenPrs)
 	{
-		// Check for duplicate file names across bundles
-		foreach (var (fileName, bundleFiles) in seenFileNames.Where(kvp => kvp.Value.Count > 1))
-		{
-			var uniqueBundles = bundleFiles.Distinct().ToList();
-			if (uniqueBundles.Count > 1)
-				collector.EmitWarning(
-					string.Empty,
-					$"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}"
-				);
-		}
-
 		// Check for duplicate PRs
 		foreach (var (pr, bundleFiles) in seenPrs.Where(kvp => kvp.Value.Count > 1))
 		{

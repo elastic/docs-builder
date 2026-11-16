@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -99,6 +100,7 @@ internal static class AssemblerBuildStampService
 		string environment,
 		IEnumerable<Checkout> checkouts,
 		ConfigurationFileProvider configFileProvider,
+		IFileInfo navigationFile,
 		IReadOnlySet<Exporter> exporters
 	)
 	{
@@ -110,7 +112,7 @@ internal static class AssemblerBuildStampService
 			checkoutMap[c.Repository.Name] = c.HeadReference;
 		}
 
-		var configHash = ComputeConfigurationHash(configFileProvider);
+		var configHash = ComputeConfigurationHash(configFileProvider, navigationFile);
 		var assemblies = CollectAssemblyMvids();
 		var exporterNames = exporters.Select(e => e.ToString()).OrderBy(e => e).ToArray();
 
@@ -178,13 +180,14 @@ internal static class AssemblerBuildStampService
 
 	// ── private helpers ───────────────────────────────────────────────────────
 
-	private static string ComputeConfigurationHash(ConfigurationFileProvider provider)
+	// navigationFile is the one the environment builds from: navigation_preview.yml under the navigation-preview flag.
+	private static string ComputeConfigurationHash(ConfigurationFileProvider provider, IFileInfo navigationFile)
 	{
 		// Hash content + filename (not path, which is ephemeral) in a fixed order
 		using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 		var files = new[]
 		{
-			provider.NavigationFile,
+			navigationFile,
 			provider.VersionFile,
 			provider.ProductsFile,
 			provider.AssemblerFile,

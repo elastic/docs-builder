@@ -41,7 +41,7 @@ public class RenderedHeadingsTests() : InlineTest("")
 
 	[Test]
 	public void Read_ExplicitAnchor_UsesAnchorAsSlugAndDropsItFromTitle() =>
-		ReadHeadings("## Get started [quickstart]").Should().Equal(new TocItem("Get started", "quickstart", 2));
+		ReadHeadings("## Get started [quickstart]").Should().Equal(new HeadingItem("Get started", "quickstart", 2));
 
 	[Test]
 	[Arguments("## When to use this API")]
@@ -63,7 +63,8 @@ public class RenderedHeadingsTests() : InlineTest("")
 		html.Split("class=\"heading-wrapper\"").Length.Should().Be(headings.Count + 1, "every rendered heading is listed");
 	}
 
-	private IReadOnlyList<TocItem> ReadHeadings(string markdown) => RenderedHeadings.Read(Parse(markdown), stripFirstHeadingLevel1: true);
+	private IReadOnlyList<HeadingItem> ReadHeadings(string markdown) =>
+		RenderedHeadings.Read(Parse(markdown), stripFirstHeadingLevel1: true);
 
 	private Markdig.Syntax.MarkdownDocument Parse(string markdown) =>
 		Set.MarkdownParser.ParseApiDescriptionString(markdown, FileSystem.FileInfo.New("docs/index.md"));

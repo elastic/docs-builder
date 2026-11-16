@@ -234,7 +234,7 @@ public class ApiTreeScopeVisibilityTests
 				{
 					Elasticsearch = new ElasticsearchEndpoint { Uri = uri, Username = "elastic", Password = "unused" }
 				},
-				new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+				SearchTuning.None
 			);
 			var index = new DisposableIndex(accessor, $"api-tree-scope-check-{Guid.NewGuid():N}");
 			try

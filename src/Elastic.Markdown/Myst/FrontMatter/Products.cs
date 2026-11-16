@@ -2,15 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Suggestions;
+using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Suggestions;
 using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-public class ProductConverter(ProductsConfiguration products) : YamlConverter<Product>
+public class ProductConverter(ProductCatalog products) : YamlConverter<Product>
 {
+	/// <summary>For the YAML source generator, which only needs to know the converter handles <see cref="Product"/>; the runtime options carry an instance built with the real catalog.</summary>
+	internal ProductConverter() : this(ProductCatalog.FromPublicProducts([])) { }
+
 	private static readonly string[] KnownKeys = ["id"];
 
 	public override Product Read(YamlReader reader)
@@ -48,7 +52,7 @@ public class ProductConverter(ProductsConfiguration products) : YamlConverter<Pr
 		if (string.IsNullOrWhiteSpace(productId))
 			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm", products);
 
-		if (products.PublicReferenceProducts.TryGetValue(productId.Replace('_', '-'), out var product))
+		if (products.PublicReferenceProducts.TryGetValue(ProductNames.Normalize(productId), out var product))
 			return product;
 
 		throw new InvalidProductException(productId, products);
@@ -58,7 +62,7 @@ public class ProductConverter(ProductsConfiguration products) : YamlConverter<Pr
 		throw new NotSupportedException("Product YAML serialization is not supported; products front matter is only ever read from YAML.");
 }
 
-public class InvalidProductException(string invalidValue, ProductsConfiguration products) : Exception(
+public class InvalidProductException(string invalidValue, ProductCatalog products) : Exception(
 	$"Invalid products frontmatter value: \"{invalidValue}\"." +
 		(!string.IsNullOrWhiteSpace(invalidValue)
 			? " " + new Suggestion(

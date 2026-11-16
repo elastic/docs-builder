@@ -40,20 +40,12 @@ public record ProductArgument
 	public string? Lifecycle { get; init; }
 
 	/// <summary>
-	/// Converts this ProductArgument to a ProductReference domain type.
+	/// Converts this ProductArgument to a ProductReference domain type (<see cref="ProductReference.Parse"/>).
 	/// The middle CLI slot (<see cref="Target"/>) is parsed via <see cref="Versions"/> into the
 	/// domain's <see cref="ProductReference.Versions"/> list; <see cref="ProductReference.Target"/>
 	/// is never populated — the entry/note schema no longer writes it.
 	/// </summary>
-	public ProductReference ToProductReference() =>
-#pragma warning disable CS0618 // Target is intentionally not forwarded — entries write Versions
-		new() { ProductId = Product ?? "", Versions = Versions, Lifecycle = ParseLifecycle(Lifecycle) };
-#pragma warning restore CS0618
-
-	/// <summary>
-	/// Converts this ProductArgument to a BundledProduct domain type.
-	/// </summary>
-	public BundledProduct ToBundledProduct() => new() { ProductId = Product ?? "", Target = Target, Lifecycle = ParseLifecycle(Lifecycle) };
+	public ProductReference ToProductReference() => ProductReference.Parse(Product, Versions, Lifecycle);
 
 	/// <summary>
 	/// Formats a product spec string matching the CLI format: "product [target] [lifecycle]".
@@ -104,13 +96,5 @@ public record ProductArgument
 		}
 
 		return result;
-	}
-
-	private static Lifecycle? ParseLifecycle(string? value)
-	{
-		if (string.IsNullOrEmpty(value))
-			return null;
-
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
 	}
 }

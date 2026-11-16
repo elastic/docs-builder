@@ -9,7 +9,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
@@ -227,7 +227,7 @@ public class XStateApplicabilityTests
 	private static OpenApiOperation OperationWithState(string xState) =>
 		new() { Extensions = new Dictionary<string, IOpenApiExtension> { ["x-state"] = new JsonNodeExtension(JsonValue.Create(xState)) } };
 
-	private static VersionsConfiguration StackVersions() =>
+	private static VersioningSystemCatalog StackVersions() =>
 		new()
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>

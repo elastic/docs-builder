@@ -790,7 +790,10 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"warning {repo}/docs/index.md:3 Invalid :link-visibility: value 'banana'. Valid values are: auto, keep-links, hide-links. Using auto."
+				"""
+				warning {repo}/docs/index.md:3 Invalid :link-visibility: value 'banana'. Valid values are: auto, keep-links, hide-links. Using auto.
+				warning {repo}/docs/index.md:3 Bundle file '9.3.0.yaml' does not follow the naming convention '{repo}-{product}-{version}.yaml' for product 'elasticsearch' ('elasticsearch-elasticsearch-9.3.0.yaml'); the fallbacks are '{product}-{version}.yaml' and 'changelog-bundle.yaml'.
+				"""
 			);
 }
 

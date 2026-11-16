@@ -6,12 +6,14 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Documentation.Builder.Http;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -22,7 +24,7 @@ namespace Documentation.Builder.Commands.Assembler;
 internal sealed class AssembleOneShotCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
@@ -58,7 +60,7 @@ internal sealed class AssembleOneShotCommand(
 			FetchLatest = fetchLatest,
 			AssumeCloned = assumeCloned
 		};
-		var cloneService = new AssemblerCloneService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
+		var cloneService = new AssemblerCloneService(logFactory, contexts, githubActionsService);
 		serviceInvoker.AddCommand(
 			cloneService,
 			cloneOptions,
@@ -69,7 +71,7 @@ internal sealed class AssembleOneShotCommand(
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var buildService = new AssemblerBuildService(
 			logFactory,
-			assemblyConfiguration,
+			contexts,
 			configurationContext,
 			githubActionsService,
 			environmentVariables
@@ -107,7 +109,7 @@ internal sealed class AssembleOneShotCommand(
 internal sealed class AssemblerCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
@@ -140,7 +142,7 @@ internal sealed class AssemblerCommands(
 			FetchLatest = fetchLatest,
 			AssumeCloned = assumeCloned
 		};
-		var service = new AssemblerCloneService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
+		var service = new AssemblerCloneService(logFactory, contexts, githubActionsService);
 		serviceInvoker.AddCommand(service, options, strict ?? false, static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -156,13 +158,7 @@ internal sealed class AssemblerCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new AssemblerBuildService(
-			logFactory,
-			assemblyConfiguration,
-			configurationContext,
-			githubActionsService,
-			environmentVariables
-		);
+		var service = new AssemblerBuildService(logFactory, contexts, configurationContext, githubActionsService, environmentVariables);
 		serviceInvoker.AddCommand(
 			service,
 			(options, fs),

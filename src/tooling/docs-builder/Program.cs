@@ -7,33 +7,57 @@ using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
 using Documentation.Builder.Commands.Codex;
 using Documentation.Builder.Commands.ReleaseAutomation;
+using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Middleware;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Isolated;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Nullean.Argh;
 using Nullean.Argh.Hosting;
+using Nullean.Entities.Argh;
 
 // Pre-host fast path: run --help, --version, __schema, __completion directly and exit
 // before the host (and its startup logs) are ever constructed.
 await ArghApp.TryArghIntrinsicCommand(args);
 
 var argh = GlobalCliOptions.TryParseArgh(args, out var cliOptions);
-var builder = Host
-	.CreateApplicationBuilder()
-	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
-	{
-		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-	})
-	.AddDocumentationToolingDefaults()
-	.AddDocumentationOpenTelemetry(new OtelRegistration("docs-builder")
-	{
-		Metrics = (_, m) => m.AddMeter(TelemetryConstants.AssemblerSyncInstrumentationName),
-		Tracing = (_, t) => t.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName),
-	});
+HostApplicationBuilder builder;
+try
+{
+	builder = Host
+		.CreateApplicationBuilder()
+		.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions())
+		.AddDocumentationToolingDefaults()
+		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-builder")
+		{
+			Metrics = (_, m) => m.AddMeter(TelemetryConstants.AssemblerSyncInstrumentationName),
+			Tracing = (_, t) => t.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName),
+		});
+}
+catch (ConfigurationException e)
+{
+	// Invalid global configuration is the one early exit: list every diagnostic the loaders found, then fail.
+	var errors = e.Diagnostics.Where(d => d.Severity == Severity.Error).ToList();
+	var warnings = e.Diagnostics.Where(d => d.Severity == Severity.Warning).ToList();
+	var hints = e.Diagnostics.Where(d => d.Severity == Severity.Hint).ToList();
+	if (errors.Count == 0)
+		Console.Error.WriteLine(e.Message);
+	else
+		new ErrataFileSourceRepository().WriteDiagnosticsToConsole(errors, warnings, hints);
+	Environment.ExitCode = 1;
+	return;
+}
+
+// cross-field rules for the option objects of a command: Argh checks them with its own and reports them as --flag errors
+ArghConstraints.Register(IsolatedBuildOptionsConstraints.All);
+ArghConstraints.Register(AssemblerBuildOptionsConstraints.All);
 
 _ = builder.Services.AddArgh(args, app =>
 {

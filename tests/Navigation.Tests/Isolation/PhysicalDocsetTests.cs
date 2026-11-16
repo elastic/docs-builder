@@ -5,8 +5,10 @@
 using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -29,7 +31,7 @@ public class PhysicalDocsetTests()
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(
+		var docSet = DocumentationSetLoader.LoadAndResolve(
 			context.Collector,
 			configPath,
 			context.ReadFileSystem as ScopedFileSystem,
@@ -79,7 +81,7 @@ public class PhysicalDocsetTests()
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(
+		var docSet = DocumentationSetLoader.LoadAndResolve(
 			context.Collector,
 			configPath,
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
@@ -111,7 +113,7 @@ public class PhysicalDocsetTests()
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(
+		var docSet = DocumentationSetLoader.LoadAndResolve(
 			context.Collector,
 			configPath,
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
@@ -122,7 +124,7 @@ public class PhysicalDocsetTests()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		var fileRefs = docSet.TableOfContents.SelectMany(TocItemExtensions.FileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
 			var path = fileSystem.FileInfo.New(Path.Join(configPath.Directory!.FullName, fileRef.PathRelativeToDocumentationSet));
@@ -149,7 +151,7 @@ public class PhysicalDocsetTests()
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(
+		var docSet = DocumentationSetLoader.LoadAndResolve(
 			context.Collector,
 			configPath,
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
@@ -178,7 +180,7 @@ public class PhysicalDocsetTests()
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "doc-builder-tests");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, configPath);
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
@@ -206,7 +208,7 @@ public class PhysicalDocsetTests()
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, configPath);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 

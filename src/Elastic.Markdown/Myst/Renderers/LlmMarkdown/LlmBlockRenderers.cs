@@ -232,7 +232,7 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 
 		var appliesText = LlmApplicabilityHelper.RenderForLlm(
 			directive.AppliesTo,
-			renderer.BuildContext.VersionsConfiguration,
+			renderer.BuildContext.Catalog.VersioningSystems,
 			useInlineTag: false
 		);
 
@@ -544,7 +544,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case IBlockAppliesTo appliesBlock when appliesBlock.AppliesTo is not null:
 				var appliesText = LlmApplicabilityHelper.RenderForLlm(
 					appliesBlock.AppliesTo,
-					renderer.BuildContext.VersionsConfiguration,
+					renderer.BuildContext.Catalog.VersioningSystems,
 					useInlineTag: false
 				);
 				if (!string.IsNullOrEmpty(appliesText))
@@ -860,7 +860,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
 			settings = SettingsBlock.PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.Catalog.Products),
 				block.Context
 			);
 		}
@@ -953,12 +953,12 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
 		var stackAvailability = LlmApplicabilityHelper.RenderStackRowForLlm(
 			appliesTo,
-			renderer.BuildContext.VersionsConfiguration,
+			renderer.BuildContext.Catalog.VersioningSystems,
 			useInlineTag: false
 		);
 		var supportedOn = LlmApplicabilityHelper.RenderSupportedOnRowForLlm(
 			appliesTo,
-			renderer.BuildContext.VersionsConfiguration,
+			renderer.BuildContext.Catalog.VersioningSystems,
 			useInlineTag: false
 		);
 		var showSupportedOn = appliesTo is not null && appliesTo != Documentation.AppliesTo.ApplicableTo.All;

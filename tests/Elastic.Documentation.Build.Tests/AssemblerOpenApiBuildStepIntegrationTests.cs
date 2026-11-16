@@ -17,6 +17,7 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
@@ -24,6 +25,7 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Floating;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Build.Tests;
@@ -61,7 +63,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		var fileSystem = new FileSystem();
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var assemblyConfig = AssemblyConfiguration.Deserialize(
+		var assemblyConfig = AssemblyLoader.Deserialize(
 			"""
 			environments:
 			  staging:
@@ -199,7 +201,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
 		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
 		var navigation = new SiteNavigation(
-			SiteNavigationFile.Deserialize(
+			SiteNavigationLoader.Deserialize(
 				// language=yaml
 				"""
 				toc:
@@ -236,7 +238,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		docsetRoot.NavigationItems.Should().NotBeEmpty("the second resolution fills the docset's API section");
 		docsetRoot.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
-		var links = workspace.Set.DocumentationSet.CreateLinkReference();
+		var links = workspace.Set.DocumentationSet.CreateLinkReference().OrThrowIfMissing();
 		links.Floating.Should().ContainKey("api/elasticsearch").WhoseValue.Pages.Should().ContainKey("");
 	}
 
@@ -249,7 +251,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		using var versionIndexClient = CreateInMemoryVersionIndexClient();
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
 		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
-		var siteNavFile = SiteNavigationFile.Deserialize(
+		var siteNavFile = SiteNavigationLoader.Deserialize(
 			// language=yaml
 			"""
 			toc:
@@ -281,7 +283,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			.Subject;
 		docsetRoot.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
 		docsetRoot.NavigationItems.Should().NotBeEmpty("the docset resolved its API section while it resolved its tree");
-		var links = workspace.Set.DocumentationSet.CreateLinkReference();
+		var links = workspace.Set.DocumentationSet.CreateLinkReference().OrThrowIfMissing();
 		var published = links.Floating.Should().ContainKey("api/elasticsearch").WhoseValue;
 		published.Versions.Should().ContainSingle(v => v.Current).Which.Name.Should().Be("main");
 		published.Pages.Should().ContainKey("", "an assembled docset publishes its APIs in links.json without a toc entry");

@@ -35,14 +35,14 @@ public sealed class PassthroughMarkdownRenderer : IMarkdownStringRenderer
 	public string Render(string markdown, IFileInfo? source) => $"<p>{markdown}</p>";
 
 	/// <summary>Reads ATX headings line by line, enough for tests that check which heading ids a page keeps.</summary>
-	public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) =>
+	public IReadOnlyList<HeadingItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) =>
 		[
 			.. markdown
 				.ReplaceLineEndings("\n")
 				.Split('\n')
 				.Select(line => (Level: line.TakeWhile(c => c == '#').Count(), Line: line))
 				.Where(h => h.Level is >= 2 and <= 6 && h.Line.Length > h.Level && h.Line[h.Level] == ' ')
-				.Select(h => new TocItem(h.Line[h.Level..].Trim(), h.Line[h.Level..].Trim().Slugify(), h.Level))
+				.Select(h => new HeadingItem(h.Line[h.Level..].Trim(), h.Line[h.Level..].Trim().Slugify(), h.Level))
 		];
 }
 
