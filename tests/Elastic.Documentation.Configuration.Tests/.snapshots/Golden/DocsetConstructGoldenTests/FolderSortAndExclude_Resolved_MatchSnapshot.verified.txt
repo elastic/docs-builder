@@ -1,0 +1,127 @@
+diagnostics:
+toc:
+FolderRef  releases sort=desc
+  FileRef  releases/1.10.md
+  FileRef  releases/1.9.md
+  FileRef  releases/1.2.md
+FolderRef  natural sort=ascending
+  FileRef  natural/page-1.md
+  FileRef  natural/page-2.md
+  FileRef  natural/page-10.md
+FolderRef  filtered exclude=[draft-*.md, skip/**]
+  FileRef  filtered/draft-one.md
+  FileRef  filtered/keep.md
+model:
+model <DocumentationSetFile>:
+  Project: "constructs"
+  TableOfContents:
+    - <FolderRef>:
+      PathRelativeToDocumentationSet: "releases"
+      PathRelativeToContainer: "releases"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "releases/1.10.md"
+          PathRelativeToContainer: "releases/1.10.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "releases/1.9.md"
+          PathRelativeToContainer: "releases/1.9.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "releases/1.2.md"
+          PathRelativeToContainer: "releases/1.2.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Sort: "desc"
+      Exclude: null
+      DefaultCta: null
+    - <FolderRef>:
+      PathRelativeToDocumentationSet: "natural"
+      PathRelativeToContainer: "natural"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "natural/page-1.md"
+          PathRelativeToContainer: "natural/page-1.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "natural/page-2.md"
+          PathRelativeToContainer: "natural/page-2.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "natural/page-10.md"
+          PathRelativeToContainer: "natural/page-10.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Sort: "ascending"
+      Exclude: null
+      DefaultCta: null
+    - <FolderRef>:
+      PathRelativeToDocumentationSet: "filtered"
+      PathRelativeToContainer: "filtered"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "filtered/draft-one.md"
+          PathRelativeToContainer: "filtered/draft-one.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "filtered/keep.md"
+          PathRelativeToContainer: "filtered/keep.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Sort: null
+      Exclude:
+        - "draft-*.md"
+        - "skip/**"
+      DefaultCta: null
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta: {}
+  FolderExcludedFiles:
+    - "filtered/draft-*.md"
+    - "filtered/skip/**"
+  TocDefaultCtas: {}

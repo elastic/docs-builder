@@ -1,0 +1,155 @@
+diagnostics:
+toc:
+IndexFileRef  index.md
+FileRef  guide.md
+  FileRef  guide/one.md
+  FileRef  guide/two.md [hidden]
+FileRef  hidden.md [hidden]
+FolderRef  setup
+  IndexFileRef  setup/index.md
+  FileRef  setup/install.md
+  FolderRef  setup/deep
+    IndexFileRef  setup/deep/index.md
+    FileRef  setup/deep/leaf.md
+FolderRef  discovered
+  IndexFileRef  discovered/index.md
+  FileRef  discovered/a.md
+  FileRef  discovered/b.md
+model:
+model <DocumentationSetFile>:
+  Project: "constructs"
+  TableOfContents:
+    - <IndexFileRef>:
+      PathRelativeToDocumentationSet: "index.md"
+      PathRelativeToContainer: "index.md"
+      Hidden: False
+      Children: []
+      Context: "/docs/docset.yml"
+      DefaultCta: null
+    - <FileRef>:
+      PathRelativeToDocumentationSet: "guide.md"
+      PathRelativeToContainer: "guide.md"
+      Hidden: False
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "guide/one.md"
+          PathRelativeToContainer: "guide/one.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "guide/two.md"
+          PathRelativeToContainer: "guide/two.md"
+          Hidden: True
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      DefaultCta: null
+    - <FileRef>:
+      PathRelativeToDocumentationSet: "hidden.md"
+      PathRelativeToContainer: "hidden.md"
+      Hidden: True
+      Children: []
+      Context: "/docs/docset.yml"
+      DefaultCta: null
+    - <FolderRef>:
+      PathRelativeToDocumentationSet: "setup"
+      PathRelativeToContainer: "setup"
+      Children:
+        - <IndexFileRef>:
+          PathRelativeToDocumentationSet: "setup/index.md"
+          PathRelativeToContainer: "setup/index.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "setup/install.md"
+          PathRelativeToContainer: "setup/install.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FolderRef>:
+          PathRelativeToDocumentationSet: "setup/deep"
+          PathRelativeToContainer: "setup/deep"
+          Children:
+            - <IndexFileRef>:
+              PathRelativeToDocumentationSet: "setup/deep/index.md"
+              PathRelativeToContainer: "setup/deep/index.md"
+              Hidden: False
+              Children: []
+              Context: "/docs/docset.yml"
+              DefaultCta: null
+            - <FileRef>:
+              PathRelativeToDocumentationSet: "setup/deep/leaf.md"
+              PathRelativeToContainer: "setup/deep/leaf.md"
+              Hidden: False
+              Children: []
+              Context: "/docs/docset.yml"
+              DefaultCta: null
+          Context: "/docs/docset.yml"
+          Sort: null
+          Exclude: null
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Sort: null
+      Exclude: null
+      DefaultCta: null
+    - <FolderRef>:
+      PathRelativeToDocumentationSet: "discovered"
+      PathRelativeToContainer: "discovered"
+      Children:
+        - <IndexFileRef>:
+          PathRelativeToDocumentationSet: "discovered/index.md"
+          PathRelativeToContainer: "discovered/index.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "discovered/a.md"
+          PathRelativeToContainer: "discovered/a.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "discovered/b.md"
+          PathRelativeToContainer: "discovered/b.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Sort: null
+      Exclude: null
+      DefaultCta: null
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta: {}
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}

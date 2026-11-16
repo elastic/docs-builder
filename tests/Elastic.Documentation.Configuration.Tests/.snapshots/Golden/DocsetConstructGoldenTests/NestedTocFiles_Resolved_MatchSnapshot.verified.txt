@@ -1,0 +1,155 @@
+diagnostics:
+toc:
+IndexFileRef  index.md
+IsolatedTableOfContentsRef  reference cta=section
+  IndexFileRef  reference/index.md (container-relative: index.md)
+  FileRef  reference/api.md (container-relative: api.md)
+  IsolatedTableOfContentsRef  reference/nested (container-relative: nested)
+    FileRef  reference/nested/only.md (container-relative: only.md)
+IsolatedTableOfContentsRef  guides/advanced [island]
+  IndexFileRef  guides/advanced/index.md (container-relative: index.md)
+  FolderRef  guides/advanced/more (container-relative: more)
+    FileRef  guides/advanced/more/x.md (container-relative: more/x.md)
+FolderRef  area
+  IsolatedTableOfContentsRef  area/inner
+    FileRef  area/inner/leaf.md (container-relative: leaf.md)
+model:
+model <DocumentationSetFile>:
+  Project: "constructs"
+  TableOfContents:
+    - <IndexFileRef>:
+      PathRelativeToDocumentationSet: "index.md"
+      PathRelativeToContainer: "index.md"
+      Hidden: False
+      Children: []
+      Context: "/docs/docset.yml"
+      DefaultCta: null
+    - <IsolatedTableOfContentsRef>:
+      PathRelativeToDocumentationSet: "reference"
+      PathRelativeToContainer: "reference"
+      Children:
+        - <IndexFileRef>:
+          PathRelativeToDocumentationSet: "reference/index.md"
+          PathRelativeToContainer: "index.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/reference/toc.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "reference/api.md"
+          PathRelativeToContainer: "api.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/reference/toc.yml"
+          DefaultCta: null
+        - <IsolatedTableOfContentsRef>:
+          PathRelativeToDocumentationSet: "reference/nested"
+          PathRelativeToContainer: "nested"
+          Children:
+            - <FileRef>:
+              PathRelativeToDocumentationSet: "reference/nested/only.md"
+              PathRelativeToContainer: "only.md"
+              Hidden: False
+              Children: []
+              Context: "/docs/reference/nested/toc.yml"
+              DefaultCta: null
+          Context: "/docs/reference/toc.yml"
+          Island: False
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Island: False
+      DefaultCta: "section"
+    - <IsolatedTableOfContentsRef>:
+      PathRelativeToDocumentationSet: "guides/advanced"
+      PathRelativeToContainer: "guides/advanced"
+      Children:
+        - <IndexFileRef>:
+          PathRelativeToDocumentationSet: "guides/advanced/index.md"
+          PathRelativeToContainer: "index.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/guides/advanced/toc.yml"
+          DefaultCta: null
+        - <FolderRef>:
+          PathRelativeToDocumentationSet: "guides/advanced/more"
+          PathRelativeToContainer: "more"
+          Children:
+            - <FileRef>:
+              PathRelativeToDocumentationSet: "guides/advanced/more/x.md"
+              PathRelativeToContainer: "more/x.md"
+              Hidden: False
+              Children: []
+              Context: "/docs/guides/advanced/toc.yml"
+              DefaultCta: null
+          Context: "/docs/guides/advanced/toc.yml"
+          Sort: null
+          Exclude: null
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Island: True
+      DefaultCta: null
+    - <FolderRef>:
+      PathRelativeToDocumentationSet: "area"
+      PathRelativeToContainer: "area"
+      Children:
+        - <IsolatedTableOfContentsRef>:
+          PathRelativeToDocumentationSet: "area/inner"
+          PathRelativeToContainer: "area/inner"
+          Children:
+            - <FileRef>:
+              PathRelativeToDocumentationSet: "area/inner/leaf.md"
+              PathRelativeToContainer: "leaf.md"
+              Hidden: False
+              Children: []
+              Context: "/docs/area/inner/toc.yml"
+              DefaultCta: null
+          Context: "/docs/docset.yml"
+          Island: False
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Sort: null
+      Exclude: null
+      DefaultCta: null
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: "docset-level"
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta:
+    docset-level <CtaDefinition>:
+      Button <CtaButton>:
+        Label: "Docset"
+        Url: "https://example.com/docset"
+      Benefits: []
+    section <CtaDefinition>:
+      Button <CtaButton>:
+        Label: "Section"
+        Url: "https://example.com/section"
+      Benefits: []
+  FolderExcludedFiles: []
+  TocDefaultCtas:
+    area/inner/leaf.md: "docset-level"
+    guides/advanced/index.md: "docset-level"
+    guides/advanced/more/x.md: "docset-level"
+    index.md: "docset-level"
+    reference/api.md: "section"
+    reference/index.md: "section"
+    reference/nested/only.md: "section"
