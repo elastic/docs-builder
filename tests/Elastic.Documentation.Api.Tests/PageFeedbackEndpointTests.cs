@@ -58,7 +58,7 @@ public class PageFeedbackEndpointTests
 		await HttpFileTest.RunAsync(
 			file,
 			new HttpFileSnapshotOptions { Client = client },
-			TestContext.Current!.Execution.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 	}
 

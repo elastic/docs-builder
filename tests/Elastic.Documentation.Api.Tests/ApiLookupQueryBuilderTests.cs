@@ -20,6 +20,57 @@ public class ApiLookupQueryBuilderTests
 
 	private static JsonDocument Json(Query query) => JsonDocument.Parse(Client.RequestResponseSerializer.SerializeToString(query));
 
+	[Test]
+	public void Build_Words_KeepsLandingPagesOutUnlessEveryWordIsInTheirTitle()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("kibana api"));
+
+		var mustNot = Clauses(json.RootElement.GetProperty("bool").GetProperty("must_not")).Single().GetProperty("bool");
+		Clauses(mustNot.GetProperty("filter"))
+			.Single()
+			.GetProperty("term")
+			.GetProperty("api.landing")
+			.GetProperty("value")
+			.GetBoolean()
+			.Should()
+			.BeTrue();
+		mustNot.GetProperty("must_not").GetProperty("multi_match").GetProperty("query").GetString().Should().Be("kibana api");
+	}
+
+	[Test]
+	public void Build_Words_PinsTheNamedLandingPageAboveEveryOperation()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("kibana api"));
+
+		var lift = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Select(c => c.EnumerateObject().Single().Value)
+			.Single(o => o.TryGetProperty("_name", out var name) && name.GetString() == "landing_name");
+		lift.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.LandingName);
+		Clauses(lift.GetProperty("filter").GetProperty("bool").GetProperty("filter"))
+			.Select(f => f.EnumerateObject().Single().Name)
+			.Should()
+			.Equal("term", "multi_match");
+	}
+
+	[Test]
+	public void Build_Words_LiftsOperationsNotMarkedDeprecated()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("isolate endpoint"));
+
+		var lift = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Select(c => c.EnumerateObject().Single().Value)
+			.Single(o => o.TryGetProperty("_name", out var name) && name.GetString() == "not_deprecated");
+		lift.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.NotDeprecated);
+		Clauses(lift.GetProperty("filter").GetProperty("bool").GetProperty("must_not"))
+			.Single()
+			.GetProperty("term")
+			.GetProperty("api.deprecated")
+			.GetProperty("value")
+			.GetBoolean()
+			.Should()
+			.BeTrue();
+	}
+
 	/// <summary>The client writes a one-clause list as a bare object.</summary>
 	private static JsonElement[] Clauses(JsonElement clauses) =>
 		clauses.ValueKind == JsonValueKind.Array ? [.. clauses.EnumerateArray()] : [clauses];
@@ -953,13 +1004,12 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	public void Build_Lifts_FavourFewerIdWordsAndOperationsNotDeprecated()
+	public void Build_Lifts_FavourFewerIdWords()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("esql query"));
 		var lifts = json.RootElement.GetProperty("bool").GetProperty("should").GetRawText();
 
 		lifts.Should().Contain("\"rank_feature\":{\"boost\":0.5,\"field\":\"api.id_words\"}");
-		lifts.Should().Contain("\"api.deprecated\":{\"boost\":0.2,\"value\":false}");
 		json
 			.RootElement
 			.GetProperty("bool")

@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Testing.Linked;
 /// <c>{repo}</c> and <c>{temp}</c>, and the rest of such a path is written with forward slashes, so a verified file
 /// reads the same on every machine and operating system. Compiled into each test project.
 /// </summary>
-internal static class SnapshotScrubbing
+internal static partial class SnapshotScrubbing
 {
 #pragma warning disable CA2255 // compiled into each test project, which is application code
 	[ModuleInitializer]
@@ -24,7 +24,7 @@ internal static class SnapshotScrubbing
 		if (FindSolutionRoot() is { } root)
 			SnapshotDefaults.AddScrubber(Under(root, "{repo}"));
 		// a test folder in the temp directory is usually named after a fresh Guid; that name is not part of what is verified
-		SnapshotDefaults.AddScrubber(Under(Path.GetTempPath(), "{temp}", RandomName));
+		SnapshotDefaults.AddScrubber(Under(Path.GetTempPath(), "{temp}", RandomName()));
 		SnapshotDefaults.AddScrubber(ContentHash);
 	}
 
@@ -37,7 +37,7 @@ internal static class SnapshotScrubbing
 		root = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 		// DiagnosticsSnapshot writes a path with forward slashes and without its drive letter, so the root has to match that way too
 		var forward = root.Replace('\\', '/');
-		var withoutDrive = DriveLetter.Replace(forward, string.Empty);
+		var withoutDrive = DriveLetter().Replace(forward, string.Empty);
 		var roots = new[] { root, forward, withoutDrive }.Where(r => r.Length > 1).Distinct().Select(Regex.Escape);
 		var pattern = new Regex($"(?:{string.Join('|', roots)})(?<rest>[^\\s\"'<>:*?|]*)", RegexOptions.Compiled);
 		return text => pattern.Replace(text, m =>
@@ -47,18 +47,21 @@ internal static class SnapshotScrubbing
 		});
 	}
 
-	private static readonly Regex DriveLetter = new("^[A-Za-z]:", RegexOptions.Compiled);
+	[GeneratedRegex("^[A-Za-z]:")]
+	private static partial Regex DriveLetter();
 
 	/// <summary>A run of 32 hex digits: a <c>Guid.ToString("N")</c> used as a folder name.</summary>
-	private static readonly Regex RandomName = new("[0-9a-fA-F]{32}", RegexOptions.Compiled);
+	[GeneratedRegex("[0-9a-fA-F]{32}")]
+	private static partial Regex RandomName();
 
 	/// <summary>
 	/// The cache-busting <c>?v=</c> hash of a static asset URL. It is a hash of the file's bytes, and a Windows checkout can change an
 	/// SVG's line endings, so the footer logo read <c>?v=19bc…</c> on Linux and macOS and another value on Windows.
 	/// </summary>
-	internal static string ContentHash(string text) => AssetHash.Replace(text, "{hash}");
+	internal static string ContentHash(string text) => AssetHash().Replace(text, "{hash}");
 
-	private static readonly Regex AssetHash = new("(?<=\\?v=)[0-9a-f]{16}", RegexOptions.Compiled);
+	[GeneratedRegex("(?<=\\?v=)[0-9a-f]{16}")]
+	private static partial Regex AssetHash();
 
 	private static string? FindSolutionRoot()
 	{

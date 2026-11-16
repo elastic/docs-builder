@@ -85,15 +85,15 @@ public class DisabledCallouts() : CodeBlockArgumentsTests(
 	public void Render() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-csharp notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-csharp">var x = 1; &lt;1&gt; var y = x - 2; var z = y - 2; &lt;2&gt;
-					</code>
-				</pre>
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre><code class="language-csharp">var x = 1; &lt;1&gt;
+			var y = x - 2;
+			var z = y - 2; &lt;2&gt;
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		""",
+			""",
 			DocsHtml.Body()
 		);
 
@@ -117,19 +117,16 @@ public class EnabledCallouts() : CodeBlockArgumentsTests(
 	public void Render() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-csharp notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
-						<span class="code-callout" data-index="1"></span>
-					</code>
-				</pre>
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		<ol class="code-callouts">
-			<li>This is a callout</li>
-		</ol>
-		""",
+			<ol class="code-callouts">
+				<li>This is a callout</li>
+			</ol>
+			""",
 			DocsHtml.Body()
 		);
 
@@ -153,18 +150,16 @@ public class EnabledSubstitutions() : CodeBlockArgumentsTests(
 	public void Render() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-csharp notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-csharp">This is a variable
-					</code>
-				</pre>
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre><code class="language-csharp">This is a variable
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		<ol>
-			<li>This is a callout</li>
-		</ol>
-		""",
+			<ol>
+				<li>This is a callout</li>
+			</ol>
+			""",
 			DocsHtml.Body()
 		);
 
@@ -188,18 +183,16 @@ public class DisabledSubstitutions() : CodeBlockArgumentsTests(
 	public void Render() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-csharp notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-csharp">{{a-variable}}
-					</code>
-				</pre>
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre><code class="language-csharp">{{a-variable}}
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		<ol>
-			<li>This is a callout</li>
-		</ol>
-		""",
+			<ol>
+				<li>This is a callout</li>
+			</ol>
+			""",
 			DocsHtml.Body()
 		);
 
@@ -223,18 +216,16 @@ public class MultipleArguments() : CodeBlockArgumentsTests(
 	public void Render() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-csharp notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-csharp">This is a variable &lt;1&gt;
-					</code>
-				</pre>
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre><code class="language-csharp">This is a variable &lt;1&gt;
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		<ol>
-			<li>This is a callout</li>
-		</ol>
-		""",
+			<ol>
+				<li>This is a callout</li>
+			</ol>
+			""",
 			DocsHtml.Body()
 		);
 

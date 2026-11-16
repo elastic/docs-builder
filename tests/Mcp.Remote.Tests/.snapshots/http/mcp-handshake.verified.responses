@@ -2,245 +2,245 @@
 status: 200 OK
 content-type: text/event-stream
 
-> event: message
-> data: {
->   "result": {
->     "protocolVersion": "2025-11-25",
->     "capabilities": {
->       "logging": {},
->       "tools": {}
->     },
->     "serverInfo": {
->       "name": "docs-mcp",
->       "version": "{server-version}"
->     },
->     "instructions": "Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.\n\n<triggers>\nUse the server when the user:\n- Wants to find, read, or verify Elastic documentation pages.\n- Needs to check whether a topic is already covered in Elastic documentation.\n- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.\n- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.\n</triggers>\n\n<tool_guidance>\n- Prefer search_docs over a general web search when looking up Elastic documentation content.\n- Use find_related_docs when exploring what documentation exists around a topic.\n- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.\n- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.\n</tool_guidance>"
->   },
->   "id": 1,
->   "jsonrpc": "2.0"
-> }
->
->
+events:
+event: message
+data:
+{
+  "result": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {
+      "logging": {},
+      "tools": {}
+    },
+    "serverInfo": {
+      "name": "docs-mcp",
+      "version": "{server-version}"
+    },
+    "instructions": "Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.\n\n<triggers>\nUse the server when the user:\n- Wants to find, read, or verify Elastic documentation pages.\n- Needs to check whether a topic is already covered in Elastic documentation.\n- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.\n- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.\n</triggers>\n\n<tool_guidance>\n- Prefer search_docs over a general web search when looking up Elastic documentation content.\n- Use find_related_docs when exploring what documentation exists around a topic.\n- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.\n- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.\n</tool_guidance>"
+  },
+  "id": 1,
+  "jsonrpc": "2.0"
+}
 
 ## tools/list: POST /docs/_mcp
 status: 200 OK
 content-type: text/event-stream
 
-> event: message
-> data: {
->   "result": {
->     "tools": [
->       {
->         "name": "find_docs_inconsistencies",
->         "description": "Finds potential inconsistencies across Elastic documentation pages covering the same topic. Use when auditing docs quality, verifying that instructions don't contradict each other, or checking for overlapping content within a product area.",
->         "inputSchema": {
->           "type": "object",
->           "properties": {
->             "topic": {
->               "description": "Topic or concept to check for inconsistencies",
->               "type": "string"
->             },
->             "focusArea": {
->               "description": "Specific area to focus on (e.g., 'installation', 'configuration')",
->               "type": [
->                 "string",
->                 "null"
->               ],
->               "default": null
->             }
->           },
->           "required": [
->             "topic"
->           ]
->         },
->         "annotations": {
->           "destructiveHint": false,
->           "idempotentHint": true,
->           "openWorldHint": false,
->           "readOnlyHint": true
->         },
->         "execution": {
->           "taskSupport": "optional"
->         }
->       },
->       {
->         "name": "check_docs_coherence",
->         "description": "Checks how coherently a topic is covered across all Elastic documentation. Use when reviewing documentation quality, auditing coverage of a feature or concept, or checking whether a topic is documented consistently across products and sections.",
->         "inputSchema": {
->           "type": "object",
->           "properties": {
->             "topic": {
->               "description": "Topic or concept to check coherence for",
->               "type": "string"
->             },
->             "limit": {
->               "description": "Maximum number of documents to analyze (default: 20)",
->               "type": "integer",
->               "default": 20
->             }
->           },
->           "required": [
->             "topic"
->           ]
->         },
->         "annotations": {
->           "destructiveHint": false,
->           "idempotentHint": true,
->           "openWorldHint": false,
->           "readOnlyHint": true
->         },
->         "execution": {
->           "taskSupport": "optional"
->         }
->       },
->       {
->         "name": "find_related_docs",
->         "description": "Finds Elastic documentation pages related to a given topic. Use when exploring what documentation exists around a subject, building context for writing, or discovering related content the user should be aware of.",
->         "inputSchema": {
->           "type": "object",
->           "properties": {
->             "topic": {
->               "description": "Topic or search terms to find related documents for",
->               "type": "string"
->             },
->             "limit": {
->               "description": "Maximum number of related documents to return (default: 10)",
->               "type": "integer",
->               "default": 10
->             },
->             "productFilter": {
->               "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana')",
->               "type": [
->                 "string",
->                 "null"
->               ],
->               "default": null
->             }
->           },
->           "required": [
->             "topic"
->           ]
->         },
->         "annotations": {
->           "destructiveHint": false,
->           "idempotentHint": true,
->           "openWorldHint": false,
->           "readOnlyHint": true
->         },
->         "execution": {
->           "taskSupport": "optional"
->         }
->       },
->       {
->         "name": "get_document_by_url",
->         "description": "Retrieves a specific Elastic documentation page by its URL. Use when the user provides a documentation URL, references a known page, or you need the full content and metadata of a specific doc. Returns title, AI summaries, headings, navigation context, and the full body only when includeBody is true. Pass includeBody=true to read the page content; otherwise body is null.",
->         "inputSchema": {
->           "type": "object",
->           "properties": {
->             "url": {
->               "description": "The URL of the document. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.",
->               "type": "string"
->             },
->             "includeBody": {
->               "description": "Include the full page body (default: false, so body is null). Set true whenever you need to read the page content.",
->               "type": "boolean",
->               "default": false
->             }
->           },
->           "required": [
->             "url"
->           ]
->         },
->         "annotations": {
->           "destructiveHint": false,
->           "idempotentHint": true,
->           "openWorldHint": false,
->           "readOnlyHint": true
->         },
->         "execution": {
->           "taskSupport": "optional"
->         }
->       },
->       {
->         "name": "search_docs",
->         "description": "Searches all published Elastic documentation by meaning. Use when the user asks about Elastic product features, needs to find existing docs pages, verify published content, or research what documentation exists on a topic. Returns relevant documents with AI summaries, relevance scores, and navigation context.",
->         "inputSchema": {
->           "type": "object",
->           "properties": {
->             "query": {
->               "description": "The search query - can be a question or keywords",
->               "type": "string"
->             },
->             "pageNumber": {
->               "description": "Page number (1-based, default: 1)",
->               "type": "integer",
->               "default": 1
->             },
->             "pageSize": {
->               "description": "Number of results per page (default: 10, max: 50)",
->               "type": "integer",
->               "default": 10
->             },
->             "productFilter": {
->               "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')",
->               "type": [
->                 "string",
->                 "null"
->               ],
->               "default": null
->             },
->             "sectionFilter": {
->               "description": "Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)",
->               "type": [
->                 "string",
->                 "null"
->               ],
->               "default": null
->             }
->           },
->           "required": [
->             "query"
->           ]
->         },
->         "annotations": {
->           "destructiveHint": false,
->           "idempotentHint": true,
->           "openWorldHint": false,
->           "readOnlyHint": true
->         },
->         "execution": {
->           "taskSupport": "optional"
->         }
->       },
->       {
->         "name": "analyze_document_structure",
->         "description": "Analyzes the structure of a Elastic documentation page. Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. Returns heading count, link count, parent pages, and whether AI summaries are present.",
->         "inputSchema": {
->           "type": "object",
->           "properties": {
->             "url": {
->               "description": "The URL of the document to analyze. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.",
->               "type": "string"
->             }
->           },
->           "required": [
->             "url"
->           ]
->         },
->         "annotations": {
->           "destructiveHint": false,
->           "idempotentHint": true,
->           "openWorldHint": false,
->           "readOnlyHint": true
->         },
->         "execution": {
->           "taskSupport": "optional"
->         }
->       }
->     ]
->   },
->   "id": 2,
->   "jsonrpc": "2.0"
-> }
->
->
+events:
+event: message
+data:
+{
+  "result": {
+    "tools": [
+      {
+        "name": "find_docs_inconsistencies",
+        "description": "Finds potential inconsistencies across Elastic documentation pages covering the same topic. Use when auditing docs quality, verifying that instructions don't contradict each other, or checking for overlapping content within a product area.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "Topic or concept to check for inconsistencies",
+              "type": "string"
+            },
+            "focusArea": {
+              "description": "Specific area to focus on (e.g., 'installation', 'configuration')",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "topic"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        },
+        "execution": {
+          "taskSupport": "optional"
+        }
+      },
+      {
+        "name": "check_docs_coherence",
+        "description": "Checks how coherently a topic is covered across all Elastic documentation. Use when reviewing documentation quality, auditing coverage of a feature or concept, or checking whether a topic is documented consistently across products and sections.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "Topic or concept to check coherence for",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Maximum number of documents to analyze (default: 20)",
+              "type": "integer",
+              "default": 20
+            }
+          },
+          "required": [
+            "topic"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        },
+        "execution": {
+          "taskSupport": "optional"
+        }
+      },
+      {
+        "name": "find_related_docs",
+        "description": "Finds Elastic documentation pages related to a given topic. Use when exploring what documentation exists around a subject, building context for writing, or discovering related content the user should be aware of.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "Topic or search terms to find related documents for",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Maximum number of related documents to return (default: 10)",
+              "type": "integer",
+              "default": 10
+            },
+            "productFilter": {
+              "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana')",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "topic"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        },
+        "execution": {
+          "taskSupport": "optional"
+        }
+      },
+      {
+        "name": "get_document_by_url",
+        "description": "Retrieves a specific Elastic documentation page by its URL. Use when the user provides a documentation URL, references a known page, or you need the full content and metadata of a specific doc. Returns title, AI summaries, headings, navigation context, and the full body only when includeBody is true. Pass includeBody=true to read the page content; otherwise body is null.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "The URL of the document. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.",
+              "type": "string"
+            },
+            "includeBody": {
+              "description": "Include the full page body (default: false, so body is null). Set true whenever you need to read the page content.",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "url"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        },
+        "execution": {
+          "taskSupport": "optional"
+        }
+      },
+      {
+        "name": "search_docs",
+        "description": "Searches all published Elastic documentation by meaning. Use when the user asks about Elastic product features, needs to find existing docs pages, verify published content, or research what documentation exists on a topic. Returns relevant documents with AI summaries, relevance scores, and navigation context.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "description": "The search query - can be a question or keywords",
+              "type": "string"
+            },
+            "pageNumber": {
+              "description": "Page number (1-based, default: 1)",
+              "type": "integer",
+              "default": 1
+            },
+            "pageSize": {
+              "description": "Number of results per page (default: 10, max: 50)",
+              "type": "integer",
+              "default": 10
+            },
+            "productFilter": {
+              "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "sectionFilter": {
+              "description": "Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        },
+        "execution": {
+          "taskSupport": "optional"
+        }
+      },
+      {
+        "name": "analyze_document_structure",
+        "description": "Analyzes the structure of a Elastic documentation page. Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. Returns heading count, link count, parent pages, and whether AI summaries are present.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "The URL of the document to analyze. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "url"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        },
+        "execution": {
+          "taskSupport": "optional"
+        }
+      }
+    ]
+  },
+  "id": 2,
+  "jsonrpc": "2.0"
+}

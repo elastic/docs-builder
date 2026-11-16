@@ -113,6 +113,8 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageDescription => ApiCatalog.PageDescription;
 
+	protected override string SeoDocumentTitle => ApiCatalog.PageTitle;
+
 	public static ApiCatalogViewModel FromEntries(ApiRenderContext context, IReadOnlyList<ApiCatalogEntry> entries) =>
 		new(context)
 		{

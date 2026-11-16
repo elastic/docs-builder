@@ -175,14 +175,27 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
+	public async Task Operation_NestedProperties_ToggleNamesHowManyPropertiesItFolds()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("toggle-label\">hide properties</span>");
-		html.Should().NotContain("toggle-label\">Show ");
-		html.Should().NotContain("toggle-label\">Hide ");
+		html.Should().MatchRegex("toggle-label\">(Hide|Show) \\d+ propert(y|ies)</span>");
+		html.Should().NotContain("toggle-label\">hide properties");
+		html.Should().NotContain("toggle-label\">show properties");
+	}
+
+	[Test]
+	public async Task Operation_ExpandAllControl_IsOneButtonAtTheEndOfTheSectionLinksBar()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		var bar = html[html.IndexOf("<nav class=\"api-section-links\"", StringComparison.Ordinal)..];
+		bar = bar[..bar.IndexOf("</nav>", StringComparison.Ordinal)];
+		bar.TrimEnd().Should().EndWith("class=\"api-expand-toggle\" data-api-expand-all>Expand all</button>");
+		html.Should().NotContain("api-expand-standalone", "the bar carries the control");
+		html.Should().NotContain("Collapse all", "one button changes its own label");
 	}
 
 	[Test]

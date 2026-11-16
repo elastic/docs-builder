@@ -79,11 +79,12 @@ public partial class ApiPropertyTreeBuilder
 			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
 			var showProperties = hasProperties;
 
-			var nestedCount = (variant.Props?.Count ?? 0)
+			var nestedCount = (variant.Props?.Values.Count(p => p is not null && IsListed(p, variantScope)) ?? 0)
 				+ (dictionaryValue is null ? 0 : 1)
 				+ (nested?.Options.Count(_analyzer.UnionOptionHasProperties) ?? 0);
 			var isCollapsible = showProperties && nestedCount > 0;
-			var defaultExpanded = ComputeDefaultExpanded();
+			// The variants of a union are what the reader picks from, so they open on load whatever the row's own state.
+			const bool defaultExpanded = true;
 
 			var description = FirstParagraph(variant.Schema?.Description);
 

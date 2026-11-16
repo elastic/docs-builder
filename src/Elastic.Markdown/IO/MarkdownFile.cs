@@ -62,6 +62,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	protected IDiagnosticsCollector Collector { get; }
 
 	public string? UrlPathPrefix { get; }
+
+	/// <summary>
+	/// False for merge fragments (API <c>op-*.md</c> / <c>tag-*.md</c>) whose title comes from elsewhere,
+	/// so a missing <c>#</c> heading is not reported.
+	/// </summary>
+	public bool WarnWhenTitleMissing { get; init; } = true;
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 
@@ -244,7 +250,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}
 
 		if (Title == RelativePath)
-			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
+		{
+			if (WarnWhenTitleMissing)
+				Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
+		}
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 

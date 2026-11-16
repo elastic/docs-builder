@@ -44,10 +44,10 @@ internal static class LandingCommonMark
 		);
 	}
 
-	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl)
+	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl, string? versionLabel = null)
 	{
 		var markdown = new StringBuilder();
-		ApiCommonMark.Heading(markdown, 1, info?.Title ?? "API Documentation");
+		ApiCommonMark.Heading(markdown, 1, ApiPageTitle.Heading(info?.Title ?? "API Documentation", versionLabel));
 		ApiCommonMark.Prepared(markdown, info?.Description, apiBaseUrl);
 		WriteOverview(markdown, rows);
 		return markdown.ToString();

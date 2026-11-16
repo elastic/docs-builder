@@ -6,8 +6,14 @@ using System.Text.Json.Nodes;
 
 namespace Elastic.ApiExplorer.Tests;
 
-/// <summary>A GET operation with a 200 response, the only shape the navigation tests need.</summary>
-internal sealed record SpecOperation(string Path, string OperationId, IReadOnlyList<string> Tags);
+/// <summary>An operation with a 200 response, a GET unless the test names another method.</summary>
+internal sealed record SpecOperation(
+	string Path,
+	string OperationId,
+	IReadOnlyList<string> Tags,
+	string Method = "get",
+	string? Summary = null
+);
 
 internal sealed record SpecTag(string Name, string? DisplayName = null, string? Description = null);
 
@@ -29,15 +35,17 @@ internal sealed record MinimalSpec(IReadOnlyList<SpecOperation> Operations, IRea
 		var paths = new JsonObject();
 		foreach (var operation in Operations)
 		{
-			paths[operation.Path] = new JsonObject
+			if (paths[operation.Path] is not JsonObject pathItem)
+				paths[operation.Path] = pathItem = new JsonObject();
+			var node = new JsonObject
 			{
-				["get"] = new JsonObject
-				{
-					["operationId"] = operation.OperationId,
-					["tags"] = StringArray(operation.Tags),
-					["responses"] = new JsonObject { ["200"] = new JsonObject { ["description"] = ResponseDescription } }
-				}
+				["operationId"] = operation.OperationId,
+				["tags"] = StringArray(operation.Tags),
+				["responses"] = new JsonObject { ["200"] = new JsonObject { ["description"] = ResponseDescription } }
 			};
+			if (operation.Summary is not null)
+				node["summary"] = operation.Summary;
+			pathItem[operation.Method] = node;
 		}
 
 		var root = new JsonObject

@@ -11,7 +11,6 @@ interface Options {
     resultsCount: number
     isLoading: boolean
     onClose: () => void
-    onNavigate: () => void
     typeFilter: TypeFilter
 }
 
@@ -26,7 +25,6 @@ export const useNavigationSearchKeyboardNavigation = ({
     resultsCount,
     isLoading,
     onClose,
-    onNavigate,
     typeFilter,
 }: Options): Result => {
     const inputRef = useRef<HTMLInputElement>(null)
@@ -53,10 +51,8 @@ export const useNavigationSearchKeyboardNavigation = ({
         const element = document.querySelector<HTMLAnchorElement>(
             `[data-search-result-index="${index}"]`
         )
-        if (element) {
-            onNavigate()
-            element.click()
-        }
+        // The row's onClick closes the dropdown or waits for the htmx request, as for a mouse click.
+        element?.click()
     }
 
     const handleInputKeyDown = useCallback(
@@ -114,7 +110,6 @@ export const useNavigationSearchKeyboardNavigation = ({
             searchTerm,
             setSelectedIndex,
             onClose,
-            onNavigate,
             trackNavigation,
         ]
     )

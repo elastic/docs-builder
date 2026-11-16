@@ -53,7 +53,7 @@ internal sealed class ServerlessReleaseCommand(
 	/// <param name="outputDir">Directory for the bundle file. Defaults to <c>./bundles</c>.</param>
 	/// <param name="dryRun">Resolve the range and print the run report without writing a bundle.</param>
 	[CommandName("serverless")]
-	[Hidden]
+	[Hidden(Schema = true)]
 	[NoOptionsInjection]
 	public async Task<int> Serverless(
 		[Argument] string service,
@@ -103,7 +103,7 @@ internal sealed class ServerlessReleaseCommand(
 		{
 			collector.EmitError(
 				string.Empty,
-				$"Could not resolve the previous {ServerlessPromotion.FinalSlice} version for '{svc.Id}' from {GitOpsRepository} history."
+				$"Could not resolve the previous {svc.FinalSlice} version for '{svc.Id}' from {GitOpsRepository} history."
 			);
 			return 1;
 		}
@@ -188,7 +188,7 @@ internal sealed class ServerlessReleaseCommand(
 				Config = tempConfig,
 				StartGitRef = startRef,
 				EndGitRef = endRef,
-				BaseRef = ServerlessPromotion.BaseBranch,
+				BaseRef = svc.BaseBranch,
 				DryRun = dryRun,
 				OnBundlePathResolved = path => paths.Add(path)
 			};
@@ -254,7 +254,7 @@ internal sealed class ServerlessReleaseCommand(
 		var result = await ServerlessPromotion.FindPreviousVersionAsync(
 			GetCommitsPage,
 			sha => GetRawAsync(http, $"repos/{GitOpsRepository}/contents/{svc.VersionsPath}?ref={sha}", ctx),
-			serviceVersion
+			new PreviousVersionSearch(svc.FinalSlice, serviceVersion)
 		);
 
 		switch (result.Status)
@@ -272,7 +272,7 @@ internal sealed class ServerlessReleaseCommand(
 			case HistoryWalkStatus.CapReached:
 				collector.EmitError(
 					string.Empty,
-					$"Read {result.ScannedCommits} commits of {svc.VersionsPath} ({ServerlessPromotion.MaxHistoryPages} pages) without finding a previous {ServerlessPromotion.FinalSlice} version."
+					$"Read {result.ScannedCommits} commits of {svc.VersionsPath} ({ServerlessPromotion.MaxHistoryPages} pages) without finding a previous {svc.FinalSlice} version."
 				);
 				return null;
 			default:

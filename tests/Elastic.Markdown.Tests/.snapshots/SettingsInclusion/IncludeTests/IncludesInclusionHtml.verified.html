@@ -44,10 +44,23 @@
 			which turns off server certificate authentication, that will allow Kibana to connect to the server if it's using a self-signed certificate.  The individual properties that can be used in the settings are documented below.</p>
 		<div class="highlight-yaml notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-yaml">xpack.actions.customHostSettings:   - url: smtp://mail.example.com:465     ssl:       verificationMode: 'full'       certificateAuthoritiesFiles: [ 'one.crt' ]       certificateAuthoritiesData: |           -----BEGIN CERTIFICATE-----           MIIDTD...           CwUAMD...           ... multiple lines of certificate data ...           -----END CERTIFICATE-----     smtp:       requireTLS: true   - url: https://webhook.example.com     ssl:       verificationMode: 'none'
-					</code>
-				</pre>
+				<pre><code class="language-yaml">xpack.actions.customHostSettings:
+  - url: smtp://mail.example.com:465
+    ssl:
+      verificationMode: 'full'
+      certificateAuthoritiesFiles: [ 'one.crt' ]
+      certificateAuthoritiesData: |
+          -----BEGIN CERTIFICATE-----
+          MIIDTD...
+          CwUAMD...
+          ... multiple lines of certificate data ...
+          -----END CERTIFICATE-----
+    smtp:
+      requireTLS: true
+  - url: https://webhook.example.com
+    ssl:
+      verificationMode: 'none'
+</code>		</pre>
 			</div>
 		</div>
 	</dd>
@@ -239,10 +252,8 @@
 			command with options to use your proxy, and log debug information, with the following command, replacing the proxy and target URLs as appropriate.  This will force the request to be made to the proxy in tunneling mode, and display some of the interaction between the client and the proxy.</p>
 		<div class="highlight-sh notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-sh">curl --verbose --proxytunnel --proxy http://localhost:8080 http://example.com
-					</code>
-				</pre>
+				<pre><code class="language-sh">curl --verbose --proxytunnel --proxy http://localhost:8080 http://example.com
+</code>		</pre>
 			</div>
 		</div>
 	</dd>
@@ -257,10 +268,8 @@
 		<p>For example:</p>
 		<div class="highlight-yaml notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-yaml">xpack.actions.proxyBypassHosts: [ "events.pagerduty.com" ]
-					</code>
-				</pre>
+				<pre><code class="language-yaml">xpack.actions.proxyBypassHosts: [ "events.pagerduty.com" ]
+</code>		</pre>
 			</div>
 		</div>
 		<p>If applicable, include the subdomain in the hostname</p>
@@ -276,10 +285,8 @@
 		<p>For example:</p>
 		<div class="highlight-yaml notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-yaml">xpack.actions.proxyOnlyHosts: [ "events.pagerduty.com" ]
-					</code>
-				</pre>
+				<pre><code class="language-yaml">xpack.actions.proxyOnlyHosts: [ "events.pagerduty.com" ]
+</code>		</pre>
 			</div>
 		</div>
 		<p>If applicable, include the subdomain in the hostname</p>
@@ -404,10 +411,12 @@
 		<p>For example:</p>
 		<div class="highlight-yaml notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-yaml">xpack.actions.run:     maxAttempts: 1     connectorTypeOverrides:         - id: '.server-log'           maxAttempts: 5
-					</code>
-				</pre>
+				<pre><code class="language-yaml">xpack.actions.run:
+    maxAttempts: 1
+    connectorTypeOverrides:
+        - id: '.server-log'
+          maxAttempts: 5
+</code>		</pre>
 			</div>
 		</div>
 	</dd>
@@ -1268,10 +1277,12 @@
 		<p>For example:</p>
 		<div class="highlight-yaml notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-yaml">xpack.alerting.rules.run:     timeout: '5m'     ruleTypeOverrides:         - id: '.index-threshold'           timeout: '15m'
-					</code>
-				</pre>
+				<pre><code class="language-yaml">xpack.alerting.rules.run:
+    timeout: '5m'
+    ruleTypeOverrides:
+        - id: '.index-threshold'
+          timeout: '15m'
+</code>		</pre>
 			</div>
 		</div>
 	</dd>
@@ -1284,10 +1295,13 @@
 		<p>For example:</p>
 		<div class="highlight-yaml notranslate">
 			<div class="highlight">
-				<pre>
-					<code class="language-yaml">xpack.alerting.rules.run:     actions:         max: 10         connectorTypeOverrides:             - id: '.server-log'               max: 5
-					</code>
-				</pre>
+				<pre><code class="language-yaml">xpack.alerting.rules.run:
+    actions:
+        max: 10
+        connectorTypeOverrides:
+            - id: '.server-log'
+              max: 5
+</code>		</pre>
 			</div>
 		</div>
 	</dd>

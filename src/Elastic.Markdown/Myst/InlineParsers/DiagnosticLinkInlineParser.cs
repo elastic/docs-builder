@@ -7,8 +7,10 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
@@ -153,9 +155,40 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		link.SetData("isCrossLink", false);
 
 		if (ValidateExternalUri(link, processor, uri))
+		{
+			CheckApiLink(context, url, link.Line, link.Column);
 			return;
+		}
 
 		ProcessInternalLink(link, processor, context);
+	}
+
+	internal static void CheckApiLink(ParserContext context, string? url, int zeroBasedLine, int column)
+	{
+		if (
+			context.SkipValidation
+			|| ApiLinkCheck.GetHint(
+				context.CrossLinkResolver,
+				url,
+				context.Build.UrlPathPrefix,
+				context.Build.Configuration.SuppressDiagnostics
+			) is not { } hint
+		)
+			return;
+
+		context
+			.Build
+			.Collector
+			.Write(new Diagnostic
+			{
+				Severity = Severity.Hint,
+				File = context.MarkdownSourcePath.FullName,
+				OriginalSourceFile = context.OriginalSourcePath?.FullName,
+				Line = zeroBasedLine + 1,
+				Column = Math.Max(column, 1),
+				Length = url!.Length,
+				Message = hint
+			});
 	}
 
 	private static bool ValidateBasicUrl(LinkInline link, InlineProcessor processor, string? url)
@@ -192,12 +225,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.CrossLinkResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
+		var resolution = context.CrossLinkResolver.Resolve(uri);
+		if (resolution is LinkResolutionUnavailable)
+			return;
+		var resolvedUri = resolution.ResolvedUri();
+		if (resolvedUri is not null)
 		{
 			link.Url = resolvedUri.ToString();
 			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)
 				link.SetData("isCrossLink", false);
 		}
+		else
+			processor.EmitError(link, resolution.ToDiagnosticMessage(uri));
 
 		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)

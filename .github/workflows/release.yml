@@ -76,14 +76,14 @@ jobs:
           path: src/Elastic.Documentation.Site
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Containers
-        run: ./build.sh publishcontainers
+        run: ./build.sh publish-containers
 
       # Resolve the manifest digest of each pushed image so we can
       # mint a signed attestation against the immutable digest. The
@@ -99,7 +99,7 @@ jobs:
         # language=bash
         run: |
           set -euo pipefail
-          for image in docs-builder docs-builder-mcp docs-builder-api; do
+          for image in docs-builder docs-builder-mcp docs-builder-api docs-builder-journeys; do
             ref="ghcr.io/elastic/${image}:${TAG_NAME}"
             digest=$(docker buildx imagetools inspect "$ref" 2>/dev/null \
               | awk '/^Digest:/ {print $2; exit}')
@@ -130,6 +130,13 @@ jobs:
         with:
           subject-name: ghcr.io/elastic/docs-builder-api
           subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-journeys image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-journeys
+          subject-digest: ${{ steps.digests.outputs.docs-builder-journeys }}
           push-to-registry: true
         
   build-link-index-lambda:
@@ -310,7 +317,7 @@ jobs:
         uses: $/.github/actions/bootstrap
 
       - name: Publish Binaries
-        run: ./build.sh publishzip
+        run: ./build.sh publish-zip
         shell: bash
         
       - name: Generate artifact attestation
@@ -318,13 +325,14 @@ jobs:
         with:
           subject-path: |
             .artifacts/publish/docs-builder/release/*.zip
+            .artifacts/publish/docs-journeys/release/*.zip
 
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
         run: |
-          gh release upload "$TAG_NAME" .artifacts/publish/docs-builder/release/*.zip
+          gh release upload "$TAG_NAME" .artifacts/publish/docs-builder/release/*.zip .artifacts/publish/docs-journeys/release/*.zip
         shell: bash
 
   publish-release:

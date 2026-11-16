@@ -1,0 +1,29 @@
+# The MCP server of a published docs site answers its liveness probe and lists and calls its tools.
+# Ported from synthetics/journeys/mcp-server.journey.ts. {{host}} is the site's origin, such as https://www.elastic.co.
+# The POSTs only read: they list tools and run a search. The old journey also checked the body for "search_docs" and
+# for a JSON-RPC "result"; MCP answers with text/event-stream, which `@expect json` does not read, so those two checks
+# wait for a body directive in Nullean.Snapshots.
+
+### MCP liveness endpoint returns 200
+# @expect status 200
+GET {{host}}/docs/_mcp/alive
+
+### MCP lists its tools
+# @readonly
+# @expect status 200
+# @expect header content-type ~ event-stream
+POST {{host}}/docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}
+
+### MCP search_docs returns a response
+# @readonly
+# @expect status 200
+# @expect header content-type ~ event-stream
+POST {{host}}/docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "search_docs", "arguments": {"query": "elasticsearch"}}}

@@ -4,6 +4,9 @@
  * This file defines custom attribute names for search telemetry.
  * Standard OpenTelemetry semconv attributes are imported from @opentelemetry/semantic-conventions.
  *
+ * Add every new attribute key to browser-allowlist.json too. The collectors keep only the keys on that list and
+ * drop the rest without an error. browser-allowlist.test.ts fails when a key here is missing from it.
+ *
  * References:
  * - https://opentelemetry.io/docs/specs/semconv/
  * - https://opentelemetry.io/docs/specs/semconv/attributes-registry/

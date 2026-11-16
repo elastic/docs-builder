@@ -193,7 +193,7 @@ public static class OpenApiExtensionReader
 		)
 			return [];
 
-		var samples = new List<CodeSample>();
+		var samples = new List<(CodeSample Sample, string? Label)>();
 		foreach (var item in samplesArray)
 		{
 			if (item is not JsonObject obj)
@@ -209,10 +209,28 @@ public static class OpenApiExtensionReader
 			var displaySource = string.Equals(language, "curl", StringComparison.OrdinalIgnoreCase)
 				? CurlSourceFormatter.Format(source)
 				: source;
-			samples.Add(new CodeSample(language, displaySource, CodeSample.GetHighlightClass(language)) { Scenario = scenario });
+			var label = scenario is null ? obj["label"]?.GetValue<string>()?.Trim() : null;
+			if (string.Equals(label, lang, StringComparison.OrdinalIgnoreCase))
+				label = null;
+
+			var sample = new CodeSample(language, displaySource, CodeSample.GetHighlightClass(language)) { Scenario = scenario };
+			samples.Add((sample, label));
 		}
 
+		// A label only says which example a sample belongs to when its language shows up more than once.
+		// Elsewhere it is a caption (often just the language name) and the samples stay one set.
+		var repeated = samples
+			.GroupBy(static s => s.Sample.Language, StringComparer.OrdinalIgnoreCase)
+			.Where(static g => g.Count() > 1)
+			.Select(static g => g.Key)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var tied = samples.Select(
+			s => !string.IsNullOrWhiteSpace(s.Label) && repeated.Contains(s.Sample.Language)
+				? s.Sample with { ExampleTitle = s.Label }
+				: s.Sample
+		);
+
 		// Console first, then by language popularity; OrderBy is stable, so unranked languages keep spec order.
-		return [.. samples.OrderBy(static s => s.Rank)];
+		return [.. tied.OrderBy(static s => s.Rank)];
 	}
 }

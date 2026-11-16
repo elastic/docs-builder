@@ -505,6 +505,9 @@
           "type": "rank_feature",
           "positive_score_impact": false
         },
+        "landing": {
+          "type": "boolean"
+        },
         "deprecated": {
           "type": "boolean"
         }

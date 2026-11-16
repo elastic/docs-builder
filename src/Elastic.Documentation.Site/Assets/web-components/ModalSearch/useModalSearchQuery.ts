@@ -44,6 +44,7 @@ const SearchResultItem = z.object({
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
+    deprecated: z.boolean().optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>

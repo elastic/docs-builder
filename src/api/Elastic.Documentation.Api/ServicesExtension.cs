@@ -164,30 +164,30 @@ public static class ServicesExtension
 			_ = services.AddSingleton<KibanaOptions>();
 			logger?.LogInformation("KibanaOptions registered successfully");
 
-			// Register HttpContextAccessor for provider resolution
-			_ = services.AddHttpContextAccessor();
-			logger?.LogInformation("HttpContextAccessor registered successfully");
+			_ = services.AddSingleton<AskAiProviderOptions>();
 
-			// Register provider resolver
-			_ = services.AddScoped<AskAiProviderResolver>();
-			logger?.LogInformation("AskAiProviderResolver registered successfully");
-
-			// Register both service implementations as concrete types
 			_ = services.AddScoped<LlmGatewayAskAiGateway>();
 			_ = services.AddScoped<AgentBuilderAskAiGateway>();
-			logger?.LogInformation("Both AI service implementations registered as concrete types");
-
-			// Register both transformers as concrete types
 			_ = services.AddScoped<LlmGatewayStreamTransformer>();
 			_ = services.AddScoped<AgentBuilderStreamTransformer>();
-			logger?.LogInformation("Both stream transformers registered as concrete types");
 
-			// Register factory as interface implementation
-			_ = services.AddScoped<IAskAiService, AskAiGatewayFactory>();
-			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
-			logger?.LogInformation(
-				"Service and transformer factories registered successfully - provider switchable via X-AI-Provider header"
+			_ = services.AddScoped<IAskAiService>(
+				sp =>
+					sp.GetRequiredService<AskAiProviderOptions>().Provider switch
+					{
+						AskAiProvider.AgentBuilder => sp.GetRequiredService<AgentBuilderAskAiGateway>(),
+						_ => sp.GetRequiredService<LlmGatewayAskAiGateway>()
+					}
 			);
+			_ = services.AddScoped<IStreamTransformer>(
+				sp =>
+					sp.GetRequiredService<AskAiProviderOptions>().Provider switch
+					{
+						AskAiProvider.AgentBuilder => sp.GetRequiredService<AgentBuilderStreamTransformer>(),
+						_ => sp.GetRequiredService<LlmGatewayStreamTransformer>()
+					}
+			);
+			logger?.LogInformation("Ask AI services registered; provider comes from {Key}", AskAiProviderOptions.ConfigurationKey);
 
 			// Register message feedback service (singleton for connection reuse)
 			_ = services.AddSingleton<IAskAiMessageFeedbackService, ElasticsearchAskAiMessageFeedbackGateway>();

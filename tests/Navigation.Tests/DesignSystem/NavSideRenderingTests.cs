@@ -46,4 +46,38 @@ public class NavSideRenderingTests
 
 		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
+
+	[Test]
+	public async Task Tree_DeprecatedOperation_DimsTheRowAndNamesItForScreenReaders()
+	{
+		var html = await RenderAsync(NavSideExamples.Navigation with { Tree = [Operation(deprecated: true)] });
+
+		html.Should().Contain("class=\"nav-tree__link nav-tree__link--deprecated\"");
+		var text = html.IndexOf("class=\"nav-tree__text\"", StringComparison.Ordinal);
+		var hidden = html.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
+		var method = html.IndexOf("method method--sm", StringComparison.Ordinal);
+		hidden.Should().BeGreaterThan(text);
+		hidden.Should().BeLessThan(method);
+		html.Should().Contain("class=\"badge badge--info method method--sm\"");
+	}
+
+	[Test]
+	public async Task Tree_OperationNotDeprecated_HasNoDeprecatedModifier()
+	{
+		var html = await RenderAsync(NavSideExamples.Navigation with { Tree = [Operation(deprecated: false)] });
+
+		html.Should().Contain("class=\"nav-tree__link\"");
+		html.Should().NotContain("deprecated").And.NotContain("Deprecated");
+	}
+
+	private static NavigationRenderNode Operation(bool deprecated) =>
+		new()
+		{
+			Kind = NavigationRenderNodeKind.Leaf,
+			IsTopLevel = false,
+			NavigationTitle = "Get document source",
+			Url = "/api/doc/elasticsearch/operation/operation-get-source",
+			HttpMethod = "get",
+			Deprecated = deprecated
+		};
 }

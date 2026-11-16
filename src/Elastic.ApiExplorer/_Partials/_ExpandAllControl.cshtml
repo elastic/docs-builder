@@ -1,0 +1,12 @@
+@inherits RazorSlice<bool>
+@* One button that opens or folds every section and property of the page. api-docs.ts keeps its label in step with the page. A page without the section-links bar shows it on a row of its own. *@
+@if (Model)
+{
+	<div class="api-expand-standalone">
+		<button type="button" class="api-expand-toggle" data-api-expand-all>Expand all</button>
+	</div>
+}
+else
+{
+	<button type="button" class="api-expand-toggle" data-api-expand-all>Expand all</button>
+}

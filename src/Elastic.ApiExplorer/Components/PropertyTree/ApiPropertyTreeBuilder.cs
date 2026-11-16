@@ -30,6 +30,10 @@ public sealed record PropertyTreeScope
 	/// <summary>A response lists no <c>writeOnly</c> fields, as a request lists no <c>readOnly</c> ones.</summary>
 	public bool IsResponse { get; init; }
 	public int Depth { get; init; }
+
+	/// <summary>Whether the row these properties sit under starts open. A required row is only needed up front while every row above it is open.</summary>
+	public bool ParentExpanded { get; init; } = true;
+
 	/// <summary>The <c>$ref</c> ids of the object types above this level; a row that refers to one again stops there.</summary>
 	public IReadOnlySet<string>? AncestorRefs { get; init; }
 	public IReadOnlyDictionary<string, string>? DescriptionOverrides { get; init; }
@@ -305,7 +309,7 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
 		var (propSchema, typeInfo, isRecursive) = (row.Schema, row.TypeInfo, row.IsRecursive);
-		var expansion = ComputeExpansion(row.Shape, typeInfo, scope, isRecursive);
+		var expansion = ComputeExpansion(row.Shape, typeInfo, scope, isRecursive, row.IsRequired);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, row.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
 		var (children, repeats) = isRecursive || row.Repeats is not null
@@ -368,9 +372,6 @@ public partial class ApiPropertyTreeBuilder(
 				alternatives.Select(static fields => string.Join(" + ", fields)).ToArray()
 			)
 			: null;
-
-	// Object rows start expanded and stay foldable. The request body root is the property list, so its fields are always visible.
-	private static bool ComputeDefaultExpanded() => true;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{
@@ -529,7 +530,7 @@ public partial class ApiPropertyTreeBuilder(
 		var keyAnchorId = $"{row.AnchorId}-string";
 		var keyPath = AppendPath(row.JsonPath, DictionaryKeyName);
 		var dictIsCollapsible = expansion.NestedCount > 0;
-		var dictDefaultExpanded = ComputeDefaultExpanded();
+		var dictDefaultExpanded = expansion.DefaultExpanded;
 		var valueScope = childScope with { Prefix = keyAnchorId, JsonPath = keyPath, Depth = childScope.Depth + 1 };
 		return new ApiPropertyChildren
 		{

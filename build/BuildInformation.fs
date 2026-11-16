@@ -10,9 +10,7 @@ open System.Runtime.InteropServices
 open System.Threading
 open System.Xml.Linq
 open System.Xml.XPath
-open Fake.Core
 open Proc.Fs
-open Fake.Tools.Git
 
 type Paths =
     static member Root =
@@ -38,6 +36,12 @@ type BuildConfiguration =
     static member ValidateAssemblyName = false
     static member GenerateApiChanges = false
     
+type BuildVersion =
+    { /// The version without build metadata, such as 1.75.1-canary.0.19
+      Semantic: string
+      /// The version with the commit, such as 1.75.1-canary.0.19+0123abc
+      Informational: string }
+
 type Software =
     static member Organization = "elastic"
     static member Repository = "docs-builder"
@@ -45,19 +49,16 @@ type Software =
     static member SignKey = "069ca2728db333c1"
     
     static let restore =
-        Lazy<unit>((fun _ -> exec { run "dotnet" "tool" "restore" }), LazyThreadSafetyMode.ExecutionAndPublication)
-        
+        Lazy<unit>((fun _ -> cmd "dotnet" [ "tool"; "restore" ] |> Cmd.run), LazyThreadSafetyMode.ExecutionAndPublication)
+
     static let versionInfo =
-        Lazy<SemVerInfo>(fun _ ->
-            let sha = Information.getCurrentSHA1 "."
-            let output = exec {
-                binary "dotnet"
-                arguments "minver" "-p" "canary.0" "-m" "0.1"
-                find (fun l -> not(l.Error))
-            }
-            SemVer.parse <| $"%s{output.Line}+%s{sha}"
+        Lazy<BuildVersion>(fun _ ->
+            let sha = cmd "git" [ "rev-parse"; "HEAD" ] |> Cmd.text |> Cmd.get
+            // MinVer logs on standard error, which Cmd.text leaves on the console.
+            let semantic = cmd "dotnet" [ "minver"; "-p"; "canary.0"; "-m"; "0.1" ] |> Cmd.text |> Cmd.get
+            { Semantic = semantic; Informational = $"%s{semantic}+%s{sha}" }
         , LazyThreadSafetyMode.ExecutionAndPublication)
-        
+
     static member Version = restore.Value; versionInfo.Value
 
 type OS =

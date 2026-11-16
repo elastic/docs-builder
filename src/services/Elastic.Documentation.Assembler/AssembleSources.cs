@@ -129,7 +129,7 @@ public class AssembleSources
 	{
 		AssembleContext = context;
 		AssembleSets = assembleSets;
-		NavigationTocMappings = FrozenDictionary<Uri, NavigationTocMapping>.Empty;
+		NavigationTocMappings = [];
 		LegacyUrlMappings = context.LegacyUrlMappings;
 		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, context.Environment);
 		CrossLinkResolver = NoopCrossLinkResolver.Instance;

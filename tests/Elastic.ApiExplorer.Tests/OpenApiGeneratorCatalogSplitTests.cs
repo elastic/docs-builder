@@ -213,7 +213,9 @@ public class OpenApiGeneratorCatalogSplitTests
 			paths.Add(doc.Path);
 
 		paths.Should().BeEquivalentTo(
+			"/docs/api/doc/cloud-billing",
 			"/docs/api/doc/cloud-billing/operation/operation-ping",
+			"/docs/api/doc/cloud-connect",
 			"/docs/api/doc/cloud-connect/operation/operation-ping"
 		);
 	}

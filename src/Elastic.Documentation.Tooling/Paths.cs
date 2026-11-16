@@ -31,7 +31,7 @@ public static class Paths
 	/// <remarks>
 	/// In DEBUG builds a <c>.git</c> found beyond <paramref name="maxParents"/> is still accepted
 	/// when it has an adjacent <c>*.slnx</c> file — this covers the developer case of running a
-	/// binary from an IDE output directory (e.g. <c>bin/Debug/net10.0/</c>) where the solution
+	/// binary from an IDE output directory (e.g. <c>bin/Debug/net11.0/</c>) where the solution
 	/// root is several levels up.
 	/// </remarks>
 	public static IDirectoryInfo? FindGitRoot(IDirectoryInfo startDirectory, int maxParents = 1)
@@ -97,7 +97,7 @@ public static class Paths
 		{
 			// *.slnx is the primary anchor: always adopt it at any depth.
 			// This covers both the local developer case (running from the IDE output directory
-			// such as bin/Debug/net10.0/) and a process started from a project
+			// such as bin/Debug/net11.0/) and a process started from a project
 			// directory, which is several levels below the solution root.
 			if (directory.GetFiles("*.slnx").Length > 0)
 				return directory;

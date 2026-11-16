@@ -77,18 +77,17 @@ cd elasticsearch-{{version}}/ <2>
 	public void ReplacesSubsInCode() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-sh notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-sh">wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.0-linux-x86_64.tar.gz wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.0-linux-x86_64.tar.gz.sha512 shasum -a 512 -c elasticsearch-7.17.0-linux-x86_64.tar.gz.sha512<span style="display: inline-block; width: 1ch"></span>
-						<span class="code-callout" data-index="1"></span>
-						tar -xzf elasticsearch-7.17.0-linux-x86_64.tar.gz cd elasticsearch-7.17.0/<span style="display: inline-block; width: 1ch"></span>
-						<span class="code-callout" data-index="2"></span>
-					</code>
-				</pre>
+			<div class="highlight-sh notranslate">
+				<div class="highlight">
+					<pre><code class="language-sh">wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.0-linux-x86_64.tar.gz
+			wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.0-linux-x86_64.tar.gz.sha512
+			shasum -a 512 -c elasticsearch-7.17.0-linux-x86_64.tar.gz.sha512<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
+			tar -xzf elasticsearch-7.17.0-linux-x86_64.tar.gz
+			cd elasticsearch-7.17.0/<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="2"></span>
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		""",
+			""",
 			DocsHtml.Body()
 		);
 }
@@ -354,15 +353,17 @@ wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{versio
 	public void MutationOperatorsWorkInCodeBlocks() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<div class="highlight-sh notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-sh"># Install Elasticsearch 9.0 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.0-linux-x86_64.tar.gz  # With space in mutation wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.0-linux-x86_64.tar.gz
-					</code>
-				</pre>
+			<div class="highlight-sh notranslate">
+				<div class="highlight">
+					<pre><code class="language-sh"># Install Elasticsearch 9.0
+			wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.0-linux-x86_64.tar.gz
+
+			# With space in mutation
+			wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.0-linux-x86_64.tar.gz
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		""",
+			""",
 			DocsHtml.Body()
 		);
 

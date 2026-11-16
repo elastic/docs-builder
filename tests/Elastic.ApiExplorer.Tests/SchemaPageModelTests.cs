@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
@@ -52,6 +53,25 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 			.Where(p => !p.Children.UseHidden && p.Children.Properties is not null && p.IsCollapsible && !p.DefaultExpanded)
 			.Should()
 			.BeEmpty("collapsed rows use hidden=\"until-found\", so find-in-page reaches their fields");
+	}
+
+	[Test]
+	public async Task Render_VariantOnlySchema_OffersThePageControlOnce()
+	{
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Single(n => n.Model.DisplayName == "Aggregation result");
+		var page = SchemaPageModel.Create(item.Model, RenderContext(item));
+		page.Properties.Should().BeNull("a type that lists only variants has no top-level properties");
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await item.Model.RenderAsync(stream, RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
+
+		var html = fs.File.ReadAllText("/out.html");
+
+		System.Text.RegularExpressions.Regex.Matches(html, "data-api-expand-all").Count.Should().Be(1);
+		html
+			.IndexOf("data-api-expand-all", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("union-types", StringComparison.Ordinal));
 	}
 
 	private static IEnumerable<ApiProperty> Flatten(ApiPropertyList list) =>

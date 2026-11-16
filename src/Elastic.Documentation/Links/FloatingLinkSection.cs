@@ -132,4 +132,28 @@ public record FloatingLinkSection
 		sitePath = page.Length == 0 ? root : $"{root}/{page}";
 		return true;
 	}
+
+	/// <summary>
+	/// Whether <paramref name="sitePath"/>, a path from the site root without slashes at either end, is a page of any
+	/// version of this section, directly or through an alias. It matches the longest version root first, so the
+	/// page of a versioned tree is never read as a page of the current version.
+	/// </summary>
+	public bool ContainsSitePath(string sitePath)
+	{
+		foreach (var version in Versions.OrderByDescending(v => v.Root.Length))
+		{
+			string page;
+			if (sitePath.Equals(version.Root, StringComparison.Ordinal))
+				page = string.Empty;
+			else if (sitePath.StartsWith(version.Root + "/", StringComparison.Ordinal))
+				page = sitePath[(version.Root.Length + 1)..];
+			else
+				continue;
+
+			if (TryResolvePage(version.Name, page, out _))
+				return true;
+		}
+
+		return false;
+	}
 }

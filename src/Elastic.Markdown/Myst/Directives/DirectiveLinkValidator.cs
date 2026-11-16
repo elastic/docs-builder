@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
 using Markdig.Syntax;
@@ -90,7 +92,18 @@ internal static class DirectiveLinkValidator
 			return url;
 
 		if (IsExternal(trimmed))
+		{
+			if (
+				ApiLinkCheck.GetHint(
+					context.CrossLinkResolver,
+					trimmed,
+					context.Build.UrlPathPrefix,
+					context.Build.Configuration.SuppressDiagnostics
+				) is { } hint
+			)
+				block.EmitHint(hint);
 			return url;
+		}
 
 		if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && CrossLinkValidator.IsCrossLink(uri))
 			return ResolveCrossLink(url, uri, block, context);
@@ -183,14 +196,21 @@ internal static class DirectiveLinkValidator
 		}
 
 		context.Build.Collector.EmitCrossLink(original);
-		if (!resolver.TryResolve(s => block.EmitError(s), uri, out var resolved))
+		var resolution = resolver.Resolve(uri);
+		if (resolution is LinkResolutionUnavailable)
 			return original;
+		var resolvedUri = resolution.ResolvedUri();
+		if (resolvedUri is null)
+		{
+			block.EmitError(resolution.ToDiagnosticMessage(uri));
+			return original;
+		}
 
 		// A cross-link resolves to a full URL, but it still points at documentation this site
 		// serves. Record it so the view model does not mistake it for an external link and open
 		// it in a new tab. Inline links make the same distinction.
-		RememberCrossLink(block, resolved.ToString());
-		return resolved.ToString();
+		RememberCrossLink(block, resolvedUri.ToString());
+		return resolvedUri.ToString();
 	}
 
 	private static void ValidateInternal(string url, DirectiveBlock block, ParserContext context)

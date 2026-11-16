@@ -18,7 +18,7 @@
 				}
 				else
 				{
-					<a class="nav-tree__link" href="@item.Url"@(item.Url.Contains('#') ? new HtmlString(" hx-boost=\"false\"") : HtmlString.Empty)>
+					<a class="nav-tree__link@(item.Deprecated ? " nav-tree__link--deprecated" : "")" href="@item.Url"@(item.Url.Contains('#') ? new HtmlString(" hx-boost=\"false\"") : HtmlString.Empty)>
 						@await RenderPartialAsync(_NavTreeLabel.Create(item))
 					</a>
 				}

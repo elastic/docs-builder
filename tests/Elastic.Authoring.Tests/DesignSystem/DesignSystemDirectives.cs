@@ -275,37 +275,32 @@ public class CodeBlockComponent : DesignSystemDirectiveTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<figure class="code-block notranslate" data-language="json">
-			<figcaption class="code-block__header">
-				<span class="code-block__language">JSON</span>
-				<button class="code-block__copy" type="button" data-copy="" hidden="">
-					<span class="code-block__copy-label">Copy</span>
-					<span class="code-block__copied-label" aria-live="polite">Copied</span>
-				</button>
-			</figcaption>
-			<pre class="code-block__pre">
-				<code class="language-json">{ "size": 10 }
-				</code>
-			</pre>
-		</figure>
-		<figure class="code-block notranslate" data-language="yaml">
-			<figcaption class="code-block__header">
-				<span class="code-block__language">YAML</span>
-				<button class="code-block__copy" type="button" data-copy="" hidden="">
-					<span class="code-block__copy-label">Copy</span>
-					<span class="code-block__copied-label" aria-live="polite">Copied</span>
-				</button>
-			</figcaption>
-			<pre class="code-block__pre">
-				<code class="language-yaml">cluster.name: docs<span style="display: inline-block; width: 1ch"></span>
-					<span class="code-callout" data-index="1"></span>
-				</code>
-			</pre>
-		</figure>
-		<ol class="code-callouts">
-			<li>The cluster name.</li>
-		</ol>
-		"""
+			<figure class="code-block notranslate" data-language="json">
+				<figcaption class="code-block__header">
+					<span class="code-block__language">JSON</span>
+					<button class="code-block__copy" type="button" data-copy="" hidden="">
+						<span class="code-block__copy-label">Copy</span>
+						<span class="code-block__copied-label" aria-live="polite">Copied</span>
+					</button>
+				</figcaption>
+				<pre class="code-block__pre"><code class="language-json">{ "size": 10 }
+			</code></pre>
+			</figure>
+			<figure class="code-block notranslate" data-language="yaml">
+				<figcaption class="code-block__header">
+					<span class="code-block__language">YAML</span>
+					<button class="code-block__copy" type="button" data-copy="" hidden="">
+						<span class="code-block__copy-label">Copy</span>
+						<span class="code-block__copied-label" aria-live="polite">Copied</span>
+					</button>
+				</figcaption>
+				<pre class="code-block__pre"><code class="language-yaml">cluster.name: docs<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
+			</code></pre>
+			</figure>
+			<ol class="code-callouts">
+				<li>The cluster name.</li>
+			</ol>
+			"""
 		);
 }
 
@@ -398,22 +393,20 @@ public class ConsoleCodeBlockSegments : DesignSystemDirectiveTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<figure class="code-block notranslate" data-language="json">
-			<figcaption class="code-block__header">
-				<span class="code-block__language">JSON</span>
-				<button class="code-block__copy" type="button" data-copy="" hidden="">
-					<span class="code-block__copy-label">Copy</span>
-					<span class="code-block__copied-label" aria-live="polite">Copied</span>
-				</button>
-			</figcaption>
-			<pre class="code-block__pre">
-				<code class="language-apiheader">GET /_search</code>
-				<code class="language-json">{ "size": 1 }</code>
-				<code class="language-apiheader">POST /docs/_doc</code>
-				<code class="language-json">{ "title": "one" }</code>
-			</pre>
-		</figure>
-		"""
+			<figure class="code-block notranslate" data-language="json">
+				<figcaption class="code-block__header">
+					<span class="code-block__language">JSON</span>
+					<button class="code-block__copy" type="button" data-copy="" hidden="">
+						<span class="code-block__copy-label">Copy</span>
+						<span class="code-block__copied-label" aria-live="polite">Copied</span>
+					</button>
+				</figcaption>
+				<pre class="code-block__pre"><code class="language-apiheader">GET /_search</code>
+			<code class="language-json">{ "size": 1 }</code>
+			<code class="language-apiheader">POST /docs/_doc</code>
+			<code class="language-json">{ "title": "one" }</code></pre>
+			</figure>
+			"""
 		);
 
 	// Inside <pre> a newline between two elements is output, which a pretty-printed snapshot cannot show.

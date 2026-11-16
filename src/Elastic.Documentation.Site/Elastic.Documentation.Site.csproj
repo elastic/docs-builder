@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -126,11 +125,11 @@
       <EmbeddedResource Include="_static/**/*.css.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
       <EmbeddedResource Include="_static/**/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/**/*.png" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.ico" Watch="false" />
       <EmbeddedResource Include="_static/**/*.ttf" Watch="false" />
       <EmbeddedResource Include="_static/**/*.woff" Watch="false" />
       <EmbeddedResource Include="_static/**/*.woff2" Watch="false" />
     </ItemGroup>
   </Target>
-
 
 </Project>
