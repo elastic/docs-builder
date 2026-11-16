@@ -1141,4 +1141,171 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			"""
 			);
 	}
+
+	// ── Empty releases (release serverless) ────────────
+
+	private const string ParentBundle = "widget-cloud-hosted-2026-08-13.yaml";
+
+	private async Task<(bool Success, string[] Files, string OutputDir)> BundleRange(
+		IGitHubCommitRangeService range,
+		bool writeEmptyRange = true,
+		IGitHubPrService? prService = null,
+		string topLevel = "",
+		string? existingOutputDir = null,
+		Action<string>? onBundlePathResolved = null
+	)
+	{
+		var outputDir = existingOutputDir ?? FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, topLevel: topLevel);
+		var service = Service(PoolHandler(), range, prService);
+
+		var success = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef,
+				WriteEmptyRange = writeEmptyRange,
+				OnBundlePathResolved = onBundlePathResolved
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var files =
+			FileSystem
+				.Directory
+				.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories)
+				.Select(FileSystem.Path.GetFileName)
+				.Order()
+				.ToArray()!;
+		return (success, files!, outputDir);
+	}
+
+	// Bundles are written into a per-product subdirectory of the output directory.
+	private string ReadOutput(string outputDir, string fileName) =>
+		FileSystem.File.ReadAllText(FileSystem.Directory.GetFiles(outputDir, fileName, SearchOption.AllDirectories).Single());
+
+	[Test]
+	public async Task EmptyRange_WithWriteEmptyRange_WritesABundleWithNoEntries()
+	{
+		var (success, files, outputDir) = await BundleRange(RangeService());
+
+		success.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		files.Should().Equal(ParentBundle);
+		ReadOutput(outputDir, ParentBundle)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    repo: widget
+			    owner: elastic
+			release-date: {today}
+			git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+			"""
+			);
+	}
+
+	[Test]
+	public async Task Bundle_TheNameIsTaken_ReportsThePathItWasWrittenTo()
+	{
+		// An earlier run left the unsuffixed bundle in the directory, so the new release is written to a timestamped name.
+		// The path the caller is told about must be that file, or a caller that renames it moves the older bundle.
+		var (_, firstFiles, outputDir) = await BundleRange(RangeService(100));
+		var original = FileSystem.Directory.GetFiles(outputDir, ParentBundle, SearchOption.AllDirectories).Single();
+		var originalText = FileSystem.File.ReadAllText(original);
+		firstFiles.Should().Equal(ParentBundle);
+
+		string? reported = null;
+		var (success, _, _) = await BundleRange(
+			RangeService(),
+			existingOutputDir: outputDir,
+			onBundlePathResolved: path => reported = path
+		);
+
+		success.Should().BeTrue();
+		reported.Should().NotBeNull().And.NotBe(original);
+		FileSystem.File.Exists(reported!).Should().BeTrue("the reported path is the file that was written");
+		FileSystem.File.ReadAllText(reported!).Should().NotContain("title:");
+		FileSystem.File.ReadAllText(original).Should().Be(originalText, "the earlier bundle is not touched");
+	}
+
+	[Test]
+	public async Task EmptyRange_WithoutTheOption_StillFails()
+	{
+		var (success, files, _) = await BundleRange(RangeService(), writeEmptyRange: false);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries could be resolved for commit range"));
+	}
+
+	[Test]
+	public async Task EmptyRange_APullRequestWhoseMetadataCannotBeRead_StillFails()
+	{
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
+
+		var (success, files, _) = await BundleRange(RangeService(400), prService: prService);
+
+		// A failed fetch is not an empty release: nothing is written and nothing is recorded as "no notes".
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+	}
+
+	// language=yaml
+	private const string ExcludeEveryFeature =
+		"""
+		rules:
+		  bundle:
+		    products:
+		      cloud-hosted:
+		        exclude_types: [feature]
+		""";
+
+	[Test]
+	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WritesABundleWithNoEntries()
+	{
+		// PR 100 resolves to a feature entry, and the bundle rules drop every feature: the release has no notes.
+		var (success, files, outputDir) = await BundleRange(RangeService(100), topLevel: ExcludeEveryFeature);
+
+		success.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		files.Should().Equal(ParentBundle);
+		ReadOutput(outputDir, ParentBundle).Should().NotContain("title:");
+	}
+
+	[Test]
+	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WithoutTheOption_StillFails()
+	{
+		var (success, files, _) = await BundleRange(RangeService(100), writeEmptyRange: false, topLevel: ExcludeEveryFeature);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+	}
+
+	[Test]
+	public async Task EmptyRange_BundleRulesRemoveTheEntriesButAPullRequestCannotBeRead_StillFails()
+	{
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
+
+		// PR 100 is dropped by the rules and PR 400 is unreadable: PR 400 may have held the notes, so this is not "no notes".
+		var (success, files, _) = await BundleRange(RangeService(100, 400), prService: prService, topLevel: ExcludeEveryFeature);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be read"));
+	}
 }
