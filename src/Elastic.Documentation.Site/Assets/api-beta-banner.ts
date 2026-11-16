@@ -38,23 +38,6 @@ export function syncApiBetaBanner(
 }
 
 const OPEN_FEEDBACK = '[data-api-beta-feedback-open]'
-const OPEN_DIALOG = 'dialog.api-beta-feedback[open]'
-
-/**
- * A modal dialog closes on Escape unless a handler prevents the keydown, and the elastic.co header does. So the banner
- * closes its own dialog. The listener captures on `window`, which runs before the header's handlers wherever focus is,
- * and it keeps the key from them, as the dialog is on top.
- */
-function onKeydown(event: KeyboardEvent): void {
-    // Escape also cancels an IME composition.
-    if (event.key !== 'Escape' || event.isComposing) return
-    const dialog = document.querySelector<HTMLDialogElement>(OPEN_DIALOG)
-    if (!dialog) return
-    event.preventDefault()
-    event.stopPropagation()
-    dialog.close()
-}
-
 /** One listener for every banner the page ever holds, so a banner that navigation replaces needs no binding. */
 function onClick(event: MouseEvent): void {
     const target = event.target
@@ -98,7 +81,6 @@ type AfterSwapDetail = {
  */
 export function bindApiBetaBanner(onChange?: (banner: Element) => void): void {
     document.addEventListener('click', onClick)
-    window.addEventListener('keydown', onKeydown, true)
     document.addEventListener('htmx:afterSwap', (event) => {
         const detail = (event as CustomEvent<AfterSwapDetail>).detail
         // Widgets with their own hx-get return fragments, not pages.

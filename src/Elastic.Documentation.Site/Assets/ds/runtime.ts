@@ -13,6 +13,7 @@ import { bindCtaClicks, initCtaImpressions } from '../runtime/cta'
 import { applyEditParam } from '../runtime/edit-param'
 import { bindHtmxHooks } from '../runtime/htmx-hooks'
 import { runInitSteps } from '../runtime/init-steps'
+import { bindModalEscape } from '../runtime/modal-escape'
 import { initTelemetry } from '../runtime/telemetry'
 import { initSmoothScroll } from '../smooth-scroll'
 import { initTable } from '../table'
@@ -60,4 +61,5 @@ document.addEventListener('htmx:load', function () {
 
 bindCtaClicks()
 initPrivacyConsent()
+bindModalEscape()
 bindHtmxHooks()
