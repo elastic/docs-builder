@@ -574,6 +574,13 @@ toc:
                 navigation_title: Elasticsearch
                 island: true
 
+              # AutoOps insights rule ids (machine-readable catalog linked from the insights API spec)
+              # https://github.com/elastic/autoops-insights/blob/main/generated/docs/rules/toc.yml
+              - toc: autoops-insights://rules
+                path_prefix: reference/autoops-insights/rules
+                navigation_title: Rule ids
+                island: true
+
           # Search UI
           # https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
           - toc: search-ui://reference
