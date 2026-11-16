@@ -1,0 +1,59 @@
+### initialize, 2024-11-05
+# A client on an older protocol version gets the version it asked for. Pinning the server to one version would
+# change this response, and would refuse the 2026-07-28 requests below or every initialize request.
+POST /docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": { "name": "test-client", "version": "1.0.0" }
+  }
+}
+
+### server/discover, 2026-07-28
+# A client on the 2026-07-28 protocol skips the handshake: every request names its version in the
+# Mcp-Protocol-Version header and in _meta, and the standard Mcp-Method header.
+POST /docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+Mcp-Protocol-Version: 2026-07-28
+Mcp-Method: server/discover
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "server/discover",
+  "params": {
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": { "name": "test-client", "version": "1.0.0" },
+      "io.modelcontextprotocol/clientCapabilities": {}
+    }
+  }
+}
+
+### tools/list, 2026-07-28
+POST /docs/_mcp
+Content-Type: application/json
+Accept: application/json, text/event-stream
+Mcp-Protocol-Version: 2026-07-28
+Mcp-Method: tools/list
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/list",
+  "params": {
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": { "name": "test-client", "version": "1.0.0" },
+      "io.modelcontextprotocol/clientCapabilities": {}
+    }
+  }
+}
