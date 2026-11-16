@@ -33,7 +33,7 @@
     <PackageVersion Include="AngleSharp" Version="1.7.2" />
     <PackageVersion Include="HtmlSanitizer" Version="9.2.1039" />
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.0.5" />
-    <PackageVersion Include="Elastic.Transport" Version="0.17.3" />
+    <PackageVersion Include="Elastic.Transport" Version="1.1.0" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.9.7" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.18.5" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.3.8" />
@@ -63,7 +63,7 @@
          and the coverage extension copies about 43 MB of native runtimes into every test project's output. Keep the versions in line with TUnit's dependencies. -->
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.Telemetry" Version="2.5.3" />
-    <PackageVersion Include="CsCheck" Version="4.0.0" />
+    <PackageVersion Include="CsCheck" Version="5.0.0" />
     <PackageVersion Include="WireMock.Net" Version="1.6.11" />
   </ItemGroup>
   <!-- Build -->
@@ -143,7 +143,7 @@
     <PackageVersion Include="Microsoft.Testing.Platform" Version="2.5.3" />
     <PackageVersion Include="Microsoft.Testing.Extensions.GitHubActionsReport" Version="2.5.3" />
     <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.5.3" />
-    <PackageVersion Include="JetBrains.Annotations" Version="2025.2.4" />
+    <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />

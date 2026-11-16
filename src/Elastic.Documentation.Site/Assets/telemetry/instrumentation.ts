@@ -1,6 +1,6 @@
 /**
  * Elastic EDOT browser SDK initialisation.
- * Sends traces, logs and metrics to the backend OTLP endpoints (/v1/o/t, /v1/o/l, /v1/o/m).
+ * Sends traces and logs to the backend OTLP endpoints (/v1/o/t, /v1/o/l). The SDK has no metrics signal.
  *
  * This module should be imported once at application startup.
  * All web components will automatically be instrumented once initialised.
@@ -69,11 +69,10 @@ function exportHeaders(): Record<string, string> {
 }
 
 // The ALB routes the browser's OTLP paths to the collector, so each signal gets its own
-// absolute URL instead of the SDK's default /v1/{traces,logs,metrics}. EDOT validates them with new URL().
+// absolute URL instead of the SDK's default /v1/{traces,logs}. EDOT validates them with new URL().
 function otlpSignalUrls(): {
     tracesUrl: string
     logsUrl: string
-    metricsUrl: string
 } {
     const basePath = docsConfig.apiBasePath.replace(/\/+$/, '')
     const signalUrl = (path: string) =>
@@ -81,7 +80,6 @@ function otlpSignalUrls(): {
     return {
         tracesUrl: signalUrl('t'),
         logsUrl: signalUrl('l'),
-        metricsUrl: signalUrl('m'),
     }
 }
 
