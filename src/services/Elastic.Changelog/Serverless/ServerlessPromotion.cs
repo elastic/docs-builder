@@ -18,12 +18,17 @@ public sealed record ServerlessSubmodule(string Repository, string Path);
 /// <param name="Profile">Bundle profile in each repository's <c>docs/changelog.yml</c>.</param>
 /// <param name="VersionsPath">Path of the service's <c>versions.yaml</c> in <c>elastic/serverless-gitops</c>.</param>
 /// <param name="Submodules">Repositories vendored as submodules; each gets its own bundle over the range of submodule commits.</param>
+/// <param name="FinalSlice">The last production slice of the service's rollout; release notes publish when it completes (for example <c>production-noncanary-ds-5</c>).</param>
+/// <param name="BaseBranch">Release notes cover pull requests merged into this branch. A pull request merged into a
+/// feature branch reaches the range when the branch merges, and the PR that merged the branch carries the note.</param>
 public sealed record ServerlessService(
 	string Id,
 	string Repository,
 	string Profile,
 	string VersionsPath,
-	IReadOnlyList<ServerlessSubmodule> Submodules
+	IReadOnlyList<ServerlessSubmodule> Submodules,
+	string FinalSlice,
+	string BaseBranch
 );
 
 /// <summary>A commit to a service's <c>versions.yaml</c> in serverless-gitops.</summary>
@@ -45,52 +50,73 @@ public enum HistoryWalkStatus
 	CapReached
 }
 
+/// <summary>What <see cref="ServerlessPromotion.FindPreviousVersionAsync"/> looks for.</summary>
+/// <param name="FinalSlice">The slice whose versions are compared.</param>
+/// <param name="CurrentVersion">The version being promoted; the walk returns the first different one.</param>
+/// <param name="MaxPages">Maximum pages of gitops history to read.</param>
+public sealed record PreviousVersionSearch(string FinalSlice, string CurrentVersion, int MaxPages = ServerlessPromotion.MaxHistoryPages);
+
 /// <summary>The result of <see cref="ServerlessPromotion.FindPreviousVersionAsync"/>.</summary>
 public sealed record HistoryWalkResult(HistoryWalkStatus Status, string? PreviousVersion, int ScannedCommits);
 
 /// <summary>Pure helpers for resolving a serverless promotion's commit range from serverless-gitops history.</summary>
 public static partial class ServerlessPromotion
 {
-	/// <summary>Release notes cover pull requests merged into this branch. A pull request merged into a
-	/// feature branch reaches the range when the branch merges, and the PR that merged the branch carries the note.</summary>
-	public const string BaseBranch = "main";
-
-	/// <summary>The last production slice of a rollout; release notes publish when it completes.</summary>
-	public const string FinalSlice = "production-noncanary-ds-5";
-
-	/// <summary>Services that can be bundled. An Elasticsearch release spans <c>elasticsearch-serverless</c>
+	/// <summary>Services that can be bundled. Kibana, Elasticsearch and, for Elastic Cloud Hosted, frontend-adminconsole. An Elasticsearch release spans <c>elasticsearch-serverless</c>
 	/// and its <c>elasticsearch</c> submodule, so it produces two bundles.</summary>
 	public static IReadOnlyDictionary<string, ServerlessService> Services { get; } = new Dictionary<string, ServerlessService>(
 		StringComparer.OrdinalIgnoreCase
 	)
 	{
-		["kibana"] = new("kibana", "kibana", "serverless-release", "services/kibana/versions.yaml", []),
+		["kibana"] = new(
+			"kibana",
+			"kibana",
+			"serverless-release",
+			"services/kibana/versions.yaml",
+			[],
+			"production-noncanary-ds-5",
+			"main"
+		),
 		["elasticsearch"] = new(
 			"elasticsearch",
 			"elasticsearch-serverless",
 			"serverless-release",
 			"services/elasticsearch/versions.yaml",
-			[new ServerlessSubmodule("elasticsearch", "elasticsearch")]
+			[new ServerlessSubmodule("elasticsearch", "elasticsearch")],
+			"production-noncanary-ds-5",
+			"main"
+		),
+		// Elastic Cloud Hosted. frontend-adminconsole is the anchor: it is the user-facing API service, its single production
+		// slice ends a release, and cloud's default branch is master.
+		["frontend-adminconsole"] = new(
+			"frontend-adminconsole",
+			"cloud",
+			"ech-release",
+			"services/frontend-adminconsole/versions.yaml",
+			[],
+			"production-sds-1",
+			"master"
 		)
 	};
 
-	[GeneratedRegex(@"\bproduction-noncanary-ds-5\b")]
-	private static partial Regex FinalSliceMessageRegex();
+	[GeneratedRegex(@"^gitops:\s+(?<slices>\S+)")]
+	private static partial Regex PromotionSlicesRegex();
 
-	[GeneratedRegex(@"^\s*production-noncanary-ds-5:\s*[""']?([0-9a-fA-F]{7,40})[""']?\s*$", RegexOptions.Multiline)]
-	private static partial Regex FinalSliceVersionRegex();
+	[GeneratedRegex(@"^\s*(?<slice>[A-Za-z0-9-]+):\s*[""']?(?<sha>[0-9a-fA-F]{7,40})[""']?\s*$", RegexOptions.Multiline)]
+	private static partial Regex SliceVersionRegex();
 
-	/// <summary>Whether a gitops commit promoted the final slice. Its message names the slices,
+	/// <summary>Whether a gitops commit promoted <paramref name="finalSlice"/>. Its message names the slices,
 	/// for example <c>gitops: production-noncanary-ds-4,production-noncanary-ds-5 Artifact promotion for kibana to 7dd981dcd7d3</c>.
 	/// Most commits to <c>versions.yaml</c> are dev, QA, or staging promotions.</summary>
-	public static bool IsFinalSlicePromotion(string commitMessage) => FinalSliceMessageRegex().IsMatch(commitMessage.Split('\n', 2)[0]);
-
-	/// <summary>Reads the <see cref="FinalSlice"/> version from a <c>versions.yaml</c>, or <c>null</c>.</summary>
-	public static string? ParseFinalSliceVersion(string versionsYaml)
+	public static bool IsFinalSlicePromotion(string commitMessage, string finalSlice)
 	{
-		var match = FinalSliceVersionRegex().Match(versionsYaml);
-		return match.Success ? match.Groups[1].Value : null;
+		var match = PromotionSlicesRegex().Match(commitMessage.Split('\n', 2)[0]);
+		return match.Success && match.Groups["slices"].Value.Split(',').Contains(finalSlice, StringComparer.Ordinal);
 	}
+
+	/// <summary>Reads the version of <paramref name="finalSlice"/> from a <c>versions.yaml</c>, or <c>null</c>.</summary>
+	public static string? ParseFinalSliceVersion(string versionsYaml, string finalSlice) =>
+		SliceVersionRegex().Matches(versionsYaml).FirstOrDefault(m => m.Groups["slice"].Value == finalSlice)?.Groups["sha"].Value;
 
 	/// <summary>Gitops stores 12-character hashes and callers may send a full SHA in any case,
 	/// so two refs are the same when their first 12 characters match, case-insensitively.</summary>
@@ -114,7 +140,7 @@ public static partial class ServerlessPromotion
 
 	/// <summary>
 	/// Walks the commit history of a service's <c>versions.yaml</c>, newest first, and returns the first
-	/// <see cref="FinalSlice"/> version that differs from <paramref name="currentVersion"/>.
+	/// final-slice version that differs from the current version.
 	/// A failed request is a failure of the walk: skipping a candidate would silently pick an older
 	/// version, and bundle the wrong commit range.
 	/// </summary>
@@ -124,12 +150,11 @@ public static partial class ServerlessPromotion
 	public static async Task<HistoryWalkResult> FindPreviousVersionAsync(
 		Func<int, Task<IReadOnlyList<GitopsCommit>?>> getCommitsPage,
 		Func<string, Task<string?>> getVersionsYaml,
-		string currentVersion,
-		int maxPages = MaxHistoryPages
+		PreviousVersionSearch search
 	)
 	{
 		var scanned = 0;
-		for (var page = 1; page <= maxPages; page++)
+		for (var page = 1; page <= search.MaxPages; page++)
 		{
 			var commits = await getCommitsPage(page);
 			if (commits is null)
@@ -138,14 +163,14 @@ public static partial class ServerlessPromotion
 				return new HistoryWalkResult(HistoryWalkStatus.NotFound, null, scanned);
 			scanned += commits.Count;
 
-			foreach (var commit in commits.Where(c => IsFinalSlicePromotion(c.Message)))
+			foreach (var commit in commits.Where(c => IsFinalSlicePromotion(c.Message, search.FinalSlice)))
 			{
 				var yaml = await getVersionsYaml(commit.Sha);
 				if (yaml is null)
 					return new HistoryWalkResult(HistoryWalkStatus.Failed, null, scanned);
 
-				var version = ParseFinalSliceVersion(yaml);
-				if (version is not null && !SameRef(version, currentVersion))
+				var version = ParseFinalSliceVersion(yaml, search.FinalSlice);
+				if (version is not null && !SameRef(version, search.CurrentVersion))
 					return new HistoryWalkResult(HistoryWalkStatus.Found, version, scanned);
 			}
 		}

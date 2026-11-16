@@ -21,13 +21,15 @@ public class ServerlessPromotionTests
 		      production-noncanary-ds-50: "aaaaaaaaaaaa"
 		""";
 
+	private const string Ds5 = "production-noncanary-ds-5";
+
 	[Test]
 	public void ParseFinalSliceVersion_ReadsDs5NotDs1() =>
-		ServerlessPromotion.ParseFinalSliceVersion(VersionsYaml).Should().Be("7dd981dcd7d3");
+		ServerlessPromotion.ParseFinalSliceVersion(VersionsYaml, Ds5).Should().Be("7dd981dcd7d3");
 
 	[Test]
 	public void ParseFinalSliceVersion_ReturnsNullWhenMissing() =>
-		ServerlessPromotion.ParseFinalSliceVersion("services: {}").Should().BeNull();
+		ServerlessPromotion.ParseFinalSliceVersion("services: {}", Ds5).Should().BeNull();
 
 	[Test]
 	[Arguments("gitops: production-noncanary-ds-4,production-noncanary-ds-5 Artifact promotion for kibana to 7dd981dcd7d3 (#199421)", true)]
@@ -35,7 +37,7 @@ public class ServerlessPromotionTests
 	[Arguments("gitops: dev Artifact promotion for kibana to 914daa00d40e (#202639)", false)]
 	[Arguments("gitops: production-noncanary-ds-50 Artifact promotion", false)]
 	public void IsFinalSlicePromotion(string message, bool expected) =>
-		ServerlessPromotion.IsFinalSlicePromotion(message).Should().Be(expected);
+		ServerlessPromotion.IsFinalSlicePromotion(message, Ds5).Should().Be(expected);
 
 	[Test]
 	[Arguments("7dd981dcd7d3", "7dd981dcd7d3", true)]
@@ -84,6 +86,58 @@ public class ServerlessPromotionTests
 		ServerlessPromotion.Services["kibana"].Submodules.Should().BeEmpty();
 	}
 
+	// ── Elastic Cloud Hosted (frontend-adminconsole) ─────────────────────
+
+	private const string EchFinalSlice = "production-sds-1";
+
+	private const string AdminconsoleVersionsYaml =
+		"""
+		services:
+		  frontend-adminconsole:
+		    versions:
+		      govcloud-moderate-sds-1: "d3124c7dda83"
+		      govcloud-staging-sds-1: "d3124c7dda83"
+		      production-sds-1: "d3124c7dda83"
+		      staging-sds-1: "2d4c3217bf7c"
+		""";
+
+	[Test]
+	public void FrontendAdminconsole_BundlesTheCloudRepositoryWithTheEchProfileOnMaster()
+	{
+		var ech = ServerlessPromotion.Services["frontend-adminconsole"];
+		ech.Repository.Should().Be("cloud");
+		ech.Profile.Should().Be("ech-release");
+		ech.VersionsPath.Should().Be("services/frontend-adminconsole/versions.yaml");
+		ech.FinalSlice.Should().Be(EchFinalSlice);
+		ech.BaseBranch.Should().Be("master");
+		ech.Submodules.Should().BeEmpty();
+	}
+
+	[Test]
+	public void Services_KeepTheirOwnFinalSliceAndBaseBranch()
+	{
+		ServerlessPromotion.Services["kibana"].FinalSlice.Should().Be(Ds5);
+		ServerlessPromotion.Services["kibana"].BaseBranch.Should().Be("main");
+		ServerlessPromotion.Services["elasticsearch"].FinalSlice.Should().Be(Ds5);
+		ServerlessPromotion.Services["elasticsearch"].BaseBranch.Should().Be("main");
+	}
+
+	[Test]
+	public void ParseFinalSliceVersion_ReadsProductionSds1ForFrontendAdminconsole() =>
+		ServerlessPromotion.ParseFinalSliceVersion(AdminconsoleVersionsYaml, EchFinalSlice).Should().Be("d3124c7dda83");
+
+	[Test]
+	public void ParseFinalSliceVersion_DoesNotReadAnotherServicesSliceNames() =>
+		ServerlessPromotion.ParseFinalSliceVersion(AdminconsoleVersionsYaml, Ds5).Should().BeNull();
+
+	[Test]
+	[Arguments("gitops: production-sds-1 Artifact promotion for frontend-adminconsole to d3124c7dda836280f00d8c4b1259f7a2b96ec765 (#224336)", true)]
+	[Arguments("gitops: staging-sds-1 Artifact promotion for frontend-adminconsole to 2d4c3217bf7cc0a885781ab82bf65c945ec44203 (#229116)", false)]
+	[Arguments("gitops: govcloud-moderate-sds-1 Artifact promotion for frontend-adminconsole to d3124c7dda83 (#224464)", false)]
+	[Arguments("gitops: govcloud-staging-sds-1 Artifact promotion for frontend-adminconsole to d3124c7dda83 (#224422)", false)]
+	public void IsFinalSlicePromotion_ForFrontendAdminconsole(string message, bool expected) =>
+		ServerlessPromotion.IsFinalSlicePromotion(message, EchFinalSlice).Should().Be(expected);
+
 	// ── History walk ─────────────────────────────────────────────────────
 
 	private static string Yaml(string ds5) =>
@@ -113,7 +167,7 @@ public class ServerlessPromotionTests
 				reads.Add(sha);
 				return Task.FromResult<string?>(yaml[sha]);
 			},
-			"7DD981DCD7D3"
+			new PreviousVersionSearch(Ds5, "7DD981DCD7D3")
 		);
 
 		result.Status.Should().Be(HistoryWalkStatus.Found);
@@ -123,12 +177,55 @@ public class ServerlessPromotionTests
 	}
 
 	[Test]
+	public async Task FindPreviousVersionAsync_UsesTheRequestedFinalSlice_NotDs5()
+	{
+		const string ds1 = "production-noncanary-ds-1";
+
+		static GitopsCommit Slice(string sha, string slice) => new(sha, $"gitops: {slice} Artifact promotion for kibana to x (#3)");
+
+		static string TwoSlices(string ds1Version, string ds5Version) =>
+			$"""
+			services:
+			  kibana:
+			    versions:
+			      production-noncanary-ds-1: "{ds1Version}"
+			      production-noncanary-ds-5: "{ds5Version}"
+			""";
+
+		var reads = new List<string>();
+		var commits =
+			(IReadOnlyList<GitopsCommit>)[Slice("s5-new", Ds5), Slice("s1-current", ds1), Slice("s5-old", Ds5), Slice("s1-previous", ds1)];
+		var yaml = new Dictionary<string, string>
+		{
+			["s5-new"] = TwoSlices("111111111111", "555555555555"),
+			["s1-current"] = TwoSlices("aaaaaaaaaaaa", "555555555555"),
+			["s5-old"] = TwoSlices("aaaaaaaaaaaa", "444444444444"),
+			["s1-previous"] = TwoSlices("bbbbbbbbbbbb", "444444444444")
+		};
+
+		var result = await ServerlessPromotion.FindPreviousVersionAsync(
+			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? commits : []),
+			sha =>
+			{
+				reads.Add(sha);
+				return Task.FromResult<string?>(yaml[sha]);
+			},
+			new PreviousVersionSearch(ds1, "aaaaaaaaaaaa")
+		);
+
+		result.Status.Should().Be(HistoryWalkStatus.Found);
+		result.PreviousVersion.Should().Be("bbbbbbbbbbbb");
+		result.ScannedCommits.Should().Be(4);
+		reads.Should().Equal("s1-current", "s1-previous");
+	}
+
+	[Test]
 	public async Task FindPreviousVersionAsync_AFailedFileReadFailsTheWalk_NotSkipsTheCommit()
 	{
 		var result = await ServerlessPromotion.FindPreviousVersionAsync(
 			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? [Prod("p-newer"), Prod("p-older")] : []),
 			sha => Task.FromResult<string?>(sha == "p-newer" ? null : Yaml("2fd663f3c363")),
-			"7dd981dcd7d3"
+			new PreviousVersionSearch(Ds5, "7dd981dcd7d3")
 		);
 
 		// Skipping p-newer would return the older version 2fd663f3c363 and bundle the wrong range.
@@ -142,7 +239,7 @@ public class ServerlessPromotionTests
 		var result = await ServerlessPromotion.FindPreviousVersionAsync(
 			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? [Dev("d1")] : null),
 			_ => Task.FromResult<string?>(Yaml("x")),
-			"7dd981dcd7d3"
+			new PreviousVersionSearch(Ds5, "7dd981dcd7d3")
 		);
 
 		result.Status.Should().Be(HistoryWalkStatus.Failed);
@@ -155,7 +252,7 @@ public class ServerlessPromotionTests
 		var result = await ServerlessPromotion.FindPreviousVersionAsync(
 			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page <= 15 ? [page == 15 ? Prod("p-old") : Dev($"d{page}")] : []),
 			_ => Task.FromResult<string?>(Yaml("03c0df903631")),
-			"7dd981dcd7d3"
+			new PreviousVersionSearch(Ds5, "7dd981dcd7d3")
 		);
 
 		result.Status.Should().Be(HistoryWalkStatus.Found);
@@ -168,13 +265,12 @@ public class ServerlessPromotionTests
 		var capped = await ServerlessPromotion.FindPreviousVersionAsync(
 			_ => Task.FromResult<IReadOnlyList<GitopsCommit>?>([Dev("d")]),
 			_ => Task.FromResult<string?>(Yaml("x")),
-			"7dd981dcd7d3",
-			maxPages: 3
+			new PreviousVersionSearch(Ds5, "7dd981dcd7d3", MaxPages: 3)
 		);
 		var exhausted = await ServerlessPromotion.FindPreviousVersionAsync(
 			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? [Prod("p")] : []),
 			_ => Task.FromResult<string?>(Yaml("7dd981dcd7d3")),
-			"7dd981dcd7d3"
+			new PreviousVersionSearch(Ds5, "7dd981dcd7d3")
 		);
 
 		capped.Status.Should().Be(HistoryWalkStatus.CapReached);

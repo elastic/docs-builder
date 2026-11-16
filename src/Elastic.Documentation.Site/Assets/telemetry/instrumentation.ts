@@ -1,11 +1,12 @@
 /**
  * Elastic EDOT browser SDK initialisation.
- * Sends traces, logs and metrics to the backend OTLP endpoints (/v1/o/t, /v1/o/l, /v1/o/m).
+ * Sends traces and logs to the backend OTLP endpoints (/v1/o/t, /v1/o/l). The SDK has no metrics signal.
  *
  * This module should be imported once at application startup.
  * All web components will automatically be instrumented once initialised.
  */
 import { config as docsConfig } from '../config'
+import { waitForWafToken } from '../waf'
 import { detectEnvironment } from './environment'
 import { startBrowserSdk } from '@elastic/opentelemetry-browser'
 
@@ -28,7 +29,7 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
             logLevel: options.debug ? 'debug' : 'warn',
             exportConfig: {
                 ...otlpSignalUrls(),
-                headers: { 'X-Docs-Session': 'active' },
+                headers: exportHeaders(),
             },
             resourceAttributes: {
                 'deployment.environment': detectEnvironment(),
@@ -50,12 +51,28 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
     }
 }
 
+const EXPORT_HEADERS = { 'X-Docs-Session': 'active' }
+
+// The WAF answers /v1/o/* requests without a token with a 202 that the exporter counts as a
+// success, so every export waits for the token cookie. SDK start doesn't wait. After a failed
+// wait the export goes out anyway, and the next export tries again.
+function exportHeaders(): Record<string, string> {
+    if (!docsConfig.wafIntegrationUrl) return EXPORT_HEADERS
+
+    let tokenReady = waitForWafToken()
+    const headers = async () => {
+        if (!(await tokenReady)) tokenReady = waitForWafToken()
+        return EXPORT_HEADERS
+    }
+    // EDOT types headers as an object, but its OTLP exporters accept a function.
+    return headers as unknown as Record<string, string>
+}
+
 // The ALB routes the browser's OTLP paths to the collector, so each signal gets its own
-// absolute URL instead of the SDK's default /v1/{traces,logs,metrics}. EDOT validates them with new URL().
+// absolute URL instead of the SDK's default /v1/{traces,logs}. EDOT validates them with new URL().
 function otlpSignalUrls(): {
     tracesUrl: string
     logsUrl: string
-    metricsUrl: string
 } {
     const basePath = docsConfig.apiBasePath.replace(/\/+$/, '')
     const signalUrl = (path: string) =>
@@ -63,7 +80,6 @@ function otlpSignalUrls(): {
     return {
         tracesUrl: signalUrl('t'),
         logsUrl: signalUrl('l'),
-        metricsUrl: signalUrl('m'),
     }
 }
 

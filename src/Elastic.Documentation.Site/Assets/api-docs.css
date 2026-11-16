@@ -3292,22 +3292,24 @@ button.example-response-tab:focus-visible {
 
 /* "Extra bold headlines with lighter accompanying text", per the brand guide: the line under the title is Inter
    at regular weight in the lighter ink, with the guide's paragraph leading of 1.55. Its contrast on the band is
-   6.65:1, above the 4.5:1 the guide requires. */
+   6.65:1, above the 4.5:1 the guide requires. It is as wide as the finder below it and not balanced, so its
+   first line runs close to the finder's edges and the two read as one block. */
 .api-catalog .api-catalog-lede {
-	max-width: 36rem;
+	max-width: 640px;
 	margin: 12px auto 0;
 	font-family: var(--font-body);
-	font-size: var(--text-base);
+	font-size: var(--text-lg);
 	line-height: 1.55;
 	color: var(--color-ink-light);
-	text-wrap: balance;
+	text-wrap: pretty;
 }
 
 /* The finder is the same box as the API sidebar's, so it looks up operations across every API. It sits
-   under the lede, as wide as the lede, and its results open below it. Both heroes use it, and the
-   navigation-preview one sits outside `.api-catalog`, so the rule stands alone. */
+   under the lede and its results open below it at the same width. 640px is the width the sidebar's
+   results get, which a route line needs to read in full. Both heroes use it, and the navigation-preview
+   one sits outside `.api-catalog`, so the rule stands alone. */
 .api-catalog-finder {
-	max-width: 36rem;
+	max-width: 640px;
 	margin: 20px auto 0;
 	text-align: left;
 }
