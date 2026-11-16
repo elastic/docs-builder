@@ -550,7 +550,8 @@ public partial class ChangelogBundlingService(
 		ChangelogConfiguration? config,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		string outputPath,
-		Cancel ctx
+		Cancel ctx,
+		bool rangeIsIncomplete = false
 	)
 	{
 		// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
@@ -573,9 +574,17 @@ public partial class ChangelogBundlingService(
 			};
 		}
 
-		if (filteredEntries.Count == 0 && !input.WriteEmptyRange)
+		// An empty result is a release with no notes only when the whole range was read. A pull request whose metadata
+		// could not be fetched may have held the notes, so that is an error, not an empty release.
+		var emptyIsAllowed = input.WriteEmptyRange && !rangeIsIncomplete;
+		if (filteredEntries.Count == 0 && !emptyIsAllowed)
 		{
-			collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle filter");
+			collector.EmitError(
+				string.Empty,
+				input.WriteEmptyRange
+					? "No changelog entries remained after applying rules.bundle filter, and the metadata of some pull requests in the range could not be read. A failed fetch is not recorded as a release with no notes."
+					: "No changelog entries remained after applying rules.bundle filter"
+			);
 			return false;
 		}
 
@@ -1193,7 +1202,8 @@ public partial class ChangelogBundlingService(
 		if (allEntries.Count == 0)
 			return await FinishEmptyRange(collector, input, config, result, ($"{owner}/{sourcing.Repo}", outputPath), ctx);
 
-		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
+		var rangeIsIncomplete = result.Report.Rows.Any(row => row.Source == GitRangePrSourceKind.Missing);
+		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx, rangeIsIncomplete);
 	}
 
 	/// <summary>

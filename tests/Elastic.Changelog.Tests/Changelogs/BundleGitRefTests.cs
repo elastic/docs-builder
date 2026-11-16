@@ -1164,12 +1164,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		StubHandler? registry = null,
 		bool writeEmptyRange = true,
 		bool amendPublishedBundle = true,
-		IGitHubPrService? prService = null
+		IGitHubPrService? prService = null,
+		string topLevel = ""
 	)
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
-		var configPath = await WriteProfileConfig(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, topLevel: topLevel);
 		var service = Service(PoolHandler(), range, prService, registryHandler: registry);
 
 		var success = await service.BundleChangelogs(
@@ -1247,6 +1248,64 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		// A failed fetch is not an empty release: nothing is written and nothing is recorded as "no notes".
 		success.Should().BeFalse();
 		files.Should().BeEmpty();
+	}
+
+	// language=yaml
+	private const string ExcludeEveryFeature =
+		"""
+		rules:
+		  bundle:
+		    products:
+		      cloud-hosted:
+		        exclude_types: [feature]
+		""";
+
+	[Test]
+	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WritesABundleWithNoEntries()
+	{
+		// PR 100 resolves to a feature entry, and the bundle rules drop every feature: the release has no notes.
+		var (success, files, outputDir) = await BundleRange(RangeService(100), Registry(), topLevel: ExcludeEveryFeature);
+
+		success.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		files.Should().Equal(ParentBundle);
+		ReadOutput(outputDir, ParentBundle).Should().NotContain("title:");
+	}
+
+	[Test]
+	public async Task EmptyRange_EveryEntryRemovedByTheBundleRules_WithoutTheOption_StillFails()
+	{
+		var (success, files, _) = await BundleRange(
+			RangeService(100),
+			writeEmptyRange: false,
+			amendPublishedBundle: false,
+			topLevel: ExcludeEveryFeature
+		);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+	}
+
+	[Test]
+	public async Task EmptyRange_BundleRulesRemoveTheEntriesButAPullRequestCannotBeRead_StillFails()
+	{
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
+
+		// PR 100 is dropped by the rules and PR 400 is unreadable: PR 400 may have held the notes, so this is not "no notes".
+		var (success, files, _) = await BundleRange(
+			RangeService(100, 400),
+			Registry(),
+			prService: prService,
+			topLevel: ExcludeEveryFeature
+		);
+
+		success.Should().BeFalse();
+		files.Should().BeEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be read"));
 	}
 
 	[Test]
