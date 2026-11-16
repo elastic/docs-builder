@@ -1,0 +1,21 @@
+{
+  "deletion_threshold_default": null,
+  "exclude_patterns": [],
+  "remote_listing_completed": false,
+  "total_source_files": 1,
+  "total_remote_files": 0,
+  "total_sync_requests": 1,
+  "delete": [],
+  "add": [
+    {
+      "local_path": "{output}/docs/index.html",
+      "destination_path": "docs/index.html"
+    }
+  ],
+  "update": [],
+  "skip": [],
+  "retain": []
+}
+--- validation: valid=False ratio=1 threshold=0.2
+--- diagnostics
+error  Bucket does not exist, cannot list objects

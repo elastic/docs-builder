@@ -1,0 +1,33 @@
+{
+  "index": {
+    "elastic/repo": {
+      "openapi.json": {
+        "9": {
+          "version": "9.1"
+        }
+      }
+    }
+  },
+  "invalidKeys": [
+    "openapi.json",
+    "elastic/openapi.json",
+    "elastic/repo/openapi.json",
+    "elastic/repo/9.1/sub/openapi.json",
+    "/elastic/repo/9.1/openapi.json",
+    "elastic//9.1/openapi.json",
+    "elastic/repo/9.1/",
+    "elastic/repo/9/openapi.json",
+    "elastic/repo/.5/openapi.json",
+    "elastic/repo/9./openapi.json",
+    "elastic/repo/+9.1/openapi.json",
+    "elastic/repo/9.-1/openapi.json",
+    "elastic/repo/9. 1/openapi.json",
+    "elastic/repo/9.1.2/openapi.json",
+    "elastic/repo/v9.1/openapi.json",
+    "elastic/repo/9.x/openapi.json",
+    "elastic/repo/MAIN/openapi.json",
+    "elastic/repo/9.99999999999/openapi.json",
+    "elastic/repo/feature-branch/openapi.json",
+    "index.json"
+  ]
+}

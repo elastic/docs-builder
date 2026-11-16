@@ -1,0 +1,11 @@
+key | yaml only | yaml true + env false | no yaml + env true | explicit setter true + env false
+air-gapped | True | False | True | False
+assembler-api-explorer | True | False | True | False
+diagnostics-panel | True | False | True | False
+disable-github-edit-link | True | False | True | False
+guide-nav | True | False | True | False
+navigation-preview | True | False | True | False
+page-feedback | True | False | True | False
+primary-nav | True | False | True | False
+staging-elastic-nav | True | False | True | False
+website-search | True | False | True | False

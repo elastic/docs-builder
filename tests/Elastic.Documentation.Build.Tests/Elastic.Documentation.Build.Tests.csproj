@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Isolated\Elastic.Documentation.Isolated.csproj" />
+    <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" />
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
     <!-- Referenced so RegexTimeoutsTests scans their regexes too. -->

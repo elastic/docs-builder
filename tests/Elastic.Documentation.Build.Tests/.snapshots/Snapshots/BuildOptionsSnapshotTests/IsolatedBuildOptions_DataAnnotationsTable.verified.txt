@@ -1,0 +1,8 @@
+defaults: valid=True []
+https canonical url: valid=True []
+http canonical url: valid=True []
+ftp canonical url: valid=True []
+file canonical url: valid=False [CanonicalBaseUrl: The CanonicalBaseUrl field is not a valid fully-qualified http, https, or ftp URL.]
+mailto canonical url: valid=False [CanonicalBaseUrl: The CanonicalBaseUrl field is not a valid fully-qualified http, https, or ftp URL.]
+relative canonical url: valid=False [CanonicalBaseUrl: The CanonicalBaseUrl field is not a valid fully-qualified http, https, or ftp URL.]
+everything set: valid=True []
