@@ -5,7 +5,11 @@
 using System.Reflection;
 using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote;
+using Elastic.Documentation.Mcp.Remote.Gateways;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Http;
 using Nullean.Snapshots.TUnit;
@@ -32,7 +36,14 @@ public class McpHandshakeTests
 		Environment.SetEnvironmentVariable("MCP_SERVER_PROFILE", "public");
 		try
 		{
-			using var factory = new WebApplicationFactory<Program>();
+			// Tool calls in the .http files must not reach Elasticsearch: a developer's credentials would query a real
+			// cluster and an unreachable one would stall the test until the transport times out.
+			using var baseFactory = new WebApplicationFactory<Program>();
+			using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+			{
+				_ = services.RemoveAll<IDocumentGateway>();
+				_ = services.AddScoped<IDocumentGateway, EchoDocumentGateway>();
+			}));
 			using var client = factory.CreateClient();
 
 			var transcript = await HttpFileSnapshot.RunAsync(
@@ -59,5 +70,15 @@ public class McpHandshakeTests
 		{
 			Environment.SetEnvironmentVariable("MCP_SERVER_PROFILE", previousProfile);
 		}
+	}
+
+	/// <summary>Answers every URL with a document at that URL, so a snapshot shows the tool's argument arrived.</summary>
+	private sealed class EchoDocumentGateway : IDocumentGateway
+	{
+		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) =>
+			Task.FromResult<DocumentResult?>(new DocumentResult { Url = url, Title = "Stub page", Type = "doc" });
+
+		public Task<DocumentStructure?> GetStructureAsync(string url, CancellationToken ct = default) =>
+			Task.FromResult<DocumentStructure?>(null);
 	}
 }

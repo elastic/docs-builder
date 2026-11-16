@@ -59,8 +59,8 @@ Mcp-Method: tools/list
 }
 
 ### tools/call, 2026-07-28
-# Runs a tool through the per-request path: the tool name travels in params and in the Mcp-Name header. An empty URL
-# finds no document, so the tool gives its not-found answer whether or not a search backend is reachable.
+# Runs a tool through the per-request path: the tool name travels in params and in the Mcp-Name header. The test host
+# answers every URL with a stub document at that URL, so the result shows the argument arrived.
 POST /docs/_mcp
 Content-Type: application/json
 Accept: application/json, text/event-stream
@@ -74,7 +74,7 @@ Mcp-Name: get_document_by_url
   "method": "tools/call",
   "params": {
     "name": "get_document_by_url",
-    "arguments": { "url": "" },
+    "arguments": { "url": "/docs/deploy-manage/api-keys" },
     "_meta": {
       "io.modelcontextprotocol/protocolVersion": "2026-07-28",
       "io.modelcontextprotocol/clientInfo": { "name": "test-client", "version": "1.0.0" },

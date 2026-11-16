@@ -278,7 +278,7 @@ data:
     "content": [
       {
         "type": "text",
-        "text": "{\"error\":\"Document not found for URL: \",\"details\":null}"
+        "text": "{\"url\":\"/docs/deploy-manage/api-keys\",\"title\":\"Stub page\",\"type\":\"doc\",\"description\":null,\"navigationSection\":null,\"aiShortSummary\":null,\"aiRagOptimizedSummary\":null,\"aiQuestions\":null,\"aiUseCases\":null,\"lastUpdated\":null,\"sourceUrl\":null,\"parents\":[],\"headings\":[],\"product\":null,\"relatedProducts\":null,\"api\":null,\"body\":null,\"bodyLength\":0,\"bodyNote\":null}"
       }
     ],
     "resultType": "complete",
