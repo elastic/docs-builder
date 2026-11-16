@@ -36,6 +36,7 @@ internal sealed class RunCommand
 	/// <param name="feature">The feature flags that are on, comma separated, for <c>@requires</c> and <c>feature</c> blocks. Defaults to the site's <c>docs:features</c> tag, or none.</param>
 	/// <param name="probe">The page that is read for the site's <c>docs:*</c> tags. Default: /docs, falling back to / when it does not answer</param>
 	/// <param name="parallel">-p, How many journeys run at once. Default: 4</param>
+	/// <param name="retries">How many times a journey that fails is run again, so one stalled navigation on a live site does not fail the run. A journey that passes on a retry passes and is reported as flaky, with what its failed attempts stopped at. Default: 0</param>
 	/// <param name="allow">Extra host patterns the journeys may reach, comma separated, on top of the elastic.co defaults.</param>
 	/// <param name="realUserAgent">Do not identify as a monitor: the site's telemetry then runs, and its exports are allowed as writes.</param>
 	/// <param name="allowWrites">Do not refuse requests that are not GET, HEAD or OPTIONS.</param>
@@ -58,6 +59,7 @@ internal sealed class RunCommand
 		string? feature = null,
 		string probe = "/docs",
 		int parallel = 4,
+		int retries = 0,
 		string? allow = null,
 		bool realUserAgent = false,
 		bool allowWrites = false,
@@ -135,6 +137,7 @@ internal sealed class RunCommand
 			Headers = headers,
 			Tags = SiteContext.Split(tag),
 			Parallel = parallel,
+			Retries = retries,
 			AllowAllSkipped = allowAllSkipped && !site.ProbeFailed,
 			Verbose = verbose,
 			ScreenshotOnFailure = screenshotOnFailure,

@@ -131,6 +131,7 @@ They combine: a journey must be in one of the areas and carry one of the tags. A
 | `--changed-only <ref>` | Only journeys that differ from the git ref (`origin/main`) or are new, in the folder `--journeys` names. No change exits with 0. |
 | `--env`, `--build-type`, `--feature`, `--probe` | The context, as above. |
 | `--parallel` | How many journeys run at once, in one shared browser. The default is 4. |
+| `--retries` | Run a journey that fails again, up to this many more times. One that passes on a retry passes the run and is reported as flaky: a `flaky` line, what each failed attempt stopped at, a warning annotation on GitHub Actions and a `flakyFailure` in the JUnit file. The default is 0; the post-deploy workflows use 1 to survive a single stalled navigation. |
 | `--allow` | Extra hosts a journey may reach, on top of `*.elastic.co`, `*.elastic.dev`, `*.cloudfront.net` and the third-party hosts the docs pages load. |
 | `--real-user-agent` | Do not identify as a monitor. The site's telemetry then runs, and its exports are allowed as writes. |
 | `--allow-writes` | Do not refuse requests that are not GET, HEAD or OPTIONS. |
