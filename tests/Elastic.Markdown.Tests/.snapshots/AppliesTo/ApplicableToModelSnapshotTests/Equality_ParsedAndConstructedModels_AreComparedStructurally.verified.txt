@@ -1,0 +1,17 @@
+All vs parsed 'all'                      equal: yes, same hash: yes
+All vs itself                            equal: yes, same hash: yes
+parsed twice                             equal: yes, same hash: yes
+ga 9.0 vs ga 9.0+                        equal: yes, same hash: yes
+ga 9.0 vs ga 9.0.0                       equal: yes, same hash: yes
+ga 9.0 vs ga 9.0.1                       equal: no, same hash: no
+ga vs ga all                             equal: no, same hash: no
+ga vs empty value                        equal: no, same hash: no
+list order is normalised                 equal: yes, same hash: yes
+ech vs ess                               equal: yes, same hash: yes
+deployment scalar vs mapping             equal: yes, same hash: yes
+serverless scalar vs mapping             equal: yes, same hash: yes
+diagnostics are part of equality         equal: no, same hash: no
+Default vs parsed                        equal: no, same hash: no
+product simple vs product mapping        equal: no, same hash: no
+empty vs empty                           equal: yes, same hash: yes
+null vs empty                            equal: no, same hash: no

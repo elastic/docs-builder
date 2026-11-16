@@ -1,0 +1,124 @@
+yaml: stak: ga
+json: []
+text: 
+  hint: Unknown key 'stak' in applies_to. Did you mean 'stack'?
+
+yaml:
+  | stack: ga
+  | unknown: ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+
+yaml: unknown:
+json: []
+text: 
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+
+yaml: unknown: ga
+json: []
+text: 
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+
+yaml: deployments: ga
+json: []
+text: 
+  hint: Unknown key 'deployments' in applies_to. Did you mean 'deployment'?
+
+yaml: serverles: ga
+json: []
+text: 
+  hint: Unknown key 'serverles' in applies_to. Did you mean 'serverless'?
+
+yaml: products: ga
+json: []
+text: 
+  hint: Unknown key 'products' in applies_to. Did you mean 'product'?
+
+yaml: produt: ga
+json: []
+text: 
+  hint: Unknown key 'produt' in applies_to. Did you mean 'product'?
+
+yaml: elasticsearc: ga
+json: []
+text: 
+  hint: Unknown key 'elasticsearc' in applies_to. Did you mean 'elasticsearch'?
+
+yaml: kibana: ga
+json: []
+text: 
+
+yaml: apm: ga
+json: []
+text: 
+
+yaml: apm_agent: ga
+json: []
+text: 
+
+yaml: apm-agent: ga
+json: []
+text: 
+
+yaml: stack_: ga
+json: []
+text: 
+  hint: Unknown key 'stack-' in applies_to. Did you mean 'stack'?
+
+yaml: _stack: ga
+json: []
+text: 
+  hint: Unknown key '-stack' in applies_to. Did you mean 'stack'?
+
+yaml: :stack: ga
+json: []
+text: 
+  warning: Applies block does not use valid yaml keys: :stack
+
+yaml:
+  | :stack: ga
+  | :serverless: ga
+json: []
+text: 
+  warning: Applies block does not use valid yaml keys: :stack, :serverless
+
+yaml:
+  | :stack: ga
+  | stack: beta
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta"}]
+text: stack: beta, 
+  warning: Applies block does not use valid yaml keys: :stack
+
+yaml: stack-trace: ga
+json: []
+text: 
+  hint: Unknown key 'stack-trace' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+
+yaml: vector_db: ga
+json: []
+text: 
+  hint: Unknown key 'vector-db' in applies_to. Did you mean 'vectordb'?
+
+yaml: vectordatabase: ga
+json: []
+text: 
+  hint: Unknown key 'vectordatabase' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+
+yaml: ESS: ga
+json: []
+text: 
+  hint: Unknown key 'ESS' in applies_to. Did you mean 'ess'?
+
+yaml: Ech: ga
+json: []
+text: 
+  hint: Unknown key 'Ech' in applies_to. Did you mean 'ech'?
+
+yaml:
+  | x: y
+  | z: w
+json: []
+text: 
+  hint: Unknown key 'x' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'z' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….

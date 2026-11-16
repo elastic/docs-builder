@@ -1,0 +1,50 @@
+ecctl                property: Ecctl              text: ecctl=ga 1.0+,   id: cloud-control-ecctl
+                     wire: [{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"1.0\u002B"}]
+curator              property: Curator            text: curator=ga 1.0+,   id: curator
+                     wire: [{"type":"product","sub_type":"curator","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-android    property: ApmAgentAndroid    text: apm-agent-android=ga 1.0+,   id: edot-android
+                     wire: [{"type":"product","sub_type":"apm-agent-android","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-dotnet     property: ApmAgentDotnet     text: apm-agent-dotnet=ga 1.0+,   id: apm-agent-dotnet
+                     wire: [{"type":"product","sub_type":"apm-agent-dotnet","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-go         property: ApmAgentGo         text: apm-agent-go=ga 1.0+,   id: apm-agent-go
+                     wire: [{"type":"product","sub_type":"apm-agent-go","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-ios        property: ApmAgentIos        text: apm-agent-ios=ga 1.0+,   id: edot-ios
+                     wire: [{"type":"product","sub_type":"apm-agent-ios","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-java       property: ApmAgentJava       text: apm-agent-java=ga 1.0+,   id: apm-agent-java
+                     wire: [{"type":"product","sub_type":"apm-agent-java","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-node       property: ApmAgentNode       text: apm-agent-node=ga 1.0+,   id: apm-agent-node
+                     wire: [{"type":"product","sub_type":"apm-agent-node","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-php        property: ApmAgentPhp        text: apm-agent-php=ga 1.0+,   id: apm-agent-php
+                     wire: [{"type":"product","sub_type":"apm-agent-php","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-python     property: ApmAgentPython     text: apm-agent-python=ga 1.0+,   id: apm-agent-python
+                     wire: [{"type":"product","sub_type":"apm-agent-python","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-ruby       property: ApmAgentRuby       text: apm-agent-ruby=ga 1.0+,   id: apm-agent-ruby
+                     wire: [{"type":"product","sub_type":"apm-agent-ruby","lifecycle":"ga","version":"1.0\u002B"}]
+apm-agent-rum-js     property: ApmAgentRumJs      text: apm-agent-rum-js=ga 1.0+,   id: apm-agent-rum-js
+                     wire: [{"type":"product","sub_type":"apm-agent-rum-js","lifecycle":"ga","version":"1.0\u002B"}]
+edot-ios             property: EdotIos            text: edot-ios=ga 1.0+,   id: edot-ios
+                     wire: [{"type":"product","sub_type":"edot-ios","lifecycle":"ga","version":"1.0\u002B"}]
+edot-android         property: EdotAndroid        text: edot-android=ga 1.0+,   id: edot-android
+                     wire: [{"type":"product","sub_type":"edot-android","lifecycle":"ga","version":"1.0\u002B"}]
+edot-dotnet          property: EdotDotnet         text: edot-dotnet=ga 1.0+,   id: edot-dotnet
+                     wire: [{"type":"product","sub_type":"edot-dotnet","lifecycle":"ga","version":"1.0\u002B"}]
+edot-java            property: EdotJava           text: edot-java=ga 1.0+,   id: edot-java
+                     wire: [{"type":"product","sub_type":"edot-java","lifecycle":"ga","version":"1.0\u002B"}]
+edot-node            property: EdotNode           text: edot-node=ga 1.0+,   id: edot-node
+                     wire: [{"type":"product","sub_type":"edot-node","lifecycle":"ga","version":"1.0\u002B"}]
+edot-browser         property: EdotBrowser        text: edot-browser=ga 1.0+,   id: edot-browser
+                     wire: [{"type":"product","sub_type":"edot-browser","lifecycle":"ga","version":"1.0\u002B"}]
+edot-react-native    property: EdotReactNative    text: edot-react-native=ga 1.0+,   id: edot-react-native
+                     wire: [{"type":"product","sub_type":"edot-react-native","lifecycle":"ga","version":"1.0\u002B"}]
+edot-php             property: EdotPhp            text: edot-php=ga 1.0+,   id: edot-php
+                     wire: [{"type":"product","sub_type":"edot-php","lifecycle":"ga","version":"1.0\u002B"}]
+edot-python          property: EdotPython         text: edot-python=ga 1.0+,   id: edot-python
+                     wire: [{"type":"product","sub_type":"edot-python","lifecycle":"ga","version":"1.0\u002B"}]
+edot-cf-aws          property: EdotCfAws          text: edot-cf-aws=ga 1.0+,   id: edot-cf-aws
+                     wire: [{"type":"product","sub_type":"edot-cf-aws","lifecycle":"ga","version":"1.0\u002B"}]
+edot-cf-azure        property: EdotCfAzure        text: edot-cf-azure=ga 1.0+,   id: edot-cf-azure
+                     wire: [{"type":"product","sub_type":"edot-cf-azure","lifecycle":"ga","version":"1.0\u002B"}]
+edot-cf-gcp          property: EdotCfGcp          text: edot-cf-gcp=ga 1.0+,   id: edot-cf-gcp
+                     wire: [{"type":"product","sub_type":"edot-cf-gcp","lifecycle":"ga","version":"1.0\u002B"}]
+edot-collector       property: EdotCollector      text: edot-collector=ga 1.0+,   id: edot-collector
+                     wire: [{"type":"product","sub_type":"edot-collector","lifecycle":"ga","version":"1.0\u002B"}]
