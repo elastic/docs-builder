@@ -109,6 +109,33 @@ public class DocsJourneysWaitTests
 	}
 
 	[Test]
+	public async Task Run_Build_ADeployThatChangesTheFlags_IsJudgedAgainstTheFlagsOfTheNewBuild()
+	{
+		// The first read of the landing page, before the wait, shows the old build with no flags. The deploy lands after it.
+		await using var site = new FakeSite(
+			buildType: "assembler",
+			features: "",
+			build: "1.73.0",
+			redeploy: ("1.74.1", "navigation-preview")
+		);
+		using var folder = new JourneyFolder().Add("a/new-layout", $"# @requires navigation-preview\n{Passing}");
+
+		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--build", "1.74.1");
+
+		run.ShouldHaveExited(0);
+		_ = run
+			.Output
+			.Should()
+			.Contain("context: env=local, build-type=assembler, features=[]")
+			.And
+			.Contain("features=[navigation-preview]")
+			.And
+			.Contain("ok      a/new-layout")
+			.And
+			.NotContain("skipped a/new-layout");
+	}
+
+	[Test]
 	[Arguments("nonsense", "--wait-for 'nonsense' is not a check")]
 	[Arguments("header:==1", "--wait-for 'header:==1' names no header")]
 	public async Task Run_WaitFor_ACheckThatIsNotOne_IsAUsageError(string check, string message)
@@ -133,9 +160,6 @@ public class DocsJourneysWaitTests
 		var run = await Cli.RunAsync("run", "--url", site.Url, "--journeys", folder.Path, "--wait-timeout", "5s");
 
 		run.ShouldHaveFailed();
-		_ = run
-			.Output
-			.Should()
-			.Contain("--wait-path, --wait-timeout, --wait-interval and --wait-retries describe a --wait-for or a --build");
+		_ = run.Output.Should().Contain("--wait-path, --wait-timeout, --wait-interval and --wait-retries describe a --wait-for; give one");
 	}
 }

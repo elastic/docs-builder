@@ -11,6 +11,9 @@ namespace Elastic.Documentation.Journeys.Cli.Commands;
 
 internal sealed class RunCommand
 {
+	// The tag the landing page of an assembler build carries: the docs-builder version that rendered it.
+	private const string BuildSelector = "meta[name='docs:build']";
+
 	private static readonly string[] DefaultAllow =
 	[
 		"*.elastic.co",
@@ -86,18 +89,15 @@ internal sealed class RunCommand
 	)
 	{
 		var baseUrl = SiteContext.ParseUrl(url);
-		if (
-			!WaitOptions.TryParse(
-				build,
-				waitFor,
-				waitPath,
-				waitTimeout,
-				waitInterval,
-				waitRetries,
-				out var preconditions,
-				out var waitProblem
-			)
-		)
+		var wait = JourneyWait.Parse(new JourneyWaitFlags
+		{
+			Checks = build is null ? waitFor ?? [] : [.. waitFor ?? [], $"{BuildSelector}@content=={build}"],
+			Path = waitPath,
+			Timeout = waitTimeout,
+			Interval = waitInterval,
+			Retries = waitRetries,
+		});
+		if (wait.Problem is { } waitProblem)
 			throw new ArgumentException(waitProblem);
 		if (changedOnly is not null && journeys is null)
 			throw new ArgumentException(
@@ -125,53 +125,63 @@ internal sealed class RunCommand
 			!allowWrites,
 			SiteContext.Split(writable).Concat(realUserAgent ? RunIdentity.TelemetryWrites : []).ToList()
 		);
-		var site = await ResolveSiteAsync(
-			baseUrl,
-			new SiteContextOptions(env, buildType, feature is null ? null : SiteContext.Split(feature), probe),
-			identity,
-			ct
-		).ConfigureAwait(false);
-		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
-		Console.Out.WriteLine(
-			ConsoleJourneyReporter.UseInteractive
-				? ConsoleJourneyReporter.ContextBlock(
-					"docs-journeys",
-					ContextRows(site, journeyBase, (env, buildType, feature)),
-					site.ProbeNotes
-				)
-				: $"context: {site.Describe}"
-		);
+		var siteOptions = new SiteContextOptions(env, buildType, feature is null ? null : SiteContext.Split(feature), probe);
+		var site = await ResolveSiteAsync(baseUrl, siteOptions, identity, ct).ConfigureAwait(false);
+		Console.Out.WriteLine(Describe(site, SiteContext.JourneyBase(baseUrl, site.BuildType)));
 
 		var headers = new Dictionary<string, string>();
 		if (identity.Synthetic)
 			headers[RunIdentity.MonitorHeader] = "true";
-		var options = new JourneyRunOptions
-		{
-			Files = [.. files.Select(f => new JourneyRunFile(f.Id, f.Path) { Display = f.DisplayPath(folder) })],
-			BaseUrl = journeyBase,
-			AllowedHosts = [.. DefaultAllow, .. SiteContext.Split(allow)],
-			ArtifactsFor = artifacts is null ? null : f => Path.Combine(artifacts, f.Id.TrimStart('/', '\\')),
-			Features = site.Features,
-			BuildType = site.BuildType,
-			Env = site.Env,
-			ReadOnly = identity.ReadOnly,
-			AllowMutations = allowMutations || allowWrites,
-			WritableUrls = identity.Writable,
-			Viewport = new JourneyViewport(1280, 800),
-			UserAgent = identity.Synthetic ? RunIdentity.UserAgent : null,
-			Headers = headers,
-			Tags = SiteContext.Split(tag),
-			Parallel = parallel,
-			Retries = retries,
-			Preconditions = preconditions,
-			AllowAllSkipped = allowAllSkipped && !site.ProbeFailed,
-			Verbose = verbose,
-			ScreenshotOnFailure = screenshotOnFailure,
-			JUnitPath = junit,
-			Rerun = RerunCommand(url, journeys, (env, buildType, feature)),
-			ParseErrorExitCode = 1,
-		};
-		return await JourneyConsoleRunner.RunAsync(options, Console.Out, Console.Error, ct).ConfigureAwait(false);
+
+		JourneyRunOptions Options(SiteContext current, bool beforeWait) =>
+			new()
+			{
+				Files = [.. files.Select(f => new JourneyRunFile(f.Id, f.Path) { Display = f.DisplayPath(folder) })],
+				BaseUrl = SiteContext.JourneyBase(baseUrl, current.BuildType),
+				AllowedHosts = [.. DefaultAllow, .. SiteContext.Split(allow)],
+				ArtifactsFor = artifacts is null ? null : f => Path.Combine(artifacts, f.Id.TrimStart('/', '\\')),
+				Features = current.Features,
+				BuildType = current.BuildType,
+				Env = current.Env,
+				ReadOnly = identity.ReadOnly,
+				AllowMutations = allowMutations || allowWrites,
+				WritableUrls = identity.Writable,
+				Viewport = new JourneyViewport(1280, 800),
+				UserAgent = identity.Synthetic ? RunIdentity.UserAgent : null,
+				Headers = headers,
+				Tags = SiteContext.Split(tag),
+				Parallel = parallel,
+				Retries = retries,
+				Preconditions = beforeWait ? wait.Preconditions : [],
+				// A deploy the wait is for can turn flags on or off: read the site again once it shows the build, so the journeys are
+				// judged against what is live and not against what the first read saw.
+				RefreshAfterPreconditions = beforeWait && wait.Preconditions.Count > 0
+					? async (_, token) =>
+					{
+						var refreshed = await ResolveSiteAsync(baseUrl, siteOptions, identity, token).ConfigureAwait(false);
+						if (refreshed.Describe != site.Describe)
+							Console.Out.WriteLine(Describe(refreshed, SiteContext.JourneyBase(baseUrl, refreshed.BuildType)));
+						return Options(refreshed, beforeWait: false);
+					}
+				: null,
+				AllowAllSkipped = allowAllSkipped && !current.ProbeFailed,
+				Verbose = verbose,
+				ScreenshotOnFailure = screenshotOnFailure,
+				JUnitPath = junit,
+				Rerun = RerunCommand(url, journeys, (env, buildType, feature)),
+				ParseErrorExitCode = 1,
+			};
+
+		return await JourneyConsoleRunner.RunAsync(Options(site, beforeWait: true), Console.Out, Console.Error, ct).ConfigureAwait(false);
+
+		string Describe(SiteContext current, Uri journeyBase) =>
+			ConsoleJourneyReporter.UseInteractive
+				? ConsoleJourneyReporter.ContextBlock(
+					"docs-journeys",
+					ContextRows(current, journeyBase, (env, buildType, feature)),
+					current.ProbeNotes
+				)
+				: $"context: {current.Describe}";
 	}
 
 	private static List<ContextRow> ContextRows(

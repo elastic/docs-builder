@@ -461,9 +461,19 @@ internal sealed class FakeSite : IAsyncDisposable
 	private readonly string _docs;
 	private readonly bool _servedFromRoot;
 	private readonly string? _build;
+	private readonly (string Html, string? Build)? _redeployed;
+	private int _landingReads;
+	private int _flakyReads;
 	private int _writes;
 
-	public FakeSite(string? buildType, string? features, bool servedFromRoot = false, string bodyClass = "", string? build = null)
+	public FakeSite(
+		string? buildType,
+		string? features,
+		bool servedFromRoot = false,
+		string bodyClass = "",
+		string? build = null,
+		(string Build, string Features)? redeploy = null
+	)
 	{
 		_servedFromRoot = servedFromRoot;
 		(_listener, Url) = StartListener();
@@ -478,6 +488,10 @@ internal sealed class FakeSite : IAsyncDisposable
 		if (build is not null)
 			_ = tags.Append(CultureInfo.InvariantCulture, $"<meta name=\"docs:build\" content=\"{build}\">");
 		_docs = $"<html><head><title>Docs</title>{tags}</head><body class=\"{bodyClass}\">Docs</body></html>";
+		// A deploy that lands right after the first read of the landing page, the way a wait for it would see it.
+		if (redeploy is { } next)
+			_redeployed =
+				($"<html><head><title>Docs</title><meta name=\"docs:build-type\" content=\"{buildType}\"><meta name=\"docs:features\" content=\"{next.Features}\"><meta name=\"docs:build\" content=\"{next.Build}\"></head><body>Docs</body></html>", next.Build);
 		_serving = Task.Run(ServeAsync);
 	}
 
@@ -512,8 +526,14 @@ internal sealed class FakeSite : IAsyncDisposable
 				lock (PageRequests)
 					PageRequests.Add(new PageRequest(request.UserAgent ?? "", request.Headers["X-Docs-Synthetic-Monitor"]));
 
+			var landing = request.Url!.AbsolutePath is "/docs" or "/docs/" or "/";
+			var live = landing && _redeployed is { } now && Interlocked.Increment(ref _landingReads) > 1 ? now : (_docs, _build);
 			var html = request.Url!.AbsolutePath switch
 			{
+				"/flaky" =>
+					$"<html><head><title>{(Interlocked.Increment(ref _flakyReads) == 1 ? "Soon" : "Page")}</title></head><body>Page</body></html>",
+				"/broken" => "<html><head><title>Soon</title></head><body>Page</body></html>",
+				"/docs" or "/docs/" or "/" when _redeployed is not null && !_servedFromRoot => live.Item1,
 				"/docs" when _servedFromRoot => null,
 				"/docs/" when !_servedFromRoot => _docs,
 				"/docs" or "/" when !_servedFromRoot || request.Url!.AbsolutePath == "/" => _docs,
@@ -538,8 +558,8 @@ internal sealed class FakeSite : IAsyncDisposable
 			{
 				var bytes = Encoding.UTF8.GetBytes(html);
 				context.Response.ContentType = "text/html; charset=utf-8";
-				if (_build is not null)
-					context.Response.AddHeader("x-docs-build", _build);
+				if (landing && live.Item2 is { } shown)
+					context.Response.AddHeader("x-docs-build", shown);
 				await context.Response.OutputStream.WriteAsync(bytes);
 				context.Response.Close();
 			}
