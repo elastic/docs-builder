@@ -100,6 +100,8 @@ public class ApiReferenceService(IApiGateway apiGateway)
 		var lookups = new[] { query.Q, query.Endpoint, query.OperationId }.Count(v => !string.IsNullOrWhiteSpace(v));
 		if (lookups > 1)
 			return new ApiReferenceRejection("invalid_arguments", "Pass at most one of q, endpoint or operation_id.");
+		if (query.View is not (null or "basic" or "full"))
+			return new ApiReferenceRejection("invalid_arguments", "view is 'basic' or 'full'.");
 		var exact = !string.IsNullOrWhiteSpace(query.Endpoint) || !string.IsNullOrWhiteSpace(query.OperationId);
 		if (query.Full && !exact)
 			return new ApiReferenceRejection("invalid_arguments", "view=full needs endpoint or operation_id.");
@@ -306,8 +308,10 @@ public sealed record ApiOperationQuery
 	public string? Endpoint { get; init; }
 	public string? OperationId { get; init; }
 	public bool IncludeDeprecated { get; init; }
-	/// <summary>Adds each result's versions and fields; needs <see cref="Endpoint"/> or <see cref="OperationId"/>.</summary>
-	public bool Full { get; init; }
+	/// <summary><c>basic</c> (the default) or <c>full</c>; any other value is rejected.</summary>
+	public string? View { get; init; }
+	/// <summary>The <c>full</c> view adds each result's versions and fields; needs <see cref="Endpoint"/> or <see cref="OperationId"/>.</summary>
+	public bool Full => View == "full";
 	/// <summary>Adds each result's body; needs <see cref="Full"/>.</summary>
 	public bool IncludeBody { get; init; }
 	public int Page { get; init; } = 1;

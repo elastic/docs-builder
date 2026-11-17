@@ -228,27 +228,25 @@ public static class MappingsExtension
 				[FromQuery(Name = "size")] int? pageSize,
 				ApiReferenceService apiReference,
 				Cancel ctx
-			) => view is not (null or "basic" or "full")
-				? Results.BadRequest(new ApiReferenceRejection("invalid_arguments", "view is 'basic' or 'full'."))
-				: ToResult(
-					await apiReference.QueryAsync(
-						new ApiOperationQuery
-						{
-							Api = api,
-							Version = version,
-							Group = apiGroupName,
-							Q = query,
-							Endpoint = endpoint,
-							OperationId = operationId,
-							IncludeDeprecated = includeDeprecated ?? false,
-							Full = view == "full",
-							IncludeBody = includeBody ?? false,
-							Page = pageNumber ?? 1,
-							Size = pageSize ?? 10
-						},
-						ctx
-					)
+			) => ToResult(
+				await apiReference.QueryAsync(
+					new ApiOperationQuery
+					{
+						Api = api,
+						Version = version,
+						Group = apiGroupName,
+						Q = query,
+						Endpoint = endpoint,
+						OperationId = operationId,
+						IncludeDeprecated = includeDeprecated ?? false,
+						View = view,
+						IncludeBody = includeBody ?? false,
+						Page = pageNumber ?? 1,
+						Size = pageSize ?? 10
+					},
+					ctx
 				)
+			)
 		);
 		_ = operations.MapGet(
 			"/{id}",
