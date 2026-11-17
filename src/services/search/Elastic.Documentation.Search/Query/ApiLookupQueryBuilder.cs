@@ -151,7 +151,7 @@ public static class ApiLookupQueryBuilder
 		Query?[] options =
 		[
 			key,
-			Constant(OperationWordQuery(token.Text), ApiLookupWeights.OperationWord, ApiLookupRoles.QueryName(ApiLookupRole.Id, index)),
+			OperationWordOption(token.Text, index),
 			Constant(
 				SynonymsMatch(QueryFieldNames.ApiGroup, token.Text),
 				ApiLookupWeights.GroupWord,
@@ -302,11 +302,7 @@ public static class ApiLookupQueryBuilder
 
 	private static List<Query> Lifts(string typed, IReadOnlyList<ApiLookupToken> tokens)
 	{
-		List<Query> lifts =
-		[
-			Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName),
-			Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed, TitleNamedQueryName)
-		];
+		List<Query> lifts = [Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName), TitleNamedLift(typed)];
 		if (SearchQueryBuilder.BuildTitleStartsWithQuery(typed) is { } startsWith)
 			lifts.Add(startsWith);
 		lifts.Add(Constant(LandingNamed(typed), ApiLookupWeights.LandingName, LandingNameQueryName));
@@ -345,10 +341,45 @@ public static class ApiLookupQueryBuilder
 			]
 		};
 
+	/// <summary>
+	/// The fingerprint is one token, so the edit distance spans the whole title. The larger of the two applies, so an exact title
+	/// never scores less than before and a typo only lifts what the exact match misses.
+	/// </summary>
+	private static Query TitleNamedLift(string typed) =>
+		new DisMaxQuery
+		{
+			QueryName = TitleNamedQueryName,
+			Queries =
+			[
+				Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed),
+				Constant(SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.ApiTitleFingerprint, typed), ApiLookupWeights.TitleNamedTypo)
+			]
+		};
+
 	private static Query MethodLift(string method) =>
 		new TermQuery { Field = QueryFieldNames.ApiMethod, Value = method.ToUpperInvariant(), Boost = ApiLookupWeights.Method };
 
-	private static Query OperationWordQuery(string text) => BoolPrefix(text, OperationWordFields);
+	/// <summary>
+	/// A word of the operation id typed whole, as its beginning, or one edit away. The three options share the role name. The
+	/// beginning scores below the whole word because stemming makes <c>stats</c> the beginning of <c>state</c>, and a word too
+	/// short for an edit has no typo option.
+	/// </summary>
+	private static Query OperationWordOption(string text, int index)
+	{
+		List<Query> options =
+		[
+			Constant(SynonymsMatch(QueryFieldNames.ApiWords, text), ApiLookupWeights.OperationWord),
+			Constant(BoolPrefix(text, OperationWordFields), ApiLookupWeights.OperationWordPrefix)
+		];
+		if (text.Length >= SearchQueryBuilder.FuzzyMinimumLength)
+			options.Add(
+				Constant(
+					SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.ApiWords, text, SynonymsAnalyzer),
+					ApiLookupWeights.OperationWordTypo
+				)
+			);
+		return new DisMaxQuery { QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Id, index), Queries = options };
+	}
 
 	private static Query TitleQuery(string text) => BoolPrefix(text, TitleCompletionFields);
 
@@ -365,6 +396,6 @@ public static class ApiLookupQueryBuilder
 	private static Query SynonymsMatch(Field field, string text) =>
 		new MatchQuery { Field = field, Query = text, Analyzer = SynonymsAnalyzer };
 
-	private static Query Constant(Query filter, float boost, string name) =>
+	private static Query Constant(Query filter, float boost, string? name = null) =>
 		new ConstantScoreQuery { Filter = filter, Boost = boost, QueryName = name };
 }

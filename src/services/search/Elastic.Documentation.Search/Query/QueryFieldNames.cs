@@ -22,6 +22,7 @@ public static class QueryFieldNames
 	public static string ApiEndpoints { get; } = $"{Doc.Fields.Api}.endpoints";
 	public static string ApiEndpointsBare { get; } = $"{Doc.Fields.Api}.endpoints_bare";
 	public static string ApiProperties { get; } = $"{Doc.Fields.Api}.properties";
+	public static string ApiWords { get; } = $"{Doc.Fields.Api}.words";
 	public static string ApiWordsCompletion { get; } = $"{Doc.Fields.Api}.words.completion";
 	public static string ApiWordsCompletion2Gram { get; } = $"{Doc.Fields.Api}.words.completion._2gram";
 	public static string ApiWordsCompletion3Gram { get; } = $"{Doc.Fields.Api}.words.completion._3gram";

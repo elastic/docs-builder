@@ -29,6 +29,11 @@ namespace Elastic.Documentation.Search;
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// <item>A method typed before a path lifts by <see cref="Method"/> only and is no word of a title, so <c>GET /_search</c> keeps the
 /// <c>POST</c> operation <c>search</c> first (10.20) above <c>scroll</c> (9.70), where "Get the search shards" led it (9.13).</item>
+/// <item><see cref="OperationWordPrefix"/> sits just below <see cref="OperationWord"/>, so a word typed whole beats one that only starts another word.</item>
+/// <item><see cref="OperationWordTypo"/> sits between <see cref="OperationWord"/> and the one-point roles, so an exact operation word beats a
+/// typo of it, and a typo of an operation word beats a word that only a title, a group or a field name carries.</item>
+/// <item><see cref="TitleNamedTypo"/> sits below <see cref="TitleNamed"/>, so a title typed exactly beats one typed with a typo, and below every
+/// endpoint key, so it only breaks ties. A word one edit from another title lifts that title too, as <c>stats</c> does for <c>state</c>.</item>
 /// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
 /// explain the typed words equally well. <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
 /// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
@@ -43,6 +48,8 @@ public static class ApiLookupWeights
 	public const float EndpointCompletion = 5.0f;
 	public const float NamespaceCompletion = 4.5f;
 	public const float OperationWord = 2.0f;
+	public const float OperationWordPrefix = 1.8f;
+	public const float OperationWordTypo = 1.5f;
 	public const float GroupWord = 1.0f;
 	public const float TitleWord = 1.0f;
 	public const float FieldName = 1.0f;
@@ -59,6 +66,9 @@ public static class ApiLookupWeights
 	/// <see cref="WholeTitle"/>, which every operation that mentions the words earns.
 	/// </summary>
 	public const float TitleNamed = 6.0f;
+
+	/// <summary>The typed words are the whole title of an operation within one edit.</summary>
+	public const float TitleNamedTypo = 2.0f;
 	public const float ListsChildren = 0.5f;
 	public const float Specificity = 0.5f;
 	public const float NotDeprecated = 0.2f;

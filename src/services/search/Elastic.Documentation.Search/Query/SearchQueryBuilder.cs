@@ -50,6 +50,7 @@ public static class SearchQueryBuilder
 	private static readonly PropertyLookup DocsWideLookup = new(AllowPrefix: false, ExpandChildren: false);
 	// One edit from four letters on: two edits let `unrated` match `updated`, and a typo in a shorter word names too many fields.
 	private static readonly Fuzziness WordFuzziness = new("AUTO:4,100");
+	internal const int FuzzyMinimumLength = 4;
 
 	// A one- or two-letter word starts the words of most field names, so it matches a whole word only, such as `id` in `scroll_id`.
 	private const int MinFieldWordPrefixLength = 3;
@@ -360,8 +361,11 @@ public static class SearchQueryBuilder
 		};
 	}
 
-	private static MatchQuery NameWordsMatch(string query) =>
-		new() { Field = QueryFieldNames.ApiPropertiesNameWords, Query = query, Fuzziness = WordFuzziness, PrefixLength = 1 };
+	/// <summary>A word within one edit, the first letter fixed. A word shorter than <see cref="FuzzyMinimumLength"/> allows no edit.</summary>
+	internal static MatchQuery FuzzyWordMatch(Field field, string text, string? analyzer = null) =>
+		new() { Field = field, Query = text, Analyzer = analyzer, Fuzziness = WordFuzziness, PrefixLength = 1 };
+
+	private static MatchQuery NameWordsMatch(string query) => FuzzyWordMatch(QueryFieldNames.ApiPropertiesNameWords, query);
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{

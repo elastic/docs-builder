@@ -257,6 +257,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("search knn", "operation-search");
 		yield return ("knn search", "operation-search");
 		yield return ("cluster health", "operation-cluster-health");
+		yield return ("health cluster", "operation-cluster-health");
+		// One typo in a word of four letters or more still names the operation the correct spelling does.
+		yield return ("clustr health", "operation-cluster-health");
 		yield return ("cat health", "operation-cat-health");
 		yield return ("indices refresh", "operation-indices-refresh");
 		yield return ("cluster state", "operation-cluster-state");
@@ -307,6 +310,41 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("release isolated endpoint", "operation-endpointunisolateaction");
 		yield return ("agent status", "operation-get-fleet-agent-status");
 		yield return ("service token", "operation-security-create-service-token");
+		// Words people type most. Each leads by more than a stray point over the next operation, and the Serverless twin of an
+		// operation ties with the stack one.
+		yield return ("reindex", "operation-reindex");
+		yield return ("msearch", "operation-msearch");
+		yield return ("mget", "operation-mget");
+		yield return ("count", "operation-count");
+		yield return ("refresh", "operation-indices-refresh");
+		yield return ("rollover", "operation-indices-rollover");
+		yield return ("analyze", "operation-indices-analyze");
+		yield return ("force merge", "operation-indices-forcemerge");
+		yield return ("put mapping", "operation-indices-put-mapping");
+		yield return ("get mapping", "operation-indices-get-mapping");
+		yield return ("cat indices", "operation-cat-indices");
+		yield return ("nodes stats", "operation-nodes-stats");
+		yield return ("snapshot create", "operation-snapshot-create");
+		yield return ("allocation explain", "operation-cluster-allocation-explain");
+		yield return ("field capabilities", "operation-field-caps");
+		// One typo in a word of four letters or more names the operation the correct spelling does. A word with no typo of its
+		// own in the title still reaches the operation through its id.
+		yield return ("cluser health", "operation-cluster-health");
+		yield return ("clustr state", "operation-cluster-state");
+		yield return ("snaphot restore", "operation-snapshot-restore");
+		yield return ("snapshot restor", "operation-snapshot-restore");
+		yield return ("snapshto restore", "operation-snapshot-restore");
+		yield return ("reindx", "operation-reindex");
+		yield return ("bulck", "operation-bulk");
+		yield return ("indx refresh", "operation-indices-refresh");
+		// `stats` stems to `stat`, which begins `state`: a word typed whole beats one that only starts another word.
+		yield return ("cluster stats", "operation-cluster-stats");
+		yield return ("clustr stats", "operation-cluster-stats");
+		// A typo in a word only the title carries: the typed words are the whole title within one edit.
+		yield return ("creat index", "operation-indices-create");
+		yield return ("delte index", "operation-indices-delete");
+		yield return ("refesh index", "operation-indices-refresh");
+		yield return ("get cluser health status", "operation-cluster-health");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -566,7 +604,13 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"legacy index template",
 			"install package",
 			"reassign agent",
-			"enrollment api key"
+			"enrollment api key",
+			"clustr helth",
+			"serch knn",
+			// Typos the fuzzy id word does not fix yet: a route key is not fuzzed, and a title-only word misses the whole-title lift.
+			"serch",
+			"clustr settings",
+			"pipline"
 		];
 
 	/// <summary>
