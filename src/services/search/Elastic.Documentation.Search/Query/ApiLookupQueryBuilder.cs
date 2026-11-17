@@ -316,10 +316,8 @@ public static class ApiLookupQueryBuilder
 	}
 
 	/// <summary>
-	/// The typed words are the whole title of an operation, whatever their order and with or without its stopwords and plurals,
-	/// as <c>create index</c> for "Create an index". The fingerprint field is analyzed on its own, so the match takes no
-	/// analyzer here, and an index that predates the field matches nothing instead of failing. The exact lowercase title keeps
-	/// working on such an index.
+	/// The match takes no analyzer because the field carries its own, and an index without the field then matches nothing
+	/// instead of failing. The exact lowercase title keeps working on such an index.
 	/// </summary>
 	private static Query TitleNamed(string typed) =>
 		new DisMaxQuery

@@ -92,8 +92,8 @@ public record ApiOperationMetadata
 	public int IdWords { get; init; }
 
 	/// <summary>
-	/// The operation's title, indexed as one token of its sorted content words, so a query made of those words in any
-	/// order, with or without the stopwords and plurals, names the operation. Left out of the document on a landing page.
+	/// The operation's title as one token of its sorted content words, so a query of those words in any order names it.
+	/// Left out on a landing page.
 	/// </summary>
 	[Text]
 	[JsonPropertyName("title_fingerprint")]

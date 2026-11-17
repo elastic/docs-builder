@@ -54,7 +54,7 @@ public static class ApiLookupWeights
 
 	/// <summary>
 	/// The typed words are the whole title of an operation once stopwords and plurals are ignored. It adds to
-	/// <see cref="WholeTitle"/>, which every operation that mentions the words earns, so only the operation they name leads.
+	/// <see cref="WholeTitle"/>, which every operation that mentions the words earns.
 	/// </summary>
 	public const float TitleNamed = 6.0f;
 	public const float ListsChildren = 0.5f;

@@ -532,7 +532,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 
 	/// <summary>
 	/// Queries the report lists with no expected result, so a weight change shows what it moves beyond the judged cases.
-	/// Names that read as an operation title (a verb and a noun) are the ones a whole-title lift could hijack.
 	/// </summary>
 	public static IEnumerable<string> ApiSearchUnjudgedReportQueries() =>
 		[
