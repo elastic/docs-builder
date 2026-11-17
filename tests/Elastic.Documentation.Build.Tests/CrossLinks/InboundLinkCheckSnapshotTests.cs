@@ -38,8 +38,8 @@ public class InboundLinkCheckSnapshotTests
 		}
 	}
 
-	private static RepositoryLinks Repository(string name, string[] crossLinks, string pages) =>
-		RepositoryLinks.Deserialize(
+	private static LinkManifest Repository(string name, string[] crossLinks, string pages) =>
+		LinkManifestJson.Read(
 			$$"""
 			{
 			  "origin": { "branch": "main", "remote": "https://github.com/example-org/{{name}}", "ref": "abc" },
@@ -55,7 +55,7 @@ public class InboundLinkCheckSnapshotTests
 		new()
 		{
 			DeclaredRepositories = ["alpha", "beta", "gamma"],
-			LinkReferences = new Dictionary<string, RepositoryLinks>
+			LinkReferences = new Dictionary<string, LinkManifest>
 			{
 				["alpha"] = Repository(
 					"alpha",

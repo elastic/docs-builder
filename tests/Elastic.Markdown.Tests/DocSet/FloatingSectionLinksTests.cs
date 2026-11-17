@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Floating;
+using Elastic.Documentation.Serialization;
 using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -49,7 +50,7 @@ public class FloatingSectionLinksTests
 		var reference = set.CreateLinkReference();
 
 		reference.Floating.Should().BeNull("a docset with nothing to publish keeps the same links.json as before");
-		RepositoryLinks.Serialize(reference).Should().NotContain("floating");
+		LinkJson.Serialize(reference).Should().NotContain("floating");
 	}
 
 	private static DocumentationSet CreateSet(DemoProvider provider)

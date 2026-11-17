@@ -5,6 +5,8 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.LinkIndex;
@@ -32,15 +34,24 @@ public class Aws3LinkIndexReader(
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = registryKey };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		var linkIndex = LinkRegistry.Deserialize(stream);
-		return linkIndex with { ETag = getObjectResponse.ETag };
+		return LinkLoader.LoadRegistry(
+			await ReadTextAsync(stream, cancellationToken),
+			registryKey,
+			getObjectResponse.ETag
+		).OrThrowIfMissing();
 	}
-	public async Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken)
+	public async Task<LinkManifest> GetRepositoryLinks(string key, Cancel cancellationToken)
 	{
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = key };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		return RepositoryLinks.Deserialize(stream);
+		return LinkLoader.LoadManifest(await ReadTextAsync(stream, cancellationToken), key).OrThrowIfMissing();
+	}
+
+	private static async Task<string> ReadTextAsync(Stream stream, Cancel cancellationToken)
+	{
+		using var reader = new StreamReader(stream);
+		return await reader.ReadToEndAsync(cancellationToken);
 	}
 
 	public string RegistryUrl { get; } = $"https://{bucketName}.s3.{s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{registryKey}";

@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -19,14 +21,14 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 public sealed class TestCrossLinkResolver : ICrossLinkResolver
 {
-	private readonly Dictionary<string, RepositoryLinks> _references = [];
+	private readonly Dictionary<string, LinkManifest> _references = [];
 	private readonly HashSet<string> _declared = [];
 	private readonly IsolatedBuildEnvironmentUriResolver _uriResolver = new();
 	private readonly FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 
 	public TestCrossLinkResolver(ConfigurationFile config)
 	{
-		var redirects = RepositoryLinks.SerializeRedirects(config.Redirects);
+		var redirects = LinkJson.SerializeRedirects(config.Redirects);
 
 		// language=json
 		var json =
@@ -63,7 +65,7 @@ public sealed class TestCrossLinkResolver : ICrossLinkResolver
 		             }
 		             """;
 
-		var reference = CrossLinkFetcher.Deserialize(json);
+		var reference = LinkManifestJson.Read(json);
 		_references.Add("docs-content", reference);
 		_references.Add("kibana", reference);
 		_declared.Add("docs-content");

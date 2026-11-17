@@ -5,7 +5,11 @@
 using System.Text;
 using System.Text.Json;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Testing;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Json;
 
@@ -26,21 +30,18 @@ public class RepositoryLinksRoundTripTests
 
 	private static string Manifest(string rest) => "{" + Origin + "," + rest + "}";
 
-	private static string RoundTrip(string json) => RepositoryLinks.Serialize(RepositoryLinks.Deserialize(json));
+	private static string RoundTrip(string json) => LinkJson.Serialize(LinkManifestJson.Read(json));
 
-	/// <summary>Whether a manifest reads, or the first line of the exception it throws.</summary>
-	private static string Outcome(string json)
+	/// <summary>
+	/// Whether a manifest reads, or the first line of the parser's exception. The loader turns that exception into an error finding with the
+	/// same message and returns no manifest, so the finding is what is printed (the parser only ever throws a <see cref="JsonException"/>).
+	/// </summary>
+	private static string Outcome(string json) => LinkLoader.LoadManifest(json, "links.json") switch
 	{
-		try
-		{
-			_ = RoundTrip(json);
-			return "reads";
-		}
-		catch (Exception e)
-		{
-			return $"throws {e.GetType().Name}: {e.Message.Split('\n')[0].TrimEnd('\r')}";
-		}
-	}
+		Unreadable<LinkManifest> unreadable =>
+			$"throws {nameof(JsonException)}: {unreadable.Findings.Single().Message.Split('\n')[0].TrimEnd('\r')}",
+		_ => "reads"
+	};
 
 	[Test]
 	public void RoundTrip_EmptyManifest_KeepsRequiredProperties() =>
@@ -215,7 +216,7 @@ public class RepositoryLinksRoundTripTests
 	[Test]
 	public void SerializeRedirects_EachShape_WritesTheRedirectsOnly()
 	{
-		var links = RepositoryLinks.Deserialize(
+		var links = LinkManifestJson.Read(
 			Manifest(
 				// language=json
 				"""
@@ -229,8 +230,8 @@ public class RepositoryLinksRoundTripTests
 			)
 		);
 
-		RepositoryLinks.SerializeRedirects(links.Redirects).Should().MatchJsonSnapshot();
-		RepositoryLinks.SerializeRedirects(null).Should().MatchInlineSnapshot("null");
+		LinkJson.SerializeRedirects(links.Redirects).Should().MatchJsonSnapshot();
+		LinkJson.SerializeRedirects(null).Should().MatchInlineSnapshot("null");
 	}
 
 	[Test]
@@ -270,18 +271,6 @@ public class RepositoryLinksRoundTripTests
 	}
 
 	[Test]
-	public void Deserialize_FromStream_MatchesTheStringOverload()
-	{
-		var json = Manifest("\"cross_links\": [ \"other-repo://a.md\" ], \"links\": { \"index.md\": { \"anchors\": [ \"a\" ] } }");
-		using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-
-		RepositoryLinks
-			.Serialize(RepositoryLinks.Deserialize(stream))
-			.Should()
-			.Be(RepositoryLinks.Serialize(RepositoryLinks.Deserialize(json)));
-	}
-
-	[Test]
 	public void RoundTrip_IsStable_SerializingTwiceGivesTheSameText()
 	{
 		var first = RoundTrip(
@@ -304,9 +293,9 @@ public class LinkRegistryRoundTripTests
 {
 	[Test]
 	public void RoundTrip_Registry_KeepsBranchesAndWritesTheEntryDefaults() =>
-		LinkRegistry
+		LinkJson
 			.Serialize(
-				LinkRegistry.Deserialize(
+				LinkManifestJson.ReadRegistry(
 					// language=json
 					"""
 				{
@@ -357,6 +346,6 @@ public class LinkRegistryRoundTripTests
 		// the copy is shallow: the branch dictionaries are shared, so the update shows through the earlier result and the original
 		result.Repositories["example-repo"]["main"].ETag.Should().Be("newer-wins");
 		registry.Repositories["example-repo"]["main"].ETag.Should().Be("newer-wins");
-		LinkRegistry.Serialize(updated).Should().MatchJsonSnapshot();
+		LinkJson.Serialize(updated).Should().MatchJsonSnapshot();
 	}
 }
