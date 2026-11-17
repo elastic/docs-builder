@@ -351,15 +351,16 @@ A request body leaves out `readOnly` fields, because only the server sets them, 
 
 A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
 
-A bar of quick links sits above the parameter, body and response sections of an operation page: **Path**, **Query**, **Headers**, **Body** and **Responses**, for the sections the operation has. **Required privileges** comes before the bar and is not one of its links. The bar stays under the page header while you scroll, a link jumps to its section, and the link of the section in view is underlined.
+A strip sits above the parameter, body and response sections of an operation page. Its first cell, **Requires**, lists the privileges the operation needs, and it has one cell for each of **Path**, **Query**, **Headers**, **Body** and **Responses** that the operation has. A section cell says what the section holds: how many parameters there are, how many top-level fields the body has (or how many variants, for a `oneOf`), and how many responses. A body with no fields to count shows its content type instead. A section cell is a link that jumps to its section. **Requires** is not a link, and a page with no required privileges has no such cell.
 
-Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Under **Responses** only the first response starts open, counting successes before errors, as the examples rail does. The responses work as an accordion: opening one closes the others and switches the examples rail to the same status code, and choosing a status in the rail opens its response. An object field starts open only when the spec marks it required and every field above it is open too, so a required field inside an optional object stays folded with it. Every other object field starts folded, and its toggle says how many properties it hides, such as **Show 6 properties**. Select it to open them, or **Hide 6 properties** to fold them again. One button in the bar of section links, on the right, opens every section and field at once, and then reads **Collapse all** to fold them again. It leaves the responses to their accordion. It doesn't remember its state, so a page always loads the way the build rendered it. A page without that bar shows the button on a row of its own. Its summary punctuation says what the names are:
+Once the strip has scrolled out of view, a floating toolbar stays under the page header. It has the same links, marks the section in view, and ends with **Expand all** and a button that scrolls back to the top. It isn't shown while the strip is on screen.
+
+Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Under **Responses** only the first response starts open, counting successes before errors, as the examples rail does. The responses work as an accordion: opening one closes the others and switches the examples rail to the same status code, and choosing a status in the rail opens its response. An object field starts open only when the spec marks it required and every field above it is open too, so a required field inside an optional object stays folded with it. Every other object field starts folded, and its toggle says how many properties it hides, such as **Show 6 properties**. Select it to open them, or **Hide 6 properties** to fold them again. One button, **Expand all**, sits under the strip and again at the end of the floating toolbar. It opens every section and field at once, and then reads **Collapse all** to fold them again. It leaves the responses to their accordion. It doesn't remember its state, so a page always loads the way the build rendered it. A page without the strip shows the button on a row of its own. Its summary punctuation says what the names are:
 
 | Summary | Meaning |
 |---|---|
 | `{ a, b }` | The fields of a JSON request body |
 | `A \| B` | Alternatives, such as the variants of a `oneOf` or the credentials of **Authentication** |
-| `A + B` | Needed together, such as the privileges in **Required privileges** |
 | `a, b` | Anything else, such as parameters or the fields of a form |
 
 The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the section, which opens if a reader has folded it. Sections and required fields start expanded, so find-in-page reaches them on first load. Select **Expand all** to reach every other section and field in a browser without `hidden="until-found"`. Reaching a section or field a reader has folded relies on `hidden="until-found"`: in a browser without it, a folded section can't be searched.
@@ -456,7 +457,7 @@ The paths come from either of two sources, and both produce the same rows:
 
 ### Required privileges [x-req-auth]
 
-The **Required privileges** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. Like the other sections it is expanded by default. Its header names the privileges: `a + b` when they are needed together and `a | b` when they are alternatives.
+The required privileges show as the first cell of the section strip, labelled **Requires**, with the word *privileges* under the names. A page that doesn't show the strip, such as one with a single section, shows them in a **Required privileges** card instead. Either way the section appears in the on-page table of contents, and it doesn't fold. A row keeps its label without the word *privileges* (`Cluster privileges` reads **Cluster**), and privileges that are alternatives or needed together are joined by **or** or **and**.
 
 Add the operation-level `x-req-auth` extension to list those privileges. It is a JSON array of strings. Each non-empty string becomes one row, with leading and trailing whitespace trimmed.
 
@@ -479,7 +480,7 @@ Specs that do not use `x-req-auth` still work. The API Explorer reads two patter
 - An Elasticsearch `## Required authorization` heading followed by bullets such as ``* Cluster privileges: `monitor` ``.
 - A Kibana line such as `[Required authorization] Route required privileges: fleet-agent-policies-read OR fleet-settings-read.` The privileges show as chips joined by **or**, or by **and** when the line uses `AND`.
 
-A line that mixes `OR` and `AND`, or a bullet with extra words around the values, stays in the description as written. When `x-req-auth` is present, it wins over the description. When neither source has privileges, the section is omitted. Malformed `x-req-auth` values are skipped and the build may log a warning.
+A line that mixes `OR` and `AND`, or a bullet with extra words around the values, stays in the description as written. When `x-req-auth` is present, it wins over the description. When neither source has privileges, there is no **Requires** cell and no card. Malformed `x-req-auth` values are skipped and the build may log a warning.
 
 `x-req-auth` is independent of OpenAPI `security` and `securitySchemes`. Privileges go in **Required privileges**. The credentials to send go in **Authentication**.
 

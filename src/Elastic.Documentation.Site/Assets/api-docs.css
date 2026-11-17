@@ -1534,8 +1534,7 @@ button.response-status-toggle:focus {
 
 #path-params-list > .property-list > .property-item,
 #query-params-list > .property-list > .property-item,
-#header-params-list > .property-list > .property-item,
-.prerequisite-item {
+#header-params-list > .property-list > .property-item {
 	border-bottom: 1px solid #e3e8f2;
 	padding-bottom: 16px;
 }
@@ -1601,8 +1600,7 @@ button.response-status-toggle:focus {
 
 #path-params-list > .property-list > .property-item:last-child,
 #query-params-list > .property-list > .property-item:last-child,
-#header-params-list > .property-list > .property-item:last-child,
-.api-param-section-body > .api-privileges > .prerequisite-item:last-child {
+#header-params-list > .property-list > .property-item:last-child {
 	padding-bottom: 0;
 	border-bottom: 0;
 }
@@ -1687,13 +1685,9 @@ button.response-status-toggle:focus {
 	--api-param-sep: ', ';
 }
 
-/* The punctuation says what the names are: { a, b } fields of a JSON object, A | B alternatives, A + B needed together, a, b anything else. */
+/* The punctuation says what the names are: { a, b } fields of a JSON object, A | B alternatives, a, b anything else. */
 .api-param-summary.is-variants {
 	--api-param-sep: ' | ';
-}
-
-.api-param-summary.is-all {
-	--api-param-sep: ' + ';
 }
 
 /* A body with no named fields has an empty summary, which would leave the button without a text baseline and sit it above the title. */
@@ -2312,35 +2306,108 @@ a.docs-reference-btn::after {
 	margin-top: calc(var(--spacing) * 2);
 }
 
-/* The label is the quiet part and the privilege name the important one, so the name carries the code look. */
-.api-privileges dt {
-	padding-top: 8px;
+/* Required privileges: a small card about the caller, apart from the folding parameter sections. */
+.api-privileges-card {
+	margin: 24px 0 0;
+	padding: 14px 16px 16px;
+	background: #f6f8fc;
+	border: 1px solid #e3e8f2;
+	border-radius: 12px;
+}
+
+/* Id-qualified like the section headings: the page's own h2 rule would otherwise set the size and padding. */
+#elastic-api-v3 .api-privileges-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+	padding: 0;
+	border: 0;
+	color: #1d2a3e;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
-}
-
-.api-privileges .privilege-label {
-	color: #516381;
-	font-weight: 400;
-}
-
-.api-privileges .api-type-badge {
-	padding: 0 6px;
-	font-family: var(
-		--font-mono,
-		ui-monospace,
-		SFMono-Regular,
-		Menlo,
-		monospace
-	);
-	font-size: 13px;
+	font-weight: 600;
 	line-height: 20px;
+}
+
+.api-privileges-icon {
+	flex: none;
+	box-sizing: content-box;
+	padding: 4px;
+	background: var(--color-blue-elastic-10, #e8f0fd);
+	border-radius: 6px;
+	color: var(--color-blue-elastic, #0b64dd);
+}
+
+.api-privileges {
+	margin: 0;
+}
+
+.api-privileges-row {
+	display: grid;
+	grid-template-columns: 72px 1fr;
+	align-items: baseline;
+	gap: 8px 12px;
+	padding: 8px 0;
+	border-top: 1px solid #e3e8f2;
+}
+
+.api-privileges-row:first-child {
+	padding-top: 0;
+	border-top: 0;
+}
+
+.api-privileges-row:last-child {
+	padding-bottom: 0;
+}
+
+.api-privileges-label {
+	color: #516381;
+	font-size: 13px;
+}
+
+.api-privileges-values {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+}
+
+/* A row with no label takes the whole width. */
+.api-privileges-row > .api-privileges-values:first-child {
+	grid-column: 1 / -1;
+}
+
+.api-privilege {
+	padding: 1px 8px;
+	background: #fff;
+	border: 1px solid #d5ddec;
+	border-radius: 6px;
 	color: #0b2f6b;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 12.5px;
+	line-height: 20px;
 }
 
 .api-privileges .privilege-join {
-	margin: 0 6px;
 	color: #516381;
 	font-size: 12px;
+}
+
+.api-privileges-note {
+	color: #516381;
+	font-size: 14px;
+}
+
+.api-privileges-note p {
+	margin: 0;
+}
+
+@media (max-width: 767px) {
+	.api-privileges-row {
+		grid-template-columns: 1fr;
+	}
 }
 
 /* Union variant item - type label without tree connectors */
@@ -4296,45 +4363,267 @@ html:has(.api-page-shell) {
 	}
 }
 
-/* Quick links to the sections of an endpoint: one bar that stays under the header while the sections scroll. */
-.api-section-links {
+/*
+ * Quick links to the sections of an endpoint, as one strip that stays in the page: what the operation requires, then
+ * each section with what it holds. The requires cell is twice as wide, and a page with no privileges has none.
+ */
+.api-section-strip {
+	display: grid;
+	grid-auto-columns: minmax(0, 1fr);
+	grid-auto-flow: column;
+	gap: 1px;
+	margin: 24px 0 0;
+	overflow: hidden;
+	background: #e3e8f2;
+	border: 1px solid #e3e8f2;
+	border-radius: 12px;
+}
+
+.api-section-requires {
+	display: flex;
+	flex-direction: column;
+	grid-column: span 2;
+	gap: 8px;
+	padding: 14px 20px 16px;
+	background: #fff;
+	color: #516381;
+}
+
+#elastic-api-v3 .api-section-requires-title {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: inherit;
+}
+
+.api-section-requires .api-privileges {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+}
+
+.api-section-requires .api-privileges-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 4px 8px;
+	padding: 0;
+	border: 0;
+}
+
+.api-section-requires .api-privileges-values {
+	min-width: 0;
+}
+
+.api-section-requires .api-privilege {
+	overflow-wrap: anywhere;
+}
+
+/* The word for what the names are, in the place the other cells put theirs. */
+.api-section-requires .api-section-cell-caption {
+	margin-top: -2px;
+}
+
+/* Qualified by the strip so the page's own link colour and underline do not apply to a cell. */
+.api-section-strip .api-section-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 14px 14px 16px;
+	background: #fff;
+	color: #516381;
+	text-decoration: none;
+	transition: background-color 150ms ease;
+}
+
+.api-section-strip .api-section-cell:hover {
+	background: #f6f8fc;
+}
+
+.api-section-strip .api-section-cell:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+/* The strip's small caps label, on a cell and on the requires heading (an h2, so id-qualified like the other section headings). */
+.api-section-cell-label,
+#elastic-api-v3 .api-section-requires-title {
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	line-height: 16px;
+	text-transform: uppercase;
+}
+
+.api-section-cell-label {
+	margin-bottom: 4px;
+}
+
+.api-section-cell-value {
+	color: #111c2c;
+	font-size: 26px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+	line-height: 32px;
+}
+
+.api-section-cell-caption {
+	font-size: 12px;
+	line-height: 20px;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+	.api-section-strip {
+		grid-auto-flow: row;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.api-section-requires {
+		grid-column: 1 / -1;
+	}
+
+	/* An odd last cell takes the whole row, so no empty slot shows the divider colour. */
+	.api-section-strip:not(.api-section-strip--requires)
+		.api-section-cell:last-child:nth-child(odd),
+	.api-section-strip--requires .api-section-cell:last-child:nth-child(even) {
+		grid-column: 1 / -1;
+	}
+}
+
+/*
+ * The pinned capsule hangs from a zero-height sticky wrapper just after the strip, so showing it never changes the
+ * height of anything in the page. It stays hidden until the wrapper reaches the header.
+ */
+.api-section-pin {
 	position: sticky;
-	top: var(--offset-top, 0px);
+	top: calc(var(--offset-top, 0px) + 8px);
 	z-index: 5;
+	height: 0;
+}
+
+.api-section-links {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
 	display: flex;
 	flex-wrap: nowrap;
-	gap: 24px;
-	margin: 24px 0 0;
-	overflow-x: auto;
+	align-items: center;
+	gap: 8px;
+	padding: 4px;
 	background: #fff;
-	border-bottom: 1px solid #e3e8f2;
+	border: 1px solid #e3e8f2;
+	border-radius: 12px;
+	box-shadow:
+		0 2px 6px rgb(17 28 44 / 0.08),
+		0 12px 28px -10px rgb(17 28 44 / 0.28);
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(-4px);
+	visibility: hidden;
+	transition:
+		opacity 150ms ease,
+		transform 150ms ease,
+		visibility 0s linear 150ms;
+}
+
+.api-section-pin[data-stuck] .api-section-links {
+	opacity: 1;
+	pointer-events: auto;
+	transform: none;
+	visibility: visible;
+	transition-delay: 0s;
+}
+
+.api-section-links-track {
+	display: flex;
+	flex: 0 1 auto;
+	gap: 2px;
+	min-width: 0;
+	overflow-x: auto;
 }
 
 .api-section-links a {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	height: 48px;
-	border-bottom: 2px solid transparent;
+	height: 32px;
+	padding: 0 14px;
+	border-radius: 8px;
 	color: #516381;
+	font-size: 13px;
 	font-weight: 600;
 	text-decoration: none;
 	white-space: nowrap;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease;
 }
 
 .api-section-links a:hover {
+	background: #f1f4fa;
 	color: #1d2a3e;
 }
 
 .api-section-links a[aria-current] {
-	border-bottom-color: #0b64dd;
-	color: #111c2c;
+	background: var(--color-blue-elastic-10, #e8f0fd);
+	color: #0b4fb3;
+}
+
+.api-section-links .api-expand-toggle {
+	height: 32px;
+	padding: 0 12px;
+	border-radius: 8px;
+}
+
+.api-section-links .api-expand-toggle:hover {
+	background: #f1f4fa;
+	text-decoration: none;
+}
+
+.api-back-to-top {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	background: none;
+	border: 0;
+	border-radius: 8px;
+	color: #516381;
+	cursor: pointer;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease;
+}
+
+.api-back-to-top:hover {
+	background: #f1f4fa;
+	color: #1d2a3e;
+}
+
+.api-back-to-top:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-section-links,
+	.api-section-links a,
+	.api-back-to-top,
+	.api-section-cell {
+		transition: none;
+	}
 }
 
 /* A section reached from the bar stops below the bar instead of under it. */
 #elastic-api-v3 .api-param-section-header,
 #elastic-api-v3 .responses-header {
-	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
+	scroll-margin-top: calc(var(--offset-top, 0px) + 72px);
 }
 
 /* Expand all / Collapse all: in the section-links bar, pushed to its right edge, or alone on a row where there is no bar. */

@@ -14,6 +14,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
@@ -186,16 +187,37 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_ExpandAllControl_IsOneButtonAtTheEndOfTheSectionLinksBar()
+	public async Task Operation_ExpandAllControl_SitsUnderTheStripAndAtTheEndOfThePinnedBar()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
 		var bar = html[html.IndexOf("<nav class=\"api-section-links\"", StringComparison.Ordinal)..];
 		bar = bar[..bar.IndexOf("</nav>", StringComparison.Ordinal)];
+		bar
+			.IndexOf("data-api-back-to-top", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(bar.IndexOf("api-section-links-track", StringComparison.Ordinal), "the back to top button opens the bar");
 		bar.TrimEnd().Should().EndWith("class=\"api-expand-toggle\" data-api-expand-all>Expand all</button>");
-		html.Should().NotContain("api-expand-standalone", "the bar carries the control");
+		var standalone = html.IndexOf("api-expand-standalone", StringComparison.Ordinal);
+		standalone.Should().BeGreaterThan(
+			html.LastIndexOf("class=\"api-section-cell\"", StringComparison.Ordinal),
+			"the row sits under the strip"
+		);
+		standalone.Should().BeGreaterThan(
+			html.IndexOf("data-section-pin", StringComparison.Ordinal),
+			"after the pinned bar's wrapper, which sits right under the strip"
+		);
 		html.Should().NotContain("Collapse all", "one button changes its own label");
+	}
+
+	[Test]
+	public async Task Operation_SectionStrip_ShowsWhatEachSectionHolds()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-section-strip"));
 	}
 
 	[Test]
