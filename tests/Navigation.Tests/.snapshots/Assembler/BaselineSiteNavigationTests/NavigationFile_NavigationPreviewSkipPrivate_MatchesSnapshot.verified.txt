@@ -1,0 +1,70 @@
+    - toc: docs-content://products
+-   - toc: private-repo-5://release-notes
+-   - toc: private-repo-15://cloud
+  
+-           - toc: private-repo-5://reference
+-             path_prefix: reference/cloud
++           - toc: cloud-on-k8s://reference
++             path_prefix: reference/cloud-on-k8s
+              island: true
+-             children:
+-               - toc: cloud-on-k8s://reference
+-                 path_prefix: reference/cloud-on-k8s
+-                 island: true
+  
+-               - toc: ecctl://reference
+-                 path_prefix: reference/ecctl
+-                 island: true
++           - toc: ecctl://reference
++             path_prefix: reference/ecctl
++             island: true
+                      children:
+-                       - toc: private-repo-1://reference/edot-cf-aws
+-                         path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
+-                       - toc: private-repo-2://reference/edot-cf-azure
+-                         path_prefix: reference/opentelemetry/edot-cloud-forwarder/azure
+  
+-               - toc: private-repo-3://reference
+-                 path_prefix: reference/integrations
+-                 island: true
+- 
+  
+-               - toc: private-repo-4://lsr
+-                 path_prefix: reference/logstash/plugins
+-                 island: true
+- 
+-               - toc: private-repo-4://vpr
+-                 path_prefix: reference/logstash/versioned-plugins
+-                 island: true
+- 
+  
+-               - toc: private-repo-15://elasticsearch
+-                 path_prefix: reference/private-repo-15/elasticsearch
+-                 navigation_title: Elasticsearch
+-                 island: true
+- 
+-               - toc: private-repo-15://rules
+-                 path_prefix: reference/private-repo-15/rules
+-                 navigation_title: Rule ids
+-                 island: true
+- 
+  
+-           - toc: private-repo-5://release-notes/cloud-hosted
+-             path_prefix: release-notes/cloud-hosted
+- 
+-           - toc: private-repo-5://release-notes/cloud-enterprise
+-             path_prefix: release-notes/cloud-enterprise
+- 
+                  path_prefix: release-notes/edot/sdks/android
+-               - toc: private-repo-1://release-notes
+-                 path_prefix: release-notes/edot/cloud-forwarder/aws
+              path_prefix: release-notes/ecctl
++ 
++   - toc: docs-builder://
++     path_prefix: reference/docs-builder
++     children:
++       - toc: docs-builder://development
++         path_prefix: reference/docs-builder/dev
++         children:
++           - toc: docs-builder://development/link-validation
++             path_prefix: reference/docs-builder/dev/link-val
