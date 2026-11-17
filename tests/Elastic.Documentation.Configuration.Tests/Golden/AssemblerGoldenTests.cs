@@ -1108,8 +1108,8 @@ public partial class AssemblerGoldenTests
 				        - "docs"
 				      Private: False
 				      CloneTimeout: null
-				    private-repo-1 <Repository>:
-				      Name: "private-repo-1"
+				    private-repo_1 <Repository>:
+				      Name: "private-repo_1"
 				      Origin: <default origin>
 				      CheckoutStrategy: Partial
 				      Skip: False
@@ -1121,8 +1121,8 @@ public partial class AssemblerGoldenTests
 				        - "docs"
 				      Private: True
 				      CloneTimeout: null
-				    private-repo-2 <Repository>:
-				      Name: "private-repo-2"
+				    private-repo_2 <Repository>:
+				      Name: "private-repo_2"
 				      Origin: <default origin>
 				      CheckoutStrategy: Partial
 				      Skip: True

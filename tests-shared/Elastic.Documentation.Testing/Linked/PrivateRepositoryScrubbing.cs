@@ -10,59 +10,51 @@ namespace Elastic.Documentation.Testing.Linked;
 
 /// <summary>
 /// Keeps the names of private repositories out of a snapshot. The names are not listed anywhere: a test derives them from the
-/// <c>private: true</c> repositories of the assembler config it loaded and passes them to <see cref="For"/>, so the frozen
-/// configuration copies and the verified files never carry a real name. Also scrubs values that change from run to run.
-/// Self-contained on purpose, so it does not collide with other scrubbers added for the configuration goldens.
+/// <c>private: true</c> repositories of the assembler config it loaded. A name is scrubbed to <c>private-repo_N</c> with
+/// <see cref="Scrubbers.Values"/> and forbidden with <see cref="SnapshotOptions.Forbid"/>, so a verified file that names one fails
+/// without the name being printed. A name that already is a <c>private-repo-N</c> placeholder is left alone.
 /// </summary>
 internal static partial class PrivateRepositoryScrubbing
 {
-	internal const string PlaceholderPrefix = "private-repo-";
+	internal const string Placeholder = "private-repo";
+
+	/// <summary>The names that are not placeholders already, in name order.</summary>
+	internal static string[] Real(IEnumerable<string> privateRepositories) =>
+		[
+			.. privateRepositories
+				.Where(n => !string.IsNullOrWhiteSpace(n) && !PlaceholderName().IsMatch(n))
+				.Distinct(StringComparer.Ordinal)
+				.Order(StringComparer.Ordinal)
+		];
 
 	/// <summary>
-	/// A scrubber that replaces each private repository with <c>private-repo-N</c>, numbered in the order of the sorted names.
-	/// Names that already are placeholders are left alone, so a frozen copy that was scrubbed earlier is unchanged.
-	/// <para>
-	/// A name with a hyphen is distinctive enough to match as a whole token anywhere. A single word such as <c>cloud</c> is also an
-	/// ordinary word in paths and prose, so it only matches where a repository can stand: before <c>://</c> or after <c>elastic/</c>.
-	/// </para>
+	/// What a name must not look like in a snapshot. A name with a hyphen is distinctive enough to forbid on its own. A single word is an
+	/// ordinary word in prose and paths, so only the forms a repository can take are forbidden: <c>name://</c> and <c>elastic/name</c>
+	/// followed by a quote, a slash, a dot, a colon or whitespace.
 	/// </summary>
-	internal static Func<string, string> For(IEnumerable<string> privateRepositories)
-	{
-		var names = privateRepositories
-			.Where(n => !string.IsNullOrWhiteSpace(n) && !n.StartsWith(PlaceholderPrefix, StringComparison.Ordinal))
-			.Distinct(StringComparer.Ordinal)
-			.OrderBy(n => n, StringComparer.Ordinal)
-			.ToArray();
-		if (names.Length == 0)
-			return text => text;
+	internal static string[] Forbidden(IEnumerable<string> privateRepositories) =>
+		[
+			.. Real(privateRepositories).SelectMany(
+				n => n.Contains('-') ? [n] : new[] { $"{n}://", $"elastic/{n}/", $"elastic/{n}.git", $"elastic/{n}\"" }
+			)
+		];
 
-		var replacements = names.Select((n, i) => (Pattern: PatternFor(n), Placeholder: $"{PlaceholderPrefix}{i + 1}")).ToArray();
-		return text =>
-		{
-			foreach (var (pattern, placeholder) in replacements)
-				text = pattern.Replace(text, placeholder);
-			return text;
-		};
-	}
+	/// <summary>A scrubber that writes each of the names a loaded configuration marks private as <c>private-repo_N</c>.</summary>
+	internal static Func<string, string> Scrub(IEnumerable<string> privateRepositories) =>
+		Scrubbers.Values(Real(privateRepositories), Placeholder);
 
 	/// <summary>
-	/// The private-repository scrubber and the volatile-value scrubbers as options for one snapshot call. For one test class to use as
+	/// The scrubber, the guard and the volatile-value scrubbers as options for one snapshot call, for a test class to use as
 	/// <c>.MatchSnapshot(options: PrivateRepositoryScrubbing.Options(names))</c>.
 	/// </summary>
 	internal static SnapshotOptions Options(IEnumerable<string> privateRepositories) =>
-		new SnapshotOptions().Scrub(For(privateRepositories)).Scrub(VolatileValues);
+		new SnapshotOptions().Scrub(Scrub(privateRepositories)).Scrub(VolatileValues).Forbid(Forbidden(privateRepositories));
 
 	/// <summary>A 40 digit commit SHA becomes <c>{sha}</c>; an ISO date, with or without a time, becomes <c>{date}</c>.</summary>
 	internal static string VolatileValues(string text) => IsoDate().Replace(Sha().Replace(text, "{sha}"), "{date}");
 
-	private static Regex PatternFor(string name)
-	{
-		var escaped = Regex.Escape(name);
-		var pattern = name.Contains('-')
-			? $"(?<![\\w.-]){escaped}(?![\\w-])"
-			: $"(?<![\\w./-]){escaped}(?=://)|(?<=elastic/){escaped}(?![\\w-])";
-		return new Regex(pattern, RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeout);
-	}
+	[GeneratedRegex("^private-repo-[0-9]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex PlaceholderName();
 
 	[GeneratedRegex("(?<![0-9a-fA-F])[0-9a-f]{40}(?![0-9a-fA-F])", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex Sha();

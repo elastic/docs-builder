@@ -35,9 +35,9 @@ public class PrivateRepositoryScrubbingTests
 				"""
 				model:
 				  - "open-docs"
-				  - "private-repo-1"
-				  - "private-repo-2"
-				  - "widget-hosted"
+				  - "private-repo_1"
+				  - "private-repo_2"
+				  - "private-repo_2-hosted"
 				"""
 			);
 	}
@@ -50,15 +50,15 @@ public class PrivateRepositoryScrubbingTests
 
 		"""
 		git@github.com:elastic/hidden-docs.git
-		https://github.com/elastic/WIDGET/blob/main/docs/toc.yml
+		https://github.com/elastic/widget/blob/main/docs/toc.yml
 		toc: hidden-docs://reference
-		hidden-docs-extra and xwidget and widget-hosted stay
+		xwidget and widget_x stay, widget-hosted is cut at the hyphen
 		""".Should().MatchInlineSnapshot(
 			"""
-			git@github.com:elastic/private-repo-1.git
-			https://github.com/elastic/private-repo-2/blob/main/docs/toc.yml
-			toc: private-repo-1://reference
-			hidden-docs-extra and xwidget and widget-hosted stay
+			git@github.com:elastic/private-repo_1.git
+			https://github.com/elastic/private-repo_2/blob/main/docs/toc.yml
+			toc: private-repo_1://reference
+			xwidget and widget_x stay, private-repo_2-hosted is cut at the hyphen
 			"""
 		);
 	}
@@ -70,6 +70,10 @@ public class PrivateRepositoryScrubbingTests
 
 		"private-repo-7 private-repo-12".Should().MatchInlineSnapshot("private-repo-7 private-repo-12");
 	}
+
+	[Test]
+	public void ShippedPrivateNames_AreForbiddenInEverySnapshot() =>
+		PrivateRepositoryGuard.Forbidden.Should().NotBeEmpty("the guard would pass vacuously");
 
 	[Test]
 	public void NamesOfOneTest_Added_DoNotRenameAnotherTestsOutput() => "hidden-docs".Should().MatchInlineSnapshot("hidden-docs");

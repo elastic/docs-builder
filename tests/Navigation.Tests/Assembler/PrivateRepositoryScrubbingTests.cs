@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Testing.Linked;
+using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -13,10 +14,28 @@ public class PrivateRepositoryScrubbingTests
 {
 	private static readonly string[] Names = ["secret-docs", "secret-docs-two", "hidden", "ci-secrets"];
 
-	[Test]
-	public void For_NamesWithAHyphen_AreReplacedAsWholeTokensEverywhere()
+	internal static IReadOnlySet<string> ShippedPrivateRepositories()
 	{
-		var scrub = PrivateRepositoryScrubbing.For(Names);
+		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("solution root not found");
+		return AssemblyConfiguration.Deserialize(
+			File.ReadAllText(Path.Join(root.FullName, "config", "assembler.yml"))
+		).AllPrivateRepositoryNames;
+	}
+
+	private static List<int> LinesWith(string text, IReadOnlyList<string> values) =>
+		[
+			.. text
+				.ReplaceLineEndings("\n")
+				.Split('\n')
+				.Select((line, i) => (line, number: i + 1))
+				.Where(l => values.Any(v => l.line.Contains(v, StringComparison.Ordinal)))
+				.Select(l => l.number)
+		];
+
+	[Test]
+	public void Scrub_Names_AreNumberedByFirstAppearanceAsWholeWords()
+	{
+		var scrub = PrivateRepositoryScrubbing.Scrub(Names);
 
 		var scrubbed = scrub(
 			"toc: secret-docs://reference\npath_prefix: reference/secret-docs/rules\nsecret-docs-two:\nnot-secret-docs\nsecret-docs_x\nhttps://github.com/elastic/secret-docs/blob/main/x.md"
@@ -24,52 +43,38 @@ public class PrivateRepositoryScrubbingTests
 
 		scrubbed.Should().MatchInlineSnapshot(
 			"""
-			toc: private-repo-3://reference
-			path_prefix: reference/private-repo-3/rules
-			private-repo-4:
-			not-secret-docs
+			toc: private-repo_1://reference
+			path_prefix: reference/private-repo_1/rules
+			private-repo_2:
+			not-private-repo_1
 			secret-docs_x
-			https://github.com/elastic/private-repo-3/blob/main/x.md
+			https://github.com/elastic/private-repo_1/blob/main/x.md
 			"""
 		);
 	}
 
 	[Test]
-	public void For_SingleWordNames_AreReplacedOnlyWhereARepositoryCanStand()
+	public void Scrub_PlaceholdersAndNoNames_LeaveTheTextAlone()
 	{
-		var scrub = PrivateRepositoryScrubbing.For(Names);
-
-		var scrubbed = scrub(
-			"hidden://reference\nthe hidden page\nreference/hidden/page\nhttps://github.com/elastic/hidden/tree/main\nhidden-page\nxhidden://y"
-		);
-
-		scrubbed.Should().MatchInlineSnapshot(
-			"""
-			private-repo-2://reference
-			the hidden page
-			reference/hidden/page
-			https://github.com/elastic/private-repo-2/tree/main
-			hidden-page
-			xhidden://y
-			"""
-		);
+		PrivateRepositoryScrubbing
+			.Scrub([.. Names, "private-repo-1", "private-repo-7"])("private-repo-1:// private-repo-7://")
+			.Should()
+			.MatchInlineSnapshot("private-repo-1:// private-repo-7://");
+		PrivateRepositoryScrubbing.Scrub([]).Invoke("secret-docs://x").Should().Be("secret-docs://x");
 	}
 
 	[Test]
-	public void For_PlaceholdersAreNumberedBySortedNameAndLeftAlone()
+	public void Forbidden_SingleWordNames_AreForbiddenOnlyWhereARepositoryCanStand()
 	{
-		var scrub = PrivateRepositoryScrubbing.For([.. Names, "private-repo-1", "private-repo-7"]);
+		var forbidden = PrivateRepositoryScrubbing.Forbidden(["hidden", "secret-docs"]);
 
-		var scrubbed = scrub("ci-secrets:// hidden:// secret-docs:// secret-docs-two:// private-repo-1:// private-repo-7://");
-
-		scrubbed.Should().MatchInlineSnapshot(
-			"private-repo-1:// private-repo-2:// private-repo-3:// private-repo-4:// private-repo-1:// private-repo-7://"
+		var lines = LinesWith(
+			"hidden://reference\nthe hidden page\nreference/hidden/page\nhttps://github.com/elastic/hidden/tree/main\nhidden-page\nxhidden://y\nsecret-docs",
+			forbidden
 		);
-	}
 
-	[Test]
-	public void For_NoNames_ReturnsTheTextUnchanged() =>
-		PrivateRepositoryScrubbing.For([]).Invoke("secret-docs://x").Should().Be("secret-docs://x");
+		lines.Should().Equal(1, 4, 6, 7);
+	}
 
 	[Test]
 	public void VolatileValues_ShasAndDates_AreReplaced() =>
@@ -84,9 +89,10 @@ public class PrivateRepositoryScrubbingTests
 	public void FrozenBaseline_ContainsNoPrivateRepositoryOfTheShippedConfig()
 	{
 		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("solution root not found");
-		var shipped = AssemblyConfiguration.Deserialize(File.ReadAllText(Path.Join(root.FullName, "config", "assembler.yml")));
-		var scrub = PrivateRepositoryScrubbing.For(shipped.AllPrivateRepositoryNames);
-		shipped.AllPrivateRepositoryNames.Should().NotBeEmpty("the check below would pass vacuously");
+		var shipped = ShippedPrivateRepositories();
+		shipped.Should().NotBeEmpty("the check below would pass vacuously");
+		var forbidden = PrivateRepositoryScrubbing.Forbidden(shipped);
+		forbidden.Should().NotBeEmpty("the check below would pass vacuously");
 
 		var files = Directory
 			.EnumerateFiles(Path.Join(root.FullName, "tests", "Navigation.Tests", "Assembler", "Baseline"))
@@ -100,9 +106,30 @@ public class PrivateRepositoryScrubbingTests
 			.ToArray();
 		files.Should().NotBeEmpty();
 
-		var leaking = files.Count(f => scrub(File.ReadAllText(f)) != File.ReadAllText(f));
+		var leaking = files.Count(f => LinesWith(File.ReadAllText(f), forbidden).Count > 0);
 
 		// the names are not part of the message on purpose
 		leaking.Should().Be(0, "a frozen copy or a verified file names a private repository");
+	}
+
+	[Test]
+	public void Options_ASnapshotThatNamesAPrivateRepository_FailsWithoutShowingTheName()
+	{
+		var shipped = PrivateRepositoryScrubbing.Forbidden(ShippedPrivateRepositories()).First(n => n.Contains('-'));
+		var options = new SnapshotOptions().Forbid([shipped]);
+
+		var message = string.Empty;
+		try
+		{
+			$"first line\nrepository {shipped}\n".Should().MatchSnapshot(options: options);
+		}
+		catch (Exception e)
+		{
+			message = e.Message;
+		}
+
+		message.Should().NotBeEmpty("the snapshot must fail");
+		// a failing check must not repeat the name either
+		message.Contains(shipped, StringComparison.Ordinal).Should().BeFalse("the message names a private repository");
 	}
 }
