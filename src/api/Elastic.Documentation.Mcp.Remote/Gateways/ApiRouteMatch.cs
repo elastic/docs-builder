@@ -19,6 +19,7 @@ public sealed record TypedEndpoint(string? Method, string Path)
 public static class ApiRouteMatch
 {
 	public const int NoMatch = -1;
+	private const string AllIndices = "_all";
 
 	/// <summary>A leading word before the path is the method; a word no route serves simply matches nothing.</summary>
 	public static TypedEndpoint Parse(string endpoint)
@@ -56,10 +57,11 @@ public static class ApiRouteMatch
 
 	/// <summary>
 	/// Whether the typed endpoint can name a route made only of parameters, such as <c>/{index}</c>. Index names cannot start
-	/// with <c>_</c>, so a typed system route like <c>/_bulk</c> or a typo of one never fills such a route.
+	/// with <c>_</c>, so a typed system route like <c>/_bulk</c> or a typo of one never fills such a route. The index
+	/// expression <c>_all</c> is the one exception.
 	/// </summary>
 	public static bool MayFillOnlyParameters(TypedEndpoint typed) =>
-		typed.Segments is { Length: > 0 } segments && !segments.Any(s => s.StartsWith('_'));
+		typed.Segments is { Length: > 0 } segments && !segments.Any(s => s.StartsWith('_') && s != AllIndices);
 
 	/// <summary>The best <see cref="Score"/> over every route of <paramref name="api"/>.</summary>
 	public static int BestScore(TypedEndpoint typed, ApiOperationMetadata api) =>

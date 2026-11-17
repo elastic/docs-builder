@@ -438,6 +438,21 @@ public class ApiGatewayTests
 	}
 
 	[Test]
+	public async Task GetOperationAsync_AllIndices_MatchesTheIndexRoute()
+	{
+		using var stub = ElasticsearchStub.Start(IndexRoutes);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var detail = await gateway.GetOperationAsync(
+			new ApiOperationLookup(new ApiScope("elasticsearch", null), new ApiEndpointKey("GET /_all")),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		detail.Should().NotBeNull();
+		detail.Operation.OperationId.Should().Be("indices-get");
+	}
+
+	[Test]
 	public async Task GetOperationAsync_RouteOfOnlyParametersWithoutMethod_ListsEveryOperationOnTheRoute()
 	{
 		using var stub = ElasticsearchStub.Start(IndexRoutes);
