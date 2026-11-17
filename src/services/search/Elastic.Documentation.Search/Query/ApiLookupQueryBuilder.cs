@@ -23,6 +23,7 @@ public static class ApiLookupQueryBuilder
 	private const string SynonymsAnalyzer = "synonyms_analyzer";
 	private const string FieldHitsPrefix = SearchQueryBuilder.ApiPropertyHits + "_";
 	private const string WholeTitleQueryName = "title_all";
+	private const string TitleNamedQueryName = "title_named";
 	private const string LandingNameQueryName = "landing_name";
 	private const string NotDeprecatedQueryName = "not_deprecated";
 
@@ -288,7 +289,7 @@ public static class ApiLookupQueryBuilder
 		List<Query> lifts =
 		[
 			Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName),
-			new TermQuery { Field = QueryFieldNames.TitleKeyword, Value = typed.ToLowerInvariant() }
+			Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed, TitleNamedQueryName)
 		];
 		if (SearchQueryBuilder.BuildTitleStartsWithQuery(typed) is { } startsWith)
 			lifts.Add(startsWith);
@@ -313,6 +314,20 @@ public static class ApiLookupQueryBuilder
 		);
 		return lifts;
 	}
+
+	/// <summary>
+	/// The match takes no analyzer because the field carries its own, and an index without the field then matches nothing
+	/// instead of failing. The exact lowercase title keeps working on such an index.
+	/// </summary>
+	private static Query TitleNamed(string typed) =>
+		new DisMaxQuery
+		{
+			Queries =
+			[
+				new TermQuery { Field = QueryFieldNames.TitleKeyword, Value = typed.ToLowerInvariant() },
+				new MatchQuery { Field = QueryFieldNames.ApiTitleFingerprint, Query = typed }
+			]
+		};
 
 	private static Query MethodLift(string method) =>
 		new TermQuery { Field = QueryFieldNames.ApiMethod, Value = method.ToUpperInvariant(), Boost = ApiLookupWeights.Method };

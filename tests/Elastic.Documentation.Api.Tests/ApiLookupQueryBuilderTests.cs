@@ -71,6 +71,32 @@ public class ApiLookupQueryBuilderTests
 			.BeTrue();
 	}
 
+	[Test]
+	public void Build_Words_LiftsTheOperationWhoseWholeTitleTheWordsAre()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("create index"));
+
+		var lift = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Select(c => c.EnumerateObject().Single().Value)
+			.Single(o => o.TryGetProperty("_name", out var name) && name.GetString() == "title_named");
+		lift.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.TitleNamed);
+		var options = lift
+			.GetProperty("filter")
+			.GetProperty("dis_max")
+			.GetProperty("queries")
+			.EnumerateArray()
+			.Select(o => o.EnumerateObject().Single())
+			.ToArray();
+		options.Select(o => o.Name).Should().Equal("term", "match");
+		options[0].Value.GetProperty("title.keyword").GetProperty("value").GetString().Should().Be("create index");
+		var match = options[1].Value.GetProperty("api.title_fingerprint");
+		match.GetProperty("query").GetString().Should().Be("create index");
+		match
+			.TryGetProperty("analyzer", out _)
+			.Should()
+			.BeFalse("the field carries its own analyzer, and an index without the field must not fail on one");
+	}
+
 	/// <summary>The client writes a one-clause list as a bare object.</summary>
 	private static JsonElement[] Clauses(JsonElement clauses) =>
 		clauses.ValueKind == JsonValueKind.Array ? [.. clauses.EnumerateArray()] : [clauses];
@@ -1022,6 +1048,12 @@ public class ApiLookupQueryBuilderTests
 	public void ApiLookupWeights_EndpointAndFieldBeatsWholeTitleOperationAndTitleWords() =>
 		(ApiLookupWeights.EndpointKey + ApiLookupWeights.FieldName).Should().BeGreaterThan(
 			ApiLookupWeights.WholeTitle + ApiLookupWeights.OperationWord + ApiLookupWeights.TitleWord
+		);
+
+	[Test]
+	public void ApiLookupWeights_TitleNamedAndOperationAndTitleWordBeatEndpointAndFieldName() =>
+		(ApiLookupWeights.TitleNamed + ApiLookupWeights.OperationWord + ApiLookupWeights.TitleWord).Should().BeGreaterThan(
+			ApiLookupWeights.EndpointKey + ApiLookupWeights.FieldName
 		);
 
 	[Test]

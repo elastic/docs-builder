@@ -51,6 +51,12 @@ public static class ApiLookupWeights
 	public const float Method = 0.5f;
 	public const float BodyWord = 0.1f;
 	public const float WholeTitle = 3.0f;
+
+	/// <summary>
+	/// The typed words are the whole title of an operation once stopwords and plurals are ignored. It adds to
+	/// <see cref="WholeTitle"/>, which every operation that mentions the words earns.
+	/// </summary>
+	public const float TitleNamed = 6.0f;
 	public const float ListsChildren = 0.5f;
 	public const float Specificity = 0.5f;
 	public const float NotDeprecated = 0.2f;

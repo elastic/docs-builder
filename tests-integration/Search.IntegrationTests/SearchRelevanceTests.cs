@@ -283,6 +283,22 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("/_cat/ind", "operation-cat-indices");
 		yield return ("/{index}/_sear", "operation-search");
 		yield return ("/_cluster/hea", "operation-cluster-health");
+		// The words are the whole title once its stopwords and plurals are ignored, so the operation leads the ones that only
+		// mention them, such as the `_create` endpoint of a document.
+		yield return ("create index", "operation-indices-create");
+		yield return ("index create", "operation-indices-create");
+		yield return ("delete index", "operation-indices-delete");
+		// The titles are plain words and the operation id carries the same words: the whole-title lift must not move them.
+		yield return ("create an index", "operation-indices-create");
+		yield return ("create data stream", "operation-indices-create-data-stream");
+		// The word is an endpoint of four operations, and the current one outranks the three deprecated legacy ones.
+		yield return ("template", "operation-indices-exists-template");
+		yield return ("esql query", "operation-esql-query");
+		// A deprecated twin or a sibling operation never leads the one the words name.
+		yield return ("isolate endpoint", "operation-endpointisolateaction");
+		yield return ("release isolated endpoint", "operation-endpointunisolateaction");
+		yield return ("agent status", "operation-get-fleet-agent-status");
+		yield return ("service token", "operation-security-create-service-token");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -495,12 +511,60 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			.OnlyContain(u => u.Contains("api-key", StringComparison.Ordinal) && !u.Contains("/kibana", StringComparison.Ordinal));
 	}
 
+	[Test]
+	public async Task ApiSearchWordsOfAnApisNameListItsLandingPageFirst()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "kibana api", PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		searchResult.Results.First().Url.Should().Be("/docs/api/doc/kibana");
+	}
+
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
 	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
 
 	/// <summary>
+	/// Queries the report lists with no expected result, so a weight change shows what it moves beyond the judged cases.
+	/// </summary>
+	public static IEnumerable<string> ApiSearchUnjudgedReportQueries() =>
+		[
+			"get index",
+			"create index template",
+			"close index",
+			"open index",
+			"delete data stream",
+			"refresh index",
+			"index document",
+			"delete document",
+			"get document",
+			"put mapping",
+			"create alias",
+			"clear cache",
+			"force merge",
+			"create snapshot",
+			"get cluster stats",
+			"create pipeline",
+			"search templates",
+			"create role",
+			"create user",
+			"reindex",
+			"legacy index template",
+			"install package",
+			"reassign agent",
+			"enrollment api key"
+		];
+
+	/// <summary>
 	/// Not an assertion: prints the top three operations of every judged API query, with each word's winning role, for
-	/// whoever tunes <see cref="ApiLookupWeights"/> next.
+	/// whoever tunes <see cref="ApiLookupWeights"/> next. With <c>API_SEARCH_REPORT_PATH</c> set it also writes the report
+	/// there, so a run before and a run after a change can be diffed.
 	/// </summary>
 	[Test]
 	[Explicit]
@@ -511,7 +575,18 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var ct = TestContext.Current!.Execution.CancellationToken;
 		Skip.Unless(await gateway.CanConnect(ct), "Elasticsearch is not connected");
 
-		var judged = ApiSearchQueryTestCases().Concat(ApiSearchFieldTestCases().Select(c => (c.Item1, c.Item2))).Distinct();
+		var judged = ApiSearchQueryTestCases()
+			.Concat(ApiSearchFieldTestCases().Select(c => (c.Item1, c.Item2)))
+			.Concat(ApiSearchUnjudgedReportQueries().Select(q => (q, "unjudged")))
+			.Distinct();
+		var lines = new List<string>();
+
+		void Report(string line)
+		{
+			lines.Add(line);
+			TestContext.Current?.Output.WriteLine(line);
+		}
+
 		foreach (var (query, expectedOperation) in judged)
 		{
 			var tokens = ApiLookupQueryBuilder.Tokenize(query);
@@ -525,15 +600,18 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 					.IncludeNamedQueriesScore(true),
 				ct
 			);
-			TestContext.Current?.Output.WriteLine($"\n{query}  (expected {expectedOperation})");
+			Report($"\n{query}  (expected {expectedOperation})");
 			foreach (var hit in response.Hits)
 			{
 				var scored = hit.MatchedQueries?.Match(_ => null, scores => scores) ?? new Dictionary<string, double>();
 				var roles = ApiLookupRoles.Resolve(scored).Select(r => $"{tokens[r.Index].Text}={r.Role.ToString().ToLowerInvariant()}");
 				var score = (hit.Score ?? 0).ToString("F2", CultureInfo.InvariantCulture);
-				TestContext.Current?.Output.WriteLine($"  {score,7}  {hit.Source?.Path}  [{string.Join(", ", roles)}]");
+				Report($"  {score,7}  {hit.Source?.Path}  [{string.Join(", ", roles)}]");
 			}
 		}
+
+		if (Environment.GetEnvironmentVariable("API_SEARCH_REPORT_PATH") is { Length: > 0 } reportPath)
+			await File.WriteAllLinesAsync(reportPath, lines, ct);
 	}
 
 	[Test]
