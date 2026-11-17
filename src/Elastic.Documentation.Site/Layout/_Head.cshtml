@@ -95,6 +95,10 @@
 	@* The state of the build, for browser journeys and monitors: which flags are on and what kind of build this is. *@
 	<meta name="docs:features" content="@Model.Features.EnabledKeys().JoinOrNull(' ')">
 	<meta name="docs:build-type" content="@Model.FrontendConfig.BuildType">
+	@if (Model.DeployedBuild is { } deployedBuild)
+	{
+		<meta name="docs:build" content="@deployedBuild">
+	}
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
 	@if (!string.IsNullOrEmpty(Model.Description))

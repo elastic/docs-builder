@@ -144,6 +144,16 @@ public record GlobalLayoutViewModel
 	/// </summary>
 	public string? NavigationActiveUrl { get; init; }
 
+	/// <summary>
+	/// The docs-builder version that rendered this page, without the <c>+sha</c> suffix, on the landing page of an assembler build;
+	/// otherwise <c>null</c>. A deploy monitor waits for it to show that the deploy is live and its cache cleared. Only the landing page
+	/// carries it: a value in every page would change every page's bytes on each version, and the S3 sync would upload them all.
+	/// </summary>
+	public string? DeployedBuild =>
+		BuildType == BuildType.Assembler && CurrentNavigationItem.Url.TrimEnd('/') == (UrlPathPrefix ?? string.Empty).TrimEnd('/')
+			? BuildContext.Version.Split('+')[0]
+			: null;
+
 	// Header properties for isolated mode
 	public string? HeaderTitle { get; init; }
 	public string? HeaderVersion { get; init; }

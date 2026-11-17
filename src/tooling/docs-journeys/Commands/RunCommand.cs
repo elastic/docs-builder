@@ -37,6 +37,12 @@ internal sealed class RunCommand
 	/// <param name="probe">The page that is read for the site's <c>docs:*</c> tags. Default: /docs, falling back to / when it does not answer</param>
 	/// <param name="parallel">-p, How many journeys run at once. Default: 4</param>
 	/// <param name="retries">How many times a journey that fails is run again, so one stalled navigation on a live site does not fail the run. A journey that passes on a retry passes and is reported as flaky, with what its failed attempts stopped at. Default: 0</param>
+	/// <param name="build">Wait until the landing page names this docs-builder version in its <c>docs:build</c> tag before any journey runs, such as the build a deploy just shipped. A site that predates the tag, or whose deploy or cache has not caught up, ends the run with exit code 4.</param>
+	/// <param name="waitFor">Wait until the site shows this before any journey runs (repeatable): <c>header:Name==value</c>, <c>selector==value</c> (text) or <c>selector@attribute==value</c>; <c>=~</c> matches a regular expression and <c>=*</c> contains. Unmet ends the run with exit code 4.</param>
+	/// <param name="waitPath">The page <c>--build</c> and <c>--wait-for</c> look at, against the site. Default: ./ (the landing page of an assembler site)</param>
+	/// <param name="waitTimeout">How long the wait lasts in all: 10s, 500ms or 2m. Default: 10s</param>
+	/// <param name="waitInterval">How long to wait between looks. Default: 500ms</param>
+	/// <param name="waitRetries">How many looks that fail (the page did not load, the connection dropped) are tried again before the wait gives up. A look that shows another value is not one. Default: 2</param>
 	/// <param name="allow">Extra host patterns the journeys may reach, comma separated, on top of the elastic.co defaults.</param>
 	/// <param name="realUserAgent">Do not identify as a monitor: the site's telemetry then runs, and its exports are allowed as writes.</param>
 	/// <param name="allowWrites">Do not refuse requests that are not GET, HEAD or OPTIONS.</param>
@@ -60,6 +66,12 @@ internal sealed class RunCommand
 		string probe = "/docs",
 		int parallel = 4,
 		int retries = 0,
+		string? build = null,
+		string[]? waitFor = null,
+		string? waitPath = null,
+		string? waitTimeout = null,
+		string? waitInterval = null,
+		int? waitRetries = null,
 		string? allow = null,
 		bool realUserAgent = false,
 		bool allowWrites = false,
@@ -74,6 +86,19 @@ internal sealed class RunCommand
 	)
 	{
 		var baseUrl = SiteContext.ParseUrl(url);
+		if (
+			!WaitOptions.TryParse(
+				build,
+				waitFor,
+				waitPath,
+				waitTimeout,
+				waitInterval,
+				waitRetries,
+				out var preconditions,
+				out var waitProblem
+			)
+		)
+			throw new ArgumentException(waitProblem);
 		if (changedOnly is not null && journeys is null)
 			throw new ArgumentException(
 				"--changed-only compares journey files with a git ref, so it needs --journeys <folder> in a checkout."
@@ -138,6 +163,7 @@ internal sealed class RunCommand
 			Tags = SiteContext.Split(tag),
 			Parallel = parallel,
 			Retries = retries,
+			Preconditions = preconditions,
 			AllowAllSkipped = allowAllSkipped && !site.ProbeFailed,
 			Verbose = verbose,
 			ScreenshotOnFailure = screenshotOnFailure,

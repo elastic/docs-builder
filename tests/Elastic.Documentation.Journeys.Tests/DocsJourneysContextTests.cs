@@ -460,9 +460,10 @@ internal sealed class FakeSite : IAsyncDisposable
 	private readonly Task _serving;
 	private readonly string _docs;
 	private readonly bool _servedFromRoot;
+	private readonly string? _build;
 	private int _writes;
 
-	public FakeSite(string? buildType, string? features, bool servedFromRoot = false, string bodyClass = "")
+	public FakeSite(string? buildType, string? features, bool servedFromRoot = false, string bodyClass = "", string? build = null)
 	{
 		_servedFromRoot = servedFromRoot;
 		(_listener, Url) = StartListener();
@@ -473,6 +474,9 @@ internal sealed class FakeSite : IAsyncDisposable
 			_ = tags.Append(
 				features.Length == 0 ? "<meta name=\"docs:features\">" : $"<meta name=\"docs:features\" content=\"{features}\">"
 			);
+		_build = build;
+		if (build is not null)
+			_ = tags.Append(CultureInfo.InvariantCulture, $"<meta name=\"docs:build\" content=\"{build}\">");
 		_docs = $"<html><head><title>Docs</title>{tags}</head><body class=\"{bodyClass}\">Docs</body></html>";
 		_serving = Task.Run(ServeAsync);
 	}
@@ -511,6 +515,7 @@ internal sealed class FakeSite : IAsyncDisposable
 			var html = request.Url!.AbsolutePath switch
 			{
 				"/docs" when _servedFromRoot => null,
+				"/docs/" when !_servedFromRoot => _docs,
 				"/docs" or "/" when !_servedFromRoot || request.Url!.AbsolutePath == "/" => _docs,
 				"/page" =>
 					"<html><head><title>Page</title></head><body><form method=\"post\" action=\"/save\"><button type=\"submit\">Save</button></form></body></html>",
@@ -533,6 +538,8 @@ internal sealed class FakeSite : IAsyncDisposable
 			{
 				var bytes = Encoding.UTF8.GetBytes(html);
 				context.Response.ContentType = "text/html; charset=utf-8";
+				if (_build is not null)
+					context.Response.AddHeader("x-docs-build", _build);
 				await context.Response.OutputStream.WriteAsync(bytes);
 				context.Response.Close();
 			}
