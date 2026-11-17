@@ -7,6 +7,7 @@ namespace Elastic.Documentation.Search.ApiReference;
 /// <summary>What a call to <see cref="ApiReferenceService"/> answers: one response, or why the call was rejected.</summary>
 public readonly union ApiReferenceReply(
 	ApiOperationSearchResponse,
+	ApiEndpointMatchResponse,
 	ApiOperationResponse,
 	ApiListResponse,
 	ApiOperationListResponse,
@@ -85,6 +86,32 @@ public class ApiReferenceService(IApiGateway apiGateway)
 			OtherMatches = detail.OtherMatches
 		};
 	}
+
+	/// <summary>
+	/// Finds the operations that serve a request such as <c>GET /my-index/_search</c>, best match first.
+	/// No match is an empty result, not a rejection: this filters the operations rather than reading one.
+	/// </summary>
+	public async Task<ApiReferenceReply> ResolveAsync(string endpoint, string? api, string? version, CancellationToken ct)
+	{
+		if (VersionWithoutApi(api, version))
+			return VersionNeedsApi;
+		if (string.IsNullOrWhiteSpace(endpoint))
+			return new ApiReferenceRejection("invalid_arguments", "Pass an endpoint, such as 'GET /_cluster/health'.");
+
+		var lookup = new ApiOperationLookup(ToScope(api, version), new ApiEndpointKey(endpoint.Trim()));
+		var detail = await apiGateway.GetOperationAsync(lookup, ct);
+		return new ApiEndpointMatchResponse
+		{
+			Endpoint = endpoint.Trim(),
+			Results = detail is null ? [] : [detail.Operation, .. detail.OtherMatches]
+		};
+	}
+
+	/// <summary>Lists the operations of one API by group; <paramref name="api"/> is required.</summary>
+	public Task<ApiReferenceReply> ListGroupsAsync(string? api, string? version, string? group, CancellationToken ct) =>
+		string.IsNullOrWhiteSpace(api)
+			? Task.FromResult<ApiReferenceReply>(new ApiReferenceRejection("invalid_arguments", "Pass api, such as 'elasticsearch'."))
+			: ListAsync(api, version, group, ct);
 
 	/// <summary>Lists every API without <paramref name="api"/>, or the operations of one API by group.</summary>
 	public async Task<ApiReferenceReply> ListAsync(string? api, string? version, string? group, CancellationToken ct)
@@ -174,6 +201,13 @@ public sealed record ApiOperationSearchResponse
 	public required string Query { get; init; }
 	public required long TotalHits { get; init; }
 	public required IReadOnlyList<ApiOperationHit> Results { get; init; }
+}
+
+/// <summary>The operations that serve one request, best match first.</summary>
+public sealed record ApiEndpointMatchResponse
+{
+	public required string Endpoint { get; init; }
+	public required IReadOnlyList<ApiOperationSummary> Results { get; init; }
 }
 
 /// <summary>One operation with its routes, versions and documented fields.</summary>

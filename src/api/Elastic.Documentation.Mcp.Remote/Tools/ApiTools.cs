@@ -108,6 +108,7 @@ public class ApiTools(ApiReferenceService apiReference, ILogger<ApiTools> logger
 				McpJsonContext.Default.ApiOperationResponse
 			),
 		ApiListResponse r => ToolSucceeded.Serialize(r, McpJsonContext.Default.ApiListResponse),
+		ApiEndpointMatchResponse r => ToolSucceeded.Serialize(r, McpJsonContext.Default.ApiEndpointMatchResponse),
 		ApiOperationListResponse r => ToolSucceeded.Serialize(r, McpJsonContext.Default.ApiOperationListResponse),
 		ApiReferenceRejection r => new ToolRejected(r.ErrorType, r.Message)
 	};

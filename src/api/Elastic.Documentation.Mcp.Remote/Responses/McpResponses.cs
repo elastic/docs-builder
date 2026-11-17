@@ -192,6 +192,7 @@ public sealed record AiEnrichmentStatusDto
 [JsonSerializable(typeof(ApiOperationSearchResponse))]
 [JsonSerializable(typeof(ApiOperationResponse))]
 [JsonSerializable(typeof(ApiListResponse))]
+[JsonSerializable(typeof(ApiEndpointMatchResponse))]
 [JsonSerializable(typeof(ApiOperationListResponse))]
 [JsonSerializable(typeof(ApiOperationGroupDto))]
 [JsonSerializable(typeof(ApiOperationListItemDto))]

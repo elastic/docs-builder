@@ -27,7 +27,7 @@ public static class MappingsExtension
 		MapFullSearch(group);
 		MapChanges(group);
 		MapPageFeedback(group);
-		MapApiReference(group);
+		MapApiOperations(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -188,24 +188,17 @@ public static class MappingsExtension
 		});
 
 	// The same lookups as the search_api_operations, get_api_operation and list_api_operations MCP tools.
-	private static void MapApiReference(IEndpointRouteBuilder group)
+	// The literal routes take precedence over {operationId}, so they reserve those ids.
+	private static void MapApiOperations(IEndpointRouteBuilder group)
 	{
-		var apiGroup = group.MapGroup("/api-reference");
-		_ = apiGroup.MapGet(
+		var operations = group.MapGroup("/api-operations");
+
+		// One collection, filtered by words (q) or by the request an operation serves (endpoint).
+		_ = operations.MapGet(
 			"/",
 			async (
-				[FromQuery(Name = "api")] string? api,
-				[FromQuery(Name = "version")] string? version,
-				[FromQuery(Name = "group")] string? apiGroupName,
-				ApiReferenceService apiReference,
-				Cancel ctx
-			) => ToResult(await apiReference.ListAsync(api, version, apiGroupName, ctx))
-		);
-
-		_ = apiGroup.MapGet(
-			"/search",
-			async (
-				[FromQuery(Name = "q")] string query,
+				[FromQuery(Name = "q")] string? query,
+				[FromQuery(Name = "endpoint")] string? endpoint,
 				[FromQuery(Name = "api")] string? api,
 				[FromQuery(Name = "version")] string? version,
 				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
@@ -213,28 +206,59 @@ public static class MappingsExtension
 				[FromQuery(Name = "size")] int? pageSize,
 				ApiReferenceService apiReference,
 				Cancel ctx
-			) => ToResult(
-				await apiReference.SearchAsync(query, api, version, includeDeprecated ?? false, pageNumber ?? 1, pageSize ?? 10, ctx)
-			)
+			) =>
+				(string.IsNullOrWhiteSpace(query), string.IsNullOrWhiteSpace(endpoint)) switch
+				{
+					(false, true) =>
+						ToResult(
+							await apiReference.SearchAsync(
+								query!,
+								api,
+								version,
+								includeDeprecated ?? false,
+								pageNumber ?? 1,
+								pageSize ?? 10,
+								ctx
+							)
+						),
+					(true, false) => ToResult(await apiReference.ResolveAsync(endpoint!, api, version, ctx)),
+					_ => Results.BadRequest(new ApiReferenceRejection("invalid_arguments", "Pass exactly one of q or endpoint."))
+				}
 		);
 
-		_ = apiGroup.MapGet(
-			"/operation",
+		_ = operations.MapGet(
+			"/apis",
+			async (ApiReferenceService apiReference, Cancel ctx) => ToResult(await apiReference.ListAsync(null, null, null, ctx))
+		);
+
+		_ = operations.MapGet(
+			"/groups",
 			async (
 				[FromQuery(Name = "api")] string? api,
-				[FromQuery(Name = "operation_id")] string? operationId,
-				[FromQuery(Name = "endpoint")] string? endpoint,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "group")] string? apiGroupName,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(await apiReference.ListGroupsAsync(api, version, apiGroupName, ctx))
+		);
+
+		_ = operations.MapGet(
+			"/{operationId}",
+			async (
+				string operationId,
+				[FromQuery(Name = "api")] string? api,
 				[FromQuery(Name = "version")] string? version,
 				[FromQuery(Name = "include_body")] bool? includeBody,
 				ApiReferenceService apiReference,
 				Cancel ctx
-			) => ToResult(await apiReference.GetAsync(api, operationId, endpoint, version, includeBody ?? false, ctx))
+			) => ToResult(await apiReference.GetAsync(api, operationId, null, version, includeBody ?? false, ctx))
 		);
 	}
 
 	private static IResult ToResult(ApiReferenceReply reply) => reply switch
 	{
 		ApiOperationSearchResponse r => Results.Ok(r),
+		ApiEndpointMatchResponse r => Results.Ok(r),
 		ApiOperationResponse r => Results.Ok(r),
 		ApiListResponse r => Results.Ok(r),
 		ApiOperationListResponse r => Results.Ok(r),
