@@ -1,0 +1,32 @@
+no-registry-info
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/codex-repo/main/links.json
+public-s3
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://registry.example.test/bucket/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://registry.example.test/bucket/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://registry.example.test/bucket/elastic/codex-repo/main/links.json
+s3-trailing-slash
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://registry.example.test/bucket/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://registry.example.test/bucket/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://registry.example.test/bucket/elastic/codex-repo/main/links.json
+link-index-json-url
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://registry.example.test/bucket/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://registry.example.test/bucket/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://registry.example.test/bucket/elastic/codex-repo/main/links.json
+github-url
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://github.com/example-org/link-index/blob/main/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://github.com/example-org/link-index/blob/main/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://github.com/example-org/link-index/blob/main/elastic/codex-repo/main/links.json
+internal-registry
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://internal.example.test/codex/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://internal.example.test/codex/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://internal.example.test/codex/internal/elastic/codex-repo/links.json
+registry-only
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/internal/elastic/codex-repo/links.json
+url-only
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'example-repo' cross link index: https://registry.example.test/bucket/elastic/example-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'other-repo' cross link index: https://registry.example.test/bucket/elastic/other-repo/main/links.json
+  LinkNotInIndex: 'missing.md' is not a valid link in the 'codex-repo' cross link index: https://registry.example.test/bucket/elastic/codex-repo/main/links.json

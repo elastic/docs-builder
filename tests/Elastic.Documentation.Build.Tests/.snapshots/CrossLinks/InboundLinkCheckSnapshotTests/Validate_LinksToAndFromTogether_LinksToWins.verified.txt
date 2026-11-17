@@ -1,0 +1,2 @@
+passed: false
+error https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/alpha/main/links.json 'elastic/beta' links to unknown file: 'missing.md' in the 'alpha' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/alpha/main/links.json
