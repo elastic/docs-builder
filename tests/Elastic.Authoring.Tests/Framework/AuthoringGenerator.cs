@@ -9,9 +9,9 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
@@ -63,7 +63,7 @@ public static class AuthoringGenerator
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
 			ProductsConfiguration = productsConfig,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 
 		var context = new BuildContext(collector, docFs, configurationContext)

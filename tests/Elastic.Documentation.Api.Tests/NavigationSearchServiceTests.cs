@@ -5,7 +5,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
@@ -126,7 +126,7 @@ public class NavigationSearchServiceTests
 			{
 				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200"), ApiKey = "test" }
 			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		);
 		using var service = new NavigationSearchService(inner, accessor, NullLogger<NavigationSearchService>.Instance);
 

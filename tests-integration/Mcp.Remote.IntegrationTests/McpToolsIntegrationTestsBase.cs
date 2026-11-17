@@ -4,9 +4,9 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
@@ -115,12 +115,7 @@ public abstract class McpToolsIntegrationTestsBase
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
 
-		var searchConfig = new SearchConfiguration
-		{
-			Synonyms = [],
-			Rules = [],
-			DiminishTerms = ["plugin", "client", "integration", "glossary"]
-		};
+		var searchConfig = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = ["plugin", "client", "integration", "glossary"] };
 
 		return new ElasticsearchClientAccessor(endpoints, searchConfig);
 	}

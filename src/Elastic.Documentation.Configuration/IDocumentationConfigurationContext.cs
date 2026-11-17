@@ -4,8 +4,8 @@
 
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -16,7 +16,7 @@ public interface IConfigurationContext
 	DocumentationEndpoints Endpoints { get; }
 	ProductsConfiguration ProductsConfiguration { get; }
 	LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	SearchConfiguration SearchConfiguration { get; }
+	SearchTuning SearchTuning { get; }
 }
 
 /// Used only to seed <see cref="IConfigurationContext"/> in DI, you primarily want to depend on <see cref="IDocumentationConfigurationContext"/>
@@ -38,7 +38,7 @@ public class ConfigurationContext : IConfigurationContext
 	public required LegacyUrlMappingConfiguration LegacyUrlMappings { get; init; }
 
 	/// <inheritdoc />
-	public required SearchConfiguration SearchConfiguration { get; init; }
+	public required SearchTuning SearchTuning { get; init; }
 }
 
 public interface IDocumentationConfigurationContext : IDocumentationContext, IConfigurationContext

@@ -3,14 +3,39 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 
 /// <summary>What <c>search.yml</c> loads into today.</summary>
 public class SearchGoldenTests
 {
-	private static string Load(string? yaml) => GoldenConfig.Outcome(GoldenConfig.Search, yaml, p => p.CreateSearchConfiguration());
+	// The snapshots record the shape search.yml loaded into before it became a SearchTuning: synonym groups as arrays, and no member that
+	// remembers what the file wrote. The projection keeps them readable as they were; what it drops is checked by the domain constraint tests.
+	private sealed record SearchConfiguration(
+		IReadOnlyList<string[]> Synonyms,
+		IReadOnlyDictionary<string, string[]> SynonymBiDirectional,
+		IReadOnlyCollection<QueryRule> Rules,
+		IReadOnlyCollection<string> DiminishTerms
+	);
+
+	private static string Load(string? yaml) =>
+		GoldenConfig.Outcome(
+			GoldenConfig.Search,
+			yaml,
+			p =>
+			{
+				var tuning = SearchTuningLoader.Load(p);
+				return new SearchConfiguration(
+					[.. tuning.Synonyms.Select(g => g.Terms.ToArray())],
+					tuning.SynonymBiDirectional,
+					tuning.Rules,
+					tuning.DiminishTerms
+				);
+			},
+			"TypeRaw"
+		);
 
 	[Test]
 	public void Baseline_Loaded_MatchesSnapshot() => Load(GoldenConfig.BaselineText(GoldenConfig.Search)).Should().MatchSnapshot();
