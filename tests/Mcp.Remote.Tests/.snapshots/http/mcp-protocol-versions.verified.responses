@@ -91,7 +91,7 @@ data:
               "default": null
             },
             "sectionFilter": {
-              "description": "Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)",
+              "description": "Filter by navigation section (e.g., 'reference', 'getting-started')",
               "type": [
                 "string",
                 "null"

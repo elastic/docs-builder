@@ -29,8 +29,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')")] string? productFilter = null,
-		[Description("Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)")] string? sectionFilter =
-			null,
+		[Description("Filter by navigation section (e.g., 'reference', 'getting-started')")] string? sectionFilter = null,
 		CancellationToken cancellationToken = default
 	) =>
 		McpToolRunner.RunAsync(logger, "search_{resource}", new Dictionary<string, object?>
