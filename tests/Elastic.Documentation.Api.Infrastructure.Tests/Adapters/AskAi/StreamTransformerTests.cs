@@ -372,6 +372,8 @@ public class StreamTransformerCommonBehaviorTests
 		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		output.Should().MatchSnapshot(name: transformerName, options: StreamTransformerTestHelpers.Scrub());
+		var options = StreamTransformerTestHelpers.Scrub();
+		options.NameReplacesArguments = true;
+		output.Should().MatchSnapshot(name: transformerName, options: options);
 	}
 }

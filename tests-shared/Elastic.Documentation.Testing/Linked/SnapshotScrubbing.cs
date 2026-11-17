@@ -34,32 +34,12 @@ internal static partial class SnapshotScrubbing
 	private static readonly AsyncLocal<Func<string, string>?> PrivateRepositoryNames = new();
 
 	/// <summary>
-	/// For the rest of the calling test, writes the given repository names as <c>private-repo-1</c>, <c>private-repo-2</c>, ... in
-	/// every snapshot, numbered in name order. A name matches as a whole token (<c>widget</c> is not <c>widget-hosted</c>),
-	/// in any case, also inside a url or a path. Pass the names a loaded configuration marks <c>private</c>, so a
+	/// For the rest of the calling test, writes the given repository names as <c>private-repo_1</c>, <c>private-repo_2</c>, ... in
+	/// every snapshot, numbered by first appearance. Pass the names a loaded configuration marks <c>private</c>, so a
 	/// snapshot never records one, however the input named it. Names already written as a placeholder are left alone.
 	/// </summary>
-	internal static void AddPrivateRepositories(IEnumerable<string> names)
-	{
-		var distinct = names
-			.Where(n => !string.IsNullOrWhiteSpace(n) && !PlaceholderName().IsMatch(n))
-			.Distinct(StringComparer.OrdinalIgnoreCase)
-			.Order(StringComparer.OrdinalIgnoreCase)
-			.ToArray();
-		if (distinct.Length == 0)
-			return;
-		var placeholders = distinct.Select((n, i) => (n, placeholder: $"private-repo-{i + 1}")).ToDictionary(
-			e => e.n,
-			e => e.placeholder,
-			StringComparer.OrdinalIgnoreCase
-		);
-		var alternatives = string.Join('|', distinct.OrderByDescending(n => n.Length).Select(Regex.Escape));
-		var pattern = new Regex($"(?<![\\w.\\-])(?:{alternatives})(?![\\w\\-])", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeout);
-		PrivateRepositoryNames.Value = text => pattern.Replace(text, m => placeholders[m.Value]);
-	}
-
-	[GeneratedRegex("^private-repo-[0-9]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex PlaceholderName();
+	internal static void AddPrivateRepositories(IEnumerable<string> names) =>
+		PrivateRepositoryNames.Value = PrivateRepositoryScrubbing.Scrub(names);
 
 	/// <summary>
 	/// Replaces <paramref name="root"/> with <paramref name="token"/> and writes the path that follows it with

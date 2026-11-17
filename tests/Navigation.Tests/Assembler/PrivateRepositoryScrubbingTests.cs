@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Testing.Linked;
+using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -13,10 +14,18 @@ public class PrivateRepositoryScrubbingTests
 {
 	private static readonly string[] Names = ["secret-docs", "secret-docs-two", "hidden", "ci-secrets"];
 
-	[Test]
-	public void For_NamesWithAHyphen_AreReplacedAsWholeTokensEverywhere()
+	internal static IReadOnlySet<string> ShippedPrivateRepositories()
 	{
-		var scrub = PrivateRepositoryScrubbing.For(Names);
+		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("solution root not found");
+		return AssemblyConfiguration.Deserialize(
+			File.ReadAllText(Path.Join(root.FullName, "config", "assembler.yml"))
+		).AllPrivateRepositoryNames;
+	}
+
+	[Test]
+	public void Scrub_Names_AreNumberedByFirstAppearanceAsWholeWords()
+	{
+		var scrub = PrivateRepositoryScrubbing.Scrub(Names);
 
 		var scrubbed = scrub(
 			"toc: secret-docs://reference\npath_prefix: reference/secret-docs/rules\nsecret-docs-two:\nnot-secret-docs\nsecret-docs_x\nhttps://github.com/elastic/secret-docs/blob/main/x.md"
@@ -24,52 +33,93 @@ public class PrivateRepositoryScrubbingTests
 
 		scrubbed.Should().MatchInlineSnapshot(
 			"""
-			toc: private-repo-3://reference
-			path_prefix: reference/private-repo-3/rules
-			private-repo-4:
-			not-secret-docs
+			toc: private-repo_1://reference
+			path_prefix: reference/private-repo_1/rules
+			private-repo_2:
+			not-private-repo_1
 			secret-docs_x
-			https://github.com/elastic/private-repo-3/blob/main/x.md
+			https://github.com/elastic/private-repo_1/blob/main/x.md
 			"""
 		);
 	}
 
 	[Test]
-	public void For_SingleWordNames_AreReplacedOnlyWhereARepositoryCanStand()
+	public void Scrub_PlaceholdersAndNoNames_LeaveTheTextAlone()
 	{
-		var scrub = PrivateRepositoryScrubbing.For(Names);
-
-		var scrubbed = scrub(
-			"hidden://reference\nthe hidden page\nreference/hidden/page\nhttps://github.com/elastic/hidden/tree/main\nhidden-page\nxhidden://y"
-		);
-
-		scrubbed.Should().MatchInlineSnapshot(
-			"""
-			private-repo-2://reference
-			the hidden page
-			reference/hidden/page
-			https://github.com/elastic/private-repo-2/tree/main
-			hidden-page
-			xhidden://y
-			"""
-		);
+		PrivateRepositoryScrubbing
+			.Scrub([.. Names, "private-repo-1", "private-repo-7"])("private-repo-1:// private-repo-7://")
+			.Should()
+			.MatchInlineSnapshot("private-repo-1:// private-repo-7://");
+		PrivateRepositoryScrubbing.Scrub([]).Invoke("secret-docs://x").Should().Be("secret-docs://x");
 	}
 
 	[Test]
-	public void For_PlaceholdersAreNumberedBySortedNameAndLeftAlone()
+	public void Forbidden_SingleWordNames_AreForbiddenOnlyAsTheFormsAnExactValueCanCover()
 	{
-		var scrub = PrivateRepositoryScrubbing.For([.. Names, "private-repo-1", "private-repo-7"]);
+		var forbidden = PrivateRepositoryScrubbing.Forbidden(["widget", "secret-docs"]);
 
-		var scrubbed = scrub("ci-secrets:// hidden:// secret-docs:// secret-docs-two:// private-repo-1:// private-repo-7://");
-
-		scrubbed.Should().MatchInlineSnapshot(
-			"private-repo-1:// private-repo-2:// private-repo-3:// private-repo-4:// private-repo-1:// private-repo-7://"
-		);
+		forbidden.Should().Contain([
+			"secret-docs",
+			"SECRET-DOCS",
+			"widget://",
+			"elastic/widget/",
+			"elastic/WIDGET.git",
+			"elastic/widget\""
+		]);
+		forbidden.Should().NotContain("widget");
 	}
 
 	[Test]
-	public void For_NoNames_ReturnsTheTextUnchanged() =>
-		PrivateRepositoryScrubbing.For([]).Invoke("secret-docs://x").Should().Be("secret-docs://x");
+	[Arguments("", true)]
+	[Arguments("\n", true)]
+	[Arguments(".", true)]
+	[Arguments(":", true)]
+	[Arguments(" #", true)]
+	[Arguments(")", true)]
+	[Arguments("#readme", true)]
+	[Arguments("?x", true)]
+	[Arguments("\"", true)]
+	[Arguments("/", true)]
+	[Arguments("-hosted", false)]
+	[Arguments("_x", false)]
+	[Arguments("x", false)]
+	public void LeakingLines_SingleWordAfterElasticSlash_IsFoundUpToAWordCharacterOrHyphen(string after, bool leaks)
+	{
+		var lines = PrivateRepositoryScrubbing.LeakingLines($"first\nrepo: elastic/widget{after}", ["widget"]);
+
+		(lines.Count > 0).Should().Be(leaks);
+	}
+
+	[Test]
+	public void LeakingLines_OtherCaseAndTokens_AreFound()
+	{
+		var names = new[] { "widget", "secret-docs" };
+
+		PrivateRepositoryScrubbing
+			.LeakingLines("a\nhttps://github.com/elastic/WIDGET/x\nWidget://y\nthe widget page\nSecret-Docs and not-secret-docs", names)
+			.Should()
+			.Equal(2, 3, 5);
+	}
+
+	[Test]
+	public void FrozenBaseline_AFileThatLeaks_IsCountedWithoutItsName()
+	{
+		var folder = Directory.CreateTempSubdirectory("leak-guard").FullName;
+		try
+		{
+			File.WriteAllText(Path.Join(folder, "clean.txt"), "repo: elastic/widget-hosted\n");
+			File.WriteAllText(Path.Join(folder, "leaks.txt"), "repo: elastic/widget");
+
+			CountLeakingFiles(Directory.EnumerateFiles(folder), ["widget"]).Should().Be(1);
+		}
+		finally
+		{
+			Directory.Delete(folder, recursive: true);
+		}
+	}
+
+	private static int CountLeakingFiles(IEnumerable<string> files, IEnumerable<string> names) =>
+		files.Count(f => PrivateRepositoryScrubbing.LeakingLines(File.ReadAllText(f), names).Count > 0);
 
 	[Test]
 	public void VolatileValues_ShasAndDates_AreReplaced() =>
@@ -84,9 +134,8 @@ public class PrivateRepositoryScrubbingTests
 	public void FrozenBaseline_ContainsNoPrivateRepositoryOfTheShippedConfig()
 	{
 		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("solution root not found");
-		var shipped = AssemblyConfiguration.Deserialize(File.ReadAllText(Path.Join(root.FullName, "config", "assembler.yml")));
-		var scrub = PrivateRepositoryScrubbing.For(shipped.AllPrivateRepositoryNames);
-		shipped.AllPrivateRepositoryNames.Should().NotBeEmpty("the check below would pass vacuously");
+		var shipped = ShippedPrivateRepositories();
+		shipped.Should().NotBeEmpty("the check below would pass vacuously");
 
 		var files = Directory
 			.EnumerateFiles(Path.Join(root.FullName, "tests", "Navigation.Tests", "Assembler", "Baseline"))
@@ -100,9 +149,23 @@ public class PrivateRepositoryScrubbingTests
 			.ToArray();
 		files.Should().NotBeEmpty();
 
-		var leaking = files.Count(f => scrub(File.ReadAllText(f)) != File.ReadAllText(f));
+		var leaking = CountLeakingFiles(files, shipped);
 
 		// the names are not part of the message on purpose
 		leaking.Should().Be(0, "a frozen copy or a verified file names a private repository");
+	}
+
+	[Test]
+	public void Options_ASnapshotThatNamesAPrivateRepository_FailsOnTheForbidCheckAndWritesNoReceivedFile()
+	{
+		const string Value = "widget-secret-synthetic";
+		var options = new SnapshotOptions().Forbid([Value]);
+
+		var (message, receivedFiles) = ForbidProbe.Run($"first line\nrepository {Value}\n", Value, options);
+
+		message.Should().NotBeNull("the text is its own snapshot, so only the forbid check can fail it");
+		message.Should().Contain("2", "the message gives the line of the forbidden value");
+		message!.Contains(Value, StringComparison.Ordinal).Should().BeFalse("the message names the value");
+		receivedFiles.Should().Be(0, "a forbidden value must not reach a received file");
 	}
 }

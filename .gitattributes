@@ -1,2 +1,5 @@
 # Verified snapshots must have stable line endings across OSes
 **/.snapshots/** text eol=lf
+
+# Raw-string fixtures in test code take the file's line endings, so a Windows checkout must not turn them into CRLF
+*.cs text eol=lf

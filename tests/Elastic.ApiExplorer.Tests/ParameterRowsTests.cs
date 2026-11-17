@@ -66,7 +66,11 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	public void Write_HeaderParameters_HaveTheirOwnSection()
 	{
 		var context = RenderContext(DocsGet);
-		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+		var markdown = OperationCommonMark.Write(
+			DocsGet.Model,
+			OperationPageModel.Create(DocsGet.Model, context),
+			context
+		).ReplaceLineEndings("\n");
 
 		markdown.Should().Contain(
 			"""
@@ -216,7 +220,11 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	public void Write_PathParameters_SitBeforeTheDescriptionOneLevelDeeper()
 	{
 		var context = RenderContext(DocsGet);
-		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+		var markdown = OperationCommonMark.Write(
+			DocsGet.Model,
+			OperationPageModel.Create(DocsGet.Model, context),
+			context
+		).ReplaceLineEndings("\n");
 
 		markdown.Should().MatchRegex("#### Path parameters\\s+- `index` \\(.*\\) — required");
 		markdown
@@ -243,7 +251,11 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	public void Write_ReferencedMapParameter_ListsMapValues()
 	{
 		var context = RenderContext(DocsGet);
-		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+		var markdown = OperationCommonMark.Write(
+			DocsGet.Model,
+			OperationPageModel.Create(DocsGet.Model, context),
+			context
+		).ReplaceLineEndings("\n");
 
 		markdown.Should().Contain(
 			"""

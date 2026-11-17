@@ -35,9 +35,9 @@ public class PrivateRepositoryScrubbingTests
 				"""
 				model:
 				  - "open-docs"
-				  - "private-repo-1"
-				  - "private-repo-2"
-				  - "widget-hosted"
+				  - "private-repo_1"
+				  - "private-repo_2"
+				  - "private-repo_2-hosted"
 				"""
 			);
 	}
@@ -52,13 +52,13 @@ public class PrivateRepositoryScrubbingTests
 		git@github.com:elastic/hidden-docs.git
 		https://github.com/elastic/WIDGET/blob/main/docs/toc.yml
 		toc: hidden-docs://reference
-		hidden-docs-extra and xwidget and widget-hosted stay
+		xwidget and widget_x stay, widget-hosted is cut at the hyphen
 		""".Should().MatchInlineSnapshot(
 			"""
-			git@github.com:elastic/private-repo-1.git
-			https://github.com/elastic/private-repo-2/blob/main/docs/toc.yml
-			toc: private-repo-1://reference
-			hidden-docs-extra and xwidget and widget-hosted stay
+			git@github.com:elastic/private-repo_1.git
+			https://github.com/elastic/private-repo_2/blob/main/docs/toc.yml
+			toc: private-repo_1://reference
+			xwidget and widget_x stay, private-repo_2-hosted is cut at the hyphen
 			"""
 		);
 	}
@@ -69,6 +69,20 @@ public class PrivateRepositoryScrubbingTests
 		SnapshotScrubbing.AddPrivateRepositories(["private-repo-7", "private-repo-12"]);
 
 		"private-repo-7 private-repo-12".Should().MatchInlineSnapshot("private-repo-7 private-repo-12");
+	}
+
+	[Test]
+	public void ShippedPrivateNames_AreForbiddenInEverySnapshotAndWriteNoReceivedFile()
+	{
+		PrivateRepositoryGuard.Forbidden.Should().NotBeEmpty("the guard would pass vacuously");
+		var name = PrivateRepositoryGuard.Forbidden.First(n => n.Contains('-'));
+
+		var (message, receivedFiles) = ForbidProbe.Run($"first line\nrepository {name}\n", name);
+
+		message.Should().NotBeNull("the text is its own snapshot, so only the default forbid check can fail it");
+		message.Should().Contain("2", "the message gives the line of the forbidden value");
+		message!.Contains(name, StringComparison.Ordinal).Should().BeFalse("the message names a private repository");
+		receivedFiles.Should().Be(0, "a forbidden value must not reach a received file");
 	}
 
 	[Test]

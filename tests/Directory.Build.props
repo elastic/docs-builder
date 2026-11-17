@@ -35,6 +35,7 @@
     <PackageReference Include="Nullean.Snapshots.AwesomeAssertions" />
     <PackageReference Include="Nullean.Snapshots.Html" />
     <PackageReference Include="Nullean.Snapshots.Json" />
+    <PackageReference Include="Nullean.Snapshots.Objects" />
     <PackageReference Include="Nullean.Snapshots.Yaml" />
     <Compile Include="$(MSBuildThisFileDirectory)..\tests-shared\Elastic.Documentation.Testing\Linked\*.cs" Link="Linked\%(Filename)%(Extension)" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\tests-shared\Elastic.Documentation.Testing\Elastic.Documentation.Testing.csproj" />
