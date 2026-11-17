@@ -5,7 +5,7 @@
 using System.Globalization;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
@@ -342,7 +342,7 @@ public class ApiLookupResultTests
 			{
 				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200"), ApiKey = "test" }
 			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		);
 		return accessor.Client.RequestResponseSerializer.Deserialize<Clients.Elasticsearch.SearchResponse<DocumentationDocument>>(stream);
 	}
