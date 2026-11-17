@@ -1,0 +1,127 @@
+diagnostics:
+toc:
+IndexFileRef  index.md
+ListingRef  posts listing=ListingOptions { Glob = , Sort = , Exclude = , Visual = None, Groups = System.String[], Extension = , Island = False }
+  IndexFileRef  posts/index.md
+  FileRef  posts/archive/deep.md [hidden]
+  FileRef  posts/one.md [hidden]
+  FileRef  posts/three.md [hidden]
+  FileRef  posts/two.md [hidden]
+ListingRef  notes listing=ListingOptions { Glob = *.md, Sort = , Exclude = System.String[], Visual = None, Groups = , Extension = , Island = False }
+  IndexFileRef  notes/index.md
+  FileRef  notes/a.md [hidden]
+model:
+model <DocumentationSetFile>:
+  Project: "constructs"
+  TableOfContents:
+    - <IndexFileRef>:
+      PathRelativeToDocumentationSet: "index.md"
+      PathRelativeToContainer: "index.md"
+      Hidden: False
+      Children: []
+      Context: "/docs/docset.yml"
+      DefaultCta: null
+    - <ListingRef>:
+      PathRelativeToDocumentationSet: "posts"
+      PathRelativeToContainer: "posts"
+      Children:
+        - <IndexFileRef>:
+          PathRelativeToDocumentationSet: "posts/index.md"
+          PathRelativeToContainer: "posts/index.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "posts/archive/deep.md"
+          PathRelativeToContainer: "posts/archive/deep.md"
+          Hidden: True
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "posts/one.md"
+          PathRelativeToContainer: "posts/one.md"
+          Hidden: True
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "posts/three.md"
+          PathRelativeToContainer: "posts/three.md"
+          Hidden: True
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "posts/two.md"
+          PathRelativeToContainer: "posts/two.md"
+          Hidden: True
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Options <ListingOptions>:
+        Glob: null
+        Sort: null
+        Exclude: null
+        Visual: None
+        Groups:
+          - "news"
+          - "how-to"
+        Extension: null
+        Island: False
+    - <ListingRef>:
+      PathRelativeToDocumentationSet: "notes"
+      PathRelativeToContainer: "notes"
+      Children:
+        - <IndexFileRef>:
+          PathRelativeToDocumentationSet: "notes/index.md"
+          PathRelativeToContainer: "notes/index.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "notes/a.md"
+          PathRelativeToContainer: "notes/a.md"
+          Hidden: True
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Options <ListingOptions>:
+        Glob: "*.md"
+        Sort: null
+        Exclude:
+          - "old-*"
+        Visual: None
+        Groups: null
+        Extension: null
+        Island: False
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta: {}
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}
