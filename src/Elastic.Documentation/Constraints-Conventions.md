@@ -18,41 +18,62 @@ Rules for the pieces:
 - A default that is the dominant idiom of the shipped files is not a violation; the field is not added.
 - Severity of a new rule on a silent coercion is Warning, unless the catalogue says otherwise.
 
-## Loader pipeline: Parse + Map + Rules
+## Where rules live
 
-Every loader is three things and nothing else, run through `LoaderPipeline` (Elastic.Documentation.Configuration/Loading):
+A record's rules are declared once, in a `*Constraints` class in `Elastic.Documentation` tagged `[Constraints<T>]` (the generator collects every static `Constraint<T>` field into `All`). The record exposes them as its one static set:
 
 ```csharp
-public static Result<SearchTuning> Load(ConfigurationFileProvider provider) =>
-    LoaderPipeline.Run(
-        "search.yml",
-        parse: ReadDto,   // the only code that touches the DTO (internal)
-        map: ToRecord);   // DTO -> anemic record; findings of its own go in LoadOptions.Extra
+public sealed record Widget(string Name, int Size) : IHaveConstraints<Widget>
+{
+    public static ConstraintSet<Widget> Constraints => WidgetConstraints.All;
+}
 ```
 
-The aggregate implements `Nullean.Entities.IHaveConstraints<T>`, so the pipeline checks against `T.Constraints` and a loader never passes its rules by hand. `LoadOptions<T>` is the optional second argument: `Extra`, `FileOf`, `ErrorsAreFatal` (default true), `Rules` (a set to use instead of `T.Constraints`, for a record a read-time set checks, or `ConstraintSet.Merge(first, second)`), and `Describe` (the text of the error for a step that threw; the default is the exception's message, so a loader keeps the text it always gave).
+Everything that checks a record reads `T.Constraints`. There is no way to pass another set, and no `ConstraintSet.Merge/From/Pair` outside the domain.
 
-- `Run` catches a step that throws and returns it as an error diagnostic carrying the exception's message, runs `rules.Report` exactly once, and returns `Result<T>` (an error means no value; `ErrorsAreFatal = false` returns the value with its errors for a caller that reports and continues). `Check` is the same last step for a record built elsewhere; `Build` only builds, for a part whose rules relate it to another part.
-- `BufferingDiagnosticsCollector` holds diagnostics in emission order, unfiltered, so a loader whose parser writes to a collector can return them in its `Result<T>` and the caller's collector sees what a direct write would have produced.
+**The ban.** `BannedSymbols.txt` (Microsoft.CodeAnalysis.BannedApiAnalyzers, rule RS0030, wired in `src/Directory.Build.props`) makes the rule-authoring API a compile error in every `src` project except `Elastic.Documentation`: `Constraints<T>`, `Relation`, `Tree`, the static `ConstraintSet`, and running a set by hand (`Report`, `Validate`, `Validated`, `Ensure`, `Check`). Tests are exempt. If you think a loader or service needs a rule, add it to the `*Constraints` class instead. `ConstraintSet<T>.Apply`/`ApplyDetailed` stay allowed: they are the checked form of an operation. The single sanctioned runner outside the domain is `Loader.cs`, which suppresses RS0030 for the whole file.
 
-## Loader recipe: build, check once, hand the result on
+## Stages are types
 
-A loader is the one place that checks the entity it builds; nothing downstream checks it again.
+A rule that holds only at one stage (a published entry versus one being authored) is not an option on a loader. Each stage is its own record with its own static `Constraints`, and a C# 15 `union` names the stages, so a switch must handle every one (CS8509, an error in `src`):
 
-1. Build the entity. When a rule relates two things, the loader builds the pair record itself.
-2. `var report = Set.All.Report(entity);` runs every rule once and reports all of them, not the first.
-3. Hand the report on: `Result.From(report, file)` (carries every diagnostic; `HasErrors` is true when a rule of Error severity was broken) or, where the loader owns a collector, `collector.WriteViolations(report, file)`, which returns whether the entity is usable. Both go through `ConstraintReport<T>.ToDiagnostics`, the only violation-to-diagnostic mapping, so every diagnostic carries the rule's id as `Diagnostic.RuleId`. Match on that, never on message text.
-4. Never check in a callee. A caller of a loader writes the findings with `result.Report(collector)`, which returns the same `Result<T>`, and then chooses: `.OrThrow()`, `.Value`, or a match on `HasErrors`. `EmitTo(collector)` is shorthand for `Report(collector).Value`.
-5. Startup-critical configuration stops the process in one place, the composition root: `Loader.Load(...).Report(collector).OrThrow()` throws a `ConfigurationException` whose message lists every error and which carries every diagnostic.
+```csharp
+public sealed record DraftWidget(string Name) : IHaveConstraints<DraftWidget> { /* Constraints => DraftWidgetConstraints.All */ }
+public sealed record PublishedWidget(string Name, string Description) : IHaveConstraints<PublishedWidget> { /* ... */ }
+public readonly union WidgetStage(DraftWidget, PublishedWidget);
+```
 
-## Domain operations: derive, then re-check
+A union is a struct that wraps its case: read the case through `.Value`, and write `OfCase`-style helpers rather than `OfType` over unions. A rule about two aggregates is a wrapper record with its own `Constraints`.
 
-A record that is not read from a file is made by a **domain operation** (`Elastic.Documentation.Domain.DomainOperation`), never by `new` or `with` in a service.
+## Loaders: declared once
 
-- **Pure.** No IO, no clock (the caller passes `today`), no collector. A finding is a diagnostic in the result, in the order it was found.
-- **Returns `Result<T>`** (`Elastic.Documentation.Diagnostics`), the record checked by the aggregate's set.
-- **Built, then derived.** `DomainOperation.Built` is for a record made from facts that were never in a file: the result carries every finding of the set. `Derived` is for a record made from one that was already checked: the set runs again, but only the errors are in the result, because the warnings the source carried were reported when it was read. A caller of `Derived` writes `result.EmitErrorsTo(collector)`.
-- **The value rides along.** `Result.From` keeps the value even when a rule of Error severity is broken, so a caller that tolerates the finding can still use it; `EmitErrorsTo` returns null instead.
+A loader is declared as a static `Loader<TDto, T>` and has one entry, `Load(text, file)`, returning a `LoadResult<T>`:
+
+```csharp
+internal static class SearchLoader
+{
+    public static readonly Loader<SearchDto, SearchTuning> Yaml = Loader.For(
+        parse: (text, file) => ReadDto(text, file),   // the only code that touches the DTO
+        map:   (dto, context) => ToRecord(dto, context));   // DTO -> record; own findings go to context.Warn / context.Hint
+}
+```
+
+- `parse` and `map` are the only steps. Findings made in `map` go to the `MapContext` the loader creates per load, so they cannot be lost or reordered, and are kept (first) when a later step throws.
+- The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default) makes an error an `Unreadable<T>`; `false` returns the `Loaded<T>` with its errors, for a caller that reports and continues.
+- A step that throws becomes an error finding. Its text is `describe(exception)`, declared with the loader (default: the message, so a loader keeps the text it always gave). Cancellation and out-of-memory propagate.
+- `value.Check(file)` checks a record built elsewhere against its `T.Constraints` and returns the `Loaded<T>`.
+
+`LoadResult<T>` is a union of `Loaded<T>` (the value and every finding, a tolerant load may still hold errors) and `Unreadable<T>` (findings only). It is not `Nullean.Entities.Result<T>`, which is the outcome of an operation. A caller writes the findings with `result.Report(collector)` (returns the same result) and then chooses `OrThrow()`, `OrThrowIfMissing()`, `ValueOrNull()` or a match on the case. `EmitTo(collector)` is `Report(collector).ValueOrNull()`. `EmitErrorsTo` writes errors only and returns null when there are some; a result's own warnings are in `Findings()` and written by `EmitTo`, not by `EmitErrorsTo`. Startup-critical configuration stops the process in one place, the composition root: `Loader.Load(...).Report(collector).OrThrow()` throws a `ConfigurationException` listing every error and carrying every finding.
+
+A caller that owns a collector and has a `ConstraintReport` writes it with `collector.WriteViolations(report, file)`, which returns whether the value is usable (no errors).
+
+`BufferingDiagnosticsCollector` holds diagnostics unfiltered, for a parser that writes to a collector whose findings a loader must return.
+
+## Operations: methods on the record, checked by the set
+
+A change to a record is a public method that returns the record (`widget.Grow()`, `widget.Rename(name)`). The checked form is the set's own `T.Constraints.Apply(current, r => r.Grow())` (`ApplyDetailed` where "nothing happened" matters). `ApplyDetailed(...).ToDiagnostics(file)` turns the outcome into findings, including the warnings `Apply` and `Validated` drop. There is no operation wrapper class.
+
+Operations are verified, not hand-tested: `AutoTest.For(WidgetConstraints.Instance, gen)` (Nullean.Entities.CsCheck) runs every public method returning `T` (and every one taking a single argument) against every rule, one generated test per kind of rule. A method returning `Result<T>` is not discovered. An operation that can open a state a rule forbids fails with the rule, the operation and the smallest input. The generated values must satisfy every rule, and each axis fails as vacuous when the data never reaches it: generate inputs on both sides of an idempotent operation. See `WidgetAutoTests`.
 
 ## Equality
 

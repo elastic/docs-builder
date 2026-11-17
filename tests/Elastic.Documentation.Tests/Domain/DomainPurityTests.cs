@@ -5,7 +5,7 @@
 using System.Reflection;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Domain;
+using Elastic.Documentation.Equality;
 
 namespace Elastic.Documentation.Tests.Domain;
 
@@ -15,12 +15,12 @@ namespace Elastic.Documentation.Tests.Domain;
 /// Domain objects may expose <c>System.IO.Abstractions</c> file handles (<c>IFileInfo</c>, <c>IDirectoryInfo</c>) by
 /// design: a resolved documentation set points at real files, and tests supply a <c>MockFileSystem</c>.
 /// The check is shallow: it reads the declared field, property, constructor and method signatures of each type, not method bodies, so a type can
-/// still use infrastructure internally. Today it covers one internal class; it earns its keep as bounded contexts are added to the list.
+/// still use infrastructure internally. Today it covers only the equality comparers; it earns its keep as bounded contexts are added to the list.
 /// </summary>
 public class DomainPurityTests
 {
 	/// <summary>Namespaces introduced by the domain model; each change that adds a bounded context adds its namespace here. Existing infrastructure namespaces are out of scope.</summary>
-	private static readonly string[] DomainNamespaces = ["Elastic.Documentation.Domain"];
+	private static readonly string[] DomainNamespaces = ["Elastic.Documentation.Equality"];
 
 	private static readonly string[] ForbiddenNamespacePrefixes =
 	[
@@ -46,7 +46,7 @@ public class DomainPurityTests
 
 	[Test]
 	public void DomainNamespaces_HoldTypes() =>
-		DomainTypes().Should().Contain(typeof(DomainOperation), "an empty list would make the purity check pass vacuously");
+		DomainTypes().Should().Contain(typeof(FileSystemInfoLocationComparer), "an empty list would make the purity check pass vacuously");
 
 	[Test]
 	public void DomainTypes_ReferenceNoInfrastructure()

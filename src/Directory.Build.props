@@ -25,6 +25,11 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
+  <!-- Rules are declared and run in Elastic.Documentation only; every other src project is banned from the rule-authoring API (see BannedSymbols.txt). -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'Elastic.Documentation'">
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)../BannedSymbols.txt" Link="BannedSymbols.txt" />
+  </ItemGroup>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 

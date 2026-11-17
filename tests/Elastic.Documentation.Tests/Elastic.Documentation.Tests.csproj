@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="CsCheck" />
     <PackageReference Include="Generator.Equals" />
+    <PackageReference Include="Nullean.Entities.CsCheck" />
   </ItemGroup>
 
 </Project>

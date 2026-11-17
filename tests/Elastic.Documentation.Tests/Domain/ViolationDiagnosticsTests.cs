@@ -16,7 +16,7 @@ public class ViolationDiagnosticsTests
 	[Test]
 	public void ToDiagnostics_MapsSeverityMessageAndRuleId_InReportedOrder()
 	{
-		var diagnostics = WidgetRules.All.Report(new Widget("", -1)).ToDiagnostics("w.yml");
+		var diagnostics = Widget.Constraints.Report(new Widget("", -1)).ToDiagnostics("w.yml");
 
 		diagnostics
 			.Select(d => (d.Severity, d.RuleId, d.Message))
@@ -27,7 +27,7 @@ public class ViolationDiagnosticsTests
 	[Test]
 	public void ToDiagnostics_WarningRule_IsAWarning()
 	{
-		var diagnostics = WidgetRules.All.Report(new Widget("n", 50)).ToDiagnostics("w.yml");
+		var diagnostics = Widget.Constraints.Report(new Widget("n", 50)).ToDiagnostics("w.yml");
 
 		diagnostics.Should().ContainSingle().Which.Severity.Should().Be(Severity.Warning);
 	}
@@ -35,7 +35,7 @@ public class ViolationDiagnosticsTests
 	[Test]
 	public void ToDiagnostic_WithoutOwnFile_UsesTheDeclaringFile()
 	{
-		var diagnostic = WidgetRules.All.Report(Broken).Violations[0].ToDiagnostic("declared.yml");
+		var diagnostic = Widget.Constraints.Report(Broken).Violations[0].ToDiagnostic("declared.yml");
 
 		diagnostic.File.Should().Be("declared.yml");
 		diagnostic.Line.Should().BeNull();
@@ -44,7 +44,7 @@ public class ViolationDiagnosticsTests
 	[Test]
 	public void ToDiagnostic_WithOwnLocation_PointsAtIt()
 	{
-		var located = WidgetRules.All.Report(Broken).Violations[0].At(new SourceLocation("own.yml", 3, 4, 5));
+		var located = Widget.Constraints.Report(Broken).Violations[0].At(new SourceLocation("own.yml", 3, 4, 5));
 
 		var diagnostic = located.ToDiagnostic("declared.yml");
 
@@ -56,11 +56,35 @@ public class ViolationDiagnosticsTests
 	{
 		var collector = new BufferedCollector();
 
-		var usable = collector.WriteViolations(WidgetRules.All.Report(WidgetRules.Valid), "w.yml");
-		var warningOnly = collector.WriteViolations(WidgetRules.All.Report(new Widget("n", 50)), "w.yml");
-		var broken = collector.WriteViolations(WidgetRules.All.Report(Broken), "w.yml");
+		var usable = collector.WriteViolations(Widget.Constraints.Report(WidgetConstraints.Valid), "w.yml");
+		var warningOnly = collector.WriteViolations(Widget.Constraints.Report(new Widget("n", 50)), "w.yml");
+		var broken = collector.WriteViolations(Widget.Constraints.Report(Broken), "w.yml");
 
 		(usable, warningOnly, broken).Should().Be((true, true, false));
 		collector.Written.Select(d => d.RuleId).Should().Equal("size-small", "name-required", "size-small");
 	}
+
+	[Test]
+	public void ApplyOutcome_Applied_CarriesTheNoticesItWasLetThroughWith()
+	{
+		var outcome = Widget.Constraints.ApplyDetailed(WidgetConstraints.Valid, w => w with { Size = 50 });
+
+		outcome.ToDiagnostics("w.yml").Select(d => (d.Severity, d.RuleId)).Should().Equal((Severity.Warning, "size-small"));
+	}
+
+	[Test]
+	public void ApplyOutcome_Failure_CarriesTheViolations()
+	{
+		var outcome = Widget.Constraints.ApplyDetailed(WidgetConstraints.Valid, w => w with { Name = "" });
+
+		outcome
+			.ToDiagnostics("w.yml")
+			.Select(d => (d.Severity, d.RuleId, d.File))
+			.Should()
+			.Equal((Severity.Error, "name-required", "w.yml"));
+	}
+
+	[Test]
+	public void ApplyOutcome_Noop_HasNoFindings() =>
+		Widget.Constraints.ApplyDetailed(WidgetConstraints.Valid, w => w).ToDiagnostics("w.yml").Should().BeEmpty();
 }

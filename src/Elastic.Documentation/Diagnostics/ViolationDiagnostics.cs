@@ -34,6 +34,17 @@ public static class ViolationDiagnostics
 	public static IReadOnlyList<Diagnostic> ToDiagnostics<T>(this ConstraintReport<T> report, string file) =>
 		[.. report.Violations.Select(v => v.ToDiagnostic(file))];
 
+	/// <summary>
+	/// The findings of a checked change: the warnings and hints an applied change was let through with, the violations of a refused one, none for a change
+	/// that did nothing. <c>Validated</c> and <c>Apply</c> drop warnings, so a loader or service that reports them reads them through this.
+	/// </summary>
+	public static IReadOnlyList<Diagnostic> ToDiagnostics<T>(this ApplyOutcome<T> outcome, string file) => outcome switch
+	{
+		ApplyOutcome<T>.Applied applied => [.. applied.Notices.Select(v => v.ToDiagnostic(file))],
+		ApplyOutcome<T>.Failure failure => [.. failure.Violations.Select(v => v.ToDiagnostic(file))],
+		_ => []
+	};
+
 	/// <summary>Writes every violation of <paramref name="report"/> to the collector and returns whether the value is usable (no errors).</summary>
 	public static bool WriteViolations<T>(this IDiagnosticsCollector collector, ConstraintReport<T> report, string file)
 	{
