@@ -92,7 +92,6 @@
     <PackageVersion Include="Proc" Version="0.22.1" />
     <PackageVersion Include="RazorSlices" Version="0.12.2" />
     <PackageVersion Include="Sep" Version="0.18.0" />
-    <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="Spectre.Console" Version="0.57.2" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="3.1.2" />
     <PackageVersion Include="System.IO.Abstractions" Version="23.0.0" />

@@ -8,7 +8,6 @@
   <ItemGroup>
     <PackageReference Include="Proc" />
     <PackageReference Include="SharpYaml" />
-    <PackageReference Include="Slugify.Core" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
