@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.PageFeedback;
 using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Api;
