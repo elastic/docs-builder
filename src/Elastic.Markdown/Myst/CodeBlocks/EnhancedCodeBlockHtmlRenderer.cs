@@ -301,7 +301,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		{
 			AppliesTo = appliesTo,
 			Inline = false,
-			VersionsConfig = appliesToDirective.Build.VersionsConfiguration,
+			VersionsConfig = appliesToDirective.Build.Catalog.VersioningSystems,
 			DesignSystem = appliesToDirective.Build.Configuration.Features.NavigationPreviewEnabled
 		};
 

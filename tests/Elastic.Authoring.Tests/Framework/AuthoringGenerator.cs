@@ -6,11 +6,9 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown;
@@ -58,11 +56,9 @@ public static class AuthoringGenerator
 
 		var configurationContext = new ConfigurationContext
 		{
-			VersionsConfiguration = versionsConfig,
+			Catalog = new GlobalCatalog(versionsConfig, productsConfig, new LegacyUrlMappingCatalog { Mappings = [] }),
 			ConfigurationFileProvider = configurationFileProvider,
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
-			ProductsConfiguration = productsConfig,
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 

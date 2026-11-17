@@ -10,6 +10,7 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
@@ -96,7 +97,7 @@ public static class InMemoryAssemblerSite
 			skipPrivateRepositories: false,
 			ConfigurationSource.Remote
 		);
-		var versions = new VersionsConfiguration
+		var versions = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
@@ -119,10 +120,8 @@ public static class InMemoryAssemblerSite
 		{
 			Endpoints = basis.Endpoints,
 			ConfigurationFileProvider = provider,
-			VersionsConfiguration = versions,
-			ProductsConfiguration = basis.ProductsConfiguration,
-			SearchConfiguration = basis.SearchConfiguration,
-			LegacyUrlMappings = basis.LegacyUrlMappings
+			Catalog = new GlobalCatalog(versions, basis.Catalog.Products, basis.Catalog.LegacyUrlMappings),
+			SearchConfiguration = basis.SearchConfiguration
 		};
 	}
 

@@ -6,10 +6,9 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
@@ -413,13 +412,8 @@ public class ConfigurationFileCtaTests
 		var docsDir = fileSystem.DirectoryInfo.New("/docs");
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
-		var productsConfig = new ProductsConfiguration
-		{
-			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-		};
+		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+		var productsConfig = new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary() };
 
 		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
 	}

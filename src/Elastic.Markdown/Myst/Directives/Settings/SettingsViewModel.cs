@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.ApplicabilityBadges;
@@ -18,7 +19,7 @@ public class SettingsViewModel
 
 	public required Func<string, string> RenderMarkdown { get; init; }
 
-	public required VersionsConfiguration VersionsConfig { get; init; }
+	public required VersioningSystemCatalog VersionsConfig { get; init; }
 
 	/// <summary>Renders applies-to badges with the design system. Set when NAVIGATION_PREVIEW is on.</summary>
 	public bool DesignSystem { get; init; }

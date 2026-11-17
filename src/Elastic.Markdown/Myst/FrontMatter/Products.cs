@@ -2,14 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Diagnostics;
 using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-public class ProductConverter(ProductsConfiguration products) : YamlConverter<Product>
+public class ProductConverter(ProductCatalog products) : YamlConverter<Product>
 {
 	private static readonly string[] KnownKeys = ["id"];
 
@@ -58,7 +58,7 @@ public class ProductConverter(ProductsConfiguration products) : YamlConverter<Pr
 		throw new NotSupportedException("Product YAML serialization is not supported; products front matter is only ever read from YAML.");
 }
 
-public class InvalidProductException(string invalidValue, ProductsConfiguration products) : Exception(
+public class InvalidProductException(string invalidValue, ProductCatalog products) : Exception(
 	$"Invalid products frontmatter value: \"{invalidValue}\"." +
 		(!string.IsNullOrWhiteSpace(invalidValue)
 			? " " + new Suggestion(

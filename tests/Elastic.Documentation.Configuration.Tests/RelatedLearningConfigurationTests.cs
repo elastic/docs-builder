@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.RelatedLearning;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -30,7 +33,7 @@ public class RelatedLearningConfigurationTests
 	[Test]
 	public void Parse_QuotedTitleWithColonAndAmpersand_Succeeds()
 	{
-		var config = RelatedLearningConfiguration.Parse(
+		var config = RelatedLearningConfigurationExtensions.Parse(
 			"""
 			links:
 			  sample:
@@ -56,7 +59,7 @@ public class RelatedLearningConfigurationTests
 	public void Parse_MissingTitle_Throws()
 	{
 		var act =
-			() => RelatedLearningConfiguration.Parse(
+			() => RelatedLearningConfigurationExtensions.Parse(
 				"""
 			links:
 			  widget:
@@ -71,11 +74,13 @@ public class RelatedLearningConfigurationTests
 	public void Parse_MissingUrl_Throws()
 	{
 		var act =
-			() => RelatedLearningConfiguration.Parse("""
+			() => RelatedLearningConfigurationExtensions.Parse(
+				"""
 			links:
 			  widget:
 			    title: Widget
-			""");
+			"""
+			);
 
 		act.Should().Throw<InvalidOperationException>().WithMessage("*link 'widget' is missing required 'url'*");
 	}
@@ -84,7 +89,7 @@ public class RelatedLearningConfigurationTests
 	public void Parse_RelativeUrl_Throws()
 	{
 		var act =
-			() => RelatedLearningConfiguration.Parse(
+			() => RelatedLearningConfigurationExtensions.Parse(
 				"""
 			links:
 			  widget:
@@ -99,14 +104,14 @@ public class RelatedLearningConfigurationTests
 	[Test]
 	public void Parse_EmptyLinks_ReturnsEmptyCatalog()
 	{
-		var config = RelatedLearningConfiguration.Parse("links: {}");
+		var config = RelatedLearningConfigurationExtensions.Parse("links: {}");
 
 		config.Links.Should().BeEmpty();
 	}
 
-	private static RelatedLearningConfiguration LoadEmbeddedCatalog()
+	private static RelatedLearningCatalog LoadEmbeddedCatalog()
 	{
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
-		return provider.CreateRelatedLearningConfiguration();
+		return RelatedLearningLoader.Load(provider).OrThrow();
 	}
 }

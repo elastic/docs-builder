@@ -4,6 +4,7 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 
@@ -26,7 +27,7 @@ public class ApplicableToViewModel
 
 	public bool ShowTooltip { get; init; } = true;
 	public required ApplicableTo AppliesTo { get; init; }
-	public required VersionsConfiguration VersionsConfig { get; init; }
+	public required VersioningSystemCatalog VersionsConfig { get; init; }
 
 	public ApplicabilityBadgePlacement BadgePlacement { get; init; } = ApplicabilityBadgePlacement.Combined;
 

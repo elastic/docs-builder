@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.Versions;
@@ -69,7 +70,7 @@ public class OperationDeprecatedProjectionTests(ApiExplorerFixture fixture)
 	[Test]
 	public void ConvertToDocuments_DeprecatedOperation_SetsApiDeprecated()
 	{
-		var versions = new VersionsConfiguration
+		var versions = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
