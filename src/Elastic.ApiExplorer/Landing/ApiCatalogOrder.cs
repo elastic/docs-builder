@@ -13,7 +13,15 @@ internal static class ApiCatalogOrder
 {
 	public static readonly string[] StackKeys = ["elasticsearch", "kibana", "logstash"];
 
-	public static readonly string[] OrchestrationKeys = ["cloud", "cloud-billing", "cloud-connect", "cloud-enterprise", "cloud-serverless"];
+	public static readonly string[] OrchestrationKeys =
+	[
+		"cloud",
+		"cloud-billing",
+		"cloud-connect",
+		"cloud-enterprise",
+		"cloud-monitoring",
+		"cloud-serverless"
+	];
 
 	/// <summary>A variant is listed right after the API it is a variant of, and shown under its card on the catalog.</summary>
 	public static readonly IReadOnlyDictionary<string, string> VariantParents = new Dictionary<string, string>(StringComparer.Ordinal)
