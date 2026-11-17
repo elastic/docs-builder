@@ -17,6 +17,8 @@ namespace Elastic.Documentation.Api.Tests;
 /// Until the stream transformer takes the chat activity, the handler owns it. A failure before that point must
 /// still end the activity, with an error status, or the span never finishes and is never exported.
 /// </summary>
+// Every factory listens to every Ask AI span in the process; tests that read those spans run one at a time.
+[NotInParallel("ask-ai-spans")]
 public class AskAiStreamFailureTests : IAsyncInitializer, IAsyncDisposable
 {
 	// The API exports spans only when an OTLP endpoint is configured, as in EuidEnrichmentTests.
