@@ -692,17 +692,18 @@
         }
       }
     },
-    "/docs/_api/v1/api-operations": {
+    "/docs/_api/v1/apis/{api}/operations": {
       "get": {
         "tags": [
           "API reference"
         ],
-        "summary": "Search, look up or list API operations",
+        "summary": "Search, look up by endpoint, or list one API's operations",
         "operationId": "list-api-operations",
         "parameters": [
           {
             "name": "api",
-            "in": "query",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -730,13 +731,6 @@
           },
           {
             "name": "endpoint",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "operation_id",
             "in": "query",
             "schema": {
               "type": "string"
@@ -842,16 +836,24 @@
         }
       }
     },
-    "/docs/_api/v1/api-operations/{id}": {
+    "/docs/_api/v1/apis/{api}/operations/{operationId}": {
       "get": {
         "tags": [
           "API reference"
         ],
-        "summary": "Read one API operation by its id, {api}:{operationId}",
+        "summary": "Read one operation of an API",
         "operationId": "get-api-operation",
         "parameters": [
           {
-            "name": "id",
+            "name": "api",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1227,9 +1229,6 @@
             "type": "string"
           },
           "operationId": {
-            "type": "string"
-          },
-          "id": {
             "type": "string"
           },
           "group": {
