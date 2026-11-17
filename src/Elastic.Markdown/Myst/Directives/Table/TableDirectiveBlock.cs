@@ -110,7 +110,9 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 
 		if (FilterSearchOnly)
 		{
-			this.EmitError(":filter-columns: can't be combined with :filterable: search, which shows no dropdown filters. Remove one of the two options.");
+			this.EmitError(
+				":filter-columns: can't be combined with :filterable: search, which shows no dropdown filters. Remove one of the two options."
+			);
 			return;
 		}
 

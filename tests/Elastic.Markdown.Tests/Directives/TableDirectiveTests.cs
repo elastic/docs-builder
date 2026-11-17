@@ -389,8 +389,7 @@ public class TableDirectiveFilterColumnsTests() : DirectiveTest<TableDirectiveBl
 )
 {
 	[Test]
-	public void ParsesFilterColumns() =>
-		Block!.FilterColumns.Should().Equal("Provider", "**Support** status");
+	public void ParsesFilterColumns() => Block!.FilterColumns.Should().Equal("Provider", "**Support** status");
 
 	[Test]
 	public void EmitsErrorForUnknownColumn() =>
@@ -400,7 +399,9 @@ public class TableDirectiveFilterColumnsTests() : DirectiveTest<TableDirectiveBl
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Filter column '**Support** status' doesn't match any column header. Available headers: Name, Provider, Support status.");
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Filter column '**Support** status' doesn't match any column header. Available headers: Name, Provider, Support status."
+			);
 }
 
 [InheritsTests]
@@ -418,8 +419,7 @@ public class TableDirectiveFilterColumnsRenderTests() : DirectiveTest<TableDirec
 )
 {
 	[Test]
-	public void MatchesHeadersCaseInsensitivelyAndIgnoresEmphasis() =>
-		Collector.Diagnostics.Should().BeEmpty();
+	public void MatchesHeadersCaseInsensitivelyAndIgnoresEmphasis() => Collector.Diagnostics.Should().BeEmpty();
 
 	[Test]
 	public void RendersHtml() =>
@@ -469,7 +469,9 @@ public class TableDirectiveInvalidFilterableTests() : DirectiveTest<TableDirecti
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Invalid filterable value 'columns'. Use :filterable: on its own for automatic dropdown filters, or :filterable: search for a search box without dropdowns.");
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Invalid filterable value 'columns'. Use :filterable: on its own for automatic dropdown filters, or :filterable: search for a search box without dropdowns."
+			);
 }
 
 [InheritsTests]
@@ -491,7 +493,9 @@ public class TableDirectiveFilterColumnsWithoutFilterableTests() : DirectiveTest
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 :filter-columns: has no effect without :filterable:. Add :filterable: to the table directive.");
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 :filter-columns: has no effect without :filterable:. Add :filterable: to the table directive."
+			);
 
 	[Test]
 	public void DoesNotWrap() => Html.Should().NotContain("filterable-table");
@@ -517,7 +521,9 @@ public class TableDirectiveFilterColumnsWithSearchOnlyTests() : DirectiveTest<Ta
 			.Diagnostics
 			.ToSnapshotText()
 			.Should()
-			.MatchInlineSnapshot("error {repo}/docs/index.md:3 :filter-columns: can't be combined with :filterable: search, which shows no dropdown filters. Remove one of the two options.");
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 :filter-columns: can't be combined with :filterable: search, which shows no dropdown filters. Remove one of the two options."
+			);
 }
 
 [InheritsTests]

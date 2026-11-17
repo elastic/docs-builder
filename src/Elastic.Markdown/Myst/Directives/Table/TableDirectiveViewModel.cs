@@ -82,9 +82,7 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 	{
 		var attributes = FilterSearchOnly
 			? " data-facets=\"none\""
-			: FilterColumns.Count > 0
-				? $" data-facet-columns=\"{WebUtility.HtmlEncode(string.Join(",", FilterColumns))}\""
-				: string.Empty;
+			: FilterColumns.Count > 0 ? $" data-facet-columns=\"{WebUtility.HtmlEncode(string.Join(",", FilterColumns))}\"" : string.Empty;
 		return $"<filterable-table{attributes}>" + html + "</filterable-table>";
 	}
 
