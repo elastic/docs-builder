@@ -8,8 +8,11 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Operations._Partials;
 using Elastic.Documentation;
 using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots.Html;
+using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -39,6 +42,31 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 		targets.Should().NotBeEmpty();
 		foreach (var target in targets)
 			html.Should().Contain($"id=\"{target}\"");
+	}
+
+	[Test]
+	public async Task Render_RootRoute_ShowsSlash()
+	{
+		var row = new EndpointRow("/", "get", [], []);
+		var html = await _EndpointPath.Create(new EndpointPathModel(row, row.Route)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<span class="api-url">
+				<span class="api-method api-method-get">
+					<span class="api-method-icon" aria-hidden="true">
+						<svg width="12" height="12" viewBox="0 0 12 12">
+							<use href="#icon-api-arrow"></use>
+						</svg>
+					</span>
+					<span class="api-method-label">GET</span>
+				</span>
+				<span class="api-url-path">/</span>
+			</span>
+			"""
+		);
 	}
 
 	[GeneratedRegex("""<a class="api-url-param" href="#([^"]+)">\{[^}]+\}</a>""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
