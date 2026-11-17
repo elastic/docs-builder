@@ -49,7 +49,7 @@ public static class SearchQueryBuilder
 	private static readonly string[] ApiPropertySourceIncludes = [$"{QueryFieldNames.ApiProperties}.*"];
 	private static readonly PropertyLookup DocsWideLookup = new(AllowPrefix: false, ExpandChildren: false);
 	// One edit from four letters on: two edits let `unrated` match `updated`, and a typo in a shorter word names too many fields.
-	private static readonly Fuzziness WordFuzziness = new("AUTO:4,100");
+	internal static readonly Fuzziness WordFuzziness = new("AUTO:4,100");
 
 	// A one- or two-letter word starts the words of most field names, so it matches a whole word only, such as `id` in `scroll_id`.
 	private const int MinFieldWordPrefixLength = 3;

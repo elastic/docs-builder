@@ -279,7 +279,12 @@ public class ApiLookupQueryBuilderTests
 		var options = OptionsByName(TokenClause(json, 0));
 
 		options.Keys.Should().BeEquivalentTo("key_0", "id_0", "group_0", "title_0", "field_0", "body_0");
-		options["id_0"].GetProperty("boost").GetSingle().Should().Be(2.0f);
+		var id = options["id_0"].GetProperty("queries").EnumerateArray().Select(o => o.GetProperty("constant_score")).ToArray();
+		id.Select(o => o.GetProperty("boost").GetSingle()).Should().Equal(2.0f, 1.5f);
+		id[0].GetProperty("filter").GetRawText().Should().NotContain("fuzziness");
+		var typo = id[1].GetProperty("filter").GetProperty("match").GetProperty("api.words");
+		typo.GetProperty("fuzziness").GetString().Should().Be("AUTO:4,100");
+		typo.GetProperty("prefix_length").GetInt32().Should().Be(1);
 		options["group_0"].GetProperty("boost").GetSingle().Should().Be(1.0f);
 		options["title_0"].GetProperty("boost").GetSingle().Should().Be(1.0f);
 		options["body_0"].GetProperty("boost").GetSingle().Should().Be(0.1f);
@@ -582,7 +587,7 @@ public class ApiLookupQueryBuilderTests
 		using var json = Json(ApiLookupQueryBuilder.Build("cluster"));
 		var options = OptionsByName(TokenClause(json, 0));
 
-		var id = options["id_0"].GetProperty("filter").GetProperty("multi_match");
+		var id = options["id_0"].GetProperty("queries")[0].GetProperty("constant_score").GetProperty("filter").GetProperty("multi_match");
 		id.GetProperty("type").GetString().Should().Be("bool_prefix");
 		id.GetProperty("operator").GetString().Should().Be("and");
 		id.GetProperty("analyzer").GetString().Should().Be("synonyms_analyzer");

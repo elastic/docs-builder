@@ -29,6 +29,9 @@ namespace Elastic.Documentation.Search;
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// <item>A method typed before a path lifts by <see cref="Method"/> only and is no word of a title, so <c>GET /_search</c> keeps the
 /// <c>POST</c> operation <c>search</c> first (10.20) above <c>scroll</c> (9.70), where "Get the search shards" led it (9.13).</item>
+/// <item><see cref="OperationWordTypo"/> sits between <see cref="OperationWord"/> and the one-point roles, so an exact operation word on one
+/// operation beats a typo of it on another, and a typo of an operation word still beats a word that only a title, a group or a field name
+/// carries. <c>clustr health</c> is <c>cluster-health</c> above <c>health-report</c> and <c>cat-health</c>, which tied with it at 3.63.</item>
 /// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
 /// explain the typed words equally well. <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
 /// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
@@ -43,6 +46,7 @@ public static class ApiLookupWeights
 	public const float EndpointCompletion = 5.0f;
 	public const float NamespaceCompletion = 4.5f;
 	public const float OperationWord = 2.0f;
+	public const float OperationWordTypo = 1.5f;
 	public const float GroupWord = 1.0f;
 	public const float TitleWord = 1.0f;
 	public const float FieldName = 1.0f;

@@ -151,7 +151,7 @@ public static class ApiLookupQueryBuilder
 		Query?[] options =
 		[
 			key,
-			Constant(OperationWordQuery(token.Text), ApiLookupWeights.OperationWord, ApiLookupRoles.QueryName(ApiLookupRole.Id, index)),
+			OperationWordOption(token.Text, index),
 			Constant(
 				SynonymsMatch(QueryFieldNames.ApiGroup, token.Text),
 				ApiLookupWeights.GroupWord,
@@ -348,7 +348,30 @@ public static class ApiLookupQueryBuilder
 	private static Query MethodLift(string method) =>
 		new TermQuery { Field = QueryFieldNames.ApiMethod, Value = method.ToUpperInvariant(), Boost = ApiLookupWeights.Method };
 
-	private static Query OperationWordQuery(string text) => BoolPrefix(text, OperationWordFields);
+	/// <summary>
+	/// A word of the operation id, or one edit away from it. Both options share the role name, so a typo still reads as an
+	/// operation word. A word too short for an edit makes the typo option equal to the exact one, which scores lower.
+	/// </summary>
+	private static Query OperationWordOption(string text, int index) =>
+		new DisMaxQuery
+		{
+			QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Id, index),
+			Queries =
+			[
+				Constant(BoolPrefix(text, OperationWordFields), ApiLookupWeights.OperationWord),
+				Constant(OperationWordTypo(text), ApiLookupWeights.OperationWordTypo)
+			]
+		};
+
+	private static Query OperationWordTypo(string text) =>
+		new MatchQuery
+		{
+			Field = QueryFieldNames.ApiWords,
+			Query = text,
+			Analyzer = SynonymsAnalyzer,
+			Fuzziness = SearchQueryBuilder.WordFuzziness,
+			PrefixLength = 1
+		};
 
 	private static Query TitleQuery(string text) => BoolPrefix(text, TitleCompletionFields);
 
@@ -365,6 +388,6 @@ public static class ApiLookupQueryBuilder
 	private static Query SynonymsMatch(Field field, string text) =>
 		new MatchQuery { Field = field, Query = text, Analyzer = SynonymsAnalyzer };
 
-	private static Query Constant(Query filter, float boost, string name) =>
+	private static Query Constant(Query filter, float boost, string? name = null) =>
 		new ConstantScoreQuery { Filter = filter, Boost = boost, QueryName = name };
 }
