@@ -2,16 +2,59 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Runtime.InteropServices;
-using Slugify;
+using System.Text;
 
 namespace Elastic.Documentation.Extensions;
 
 public static class StringExtensions
 {
-	private static readonly SlugHelper SlugHelper = new();
+	/// <summary>
+	/// The URL slug of <paramref name="text"/>: trimmed, lower-cased, diacritics removed, whitespace runs turned into one <c>-</c>,
+	/// everything but <c>a-z 0-9 - _ .</c> dropped and repeated dashes collapsed. Null gives an empty string.
+	/// These rules produce the anchors, heading ids and changelog links, so changing them breaks existing links.
+	/// </summary>
+	public static string Slugify(this string? text)
+	{
+		if (string.IsNullOrWhiteSpace(text))
+			return string.Empty;
 
-	public static string Slugify(this string? text) => text is null ? string.Empty : SlugHelper.GenerateSlug(text);
+		var decomposed = text.Trim().Normalize(NormalizationForm.FormD);
+		var sb = new StringBuilder(decomposed.Length);
+		var pendingSeparator = false;
+		foreach (var original in decomposed)
+		{
+			if (CharUnicodeInfo.GetUnicodeCategory(original) == UnicodeCategory.NonSpacingMark)
+				continue;
+			if (char.IsWhiteSpace(original))
+			{
+				pendingSeparator = true;
+				continue;
+			}
+			var c = char.ToLowerInvariant(original);
+			if (!IsSlugChar(c))
+				continue;
+			if (pendingSeparator)
+			{
+				AppendSlugChar(sb, '-');
+				pendingSeparator = false;
+			}
+			AppendSlugChar(sb, c);
+		}
+		if (pendingSeparator)
+			AppendSlugChar(sb, '-');
+		return sb.ToString();
+	}
+
+	private static bool IsSlugChar(char c) => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-' or '_' or '.';
+
+	private static void AppendSlugChar(StringBuilder sb, char c)
+	{
+		if (c == '-' && sb.Length > 0 && sb[^1] == '-')
+			return;
+		_ = sb.Append(c);
+	}
 
 	/// <summary>Null for an empty string, so a Razor attribute bound to it is left out instead of written as <c>name=""</c>.</summary>
 	public static string? NullIfEmpty(this string? value) => string.IsNullOrEmpty(value) ? null : value;

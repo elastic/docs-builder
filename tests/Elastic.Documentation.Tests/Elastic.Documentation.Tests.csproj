@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
+    <None Include="slugify-4.0.1.golden.tsv" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
 </Project>
