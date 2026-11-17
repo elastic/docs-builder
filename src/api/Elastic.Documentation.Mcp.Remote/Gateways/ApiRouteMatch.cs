@@ -2,13 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using Elastic.Documentation.Search.Contract;
 
 namespace Elastic.Documentation.Mcp.Remote.Gateways;
 
-/// <summary>A route as typed, split into lowercase segments with each <c>{param}</c> written as <c>*</c>.</summary>
-public sealed record TypedEndpoint(string? Method, string[] Segments);
+/// <summary>A route as typed: its method, if any, and the path through <see cref="ApiEndpointPath.NormalizeQuery"/>.</summary>
+public sealed record TypedEndpoint(string? Method, string Path)
+{
+	public string[] Segments => Path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+}
 
 /// <summary>
 /// Decides which spec route a typed endpoint names. The index matches endpoints loosely, by every template a typed path
@@ -17,25 +19,13 @@ public sealed record TypedEndpoint(string? Method, string[] Segments);
 public static class ApiRouteMatch
 {
 	public const int NoMatch = -1;
-	private const string Wildcard = "*";
 
-	private static readonly FrozenSet<string> HttpMethods = new[]
-	{
-		"GET",
-		"POST",
-		"PUT",
-		"DELETE",
-		"HEAD",
-		"PATCH",
-		"OPTIONS"
-	}.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
-
+	/// <summary>A leading word before the path is the method; a word no route serves simply matches nothing.</summary>
 	public static TypedEndpoint Parse(string endpoint)
 	{
 		var words = endpoint.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-		var method = words.Length == 2 && HttpMethods.Contains(words[0]) ? words[0].ToUpperInvariant() : null;
-		var path = method is null ? endpoint.Trim() : words[1];
-		return new TypedEndpoint(method, [.. path.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(NormalizeSegment)]);
+		var method = words.Length == 2 ? words[0].ToUpperInvariant() : null;
+		return new TypedEndpoint(method, ApiEndpointPath.NormalizeQuery(words[^1]));
 	}
 
 	/// <summary>
@@ -48,15 +38,16 @@ public static class ApiRouteMatch
 			return NoMatch;
 
 		var routeSegments = route.Path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		if (routeSegments.Length != typed.Segments.Length)
+		var typedSegments = typed.Segments;
+		if (routeSegments.Length != typedSegments.Length)
 			return NoMatch;
 
 		var literals = 0;
 		for (var i = 0; i < routeSegments.Length; i++)
 		{
-			if (IsParameter(routeSegments[i]))
+			if (routeSegments[i].StartsWith('{'))
 				continue;
-			if (!SameLiteral(routeSegments[i], typed.Segments[i]))
+			if (!SameLiteral(routeSegments[i], typedSegments[i]))
 				return NoMatch;
 			literals++;
 		}
@@ -67,11 +58,10 @@ public static class ApiRouteMatch
 	public static int BestScore(TypedEndpoint typed, ApiOperationMetadata api) =>
 		api.Routes.Select(r => Score(typed, r)).DefaultIfEmpty(NoMatch).Max();
 
+	/// <summary>Every route of <paramref name="api"/> as <c>METHOD /spec/path</c>, verbatim from the spec.</summary>
+	public static string[] Endpoints(ApiOperationMetadata api) => [.. api.Routes.SelectMany(r => r.Methods.Select(m => $"{m} {r.Path}"))];
+
+	// NormalizeQuery writes a typed {param} as *, which names no literal.
 	private static bool SameLiteral(string routeSegment, string typedSegment) =>
-		typedSegment != Wildcard
-			&& string.Equals(routeSegment.TrimStart('_'), typedSegment.TrimStart('_'), StringComparison.OrdinalIgnoreCase);
-
-	private static string NormalizeSegment(string segment) => IsParameter(segment) ? Wildcard : segment.ToLowerInvariant();
-
-	private static bool IsParameter(string segment) => segment.StartsWith('{') && segment.EndsWith('}');
+		typedSegment != "*" && string.Equals(routeSegment.TrimStart('_'), typedSegment.TrimStart('_'), StringComparison.OrdinalIgnoreCase);
 }

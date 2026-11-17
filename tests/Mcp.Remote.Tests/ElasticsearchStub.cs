@@ -10,24 +10,12 @@ using Elastic.Documentation.Search.Common;
 
 namespace Mcp.Remote.Tests;
 
-internal static class ElasticsearchStubs
-{
-	public static ElasticsearchClientAccessor CreateAccessor(ElasticsearchStub stub) =>
-		new(
-			new DocumentationEndpoints
-			{
-				Elasticsearch = new ElasticsearchEndpoint { Uri = stub.Uri, ApiKey = "test" },
-				SearchIndexOverride = "test-index"
-			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
-		);
-}
-
 /// <summary>Answers every request with one canned Elasticsearch response and keeps the last request body.</summary>
 internal sealed class ElasticsearchStub : IDisposable
 {
 	private readonly HttpListener _listener = new();
 	private readonly string _response;
+	private ElasticsearchClientAccessor? _accessor;
 
 	private ElasticsearchStub(string response, int port)
 	{
@@ -38,6 +26,17 @@ internal sealed class ElasticsearchStub : IDisposable
 
 	public Uri Uri { get; }
 	public string LastRequestBody { get; private set; } = string.Empty;
+
+	/// <summary>A client pointed at this stub, disposed with it.</summary>
+	public ElasticsearchClientAccessor Accessor =>
+		_accessor ??= new(
+			new DocumentationEndpoints
+			{
+				Elasticsearch = new ElasticsearchEndpoint { Uri = Uri, ApiKey = "test" },
+				SearchIndexOverride = "test-index"
+			},
+			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+		);
 
 	public static ElasticsearchStub Start(string response)
 	{
@@ -96,5 +95,9 @@ internal sealed class ElasticsearchStub : IDisposable
 		}
 	}
 
-	public void Dispose() => _listener.Close();
+	public void Dispose()
+	{
+		_accessor?.Dispose();
+		_listener.Close();
+	}
 }

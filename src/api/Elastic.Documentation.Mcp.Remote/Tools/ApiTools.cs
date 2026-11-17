@@ -24,6 +24,11 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 	internal const int MaxListedOperations = 150;
 	private const string UngroupedName = "Other";
 
+	private static readonly ToolRejected VersionNeedsApi = new(
+		"invalid_arguments",
+		"version needs api: pass the API key the version belongs to."
+	);
+
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("search_api_operations"), Description("Searches the Elastic REST API reference for operations. "
 		+ "Use when the user asks which API call does something, names an endpoint such as 'GET /_cluster/health', "
 		+ "or names a request or response field such as 'retriever' or 'track_total_hits'. "
@@ -50,16 +55,11 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			["pageSize"] = pageSize
 		}, async () =>
 		{
-			if (ToScope(api, version) is not { } scope)
-				return VersionNeedsApi();
+			if (VersionWithoutApi(api, version))
+				return VersionNeedsApi;
+			var scope = ToScope(api, version);
 
-			var search = new ApiOperationSearch(
-				query,
-				scope.Scope,
-				includeDeprecated,
-				Math.Max(1, pageNumber),
-				Math.Clamp(pageSize, 1, 50)
-			);
+			var search = new ApiOperationSearch(query, scope, includeDeprecated, Math.Max(1, pageNumber), Math.Clamp(pageSize, 1, 50));
 			var page = await apiGateway.SearchOperationsAsync(search, cancellationToken);
 			var response = new ApiOperationSearchResponse { Query = query, TotalHits = page.Total, Results = page.Hits };
 			return new ToolSucceeded(JsonSerializer.Serialize(response, McpJsonContext.Default.ApiOperationSearchResponse));
@@ -90,12 +90,13 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			["includeBody"] = includeBody
 		}, async () =>
 		{
-			if (ToScope(api, version) is not { } scope)
-				return VersionNeedsApi();
+			if (VersionWithoutApi(api, version))
+				return VersionNeedsApi;
+			var scope = ToScope(api, version);
 			if (ToOperationKey(operationId, endpoint) is not { } key)
 				return new ToolRejected("invalid_arguments", "Pass exactly one of operationId or endpoint.");
 
-			var detail = await apiGateway.GetOperationAsync(new ApiOperationLookup(scope.Scope, key), cancellationToken);
+			var detail = await apiGateway.GetOperationAsync(new ApiOperationLookup(scope, key), cancellationToken);
 			return detail is null
 				? new ToolRejected(
 					"operation_not_found",
@@ -117,9 +118,10 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 	) =>
 		Run("list_api_operations", new Dictionary<string, object?> { ["api"] = api, ["version"] = version, ["group"] = group }, async () =>
 		{
-			if (ToScope(api, version) is not { } scope)
-				return VersionNeedsApi();
-			if (scope.Scope is null)
+			if (VersionWithoutApi(api, version))
+				return VersionNeedsApi;
+			var scope = ToScope(api, version);
+			if (scope is null)
 			{
 				var apis = await apiGateway.ListApisAsync(cancellationToken);
 				return new ToolSucceeded(
@@ -127,13 +129,13 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 				);
 			}
 
-			var operations = await apiGateway.ListOperationsAsync(scope.Scope, cancellationToken);
+			var operations = await apiGateway.ListOperationsAsync(scope, cancellationToken);
 			return operations.Count == 0
 				? new ToolRejected(
 					"api_not_found",
 					$"No operations found for API '{api}'{(version is null ? "" : $" version '{version}'")}."
 				)
-				: GroupOperations(scope.Scope, operations, group);
+				: GroupOperations(scope, operations, group);
 		});
 
 	internal static ToolReply GroupOperations(ApiScope scope, IReadOnlyList<ApiOperationSummary> operations, string? group)
@@ -200,27 +202,21 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			OtherMatches = detail.OtherMatches
 		};
 
-	/// <summary>The scope the arguments name, wrapped so that "no API" differs from "invalid"; null when a version comes without an API.</summary>
-	private static ScopeArgument? ToScope(string? api, string? version)
+	private static bool VersionWithoutApi(string? api, string? version) =>
+		string.IsNullOrWhiteSpace(api) && !string.IsNullOrWhiteSpace(version);
+
+	private static ApiScope? ToScope(string? api, string? version) =>
+		string.IsNullOrWhiteSpace(api)
+			? null
+			: new ApiScope(api.Trim().ToLowerInvariant(), string.IsNullOrWhiteSpace(version) ? null : version.Trim().ToLowerInvariant());
+
+	private static ApiOperationKey? ToOperationKey(string? operationId, string? endpoint)
 	{
-		var key = string.IsNullOrWhiteSpace(api) ? null : api.Trim().ToLowerInvariant();
-		var tree = string.IsNullOrWhiteSpace(version) ? null : version.Trim().ToLowerInvariant();
-		if (key is null)
-			return tree is null ? new ScopeArgument(null) : null;
-		return new ScopeArgument(new ApiScope(key, tree));
+		var hasId = !string.IsNullOrWhiteSpace(operationId);
+		if (hasId == !string.IsNullOrWhiteSpace(endpoint))
+			return null;
+		return hasId ? new ApiOperationIdKey(operationId!.Trim()) : new ApiEndpointKey(endpoint!.Trim());
 	}
-
-	private static ApiOperationKey? ToOperationKey(string? operationId, string? endpoint) => (string.IsNullOrWhiteSpace(
-		operationId
-	), string.IsNullOrWhiteSpace(endpoint)) switch
-	{
-		(false, true) => new ApiOperationIdKey(operationId!.Trim()),
-		(true, false) => new ApiEndpointKey(endpoint!.Trim()),
-		_ => null
-	};
-
-	private static ToolRejected VersionNeedsApi() =>
-		new("invalid_arguments", "version needs api: pass the API key the version belongs to.");
 
 	private async Task<string> Run(string toolName, Dictionary<string, object?> arguments, Func<Task<ToolReply>> handle)
 	{
@@ -268,8 +264,6 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 		}
 		throw new UnreachableException();
 	}
-
-	private sealed record ScopeArgument(ApiScope? Scope);
 }
 
 /// <summary>What a tool handler produced: a JSON reply, or a reason it declined the call.</summary>

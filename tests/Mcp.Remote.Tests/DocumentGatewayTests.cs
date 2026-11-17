@@ -104,8 +104,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_ApiDocument_ReturnsApiTypeAndVerbatimRoutes()
 	{
 		using var stub = ElasticsearchStub.Start(ApiHit);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
+		var gateway = new DocumentGateway(stub.Accessor, NullLogger<DocumentGateway>.Instance);
 
 		var result = await gateway.GetByUrlAsync(
 			"/docs/api/doc/logstash/operation/operation-nodestats",
@@ -125,8 +124,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_ApiLandingPage_ReturnsApiTypeAndNoOperation()
 	{
 		using var stub = ElasticsearchStub.Start(ApiLandingHit);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
+		var gateway = new DocumentGateway(stub.Accessor, NullLogger<DocumentGateway>.Instance);
 
 		var result = await gateway.GetByUrlAsync("/docs/api/doc/logstash", TestContext.Current!.Execution.CancellationToken);
 
@@ -139,8 +137,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_RequestsContentTypeAndApiFromSource()
 	{
 		using var stub = ElasticsearchStub.Start(ApiHit);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
+		var gateway = new DocumentGateway(stub.Accessor, NullLogger<DocumentGateway>.Instance);
 
 		_ = await gateway.GetByUrlAsync(
 			"/docs/api/doc/logstash/operation/operation-nodestats",
@@ -154,8 +151,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_NarrativeDocument_ReturnsDocsTypeAndNoApi()
 	{
 		using var stub = ElasticsearchStub.Start(NarrativeHit);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
+		var gateway = new DocumentGateway(stub.Accessor, NullLogger<DocumentGateway>.Instance);
 
 		var result = await gateway.GetByUrlAsync("/docs/some-page", TestContext.Current!.Execution.CancellationToken);
 

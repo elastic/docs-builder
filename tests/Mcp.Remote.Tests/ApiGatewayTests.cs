@@ -84,8 +84,7 @@ public class ApiGatewayTests
 	public async Task GetOperationAsync_ConcreteEndpoint_ReturnsTheOperationWhoseRouteItFills()
 	{
 		using var stub = ElasticsearchStub.Start(SearchCandidates);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new ApiGateway(accessor, NullLogger<ApiGateway>.Instance);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
 
 		var detail = await gateway.GetOperationAsync(
 			new ApiOperationLookup(new ApiScope("elasticsearch", null), new ApiEndpointKey("GET /my-index/_search")),
@@ -105,8 +104,7 @@ public class ApiGatewayTests
 	public async Task GetOperationAsync_EndpointNoRouteFits_ReturnsNull()
 	{
 		using var stub = ElasticsearchStub.Start(SearchCandidates);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new ApiGateway(accessor, NullLogger<ApiGateway>.Instance);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
 
 		var detail = await gateway.GetOperationAsync(
 			new ApiOperationLookup(null, new ApiEndpointKey("DELETE /my-index/_search")),
@@ -120,8 +118,7 @@ public class ApiGatewayTests
 	public async Task GetOperationAsync_OperationId_ListsLaterHitsAsOtherMatches()
 	{
 		using var stub = ElasticsearchStub.Start(SearchCandidates);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new ApiGateway(accessor, NullLogger<ApiGateway>.Instance);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
 
 		var detail = await gateway.GetOperationAsync(
 			new ApiOperationLookup(null, new ApiOperationIdKey("get")),
@@ -138,8 +135,7 @@ public class ApiGatewayTests
 	public async Task GetOperationAsync_OperationIdInVersion_FiltersByApiTreeAndOperationId()
 	{
 		using var stub = ElasticsearchStub.Start(SearchCandidates);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new ApiGateway(accessor, NullLogger<ApiGateway>.Instance);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
 
 		_ = await gateway.GetOperationAsync(
 			new ApiOperationLookup(new ApiScope("elasticsearch", "9"), new ApiOperationIdKey("search")),
@@ -281,8 +277,7 @@ public class ApiGatewayTests
 	public async Task SearchOperationsAsync_MapsHitsToOperations()
 	{
 		using var stub = ElasticsearchStub.Start(SearchCandidates);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new ApiGateway(accessor, NullLogger<ApiGateway>.Instance);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
 
 		var page = await gateway.SearchOperationsAsync(
 			new ApiOperationSearch("search", null, IncludeDeprecated: false, PageNumber: 1, PageSize: 10),
@@ -298,8 +293,7 @@ public class ApiGatewayTests
 	public async Task SearchOperationsAsync_ExcludesDeprecatedOperationsAndLandingPagesByDefault()
 	{
 		using var stub = ElasticsearchStub.Start(SearchCandidates);
-		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
-		var gateway = new ApiGateway(accessor, NullLogger<ApiGateway>.Instance);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
 
 		_ = await gateway.SearchOperationsAsync(
 			new ApiOperationSearch("search", null, IncludeDeprecated: false, PageNumber: 1, PageSize: 10),

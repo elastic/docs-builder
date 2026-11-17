@@ -111,31 +111,19 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 	/// <inheritdoc />
 	public async Task<IReadOnlyList<ApiSummary>> ListApisAsync(CancellationToken ct = default)
 	{
-		var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
-			s => s
-				.Indices(clientAccessor.SearchIndex)
-				.Query(new BoolQuery { Filter = [SearchQueryBuilder.DocumentFilterFor(null), ApiDocuments, LandingPages] })
-				.Size(MaxApis)
-				.Sort(so => so.Field(QueryFieldNames.ApiKey, sf => sf.Order(SortOrder.Asc)))
-				.Source(sf => sf.Filter(f => f.Includes(SummarySource))),
-			ct
-		);
-		EnsureValid(response);
-
+		var query = new BoolQuery { Filter = [SearchQueryBuilder.DocumentFilterFor(null), ApiDocuments, LandingPages] };
+		var documents = await SearchDocuments(query, MaxApis, SummarySource, ct);
 		return [
-			.. response
-				.Documents
-				.Where(d => d.Api is not null)
-				.Select(
-					d => new ApiSummary
-					{
-						Key = d.Api!.Key,
-						Title = d.Title,
-						Url = d.Path,
-						Description = d.Description,
-						Versions = [.. d.Api.Trees.Select(t => t.Tree)]
-					}
-				)
+			.. documents.OrderBy(d => d.Api!.Key, StringComparer.Ordinal).Select(
+				d => new ApiSummary
+				{
+					Key = d.Api!.Key,
+					Title = d.Title,
+					Url = d.Path,
+					Description = d.Description,
+					Versions = [.. d.Api.Trees.Select(t => t.Tree)]
+				}
+			)
 		];
 	}
 
@@ -158,7 +146,7 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 	/// <summary>Candidates from the index's loose endpoint keys, ranked by how many literal segments of their route the caller typed.</summary>
 	private async Task<IReadOnlyList<DocumentationDocument>> FindByEndpoint(ApiScope? scope, TypedEndpoint typed, CancellationToken ct)
 	{
-		var candidates = EndpointCandidates(typed);
+		string[] candidates = [.. ApiEndpointPath.QueryCandidates(typed.Path).SelectMany(g => g.Terms)];
 		if (candidates.Length == 0)
 			return [];
 
@@ -184,11 +172,6 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 		];
 	}
 
-	private static string[] EndpointCandidates(TypedEndpoint typed) =>
-		typed.Segments.Length == 0
-			? [ApiEndpointPath.Root]
-			: [.. ApiEndpointPath.QueryCandidates(string.Join('/', typed.Segments)).SelectMany(g => g.Terms)];
-
 	private async Task<IReadOnlyList<DocumentationDocument>> SearchDocuments(Query query, int size, string[] source, CancellationToken ct)
 	{
 		var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
@@ -203,7 +186,7 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 	/// Operation pages, never landing pages, of one API when <paramref name="scope"/> is set. Without a version the
 	/// default tree applies, because only its documents are not hidden.
 	/// </summary>
-	internal static Query OperationFilter(ApiScope? scope)
+	private static Query OperationFilter(ApiScope? scope)
 	{
 		var page = scope is { Version: { } version } ? new ApiPageContext(scope.Key, version) : null;
 		List<Query> filters = [SearchQueryBuilder.DocumentFilterFor(page), ApiDocuments];
@@ -231,7 +214,7 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 			OperationId = api.OperationId,
 			Group = string.IsNullOrEmpty(api.Group) ? null : api.Group,
 			Deprecated = api.Deprecated,
-			Endpoints = [.. api.Routes.SelectMany(r => r.Methods.Select(m => $"{m} {r.Path}"))]
+			Endpoints = ApiRouteMatch.Endpoints(api)
 		};
 	}
 
