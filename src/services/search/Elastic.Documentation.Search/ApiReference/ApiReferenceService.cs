@@ -66,7 +66,7 @@ public class ApiReferenceService(IApiGateway apiGateway)
 		if (VersionWithoutApi(api, version))
 			return VersionNeedsApi;
 		if (ToOperationKey(operationId, endpoint) is not { } key)
-			return new ApiReferenceRejection("invalid_arguments", "Pass exactly one of operationId or endpoint.");
+			return new ApiReferenceRejection("invalid_arguments", "Pass exactly one of an operation id or an endpoint.");
 
 		var detail = await apiGateway.GetOperationAsync(new ApiOperationLookup(ToScope(api, version), key), ct);
 		if (detail is null)

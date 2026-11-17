@@ -77,7 +77,7 @@ public class ApiToolsTests
 
 		var json = await tools.GetApiOperation("elasticsearch", operationId, endpoint, cancellationToken: Ct);
 
-		Error(json).Should().MatchInlineSnapshot("""Pass exactly one of operationId or endpoint.""");
+		Error(json).Should().MatchInlineSnapshot("""Pass exactly one of an operation id or an endpoint.""");
 		A.CallTo(gateway).MustNotHaveHappened();
 	}
 
