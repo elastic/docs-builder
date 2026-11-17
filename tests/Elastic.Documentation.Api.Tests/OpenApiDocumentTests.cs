@@ -66,6 +66,23 @@ public class OpenApiDocumentTests
 	}
 
 	[Test]
+	public async Task Document_NamesEveryOperationOnce()
+	{
+		var document = await Document();
+
+		var ids = document
+			.GetProperty("paths")
+			.EnumerateObject()
+			.SelectMany(path => path.Value.EnumerateObject().Where(op => op.Name is "get" or "post" or "put" or "delete"))
+			.Select(op => op.Value.TryGetProperty("operationId", out var id) ? id.GetString() : null)
+			.ToList();
+
+		// API Explorer turns these into page slugs and the api-operations ids, such as docs-api:search.
+		ids.Should().NotContainNulls().And.OnlyHaveUniqueItems().And.HaveCount(12);
+		ids.Should().Contain(["search", "get-api-operation", "list-api-operations"]);
+	}
+
+	[Test]
 	public async Task Document_GivesEveryErrorTheApiErrorSchema()
 	{
 		var document = await Document();

@@ -96,6 +96,7 @@ public static class MappingsExtension
 				await transformedStream.CopyToAsync(context.Response.Body, ctx);
 			})
 			.WithTags(AskAiTag)
+			.WithName("ask-ai-stream")
 			.WithSummary("Stream an Ask AI answer as server-sent events")
 			.Produces(StatusCodes.Status200OK, contentType: "text/event-stream")
 			.ProducesErrors(StatusCodes.Status400BadRequest);
@@ -132,6 +133,7 @@ public static class MappingsExtension
 			})
 			.DisableAntiforgery()
 			.WithTags(AskAiTag)
+			.WithName("ask-ai-message-feedback")
 			.WithSummary("Record a reaction to an Ask AI answer")
 			.Produces(StatusCodes.Status204NoContent)
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
@@ -165,6 +167,7 @@ public static class MappingsExtension
 				return Results.Ok(response);
 			})
 			.WithTags(SearchTag)
+			.WithName("navigation-search")
 			.WithSummary("Search page titles and the navigation")
 			.Produces<NavigationSearchResponse>()
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
@@ -204,6 +207,7 @@ public static class MappingsExtension
 				return Results.Ok(response);
 			})
 			.WithTags(SearchTag)
+			.WithName("search")
 			.WithSummary("Search the documentation")
 			.Produces<FullSearchResponse>()
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
@@ -227,6 +231,7 @@ public static class MappingsExtension
 				return Results.Ok(response);
 			})
 			.WithTags(ChangesTag)
+			.WithName("list-changes")
 			.WithSummary("List the pages that changed since a date")
 			.Produces<ChangesResponse>()
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
@@ -242,6 +247,7 @@ public static class MappingsExtension
 				"/",
 				async (ApiReferenceService apiReference, Cancel ctx) => ToResult(await apiReference.ListAsync(null, null, null, ctx))
 			)
+			.WithName("list-apis")
 			.WithSummary("List every API")
 			.Produces<ApiListResponse>()
 			.ProducesErrors();
@@ -250,6 +256,7 @@ public static class MappingsExtension
 				"/{api}",
 				async (string api, ApiReferenceService apiReference, Cancel ctx) => ToResult(await apiReference.GetApiAsync(api, ctx))
 			)
+			.WithName("get-api")
 			.WithSummary("Read one API")
 			.Produces<ApiSummary>()
 			.ProducesErrors(StatusCodes.Status404NotFound);
@@ -264,6 +271,7 @@ public static class MappingsExtension
 					Cancel ctx
 				) => ToResult(await apiReference.ListGroupsAsync(api, version, includeDeprecated ?? false, ctx))
 			)
+			.WithName("list-api-groups")
 			.WithSummary("Count one API's operations by group")
 			.Produces<ApiOperationListResponse>()
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound);
@@ -302,6 +310,7 @@ public static class MappingsExtension
 					)
 				)
 			)
+			.WithName("list-api-operations")
 			.WithSummary("Search, look up by endpoint, or list one API's operations")
 			.Produces<ApiOperationCollectionResponse>()
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status503ServiceUnavailable);
@@ -317,6 +326,7 @@ public static class MappingsExtension
 					Cancel ctx
 				) => ToResult(await apiReference.GetOperationAsync(api, operationId, version, includeBody ?? false, ctx))
 			)
+			.WithName("get-api-operation")
 			.WithSummary("Read one operation of an API")
 			.Produces<ApiOperationResponse>()
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound);
@@ -385,6 +395,7 @@ public static class MappingsExtension
 			})
 			.DisableAntiforgery()
 			.WithTags(FeedbackTag)
+			.WithName("put-page-feedback")
 			.WithSummary("Record or update feedback on a page")
 			.Produces(StatusCodes.Status204NoContent)
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
@@ -408,6 +419,7 @@ public static class MappingsExtension
 			})
 			.DisableAntiforgery()
 			.WithTags(FeedbackTag)
+			.WithName("delete-page-feedback")
 			.WithSummary("Delete feedback on a page")
 			.Produces(StatusCodes.Status204NoContent)
 			.ProducesErrors(StatusCodes.Status503ServiceUnavailable);
