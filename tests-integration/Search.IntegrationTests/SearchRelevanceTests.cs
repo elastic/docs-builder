@@ -283,6 +283,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("/_cat/ind", "operation-cat-indices");
 		yield return ("/{index}/_sear", "operation-search");
 		yield return ("/_cluster/hea", "operation-cluster-health");
+		// The words are the whole title once its stopwords and plurals are ignored, so the operation leads the ones that only
+		// mention them, such as the `_create` endpoint of a document.
+		yield return ("create index", "operation-indices-create");
+		yield return ("index create", "operation-indices-create");
+		yield return ("delete index", "operation-indices-delete");
 		// The titles are plain words and the operation id carries the same words: the whole-title lift must not move them.
 		yield return ("create an index", "operation-indices-create");
 		yield return ("create data stream", "operation-indices-create-data-stream");
