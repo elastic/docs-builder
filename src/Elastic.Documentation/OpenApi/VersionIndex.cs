@@ -9,25 +9,41 @@ namespace Elastic.Documentation.OpenApi;
 /// <summary>One version moniker of a spec file: <c>main</c> or a major number, and the version it resolves to (<c>main</c>, <c>9.5</c>).</summary>
 public sealed record VersionMoniker(string Key, string Version);
 
-/// <summary>The monikers published for one spec file of a repository, in the order the index wrote them.</summary>
+/// <summary>
+/// The monikers published for one spec file of a repository, in the order the index wrote them. A JSON null in the index is kept as it was written
+/// (a null <paramref name="Monikers"/>, a null element), so reading it fails where it always did.
+/// </summary>
 public sealed record VersionIndexSpec(string File, IReadOnlyList<VersionMoniker> Monikers)
 {
-	public bool Equals(VersionIndexSpec? other) => other is not null && File == other.File && Monikers.SequenceEqual(other.Monikers);
+	public bool Equals(VersionIndexSpec? other) =>
+		other is not null && File == other.File && (Monikers ?? []).SequenceEqual(other.Monikers ?? []);
 
-	public override int GetHashCode() => HashCode.Combine(File, Monikers.Count);
+	public override int GetHashCode() => HashCode.Combine(File, Monikers?.Count);
 }
 
-/// <summary>The spec files published for one <c>org/repo</c>, in the order the index wrote them.</summary>
+/// <summary>
+/// The spec files published for one <c>org/repo</c>, in the order the index wrote them. A JSON null in the index is kept as written
+/// (a null <paramref name="Specs"/>), so looking the repository up fails where it always did.
+/// </summary>
 public sealed record VersionIndexRepository(string Name, IReadOnlyList<VersionIndexSpec> Specs)
 {
-	public bool Equals(VersionIndexRepository? other) => other is not null && Name == other.Name && Specs.SequenceEqual(other.Specs);
+	public bool Equals(VersionIndexRepository? other) =>
+		other is not null && Name == other.Name && (Specs ?? []).SequenceEqual(other.Specs ?? []);
 
-	public override int GetHashCode() => HashCode.Combine(Name, Specs.Count);
+	public override int GetHashCode() => HashCode.Combine(Name, Specs?.Count);
 
+	/// <summary>Looks a spec file up. Throws <see cref="NullReferenceException"/> when the index wrote this repository as null.</summary>
 	public bool TryGetSpec(string file, out IReadOnlyList<VersionMoniker> monikers)
 	{
-		monikers = Specs.FirstOrDefault(s => s.File == file)?.Monikers ?? [];
-		return Specs.Any(s => s.File == file);
+		for (var i = 0; i < Specs.Count; i++)
+		{
+			if (Specs[i].File != file)
+				continue;
+			monikers = Specs[i].Monikers;
+			return true;
+		}
+		monikers = [];
+		return false;
 	}
 }
 
@@ -49,7 +65,9 @@ public sealed record VersionIndex(IReadOnlyList<VersionIndexRepository> Reposito
 		return repository is not null;
 	}
 
-	/// <summary>Every moniker with the repository and spec file it sits under, in written order.</summary>
+	/// <summary>Every moniker with the repository and spec file it sits under, in written order. Nulls the index wrote are skipped.</summary>
 	public IEnumerable<(string Repository, string File, VersionMoniker Moniker)> AllMonikers() =>
-		Repositories.SelectMany(r => r.Specs.SelectMany(s => s.Monikers.Select(m => (r.Name, s.File, m))));
+		Repositories.SelectMany(
+			r => (r.Specs ?? []).SelectMany(s => (s.Monikers ?? []).OfType<VersionMoniker>().Select(m => (r.Name, s.File, m)))
+		);
 }

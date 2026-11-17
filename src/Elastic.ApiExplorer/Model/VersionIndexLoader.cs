@@ -28,16 +28,24 @@ internal static class VersionIndexLoader
 	/// <summary>The index of the text, or the parser's message; null for a text that parsed to nothing is the message <see cref="EmptyMessage"/>.</summary>
 	public static LoadResult<VersionIndex> Load(string text, string file) => Json.Load(text, file);
 
+	// A JSON null at any level is kept as written (null!), not rejected: the client's lookups throw on it only when they reach it, as they always did.
 	private static VersionIndex ToModel(RootVersionIndex dto) =>
 		new([
 			.. dto.Select(
 				repo => new VersionIndexRepository(
 					repo.Key,
-					[
-						.. repo.Value.Select(
-							spec => new VersionIndexSpec(spec.Key, [.. spec.Value.Select(m => new VersionMoniker(m.Key, m.Value.Version))])
-						)
-					]
+					repo.Value is null
+						? null!
+						: [
+							.. repo.Value.Select(
+								spec => new VersionIndexSpec(
+									spec.Key,
+									spec.Value is null
+										? null!
+										: [.. spec.Value.Select(m => m.Value is null ? null! : new VersionMoniker(m.Key, m.Value.Version))]
+								)
+							)
+						]
 				)
 			)
 		]);

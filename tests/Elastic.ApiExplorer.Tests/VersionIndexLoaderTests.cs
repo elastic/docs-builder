@@ -67,4 +67,20 @@ public class VersionIndexLoaderTests
 		repo.TryGetSpec("other.json", out _).Should().BeFalse();
 		index.TryGetRepository("x/y", out _).Should().BeFalse();
 	}
+
+	[Test]
+	public void Load_AJsonNullAtAnyLevel_IsKeptAsWritten_NotReported()
+	{
+		var result = VersionIndexLoader.Load(
+			"""{ "a/b": null, "c/d": { "s.json": null, "t.json": { "main": null, "9": { "version": "9.1" } } } }""",
+			File
+		);
+
+		result.Findings().Should().BeEmpty();
+		var index = result.ValueOrNull()!;
+		index.Repositories.Select(r => r.Name).Should().Equal("a/b", "c/d");
+		index.Repositories[0].Specs.Should().BeNull();
+		index.Repositories[1].Specs[0].Monikers.Should().BeNull();
+		index.AllMonikers().Select(m => m.Moniker.Key).Should().Equal("9");
+	}
 }
