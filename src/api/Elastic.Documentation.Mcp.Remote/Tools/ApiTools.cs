@@ -3,15 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Text.Json;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
-using Elastic.Documentation.Mcp.Remote.Telemetry;
-using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
-using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -45,7 +41,7 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
 		CancellationToken cancellationToken = default
 	) =>
-		Run("search_api_operations", new Dictionary<string, object?>
+		McpToolRunner.RunAsync(logger, "search_api_operations", new Dictionary<string, object?>
 		{
 			["query"] = query,
 			["api"] = api,
@@ -62,7 +58,7 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			var search = new ApiOperationSearch(query, scope, includeDeprecated, Math.Max(1, pageNumber), Math.Clamp(pageSize, 1, 50));
 			var page = await apiGateway.SearchOperationsAsync(search, cancellationToken);
 			var response = new ApiOperationSearchResponse { Query = query, TotalHits = page.Total, Results = page.Hits };
-			return new ToolSucceeded(JsonSerializer.Serialize(response, McpJsonContext.Default.ApiOperationSearchResponse));
+			return ToolSucceeded.Serialize(response, McpJsonContext.Default.ApiOperationSearchResponse);
 		});
 
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("get_api_operation"), Description("Retrieves one operation from the Elastic REST API reference. "
@@ -81,7 +77,7 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			false,
 		CancellationToken cancellationToken = default
 	) =>
-		Run("get_api_operation", new Dictionary<string, object?>
+		McpToolRunner.RunAsync(logger, "get_api_operation", new Dictionary<string, object?>
 		{
 			["api"] = api,
 			["operationId"] = operationId,
@@ -102,7 +98,7 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 					"operation_not_found",
 					$"No API operation matches {operationId ?? endpoint}{(api is null ? "" : $" in {api}")}."
 				)
-				: new ToolSucceeded(JsonSerializer.Serialize(ToResponse(detail, includeBody), McpJsonContext.Default.ApiOperationResponse));
+				: ToolSucceeded.Serialize(ToResponse(detail, includeBody), McpJsonContext.Default.ApiOperationResponse);
 		});
 
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("list_api_operations"), Description("Lists the Elastic REST APIs, or the operations of one API. "
@@ -116,7 +112,12 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 		[Description("Only the operations of this group, e.g. 'ES|QL' or 'cluster'")] string? group = null,
 		CancellationToken cancellationToken = default
 	) =>
-		Run("list_api_operations", new Dictionary<string, object?> { ["api"] = api, ["version"] = version, ["group"] = group }, async () =>
+		McpToolRunner.RunAsync(logger, "list_api_operations", new Dictionary<string, object?>
+		{
+			["api"] = api,
+			["version"] = version,
+			["group"] = group
+		}, async () =>
 		{
 			if (VersionWithoutApi(api, version))
 				return VersionNeedsApi;
@@ -124,9 +125,7 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			if (scope is null)
 			{
 				var apis = await apiGateway.ListApisAsync(cancellationToken);
-				return new ToolSucceeded(
-					JsonSerializer.Serialize(new ApiListResponse { Apis = apis }, McpJsonContext.Default.ApiListResponse)
-				);
+				return ToolSucceeded.Serialize(new ApiListResponse { Apis = apis }, McpJsonContext.Default.ApiListResponse);
 			}
 
 			var operations = await apiGateway.ListOperationsAsync(scope, cancellationToken);
@@ -163,7 +162,7 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			Groups = [.. groups.Select(g => ToGroup(g, listOperations))],
 			Note = listOperations ? null : $"This API has {operations.Count} operations. Pass group to list the operations of one group."
 		};
-		return new ToolSucceeded(JsonSerializer.Serialize(response, McpJsonContext.Default.ApiOperationListResponse));
+		return ToolSucceeded.Serialize(response, McpJsonContext.Default.ApiOperationListResponse);
 	}
 
 	private static ApiOperationGroupDto ToGroup(IGrouping<string, ApiOperationSummary> group, bool listOperations) =>
@@ -196,9 +195,7 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			AiShortSummary = detail.AiShortSummary,
 			Body = includeBody ? detail.Body : null,
 			BodyLength = detail.Body?.Length ?? 0,
-			BodyNote = !includeBody && detail.Body is { Length: > 0 }
-				? "The body is omitted by default. Call this tool again with includeBody=true to read it."
-				: null,
+			BodyNote = ResponseBody.Note(detail.Body, includeBody),
 			OtherMatches = detail.OtherMatches
 		};
 
@@ -217,58 +214,4 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			return null;
 		return hasId ? new ApiOperationIdKey(operationId!.Trim()) : new ApiEndpointKey(endpoint!.Trim());
 	}
-
-	private async Task<string> Run(string toolName, Dictionary<string, object?> arguments, Func<Task<ToolReply>> handle)
-	{
-		using var activity = McpToolTelemetry.StartActivity(toolName);
-		McpToolTelemetry.LogStart(logger, toolName, McpToolTelemetry.SetPayloadMetadata(activity, arguments));
-		var duration = Stopwatch.StartNew();
-		var outcome = "failure";
-
-		try
-		{
-			switch (await handle())
-			{
-				case ToolSucceeded succeeded:
-					McpToolTelemetry.MarkSuccess(activity);
-					outcome = "success";
-					return succeeded.Json;
-				case ToolRejected rejected:
-					McpToolTelemetry.MarkFailure(activity, rejected.ErrorType, rejected.Message);
-					return JsonSerializer.Serialize(new ErrorResponse(rejected.Message), McpJsonContext.Default.ErrorResponse);
-			}
-		}
-		catch (OperationCanceledException)
-		{
-			McpToolTelemetry.MarkCancelled(activity);
-			outcome = "cancelled";
-			throw;
-		}
-		catch (SearchUnavailableException ex)
-		{
-			// Transient backend failure: McpException gives the client IsError=true so it knows to retry.
-			McpToolTelemetry.MarkFailure(activity, ex);
-			outcome = "unavailable";
-			throw new McpException(ex.Message, ex);
-		}
-		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
-		{
-			McpToolTelemetry.MarkFailure(activity, ex);
-			logger.LogError(ex, "{ToolName} failed", toolName);
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
-		}
-		finally
-		{
-			duration.Stop();
-			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
-		}
-		throw new UnreachableException();
-	}
 }
-
-/// <summary>What a tool handler produced: a JSON reply, or a reason it declined the call.</summary>
-public readonly union ToolReply(ToolSucceeded, ToolRejected);
-
-public sealed record ToolSucceeded(string Json);
-
-public sealed record ToolRejected(string ErrorType, string Message);

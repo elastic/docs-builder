@@ -68,7 +68,7 @@ public sealed record ApiOperationDetail
 	public string? AiShortSummary { get; init; }
 	public string? Body { get; init; }
 
-	/// <summary>Other operations that match the lookup less well, e.g. the same operation id in another API.</summary>
+	/// <summary>Other operations that match the lookup as well, e.g. the same operation id or route in another API.</summary>
 	public IReadOnlyList<ApiOperationSummary> OtherMatches { get; init; } = [];
 }
 

@@ -15,11 +15,13 @@ internal sealed class ElasticsearchStub : IDisposable
 {
 	private readonly HttpListener _listener = new();
 	private readonly string _response;
+	private readonly int _statusCode;
 	private ElasticsearchClientAccessor? _accessor;
 
-	private ElasticsearchStub(string response, int port)
+	private ElasticsearchStub(string response, int port, int statusCode)
 	{
 		_response = response;
+		_statusCode = statusCode;
 		Uri = new Uri($"http://127.0.0.1:{port}/");
 		_listener.Prefixes.Add(Uri.ToString());
 	}
@@ -38,7 +40,7 @@ internal sealed class ElasticsearchStub : IDisposable
 			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
 		);
 
-	public static ElasticsearchStub Start(string response)
+	public static ElasticsearchStub Start(string response, int statusCode = 200)
 	{
 		// Bind a free port; retry if another process takes it between probe and bind.
 		for (var attempt = 0; ; attempt++)
@@ -48,7 +50,7 @@ internal sealed class ElasticsearchStub : IDisposable
 			var port = ((IPEndPoint)probe.LocalEndpoint).Port;
 			probe.Stop();
 
-			var stub = new ElasticsearchStub(response, port);
+			var stub = new ElasticsearchStub(response, port, statusCode);
 			try
 			{
 				stub._listener.Start();
@@ -86,7 +88,7 @@ internal sealed class ElasticsearchStub : IDisposable
 				LastRequestBody = await reader.ReadToEndAsync();
 
 			var bytes = Encoding.UTF8.GetBytes(_response);
-			context.Response.StatusCode = 200;
+			context.Response.StatusCode = _statusCode;
 			context.Response.ContentType = "application/json";
 			// The Elasticsearch client rejects responses without the product header.
 			context.Response.Headers["X-Elastic-Product"] = "Elasticsearch";

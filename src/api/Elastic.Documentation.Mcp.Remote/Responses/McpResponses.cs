@@ -10,6 +10,15 @@ namespace Elastic.Documentation.Mcp.Remote.Responses;
 // Common error response
 public sealed record ErrorResponse(string Error, List<string>? Details = null);
 
+public static class ResponseBody
+{
+	/// <summary>The note a response carries when it leaves out a body the caller can still ask for.</summary>
+	public static string? Note(string? body, bool includeBody) =>
+		!includeBody && body is { Length: > 0 }
+			? "The body is omitted by default. Call this tool again with includeBody=true to read it."
+			: null;
+}
+
 // SemanticSearch response
 public sealed record SemanticSearchResponse
 {

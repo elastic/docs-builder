@@ -7,8 +7,10 @@ using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Tools;
+using Elastic.Documentation.Search;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using ModelContextProtocol;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Json;
 
@@ -207,5 +209,19 @@ public class ApiToolsTests
 		var reply = ApiTools.GroupOperations(new ApiScope("elasticsearch", null), [Operation("search", "Search")], group: "nope");
 
 		(reply is ToolRejected rejected ? rejected.ErrorType : null).Should().Be("group_not_found");
+	}
+
+	[Test]
+	public async Task SearchApiOperations_BackendUnavailable_ThrowsMcpExceptionSoTheClientRetries()
+	{
+		var gateway = A.Fake<IApiGateway>();
+		_ = A.CallTo(() => gateway.SearchOperationsAsync(A<ApiOperationSearch>._, A<CancellationToken>._)).Throws(
+			SearchUnavailableException.Transient("MaxTimeoutReached")
+		);
+		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+
+		var search = () => tools.SearchApiOperations("health", cancellationToken: Ct);
+
+		_ = await search.Should().ThrowAsync<McpException>();
 	}
 }

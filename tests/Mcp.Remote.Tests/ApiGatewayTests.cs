@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote.Gateways;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Json;
@@ -72,6 +73,99 @@ public class ApiGatewayTests
 		                "description": "A comma-separated list of data streams, indices, and aliases to search."
 		              }
 		            ]
+		          }
+		        }
+		      }
+		    ]
+		  }
+		}
+		""";
+
+	// Create, get and delete index share the route /{index}, which has no literal segment and so no endpoint key.
+	private const string IndexRoutes =
+		"""
+		{
+		  "took": 1,
+		  "timed_out": false,
+		  "hits": {
+		    "total": { "value": 2, "relation": "eq" },
+		    "hits": [
+		      {
+		        "_index": "test-index",
+		        "_id": "/docs/api/doc/elasticsearch/operation/operation-indices-get",
+		        "_source": {
+		          "path": "/docs/api/doc/elasticsearch/operation/operation-indices-get",
+		          "title": "Get index information",
+		          "search_title": "Get index information",
+		          "content_type": "api",
+		          "api": {
+		            "key": "elasticsearch",
+		            "method": "GET",
+		            "path": "/{index}",
+		            "operation_id": "indices-get",
+		            "endpoints": [],
+		            "routes": [ { "path": "/{index}", "methods": ["GET"] } ]
+		          }
+		        }
+		      },
+		      {
+		        "_index": "test-index",
+		        "_id": "/docs/api/doc/elasticsearch/operation/operation-indices-create",
+		        "_source": {
+		          "path": "/docs/api/doc/elasticsearch/operation/operation-indices-create",
+		          "title": "Create an index",
+		          "search_title": "Create an index",
+		          "content_type": "api",
+		          "api": {
+		            "key": "elasticsearch",
+		            "method": "PUT",
+		            "path": "/{index}",
+		            "operation_id": "indices-create",
+		            "endpoints": [],
+		            "routes": [ { "path": "/{index}", "methods": ["PUT"] } ]
+		          }
+		        }
+		      }
+		    ]
+		  }
+		}
+		""";
+
+	// The default tree renders the landing page differently from version 8, so the index holds two renderings.
+	private const string LandingRenderings =
+		"""
+		{
+		  "took": 1,
+		  "timed_out": false,
+		  "hits": {
+		    "total": { "value": 2, "relation": "eq" },
+		    "hits": [
+		      {
+		        "_index": "test-index",
+		        "_id": "/docs/api/doc/elasticsearch/8",
+		        "_source": {
+		          "path": "/docs/api/doc/elasticsearch/8",
+		          "title": "Elasticsearch API (8)",
+		          "search_title": "Elasticsearch API (8)",
+		          "content_type": "api",
+		          "hidden": true,
+		          "api": {
+		            "key": "elasticsearch", "landing": true, "method": "", "path": "", "operation_id": "", "endpoints": [], "routes": [],
+		            "trees": [ { "tree": "8", "root": "/docs/api/doc/elasticsearch/8" } ]
+		          }
+		        }
+		      },
+		      {
+		        "_index": "test-index",
+		        "_id": "/docs/api/doc/elasticsearch",
+		        "_source": {
+		          "path": "/docs/api/doc/elasticsearch",
+		          "title": "Elasticsearch API",
+		          "search_title": "Elasticsearch API",
+		          "content_type": "api",
+		          "api": {
+		            "key": "elasticsearch", "landing": true, "method": "", "path": "", "operation_id": "", "endpoints": [], "routes": [],
+		            "trees": [ { "tree": "main", "root": "/docs/api/doc/elasticsearch" }, { "tree": "9", "root": "/docs/api/doc/elasticsearch/9" } ]
 		          }
 		        }
 		      }
@@ -306,5 +400,90 @@ public class ApiGatewayTests
 			.Contain("""{"term":{"api.deprecated":{"value":true}}}""")
 			.And
 			.Contain("""{"term":{"api.landing":{"value":true}}}""");
+	}
+
+	[Test]
+	public async Task GetOperationAsync_RouteOfOnlyParameters_MatchesByMethodAndPath()
+	{
+		using var stub = ElasticsearchStub.Start(IndexRoutes);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var detail = await gateway.GetOperationAsync(
+			new ApiOperationLookup(new ApiScope("elasticsearch", null), new ApiEndpointKey("PUT /my-index")),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		detail.Should().NotBeNull();
+		detail.Operation.OperationId.Should().Be("indices-create");
+		detail.OtherMatches.Should().BeEmpty();
+		stub.LastRequestBody.Should().Contain("""{"regexp":{"api.path":{"value":"/\\{[^/]\u002B\\}"}}}""");
+	}
+
+	[Test]
+	public async Task GetOperationAsync_RouteOfOnlyParametersWithoutMethod_ListsEveryOperationOnTheRoute()
+	{
+		using var stub = ElasticsearchStub.Start(IndexRoutes);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var detail = await gateway.GetOperationAsync(
+			new ApiOperationLookup(new ApiScope("elasticsearch", null), new ApiEndpointKey("/my-index")),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		detail.Should().NotBeNull();
+		(new[] { detail.Operation.OperationId })
+			.Concat(detail.OtherMatches.Select(o => o.OperationId))
+			.Should()
+			.BeEquivalentTo("indices-get", "indices-create");
+	}
+
+	[Test]
+	public async Task ListApisAsync_LandingRenderedPerVersion_ListsEveryVersionUnderTheVisiblePage()
+	{
+		using var stub = ElasticsearchStub.Start(LandingRenderings);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var apis = await gateway.ListApisAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var api = apis.Should().ContainSingle().Subject;
+		api.Url.Should().Be("/docs/api/doc/elasticsearch");
+		api.Title.Should().Be("Elasticsearch API");
+		api.Versions.Should().BeEquivalentTo("8", "main", "9");
+	}
+
+	[Test]
+	public async Task SearchOperationsAsync_OverloadedCluster_ThrowsSearchUnavailable()
+	{
+		using var stub = ElasticsearchStub.Start(
+			"""{"error":{"type":"es_rejected_execution_exception","reason":"rejected"},"status":429}""",
+			statusCode: 429
+		);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var search =
+			() => gateway.SearchOperationsAsync(
+				new ApiOperationSearch("search", null, IncludeDeprecated: false, PageNumber: 1, PageSize: 10),
+				TestContext.Current!.Execution.CancellationToken
+			);
+
+		_ = await search.Should().ThrowAsync<SearchUnavailableException>();
+	}
+
+	[Test]
+	public async Task SearchOperationsAsync_BadRequest_ThrowsInvalidOperation()
+	{
+		using var stub = ElasticsearchStub.Start(
+			"""{"error":{"type":"parsing_exception","reason":"bad query"},"status":400}""",
+			statusCode: 400
+		);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var search =
+			() => gateway.SearchOperationsAsync(
+				new ApiOperationSearch("search", null, IncludeDeprecated: false, PageNumber: 1, PageSize: 10),
+				TestContext.Current!.Execution.CancellationToken
+			);
+
+		_ = await search.Should().ThrowAsync<InvalidOperationException>().WithMessage("*bad query*");
 	}
 }

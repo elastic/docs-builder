@@ -8,7 +8,9 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Highlighting;
+using Elastic.Transport;
 using Microsoft.Extensions.Logging;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.Contract.DocumentationDocument>;
 
 namespace Elastic.Documentation.Mcp.Remote.Gateways;
 
@@ -19,7 +21,8 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 
 	// Enough for every operation of the largest API in one version tree.
 	private const int MaxOperations = 2000;
-	private const int MaxApis = 200;
+	// Every API's landing page, once per version tree whose landing content differs.
+	private const int MaxLandingRenderings = 1000;
 	private const int MaxEndpointCandidates = 50;
 	private const int MaxIdMatches = 10;
 
@@ -58,9 +61,8 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 			Filter = [OperationFilter(search.Scope)],
 			MustNot = search.IncludeDeprecated ? [] : [DeprecatedOperations]
 		};
-		var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
+		var response = await Search(
 			s => s
-				.Indices(clientAccessor.SearchIndex)
 				.Query(query)
 				.From((search.PageNumber - 1) * search.PageSize)
 				.Size(search.PageSize)
@@ -69,7 +71,6 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 				.IncludeNamedQueriesScore(true),
 			ct
 		);
-		EnsureValid(response);
 
 		var options = new HighlightOptions { ApiLookup = true, ListChildren = ApiLookupQueryBuilder.ExpandsChildren(search.Query) };
 		var hits = response
@@ -111,20 +112,10 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 	/// <inheritdoc />
 	public async Task<IReadOnlyList<ApiSummary>> ListApisAsync(CancellationToken ct = default)
 	{
-		var query = new BoolQuery { Filter = [SearchQueryBuilder.DocumentFilterFor(null), ApiDocuments, LandingPages] };
-		var documents = await SearchDocuments(query, MaxApis, SummarySource, ct);
-		return [
-			.. documents.OrderBy(d => d.Api!.Key, StringComparer.Ordinal).Select(
-				d => new ApiSummary
-				{
-					Key = d.Api!.Key,
-					Title = d.Title,
-					Url = d.Path,
-					Description = d.Description,
-					Versions = [.. d.Api.Trees.Select(t => t.Tree)]
-				}
-			)
-		];
+		// Hidden renderings included: each lists only the trees that share its content, so an API's versions are their union.
+		var query = new BoolQuery { Filter = [ApiDocuments, LandingPages] };
+		var renderings = await SearchDocuments(query, MaxLandingRenderings, [.. SummarySource, "hidden"], ct);
+		return [.. renderings.GroupBy(d => d.Api!.Key).OrderBy(g => g.Key, StringComparer.Ordinal).Select(ToApiSummary)];
 	}
 
 	/// <inheritdoc />
@@ -143,43 +134,79 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 		return await SearchDocuments(query, MaxIdMatches, DetailSource, ct);
 	}
 
-	/// <summary>Candidates from the index's loose endpoint keys, ranked by how many literal segments of their route the caller typed.</summary>
+	/// <summary>
+	/// Candidates from the index's loose endpoint keys, or for a route made only of parameters such as <c>/{index}</c>,
+	/// which has no key, from its path. The best matching route wins; other candidates that match it as well are kept.
+	/// </summary>
 	private async Task<IReadOnlyList<DocumentationDocument>> FindByEndpoint(ApiScope? scope, TypedEndpoint typed, CancellationToken ct)
 	{
 		string[] candidates = [.. ApiEndpointPath.QueryCandidates(typed.Path).SelectMany(g => g.Terms)];
-		if (candidates.Length == 0)
-			return [];
-
-		var query = new BoolQuery
-		{
-			Filter = [OperationFilter(scope)],
-			Should =
-			[
+		List<Query> routeQueries = candidates.Length == 0
+			? []
+			: [
 				Terms(QueryFieldNames.ApiEndpoints, candidates),
 				Terms(QueryFieldNames.ApiEndpointsBare, ApiEndpointPath.BareKeys(candidates))
-			],
-			MinimumShouldMatch = 1
-		};
-		var documents = await SearchDocuments(query, MaxEndpointCandidates, DetailSource, ct);
-		return [
-			.. documents
-				.Select(d => (Document: d, Score: ApiRouteMatch.BestScore(typed, d.Api!)))
-				.Where(c => c.Score != ApiRouteMatch.NoMatch)
-				.OrderByDescending(c => c.Score)
-				// A page serving several methods leads with one; prefer the page that leads with the typed method.
-				.ThenByDescending(c => string.Equals(c.Document.Api!.Method, typed.Method, StringComparison.OrdinalIgnoreCase))
-				.Select(c => c.Document)
-		];
+			];
+		if (typed.Segments.Length > 0)
+			routeQueries.Add(new RegexpQuery
+			{
+				Field = QueryFieldNames.ApiPath,
+				Value = string.Concat(Enumerable.Repeat(@"/\{[^/]+\}", typed.Segments.Length))
+			});
+		if (routeQueries.Count == 0)
+			return [];
+
+		var query = new BoolQuery { Filter = [OperationFilter(scope)], Should = routeQueries, MinimumShouldMatch = 1 };
+		var ranked = (await SearchDocuments(query, MaxEndpointCandidates, DetailSource, ct))
+			.Select(d => (Document: d, Rank: RouteRank(typed, d.Api!)))
+			.Where(c => c.Rank >= 0)
+			.ToList();
+		var best = ranked.Select(c => c.Rank).DefaultIfEmpty(-1).Max();
+		return [.. ranked.Where(c => c.Rank == best).Select(c => c.Document)];
+	}
+
+	/// <summary>
+	/// Literal segments matched first; then, since a page serving several methods leads with one, the page that leads with the
+	/// typed method. Negative when no route fits.
+	/// </summary>
+	private static int RouteRank(TypedEndpoint typed, ApiOperationMetadata api)
+	{
+		var score = ApiRouteMatch.BestScore(typed, api);
+		var leadsWithMethod = string.Equals(api.Method, typed.Method, StringComparison.OrdinalIgnoreCase);
+		return score == ApiRouteMatch.NoMatch ? -1 : (score * 2) + (leadsWithMethod ? 1 : 0);
 	}
 
 	private async Task<IReadOnlyList<DocumentationDocument>> SearchDocuments(Query query, int size, string[] source, CancellationToken ct)
 	{
-		var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
-			s => s.Indices(clientAccessor.SearchIndex).Query(query).Size(size).Source(sf => sf.Filter(f => f.Includes(source))),
-			ct
-		);
-		EnsureValid(response);
+		var response = await Search(s => s.Query(query).Size(size).Source(sf => sf.Filter(f => f.Includes(source))), ct);
 		return [.. response.Documents.Where(d => d.Api is not null)];
+	}
+
+	/// <summary>Runs a search on the docs index; a timeout or an overloaded cluster becomes <see cref="SearchUnavailableException"/>.</summary>
+	private async Task<EsSearchResponse> Search(Action<SearchRequestDescriptor<DocumentationDocument>> configure, CancellationToken ct)
+	{
+		EsSearchResponse response;
+		try
+		{
+			response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
+				s => configure(s.Indices(clientAccessor.SearchIndex)),
+				ct
+			);
+		}
+		catch (TransportException ex) when (SearchUnavailableException.IsTransient(ex))
+		{
+			throw SearchUnavailableException.Transient(ex.FailureReason, ex);
+		}
+		if (response.IsValidResponse)
+			return response;
+
+		var reason = response.ElasticsearchServerError?.Error?.Reason
+			?? response.ApiCallDetails?.OriginalException?.Message
+			?? "unknown error";
+		if (SearchUnavailableException.IsTransient(response))
+			throw SearchUnavailableException.Transient(reason, response.ApiCallDetails?.OriginalException);
+		logger.LogError("API index query failed: {Reason}", reason);
+		throw new InvalidOperationException($"The API index query failed: {reason}");
 	}
 
 	/// <summary>
@@ -218,6 +245,20 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 		};
 	}
 
+	private static ApiSummary ToApiSummary(IGrouping<string, DocumentationDocument> renderings)
+	{
+		// The default tree's rendering is the visible one; its title and URL stand for the API.
+		var landing = renderings.FirstOrDefault(d => !d.Hidden) ?? renderings.First();
+		return new ApiSummary
+		{
+			Key = renderings.Key,
+			Title = landing.Title,
+			Url = landing.Path,
+			Description = landing.Description,
+			Versions = [.. renderings.SelectMany(d => d.Api!.Trees).Select(t => t.Tree).Distinct(StringComparer.Ordinal)]
+		};
+	}
+
 	private static ApiField ToField(ApiPropertyEntry property) =>
 		new()
 		{
@@ -227,13 +268,4 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 			Location = property.Location,
 			Description = property.Description
 		};
-
-	private void EnsureValid<TDocument>(Clients.Elasticsearch.SearchResponse<TDocument> response)
-	{
-		if (response.IsValidResponse)
-			return;
-		var reason = response.ElasticsearchServerError?.Error?.Reason ?? "unknown error";
-		logger.LogError("API index query failed: {Reason}", reason);
-		throw new InvalidOperationException($"The API index query failed: {reason}");
-	}
 }
