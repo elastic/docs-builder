@@ -26,12 +26,13 @@ Every loader is three things and nothing else, run through `LoaderPipeline` (Ela
 public static Result<SearchTuning> Load(ConfigurationFileProvider provider) =>
     LoaderPipeline.Run(
         "search.yml",
-        parse: ReadDto,                       // the only code that touches the DTO (internal)
-        map: ToRecord,                        // DTO -> anemic record; findings of its own go in `extra`
-        rules: SearchTuningConstraints.All);  // the aggregate's set, from Elastic.Documentation
+        parse: ReadDto,   // the only code that touches the DTO (internal)
+        map: ToRecord);   // DTO -> anemic record; findings of its own go in LoadOptions.Extra
 ```
 
-- `Run` catches a step that throws and returns it as an error diagnostic carrying the exception's message, runs `rules.Report` exactly once, and returns `Result<T>` (an error means no value; `errorsAreFatal: false` returns the value with its errors for a caller that reports and continues). `Check` is the same last step for a record built elsewhere; `Build` only builds, for a part whose rules relate it to another part.
+The aggregate implements `Nullean.Entities.IHaveConstraints<T>`, so the pipeline checks against `T.Constraints` and a loader never passes its rules by hand. `LoadOptions<T>` is the optional second argument: `Extra`, `FileOf`, `ErrorsAreFatal` (default true), `Rules` (a set to use instead of `T.Constraints`, for a record a read-time set checks, or `ConstraintSet.Merge(first, second)`), and `Describe` (the text of the error for a step that threw; the default is the exception's message, so a loader keeps the text it always gave).
+
+- `Run` catches a step that throws and returns it as an error diagnostic carrying the exception's message, runs `rules.Report` exactly once, and returns `Result<T>` (an error means no value; `ErrorsAreFatal = false` returns the value with its errors for a caller that reports and continues). `Check` is the same last step for a record built elsewhere; `Build` only builds, for a part whose rules relate it to another part.
 - `BufferingDiagnosticsCollector` holds diagnostics in emission order, unfiltered, so a loader whose parser writes to a collector can return them in its `Result<T>` and the caller's collector sees what a direct write would have produced.
 
 ## Loader recipe: build, check once, hand the result on
@@ -40,7 +41,7 @@ A loader is the one place that checks the entity it builds; nothing downstream c
 
 1. Build the entity. When a rule relates two things, the loader builds the pair record itself.
 2. `var report = Set.All.Report(entity);` runs every rule once and reports all of them, not the first.
-3. Hand the report on: `Result.From(report, file)` (carries every diagnostic; `HasErrors` is true when a rule of Error severity was broken) or, where the loader owns a collector, `collector.Write(report, file)`, which returns whether the entity is usable. Both go through `ConstraintReport<T>.ToDiagnostics`, the only violation-to-diagnostic mapping, so every diagnostic carries the rule's id as `Diagnostic.RuleId`. Match on that, never on message text.
+3. Hand the report on: `Result.From(report, file)` (carries every diagnostic; `HasErrors` is true when a rule of Error severity was broken) or, where the loader owns a collector, `collector.WriteViolations(report, file)`, which returns whether the entity is usable. Both go through `ConstraintReport<T>.ToDiagnostics`, the only violation-to-diagnostic mapping, so every diagnostic carries the rule's id as `Diagnostic.RuleId`. Match on that, never on message text.
 4. Never check in a callee. A caller of a loader writes the findings with `result.Report(collector)`, which returns the same `Result<T>`, and then chooses: `.OrThrow()`, `.Value`, or a match on `HasErrors`. `EmitTo(collector)` is shorthand for `Report(collector).Value`.
 5. Startup-critical configuration stops the process in one place, the composition root: `Loader.Load(...).Report(collector).OrThrow()` throws a `ConfigurationException` whose message lists every error and which carries every diagnostic.
 

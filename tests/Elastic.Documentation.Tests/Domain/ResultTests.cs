@@ -139,4 +139,20 @@ public class ResultTests
 
 	[Test]
 	public void From_ValidValue_HasNoDiagnostics() => Result.From(WidgetRules.All.Report(Value), "w.yml").Diagnostics.Should().BeEmpty();
+
+	[Test]
+	public void ConfigurationException_Lines_ShowPositionAndRuleId()
+	{
+		var diagnostics = new[]
+		{
+			new Diagnostic { Severity = Severity.Error, File = "a.yml", Message = "m1" },
+			new Diagnostic { Severity = Severity.Warning, File = "a.yml", Message = "m2", Line = 3, RuleId = "r" },
+			new Diagnostic { Severity = Severity.Hint, File = "a.yml", Message = "m3", Line = 4, Column = 5 }
+		};
+
+		new ConfigurationException(diagnostics)
+			.Lines
+			.Should()
+			.Equal("error: a.yml: m1", "warning: a.yml(3): m2 [r]", "hint: a.yml(4,5): m3");
+	}
 }

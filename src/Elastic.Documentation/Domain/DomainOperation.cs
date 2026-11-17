@@ -15,21 +15,27 @@ internal static class DomainOperation
 	/// <summary>
 	/// A record built from facts that were never in a file: every finding of <paramref name="rules"/> is in the result, so the caller sees what
 	/// a loader would have reported. The value is carried even when a rule of Error severity is broken (see <see cref="Result{T}.HasErrors"/>).
+	/// Violations are reported against <paramref name="file"/>, which the caller must name so no diagnostic carries an empty file.
 	/// </summary>
 	public static Result<T> Built<T>(
 		Nullean.Entities.ConstraintSet<T> rules,
 		T value,
-		IReadOnlyList<Diagnostic>? own = null,
-		string file = ""
+		string file,
+		IReadOnlyList<Diagnostic>? own = null
 	) where T : class => Result.From(rules.Report(value), file, own);
 
 	/// <summary>
 	/// A record derived from one that was already checked: re-checked by <paramref name="rules"/>, and only the errors are in the result. The warnings
-	/// the source carried were reported when it was read; what the derivation itself breaks is an error of its own.
+	/// the source carried were reported when it was read; what the derivation itself breaks is an error of its own, reported against <paramref name="file"/>.
 	/// </summary>
+	/// <remarks>
+	/// <paramref name="own"/> keeps its findings at any severity, so a warning or hint of the operation is in <see cref="Result{T}.Diagnostics"/> and is
+	/// written by <see cref="Result{T}.EmitTo"/>, but not by <see cref="Result{T}.EmitErrorsTo"/>.
+	/// </remarks>
 	public static Result<T> Derived<T>(
 		Nullean.Entities.ConstraintSet<T> rules,
 		T value,
+		string file,
 		IReadOnlyList<Diagnostic>? own = null
 	) where T : class
 	{
@@ -37,15 +43,7 @@ internal static class DomainOperation
 			.Report(value)
 			.Violations
 			.Where(v => v.Severity == Nullean.Entities.Severity.Error)
-			.Select(v => v.ToDiagnostic(string.Empty));
+			.Select(v => v.ToDiagnostic(file));
 		return Result.Success(value, [.. own ?? [], .. errors]);
-	}
-
-	/// <summary>The lifecycle a CLI or label text names, null when blank or not a lifecycle.</summary>
-	public static Lifecycle? ParseLifecycle(string? value)
-	{
-		if (string.IsNullOrWhiteSpace(value))
-			return null;
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
 	}
 }

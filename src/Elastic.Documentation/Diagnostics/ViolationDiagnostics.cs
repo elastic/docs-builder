@@ -35,7 +35,7 @@ public static class ViolationDiagnostics
 		[.. report.Violations.Select(v => v.ToDiagnostic(file))];
 
 	/// <summary>Writes every violation of <paramref name="report"/> to the collector and returns whether the value is usable (no errors).</summary>
-	public static bool Write<T>(this IDiagnosticsCollector collector, ConstraintReport<T> report, string file)
+	public static bool WriteViolations<T>(this IDiagnosticsCollector collector, ConstraintReport<T> report, string file)
 	{
 		foreach (var diagnostic in report.ToDiagnostics(file))
 			collector.Write(diagnostic);

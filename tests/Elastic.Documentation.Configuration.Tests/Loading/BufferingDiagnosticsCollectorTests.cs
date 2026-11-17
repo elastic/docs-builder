@@ -36,12 +36,39 @@ public class BufferingDiagnosticsCollectorTests
 		(collector.Errors, collector.Warnings, collector.Hints).Should().Be((1, 1, 1));
 	}
 
+	private static readonly TimeSpan Limit = TimeSpan.FromSeconds(10);
+
 	[Test]
-	public async Task StartAndStop_NeedNoBackgroundWork()
+	public async Task StartedThroughTheInterface_ThenStopped_EndsTheBackgroundReader()
 	{
 		var collector = new BufferingDiagnosticsCollector();
 
-		collector.StartAsync(CancellationToken.None).Should().BeSameAs(collector);
-		await collector.StopAsync(CancellationToken.None);
+		// the returned task is the reader's lifetime: it ends only when StopAsync completes the channel
+		var reader = ((IDiagnosticsCollector)collector).StartAsync(CancellationToken.None);
+		collector.Write(Of(Severity.Warning, "w"));
+		await collector.StopAsync(CancellationToken.None).WaitAsync(Limit);
+		await reader.WaitAsync(Limit);
+
+		collector.Diagnostics.Should().ContainSingle();
+	}
+
+	[Test]
+	public async Task StartedWithTheConcreteMethod_ThenStopped_Completes()
+	{
+		var collector = new BufferingDiagnosticsCollector();
+
+		_ = collector.StartAsync(CancellationToken.None);
+		await collector.StopAsync(CancellationToken.None).WaitAsync(Limit);
+	}
+
+	[Test]
+	public async Task NeverStarted_Stops_Completes()
+	{
+		var collector = new BufferingDiagnosticsCollector();
+
+		collector.Write(Of(Severity.Error, "e"));
+		await collector.StopAsync(CancellationToken.None).WaitAsync(Limit);
+
+		collector.Diagnostics.Should().ContainSingle();
 	}
 }

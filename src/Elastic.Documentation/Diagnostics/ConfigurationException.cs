@@ -27,8 +27,14 @@ public sealed class ConfigurationException(
 
 	private static string Format(Diagnostic d)
 	{
-		var position = d.Line is { } line ? d.Column is { } column ? $"({line},{column})" : $"({line})" : string.Empty;
 		var rule = d.RuleId is { } id ? $" [{id}]" : string.Empty;
-		return $"{d.Severity.ToString().ToLowerInvariant()}: {d.File}{position}: {d.Message}{rule}";
+		return $"{d.Severity.ToString().ToLowerInvariant()}: {d.File}{PositionOf(d)}: {d.Message}{rule}";
+	}
+
+	private static string PositionOf(Diagnostic d)
+	{
+		if (d.Line is not { } line)
+			return string.Empty;
+		return d.Column is { } column ? $"({line},{column})" : $"({line})";
 	}
 }

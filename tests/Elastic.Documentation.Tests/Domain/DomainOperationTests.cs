@@ -17,7 +17,7 @@ public class DomainOperationTests
 	{
 		var broken = new Widget("", 50);
 
-		var result = DomainOperation.Built(WidgetRules.All, broken, [Own], "w.yml");
+		var result = DomainOperation.Built(WidgetRules.All, broken, "w.yml", [Own]);
 
 		result.Value.Should().BeSameAs(broken);
 		result.HasErrors.Should().BeTrue();
@@ -28,7 +28,7 @@ public class DomainOperationTests
 	[Test]
 	public void Derived_KeepsOnlyErrors_AfterTheOperationsOwn()
 	{
-		var result = DomainOperation.Derived(WidgetRules.All, new Widget("", 50), [Own]);
+		var result = DomainOperation.Derived(WidgetRules.All, new Widget("", 50), "w.yml", [Own]);
 
 		result.Diagnostics.Select(d => d.Message).Should().Equal("own", "Widget has no name.");
 	}
@@ -36,24 +36,33 @@ public class DomainOperationTests
 	[Test]
 	public void Derived_ValidValue_HasNoDiagnostics()
 	{
-		var result = DomainOperation.Derived(WidgetRules.All, new Widget("n", 50));
+		var result = DomainOperation.Derived(WidgetRules.All, new Widget("n", 50), "w.yml");
 
 		result.HasErrors.Should().BeFalse();
 		result.Diagnostics.Should().BeEmpty();
 	}
 
 	[Test]
-	[Arguments(null)]
-	[Arguments("")]
-	[Arguments("  ")]
-	[Arguments("not-a-lifecycle")]
-	public void ParseLifecycle_BlankOrUnknown_IsNull(string? text) => DomainOperation.ParseLifecycle(text).Should().BeNull();
+	public void Derived_ErrorsAreReportedAgainstTheGivenFile()
+	{
+		var result = DomainOperation.Derived(WidgetRules.All, new Widget("", 1), "derived.yml");
+
+		result.Diagnostics.Should().ContainSingle().Which.File.Should().Be("derived.yml");
+	}
 
 	[Test]
-	[Arguments("ga", Lifecycle.Ga)]
-	[Arguments("GA", Lifecycle.Ga)]
-	[Arguments("beta", Lifecycle.Beta)]
-	[Arguments("Preview", Lifecycle.Preview)]
-	public void ParseLifecycle_KnownText_IgnoresCase(string text, Lifecycle expected) =>
-		DomainOperation.ParseLifecycle(text).Should().Be(expected);
+	public void Derived_OwnWarning_IsInDiagnosticsAndEmitTo_ButNotEmitErrorsTo()
+	{
+		var warning = new Diagnostic { Severity = Severity.Warning, File = "own", Message = "own warning" };
+		var result = DomainOperation.Derived(WidgetRules.All, WidgetRules.Valid, "w.yml", [warning]);
+
+		var viaEmitTo = new BufferedCollector();
+		var viaEmitErrorsTo = new BufferedCollector();
+		_ = result.EmitTo(viaEmitTo);
+		_ = result.EmitErrorsTo(viaEmitErrorsTo);
+
+		result.Diagnostics.Should().ContainSingle().Which.Message.Should().Be("own warning");
+		viaEmitTo.Written.Should().ContainSingle();
+		viaEmitErrorsTo.Written.Should().BeEmpty();
+	}
 }

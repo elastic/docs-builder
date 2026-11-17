@@ -32,7 +32,8 @@ public sealed record Result<T>(T? Value, IReadOnlyList<Diagnostic> Diagnostics) 
 	/// <summary>
 	/// Writes only the error diagnostics to <paramref name="collector"/> and returns the value when there are none (null otherwise). For a caller that
 	/// derived a record from one the loader already checked: the warnings it carried were reported when it was read, so only what the derivation
-	/// itself broke is news.
+	/// itself broke is news. A <c>DomainOperation.Derived</c> result keeps the operation's own warnings and hints in <see cref="Diagnostics"/> too; this method does not
+	/// write them, so a caller that wants them uses <see cref="EmitTo"/> or reads <see cref="Diagnostics"/>.
 	/// </summary>
 	public T? EmitErrorsTo(IDiagnosticsCollector collector)
 	{

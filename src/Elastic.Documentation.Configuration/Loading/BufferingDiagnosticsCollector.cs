@@ -21,8 +21,4 @@ internal sealed class BufferingDiagnosticsCollector() : DiagnosticsCollector([])
 		IncrementSeverityCount(diagnostic);
 		_diagnostics.Add(diagnostic);
 	}
-
-	public override DiagnosticsCollector StartAsync(Cancel ctx) => this;
-
-	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
 }

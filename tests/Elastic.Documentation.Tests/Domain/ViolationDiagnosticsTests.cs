@@ -52,13 +52,13 @@ public class ViolationDiagnosticsTests
 	}
 
 	[Test]
-	public void Write_ReportsEveryViolation_AndSaysWhetherTheValueIsUsable()
+	public void WriteViolations_ReportsEveryViolation_AndSaysWhetherTheValueIsUsable()
 	{
 		var collector = new BufferedCollector();
 
-		var usable = collector.Write(WidgetRules.All.Report(WidgetRules.Valid), "w.yml");
-		var warningOnly = collector.Write(WidgetRules.All.Report(new Widget("n", 50)), "w.yml");
-		var broken = collector.Write(WidgetRules.All.Report(Broken), "w.yml");
+		var usable = collector.WriteViolations(WidgetRules.All.Report(WidgetRules.Valid), "w.yml");
+		var warningOnly = collector.WriteViolations(WidgetRules.All.Report(new Widget("n", 50)), "w.yml");
+		var broken = collector.WriteViolations(WidgetRules.All.Report(Broken), "w.yml");
 
 		(usable, warningOnly, broken).Should().Be((true, true, false));
 		collector.Written.Select(d => d.RuleId).Should().Equal("size-small", "name-required", "size-small");

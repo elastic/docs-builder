@@ -14,6 +14,8 @@ namespace Elastic.Documentation.Tests.Domain;
 /// collectors, no raw <c>System.IO</c> handles. Loading lives in <c>Elastic.Documentation.Configuration</c>.
 /// Domain objects may expose <c>System.IO.Abstractions</c> file handles (<c>IFileInfo</c>, <c>IDirectoryInfo</c>) by
 /// design: a resolved documentation set points at real files, and tests supply a <c>MockFileSystem</c>.
+/// The check is shallow: it reads the declared field, property, constructor and method signatures of each type, not method bodies, so a type can
+/// still use infrastructure internally. Today it covers one internal class; it earns its keep as bounded contexts are added to the list.
 /// </summary>
 public class DomainPurityTests
 {

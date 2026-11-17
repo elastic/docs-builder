@@ -7,7 +7,10 @@ using Nullean.Entities;
 namespace Elastic.Documentation.Tests.Domain;
 
 /// <summary>A minimal record and constraint set, so the foundation types are tested without any area's model.</summary>
-public sealed record Widget(string Name, int Size);
+public sealed record Widget(string Name, int Size) : IHaveConstraints<Widget>
+{
+	public static ConstraintSet<Widget> Constraints => WidgetRules.All;
+}
 
 public static class WidgetRules
 {
