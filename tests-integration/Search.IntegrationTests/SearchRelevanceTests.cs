@@ -336,6 +336,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("reindx", "operation-reindex");
 		yield return ("bulck", "operation-bulk");
 		yield return ("indx refresh", "operation-indices-refresh");
+		// `stats` stems to `stat`, which begins `state`: a word typed whole beats one that only starts another word.
+		yield return ("cluster stats", "operation-cluster-stats");
+		yield return ("clustr stats", "operation-cluster-stats");
 		// A typo in a word only the title carries: the typed words are the whole title within one edit.
 		yield return ("creat index", "operation-indices-create");
 		yield return ("delte index", "operation-indices-delete");
@@ -607,7 +610,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			// Typos the fuzzy id word does not fix yet: a route key is not fuzzed, and a title-only word misses the whole-title lift.
 			"serch",
 			"clustr settings",
-			"clustr stats",
 			"pipline"
 		];
 

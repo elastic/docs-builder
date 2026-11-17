@@ -29,6 +29,7 @@ namespace Elastic.Documentation.Search;
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// <item>A method typed before a path lifts by <see cref="Method"/> only and is no word of a title, so <c>GET /_search</c> keeps the
 /// <c>POST</c> operation <c>search</c> first (10.20) above <c>scroll</c> (9.70), where "Get the search shards" led it (9.13).</item>
+/// <item><see cref="OperationWordPrefix"/> sits just below <see cref="OperationWord"/>, so a word typed whole beats one that only starts another word.</item>
 /// <item><see cref="OperationWordTypo"/> sits between <see cref="OperationWord"/> and the one-point roles, so an exact operation word beats a
 /// typo of it, and a typo of an operation word beats a word that only a title, a group or a field name carries.</item>
 /// <item><see cref="TitleNamedTypo"/> sits below <see cref="TitleNamed"/>, so a title typed exactly beats one typed with a typo, and below every
@@ -47,6 +48,7 @@ public static class ApiLookupWeights
 	public const float EndpointCompletion = 5.0f;
 	public const float NamespaceCompletion = 4.5f;
 	public const float OperationWord = 2.0f;
+	public const float OperationWordPrefix = 1.8f;
 	public const float OperationWordTypo = 1.5f;
 	public const float GroupWord = 1.0f;
 	public const float TitleWord = 1.0f;

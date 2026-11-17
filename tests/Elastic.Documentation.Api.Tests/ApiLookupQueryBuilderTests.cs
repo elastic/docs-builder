@@ -103,7 +103,8 @@ public class ApiLookupQueryBuilderTests
 	[Test]
 	public void ApiLookupWeights_TypoRoles_ScoreBelowTheirExactRoles()
 	{
-		ApiLookupWeights.OperationWord.Should().BeGreaterThan(ApiLookupWeights.OperationWordTypo);
+		ApiLookupWeights.OperationWord.Should().BeGreaterThan(ApiLookupWeights.OperationWordPrefix);
+		ApiLookupWeights.OperationWordPrefix.Should().BeGreaterThan(ApiLookupWeights.OperationWordTypo);
 		ApiLookupWeights
 			.OperationWordTypo
 			.Should()
@@ -116,9 +117,12 @@ public class ApiLookupQueryBuilderTests
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("cat"));
 
-		var id = OptionsByName(TokenClause(json, 0))["id_0"];
+		var id = OptionsByName(TokenClause(json, 0))["id_0"].GetProperty("queries").EnumerateArray();
 
-		id.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.OperationWord);
+		id
+			.Select(o => o.GetProperty("constant_score").GetProperty("boost").GetSingle())
+			.Should()
+			.Equal(ApiLookupWeights.OperationWord, ApiLookupWeights.OperationWordPrefix);
 	}
 
 	[Test]
@@ -318,9 +322,9 @@ public class ApiLookupQueryBuilderTests
 
 		options.Keys.Should().BeEquivalentTo("key_0", "id_0", "group_0", "title_0", "field_0", "body_0");
 		var id = options["id_0"].GetProperty("queries").EnumerateArray().Select(o => o.GetProperty("constant_score")).ToArray();
-		id.Select(o => o.GetProperty("boost").GetSingle()).Should().Equal(2.0f, 1.5f);
-		id[0].GetProperty("filter").GetRawText().Should().NotContain("fuzziness");
-		AssertFuzzy(id[1].GetProperty("filter").GetProperty("match").GetProperty("api.words"), "cluster");
+		id.Select(o => o.GetProperty("boost").GetSingle()).Should().Equal(2.0f, 1.8f, 1.5f);
+		id[0].GetProperty("filter").GetProperty("match").GetProperty("api.words").GetRawText().Should().NotContain("fuzziness");
+		AssertFuzzy(id[2].GetProperty("filter").GetProperty("match").GetProperty("api.words"), "cluster");
 		options["group_0"].GetProperty("boost").GetSingle().Should().Be(1.0f);
 		options["title_0"].GetProperty("boost").GetSingle().Should().Be(1.0f);
 		options["body_0"].GetProperty("boost").GetSingle().Should().Be(0.1f);
@@ -623,7 +627,7 @@ public class ApiLookupQueryBuilderTests
 		using var json = Json(ApiLookupQueryBuilder.Build("cluster"));
 		var options = OptionsByName(TokenClause(json, 0));
 
-		var id = options["id_0"].GetProperty("queries")[0].GetProperty("constant_score").GetProperty("filter").GetProperty("multi_match");
+		var id = options["id_0"].GetProperty("queries")[1].GetProperty("constant_score").GetProperty("filter").GetProperty("multi_match");
 		id.GetProperty("type").GetString().Should().Be("bool_prefix");
 		id.GetProperty("operator").GetString().Should().Be("and");
 		id.GetProperty("analyzer").GetString().Should().Be("synonyms_analyzer");

@@ -360,28 +360,25 @@ public static class ApiLookupQueryBuilder
 		new TermQuery { Field = QueryFieldNames.ApiMethod, Value = method.ToUpperInvariant(), Boost = ApiLookupWeights.Method };
 
 	/// <summary>
-	/// A word of the operation id, or one edit away from it. Both options share the role name, so a typo still reads as an
-	/// operation word. A word too short for an edit has no typo option.
+	/// A word of the operation id typed whole, as its beginning, or one edit away. The three options share the role name. The
+	/// beginning scores below the whole word because stemming makes <c>stats</c> the beginning of <c>state</c>, and a word too
+	/// short for an edit has no typo option.
 	/// </summary>
 	private static Query OperationWordOption(string text, int index)
 	{
-		var name = ApiLookupRoles.QueryName(ApiLookupRole.Id, index);
-		var exact = BoolPrefix(text, OperationWordFields);
-		if (text.Length < SearchQueryBuilder.FuzzyMinimumLength)
-			return Constant(exact, ApiLookupWeights.OperationWord, name);
-
-		return new DisMaxQuery
-		{
-			QueryName = name,
-			Queries =
-			[
-				Constant(exact, ApiLookupWeights.OperationWord),
+		List<Query> options =
+		[
+			Constant(SynonymsMatch(QueryFieldNames.ApiWords, text), ApiLookupWeights.OperationWord),
+			Constant(BoolPrefix(text, OperationWordFields), ApiLookupWeights.OperationWordPrefix)
+		];
+		if (text.Length >= SearchQueryBuilder.FuzzyMinimumLength)
+			options.Add(
 				Constant(
 					SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.ApiWords, text, SynonymsAnalyzer),
 					ApiLookupWeights.OperationWordTypo
 				)
-			]
-		};
+			);
+		return new DisMaxQuery { QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Id, index), Queries = options };
 	}
 
 	private static Query TitleQuery(string text) => BoolPrefix(text, TitleCompletionFields);
