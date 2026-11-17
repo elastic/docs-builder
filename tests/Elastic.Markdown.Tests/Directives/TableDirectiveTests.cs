@@ -389,7 +389,7 @@ public class TableDirectiveFilterColumnsTests() : DirectiveTest<TableDirectiveBl
 )
 {
 	[Test]
-	public void ParsesFilterColumns() => Block!.FilterColumns.Should().Equal("Provider", "**Support** status");
+	public void KeepsOnlyColumnsThatMatchAHeader() => Block!.FilterColumns.Should().Equal("Provider");
 
 	[Test]
 	public void EmitsErrorForUnknownColumn() =>
