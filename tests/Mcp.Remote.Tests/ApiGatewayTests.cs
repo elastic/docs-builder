@@ -420,6 +420,24 @@ public class ApiGatewayTests
 	}
 
 	[Test]
+	[Arguments("GET /_bulk")]
+	[Arguments("GET /_clusterr")]
+	[Arguments("DELETE /_search")]
+	public async Task GetOperationAsync_SystemRouteNoOperationServes_ReturnsNullRatherThanAnIndexOperation(string endpoint)
+	{
+		using var stub = ElasticsearchStub.Start(IndexRoutes);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var detail = await gateway.GetOperationAsync(
+			new ApiOperationLookup(new ApiScope("elasticsearch", null), new ApiEndpointKey(endpoint)),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		detail.Should().BeNull();
+		stub.LastRequestBody.Should().NotContain("regexp");
+	}
+
+	[Test]
 	public async Task GetOperationAsync_RouteOfOnlyParametersWithoutMethod_ListsEveryOperationOnTheRoute()
 	{
 		using var stub = ElasticsearchStub.Start(IndexRoutes);

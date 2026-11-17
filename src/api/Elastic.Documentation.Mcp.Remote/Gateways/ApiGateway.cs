@@ -147,7 +147,7 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 				Terms(QueryFieldNames.ApiEndpoints, candidates),
 				Terms(QueryFieldNames.ApiEndpointsBare, ApiEndpointPath.BareKeys(candidates))
 			];
-		if (typed.Segments.Length > 0)
+		if (ApiRouteMatch.MayFillOnlyParameters(typed))
 			routeQueries.Add(new RegexpQuery
 			{
 				Field = QueryFieldNames.ApiPath,

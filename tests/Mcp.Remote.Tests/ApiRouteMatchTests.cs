@@ -38,6 +38,9 @@ public class ApiRouteMatchTests
 	[Arguments("GET /_cluster/health", "/_cluster/health/{index}", ApiRouteMatch.NoMatch)]
 	[Arguments("GET /{index}/_search", "/_search/{index}", ApiRouteMatch.NoMatch)]
 	[Arguments("DELETE /_cluster/health", "/_cluster/health", ApiRouteMatch.NoMatch)]
+	[Arguments("GET /my-index", "/{index}", 0)]
+	[Arguments("GET /_clusterr", "/{index}", ApiRouteMatch.NoMatch)]
+	[Arguments("GET /_bulk/extra", "/{index}/{id}", ApiRouteMatch.NoMatch)]
 	public void Score_CountsLiteralSegmentsTheTypedEndpointSpellsOut(string endpoint, string route, int expected) =>
 		ApiRouteMatch.Score(ApiRouteMatch.Parse(endpoint), Route(route, "GET")).Should().Be(expected);
 

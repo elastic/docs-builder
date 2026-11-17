@@ -51,8 +51,15 @@ public static class ApiRouteMatch
 				return NoMatch;
 			literals++;
 		}
-		return literals;
+		return literals == 0 && routeSegments.Length > 0 && !MayFillOnlyParameters(typed) ? NoMatch : literals;
 	}
+
+	/// <summary>
+	/// Whether the typed endpoint can name a route made only of parameters, such as <c>/{index}</c>. Index names cannot start
+	/// with <c>_</c>, so a typed system route like <c>/_bulk</c> or a typo of one never fills such a route.
+	/// </summary>
+	public static bool MayFillOnlyParameters(TypedEndpoint typed) =>
+		typed.Segments is { Length: > 0 } segments && !segments.Any(s => s.StartsWith('_'));
 
 	/// <summary>The best <see cref="Score"/> over every route of <paramref name="api"/>.</summary>
 	public static int BestScore(TypedEndpoint typed, ApiOperationMetadata api) =>
