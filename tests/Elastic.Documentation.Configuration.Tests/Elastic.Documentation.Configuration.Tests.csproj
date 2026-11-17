@@ -9,6 +9,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- frozen copies of config/*.yml: the golden snapshots must not change when config/ does -->
+    <None Include="Golden\Baseline\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Elastic.Documentation.Testing" />
     <Using Include="Nullean.Snapshots" />
   </ItemGroup>
