@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Serialization;
@@ -23,9 +24,7 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 /// </summary>
 public class ApplicableToYamlSnapshotTests
 {
-	private static readonly ProductsConfiguration Products = TestHelpers.CreateConfigurationContext(
-		new MockFileSystem()
-	).ProductsConfiguration;
+	private static readonly ProductCatalog Products = TestHelpers.CreateConfigurationContext(new MockFileSystem()).Catalog.Products;
 
 	internal static string Describe(string yaml)
 	{

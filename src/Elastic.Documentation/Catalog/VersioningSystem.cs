@@ -4,13 +4,23 @@
 
 using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Versions;
+using Generator.Equals;
 using NetEscapades.EnumGenerators;
+using Nullean.Entities;
 using SharpYaml.Serialization;
 
-namespace Elastic.Documentation.Configuration.Versions;
+namespace Elastic.Documentation.Catalog;
 
-public record VersionsConfiguration
+/// <summary>Every versioning system from <c>versions.yml</c>, keyed by id. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
+/// <remarks>
+/// Constructed through <c>GlobalCatalog</c>.
+/// </remarks>
+[Equatable]
+public sealed partial record VersioningSystemCatalog : IHaveConstraints<VersioningSystemCatalog>
 {
+	public static ConstraintSet<VersioningSystemCatalog> Constraints => VersioningSystemConstraints.All;
+
+	[UnorderedEquality]
 	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
 	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
 	{
@@ -148,7 +158,11 @@ public enum VersioningSystemId
 	None = -1,
 }
 
-public record VersioningSystem
+/// <summary>A version line with a <c>base</c> (first version the docs cover) and a <c>current</c> (latest release).</summary>
+/// <remarks>
+/// Constructed through <c>VersioningSystemCatalog</c>.
+/// </remarks>
+public sealed record VersioningSystem
 {
 	/// <summary>
 	/// The sentinel major version value used for "versionless" products (serverless, cloud, etc.)

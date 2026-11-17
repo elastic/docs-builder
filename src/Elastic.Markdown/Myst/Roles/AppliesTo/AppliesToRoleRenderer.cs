@@ -26,7 +26,7 @@ public class AppliesToRoleHtmlRenderer : HtmlObjectRenderer<AppliesToRole>
 		{
 			AppliesTo = appliesTo,
 			Inline = true,
-			VersionsConfig = role.BuildContext.VersionsConfiguration,
+			VersionsConfig = role.BuildContext.Catalog.VersioningSystems,
 			DesignSystem = role.BuildContext.Configuration.Features.NavigationPreviewEnabled
 		};
 

@@ -38,7 +38,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 		if (context.Git.IsAvailable)
 		{
 			var repo = context.Git.RepositoryName;
-			var candidate = context.ProductsConfiguration.GetProductByRepositoryName(repo)?.Id ?? repo;
+			var candidate = context.Catalog.Products.GetProductByRepositoryName(repo)?.Id ?? repo;
 			if (IsValidCdnProductId(candidate) && !explicitProducts.Contains(candidate, StringComparer.Ordinal))
 				inferredProduct = candidate;
 		}

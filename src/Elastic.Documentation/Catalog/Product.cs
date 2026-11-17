@@ -3,33 +3,54 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
+using Generator.Equals;
+using Nullean.Entities;
 using SharpYaml.Serialization;
 
-namespace Elastic.Documentation.Configuration.Products;
+namespace Elastic.Documentation.Catalog;
 
-public record ProductsConfiguration : IProductNameLookup
+/// <summary>Every product from <c>products.yml</c>, with lookups by repository and display name. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
+/// <remarks>
+/// Constructed with <c>CatalogLoader.Load</c> or <see cref="ProductCatalog.FromPublicProducts"/>. <c>PublicReferenceProducts</c> and <c>ProductDisplayNames</c> are computed from <c>Products</c>.
+/// </remarks>
+[Equatable]
+public sealed partial record ProductCatalog : IProductNameLookup, IHaveConstraints<ProductCatalog>
 {
+	public static ConstraintSet<ProductCatalog> Constraints => ProductCatalogConstraints.All;
+
+	[UnorderedEquality]
 	public required FrozenDictionary<string, Product> Products { get; init; }
 
+	/// <summary>A catalog of <paramref name="products"/>, every one of them a public reference product.</summary>
+	public static ProductCatalog FromPublicProducts(IEnumerable<KeyValuePair<string, Product>> products) =>
+		new() { Products = products.ToFrozenDictionary() };
+
+	// A copy (a `with`) starts without the projections below: they are computed from the copy's own Products.
+	private ProductCatalog(ProductCatalog original) => Products = original.Products;
+
 	/// <summary>
-	/// Products with the <c>public-reference</c> feature enabled. These can appear in
+	/// Products with the <c>public-reference</c> feature enabled: a projection of <see cref="Products"/>, computed once. These can appear in
 	/// applies_to blocks, page frontmatter, and get display-name substitutions.
 	/// When a product has no explicit <c>features</c> map, it is included here by default.
 	/// </summary>
-	public required FrozenDictionary<string, Product> PublicReferenceProducts { get; init; }
+	[IgnoreEquality]
+	public FrozenDictionary<string, Product> PublicReferenceProducts =>
+		field ??= Products.Where(p => p.Value.Features.PublicReference).ToFrozenDictionary();
 
 	/// <summary>
-	/// Product id to display name mappings for fast lookups.
+	/// Product id to display name mappings for fast lookups: a projection of <see cref="Products"/>, computed once.
 	/// </summary>
-	public required FrozenDictionary<string, string> ProductDisplayNames { get; init; }
+	[IgnoreEquality]
+	public FrozenDictionary<string, string> ProductDisplayNames =>
+		field ??= Products.ToFrozenDictionary(p => p.Key, p => p.Value.DisplayName);
 
 	private FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>>? _displayNameLookup;
 
 	/// <summary>
 	/// Gets the alternate lookup for span-based product id lookups.
 	/// </summary>
+	[IgnoreEquality]
 	public FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> DisplayNameLookup =>
 		_displayNameLookup ??= ProductDisplayNames.GetAlternateLookup<ReadOnlySpan<char>>();
 
@@ -87,11 +108,6 @@ public record ProductsConfiguration : IProductNameLookup
 	}
 }
 
-public record ProductLink
-{
-	public string Id { get; set; } = string.Empty;
-}
-
 /// <summary>
 /// The release-notes onboarding path a product follows, declared via <c>features.release-notes</c>
 /// in <c>products.yml</c>. A product either ships via the Elastic DRA pipeline
@@ -114,7 +130,10 @@ public enum ReleaseNotesPath
 }
 
 /// <summary>Declares which docs-builder subsystems a product participates in.</summary>
-public record ProductFeatures
+/// <remarks>
+/// Constructed through <c>Product</c>.
+/// </remarks>
+public sealed record ProductFeatures
 {
 	/// <summary>Product can be referenced in applies_to blocks, page frontmatter, and gets display-name substitutions.</summary>
 	public bool PublicReference { get; init; }
@@ -140,7 +159,11 @@ public record ProductFeatures
 	);
 }
 
-public record Product
+/// <summary>A product from <c>products.yml</c>. Its versioning system is resolved while loading the <see cref="GlobalCatalog"/>.</summary>
+/// <remarks>
+/// Constructed through <c>ProductCatalog</c>.
+/// </remarks>
+public sealed record Product
 {
 	public required string Id { get; init; }
 	public required string DisplayName { get; init; }

@@ -68,8 +68,7 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		try
 		{
-			Data = YamlSerialization.Deserialize<WhatsNewData>(yaml, Build.ProductsConfiguration, this.YamlReporting())
-				?? WhatsNewData.Empty;
+			Data = YamlSerialization.Deserialize<WhatsNewData>(yaml, Build.Catalog.Products, this.YamlReporting()) ?? WhatsNewData.Empty;
 		}
 		catch (YamlException ex)
 		{
@@ -157,7 +156,7 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 		{
 			var config = YamlSerialization.Deserialize<WhatsNewConfig>(
 				yaml,
-				Build.ProductsConfiguration,
+				Build.Catalog.Products,
 				new YamlUnmappedMemberReporting(diagnostics.Add, path)
 			);
 			return new CentralConfigEntry(yaml, config, diagnostics);

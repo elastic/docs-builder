@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;

@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Site.FileProviders;
@@ -144,7 +145,7 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 	[Test]
 	public async Task Export_FixtureOperations_EveryPropertyAnchorExistsInRenderedPage()
 	{
-		var versions = new VersionsConfiguration
+		var versions = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{

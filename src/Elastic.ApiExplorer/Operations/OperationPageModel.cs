@@ -120,7 +120,7 @@ public partial record OperationPageModel
 		{
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
-			VersionsConfiguration = context.BuildContext.VersionsConfiguration,
+			VersionsConfiguration = context.BuildContext.Catalog.VersioningSystems,
 			DesignSystem = context.BuildContext.Configuration.Features.NavigationPreviewEnabled,
 			SchemaResolveCache = context.SchemaResolveCache
 		};
@@ -189,7 +189,7 @@ public partial record OperationPageModel
 		{
 			Availability = AvailabilityBadge.FromOperation(
 				operation,
-				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Catalog.VersioningSystems,
 				designSystem: context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			),
 			ExternalDocs = externalDocs,
