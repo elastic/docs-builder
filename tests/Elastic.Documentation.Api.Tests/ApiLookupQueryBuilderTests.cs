@@ -97,6 +97,32 @@ public class ApiLookupQueryBuilderTests
 			.BeFalse("the field carries its own analyzer, and an index without the field must not fail on one");
 	}
 
+	[Test]
+	[Arguments("GET /_search", "/_search")]
+	[Arguments("post /_search knn", "/_search knn")]
+	[Arguments("get cluster settings", "get cluster settings")]
+	[Arguments("GET", "GET")]
+	public void Build_MethodBeforePath_LeavesTheMethodOutOfTheTitleLifts(string query, string expectedTitleText)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(query));
+
+		var lifts = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Select(c => c.EnumerateObject().Single().Value)
+			.Where(o => o.TryGetProperty("_name", out _))
+			.ToDictionary(o => o.GetProperty("_name").GetString()!);
+		lifts["title_all"].GetProperty("filter").GetProperty("multi_match").GetProperty("query").GetString().Should().Be(expectedTitleText);
+		lifts["title_named"]
+			.GetProperty("filter")
+			.GetProperty("dis_max")
+			.GetProperty("queries")[1]
+			.GetProperty("match")
+			.GetProperty("api.title_fingerprint")
+			.GetProperty("query")
+			.GetString()
+			.Should()
+			.Be(expectedTitleText);
+	}
+
 	/// <summary>The client writes a one-clause list as a bare object.</summary>
 	private static JsonElement[] Clauses(JsonElement clauses) =>
 		clauses.ValueKind == JsonValueKind.Array ? [.. clauses.EnumerateArray()] : [clauses];
