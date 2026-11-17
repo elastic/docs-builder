@@ -62,9 +62,10 @@ internal static class MarkdownDocumentAssertions
 
 		// Copy diagnostics from expected onto actual so the Equals comparison ignores them —
 		// this mirrors the F# `applies.Diagnostics <- a.Diagnostics` line exactly.
-		if (expected is not null && matter.AppliesTo is not null)
-			matter.AppliesTo.Diagnostics = expected.Diagnostics;
+		var actual = expected is not null && matter.AppliesTo is not null
+			? matter.AppliesTo with { Diagnostics = expected.Diagnostics }
+			: matter.AppliesTo;
 
-		matter.AppliesTo.Should().Be(expected);
+		actual.Should().Be(expected);
 	}
 }
