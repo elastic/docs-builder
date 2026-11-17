@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site.StyleGuide;
 
@@ -38,7 +39,7 @@ public static partial class DesignSystemFiles
 
 	public static string StripComments(string css) => CssComment().Replace(css, "");
 
-	[GeneratedRegex(@"/\*.*?\*/", RegexOptions.Singleline)]
+	[GeneratedRegex(@"/\*.*?\*/", RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CssComment();
 }
 
@@ -98,10 +99,10 @@ public partial class DesignSystemCssTests
 	}
 
 	// Container queries answer to a component's own width and are not breakpoints.
-	[GeneratedRegex(@"@media[^{]*")]
+	[GeneratedRegex(@"@media[^{]*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MediaQuery();
 
-	[GeneratedRegex(@"\((?:min|max)-width:\s*(\d+)px\)")]
+	[GeneratedRegex(@"\((?:min|max)-width:\s*(\d+)px\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MediaWidth();
 
 	[Test]
@@ -127,9 +128,9 @@ public partial class DesignSystemCssTests
 		theme.Should().Contain("[data-theme='dark']").And.Contain("[data-theme='light']").And.Contain("prefers-color-scheme: dark");
 	}
 
-	[GeneratedRegex(@"(?<![\w&-])#[0-9a-fA-F]{3,8}\b")]
+	[GeneratedRegex(@"(?<![\w&-])#[0-9a-fA-F]{3,8}\b", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HexColor();
 
-	[GeneratedRegex(@"\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch)\(")]
+	[GeneratedRegex(@"\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch)\(", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ColorFunction();
 }

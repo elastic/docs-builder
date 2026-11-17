@@ -217,6 +217,6 @@ public static partial class GitCheckoutInformationFactory
 		return config.GetSetting(remoteSection, "url")?.Trim() ?? string.Empty;
 	}
 
-	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CutOffGitExtension();
 }

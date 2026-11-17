@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.StyleGuide;
 using Elastic.Codex.StyleGuide;
@@ -125,6 +126,6 @@ public partial class StyleGuidePreviewTests
 	[Test]
 	public async Task UnknownPreview_IsNull() => (await RenderAsync("nope")).Should().BeNull();
 
-	[System.Text.RegularExpressions.GeneratedRegex("breadcrumb__item")]
+	[System.Text.RegularExpressions.GeneratedRegex("breadcrumb__item", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex BreadcrumbItemRegex();
 }

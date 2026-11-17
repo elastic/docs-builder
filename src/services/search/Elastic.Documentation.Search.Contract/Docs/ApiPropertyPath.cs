@@ -26,6 +26,6 @@ public static partial class ApiPropertyPath
 	public static string[] IdentifierWords(string identifier) =>
 		[.. WordBoundary().Split(identifier).Where(word => word.Length > 0).Select(word => word.ToLowerInvariant())];
 
-	[GeneratedRegex(@"[._\-]+|(?<=\p{Ll})(?=\p{Lu})")]
+	[GeneratedRegex(@"[._\-]+|(?<=\p{Ll})(?=\p{Lu})", RegexOptions.None, ContractRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WordBoundary();
 }

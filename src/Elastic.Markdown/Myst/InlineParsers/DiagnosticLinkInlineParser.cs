@@ -44,7 +44,7 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 
 internal sealed partial class LinkRegexExtensions
 {
-	[GeneratedRegex(@"(?:^|\s)\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"(?:^|\s)\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex MatchTitleStylingInstructions();
 }
 

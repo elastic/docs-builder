@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Api.Adapters.AskAi;
 using Elastic.Documentation.Api.AskAi;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,7 +46,10 @@ internal static class StreamTransformerTestHelpers
 
 	/// <summary>Replaces what changes per run: generated conversation ids and millisecond timestamps taken from the clock.</summary>
 	public static SnapshotOptions Scrub() =>
-		new SnapshotOptions().Scrub(Scrubbers.Guids).Scrub(new Regex(@"""timestamp"":\d{13}"), "\"timestamp\":{now}");
+		new SnapshotOptions().Scrub(Scrubbers.Guids).Scrub(
+			new Regex(@"""timestamp"":\d{13}", RegexOptions.None, RegexTimeouts.MatchTimeout),
+			"\"timestamp\":{now}"
+		);
 }
 
 public class AgentBuilderStreamTransformerTests
