@@ -13,6 +13,8 @@ public static class StringExtensions
 	/// <summary>
 	/// The URL slug of <paramref name="text"/>: trimmed, lower-cased, diacritics removed, whitespace runs turned into one <c>-</c>,
 	/// everything but <c>a-z 0-9 - _ .</c> dropped and repeated dashes collapsed. Null gives an empty string.
+	/// Whitespace means any Unicode whitespace (tab, newline, no-break space), as in Slugify.Core 4.0.1. Slugify.Core 5.x only
+	/// replaces a plain space and drops the others, so <c>a&#9;b</c> gives <c>a-b</c> here and <c>ab</c> there.
 	/// These rules produce the anchors, heading ids and changelog links, so changing them breaks existing links.
 	/// </summary>
 	public static string Slugify(this string? text)

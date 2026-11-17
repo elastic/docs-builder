@@ -65,6 +65,8 @@ public class StringExtensionsTests
 	[Arguments("1.2.3 a_b", "1.2.3-a_b")]
 	[Arguments("C# (a/b?c)", "c-abc")]
 	[Arguments("日本語 text", "-text")]
+	[Arguments("a\tb", "a-b")]
+	[Arguments("a\u00a0b\nc", "a-b-c")]
 	public void Slugify_Rules_AreStable(string input, string expected) => input.Slugify().Should().Be(expected);
 
 	/// <summary>
