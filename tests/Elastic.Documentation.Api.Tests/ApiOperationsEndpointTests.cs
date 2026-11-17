@@ -106,8 +106,8 @@ public class ApiOperationsEndpointTests
 		var (status, body) = await Get(gateway, pathAndQuery);
 
 		status.Should().Be(HttpStatusCode.BadRequest);
-		body.GetProperty("errorType").GetString().Should().Be("invalid_arguments");
-		body.GetProperty("message").GetString().Should().Be(message);
+		body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("invalid-arguments"));
+		body.GetProperty("detail").GetString().Should().Be(message);
 		A.CallTo(gateway).MustNotHaveHappened();
 	}
 
@@ -180,9 +180,9 @@ public class ApiOperationsEndpointTests
 	}
 
 	[Test]
-	[Arguments("/apis/nope/operations", "api_not_found")]
-	[Arguments("/apis/elasticsearch/operations?group=nope", "group_not_found")]
-	[Arguments("/apis/nope/groups", "api_not_found")]
+	[Arguments("/apis/nope/operations", "api-not-found")]
+	[Arguments("/apis/elasticsearch/operations?group=nope", "group-not-found")]
+	[Arguments("/apis/nope/groups", "api-not-found")]
 	public async Task Listing_UnknownApiOrGroup_IsNotFound(string pathAndQuery, string errorType)
 	{
 		var gateway = A.Fake<IApiGateway>();
@@ -193,7 +193,7 @@ public class ApiOperationsEndpointTests
 		var (status, body) = await Get(gateway, pathAndQuery);
 
 		status.Should().Be(HttpStatusCode.NotFound);
-		body.GetProperty("errorType").GetString().Should().Be(errorType);
+		body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri(errorType));
 	}
 
 	[Test]
@@ -232,8 +232,8 @@ public class ApiOperationsEndpointTests
 		var (status, body) = await Get(gateway, "/apis/elasticsearch/operations/nope");
 
 		status.Should().Be(HttpStatusCode.NotFound);
-		body.GetProperty("errorType").GetString().Should().Be("operation_not_found");
-		body.GetProperty("message").GetString().Should().Be("No API operation matches nope in elasticsearch.");
+		body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("operation-not-found"));
+		body.GetProperty("detail").GetString().Should().Be("No API operation matches nope in elasticsearch.");
 	}
 
 	private static readonly ApiSummary Elasticsearch = new()
@@ -259,7 +259,7 @@ public class ApiOperationsEndpointTests
 		oneStatus.Should().Be(HttpStatusCode.OK);
 		one.GetProperty("title").GetString().Should().Be("Elasticsearch API");
 		missingStatus.Should().Be(HttpStatusCode.NotFound);
-		missing.GetProperty("errorType").GetString().Should().Be("api_not_found");
+		missing.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("api-not-found"));
 	}
 
 	[Test]

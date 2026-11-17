@@ -71,19 +71,53 @@ The value is case-insensitive. Any other value stops the Ask AI service with a c
 
 ## Errors
 
-Every error response has a JSON body with a stable `errorType` and a `message` for people:
+Every error is an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem, served as `application/problem+json`:
 
 ```json
-{ "errorType": "invalid_arguments", "message": "Pass at most one of q, endpoint or operation_id." }
+{
+  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+  "title": "Invalid arguments",
+  "status": 400,
+  "detail": "Pass at most one of q, endpoint or operation_id.",
+  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+}
 ```
 
-| Status | `errorType` | Meaning |
-|--------|-------------|---------|
-| `400` | `invalid_arguments` | A parameter is missing, doesn't parse, or contradicts another one |
-| `404` | `operation_not_found`, `api_not_found`, `group_not_found` | Valid arguments that nothing matches |
-| `404` | `not_found` | No endpoint matches the path |
-| `500` | `internal_error` | An unexpected failure. The message doesn't include its details. |
-| `503` | `search_unavailable` | Elasticsearch timed out or is overloaded. Retry after the `Retry-After` seconds. |
-| `503` | `feedback_unavailable` | Feedback could not be stored. Retry later. |
+- `type` identifies the problem and links to its section below. Match on it, not on `title` or `detail`.
+- `title` is the same for every occurrence of a type.
+- `detail` explains this occurrence, for people.
+- `traceId` names the request's trace. Quote it when you report a problem.
 
-Errors from the CDN, such as the `403` for a missing cookie, aren't JSON.
+Errors from the CDN, such as the `403` for a missing cookie, aren't problems and aren't JSON.
+
+### Invalid arguments [invalid-arguments]
+
+`400`. A parameter is missing, doesn't parse, or contradicts another one. `detail` says which.
+
+### Not found [not-found]
+
+`404`. No endpoint matches the path.
+
+### API operation not found [operation-not-found]
+
+`404`. No API operation has that id, or serves that endpoint, in the requested API and version.
+
+### API not found [api-not-found]
+
+`404`. No API has that key, or it has no operations in the requested version.
+
+### API group not found [group-not-found]
+
+`404`. The API has no group with that name.
+
+### Internal error [internal-error]
+
+`500`. An unexpected failure. `detail` doesn't include its cause; use `traceId` to report it.
+
+### Search unavailable [search-unavailable]
+
+`503`. Elasticsearch timed out or is overloaded. Retry after the seconds in the `Retry-After` header.
+
+### Feedback unavailable [feedback-unavailable]
+
+`503`. Feedback could not be stored. Retry later.

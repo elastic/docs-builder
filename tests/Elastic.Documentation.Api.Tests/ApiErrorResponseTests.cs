@@ -54,14 +54,17 @@ public class ApiErrorResponseTests
 		using (response)
 		{
 			response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+			response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
 			response.Headers.RetryAfter!.Delta.Should().Be(TimeSpan.FromSeconds(5));
-			body.GetProperty("errorType").GetString().Should().Be("search_unavailable");
-			body.GetProperty("message").GetString().Should().Contain("MaxTimeoutReached");
+			body.GetProperty("status").GetInt32().Should().Be(503);
+			body.GetProperty("title").GetString().Should().Be("Search unavailable");
+			body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("search-unavailable"));
+			body.GetProperty("detail").GetString().Should().Contain("MaxTimeoutReached");
 		}
 	}
 
 	[Test]
-	public async Task Search_UnexpectedFailure_IsA500WithABodyThatHidesTheException()
+	public async Task Search_UnexpectedFailure_IsA500ProblemThatHidesTheException()
 	{
 		var (response, body) = await SearchThrowing(new InvalidOperationException("secret detail"));
 
@@ -69,8 +72,8 @@ public class ApiErrorResponseTests
 		{
 			response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
 			response.Headers.RetryAfter.Should().BeNull();
-			body.GetProperty("errorType").GetString().Should().Be("internal_error");
-			body.GetProperty("message").GetString().Should().NotContain("secret detail");
+			body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("internal-error"));
+			body.GetProperty("detail").GetString().Should().NotContain("secret detail");
 		}
 	}
 
@@ -96,10 +99,10 @@ public class ApiErrorResponseTests
 		if (!stored)
 			JsonElement
 				.Parse(await response.Content.ReadAsStringAsync(Ct))
-				.GetProperty("errorType")
+				.GetProperty("type")
 				.GetString()
 				.Should()
-				.Be("feedback_unavailable");
+				.Be(ApiProblems.TypeUri("feedback-unavailable"));
 	}
 
 	private static async Task<(HttpStatusCode Status, JsonElement Body)> Get(string pathAndQuery)
@@ -116,13 +119,13 @@ public class ApiErrorResponseTests
 	[Arguments("/search?q=x&size=many")]
 	[Arguments("/changes?since=yesterday")]
 	[Arguments("/changes")]
-	public async Task ParameterThatDoesNotBind_IsA400WithAnApiError(string pathAndQuery)
+	public async Task ParameterThatDoesNotBind_IsA400Problem(string pathAndQuery)
 	{
 		var (status, body) = await Get(pathAndQuery);
 
 		status.Should().Be(HttpStatusCode.BadRequest);
-		body.GetProperty("errorType").GetString().Should().Be("invalid_arguments");
-		body.GetProperty("message").GetString().Should().NotBeNullOrWhiteSpace();
+		body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("invalid-arguments"));
+		body.GetProperty("detail").GetString().Should().NotBeNullOrWhiteSpace();
 	}
 
 	[Test]
@@ -131,7 +134,7 @@ public class ApiErrorResponseTests
 		var (status, body) = await Get("/changes?since=2026-01-01T00:00:00Z&cursor=not-a-cursor");
 
 		status.Should().Be(HttpStatusCode.BadRequest);
-		body.GetProperty("message").GetString().Should().Be("cursor is not a nextCursor that /changes returned.");
+		body.GetProperty("detail").GetString().Should().Be("cursor is not a nextCursor that /changes returned.");
 		A.CallTo(Changes.Current).MustNotHaveHappened();
 	}
 }

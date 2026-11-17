@@ -95,6 +95,6 @@ public class NavigationSearchEndpointTests
 
 		status.Should().Be(HttpStatusCode.BadRequest);
 		received.Should().BeNull();
-		JsonElement.Parse(body).GetProperty("errorType").GetString().Should().Be("invalid_arguments");
+		JsonElement.Parse(body).GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("invalid-arguments"));
 	}
 }

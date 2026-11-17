@@ -340,8 +340,13 @@ public static class MappingsExtension
 		ApiOperationResponse r => Results.Ok(r),
 		ApiListResponse r => Results.Ok(r),
 		ApiOperationListResponse r => Results.Ok(r),
-		ApiReferenceRejection { IsNotFound: true } r => Results.NotFound(new ApiError(r.ErrorType, r.Message)),
-		ApiReferenceRejection r => Results.BadRequest(new ApiError(r.ErrorType, r.Message))
+		// The service names types in snake case for MCP; problem type fragments use kebab case.
+		ApiReferenceRejection r =>
+			ApiProblems.Problem(
+				r.IsNotFound ? StatusCodes.Status404NotFound : StatusCodes.Status400BadRequest,
+				r.ErrorType.Replace('_', '-'),
+				r.Message
+			)
 	};
 
 	private const string SearchTag = "Search";
@@ -350,20 +355,21 @@ public static class MappingsExtension
 	private const string FeedbackTag = "Page feedback";
 	private const string ApiReferenceTag = "API reference";
 
-	private static IResult Invalid(string message) => Results.BadRequest(new ApiError("invalid_arguments", message));
+	private static IResult Invalid(string message) =>
+		ApiProblems.Problem(StatusCodes.Status400BadRequest, ApiProblems.InvalidArguments, message);
 
 	private static IResult FeedbackUnavailable() =>
-		Results.Json(
-			new ApiError("feedback_unavailable", "The feedback could not be stored. Try again later."),
-			ApiJsonContext.Default.ApiError,
-			statusCode: StatusCodes.Status503ServiceUnavailable
+		ApiProblems.Problem(
+			StatusCodes.Status503ServiceUnavailable,
+			ApiProblems.FeedbackUnavailable,
+			"The feedback could not be stored. Try again later."
 		);
 
-	/// <summary>Declares the error responses of an endpoint; each has an <see cref="ApiError"/> body, and any endpoint can fail with 500.</summary>
+	/// <summary>Declares the error responses of an endpoint as problem details; any endpoint can fail with 500.</summary>
 	private static RouteHandlerBuilder ProducesErrors(this RouteHandlerBuilder builder, params int[] statusCodes)
 	{
 		foreach (var statusCode in statusCodes.Append(StatusCodes.Status500InternalServerError))
-			_ = builder.Produces<ApiError>(statusCode);
+			_ = builder.ProducesProblem(statusCode);
 		return builder;
 	}
 

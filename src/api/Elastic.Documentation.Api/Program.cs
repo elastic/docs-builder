@@ -12,7 +12,6 @@ using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.WebUtilities;
 
 try
 {
@@ -56,47 +55,17 @@ try
 
 	_ = app.Environment.IsDevelopment()
 		? app.UseDeveloperExceptionPage()
-		: app.UseExceptionHandler(err => err.Run(async context =>
+		: app.UseExceptionHandler(new ExceptionHandlerOptions
 		{
-			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-			ApiError error;
-			if (ex is BadHttpRequestException badRequest)
-			{
-				// A parameter that does not bind, such as a missing q or a since that is not a date.
-				context.Response.StatusCode = badRequest.StatusCode;
-				error = new ApiError("invalid_arguments", badRequest.Message);
-			}
-			else if (ex is SearchUnavailableException)
-			{
-				// Transient by construction (timeout, overload): tell clients and the CDN to retry instead of failing.
-				logger.LogWarning(ex, "Search unavailable on {Method} {Path}", context.Request.Method, context.Request.Path);
-				context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-				context.Response.Headers.RetryAfter = "5";
-				error = new ApiError("search_unavailable", ex.Message);
-			}
-			else
-			{
-				if (ex != null)
-					logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-				context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-				error = new ApiError("internal_error", "An unexpected error occurred.");
-			}
-			await context.Response.WriteAsJsonAsync(error, ApiJsonContext.Default.ApiError);
-		}));
+			// No handler: with AddProblemDetails the middleware writes the problem, typed by ApiProblems.Customize.
+			StatusCodeSelector = ApiProblems.StatusCodeFor,
+			// A parameter that does not bind is the client's mistake, not an error worth logging.
+			SuppressDiagnosticsCallback = context => context.Exception is BadHttpRequestException
+		});
 
 	// Some binding failures, such as a number that does not parse, end in an empty 400 instead of throwing;
-	// give every bodyless error the same ApiError body as the rest.
-	_ = app.UseStatusCodePages(async statusContext =>
-	{
-		var response = statusContext.HttpContext.Response;
-		var error = response.StatusCode switch
-		{
-			StatusCodes.Status400BadRequest => new ApiError("invalid_arguments", "A parameter is missing or does not parse."),
-			StatusCodes.Status404NotFound => new ApiError("not_found", "No endpoint matches this path."),
-			_ => new ApiError("request_failed", ReasonPhrases.GetReasonPhrase(response.StatusCode))
-		};
-		await response.WriteAsJsonAsync(error, ApiJsonContext.Default.ApiError);
-	});
+	// with AddProblemDetails, status code pages give every bodyless error a problem body like the rest.
+	_ = app.UseStatusCodePages();
 
 	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 

@@ -62,7 +62,8 @@ public static class ServicesExtension
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
-		// Binding failures throw, so the exception handler answers them with an ApiError body like every other 400.
+		// Every error answers RFC 9457 problem details; binding failures throw, so they get a precise detail.
+		_ = services.AddProblemDetails(options => options.CustomizeProblemDetails = ApiProblems.Customize);
 		_ = services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 		_ = services.AddOpenApi(options => options.AddDocumentTransformer((document, _, _) =>
 		{

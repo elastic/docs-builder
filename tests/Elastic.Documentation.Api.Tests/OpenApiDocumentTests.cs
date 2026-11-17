@@ -83,31 +83,35 @@ public class OpenApiDocumentTests
 	}
 
 	[Test]
-	public async Task Document_GivesEveryErrorTheApiErrorSchema()
+	public async Task Document_DescribesEveryErrorAsProblemDetails()
 	{
 		var document = await Document();
 
-		var errorSchemas = document
+		var errorContent = document
 			.GetProperty("paths")
 			.EnumerateObject()
 			.SelectMany(path => path.Value.EnumerateObject().Where(op => op.Name is "get" or "post" or "put" or "delete"))
 			.SelectMany(op => op.Value.GetProperty("responses").EnumerateObject().Where(r => r.Name[0] is '4' or '5'))
-			.Select(
-				r => r.Value.GetProperty("content").GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString()
+			.SelectMany(
+				r => r
+					.Value
+					.GetProperty("content")
+					.EnumerateObject()
+					.Select(c => $"{c.Name} {c.Value.GetProperty("schema").GetProperty("$ref").GetString()}")
 			)
 			.Distinct()
 			.ToList();
 
-		errorSchemas.Should().Equal("#/components/schemas/ApiError");
+		errorContent.Should().Equal("application/problem+json #/components/schemas/ProblemDetails");
 		document
 			.GetProperty("components")
 			.GetProperty("schemas")
-			.GetProperty("ApiError")
+			.GetProperty("ProblemDetails")
 			.GetProperty("properties")
 			.EnumerateObject()
 			.Select(p => p.Name)
 			.Should()
-			.Equal("errorType", "message");
+			.Contain(["type", "title", "status", "detail", "instance"]);
 	}
 
 	[Test]
