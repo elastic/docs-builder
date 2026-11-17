@@ -4,6 +4,7 @@
 
 using System.Linq;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -47,6 +48,13 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// dropdown filter, in place of the automatic choice. Empty means automatic.
 	/// </summary>
 	public IReadOnlyList<string> FilterColumns { get; private set; } = [];
+
+	/// <summary>
+	/// Zero-based positions of the columns that <see cref="FilterColumns"/> matched, in table
+	/// order. Set at render time. The client filters by position, so header text is only ever
+	/// compared here, never again in the browser.
+	/// </summary>
+	public IReadOnlyList<int> FilterColumnIndexes { get; private set; } = [];
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
@@ -127,8 +135,9 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	}
 
 	/// <summary>
-	/// Checks every <c>:filter-columns:</c> name against the table's header row, so a typo
-	/// fails the build instead of silently dropping a filter. Unknown names are removed.
+	/// Matches every <c>:filter-columns:</c> name against the table's header row and records
+	/// the matched column positions for the client. A name that matches no header fails the
+	/// build instead of silently dropping a filter, and is removed.
 	/// </summary>
 	private void ValidateFilterColumns(Markdig.Extensions.Tables.Table table)
 	{
@@ -136,10 +145,10 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			return;
 
 		var headers = table.Count > 0 && table[0] is TableRow { IsHeader: true } headerRow
-			? headerRow.OfType<TableCell>().Select(CellText).Where(h => h.Length > 0).ToList()
+			? headerRow.OfType<TableCell>().Select(CellText).ToList()
 			: [];
 
-		if (headers.Count == 0)
+		if (headers.All(h => h.Length == 0))
 		{
 			this.EmitError(":filter-columns: needs a table with a header row, because it matches columns by their header text.");
 			FilterColumns = [];
@@ -147,20 +156,36 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 		}
 
 		var known = new List<string>(FilterColumns.Count);
+		var indexes = new SortedSet<int>();
 		foreach (var name in FilterColumns)
 		{
-			if (headers.Any(h => h.Equals(name, StringComparison.OrdinalIgnoreCase)))
-				known.Add(name);
-			else
-				this.EmitError($"Filter column '{name}' doesn't match any column header. Available headers: {string.Join(", ", headers)}.");
+			var wanted = CollapseWhitespace(name);
+			var matches = Enumerable
+				.Range(0, headers.Count)
+				.Where(i => headers[i].Length > 0 && headers[i].Equals(wanted, StringComparison.OrdinalIgnoreCase))
+				.ToList();
+
+			if (matches.Count == 0)
+			{
+				this.EmitError(
+					$"Filter column '{name}' doesn't match any column header. Available headers: {string.Join(", ", headers.Where(h => h.Length > 0))}."
+				);
+				continue;
+			}
+
+			known.Add(name);
+			indexes.UnionWith(matches);
 		}
 
 		FilterColumns = known;
+		FilterColumnIndexes = indexes.ToArray();
 	}
 
 	/// <summary>
-	/// The visible text of a header cell, matching what the browser reads as its
-	/// <c>textContent</c>: literal and code text, with emphasis and links unwrapped.
+	/// The text a reader sees in a header cell: literal and code text, substitution values,
+	/// and HTML entities, with emphasis and links unwrapped. Footnote markers are skipped,
+	/// and runs of whitespace become one space. A role keeps its raw content, which can
+	/// differ from what the role renders.
 	/// </summary>
 	private static string CellText(TableCell cell)
 	{
@@ -171,8 +196,11 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 				AppendInlineText(paragraph.Inline, sb);
 		}
 
-		return string.Join(' ', sb.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+		return CollapseWhitespace(sb.ToString());
 	}
+
+	private static string CollapseWhitespace(string text) =>
+		string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
 	private static void AppendInlineText(ContainerInline container, System.Text.StringBuilder sb)
 	{
@@ -182,6 +210,20 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			{
 				case LiteralInline literal:
 					_ = sb.Append(literal.Content);
+					break;
+				// Before CodeInline, which SubstitutionLeaf derives from: write the value
+				// the page shows, the same way SubstitutionRenderer does.
+				case SubstitutionLeaf substitution:
+					_ = sb.Append(
+						!substitution.Found
+							? substitution.Content
+							: substitution.Mutations is null or { Count: 0 }
+								? substitution.Replacement
+								: SubstitutionMutationHelper.ApplyMutations(substitution.Replacement, substitution.Mutations)
+					);
+					break;
+				case HtmlEntityInline entity:
+					_ = sb.Append(entity.Transcoded.ToString());
 					break;
 				case CodeInline code:
 					_ = sb.Append(code.Content);

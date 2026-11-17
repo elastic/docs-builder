@@ -453,7 +453,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Matrix = block.Matrix,
 			Filterable = block.Filterable,
 			FilterSearchOnly = block.FilterSearchOnly,
-			FilterColumns = block.FilterColumns
+			FilterColumnIndexes = block.FilterColumnIndexes
 		});
 		RenderRazorSlice(slice, renderer);
 	}

@@ -389,7 +389,11 @@ public class TableDirectiveFilterColumnsTests() : DirectiveTest<TableDirectiveBl
 )
 {
 	[Test]
-	public void KeepsOnlyColumnsThatMatchAHeader() => Block!.FilterColumns.Should().Equal("Provider");
+	public void KeepsOnlyColumnsThatMatchAHeader()
+	{
+		Block!.FilterColumns.Should().Equal("Provider");
+		Block!.FilterColumnIndexes.Should().Equal(1);
+	}
 
 	[Test]
 	public void EmitsErrorForUnknownColumn() =>
@@ -426,7 +430,7 @@ public class TableDirectiveFilterColumnsRenderTests() : DirectiveTest<TableDirec
 		Html.Should().MatchInlineHtmlSnapshot(
 			html: DocsHtml.Body(),
 			expected: """
-		<filterable-table data-facet-columns="provider,Support status">
+		<filterable-table data-facet-columns="1,2">
 			<div class="table-wrapper">
 				<table>
 					<thead>
@@ -448,6 +452,90 @@ public class TableDirectiveFilterColumnsRenderTests() : DirectiveTest<TableDirec
 		</filterable-table>
 		"""
 		);
+}
+
+[InheritsTests]
+public class TableDirectiveFilterColumnsFootnoteHeaderTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable:
+:filter-columns: Status
+
+| Name | Status[^1] |
+| --- | --- |
+| a | Core |
+| b | Extended |
+:::
+
+[^1]: Support level.
+"""
+)
+{
+	// The footnote marker renders as a number after "Status", which readers
+	// don't treat as part of the header, so the name still matches.
+	[Test]
+	public void MatchesTheHeaderWithoutItsFootnoteMarker()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		Block!.FilterColumnIndexes.Should().Equal(1);
+	}
+
+	[Test]
+	public void RendersTheColumnPosition() => Html.Should().Contain("<filterable-table data-facet-columns=\"1\">");
+}
+
+[InheritsTests]
+public class TableDirectiveFilterColumnsSubstitutionHeaderTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+---
+sub:
+  provider-label: "Model provider"
+---
+
+# Test Document
+
+:::{table}
+:filterable:
+:filter-columns: Model provider
+
+| Name | {{provider-label}} |
+| --- | --- |
+| a | Vendor A |
+| b | Vendor B |
+:::
+"""
+)
+{
+	// The header shows the substitution's value, so that's what the name matches.
+	[Test]
+	public void MatchesTheSubstitutedValue()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		Block!.FilterColumnIndexes.Should().Equal(1);
+	}
+}
+
+[InheritsTests]
+public class TableDirectiveFilterColumnsWhitespaceTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable:
+:filter-columns: support   status
+
+| Name | Support  status |
+| --- | --- |
+| a | Core |
+| b | Extended |
+:::
+"""
+)
+{
+	[Test]
+	public void IgnoresExtraSpacesOnBothSides()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		Block!.FilterColumnIndexes.Should().Equal(1);
+	}
 }
 
 [InheritsTests]

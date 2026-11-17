@@ -151,19 +151,21 @@ class FilterableTableElement extends HTMLElement {
     }
 
     /**
-     * The columns the author chose for dropdowns, lowercased, or null when the
-     * choice is automatic. `:filterable: search` renders `data-facets="none"`
-     * (an empty choice), and `:filter-columns:` renders `data-facet-columns`.
+     * The zero-based positions of the columns the author chose for dropdowns,
+     * or null when the choice is automatic. `:filterable: search` renders
+     * `data-facets="none"` (an empty choice). `:filter-columns:` names columns
+     * by header text, and the build matches those names and renders the
+     * positions in `data-facet-columns`, so header text is never compared here.
      */
-    private chosenColumns(): Set<string> | null {
+    private chosenColumns(): Set<number> | null {
         if (this.dataset.facets === 'none') return new Set()
         const listed = this.dataset.facetColumns
         if (listed === undefined) return null
         return new Set(
             listed
                 .split(',')
-                .map((name) => name.trim().toLowerCase())
-                .filter(Boolean)
+                .map((position) => Number.parseInt(position.trim(), 10))
+                .filter((position) => Number.isInteger(position))
         )
     }
 
@@ -178,7 +180,7 @@ class FilterableTableElement extends HTMLElement {
             if (!label) return
             // The author's choice replaces the heuristic below, so a column of
             // scores never gets a dropdown just because it has few values.
-            if (chosen && !chosen.has(label.toLowerCase())) return
+            if (chosen && !chosen.has(colIndex)) return
             const perRow = this.columnValues(colIndex)
             const values = Array.from(new Set(perRow.flat())).sort((a, b) =>
                 a.localeCompare(b)
