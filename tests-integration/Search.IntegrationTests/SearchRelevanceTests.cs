@@ -336,6 +336,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("reindx", "operation-reindex");
 		yield return ("bulck", "operation-bulk");
 		yield return ("indx refresh", "operation-indices-refresh");
+		// A typo in a word only the title carries: the typed words are the whole title within one edit.
+		yield return ("creat index", "operation-indices-create");
+		yield return ("delte index", "operation-indices-delete");
+		yield return ("refesh index", "operation-indices-refresh");
+		yield return ("get cluser health status", "operation-cluster-health");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -597,13 +602,10 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"reassign agent",
 			"enrollment api key",
 			"clustr helth",
-			"creat index",
 			"serch knn",
 			"snapshot restor",
 			// Typos the fuzzy id word does not fix yet: a route key is not fuzzed, and a title-only word misses the whole-title lift.
 			"serch",
-			"refesh index",
-			"delte index",
 			"clustr settings",
 			"clustr stats",
 			"pipline"

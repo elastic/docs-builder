@@ -72,6 +72,30 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	public void Build_Words_LiftsTheTitleWithinOneEditBelowTheExactTitleAndExcludesTheExactOne()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("delte index"));
+
+		var lift = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Select(c => c.EnumerateObject().Single().Value)
+			.Single(o => o.TryGetProperty("_name", out var name) && name.GetString() == "title_named_typo");
+		lift.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.TitleNamedTypo);
+		ApiLookupWeights.TitleNamedTypo.Should().BeLessThan(ApiLookupWeights.TitleNamed);
+		var filter = lift.GetProperty("filter").GetProperty("bool");
+		var fuzzy = Clauses(filter.GetProperty("filter")).Single().GetProperty("match").GetProperty("api.title_fingerprint");
+		fuzzy.GetProperty("query").GetString().Should().Be("delte index");
+		fuzzy.GetProperty("fuzziness").GetString().Should().Be("AUTO:4,100");
+		fuzzy.GetProperty("prefix_length").GetInt32().Should().Be(1);
+		Clauses(filter.GetProperty("must_not"))
+			.Single()
+			.GetRawText()
+			.Should()
+			.Contain("title.keyword")
+			.And
+			.Contain("api.title_fingerprint");
+	}
+
+	[Test]
 	public void Build_Words_LiftsTheOperationWhoseWholeTitleTheWordsAre()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("create index"));

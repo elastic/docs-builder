@@ -24,6 +24,7 @@ public static class ApiLookupQueryBuilder
 	private const string FieldHitsPrefix = SearchQueryBuilder.ApiPropertyHits + "_";
 	private const string WholeTitleQueryName = "title_all";
 	private const string TitleNamedQueryName = "title_named";
+	private const string TitleNamedTypoQueryName = "title_named_typo";
 	private const string LandingNameQueryName = "landing_name";
 	private const string NotDeprecatedQueryName = "not_deprecated";
 
@@ -305,7 +306,8 @@ public static class ApiLookupQueryBuilder
 		List<Query> lifts =
 		[
 			Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName),
-			Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed, TitleNamedQueryName)
+			Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed, TitleNamedQueryName),
+			Constant(TitleNamedTypo(typed), ApiLookupWeights.TitleNamedTypo, TitleNamedTypoQueryName)
 		];
 		if (SearchQueryBuilder.BuildTitleStartsWithQuery(typed) is { } startsWith)
 			lifts.Add(startsWith);
@@ -343,6 +345,26 @@ public static class ApiLookupQueryBuilder
 				new TermQuery { Field = QueryFieldNames.TitleKeyword, Value = typed.ToLowerInvariant() },
 				new MatchQuery { Field = QueryFieldNames.ApiTitleFingerprint, Query = typed }
 			]
+		};
+
+	/// <summary>
+	/// The fingerprint is one token, so the edit distance spans the whole title. The exact title is excluded, so a typo only
+	/// lifts what <see cref="TitleNamed"/> misses.
+	/// </summary>
+	private static Query TitleNamedTypo(string typed) =>
+		new BoolQuery
+		{
+			Filter =
+			[
+				new MatchQuery
+				{
+					Field = QueryFieldNames.ApiTitleFingerprint,
+					Query = typed,
+					Fuzziness = SearchQueryBuilder.WordFuzziness,
+					PrefixLength = 1
+				}
+			],
+			MustNot = [TitleNamed(typed)]
 		};
 
 	private static Query MethodLift(string method) =>
