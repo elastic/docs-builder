@@ -310,6 +310,32 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("release isolated endpoint", "operation-endpointunisolateaction");
 		yield return ("agent status", "operation-get-fleet-agent-status");
 		yield return ("service token", "operation-security-create-service-token");
+		// Words people type most. Each leads by more than a stray point over the next operation, and the Serverless twin of an
+		// operation ties with the stack one.
+		yield return ("reindex", "operation-reindex");
+		yield return ("msearch", "operation-msearch");
+		yield return ("mget", "operation-mget");
+		yield return ("count", "operation-count");
+		yield return ("refresh", "operation-indices-refresh");
+		yield return ("rollover", "operation-indices-rollover");
+		yield return ("analyze", "operation-indices-analyze");
+		yield return ("force merge", "operation-indices-forcemerge");
+		yield return ("put mapping", "operation-indices-put-mapping");
+		yield return ("get mapping", "operation-indices-get-mapping");
+		yield return ("cat indices", "operation-cat-indices");
+		yield return ("nodes stats", "operation-nodes-stats");
+		yield return ("snapshot create", "operation-snapshot-create");
+		yield return ("allocation explain", "operation-cluster-allocation-explain");
+		yield return ("field capabilities", "operation-field-caps");
+		// One typo in a word of four letters or more names the operation the correct spelling does. A word with no typo of its
+		// own in the title still reaches the operation through its id.
+		yield return ("cluser health", "operation-cluster-health");
+		yield return ("clustr state", "operation-cluster-state");
+		yield return ("snaphot restore", "operation-snapshot-restore");
+		yield return ("snapshto restore", "operation-snapshot-restore");
+		yield return ("reindx", "operation-reindex");
+		yield return ("bulck", "operation-bulk");
+		yield return ("indx refresh", "operation-indices-refresh");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -573,7 +599,14 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"clustr helth",
 			"creat index",
 			"serch knn",
-			"snapshot restor"
+			"snapshot restor",
+			// Typos the fuzzy id word does not fix yet: a route key is not fuzzed, and a title-only word misses the whole-title lift.
+			"serch",
+			"refesh index",
+			"delte index",
+			"clustr settings",
+			"clustr stats",
+			"pipline"
 		];
 
 	/// <summary>
