@@ -44,6 +44,16 @@ public class ApiCatalogViewModelTests
 	}
 
 	[Test]
+	public void Group_DocsApi_GetsADocumentationSectionOfItsOwn()
+	{
+		var groups = ApiCatalogViewModel.Group([.. Production, Entry("docs-api", "Elastic Docs API"), Entry("zeta", "Zeta API")]);
+
+		groups.Select(g => g.Title).Should().Equal("Elastic Stack", "Orchestration", "Documentation", null);
+		groups[2].Entries.Select(e => e.Key).Should().Equal("docs-api");
+		groups[3].Entries.Select(e => e.Key).Should().Equal("zeta");
+	}
+
+	[Test]
 	public void Group_ShowsEveryApiExactlyOnce()
 	{
 		var ordered = ApiCatalogViewModel.Group(Production).SelectMany(g => g.Entries).Select(e => e.Key).ToArray();

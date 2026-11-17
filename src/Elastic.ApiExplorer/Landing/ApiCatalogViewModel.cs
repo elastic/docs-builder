@@ -95,7 +95,8 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 	private static readonly (string Title, string[] Keys)[] GroupDefinitions =
 	[
 		("Elastic Stack", [.. ApiCatalogOrder.StackKeys, .. ApiCatalogOrder.VariantParents.Keys]),
-		("Orchestration", ApiCatalogOrder.OrchestrationKeys)
+		("Orchestration", ApiCatalogOrder.OrchestrationKeys),
+		("Documentation", ApiCatalogOrder.DocumentationKeys)
 	];
 
 	private static readonly (string Category, string Label)[] DeploymentLabels =
