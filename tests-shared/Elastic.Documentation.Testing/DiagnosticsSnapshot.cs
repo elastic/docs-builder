@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Documentation.Testing;
@@ -48,6 +49,6 @@ public static partial class DiagnosticsSnapshot
 	private static string Normalise(string text) => DriveLetter().Replace(text.Replace('\\', '/'), string.Empty);
 
 	// "C:/docs/..." at the start of a path; not the "s:" of "https://", which a letter or digit precedes
-	[GeneratedRegex("(?<![A-Za-z0-9])[A-Za-z]:(?=/)")]
+	[GeneratedRegex("(?<![A-Za-z0-9])[A-Za-z]:(?=/)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex DriveLetter();
 }

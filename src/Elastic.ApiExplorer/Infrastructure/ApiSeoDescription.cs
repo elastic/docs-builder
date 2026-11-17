@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -138,36 +139,36 @@ internal static partial class ApiSeoDescription
 		return string.Concat(text.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 	}
 
-	[GeneratedRegex(@"\bpaths?\b", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\bpaths?\b", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PathWordPattern();
 
-	[GeneratedRegex(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HttpMethodPattern();
 
-	[GeneratedRegex(@"!\[([^\]]*)\]\([^)]+\)")]
+	[GeneratedRegex(@"!\[([^\]]*)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ImagePattern();
 
-	[GeneratedRegex(@"\[([^\]]+)\]\([^)]+\)")]
+	[GeneratedRegex(@"\[([^\]]+)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkPattern();
 
-	[GeneratedRegex(@"\*\*([^*]+)\*\*")]
+	[GeneratedRegex(@"\*\*([^*]+)\*\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BoldStarPattern();
 
-	[GeneratedRegex(@"__([^_]+)__")]
+	[GeneratedRegex(@"__([^_]+)__", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BoldUnderscorePattern();
 
-	[GeneratedRegex(@"\*([^*]+)\*")]
+	[GeneratedRegex(@"\*([^*]+)\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ItalicStarPattern();
 
-	[GeneratedRegex(@"_([^_]+)_")]
+	[GeneratedRegex(@"_([^_]+)_", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ItalicUnderscorePattern();
 
-	[GeneratedRegex(@"`([^`]+)`")]
+	[GeneratedRegex(@"`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodePattern();
 
-	[GeneratedRegex(@"^#{1,6}\s+", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^#{1,6}\s+", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingPattern();
 
-	[GeneratedRegex(@"\s+")]
+	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespacePattern();
 }

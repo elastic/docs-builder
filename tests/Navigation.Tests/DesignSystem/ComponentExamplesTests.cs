@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.Components;
 using Elastic.Documentation.Site.StyleGuide;
 
@@ -135,9 +136,9 @@ public partial class ComponentExamplesTests
 		bundle.Should().Contain($"@import '{relative}' layer(ds.components);");
 	}
 
-	[GeneratedRegex(@"\.([a-zA-Z_][\w-]*)")]
+	[GeneratedRegex(@"\.([a-zA-Z_][\w-]*)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ClassSelector();
 
-	[GeneratedRegex(@"\s+")]
+	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespaceRun();
 }

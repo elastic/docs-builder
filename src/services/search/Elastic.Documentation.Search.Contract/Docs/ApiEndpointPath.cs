@@ -126,6 +126,7 @@ public static partial class ApiEndpointPath
 
 	private static bool IsPathParameter(string segment) => segment.StartsWith('{') && segment.EndsWith('}');
 
-	[GeneratedRegex(@"^(GET|POST|PUT|DELETE|HEAD|PATCH)(?:\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^(GET|POST|PUT|DELETE|HEAD|PATCH)(?:\s+|$)", RegexOptions.IgnoreCase
+		| RegexOptions.CultureInvariant, ContractRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HttpMethodPrefix();
 }

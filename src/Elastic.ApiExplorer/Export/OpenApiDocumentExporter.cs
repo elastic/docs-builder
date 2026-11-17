@@ -28,10 +28,10 @@ namespace Elastic.ApiExplorer.Export;
 /// </summary>
 public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
 {
-	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationListIntroRegex();
 
-	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase)]
+	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>

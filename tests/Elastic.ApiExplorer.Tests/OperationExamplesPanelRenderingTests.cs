@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
+using Elastic.Documentation;
 using Nullean.Snapshots.Html;
 using RazorSlices;
 
@@ -358,21 +359,24 @@ public partial class OperationExamplesPanelRenderingTests
 		html.Should().Contain("<span class=\"api-rail-label\">Response</span>");
 	}
 
-	[GeneratedRegex("data-code-card")]
+	[GeneratedRegex("data-code-card", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodeCardRegex();
 
-	[GeneratedRegex("data-code-actions")]
+	[GeneratedRegex("data-code-actions", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodeActionsRegex();
 
-	[GeneratedRegex("data-status=\"200\"")]
+	[GeneratedRegex("data-status=\"200\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex Status200Regex();
 
-	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline)]
+	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
 	private static partial Regex CarouselCardRegex();
 
-	[GeneratedRegex("data-tippy-content=\"Unauthorized\"")]
+	[GeneratedRegex("data-tippy-content=\"Unauthorized\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex UnauthorizedTooltipRegex();
 
-	[GeneratedRegex("data-status=\"404\"[^>]*data-tippy-content=\"\"")]
+	[GeneratedRegex("data-status=\"404\"[^>]*data-tippy-content=\"\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex EmptyTooltipOn404Regex();
 }

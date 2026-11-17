@@ -187,19 +187,19 @@ internal sealed partial class SiteContext
 	}
 
 	// An empty docs:features renders as <meta name="docs:features"> with no content attribute.
-	[GeneratedRegex("""<meta name="docs:features"(?: content="(?<content>[^"]*)")?""")]
+	[GeneratedRegex("""<meta name="docs:features"(?: content="(?<content>[^"]*)")?""", RegexOptions.None, JourneysRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FeaturesMeta();
 
-	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""")]
+	[GeneratedRegex("""<meta name="docs:build-type" content="(?<content>[^"]*)""", RegexOptions.None, JourneysRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildTypeMeta();
 
-	[GeneratedRegex("""^[A-Za-z0-9][A-Za-z0-9._:-]*$""")]
+	[GeneratedRegex("""^[A-Za-z0-9][A-Za-z0-9._:-]*$""", RegexOptions.None, JourneysRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FlagName();
 
 	private static readonly HashSet<string> BuildTypes = new(["isolated", "assembler", "codex"], StringComparer.Ordinal);
 
 	// Every layout renders the build type as a body class, which is what isolated and Codex sites answer with.
-	[GeneratedRegex("""build-type-(?<type>isolated|assembler|codex)""")]
+	[GeneratedRegex("""build-type-(?<type>isolated|assembler|codex)""", RegexOptions.None, JourneysRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildTypeClass();
 }
 
