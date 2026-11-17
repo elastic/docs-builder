@@ -183,6 +183,15 @@ public class LinkLoaderTests
 		LinkLoader.ReadRegistry("null", "link-index.json").Should().BeNull();
 	}
 
+	// Recorded as it was: the S3 reader set the ETag with `with` on the null the raw reader returned, which threw.
+	[Test]
+	public void ReadRegistry_ALiteralNullWithAnETag_ThrowsANullReferenceException()
+	{
+		var read = () => LinkLoader.ReadRegistry("null", "link-index.json", "\"etag-1\"");
+
+		read.Should().Throw<NullReferenceException>();
+	}
+
 	private static LinkRegistry LinkRegistryOf(string repository) =>
 		new()
 		{

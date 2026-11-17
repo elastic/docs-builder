@@ -55,7 +55,10 @@ public static class LinkLoader
 
 	/// <summary>The registry a consumer builds on, read as <c>link-index.json</c> always was; see <see cref="ReadManifest"/>.</summary>
 	public static LinkRegistry ReadRegistry(string json, string file, string? eTag = null) =>
-		IsNullLiteral(json) ? null! : LoadRegistry(json, file, eTag).OrThrowAsJsonException();
+		IsNullLiteral(json) ? NullRegistry(eTag) : LoadRegistry(json, file, eTag).OrThrowAsJsonException();
+
+	// the S3 reader always wrote the ETag with `with`, which throws on the null the raw reader returned for a literal null; the other readers returned the null
+	private static LinkRegistry NullRegistry(string? eTag) => eTag is null ? null! : ((LinkRegistry)null!) with { ETag = eTag };
 
 	private static bool IsNullLiteral(string json) => json.AsSpan().Trim().SequenceEqual("null");
 
