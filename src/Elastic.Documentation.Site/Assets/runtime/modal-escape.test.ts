@@ -177,6 +177,40 @@ describe('modal dialogs and Escape', () => {
         expect(second.open).toBe(false)
     })
 
+    it('closes the dialog opened last, not the last one in the document', () => {
+        const first = document.createElement('dialog')
+        const second = document.createElement('dialog')
+        first.id = 'first'
+        second.id = 'second'
+        document.body.append(first, second)
+        document.addEventListener('keydown', preventEscape)
+
+        // The one earlier in the document is the one on top.
+        second.showModal()
+        first.showModal()
+        press(document.body)
+        vi.runAllTimers()
+
+        expect(first.open).toBe(false)
+        expect(second.open).toBe(true)
+    })
+
+    it('goes by the latest opening of a dialog that was closed and opened again', async () => {
+        const first = openDialog('first')
+        const second = openDialog('second')
+        document.addEventListener('keydown', preventEscape)
+
+        first.close()
+        // Let the observer see the closing before the dialog opens again.
+        await Promise.resolve()
+        first.showModal()
+        press(document.body)
+        vi.runAllTimers()
+
+        expect(first.open).toBe(false)
+        expect(second.open).toBe(true)
+    })
+
     it('leaves a dialog that is not modal alone', () => {
         const dialog = openDialog('a')
         // Opened with show(), not showModal().

@@ -18,8 +18,35 @@ function isModal(dialog: HTMLDialogElement): boolean {
     }
 }
 
-/** The dialog the key is for: the one holding the target, else the last modal dialog open. */
+// The browser has no API for the order of the top layer, so the order in which dialogs open is recorded as they do.
+const openedAt = new WeakMap<HTMLDialogElement, number>()
+let opened = 0
+let observer: MutationObserver | undefined
+
+function noteOpening(dialog: HTMLDialogElement): void {
+    if (!dialog.open) openedAt.delete(dialog)
+    else if (!openedAt.has(dialog)) openedAt.set(dialog, ++opened)
+}
+
+function noteOpenings(records: MutationRecord[]): void {
+    for (const { target } of records) {
+        if (target instanceof HTMLDialogElement) noteOpening(target)
+    }
+}
+
+function lastOpened(dialogs: HTMLDialogElement[]): HTMLDialogElement | null {
+    let last: HTMLDialogElement | null = null
+    for (const dialog of dialogs) {
+        if (!last || (openedAt.get(dialog) ?? 0) >= (openedAt.get(last) ?? 0))
+            last = dialog
+    }
+    return last
+}
+
+/** The dialog the key is for: the one holding the target, else the modal dialog opened last. */
 function targetDialog(target: EventTarget | null): HTMLDialogElement | null {
+    // Openings the observer has not reported yet: a dialog can open in the same task as the key.
+    if (observer) noteOpenings(observer.takeRecords())
     const open = Array.from(
         document.querySelectorAll<HTMLDialogElement>('dialog[open]')
     ).filter(isModal)
@@ -27,9 +54,7 @@ function targetDialog(target: EventTarget | null): HTMLDialogElement | null {
         target instanceof Element
             ? target.closest<HTMLDialogElement>('dialog')
             : null
-    return holding && open.includes(holding)
-        ? holding
-        : (open[open.length - 1] ?? null)
+    return holding && open.includes(holding) ? holding : lastOpened(open)
 }
 
 function requestClose(dialog: CloseRequestable): void {
@@ -55,6 +80,16 @@ function onKeydown(event: KeyboardEvent): void {
 }
 
 export function bindModalEscape(): void {
+    // Dialogs already open count in document order; later ones as they open.
+    document
+        .querySelectorAll<HTMLDialogElement>('dialog[open]')
+        .forEach(noteOpening)
+    observer = new MutationObserver(noteOpenings)
+    observer.observe(document, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['open'],
+    })
     // Capture on `window`: it runs first, so the dialog is found before any handler can change the page.
     window.addEventListener('keydown', onKeydown, true)
 }
