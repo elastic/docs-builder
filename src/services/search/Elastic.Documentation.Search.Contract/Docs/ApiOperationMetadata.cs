@@ -92,6 +92,15 @@ public record ApiOperationMetadata
 	public int IdWords { get; init; }
 
 	/// <summary>
+	/// The operation's title, indexed as one token of its sorted content words, so a query made of those words in any
+	/// order, with or without the stopwords and plurals, names the operation. Left out of the document on a landing page.
+	/// </summary>
+	[Text]
+	[JsonPropertyName("title_fingerprint")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? TitleFingerprint { get; init; }
+
+	/// <summary>
 	/// True on the API's own landing page, which has no operation of its own: its method, path, operation id and
 	/// endpoints are empty. Left out of the document when false, so operation documents keep their hash.
 	/// </summary>
