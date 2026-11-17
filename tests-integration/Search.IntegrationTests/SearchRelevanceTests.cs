@@ -332,6 +332,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("cluser health", "operation-cluster-health");
 		yield return ("clustr state", "operation-cluster-state");
 		yield return ("snaphot restore", "operation-snapshot-restore");
+		yield return ("snapshot restor", "operation-snapshot-restore");
 		yield return ("snapshto restore", "operation-snapshot-restore");
 		yield return ("reindx", "operation-reindex");
 		yield return ("bulck", "operation-bulk");
@@ -606,7 +607,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"enrollment api key",
 			"clustr helth",
 			"serch knn",
-			"snapshot restor",
 			// Typos the fuzzy id word does not fix yet: a route key is not fuzzed, and a title-only word misses the whole-title lift.
 			"serch",
 			"clustr settings",
