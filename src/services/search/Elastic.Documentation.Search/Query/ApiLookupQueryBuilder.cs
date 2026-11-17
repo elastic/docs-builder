@@ -15,7 +15,7 @@ namespace Elastic.Documentation.Search;
 /// The query behind the API navigation search. Each word of the query must be explained by one role on an operation:
 /// its endpoint, a word of its operation id, its group, a word of its title, its HTTP method, a field name, or a word of
 /// its description. An HTTP method typed right before a path joins that path's word and only lifts operations with that
-/// method. The best role counts per word and word order does not matter. Every role option is named
+/// method; it is not a word of any title. The best role counts per word and word order does not matter. Every role option is named
 /// <c>&lt;role&gt;_&lt;index&gt;</c> so the result processor can tell, from the named query scores, which role won each word.
 /// </summary>
 public static class ApiLookupQueryBuilder
@@ -62,7 +62,7 @@ public static class ApiLookupQueryBuilder
 		if (clauses.Count == 0)
 			return new MatchNoneQuery();
 
-		var typed = query.Trim();
+		var typed = TitleText(query);
 		return new BoolQuery
 		{
 			Must = [new BoolQuery { Should = clauses, MinimumShouldMatch = TokensMinimumShouldMatch }],
@@ -84,16 +84,32 @@ public static class ApiLookupQueryBuilder
 	/// <summary>The words of every plain word but the one at <paramref name="index"/>, which a field row may name besides it.</summary>
 	private static string[] OtherWords(string[][] tokenWords, int index) => [.. tokenWords.Where((_, i) => i != index).SelectMany(w => w)];
 
+	/// <summary>
+	/// The typed words a title can answer. A method before a path names the verb of the request, so <c>GET /_search</c> asks
+	/// for the route and never for a title that starts with <c>Get</c>.
+	/// </summary>
+	private static string TitleText(string query)
+	{
+		var words = Words(query);
+		return string.Join(' ', words.Where((_, i) => !IsMethodBeforePath(words, i)));
+	}
+
+	private static string[] Words(string query) =>
+		query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+	private static bool IsMethodBeforePath(string[] words, int index) =>
+		index + 1 < words.Length && HttpMethods.Contains(words[index]) && words[index + 1].StartsWith('/');
+
 	/// <summary>A word typed with a trailing dot, as in <c>retriever.</c>, asks for the children of the field it names.</summary>
 	public static bool ExpandsChildren(string query) => Tokenize(query).Any(t => t.ExpandChildren);
 
 	public static IReadOnlyList<ApiLookupToken> Tokenize(string query)
 	{
-		var words = query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var words = Words(query);
 		var tokens = new List<ApiLookupToken>();
 		for (var i = 0; i < words.Length && tokens.Count < MaxTokens; i++)
 		{
-			if (i + 1 < words.Length && HttpMethods.Contains(words[i]) && words[i + 1].StartsWith('/'))
+			if (IsMethodBeforePath(words, i))
 			{
 				tokens.Add(
 					new ApiLookupToken(ApiLookupTokenKind.Path, $"{words[i]} {words[i + 1]}", ExpandChildren: false, Method: words[i])

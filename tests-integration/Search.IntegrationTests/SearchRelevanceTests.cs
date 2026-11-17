@@ -267,6 +267,14 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("run a search", "operation-search");
 		yield return ("GET /_search knn", "operation-search");
 		yield return ("POST /_count", "operation-count");
+		// The route decides: a method that differs from the operation's canonical one never lets a title that starts with the
+		// same verb, such as "Get the search shards", lead the operation the route names.
+		yield return ("GET /_search", "operation-search");
+		yield return ("POST /_search", "operation-search");
+		yield return ("/_search", "operation-search");
+		yield return ("/_search knn", "operation-search");
+		yield return ("GET /_cluster/health", "operation-cluster-health");
+		yield return ("GET /_search_shards", "operation-search-shards");
 		yield return ("snapshot restore", "operation-snapshot-restore");
 		yield return ("search template", "operation-search-template");
 		yield return ("/_cluster health", "operation-cluster-health");

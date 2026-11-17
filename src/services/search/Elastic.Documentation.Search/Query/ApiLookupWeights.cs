@@ -27,6 +27,8 @@ namespace Elastic.Documentation.Search;
 /// and a row named by a word beats a listed child. With <see cref="FieldSeveralWords"/> it adds up to <see cref="FieldName"/>, so
 /// <c>unrated docs</c> finds <c>unrated_docs</c> as surely as the identifier does.</item>
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
+/// <item>A method typed before a path lifts by <see cref="Method"/> only and is no word of a title, so <c>GET /_search</c> keeps the
+/// <c>POST</c> operation <c>search</c> first (10.20) above <c>scroll</c> (9.70), where "Get the search shards" led it (9.13).</item>
 /// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
 /// explain the typed words equally well. <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
 /// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
