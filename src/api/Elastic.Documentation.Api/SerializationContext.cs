@@ -18,6 +18,9 @@ public record InputMessage(string Role, MessagePart[] Parts);
 
 public record OutputMessage(string Role, MessagePart[] Parts, string FinishReason);
 
+/// <summary>The body of an error response: a stable <paramref name="ErrorType"/> and a message for people.</summary>
+public sealed record ApiError(string ErrorType, string Message);
+
 [JsonSerializable(typeof(AskAiRequest))]
 [JsonSerializable(typeof(AskAiMessageFeedbackRequest))]
 [JsonSerializable(typeof(Reaction))]
@@ -47,5 +50,6 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(Search.ApiReference.ApiSummary))]
 [JsonSerializable(typeof(Search.ApiReference.ApiOperationListResponse))]
 [JsonSerializable(typeof(Search.ApiReference.ApiReferenceRejection))]
+[JsonSerializable(typeof(ApiError))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;

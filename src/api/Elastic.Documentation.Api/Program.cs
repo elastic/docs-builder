@@ -6,6 +6,7 @@ using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
@@ -54,13 +55,26 @@ try
 
 	_ = app.Environment.IsDevelopment()
 		? app.UseDeveloperExceptionPage()
-		: app.UseExceptionHandler(err => err.Run(context =>
+		: app.UseExceptionHandler(err => err.Run(async context =>
 		{
 			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-			if (ex != null)
-				logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-			context.Response.StatusCode = 500;
-			return Task.CompletedTask;
+			ApiError error;
+			if (ex is SearchUnavailableException)
+			{
+				// Transient by construction (timeout, overload): tell clients and the CDN to retry instead of failing.
+				logger.LogWarning(ex, "Search unavailable on {Method} {Path}", context.Request.Method, context.Request.Path);
+				context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+				context.Response.Headers.RetryAfter = "5";
+				error = new ApiError("search_unavailable", ex.Message);
+			}
+			else
+			{
+				if (ex != null)
+					logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+				context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+				error = new ApiError("internal_error", "An unexpected error occurred.");
+			}
+			await context.Response.WriteAsJsonAsync(error, ApiJsonContext.Default.ApiError);
 		}));
 
 	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);

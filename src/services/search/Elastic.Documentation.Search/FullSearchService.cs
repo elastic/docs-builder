@@ -22,6 +22,9 @@ public partial class FullSearchService(
 	ILogger<FullSearchService> logger
 ) : IFullSearchService, IDisposable
 {
+	/// <summary>The largest page any caller gets; the site asks for at most 50.</summary>
+	public const int MaxPageSize = 50;
+
 	public async Task<FullSearchResponse> SearchAsync(FullSearchRequest request, Cancel ctx = default)
 	{
 		SearchResponse<DocumentationDocument> resp;
@@ -31,8 +34,8 @@ public partial class FullSearchService(
 				new SearchRequest
 				{
 					Query = request.Query,
-					PageNumber = request.PageNumber,
-					PageSize = request.PageSize,
+					PageNumber = Math.Max(1, request.PageNumber),
+					PageSize = Math.Clamp(request.PageSize, 1, MaxPageSize),
 					TypeFilter = request.TypeFilter ?? [],
 					SectionFilter = request.SectionFilter ?? [],
 					ProductFilter = request.ProductFilter ?? [],
