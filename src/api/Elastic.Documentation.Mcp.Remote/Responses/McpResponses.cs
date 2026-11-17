@@ -3,11 +3,21 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Mcp.Remote.Gateways;
 
 namespace Elastic.Documentation.Mcp.Remote.Responses;
 
 // Common error response
 public sealed record ErrorResponse(string Error, List<string>? Details = null);
+
+public static class ResponseBody
+{
+	/// <summary>The note a response carries when it leaves out a body the caller can still ask for.</summary>
+	public static string? Note(string? body, bool includeBody) =>
+		!includeBody && body is { Length: > 0 }
+			? "The body is omitted by default. Call this tool again with includeBody=true to read it."
+			: null;
+}
 
 // SemanticSearch response
 public sealed record SemanticSearchResponse
@@ -164,6 +174,60 @@ public sealed record AiEnrichmentStatusDto
 	public required bool HasUseCases { get; init; }
 }
 
+// search_api_operations response
+public sealed record ApiOperationSearchResponse
+{
+	public required string Query { get; init; }
+	public required long TotalHits { get; init; }
+	public required IReadOnlyList<ApiOperationHit> Results { get; init; }
+}
+
+// get_api_operation response
+public sealed record ApiOperationResponse
+{
+	public required ApiOperationSummary Operation { get; init; }
+	public required string[] Versions { get; init; }
+	public required IReadOnlyList<ApiField> Fields { get; init; }
+	public string? AiShortSummary { get; init; }
+	public string? Body { get; init; }
+	public int BodyLength { get; init; }
+	public string? BodyNote { get; init; }
+	public required IReadOnlyList<ApiOperationSummary> OtherMatches { get; init; }
+}
+
+// list_api_operations response without an API key
+public sealed record ApiListResponse
+{
+	public required IReadOnlyList<ApiSummary> Apis { get; init; }
+}
+
+// list_api_operations response for one API
+public sealed record ApiOperationListResponse
+{
+	public required string Api { get; init; }
+	public string? Version { get; init; }
+	public required int TotalOperations { get; init; }
+	public required IReadOnlyList<ApiOperationGroupDto> Groups { get; init; }
+	public string? Note { get; init; }
+}
+
+public sealed record ApiOperationGroupDto
+{
+	public required string Name { get; init; }
+	public required int Count { get; init; }
+	public IReadOnlyList<ApiOperationListItemDto>? Operations { get; init; }
+}
+
+public sealed record ApiOperationListItemDto
+{
+	public required string Title { get; init; }
+	public required string Url { get; init; }
+	public required string Method { get; init; }
+	public required string Path { get; init; }
+	public required string OperationId { get; init; }
+	public bool Deprecated { get; init; }
+}
+
 [JsonSourceGenerationOptions(WriteIndented = false, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(SemanticSearchResponse))]
@@ -181,4 +245,14 @@ public sealed record AiEnrichmentStatusDto
 [JsonSerializable(typeof(ProductDto))]
 [JsonSerializable(typeof(DocumentStructureResponse))]
 [JsonSerializable(typeof(AiEnrichmentStatusDto))]
+[JsonSerializable(typeof(ApiOperationSearchResponse))]
+[JsonSerializable(typeof(ApiOperationResponse))]
+[JsonSerializable(typeof(ApiListResponse))]
+[JsonSerializable(typeof(ApiOperationListResponse))]
+[JsonSerializable(typeof(ApiOperationGroupDto))]
+[JsonSerializable(typeof(ApiOperationListItemDto))]
+[JsonSerializable(typeof(ApiOperationHit))]
+[JsonSerializable(typeof(ApiOperationSummary))]
+[JsonSerializable(typeof(ApiField))]
+[JsonSerializable(typeof(ApiSummary))]
 public sealed partial class McpJsonContext : JsonSerializerContext;

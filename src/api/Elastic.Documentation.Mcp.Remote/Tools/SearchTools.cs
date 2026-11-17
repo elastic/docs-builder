@@ -3,14 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Text.Json;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
-using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
-using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -28,50 +24,33 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		+ "Use when the user asks about Elastic product features, needs to find existing docs pages, "
 		+ "verify published content, or research what documentation exists on a topic. "
 		+ "Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
-	public async Task<string> SemanticSearch(
+	public Task<string> SemanticSearch(
 		[Description("The search query - can be a question or keywords")] string query,
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')")] string? productFilter = null,
-		[Description("Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)")] string? sectionFilter =
-			null,
+		[Description("Filter by navigation section (e.g., 'reference', 'getting-started')")] string? sectionFilter = null,
 		CancellationToken cancellationToken = default
-	)
-	{
-		var toolName = McpToolTelemetry.ResolveToolName("search_{resource}");
-		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(
-			activity,
-			new Dictionary<string, object?>
-			{
-				["query"] = query,
-				["pageNumber"] = pageNumber,
-				["pageSize"] = pageSize,
-				["productFilter"] = productFilter,
-				["sectionFilter"] = sectionFilter
-			}
-		);
-		McpToolTelemetry.LogStart(logger, toolName, payload);
-		var duration = Stopwatch.StartNew();
-		var outcome = "failure";
-
-		try
+	) =>
+		McpToolRunner.RunAsync(logger, "search_{resource}", new Dictionary<string, object?>
 		{
-			pageSize = Math.Clamp(pageSize, 1, 50);
-			pageNumber = Math.Max(1, pageNumber);
-
+			["query"] = query,
+			["pageNumber"] = pageNumber,
+			["pageSize"] = pageSize,
+			["productFilter"] = productFilter,
+			["sectionFilter"] = sectionFilter
+		}, async () =>
+		{
 			var request = new FullSearchRequest
 			{
 				Query = query,
-				PageNumber = pageNumber,
-				PageSize = pageSize,
+				PageNumber = Math.Max(1, pageNumber),
+				PageSize = Math.Clamp(pageSize, 1, 50),
 				ProductFilter = productFilter != null ? [productFilter] : null,
 				SectionFilter = sectionFilter != null ? [sectionFilter] : null,
 				IncludeHighlighting = false
 			};
-
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
-
 			var response = new SemanticSearchResponse
 			{
 				Query = query,
@@ -95,37 +74,8 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 					)
 					.ToList()
 			};
-
-			McpToolTelemetry.MarkSuccess(activity);
-			outcome = "success";
-			return JsonSerializer.Serialize(response, McpJsonContext.Default.SemanticSearchResponse);
-		}
-		catch (OperationCanceledException)
-		{
-			McpToolTelemetry.MarkCancelled(activity);
-			outcome = "cancelled";
-			throw;
-		}
-		catch (SearchUnavailableException ex)
-		{
-			// Transient backend failure (timeout, 429, overload) — surface as McpException so the
-			// MCP client receives IsError=true with the message and knows to retry.
-			McpToolTelemetry.MarkFailure(activity, ex);
-			outcome = "unavailable";
-			throw new McpException(ex.Message, ex);
-		}
-		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
-		{
-			McpToolTelemetry.MarkFailure(activity, ex);
-			logger.LogError(ex, "SemanticSearch failed for query '{Query}'", query);
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
-		}
-		finally
-		{
-			duration.Stop();
-			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
-		}
-	}
+			return ToolSucceeded.Serialize(response, McpJsonContext.Default.SemanticSearchResponse);
+		});
 
 	/// <summary>
 	/// Finds documents related to a given topic or document URL.
@@ -133,38 +83,28 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("find_related_{resource}"), Description("Finds {docs} pages related to a given topic. "
 		+ "Use when exploring what documentation exists around a subject, building context for writing, "
 		+ "or discovering related content the user should be aware of.")]
-	public async Task<string> FindRelatedDocs(
+	public Task<string> FindRelatedDocs(
 		[Description("Topic or search terms to find related documents for")] string topic,
 		[Description("Maximum number of related documents to return (default: 10)")] int limit = 10,
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana')")] string? productFilter = null,
 		CancellationToken cancellationToken = default
-	)
-	{
-		var toolName = McpToolTelemetry.ResolveToolName("find_related_{resource}");
-		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(
-			activity,
-			new Dictionary<string, object?> { ["topic"] = topic, ["limit"] = limit, ["productFilter"] = productFilter }
-		);
-		McpToolTelemetry.LogStart(logger, toolName, payload);
-		var duration = Stopwatch.StartNew();
-		var outcome = "failure";
-
-		try
+	) =>
+		McpToolRunner.RunAsync(logger, "find_related_{resource}", new Dictionary<string, object?>
 		{
-			limit = Math.Clamp(limit, 1, 20);
-
+			["topic"] = topic,
+			["limit"] = limit,
+			["productFilter"] = productFilter
+		}, async () =>
+		{
 			var request = new FullSearchRequest
 			{
 				Query = topic,
 				PageNumber = 1,
-				PageSize = limit,
+				PageSize = Math.Clamp(limit, 1, 20),
 				ProductFilter = productFilter != null ? [productFilter] : null,
 				IncludeHighlighting = false
 			};
-
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
-
 			var response = new RelatedDocsResponse
 			{
 				Topic = topic,
@@ -184,35 +124,6 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 					)
 					.ToList()
 			};
-
-			McpToolTelemetry.MarkSuccess(activity);
-			outcome = "success";
-			return JsonSerializer.Serialize(response, McpJsonContext.Default.RelatedDocsResponse);
-		}
-		catch (OperationCanceledException)
-		{
-			McpToolTelemetry.MarkCancelled(activity);
-			outcome = "cancelled";
-			throw;
-		}
-		catch (SearchUnavailableException ex)
-		{
-			// Transient backend failure (timeout, 429, overload) — surface as McpException so the
-			// MCP client receives IsError=true with the message and knows to retry.
-			McpToolTelemetry.MarkFailure(activity, ex);
-			outcome = "unavailable";
-			throw new McpException(ex.Message, ex);
-		}
-		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
-		{
-			McpToolTelemetry.MarkFailure(activity, ex);
-			logger.LogError(ex, "FindRelatedDocs failed for topic '{Topic}'", topic);
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
-		}
-		finally
-		{
-			duration.Stop();
-			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
-		}
-	}
+			return ToolSucceeded.Serialize(response, McpJsonContext.Default.RelatedDocsResponse);
+		});
 }
