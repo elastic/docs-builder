@@ -42,7 +42,7 @@ public class ComparersTests
 	/// </summary>
 	[Test]
 	public void FileSystemInfoLocation_SamePath_IsEqual() =>
-		Names.Check(name =>
+		Names.Sample(name =>
 		{
 			var comparer = FileSystemInfoLocationComparer.Default;
 			var (a, b) = (File("/docs/" + name), File("/docs/" + name));
@@ -70,7 +70,7 @@ public class ComparersTests
 	/// </summary>
 	[Test]
 	public void StringListEntry_EqualExactlyWhenKeyAndOrderedItemsMatch() =>
-		Gen.Select(Entries, Entries).Check(pair =>
+		Gen.Select(Entries, Entries).Sample(pair =>
 		{
 			var (x, y) = pair;
 			var comparer = StringListEntryComparer.Default;

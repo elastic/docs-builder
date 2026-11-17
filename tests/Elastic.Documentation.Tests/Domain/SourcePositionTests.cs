@@ -23,7 +23,7 @@ public class SourcePositionTests
 	/// </summary>
 	[Test]
 	public void Equality_IsStructural() =>
-		Positions.Check(p =>
+		Positions.Sample(p =>
 		{
 			var copy = new SourcePosition(p.Line, p.Column, p.EndLine, p.EndColumn);
 			copy.Should().Be(p);

@@ -19,7 +19,8 @@ public class WidgetAutoTests
 		Gen.Int[1, WidgetConstraints.MaxSize]
 	).Select(t => new Widget(t.Item1, t.Item2));
 
-	public static IEnumerable<Func<AxisCase>> Axes() => AutoTest.For(WidgetConstraints.Instance, Widgets).AsDataSource();
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		AutoTest.For(WidgetConstraints.Instance, Widgets).Seed(RunSeed.Value).AsDataSource();
 
 	[Test]
 	[MethodDataSource(nameof(Axes))]

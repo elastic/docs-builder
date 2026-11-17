@@ -81,6 +81,8 @@ Records holding collections or file handles compare those by reference unless to
 
 ## Testing
 
-Property tests use [CsCheck](https://github.com/AnthonyLloyd/CsCheck) with a **fixed seed** (`Props.Check`: `Props.Seed`, 200 iterations, one thread, so a run is the same run and a failure prints a shrunk input). Each property test carries a doc comment with the law and the consequence if it is broken, because a generated input is invisible and the comment is the only place a reader learns what is guaranteed.
+Property tests use [CsCheck](https://github.com/AnthonyLloyd/CsCheck) with its **default random seed**: every run explores new inputs, so a rule or generator weakness that one seed hides is found by a later run. A failure prints its seed (`Set seed: "..." or -e CsCheck_Seed=... to reproduce`), and CsCheck reads the `CsCheck_Seed` environment variable to start from a given seed (`CsCheck_Seed=<seed> mise run test`). `AutoTest` defaults to a fixed seed, so a test passes one explicitly with `.Seed(RunSeed.Value)`: random per run, or `CsCheck_Seed` when set; its failure prints a `.Seed("...")` to replay.
+
+Never pin a seed in a test. **Every bug a property test finds gets a pinned regression case**: a plain example test with the shrunk input it printed, in the same class, so the fix cannot regress and nobody has to rediscover it by luck. Each property test carries a doc comment with the law and the consequence if it is broken, because a generated input is invisible and the comment is the only place a reader learns what is guaranteed.
 
 `DomainPurityTests` lists the bounded-context namespaces of the domain model: they hold data, not machinery (no YAML, logging, diagnostics collectors or raw `System.IO` handles). A change that adds a namespace adds it to that list.
