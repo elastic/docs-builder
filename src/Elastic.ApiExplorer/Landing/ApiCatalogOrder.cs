@@ -23,6 +23,9 @@ internal static class ApiCatalogOrder
 		"cloud-serverless"
 	];
 
+	/// <summary>The APIs of the documentation site itself, such as the docs API that serves search and Ask AI.</summary>
+	public static readonly string[] DocumentationKeys = ["docs-api"];
+
 	/// <summary>A variant is listed right after the API it is a variant of, and shown under its card on the catalog.</summary>
 	public static readonly IReadOnlyDictionary<string, string> VariantParents = new Dictionary<string, string>(StringComparer.Ordinal)
 	{
@@ -33,7 +36,8 @@ internal static class ApiCatalogOrder
 	private static readonly string[] Pinned =
 	[
 		.. StackKeys.SelectMany(key => new[] { key }.Concat(VariantParents.Where(v => v.Value == key).Select(v => v.Key))),
-		.. OrchestrationKeys
+		.. OrchestrationKeys,
+		.. DocumentationKeys
 	];
 
 	/// <summary>Position of a pinned API, or <see cref="int.MaxValue"/> when it is ordered by title like the rest.</summary>
