@@ -202,9 +202,13 @@ public static class MappingsExtension
 		);
 		_ = apis.MapGet(
 			"/{api}/groups",
-			async (string api, [FromQuery(Name = "version")] string? version, ApiReferenceService apiReference, Cancel ctx) => ToResult(
-				await apiReference.ListGroupsAsync(api, version, ctx)
-			)
+			async (
+				string api,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(await apiReference.ListGroupsAsync(api, version, includeDeprecated ?? false, ctx))
 		);
 
 		var operations = group.MapGroup("/api-operations");

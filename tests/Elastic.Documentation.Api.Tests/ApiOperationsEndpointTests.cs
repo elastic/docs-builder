@@ -102,6 +102,7 @@ public class ApiOperationsEndpointTests
 	[Arguments("/api-operations?operation_id=x&view=everything", "view is 'basic' or 'full'.")]
 	[Arguments("/api-operations/cluster-health", "An operation id looks like 'elasticsearch:cluster-health'.")]
 	[Arguments("/api-operations/elasticsearch:", "An operation id looks like 'elasticsearch:cluster-health'.")]
+	[Arguments("/apis/%20/groups", "Pass an API key, such as 'elasticsearch'.")]
 	public async Task InvalidArguments_AreABadRequestWithoutQueryingTheIndex(string pathAndQuery, string message)
 	{
 		var gateway = A.Fake<IApiGateway>();
@@ -115,14 +116,14 @@ public class ApiOperationsEndpointTests
 	}
 
 	[Test]
-	public async Task Endpoint_FullView_ReturnsEveryMatchWithItsFieldsInOneRequest()
+	public async Task Endpoint_FullView_ReturnsEveryMatchWithItsFieldsFromOneLookup()
 	{
 		List<ApiOperationLookup> received = [];
 		var gateway = A.Fake<IApiGateway>();
-		A
-			.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._))
+		_ = A
+			.CallTo(() => gateway.FindOperationsAsync(A<ApiOperationLookup>._, A<CancellationToken>._))
 			.Invokes((ApiOperationLookup lookup, CancellationToken _) => received.Add(lookup))
-			.ReturnsNextFromSequence(Detail("Body", KibanaOperation), Detail() with { Operation = KibanaOperation });
+			.Returns([Detail("Body"), Detail() with { Operation = KibanaOperation }]);
 
 		var (status, body) = await Get(gateway, "/api-operations?endpoint=GET%20/my-index/_search&view=full&include_body=true");
 
@@ -133,31 +134,31 @@ public class ApiOperationsEndpointTests
 		best.GetProperty("body").GetString().Should().Be("Body");
 		body.GetProperty("results")[1].GetProperty("fields").GetArrayLength().Should().Be(1);
 		ApiOperationKey endpointKey = new ApiEndpointKey("GET /my-index/_search");
-		ApiOperationKey kibanaKey = new ApiOperationIdKey("kibana-health");
-		received.Should().Equal(new ApiOperationLookup(null, endpointKey), new ApiOperationLookup(new ApiScope("kibana", null), kibanaKey));
+		received.Should().Equal(new ApiOperationLookup(null, endpointKey));
+		A.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
 	[Test]
 	public async Task OperationId_BasicView_ListsTheSameIdInEveryApiWithoutFields()
 	{
 		var gateway = A.Fake<IApiGateway>();
-		_ = A.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns(
-			Detail(otherMatches: KibanaOperation)
-		);
+		_ = A.CallTo(() => gateway.FindOperationsAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns([
+			Detail(),
+			Detail() with { Operation = KibanaOperation }
+		]);
 
 		var (status, body) = await Get(gateway, "/api-operations?operation_id=cluster-health");
 
 		status.Should().Be(HttpStatusCode.OK);
 		Ids(body).Should().Equal("elasticsearch:cluster-health", "kibana:kibana-health");
 		body.GetProperty("results")[0].GetProperty("fields").ValueKind.Should().Be(JsonValueKind.Null);
-		A.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
 	}
 
 	[Test]
 	public async Task Endpoint_NoMatch_IsAnEmptyPage()
 	{
 		var gateway = A.Fake<IApiGateway>();
-		_ = A.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns((ApiOperationDetail?)null);
+		_ = A.CallTo(() => gateway.FindOperationsAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns([]);
 
 		var (status, body) = await Get(gateway, "/api-operations?endpoint=GET%20/nope");
 
@@ -289,5 +290,33 @@ public class ApiOperationsEndpointTests
 			.Equal(("cluster", 2), ("search", 1));
 		body.GetProperty("groups")[0].GetProperty("operations").ValueKind.Should().Be(JsonValueKind.Null);
 		body.GetProperty("note").ValueKind.Should().Be(JsonValueKind.Null);
+	}
+
+	[Test]
+	[Arguments("", 1)]
+	[Arguments("&include_deprecated=true", 2)]
+	public async Task Groups_CountDeprecatedOperationsOnlyWhenTheListingWould(string includeDeprecated, int clusterCount)
+	{
+		var gateway = A.Fake<IApiGateway>();
+		_ = A.CallTo(() => gateway.ListOperationsAsync(A<ApiScope>._, A<CancellationToken>._)).Returns([
+			Operation,
+			Operation with { OperationId = "old", Deprecated = true },
+			Operation with { OperationId = "gone", Group = "legacy", Deprecated = true }
+		]);
+
+		var (groupsStatus, groups) = await Get(gateway, $"/apis/elasticsearch/groups?version=9{includeDeprecated}");
+		var (listStatus, list) = await Get(gateway, $"/api-operations?api=elasticsearch&group=cluster{includeDeprecated}");
+
+		groupsStatus.Should().Be(HttpStatusCode.OK);
+		listStatus.Should().Be(HttpStatusCode.OK);
+		var cluster = groups.GetProperty("groups").EnumerateArray().Single(g => g.GetProperty("name").GetString() == "cluster");
+		cluster.GetProperty("count").GetInt32().Should().Be(clusterCount);
+		list.GetProperty("totalHits").GetInt64().Should().Be(clusterCount);
+		groups
+			.GetProperty("groups")
+			.EnumerateArray()
+			.Any(g => g.GetProperty("name").GetString() == "legacy")
+			.Should()
+			.Be(includeDeprecated != "");
 	}
 }

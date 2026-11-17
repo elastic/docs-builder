@@ -30,7 +30,7 @@ An operation's id is `{api}:{operationId}`, such as `elasticsearch:cluster-healt
 |---------|------------------|---------|
 | `/apis` | None | `apis`, with each API's key, title, landing page, and versions |
 | `/apis/{api}` | None | That API's key, title, landing page, and versions |
-| `/apis/{api}/groups` | `version` | The API's `groups`, each with its name and operation count |
+| `/apis/{api}/groups` | `version`<br>`include_deprecated` (default `false`) | The API's `groups`, each with its name and operation count. Counts follow the same deprecated filter as a group listing. |
 
 ### API operations
 

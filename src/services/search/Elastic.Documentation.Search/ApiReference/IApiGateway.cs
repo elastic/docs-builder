@@ -12,6 +12,9 @@ public interface IApiGateway
 	/// <summary>The best match for <paramref name="lookup"/>, or <c>null</c> when no operation matches.</summary>
 	Task<ApiOperationDetail?> GetOperationAsync(ApiOperationLookup lookup, CancellationToken ct = default);
 
+	/// <summary>Every match for <paramref name="lookup"/>, best first, each with its versions, fields and body, from one index query.</summary>
+	Task<IReadOnlyList<ApiOperationDetail>> FindOperationsAsync(ApiOperationLookup lookup, CancellationToken ct = default);
+
 	Task<IReadOnlyList<ApiSummary>> ListApisAsync(CancellationToken ct = default);
 
 	Task<IReadOnlyList<ApiOperationSummary>> ListOperationsAsync(ApiScope scope, CancellationToken ct = default);

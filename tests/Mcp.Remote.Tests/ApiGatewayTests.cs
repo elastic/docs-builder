@@ -226,6 +226,23 @@ public class ApiGatewayTests
 	}
 
 	[Test]
+	public async Task FindOperationsAsync_OperationId_ReturnsEveryMatchWithItsDetailsFromOneQuery()
+	{
+		using var stub = ElasticsearchStub.Start(SearchCandidates);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var matches = await gateway.FindOperationsAsync(
+			new ApiOperationLookup(null, new ApiOperationIdKey("get")),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		matches.Select(m => m.Operation.OperationId).Should().Equal("get", "search");
+		matches.Should().AllSatisfy(m => m.Versions.Should().NotBeNull());
+		matches.Should().AllSatisfy(m => m.OtherMatches.Should().BeEmpty());
+		stub.RequestCount.Should().Be(1);
+	}
+
+	[Test]
 	public async Task GetOperationAsync_OperationIdInVersion_FiltersByApiTreeAndOperationId()
 	{
 		using var stub = ElasticsearchStub.Start(SearchCandidates);

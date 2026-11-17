@@ -135,22 +135,12 @@ public class ApiReferenceService(IApiGateway apiGateway)
 			ApiOperationKey key = string.IsNullOrWhiteSpace(query.Endpoint)
 				? new ApiOperationIdKey(query.OperationId!.Trim())
 				: new ApiEndpointKey(query.Endpoint.Trim());
-			var detail = await apiGateway.GetOperationAsync(new ApiOperationLookup(scope, key), ct);
-			if (detail is null)
-				return new ApiOperationCollectionResponse { TotalHits = 0, Results = [] };
-			List<ApiOperationItem> items = [ToItem(detail.Operation, query.Full ? detail : null, query.IncludeBody)];
-			foreach (var other in detail.OtherMatches)
+			var matches = await apiGateway.FindOperationsAsync(new ApiOperationLookup(scope, key), ct);
+			return new ApiOperationCollectionResponse
 			{
-				// Other matches come back as summaries; a full view reads each one in its own API.
-				var otherDetail = query.Full
-					? await apiGateway.GetOperationAsync(
-						new ApiOperationLookup(new ApiScope(other.Api, scope?.Version), new ApiOperationIdKey(other.OperationId)),
-						ct
-					)
-					: null;
-				items.Add(ToItem(other, otherDetail, query.IncludeBody));
-			}
-			return new ApiOperationCollectionResponse { TotalHits = items.Count, Results = items };
+				TotalHits = matches.Count,
+				Results = [.. matches.Select(m => ToItem(m.Operation, query.Full ? m : null, query.IncludeBody))]
+			};
 		}
 
 		if (scope is null)
@@ -194,12 +184,18 @@ public class ApiReferenceService(IApiGateway apiGateway)
 		return apis.FirstOrDefault(a => a.Key == key) is { } found ? found : new ApiReferenceRejection("api_not_found", $"No API '{api}'.");
 	}
 
-	/// <summary>Counts one API's operations by group, without listing them.</summary>
-	public async Task<ApiReferenceReply> ListGroupsAsync(string api, string? version, CancellationToken ct)
+	/// <summary>
+	/// Counts one API's operations by group, without listing them. Deprecated operations count only with
+	/// <paramref name="includeDeprecated"/>, as in the listing, so a count matches the group's listing.
+	/// </summary>
+	public async Task<ApiReferenceReply> ListGroupsAsync(string api, string? version, bool includeDeprecated, CancellationToken ct)
 	{
-		var scope = ToScope(api, version)!;
+		if (ToScope(api, version) is not { } scope)
+			return new ApiReferenceRejection("invalid_arguments", "Pass an API key, such as 'elasticsearch'.");
 		var operations = await apiGateway.ListOperationsAsync(scope, ct);
-		return operations.Count == 0 ? ApiNotFound(scope) : GroupOperations(scope, operations, group: null, groupsOnly: true);
+		return operations.Count == 0
+			? ApiNotFound(scope)
+			: GroupOperations(scope, [.. operations.Where(o => includeDeprecated || !o.Deprecated)], group: null, groupsOnly: true);
 	}
 
 	/// <summary>Lists every API without <paramref name="api"/>, or the operations of one API by group.</summary>
