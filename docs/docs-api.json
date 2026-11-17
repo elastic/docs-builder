@@ -1,0 +1,1911 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Elastic Docs API",
+    "description": "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs. Requests through www.elastic.co need the cookie feature_search_or_askai_enabled=true; without it the CDN answers 403.",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://www.elastic.co"
+    }
+  ],
+  "paths": {
+    "/docs/_api/v1/changes": {
+      "get": {
+        "tags": [
+          "Changes"
+        ],
+        "summary": "List the pages that changed since a date",
+        "operationId": "list-changes",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/page-feedback/{feedbackId}": {
+      "put": {
+        "tags": [
+          "Page feedback"
+        ],
+        "summary": "Record or update feedback on a page",
+        "operationId": "put-page-feedback",
+        "parameters": [
+          {
+            "name": "feedbackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Page feedback"
+        ],
+        "summary": "Delete feedback on a page",
+        "operationId": "delete-page-feedback",
+        "parameters": [
+          {
+            "name": "feedbackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/ask-ai/stream": {
+      "post": {
+        "tags": [
+          "Ask AI"
+        ],
+        "summary": "Stream an Ask AI answer as server-sent events",
+        "operationId": "ask-ai-stream",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskAiRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/ask-ai/message-feedback": {
+      "post": {
+        "tags": [
+          "Ask AI"
+        ],
+        "summary": "Record a reaction to an Ask AI answer",
+        "operationId": "ask-ai-message-feedback",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskAiMessageFeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/navigation-search": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search page titles and the navigation",
+        "operationId": "navigation-search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "api_tree",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavigationSearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/search": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search the documentation",
+        "operationId": "search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "deployment",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullSearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/apis": {
+      "get": {
+        "tags": [
+          "API reference"
+        ],
+        "summary": "List every API",
+        "operationId": "list-apis",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiListResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/apis/{api}": {
+      "get": {
+        "tags": [
+          "API reference"
+        ],
+        "summary": "Read one API",
+        "operationId": "get-api",
+        "parameters": [
+          {
+            "name": "api",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/apis/{api}/groups": {
+      "get": {
+        "tags": [
+          "API reference"
+        ],
+        "summary": "Count one API's operations by group",
+        "operationId": "list-api-groups",
+        "parameters": [
+          {
+            "name": "api",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_deprecated",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiOperationListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/api-operations": {
+      "get": {
+        "tags": [
+          "API reference"
+        ],
+        "summary": "Search, look up or list API operations",
+        "operationId": "list-api-operations",
+        "parameters": [
+          {
+            "name": "api",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_deprecated",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_body",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiOperationCollectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs/_api/v1/api-operations/{id}": {
+      "get": {
+        "tags": [
+          "API reference"
+        ],
+        "summary": "Read one API operation by its id, {api}:{operationId}",
+        "operationId": "get-api-operation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_body",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "required": [
+          "errorType",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "errorType": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiField": {
+        "required": [
+          "name",
+          "path",
+          "type",
+          "location",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiListResponse": {
+        "required": [
+          "apis"
+        ],
+        "type": "object",
+        "properties": {
+          "apis": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiSummary"
+            }
+          }
+        }
+      },
+      "ApiOperationCollectionResponse": {
+        "required": [
+          "totalHits",
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "totalHits": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiOperationItem"
+            }
+          }
+        }
+      },
+      "ApiOperationGroupDto": {
+        "required": [
+          "name",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "operations": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ApiOperationListItemDto"
+            }
+          }
+        }
+      },
+      "ApiOperationItem": {
+        "required": [
+          "operation"
+        ],
+        "type": "object",
+        "properties": {
+          "operation": {
+            "$ref": "#/components/schemas/ApiOperationSummary"
+          },
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "float"
+          },
+          "matchedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ApiField"
+            }
+          },
+          "versions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "fields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ApiField"
+            }
+          },
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ApiOperationListItemDto": {
+        "required": [
+          "title",
+          "url",
+          "method",
+          "path",
+          "operationId"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "operationId": {
+            "type": "string"
+          },
+          "deprecated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiOperationListResponse": {
+        "required": [
+          "api",
+          "totalOperations",
+          "groups"
+        ],
+        "type": "object",
+        "properties": {
+          "api": {
+            "type": "string"
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "totalOperations": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiOperationGroupDto"
+            }
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ApiOperationResponse": {
+        "required": [
+          "operation",
+          "versions",
+          "fields",
+          "otherMatches"
+        ],
+        "type": "object",
+        "properties": {
+          "operation": {
+            "$ref": "#/components/schemas/ApiOperationSummary"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiField"
+            }
+          },
+          "aiShortSummary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bodyLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "bodyNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "otherMatches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiOperationSummary"
+            }
+          }
+        }
+      },
+      "ApiOperationSummary": {
+        "required": [
+          "api",
+          "title",
+          "url",
+          "method",
+          "path",
+          "operationId",
+          "endpoints"
+        ],
+        "type": "object",
+        "properties": {
+          "api": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "operationId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "group": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deprecated": {
+            "type": "boolean"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApiRouteEntry": {
+        "required": [
+          "path",
+          "methods"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApiSummary": {
+        "required": [
+          "key",
+          "title",
+          "url",
+          "versions"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AskAiMessageFeedbackRequest": {
+        "required": [
+          "messageId",
+          "conversationId",
+          "reaction"
+        ],
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reaction": {
+            "$ref": "#/components/schemas/Reaction"
+          }
+        }
+      },
+      "AskAiRequest": {
+        "required": [
+          "message",
+          "conversationId"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ChangedPageDto": {
+        "required": [
+          "url",
+          "title",
+          "lastUpdated"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChangesResponse": {
+        "required": [
+          "pages",
+          "hasMore"
+        ],
+        "type": "object",
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangedPageDto"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "FullSearchAggregations": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          "navigationSection": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          "deploymentType": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          "product": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProductAggregationBucket"
+            }
+          }
+        }
+      },
+      "FullSearchProduct": {
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      },
+      "FullSearchResponse": {
+        "required": [
+          "results",
+          "totalResults",
+          "pageNumber",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FullSearchResultItem"
+            }
+          },
+          "totalResults": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "aggregations": {
+            "$ref": "#/components/schemas/FullSearchAggregations"
+          },
+          "isSemanticQuery": {
+            "type": "boolean"
+          },
+          "pageCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "FullSearchResultItem": {
+        "required": [
+          "type",
+          "url",
+          "title",
+          "description",
+          "parents"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FullSearchResultParent"
+            }
+          },
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "float"
+          },
+          "aiShortSummary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aiRagOptimizedSummary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "navigationSection": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastUpdated": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "product": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FullSearchProduct"
+              }
+            ]
+          },
+          "relatedProducts": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/FullSearchProduct"
+            }
+          }
+        }
+      },
+      "FullSearchResultParent": {
+        "required": [
+          "title",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "NavigationSearchAggregations": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      },
+      "NavigationSearchProperty": {
+        "required": [
+          "name",
+          "path",
+          "type",
+          "description",
+          "anchor",
+          "location",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "anchor": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "NavigationSearchResponse": {
+        "required": [
+          "results",
+          "totalResults",
+          "pageNumber",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NavigationSearchResultItem"
+            }
+          },
+          "totalResults": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "aggregations": {
+            "$ref": "#/components/schemas/NavigationSearchAggregations"
+          },
+          "pageCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "NavigationSearchResultItem": {
+        "required": [
+          "type",
+          "url",
+          "title",
+          "description",
+          "parents"
+        ],
+        "type": "object",
+        "properties": {
+          "properties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NavigationSearchProperty"
+            }
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiRouteEntry"
+            }
+          },
+          "deprecated": {
+            "type": "boolean"
+          },
+          "landing": {
+            "type": "boolean"
+          },
+          "apiKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "product": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NavigationSearchResultItemParent"
+            }
+          },
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "float"
+          }
+        }
+      },
+      "NavigationSearchResultItemParent": {
+        "required": [
+          "title",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "PageFeedbackReaction": {
+        "enum": [
+          "unspecified",
+          "thumbsUp",
+          "thumbsDown"
+        ]
+      },
+      "PageFeedbackReason": {
+        "enum": [
+          "accurate",
+          "solvedProblem",
+          "easyToUnderstand",
+          "helpfulExamples",
+          "easyToFind",
+          "inaccurate",
+          "missingInformation",
+          "hardToUnderstand",
+          "codeSampleErrors",
+          "outOfDate",
+          "anotherReason"
+        ]
+      },
+      "PageFeedbackRequest": {
+        "required": [
+          "pageUrl",
+          "pageTitle",
+          "reaction",
+          "reasons",
+          "reasonSetVersion",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "pageUrl": {
+            "type": "string"
+          },
+          "pageTitle": {
+            "type": "string"
+          },
+          "reaction": {
+            "$ref": "#/components/schemas/PageFeedbackReaction"
+          },
+          "reasons": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PageFeedbackReason"
+            }
+          },
+          "reasonSetVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ProductAggregationBucket": {
+        "required": [
+          "count",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      },
+      "Reaction": {
+        "enum": [
+          "thumbsUp",
+          "thumbsDown"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "API reference"
+    },
+    {
+      "name": "Ask AI"
+    },
+    {
+      "name": "Changes"
+    },
+    {
+      "name": "Page feedback"
+    },
+    {
+      "name": "Search"
+    }
+  ]
+}
