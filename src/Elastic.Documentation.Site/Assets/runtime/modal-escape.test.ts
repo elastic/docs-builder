@@ -211,6 +211,21 @@ describe('modal dialogs and Escape', () => {
         expect(second.open).toBe(true)
     })
 
+    it('goes by the reopening of a dialog that closed and opened again in one task', () => {
+        const first = openDialog('first')
+        const second = openDialog('second')
+        document.addEventListener('keydown', preventEscape)
+
+        // No wait between the two: the observer reports both changes together.
+        first.close()
+        first.showModal()
+        press(document.body)
+        vi.runAllTimers()
+
+        expect(first.open).toBe(false)
+        expect(second.open).toBe(true)
+    })
+
     it('leaves a dialog that is not modal alone', () => {
         const dialog = openDialog('a')
         // Opened with show(), not showModal().

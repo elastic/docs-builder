@@ -24,14 +24,21 @@ let opened = 0
 let observer: MutationObserver | undefined
 
 function noteOpening(dialog: HTMLDialogElement): void {
-    if (!dialog.open) openedAt.delete(dialog)
-    else if (!openedAt.has(dialog)) openedAt.set(dialog, ++opened)
+    if (dialog.open && !openedAt.has(dialog)) openedAt.set(dialog, ++opened)
 }
 
+// One record per change of the attribute, so a close and a reopen in the same task are told apart. The dialog's state
+// then is only the end of the story: the old value says whether a change was an opening.
 function noteOpenings(records: MutationRecord[]): void {
-    for (const { target } of records) {
-        if (target instanceof HTMLDialogElement) noteOpening(target)
+    const changed = new Set<HTMLDialogElement>()
+    for (const { target, oldValue } of records) {
+        if (!(target instanceof HTMLDialogElement)) continue
+        changed.add(target)
+        if (oldValue === null) openedAt.set(target, ++opened)
     }
+    changed.forEach((dialog) => {
+        if (!dialog.open) openedAt.delete(dialog)
+    })
 }
 
 function lastOpened(dialogs: HTMLDialogElement[]): HTMLDialogElement | null {
@@ -88,6 +95,7 @@ export function bindModalEscape(): void {
     observer.observe(document, {
         subtree: true,
         attributes: true,
+        attributeOldValue: true,
         attributeFilter: ['open'],
     })
     // Capture on `window`: it runs first, so the dialog is found before any handler can change the page.
