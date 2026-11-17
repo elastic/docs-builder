@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml rules.match: 'some' is not valid. Use 'any', 'all', or 'conjunction'."
+  ]
+}

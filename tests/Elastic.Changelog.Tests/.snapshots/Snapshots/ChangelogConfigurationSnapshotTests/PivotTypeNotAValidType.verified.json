@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml Type 'chore' in pivot.types is not a valid type. Valid types: invalid, feature, enhancement, security, bug-fix, breaking-change, deprecation, known-issue, docs, regression, other"
+  ]
+}

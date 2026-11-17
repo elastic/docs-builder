@@ -1,0 +1,130 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": {
+        "breaking-change": {
+          "Labels": ">breaking, >bc",
+          "Subtypes": {
+            "api": ">api-breaking",
+            "behavioral": ">behavioral-breaking",
+            "configuration": ">config-breaking",
+            "dependency": ">dependency-breaking",
+            "subscription": ">subscription-breaking",
+            "plugin": ">plugin-breaking",
+            "security": ">security-breaking",
+            "other": null
+          }
+        },
+        "bug-fix": {
+          "Labels": ">bug",
+          "Subtypes": null
+        },
+        "deprecation": {
+          "Labels": ">deprecation",
+          "Subtypes": null
+        },
+        "feature": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "enhancement": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "docs": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "known-issue": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "other": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "regression": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "security": {
+          "Labels": null,
+          "Subtypes": null
+        }
+      },
+      "Subtypes": null,
+      "Areas": null,
+      "Products": null,
+      "Features": null,
+      "Highlight": null
+    },
+    "RequiredPivots": "None",
+    "Types": [
+      "breaking-change",
+      "bug-fix",
+      "deprecation",
+      "feature",
+      "enhancement",
+      "docs",
+      "known-issue",
+      "other",
+      "regression",
+      "security"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": {
+      ">breaking": "breaking-change",
+      ">bc": "breaking-change",
+      ">bug": "bug-fix",
+      ">deprecation": "deprecation"
+    },
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": {
+      "Available": null,
+      "Default": null,
+      "Implies": null
+    },
+    "Filename": "Pr",
+    "Bundle": {
+      "Directory": "docs/changelog",
+      "OutputDirectory": "docs/releases",
+      "UseLocalChangelogs": false,
+      "Description": null,
+      "Repo": null,
+      "Owner": null,
+      "Branch": null,
+      "LinkAllowRepos": null,
+      "ReleaseDates": null,
+      "Backports": null,
+      "Profiles": null,
+      "Releases": null
+    },
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

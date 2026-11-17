@@ -1,0 +1,78 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": {
+        "feature": {
+          "Labels": ">feature, >new",
+          "Subtypes": null
+        },
+        "bug-fix": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "breaking-change": {
+          "Labels": ">breaking",
+          "Subtypes": null
+        },
+        "docs": {
+          "Labels": null,
+          "Subtypes": null
+        },
+        "other": {
+          "Labels": null,
+          "Subtypes": null
+        }
+      },
+      "Subtypes": null,
+      "Areas": null,
+      "Products": null,
+      "Features": null,
+      "Highlight": null
+    },
+    "RequiredPivots": "None",
+    "Types": [
+      "feature",
+      "bug-fix",
+      "breaking-change",
+      "docs",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": {
+      ">feature": "feature",
+      ">new": "feature",
+      ">breaking": "breaking-change"
+    },
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml filename: 'sequential' is not valid. The only supported value is 'pr'. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'."
+  ]
+}

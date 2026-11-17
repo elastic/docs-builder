@@ -1,0 +1,105 @@
+{
+  "configuration": {
+    "Pivot": null,
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": {
+      "Match": "Any",
+      "Create": null,
+      "Bundle": {
+        "ExcludeProducts": null,
+        "IncludeProducts": null,
+        "MatchProducts": "Any",
+        "Blocker": {
+          "Types": [
+            "docs"
+          ],
+          "TypesMode": "Exclude",
+          "Areas": null,
+          "AreasMode": "Exclude",
+          "MatchAreas": "Any",
+          "HasBlockingRules": true
+        },
+        "ByProduct": {
+          "security": {
+            "Blocker": {
+              "Types": [
+                "docs"
+              ],
+              "TypesMode": "Exclude",
+              "Areas": [
+                "APM",
+                "Infrastructure monitoring"
+              ],
+              "AreasMode": "Include",
+              "MatchAreas": "Any",
+              "HasBlockingRules": true
+            },
+            "IncludeProducts": null,
+            "ExcludeProducts": [
+              "kibana"
+            ],
+            "MatchProducts": "Any"
+          },
+          "kibana": {
+            "Blocker": null,
+            "IncludeProducts": [
+              "kibana",
+              "security"
+            ],
+            "ExcludeProducts": null,
+            "MatchProducts": "All"
+          }
+        }
+      },
+      "Publish": null
+    },
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": [
+    "hint {root}/docs/changelog.yml Per-product rule 'kibana' includes disjoint products [security] which cannot be included due to single-product rule resolution. Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md",
+    "hint {root}/docs/changelog.yml rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). See: https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md#rules-bundle"
+  ]
+}

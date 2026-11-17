@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml Product 'example-missing-product' in changelog.yml is not in the list of available products from config/products.yml. Available products: cloud-hosted, cloud-serverless, elasticsearch, kibana, security"
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/elasticsearch-9.3.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Add a thing",
+          "Fix a thing"
+        ],
+        "entries": [
+          "Feature: Add a thing prs=[100] subtype=",
+          "BugFix: Fix a thing prs=[101] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "elasticsearch-9.3.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Add a thing",
+          "Fix a thing"
+        ],
+        "entries": [
+          "Feature: Add a thing prs=[100] subtype=",
+          "BugFix: Fix a thing prs=[101] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/elasticsearch-9.3.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Add a thing",
+          "Fix a thing"
+        ],
+        "entries": [
+          "Feature: Add a thing prs=[100] subtype=",
+          "BugFix: Fix a thing prs=[101] subtype="
+        ]
+      }
+    ]
+  }
+}

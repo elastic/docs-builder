@@ -1,0 +1,77 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": null,
+      "Subtypes": null,
+      "Areas": {
+        "Search, Ranking": ":Search/Ranking",
+        "Security": ":Security/Auth, Team:Security",
+        "Empty": null
+      },
+      "Products": null,
+      "Features": null,
+      "Highlight": null
+    },
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": [
+      "Search, Ranking",
+      "Security",
+      "Empty"
+    ],
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": {
+      ":Search/Ranking": [
+        "Search, Ranking"
+      ],
+      ":Security/Auth": [
+        "Security"
+      ],
+      "Team:Security": [
+        "Security"
+      ]
+    },
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: 'not-owner-slash-repo'."
+  ]
+}

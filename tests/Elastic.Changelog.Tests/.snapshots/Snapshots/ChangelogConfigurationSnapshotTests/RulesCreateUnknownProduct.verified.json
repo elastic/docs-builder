@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml rules.create.products: 'example-missing-product' not in available products. Available: cloud-hosted, cloud-serverless, elasticsearch, kibana, security"
+  ]
+}

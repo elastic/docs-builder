@@ -1,0 +1,66 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": null,
+      "Subtypes": null,
+      "Areas": null,
+      "Products": null,
+      "Features": {
+        "feature:new-search-api": "feature-flag:new-search-api, :Feature/NewSearchApi",
+        "feature:other": ":Feature/Other"
+      },
+      "Highlight": null
+    },
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": {
+      "feature-flag:new-search-api": "feature:new-search-api",
+      ":Feature/NewSearchApi": "feature:new-search-api",
+      ":Feature/Other": "feature:other"
+    },
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}
