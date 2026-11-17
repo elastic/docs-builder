@@ -1,0 +1,32 @@
+air-gapped
+  yaml:    AIR_GAPPED=true, ASSEMBLER_API_EXPLORER=true
+  enabled: air-gapped, assembler-api-explorer
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: air-gapped, assembler-api-explorer, guide-nav
+demo
+  yaml:    ASSEMBLER_API_EXPLORER=true, NAVIGATION_PREVIEW=true, PAGE_FEEDBACK=true
+  enabled: assembler-api-explorer, navigation-preview, page-feedback
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: assembler-api-explorer, guide-nav, navigation-preview
+dev
+  yaml:    NAVIGATION_PREVIEW=false, PAGE_FEEDBACK=true, WEBSITE_SEARCH=true
+  enabled: page-feedback, website-search
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: guide-nav, website-search
+edge
+  yaml:    ASSEMBLER_API_EXPLORER=true, NAVIGATION_PREVIEW=false, PAGE_FEEDBACK=true
+  enabled: assembler-api-explorer, page-feedback
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: assembler-api-explorer, guide-nav
+local
+  yaml:    WEBSITE_SEARCH=true
+  enabled: website-search
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: guide-nav, website-search
+preview
+  yaml:    ASSEMBLER_API_EXPLORER=true, PAGE_FEEDBACK=true
+  enabled: assembler-api-explorer, page-feedback
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: assembler-api-explorer, guide-nav
+prod
+  yaml:    
+  enabled: 
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: guide-nav
+staging
+  yaml:    ASSEMBLER_API_EXPLORER=true, NAVIGATION_PREVIEW=false, PAGE_FEEDBACK=true, WEBSITE_SEARCH=true
+  enabled: assembler-api-explorer, page-feedback, website-search
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: assembler-api-explorer, guide-nav, website-search

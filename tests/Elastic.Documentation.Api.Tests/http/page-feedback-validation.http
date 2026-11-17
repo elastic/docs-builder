@@ -1,0 +1,509 @@
+### valid reaction only
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### missing page url
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### empty page url
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### blank page url
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "   ",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### page url without a leading slash
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### page url that is protocol relative
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "//example.com/docs",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### page url that is absolute
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "https://example.com/docs",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### page url over 2048 characters
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### page url of exactly 2048 characters
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### page url null
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": null,
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### page url a number
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": 5,
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### missing page title
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "reaction": "thumbsUp"
+}
+
+### blank page title
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": " ",
+  "reaction": "thumbsUp"
+}
+
+### page title over 500 characters
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+  "reaction": "thumbsUp"
+}
+
+### page title of exactly 500 characters
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+  "reaction": "thumbsUp"
+}
+
+### missing reaction
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page"
+}
+
+### unspecified reaction
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "unspecified"
+}
+
+### unknown reaction
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "shrug"
+}
+
+### reaction in upper case
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "THUMBSUP"
+}
+
+### reaction as a number
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": 1
+}
+
+### comment without reasons
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "comment": "Only a comment"
+}
+
+### comment over 2000 characters
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "accurate"
+  ],
+  "reasonSetVersion": 1,
+  "comment": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+}
+
+### comment of exactly 2000 characters
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "accurate"
+  ],
+  "reasonSetVersion": 1,
+  "comment": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+}
+
+### reasons without a set version
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "accurate"
+  ]
+}
+
+### reasons with set version zero
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "accurate"
+  ],
+  "reasonSetVersion": 0
+}
+
+### reasons with negative set version
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "accurate"
+  ],
+  "reasonSetVersion": -1
+}
+
+### set version without reasons
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasonSetVersion": 1
+}
+
+### empty reasons with a set version
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [],
+  "reasonSetVersion": 1
+}
+
+### empty reasons alone
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": []
+}
+
+### reason that does not exist
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "delightful"
+  ],
+  "reasonSetVersion": 1
+}
+
+### reason that belongs to the other reaction
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "inaccurate"
+  ],
+  "reasonSetVersion": 1
+}
+
+### thumbs down with a matching reason
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsDown",
+  "reasons": [
+    "outOfDate"
+  ],
+  "reasonSetVersion": 1
+}
+
+### thumbs down with a thumbs up reason
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsDown",
+  "reasons": [
+    "accurate"
+  ],
+  "reasonSetVersion": 1
+}
+
+### another reason on thumbs down
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsDown",
+  "reasons": [
+    "anotherReason"
+  ],
+  "reasonSetVersion": 3,
+  "comment": "text"
+}
+
+### unspecified reason
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "unspecified"
+  ],
+  "reasonSetVersion": 1
+}
+
+### reasons null items
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    null
+  ],
+  "reasonSetVersion": 1
+}
+
+### duplicate reasons
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "reasons": [
+    "accurate",
+    "accurate"
+  ],
+  "reasonSetVersion": 1
+}
+
+### unknown property is ignored
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp",
+  "extra": "x"
+}
+
+### empty object
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{}
+
+### json null
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+null
+
+### body is a json array
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+[]
+
+### body is not json
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+this is not json
+
+### empty body
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+
+
+### truncated json
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{"pageUrl": "/docs"
+
+### wrong content type
+PUT /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: text/plain
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### feedback id that is not a guid
+PUT /docs/_api/v1/page-feedback/not-a-guid
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### unsupported method
+POST /docs/_api/v1/page-feedback/{{$guid}}
+Content-Type: application/json
+
+{
+  "pageUrl": "/docs/test-page",
+  "pageTitle": "Test page",
+  "reaction": "thumbsUp"
+}
+
+### delete with an id that is not a guid
+DELETE /docs/_api/v1/page-feedback/not-a-guid
+
+### get is not mapped
+GET /docs/_api/v1/page-feedback/{{$guid}}
