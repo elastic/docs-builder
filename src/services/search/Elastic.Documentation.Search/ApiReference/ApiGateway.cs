@@ -12,7 +12,7 @@ using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.Contract.DocumentationDocument>;
 
-namespace Elastic.Documentation.Mcp.Remote.Gateways;
+namespace Elastic.Documentation.Search.ApiReference;
 
 /// <summary>Queries the <c>api.*</c> fields API Explorer pages carry in the docs search index.</summary>
 public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiGateway> logger) : IApiGateway

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Search.ApiReference;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,6 +64,17 @@ public static class ServicesExtension
 		_ = services.AddSingleton<SharedPointInTimeManager>();
 		_ = services.AddScoped<IChangesService, ChangesService>();
 
+		return services;
+	}
+
+	/// <summary>
+	/// Registers <see cref="ApiReferenceService"/> over the <c>api.*</c> fields of the docs index.
+	/// Needs the <see cref="ElasticsearchClientAccessor"/> that <see cref="AddSearchServices"/> registers.
+	/// </summary>
+	public static IServiceCollection AddApiReferenceServices(this IServiceCollection services)
+	{
+		_ = services.AddScoped<IApiGateway, ApiGateway>();
+		_ = services.AddScoped<ApiReferenceService>();
 		return services;
 	}
 

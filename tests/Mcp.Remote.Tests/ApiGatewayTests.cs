@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Json;

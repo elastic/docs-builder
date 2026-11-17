@@ -40,5 +40,10 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(FullSearchAggregations))]
 [JsonSerializable(typeof(ChangesResponse))]
 [JsonSerializable(typeof(ChangedPageDto))]
+[JsonSerializable(typeof(Search.ApiReference.ApiOperationSearchResponse))]
+[JsonSerializable(typeof(Search.ApiReference.ApiOperationResponse))]
+[JsonSerializable(typeof(Search.ApiReference.ApiListResponse))]
+[JsonSerializable(typeof(Search.ApiReference.ApiOperationListResponse))]
+[JsonSerializable(typeof(Search.ApiReference.ApiReferenceRejection))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;

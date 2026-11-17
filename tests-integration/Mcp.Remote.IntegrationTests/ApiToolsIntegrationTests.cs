@@ -7,6 +7,7 @@ using System.Text.Json.Serialization.Metadata;
 using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Tools;
+using Elastic.Documentation.Search.ApiReference;
 
 namespace Mcp.Remote.IntegrationTests;
 
@@ -74,7 +75,7 @@ public class ApiToolsIntegrationTests : McpToolsIntegrationTestsBase
 
 		var json = await tools.ListApiOperations("elasticsearch", cancellationToken: Ct);
 		var response = Reply(json, McpJsonContext.Default.ApiOperationListResponse);
-		response.TotalOperations.Should().BeGreaterThan(ApiTools.MaxListedOperations);
+		response.TotalOperations.Should().BeGreaterThan(ApiReferenceService.MaxListedOperations);
 		response.Groups.Should().NotBeEmpty();
 	}
 }

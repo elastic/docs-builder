@@ -70,7 +70,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 					: null,
 				Body = includeBody ? result.Body : null,
 				BodyLength = result.Body?.Length ?? 0,
-				BodyNote = ResponseBody.Note(result.Body, includeBody)
+				BodyNote = ResponseBody.Note(result.Body?.Length ?? 0, includeBody)
 			};
 			return ToolSucceeded.Serialize(response, McpJsonContext.Default.DocumentResponse);
 		});

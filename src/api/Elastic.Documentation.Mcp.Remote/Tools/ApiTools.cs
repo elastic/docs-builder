@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel;
-using System.Text.Json;
 using Elastic.Documentation.Assembler.Mcp;
-using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Elastic.Documentation.Search.ApiReference;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
@@ -14,17 +13,8 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 
 /// <summary>MCP tools for the REST API reference that API Explorer publishes.</summary>
 [McpServerToolType]
-public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
+public class ApiTools(ApiReferenceService apiReference, ILogger<ApiTools> logger)
 {
-	// Above this many operations, listing an API without a group returns the group names only.
-	internal const int MaxListedOperations = 150;
-	private const string UngroupedName = "Other";
-
-	private static readonly ToolRejected VersionNeedsApi = new(
-		"invalid_arguments",
-		"version needs api: pass the API key the version belongs to."
-	);
-
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("search_api_operations"), Description("Searches the Elastic REST API reference for operations. "
 		+ "Use when the user asks which API call does something, names an endpoint such as 'GET /_cluster/health', "
 		+ "or names a request or response field such as 'retriever' or 'track_total_hits'. "
@@ -41,25 +31,22 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
 		CancellationToken cancellationToken = default
 	) =>
-		McpToolRunner.RunAsync(logger, "search_api_operations", new Dictionary<string, object?>
-		{
-			["query"] = query,
-			["api"] = api,
-			["version"] = version,
-			["includeDeprecated"] = includeDeprecated,
-			["pageNumber"] = pageNumber,
-			["pageSize"] = pageSize
-		}, async () =>
-		{
-			if (VersionWithoutApi(api, version))
-				return VersionNeedsApi;
-			var scope = ToScope(api, version);
-
-			var search = new ApiOperationSearch(query, scope, includeDeprecated, Math.Max(1, pageNumber), Math.Clamp(pageSize, 1, 50));
-			var page = await apiGateway.SearchOperationsAsync(search, cancellationToken);
-			var response = new ApiOperationSearchResponse { Query = query, TotalHits = page.Total, Results = page.Hits };
-			return ToolSucceeded.Serialize(response, McpJsonContext.Default.ApiOperationSearchResponse);
-		});
+		McpToolRunner.RunAsync(
+			logger,
+			"search_api_operations",
+			new Dictionary<string, object?>
+			{
+				["query"] = query,
+				["api"] = api,
+				["version"] = version,
+				["includeDeprecated"] = includeDeprecated,
+				["pageNumber"] = pageNumber,
+				["pageSize"] = pageSize
+			},
+			async () => ToToolReply(
+				await apiReference.SearchAsync(query, api, version, includeDeprecated, pageNumber, pageSize, cancellationToken)
+			)
+		);
 
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("get_api_operation"), Description("Retrieves one operation from the Elastic REST API reference. "
 		+ "Use when you know the endpoint or the operation id and need its parameters, request body and response fields. "
@@ -77,29 +64,22 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 			false,
 		CancellationToken cancellationToken = default
 	) =>
-		McpToolRunner.RunAsync(logger, "get_api_operation", new Dictionary<string, object?>
-		{
-			["api"] = api,
-			["operationId"] = operationId,
-			["endpoint"] = endpoint,
-			["version"] = version,
-			["includeBody"] = includeBody
-		}, async () =>
-		{
-			if (VersionWithoutApi(api, version))
-				return VersionNeedsApi;
-			var scope = ToScope(api, version);
-			if (ToOperationKey(operationId, endpoint) is not { } key)
-				return new ToolRejected("invalid_arguments", "Pass exactly one of operationId or endpoint.");
-
-			var detail = await apiGateway.GetOperationAsync(new ApiOperationLookup(scope, key), cancellationToken);
-			return detail is null
-				? new ToolRejected(
-					"operation_not_found",
-					$"No API operation matches {operationId ?? endpoint}{(api is null ? "" : $" in {api}")}."
-				)
-				: ToolSucceeded.Serialize(ToResponse(detail, includeBody), McpJsonContext.Default.ApiOperationResponse);
-		});
+		McpToolRunner.RunAsync(
+			logger,
+			"get_api_operation",
+			new Dictionary<string, object?>
+			{
+				["api"] = api,
+				["operationId"] = operationId,
+				["endpoint"] = endpoint,
+				["version"] = version,
+				["includeBody"] = includeBody
+			},
+			async () => ToToolReply(
+				await apiReference.GetAsync(api, operationId, endpoint, version, includeBody, cancellationToken),
+				includeBody
+			)
+		);
 
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("list_api_operations"), Description("Lists the Elastic REST APIs, or the operations of one API. "
 		+ "Use when the user wants to browse what an API offers, or you need an API key for the other API tools. "
@@ -112,106 +92,23 @@ public class ApiTools(IApiGateway apiGateway, ILogger<ApiTools> logger)
 		[Description("Only the operations of this group, e.g. 'ES|QL' or 'cluster'")] string? group = null,
 		CancellationToken cancellationToken = default
 	) =>
-		McpToolRunner.RunAsync(logger, "list_api_operations", new Dictionary<string, object?>
-		{
-			["api"] = api,
-			["version"] = version,
-			["group"] = group
-		}, async () =>
-		{
-			if (VersionWithoutApi(api, version))
-				return VersionNeedsApi;
-			var scope = ToScope(api, version);
-			if (scope is null)
-			{
-				var apis = await apiGateway.ListApisAsync(cancellationToken);
-				return ToolSucceeded.Serialize(new ApiListResponse { Apis = apis }, McpJsonContext.Default.ApiListResponse);
-			}
+		McpToolRunner.RunAsync(
+			logger,
+			"list_api_operations",
+			new Dictionary<string, object?> { ["api"] = api, ["version"] = version, ["group"] = group },
+			async () => ToToolReply(await apiReference.ListAsync(api, version, group, cancellationToken))
+		);
 
-			var operations = await apiGateway.ListOperationsAsync(scope, cancellationToken);
-			return operations.Count == 0
-				? new ToolRejected(
-					"api_not_found",
-					$"No operations found for API '{api}'{(version is null ? "" : $" version '{version}'")}."
-				)
-				: GroupOperations(scope, operations, group);
-		});
-
-	internal static ToolReply GroupOperations(ApiScope scope, IReadOnlyList<ApiOperationSummary> operations, string? group)
+	internal static ToolReply ToToolReply(ApiReferenceReply reply, bool includeBody = false) => reply switch
 	{
-		var groups = operations
-			.GroupBy(o => o.Group ?? UngroupedName, StringComparer.OrdinalIgnoreCase)
-			.OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
-			.ToList();
-		if (group is not null)
-		{
-			groups = [.. groups.Where(g => string.Equals(g.Key, group.Trim(), StringComparison.OrdinalIgnoreCase))];
-			if (groups.Count == 0)
-				return new ToolRejected(
-					"group_not_found",
-					$"API '{scope.Key}' has no group '{group}'. Call list_api_operations without group to see its groups."
-				);
-		}
-
-		var listOperations = group is not null || operations.Count <= MaxListedOperations;
-		var response = new ApiOperationListResponse
-		{
-			Api = scope.Key,
-			Version = scope.Version,
-			TotalOperations = groups.Sum(g => g.Count()),
-			Groups = [.. groups.Select(g => ToGroup(g, listOperations))],
-			Note = listOperations ? null : $"This API has {operations.Count} operations. Pass group to list the operations of one group."
-		};
-		return ToolSucceeded.Serialize(response, McpJsonContext.Default.ApiOperationListResponse);
-	}
-
-	private static ApiOperationGroupDto ToGroup(IGrouping<string, ApiOperationSummary> group, bool listOperations) =>
-		new()
-		{
-			Name = group.Key,
-			Count = group.Count(),
-			Operations = listOperations
-				? [.. group.OrderBy(o => o.Path, StringComparer.Ordinal).ThenBy(o => o.Method, StringComparer.Ordinal).Select(ToListItem)]
-				: null
-		};
-
-	private static ApiOperationListItemDto ToListItem(ApiOperationSummary operation) =>
-		new()
-		{
-			Title = operation.Title,
-			Url = operation.Url,
-			Method = operation.Method,
-			Path = operation.Path,
-			OperationId = operation.OperationId,
-			Deprecated = operation.Deprecated
-		};
-
-	private static ApiOperationResponse ToResponse(ApiOperationDetail detail, bool includeBody) =>
-		new()
-		{
-			Operation = detail.Operation,
-			Versions = detail.Versions,
-			Fields = detail.Fields,
-			AiShortSummary = detail.AiShortSummary,
-			Body = includeBody ? detail.Body : null,
-			BodyLength = detail.Body?.Length ?? 0,
-			BodyNote = ResponseBody.Note(detail.Body, includeBody),
-			OtherMatches = detail.OtherMatches
-		};
-
-	private static bool VersionWithoutApi(string? api, string? version) =>
-		string.IsNullOrWhiteSpace(api) && !string.IsNullOrWhiteSpace(version);
-
-	private static ApiScope? ToScope(string? api, string? version) =>
-		string.IsNullOrWhiteSpace(api)
-			? null
-			: new ApiScope(api.Trim().ToLowerInvariant(), string.IsNullOrWhiteSpace(version) ? null : version.Trim().ToLowerInvariant());
-
-	private static ApiOperationKey? ToOperationKey(string? operationId, string? endpoint)
-	{
-		var hasId = !string.IsNullOrWhiteSpace(operationId);
-		if (hasId == !string.IsNullOrWhiteSpace(endpoint))
-			return null;
-		return hasId ? new ApiOperationIdKey(operationId!.Trim()) : new ApiEndpointKey(endpoint!.Trim());
-	}
+		ApiOperationSearchResponse r => ToolSucceeded.Serialize(r, McpJsonContext.Default.ApiOperationSearchResponse),
+		ApiOperationResponse r =>
+			ToolSucceeded.Serialize(
+				r with { BodyNote = ResponseBody.Note(r.BodyLength, includeBody) },
+				McpJsonContext.Default.ApiOperationResponse
+			),
+		ApiListResponse r => ToolSucceeded.Serialize(r, McpJsonContext.Default.ApiListResponse),
+		ApiOperationListResponse r => ToolSucceeded.Serialize(r, McpJsonContext.Default.ApiOperationListResponse),
+		ApiReferenceRejection r => new ToolRejected(r.ErrorType, r.Message)
+	};
 }

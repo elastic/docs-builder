@@ -7,6 +7,7 @@ using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +27,7 @@ public static class MappingsExtension
 		MapFullSearch(group);
 		MapChanges(group);
 		MapPageFeedback(group);
+		MapApiReference(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -184,6 +186,61 @@ public static class MappingsExtension
 			var response = await changesService.GetChangesAsync(request, ctx);
 			return Results.Ok(response);
 		});
+
+	// The same lookups as the search_api_operations, get_api_operation and list_api_operations MCP tools.
+	private static void MapApiReference(IEndpointRouteBuilder group)
+	{
+		var apiGroup = group.MapGroup("/api-reference");
+		_ = apiGroup.MapGet(
+			"/",
+			async (
+				[FromQuery(Name = "api")] string? api,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "group")] string? apiGroupName,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(await apiReference.ListAsync(api, version, apiGroupName, ctx))
+		);
+
+		_ = apiGroup.MapGet(
+			"/search",
+			async (
+				[FromQuery(Name = "q")] string query,
+				[FromQuery(Name = "api")] string? api,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
+				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "size")] int? pageSize,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(
+				await apiReference.SearchAsync(query, api, version, includeDeprecated ?? false, pageNumber ?? 1, pageSize ?? 10, ctx)
+			)
+		);
+
+		_ = apiGroup.MapGet(
+			"/operation",
+			async (
+				[FromQuery(Name = "api")] string? api,
+				[FromQuery(Name = "operation_id")] string? operationId,
+				[FromQuery(Name = "endpoint")] string? endpoint,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "include_body")] bool? includeBody,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(await apiReference.GetAsync(api, operationId, endpoint, version, includeBody ?? false, ctx))
+		);
+	}
+
+	private static IResult ToResult(ApiReferenceReply reply) => reply switch
+	{
+		ApiOperationSearchResponse r => Results.Ok(r),
+		ApiOperationResponse r => Results.Ok(r),
+		ApiListResponse r => Results.Ok(r),
+		ApiOperationListResponse r => Results.Ok(r),
+		ApiReferenceRejection r when r.ErrorType.EndsWith("_not_found", StringComparison.Ordinal) => Results.NotFound(r),
+		ApiReferenceRejection r => Results.BadRequest(r)
+	};
 
 	private static void MapPageFeedback(IEndpointRouteBuilder group)
 	{
