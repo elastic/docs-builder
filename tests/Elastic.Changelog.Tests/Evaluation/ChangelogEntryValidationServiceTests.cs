@@ -99,7 +99,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 				PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
 				ProductDisplayNames = productsDict.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 			},
-			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			SearchTuning = ConfigurationContext.SearchTuning,
 			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
 		};
 
@@ -149,7 +149,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 				PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
 				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 			},
-			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			SearchTuning = ConfigurationContext.SearchTuning,
 			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
 		};
 	}

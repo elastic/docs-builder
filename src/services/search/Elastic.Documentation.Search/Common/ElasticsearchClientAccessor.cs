@@ -5,7 +5,6 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Transport;
@@ -22,7 +21,7 @@ public class ElasticsearchClientAccessor : IDisposable
 	private readonly SingleNodePool _nodePool;
 	public ElasticsearchClient Client { get; }
 	public ElasticsearchEndpoint Endpoint { get; }
-	public SearchConfiguration SearchConfiguration { get; }
+	public SearchTuning SearchTuning { get; }
 
 	/// <summary>
 	/// Index target for search queries. When <c>DOCUMENTATION_ELASTIC_INDEX_OVERRIDE</c> is set,
@@ -35,11 +34,11 @@ public class ElasticsearchClientAccessor : IDisposable
 	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; }
 	public IReadOnlyCollection<string> DiminishTerms { get; }
 
-	public ElasticsearchClientAccessor(DocumentationEndpoints endpoints, SearchConfiguration searchConfiguration)
+	public ElasticsearchClientAccessor(DocumentationEndpoints endpoints, SearchTuning searchConfiguration)
 	{
 		var endpoint = endpoints.Elasticsearch;
 		Endpoint = endpoint;
-		SearchConfiguration = searchConfiguration;
+		SearchTuning = searchConfiguration;
 		SynonymBiDirectional = searchConfiguration.SynonymBiDirectional;
 		DiminishTerms = searchConfiguration.DiminishTerms;
 

@@ -121,7 +121,7 @@ public static class InMemoryAssemblerSite
 			ConfigurationFileProvider = provider,
 			VersionsConfiguration = versions,
 			ProductsConfiguration = basis.ProductsConfiguration,
-			SearchConfiguration = basis.SearchConfiguration,
+			SearchTuning = basis.SearchTuning,
 			LegacyUrlMappings = basis.LegacyUrlMappings
 		};
 	}

@@ -5,7 +5,7 @@
 using System.Net;
 using System.Text;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 
 namespace Mcp.Remote.Tests;
@@ -40,7 +40,7 @@ internal sealed class ElasticsearchStub : IDisposable
 				Elasticsearch = new ElasticsearchEndpoint { Uri = Uri, ApiKey = "test" },
 				SearchIndexOverride = "test-index"
 			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		);
 
 	public static ElasticsearchStub Start(string response, int statusCode = 200)

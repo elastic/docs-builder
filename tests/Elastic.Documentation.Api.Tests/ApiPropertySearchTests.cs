@@ -7,7 +7,7 @@ using AwesomeAssertions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
@@ -266,7 +266,7 @@ public class ApiPropertySearchTests
 			{
 				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200"), ApiKey = "test" }
 			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		);
 		return accessor
 			.Client
