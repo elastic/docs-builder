@@ -104,7 +104,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_ApiDocument_ReturnsApiTypeAndVerbatimRoutes()
 	{
 		using var stub = ElasticsearchStub.Start(ApiHit);
-		using var accessor = CreateAccessor(stub);
+		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
 		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
 
 		var result = await gateway.GetByUrlAsync(
@@ -125,7 +125,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_ApiLandingPage_ReturnsApiTypeAndNoOperation()
 	{
 		using var stub = ElasticsearchStub.Start(ApiLandingHit);
-		using var accessor = CreateAccessor(stub);
+		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
 		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
 
 		var result = await gateway.GetByUrlAsync("/docs/api/doc/logstash", TestContext.Current!.Execution.CancellationToken);
@@ -139,7 +139,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_RequestsContentTypeAndApiFromSource()
 	{
 		using var stub = ElasticsearchStub.Start(ApiHit);
-		using var accessor = CreateAccessor(stub);
+		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
 		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
 
 		_ = await gateway.GetByUrlAsync(
@@ -154,7 +154,7 @@ public class DocumentGatewayTests
 	public async Task GetByUrl_NarrativeDocument_ReturnsDocsTypeAndNoApi()
 	{
 		using var stub = ElasticsearchStub.Start(NarrativeHit);
-		using var accessor = CreateAccessor(stub);
+		using var accessor = ElasticsearchStubs.CreateAccessor(stub);
 		var gateway = new DocumentGateway(accessor, NullLogger<DocumentGateway>.Instance);
 
 		var result = await gateway.GetByUrlAsync("/docs/some-page", TestContext.Current!.Execution.CancellationToken);
@@ -162,90 +162,5 @@ public class DocumentGatewayTests
 		result.Should().NotBeNull();
 		result.Type.Should().Be("docs");
 		result.Api.Should().BeNull();
-	}
-
-	private static ElasticsearchClientAccessor CreateAccessor(ElasticsearchStub stub) =>
-		new(
-			new DocumentationEndpoints
-			{
-				Elasticsearch = new ElasticsearchEndpoint { Uri = stub.Uri, ApiKey = "test" },
-				SearchIndexOverride = "test-index"
-			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
-		);
-
-	private sealed class ElasticsearchStub : IDisposable
-	{
-		private readonly HttpListener _listener = new();
-		private readonly string _response;
-
-		private ElasticsearchStub(string response, int port)
-		{
-			_response = response;
-			Uri = new Uri($"http://127.0.0.1:{port}/");
-			_listener.Prefixes.Add(Uri.ToString());
-		}
-
-		public Uri Uri { get; }
-		public string LastRequestBody { get; private set; } = string.Empty;
-
-		public static ElasticsearchStub Start(string response)
-		{
-			// Bind a free port; retry if another process takes it between probe and bind.
-			for (var attempt = 0; ; attempt++)
-			{
-				var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-				probe.Start();
-				var port = ((IPEndPoint)probe.LocalEndpoint).Port;
-				probe.Stop();
-
-				var stub = new ElasticsearchStub(response, port);
-				try
-				{
-					stub._listener.Start();
-				}
-				catch (HttpListenerException) when (attempt < 5)
-				{
-					stub.Dispose();
-					continue;
-				}
-
-				_ = Task.Run(stub.ServeAsync);
-				return stub;
-			}
-		}
-
-		private async Task ServeAsync()
-		{
-			while (_listener.IsListening)
-			{
-				HttpListenerContext context;
-				try
-				{
-					context = await _listener.GetContextAsync();
-				}
-				catch (Exception ex) when (ex is HttpListenerException or ObjectDisposedException or InvalidOperationException)
-				{
-					return;
-				}
-
-				// The client gzips request bodies by default.
-				var body = context.Request.Headers["Content-Encoding"] == "gzip"
-					? new System.IO.Compression.GZipStream(context.Request.InputStream, System.IO.Compression.CompressionMode.Decompress)
-					: context.Request.InputStream;
-				using (var reader = new StreamReader(body, Encoding.UTF8))
-					LastRequestBody = await reader.ReadToEndAsync();
-
-				var bytes = Encoding.UTF8.GetBytes(_response);
-				context.Response.StatusCode = 200;
-				context.Response.ContentType = "application/json";
-				// The Elasticsearch client rejects responses without the product header.
-				context.Response.Headers["X-Elastic-Product"] = "Elasticsearch";
-				await context.Response.OutputStream.WriteAsync(bytes);
-				context.Response.Close();
-			}
-		}
-
-		public void Dispose() => _listener.Close();
 	}
 }

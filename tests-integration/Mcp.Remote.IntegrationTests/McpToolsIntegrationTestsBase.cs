@@ -66,6 +66,13 @@ public abstract class McpToolsIntegrationTestsBase
 		return (documentTools, clientAccessor);
 	}
 
+	protected (ApiTools Tools, ElasticsearchClientAccessor ClientAccessor) CreateApiTools()
+	{
+		var clientAccessor = CreateElasticsearchClientAccessor();
+		var apiGateway = new ApiGateway(clientAccessor, NullLogger<ApiGateway>.Instance);
+		return (new ApiTools(apiGateway, NullLogger<ApiTools>.Instance), clientAccessor);
+	}
+
 	/// <summary>
 	/// Creates CoherenceTools with all required dependencies.
 	/// </summary>

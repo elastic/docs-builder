@@ -31,6 +31,7 @@ public static class QueryFieldNames
 	public static string ApiLanding { get; } = $"{Doc.Fields.Api}.landing";
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
 	public static string ApiKey { get; } = $"{Doc.Fields.Api}.key";
+	public static string ApiOperationId { get; } = $"{Doc.Fields.Api}.operation_id";
 	public static string ApiTreesTree { get; } = $"{Doc.Fields.Api}.trees.tree";
 	public static string ApiPropertiesName { get; } = $"{ApiProperties}.name";
 	public static string ApiPropertiesParent { get; } = $"{ApiProperties}.parent";
