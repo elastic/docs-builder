@@ -155,15 +155,7 @@ internal sealed class RunCommand
 				Preconditions = beforeWait ? wait.Preconditions : [],
 				// A deploy the wait is for can turn flags on or off: read the site again once it shows the build, so the journeys are
 				// judged against what is live and not against what the first read saw.
-				RefreshAfterPreconditions = beforeWait && wait.Preconditions.Count > 0
-					? async (_, token) =>
-					{
-						var refreshed = await ResolveSiteAsync(baseUrl, siteOptions, identity, token).ConfigureAwait(false);
-						if (refreshed.Describe != site.Describe)
-							Console.Out.WriteLine(Describe(refreshed, SiteContext.JourneyBase(baseUrl, refreshed.BuildType)));
-						return Options(refreshed, beforeWait: false);
-					}
-				: null,
+				RefreshAfterPreconditions = beforeWait && wait.Preconditions.Count > 0 ? RefreshAsync : null,
 				AllowAllSkipped = allowAllSkipped && !current.ProbeFailed,
 				Verbose = verbose,
 				ScreenshotOnFailure = screenshotOnFailure,
@@ -173,6 +165,14 @@ internal sealed class RunCommand
 			};
 
 		return await JourneyConsoleRunner.RunAsync(Options(site, beforeWait: true), Console.Out, Console.Error, ct).ConfigureAwait(false);
+
+		async Task<JourneyRunOptions> RefreshAsync(object? _, CancellationToken token)
+		{
+			var refreshed = await ResolveSiteAsync(baseUrl, siteOptions, identity, token).ConfigureAwait(false);
+			if (refreshed.Describe != site.Describe)
+				Console.Out.WriteLine(Describe(refreshed, SiteContext.JourneyBase(baseUrl, refreshed.BuildType)));
+			return Options(refreshed, beforeWait: false);
+		}
 
 		string Describe(SiteContext current, Uri journeyBase) =>
 			ConsoleJourneyReporter.UseInteractive
