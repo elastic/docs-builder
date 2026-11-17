@@ -33,8 +33,9 @@
 	}
 </div>
 <div class="api-section-pin" data-section-pin>
+	@* The arrow is the first thing the pointer crosses on its way to the links, so its tooltip waits: the same slow delay as SLOW_TOOLTIP_DELAY in tooltip.ts. *@
 	<nav class="api-section-links" aria-label="Sections of this endpoint" data-toc data-toc-sticky>
-		<button type="button" class="api-back-to-top" aria-label="Back to top" data-tippy-content="Back to top" data-api-back-to-top>
+		<button type="button" class="api-back-to-top" aria-label="Back to top" data-tippy-content="Back to top" data-tippy-delay="[500, 0]" data-api-back-to-top>
 			<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" /></svg>
 		</button>
 		<div class="api-section-links-track">
