@@ -15,8 +15,18 @@ public readonly union ApiReferenceReply(
 	ApiReferenceRejection
 );
 
-/// <summary>A call the API reference cannot answer. <see cref="ErrorType"/> ends in <c>_not_found</c> when nothing matched.</summary>
-public sealed record ApiReferenceRejection(string ErrorType, string Message);
+/// <summary>A call the API reference cannot answer: invalid arguments, or nothing to answer with.</summary>
+public sealed record ApiReferenceRejection(string ErrorType, string Message)
+{
+	/// <summary>Nothing matched, as opposed to arguments that can never match.</summary>
+	public bool IsNotFound { get; private init; }
+
+	/// <summary>Arguments that can never match, whatever the index holds.</summary>
+	public static ApiReferenceRejection Invalid(string message) => new("invalid_arguments", message);
+
+	/// <summary>Valid arguments that nothing in the index matches.</summary>
+	public static ApiReferenceRejection NotFound(string errorType, string message) => new(errorType, message) { IsNotFound = true };
+}
 
 /// <summary>Searches, reads and lists the operations of the REST API reference. The MCP tools and the docs API share it.</summary>
 public class ApiReferenceService(IApiGateway apiGateway)
@@ -26,8 +36,7 @@ public class ApiReferenceService(IApiGateway apiGateway)
 	public const int MaxPageSize = 50;
 	private const string UngroupedName = "Other";
 
-	private static readonly ApiReferenceRejection VersionNeedsApi = new(
-		"invalid_arguments",
+	private static readonly ApiReferenceRejection VersionNeedsApi = ApiReferenceRejection.Invalid(
 		"version needs api: pass the API key the version belongs to."
 	);
 
@@ -68,11 +77,11 @@ public class ApiReferenceService(IApiGateway apiGateway)
 		if (VersionWithoutApi(api, version))
 			return VersionNeedsApi;
 		if (ToOperationKey(operationId, endpoint) is not { } key)
-			return new ApiReferenceRejection("invalid_arguments", "Pass exactly one of an operation id or an endpoint.");
+			return ApiReferenceRejection.Invalid("Pass exactly one of an operation id or an endpoint.");
 
 		var detail = await apiGateway.GetOperationAsync(new ApiOperationLookup(ToScope(api, version), key), ct);
 		if (detail is null)
-			return new ApiReferenceRejection(
+			return ApiReferenceRejection.NotFound(
 				"operation_not_found",
 				$"No API operation matches {operationId ?? endpoint}{(api is null ? "" : $" in {api}")}."
 			);
@@ -96,19 +105,19 @@ public class ApiReferenceService(IApiGateway apiGateway)
 	{
 		// Every lookup is inside one API, so an operation id or a route can never match in two of them.
 		if (ToScope(query.Api, query.Version) is not { } scope)
-			return new ApiReferenceRejection("invalid_arguments", "Pass an API key, such as 'elasticsearch'.");
+			return ApiReferenceRejection.Invalid("Pass an API key, such as 'elasticsearch'.");
 		var hasQuery = !string.IsNullOrWhiteSpace(query.Q);
 		var hasEndpoint = !string.IsNullOrWhiteSpace(query.Endpoint);
 		if (hasQuery && hasEndpoint)
-			return new ApiReferenceRejection("invalid_arguments", "Pass q or endpoint, not both.");
+			return ApiReferenceRejection.Invalid("Pass q or endpoint, not both.");
 		if (query.View is not (null or "basic" or "full"))
-			return new ApiReferenceRejection("invalid_arguments", "view is 'basic' or 'full'.");
+			return ApiReferenceRejection.Invalid("view is 'basic' or 'full'.");
 		if (query.Full && !hasEndpoint)
-			return new ApiReferenceRejection("invalid_arguments", "view=full needs endpoint.");
+			return ApiReferenceRejection.Invalid("view=full needs endpoint.");
 		if (query.IncludeBody && !query.Full)
-			return new ApiReferenceRejection("invalid_arguments", "include_body needs view=full.");
+			return ApiReferenceRejection.Invalid("include_body needs view=full.");
 		if (!string.IsNullOrWhiteSpace(query.Group) && (hasQuery || hasEndpoint))
-			return new ApiReferenceRejection("invalid_arguments", "group filters a listing; pass it without q or endpoint.");
+			return ApiReferenceRejection.Invalid("group filters a listing; pass it without q or endpoint.");
 
 		var page = Math.Max(1, query.Page);
 		var size = Math.Clamp(query.Size, 1, MaxPageSize);
@@ -154,7 +163,7 @@ public class ApiReferenceService(IApiGateway apiGateway)
 			var group = query.Group.Trim();
 			listed = listed.Where(o => string.Equals(o.Group ?? UngroupedName, group, StringComparison.OrdinalIgnoreCase)).ToList();
 			if (!listed.Any())
-				return new ApiReferenceRejection("group_not_found", $"API '{scope.Key}' has no group '{group}'.");
+				return ApiReferenceRejection.NotFound("group_not_found", $"API '{scope.Key}' has no group '{group}'.");
 		}
 		var sorted = listed.OrderBy(o => o.Path, StringComparer.Ordinal).ThenBy(o => o.Method, StringComparer.Ordinal).ToList();
 		return new ApiOperationCollectionResponse
@@ -173,9 +182,7 @@ public class ApiReferenceService(IApiGateway apiGateway)
 		CancellationToken ct
 	) =>
 		string.IsNullOrWhiteSpace(api)
-			? Task.FromResult<ApiReferenceReply>(
-				new ApiReferenceRejection("invalid_arguments", "Pass an API key, such as 'elasticsearch'.")
-			)
+			? Task.FromResult<ApiReferenceReply>(ApiReferenceRejection.Invalid("Pass an API key, such as 'elasticsearch'."))
 			: GetAsync(api, operationId, null, version, includeBody, ct);
 
 	/// <summary>Reads one API by its key.</summary>
@@ -183,7 +190,9 @@ public class ApiReferenceService(IApiGateway apiGateway)
 	{
 		var apis = await apiGateway.ListApisAsync(ct);
 		var key = api.Trim().ToLowerInvariant();
-		return apis.FirstOrDefault(a => a.Key == key) is { } found ? found : new ApiReferenceRejection("api_not_found", $"No API '{api}'.");
+		return apis.FirstOrDefault(a => a.Key == key) is { } found
+			? found
+			: ApiReferenceRejection.NotFound("api_not_found", $"No API '{api}'.");
 	}
 
 	/// <summary>
@@ -193,7 +202,7 @@ public class ApiReferenceService(IApiGateway apiGateway)
 	public async Task<ApiReferenceReply> ListGroupsAsync(string api, string? version, bool includeDeprecated, CancellationToken ct)
 	{
 		if (ToScope(api, version) is not { } scope)
-			return new ApiReferenceRejection("invalid_arguments", "Pass an API key, such as 'elasticsearch'.");
+			return ApiReferenceRejection.Invalid("Pass an API key, such as 'elasticsearch'.");
 		var operations = await apiGateway.ListOperationsAsync(scope, ct);
 		return operations.Count == 0
 			? ApiNotFound(scope)
@@ -213,7 +222,10 @@ public class ApiReferenceService(IApiGateway apiGateway)
 	}
 
 	private static ApiReferenceRejection ApiNotFound(ApiScope scope) =>
-		new("api_not_found", $"No operations found for API '{scope.Key}'{(scope.Version is null ? "" : $" version '{scope.Version}'")}.");
+		ApiReferenceRejection.NotFound(
+			"api_not_found",
+			$"No operations found for API '{scope.Key}'{(scope.Version is null ? "" : $" version '{scope.Version}'")}."
+		);
 
 	private static ApiOperationItem ToItem(ApiOperationSummary operation, ApiOperationDetail? detail, bool includeBody) =>
 		new() { Operation = operation, Versions = detail?.Versions, Fields = detail?.Fields, Body = includeBody ? detail?.Body : null };
@@ -233,7 +245,7 @@ public class ApiReferenceService(IApiGateway apiGateway)
 		{
 			groups = [.. groups.Where(g => string.Equals(g.Key, group.Trim(), StringComparison.OrdinalIgnoreCase))];
 			if (groups.Count == 0)
-				return new ApiReferenceRejection(
+				return ApiReferenceRejection.NotFound(
 					"group_not_found",
 					$"API '{scope.Key}' has no group '{group}'. List the API without group to see its groups."
 				);

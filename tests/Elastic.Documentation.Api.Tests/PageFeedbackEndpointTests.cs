@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Api.Tests.Fixtures;
@@ -210,6 +211,8 @@ public class PageFeedbackEndpointTests
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
+		var body = JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
+		body.GetProperty("errorType").GetString().Should().Be("invalid_arguments");
 	}
 
 	[Test]
@@ -262,6 +265,8 @@ public class PageFeedbackEndpointTests
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
+		var body = JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
+		body.GetProperty("errorType").GetString().Should().Be("invalid_arguments");
 	}
 
 	[Test]
@@ -277,6 +282,8 @@ public class PageFeedbackEndpointTests
 		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+		var body = JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
+		body.GetProperty("errorType").GetString().Should().Be("feedback_unavailable");
 	}
 
 	[Test]

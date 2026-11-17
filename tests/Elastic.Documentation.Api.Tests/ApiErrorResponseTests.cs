@@ -19,6 +19,7 @@ public class ApiErrorResponseTests
 {
 	private static readonly SwappableService<IFullSearchService> Search = new();
 	private static readonly SwappableService<IAskAiMessageFeedbackService> Feedback = new();
+	private static readonly SwappableService<IChangesService> Changes = new();
 
 	private static readonly Lazy<ApiWebApplicationFactory> SharedFactory = new(() => ApiWebApplicationFactory.WithMockedServices(replacements =>
 	{
@@ -92,5 +93,45 @@ public class ApiErrorResponseTests
 
 		response.StatusCode.Should().Be(expected);
 		A.CallTo(() => feedback.RecordFeedbackAsync(A<AskAiMessageFeedbackRecord>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+		if (!stored)
+			JsonElement
+				.Parse(await response.Content.ReadAsStringAsync(Ct))
+				.GetProperty("errorType")
+				.GetString()
+				.Should()
+				.Be("feedback_unavailable");
+	}
+
+	private static async Task<(HttpStatusCode Status, JsonElement Body)> Get(string pathAndQuery)
+	{
+		Search.Current = A.Fake<IFullSearchService>();
+		Changes.Current = A.Fake<IChangesService>();
+		using var client = SharedFactory.Value.CreateClient();
+		using var response = await client.GetAsync($"/docs/_api/v1{pathAndQuery}", Ct);
+		return (response.StatusCode, JsonElement.Parse(await response.Content.ReadAsStringAsync(Ct)));
+	}
+
+	[Test]
+	[Arguments("/search")]
+	[Arguments("/search?q=x&size=many")]
+	[Arguments("/changes?since=yesterday")]
+	[Arguments("/changes")]
+	public async Task ParameterThatDoesNotBind_IsA400WithAnApiError(string pathAndQuery)
+	{
+		var (status, body) = await Get(pathAndQuery);
+
+		status.Should().Be(HttpStatusCode.BadRequest);
+		body.GetProperty("errorType").GetString().Should().Be("invalid_arguments");
+		body.GetProperty("message").GetString().Should().NotBeNullOrWhiteSpace();
+	}
+
+	[Test]
+	public async Task Changes_CursorItDidNotReturn_IsA400InsteadOfTheFirstPage()
+	{
+		var (status, body) = await Get("/changes?since=2026-01-01T00:00:00Z&cursor=not-a-cursor");
+
+		status.Should().Be(HttpStatusCode.BadRequest);
+		body.GetProperty("message").GetString().Should().Be("cursor is not a nextCursor that /changes returned.");
+		A.CallTo(Changes.Current).MustNotHaveHappened();
 	}
 }

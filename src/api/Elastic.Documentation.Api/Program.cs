@@ -12,6 +12,7 @@ using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.WebUtilities;
 
 try
 {
@@ -59,7 +60,13 @@ try
 		{
 			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
 			ApiError error;
-			if (ex is SearchUnavailableException)
+			if (ex is BadHttpRequestException badRequest)
+			{
+				// A parameter that does not bind, such as a missing q or a since that is not a date.
+				context.Response.StatusCode = badRequest.StatusCode;
+				error = new ApiError("invalid_arguments", badRequest.Message);
+			}
+			else if (ex is SearchUnavailableException)
 			{
 				// Transient by construction (timeout, overload): tell clients and the CDN to retry instead of failing.
 				logger.LogWarning(ex, "Search unavailable on {Method} {Path}", context.Request.Method, context.Request.Path);
@@ -77,6 +84,20 @@ try
 			await context.Response.WriteAsJsonAsync(error, ApiJsonContext.Default.ApiError);
 		}));
 
+	// Some binding failures, such as a number that does not parse, end in an empty 400 instead of throwing;
+	// give every bodyless error the same ApiError body as the rest.
+	_ = app.UseStatusCodePages(async statusContext =>
+	{
+		var response = statusContext.HttpContext.Response;
+		var error = response.StatusCode switch
+		{
+			StatusCodes.Status400BadRequest => new ApiError("invalid_arguments", "A parameter is missing or does not parse."),
+			StatusCodes.Status404NotFound => new ApiError("not_found", "No endpoint matches this path."),
+			_ => new ApiError("request_failed", ReasonPhrases.GetReasonPhrase(response.StatusCode))
+		};
+		await response.WriteAsJsonAsync(error, ApiJsonContext.Default.ApiError);
+	});
+
 	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 
 	_ = api.MapHealthChecks("/health");
@@ -85,6 +106,7 @@ try
 	var v1 = api.MapGroup("/v1");
 
 	v1.MapElasticDocsApiEndpoints();
+	_ = v1.MapOpenApi("/openapi.json");
 	Console.WriteLine("API endpoints mapped");
 
 	Console.WriteLine("Application startup completed successfully");
