@@ -77,8 +77,7 @@ public class FeatureFlagsMatrixTests
 
 				Environment.SetEnvironmentVariable(EnvName(key), "false");
 				var yamlEnvFalse = new FeatureFlags(yaml).EnabledKeys().Contains(key);
-				var explicitSet = new FeatureFlags([]);
-				explicitSet.Set(key, true);
+				var explicitSet = new FeatureFlags([]).With(key, true);
 				var setterEnvFalse = explicitSet.EnabledKeys().Contains(key);
 
 				Environment.SetEnvironmentVariable(EnvName(key), "true");
@@ -110,8 +109,7 @@ public class FeatureFlagsMatrixTests
 			];
 			foreach (var key in keys)
 			{
-				var flags = new FeatureFlags([]);
-				flags.Set(key, true);
+				var flags = new FeatureFlags([]).With(key, true);
 				_ = sb.Append(
 					CultureInfo.InvariantCulture,
 					$"Set('{key}', true) => PageFeedbackEnabled={flags.PageFeedbackEnabled} enabled=[{string.Join(',', flags.EnabledKeys())}]\n"
@@ -124,18 +122,19 @@ public class FeatureFlagsMatrixTests
 				$"constructor does not normalise: PAGE_FEEDBACK=true => PageFeedbackEnabled={constructed.PageFeedbackEnabled}\n"
 			);
 
-			foreach (var property in typeof(FeatureFlags)
+			// Each typed property is paired with its key by the flag it reads once that key is set
+			var typed = typeof(FeatureFlags)
 				.GetProperties()
-				.Where(p => p.PropertyType == typeof(bool) && p.CanWrite)
-				.OrderBy(p => p.Name, StringComparer.Ordinal))
+				.Where(p => p.PropertyType == typeof(bool))
+				.OrderBy(p => p.Name, StringComparer.Ordinal);
+			foreach (var property in typed)
 			{
-				var flags = new FeatureFlags([]);
-				property.SetValue(flags, true);
-				var afterTrue = string.Join(',', flags.EnabledKeys());
-				property.SetValue(flags, false);
+				var key = FeatureFlags.KnownKeys.Single(k => (bool)property.GetValue(new FeatureFlags([]).With(k, true))!);
+				var afterTrue = string.Join(',', new FeatureFlags([]).With(key, true).EnabledKeys());
+				var afterFalse = string.Join(',', new FeatureFlags([]).With(key, true).With(key, false).EnabledKeys());
 				_ = sb.Append(
 					CultureInfo.InvariantCulture,
-					$"{property.Name}: setter true => [{afterTrue}], then false => [{string.Join(',', flags.EnabledKeys())}]\n"
+					$"{property.Name}: setter true => [{afterTrue}], then false => [{afterFalse}]\n"
 				);
 			}
 			return sb.ToString();

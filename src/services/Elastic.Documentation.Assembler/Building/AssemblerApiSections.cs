@@ -31,13 +31,8 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider, IDisposable
 	private AssemblerApiSections(IReadOnlyList<(AssemblerApiOwner Owner, ApiFloatingSectionProvider Provider)> owners) => _owners = owners;
 
 	/// <summary>Whether the environment renders the API Explorer, which is the <c>assembler-api-explorer</c> feature flag.</summary>
-	internal static bool IsEnabled(AssembleContext assembleContext)
-	{
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in assembleContext.Environment.FeatureFlags)
-			features.Set(key, value);
-		return features.AssemblerApiExplorerEnabled;
-	}
+	internal static bool IsEnabled(AssembleContext assembleContext) =>
+		new FeatureFlags([]).With(assembleContext.Environment.FeatureFlags).AssemblerApiExplorerEnabled;
 
 	/// <summary>
 	/// Finds the content repositories that declare APIs. A build with the <c>assembler-api-explorer</c> flag off
@@ -102,8 +97,7 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider, IDisposable
 		var generators = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(_owners.Count);
 		foreach (var (owner, provider) in _owners)
 		{
-			foreach (var (key, value) in assembleContext.Environment.FeatureFlags)
-				owner.Set.BuildContext.Configuration.Features.Set(key, value);
+			owner.Set.BuildContext.OverrideFeatures(f => f.With(assembleContext.Environment.FeatureFlags));
 			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
 			var generator = new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, VersionIndexClient)
 			{

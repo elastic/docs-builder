@@ -4,47 +4,77 @@
 
 namespace Elastic.Documentation.Configuration.Builder;
 
-public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
+/// <summary>
+/// The feature flags a build runs with: <c>docset.yml</c> toggles and per-environment <c>feature_flags</c>, each
+/// overridable by a <c>FEATURE_*</c> environment variable. The variables are read through <see cref="IEnvironmentVariables"/>
+/// so tests can supply their own without touching the process environment. Immutable; a runtime override builds a new
+/// instance with <see cref="With(string, bool)"/> and is applied through <c>BuildContext.OverrideFeatures</c>.
+/// </summary>
+public sealed class FeatureFlags
 {
-	private readonly Dictionary<string, bool> _featureFlags = [with(initFeatureFlags)];
+	private readonly Dictionary<string, bool> _featureFlags;
+	private readonly IEnvironmentVariables _environment;
 
-	public void Set(string key, bool value)
+	public FeatureFlags(Dictionary<string, bool> initFeatureFlags, IEnvironmentVariables? environment = null)
 	{
-		var normalizedKey = key.ToLowerInvariant().Replace('_', '-');
-		_featureFlags[normalizedKey] = value;
+		_featureFlags = [with(initFeatureFlags)];
+		_environment = environment ?? SystemEnvironmentVariables.Instance;
 	}
 
-	public bool PrimaryNavEnabled { get => IsEnabled("primary-nav"); set => _featureFlags["primary-nav"] = value; }
-
-	public bool DisableGitHubEditLink
+	private FeatureFlags(
+		Dictionary<string, bool> featureFlags,
+		IEnvironmentVariables environment,
+		string? websiteSearchScriptUrl,
+		string? wafIntegrationUrl
+	)
 	{
-		get => IsEnabled("disable-github-edit-link");
-		set => _featureFlags["disable-github-edit-link"] = value;
+		_featureFlags = featureFlags;
+		_environment = environment;
+		WebsiteSearchScriptUrl = websiteSearchScriptUrl;
+		WafIntegrationUrl = wafIntegrationUrl;
 	}
 
-	public bool StagingElasticNavEnabled { get => IsEnabled("staging-elastic-nav"); set => _featureFlags["staging-elastic-nav"] = value; }
-
-	public bool WebsiteSearchEnabled { get => IsEnabled("website-search"); set => _featureFlags["website-search"] = value; }
-
-	public string? WebsiteSearchScriptUrl { get; set; }
-
-	public string? WafIntegrationUrl { get; set; }
-
-	public bool AirGappedEnabled { get => IsEnabled("air-gapped"); set => _featureFlags["air-gapped"] = value; }
-
-	public bool DiagnosticsPanelEnabled { get => IsEnabled("diagnostics-panel"); set => _featureFlags["diagnostics-panel"] = value; }
-
-	public bool AssemblerApiExplorerEnabled
+	/// <summary>A copy with <paramref name="key"/> set; the key normalizes to kebab-case (<c>API_NAV_GROUPING</c> is <c>api-nav-grouping</c>).</summary>
+	public FeatureFlags With(string key, bool value)
 	{
-		get => IsEnabled("assembler-api-explorer");
-		set => _featureFlags["assembler-api-explorer"] = value;
+		var flags = new Dictionary<string, bool>(_featureFlags, _featureFlags.Comparer)
+		{
+			[key.ToLowerInvariant().Replace('_', '-')] = value
+		};
+		return new FeatureFlags(flags, _environment, WebsiteSearchScriptUrl, WafIntegrationUrl);
 	}
 
-	public bool GuideNavEnabled { get => IsEnabled("guide-nav"); set => _featureFlags["guide-nav"] = value; }
+	/// <summary>A copy with every flag in <paramref name="flags"/> set, in order.</summary>
+	public FeatureFlags With(IEnumerable<KeyValuePair<string, bool>> flags) =>
+		flags.Aggregate(this, (current, flag) => current.With(flag.Key, flag.Value));
 
-	public bool NavigationPreviewEnabled { get => IsEnabled("navigation-preview"); set => _featureFlags["navigation-preview"] = value; }
+	public FeatureFlags WithWebsiteSearchScriptUrl(string? url) => new(_featureFlags, _environment, url, WafIntegrationUrl);
 
-	public bool PageFeedbackEnabled { get => IsEnabled("page-feedback"); set => _featureFlags["page-feedback"] = value; }
+	public FeatureFlags WithWafIntegrationUrl(string? url) => new(_featureFlags, _environment, WebsiteSearchScriptUrl, url);
+
+	public bool PrimaryNavEnabled => IsEnabled("primary-nav");
+
+	public bool DisableGitHubEditLink => IsEnabled("disable-github-edit-link");
+
+	public bool StagingElasticNavEnabled => IsEnabled("staging-elastic-nav");
+
+	public bool WebsiteSearchEnabled => IsEnabled("website-search");
+
+	public string? WebsiteSearchScriptUrl { get; }
+
+	public string? WafIntegrationUrl { get; }
+
+	public bool AirGappedEnabled => IsEnabled("air-gapped");
+
+	public bool DiagnosticsPanelEnabled => IsEnabled("diagnostics-panel");
+
+	public bool AssemblerApiExplorerEnabled => IsEnabled("assembler-api-explorer");
+
+	public bool GuideNavEnabled => IsEnabled("guide-nav");
+
+	public bool NavigationPreviewEnabled => IsEnabled("navigation-preview");
+
+	public bool PageFeedbackEnabled => IsEnabled("page-feedback");
 
 	/// <summary>Keys of the typed flags, in kebab-case. Keep in step with the properties above: a test enforces it.</summary>
 	public static IReadOnlyList<string> KnownKeys { get; } =
@@ -67,7 +97,7 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";
-		if (Environment.GetEnvironmentVariable(envKey) is { } envValue)
+		if (_environment.GetEnvironmentVariable(envKey) is { } envValue)
 		{
 			if (bool.TryParse(envValue, out var envBool))
 				return envBool;
