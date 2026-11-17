@@ -38,7 +38,6 @@ export function syncApiBetaBanner(
 }
 
 const OPEN_FEEDBACK = '[data-api-beta-feedback-open]'
-
 /** One listener for every banner the page ever holds, so a banner that navigation replaces needs no binding. */
 function onClick(event: MouseEvent): void {
     const target = event.target

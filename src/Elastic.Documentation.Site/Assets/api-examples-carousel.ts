@@ -551,14 +551,6 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close()
     })
-    // Escape closes a modal dialog natively, unless another handler on the page prevents the keydown;
-    // the site chrome does, so close explicitly and keep the key from reaching it.
-    dialog.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') return
-        event.preventDefault()
-        event.stopPropagation()
-        dialog.close()
-    })
     const unlockScroll = lockPageScroll()
     dialog.addEventListener('close', () => {
         unlockScroll()
