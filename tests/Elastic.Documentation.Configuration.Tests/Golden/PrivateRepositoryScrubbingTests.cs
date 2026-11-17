@@ -50,7 +50,7 @@ public class PrivateRepositoryScrubbingTests
 
 		"""
 		git@github.com:elastic/hidden-docs.git
-		https://github.com/elastic/widget/blob/main/docs/toc.yml
+		https://github.com/elastic/WIDGET/blob/main/docs/toc.yml
 		toc: hidden-docs://reference
 		xwidget and widget_x stay, widget-hosted is cut at the hyphen
 		""".Should().MatchInlineSnapshot(
@@ -72,8 +72,18 @@ public class PrivateRepositoryScrubbingTests
 	}
 
 	[Test]
-	public void ShippedPrivateNames_AreForbiddenInEverySnapshot() =>
+	public void ShippedPrivateNames_AreForbiddenInEverySnapshotAndWriteNoReceivedFile()
+	{
 		PrivateRepositoryGuard.Forbidden.Should().NotBeEmpty("the guard would pass vacuously");
+		var name = PrivateRepositoryGuard.Forbidden.First(n => n.Contains('-'));
+
+		var (message, receivedFiles) = ForbidProbe.Run($"first line\nrepository {name}\n", name);
+
+		message.Should().NotBeNull("the text is its own snapshot, so only the default forbid check can fail it");
+		message.Should().Contain("2", "the message gives the line of the forbidden value");
+		message!.Contains(name, StringComparison.Ordinal).Should().BeFalse("the message names a private repository");
+		receivedFiles.Should().Be(0, "a forbidden value must not reach a received file");
+	}
 
 	[Test]
 	public void NamesOfOneTest_Added_DoNotRenameAnotherTestsOutput() => "hidden-docs".Should().MatchInlineSnapshot("hidden-docs");

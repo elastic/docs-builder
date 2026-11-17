@@ -22,16 +22,6 @@ public class PrivateRepositoryScrubbingTests
 		).AllPrivateRepositoryNames;
 	}
 
-	private static List<int> LinesWith(string text, IReadOnlyList<string> values) =>
-		[
-			.. text
-				.ReplaceLineEndings("\n")
-				.Split('\n')
-				.Select((line, i) => (line, number: i + 1))
-				.Where(l => values.Any(v => l.line.Contains(v, StringComparison.Ordinal)))
-				.Select(l => l.number)
-		];
-
 	[Test]
 	public void Scrub_Names_AreNumberedByFirstAppearanceAsWholeWords()
 	{
@@ -64,17 +54,72 @@ public class PrivateRepositoryScrubbingTests
 	}
 
 	[Test]
-	public void Forbidden_SingleWordNames_AreForbiddenOnlyWhereARepositoryCanStand()
+	public void Forbidden_SingleWordNames_AreForbiddenOnlyAsTheFormsAnExactValueCanCover()
 	{
-		var forbidden = PrivateRepositoryScrubbing.Forbidden(["hidden", "secret-docs"]);
+		var forbidden = PrivateRepositoryScrubbing.Forbidden(["widget", "secret-docs"]);
 
-		var lines = LinesWith(
-			"hidden://reference\nthe hidden page\nreference/hidden/page\nhttps://github.com/elastic/hidden/tree/main\nhidden-page\nxhidden://y\nsecret-docs",
-			forbidden
-		);
-
-		lines.Should().Equal(1, 4, 6, 7);
+		forbidden.Should().Contain([
+			"secret-docs",
+			"SECRET-DOCS",
+			"widget://",
+			"elastic/widget/",
+			"elastic/WIDGET.git",
+			"elastic/widget\""
+		]);
+		forbidden.Should().NotContain("widget");
 	}
+
+	[Test]
+	[Arguments("", true)]
+	[Arguments("\n", true)]
+	[Arguments(".", true)]
+	[Arguments(":", true)]
+	[Arguments(" #", true)]
+	[Arguments(")", true)]
+	[Arguments("#readme", true)]
+	[Arguments("?x", true)]
+	[Arguments("\"", true)]
+	[Arguments("/", true)]
+	[Arguments("-hosted", false)]
+	[Arguments("_x", false)]
+	[Arguments("x", false)]
+	public void LeakingLines_SingleWordAfterElasticSlash_IsFoundUpToAWordCharacterOrHyphen(string after, bool leaks)
+	{
+		var lines = PrivateRepositoryScrubbing.LeakingLines($"first\nrepo: elastic/widget{after}", ["widget"]);
+
+		(lines.Count > 0).Should().Be(leaks);
+	}
+
+	[Test]
+	public void LeakingLines_OtherCaseAndTokens_AreFound()
+	{
+		var names = new[] { "widget", "secret-docs" };
+
+		PrivateRepositoryScrubbing
+			.LeakingLines("a\nhttps://github.com/elastic/WIDGET/x\nWidget://y\nthe widget page\nSecret-Docs and not-secret-docs", names)
+			.Should()
+			.Equal(2, 3, 5);
+	}
+
+	[Test]
+	public void FrozenBaseline_AFileThatLeaks_IsCountedWithoutItsName()
+	{
+		var folder = Directory.CreateTempSubdirectory("leak-guard").FullName;
+		try
+		{
+			File.WriteAllText(Path.Join(folder, "clean.txt"), "repo: elastic/widget-hosted\n");
+			File.WriteAllText(Path.Join(folder, "leaks.txt"), "repo: elastic/widget");
+
+			CountLeakingFiles(Directory.EnumerateFiles(folder), ["widget"]).Should().Be(1);
+		}
+		finally
+		{
+			Directory.Delete(folder, recursive: true);
+		}
+	}
+
+	private static int CountLeakingFiles(IEnumerable<string> files, IEnumerable<string> names) =>
+		files.Count(f => PrivateRepositoryScrubbing.LeakingLines(File.ReadAllText(f), names).Count > 0);
 
 	[Test]
 	public void VolatileValues_ShasAndDates_AreReplaced() =>
@@ -91,8 +136,6 @@ public class PrivateRepositoryScrubbingTests
 		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("solution root not found");
 		var shipped = ShippedPrivateRepositories();
 		shipped.Should().NotBeEmpty("the check below would pass vacuously");
-		var forbidden = PrivateRepositoryScrubbing.Forbidden(shipped);
-		forbidden.Should().NotBeEmpty("the check below would pass vacuously");
 
 		var files = Directory
 			.EnumerateFiles(Path.Join(root.FullName, "tests", "Navigation.Tests", "Assembler", "Baseline"))
@@ -106,30 +149,23 @@ public class PrivateRepositoryScrubbingTests
 			.ToArray();
 		files.Should().NotBeEmpty();
 
-		var leaking = files.Count(f => LinesWith(File.ReadAllText(f), forbidden).Count > 0);
+		var leaking = CountLeakingFiles(files, shipped);
 
 		// the names are not part of the message on purpose
 		leaking.Should().Be(0, "a frozen copy or a verified file names a private repository");
 	}
 
 	[Test]
-	public void Options_ASnapshotThatNamesAPrivateRepository_FailsWithoutShowingTheName()
+	public void Options_ASnapshotThatNamesAPrivateRepository_FailsOnTheForbidCheckAndWritesNoReceivedFile()
 	{
-		var shipped = PrivateRepositoryScrubbing.Forbidden(ShippedPrivateRepositories()).First(n => n.Contains('-'));
-		var options = new SnapshotOptions().Forbid([shipped]);
+		const string Value = "widget-secret-synthetic";
+		var options = new SnapshotOptions().Forbid([Value]);
 
-		var message = string.Empty;
-		try
-		{
-			$"first line\nrepository {shipped}\n".Should().MatchSnapshot(options: options);
-		}
-		catch (Exception e)
-		{
-			message = e.Message;
-		}
+		var (message, receivedFiles) = ForbidProbe.Run($"first line\nrepository {Value}\n", Value, options);
 
-		message.Should().NotBeEmpty("the snapshot must fail");
-		// a failing check must not repeat the name either
-		message.Contains(shipped, StringComparison.Ordinal).Should().BeFalse("the message names a private repository");
+		message.Should().NotBeNull("the text is its own snapshot, so only the forbid check can fail it");
+		message.Should().Contain("2", "the message gives the line of the forbidden value");
+		message!.Contains(Value, StringComparison.Ordinal).Should().BeFalse("the message names the value");
+		receivedFiles.Should().Be(0, "a forbidden value must not reach a received file");
 	}
 }
