@@ -89,35 +89,34 @@ public class ApiReferenceService(IApiGateway apiGateway)
 	}
 
 	/// <summary>
-	/// Reads the operations collection: a search with <see cref="ApiOperationQuery.Q"/>, the operations behind an
-	/// <see cref="ApiOperationQuery.Endpoint"/> or an <see cref="ApiOperationQuery.OperationId"/> (best match first),
-	/// or one API's operations by path when none of the three is set.
+	/// Reads one API's operations: a search with <see cref="ApiOperationQuery.Q"/>, the operations that serve an
+	/// <see cref="ApiOperationQuery.Endpoint"/> (best route first), or a listing by path when neither is set.
 	/// </summary>
 	public async Task<ApiReferenceReply> QueryAsync(ApiOperationQuery query, CancellationToken ct)
 	{
-		if (VersionWithoutApi(query.Api, query.Version))
-			return VersionNeedsApi;
-		var lookups = new[] { query.Q, query.Endpoint, query.OperationId }.Count(v => !string.IsNullOrWhiteSpace(v));
-		if (lookups > 1)
-			return new ApiReferenceRejection("invalid_arguments", "Pass at most one of q, endpoint or operation_id.");
+		// Every lookup is inside one API, so an operation id or a route can never match in two of them.
+		if (ToScope(query.Api, query.Version) is not { } scope)
+			return new ApiReferenceRejection("invalid_arguments", "Pass an API key, such as 'elasticsearch'.");
+		var hasQuery = !string.IsNullOrWhiteSpace(query.Q);
+		var hasEndpoint = !string.IsNullOrWhiteSpace(query.Endpoint);
+		if (hasQuery && hasEndpoint)
+			return new ApiReferenceRejection("invalid_arguments", "Pass q or endpoint, not both.");
 		if (query.View is not (null or "basic" or "full"))
 			return new ApiReferenceRejection("invalid_arguments", "view is 'basic' or 'full'.");
-		var exact = !string.IsNullOrWhiteSpace(query.Endpoint) || !string.IsNullOrWhiteSpace(query.OperationId);
-		if (query.Full && !exact)
-			return new ApiReferenceRejection("invalid_arguments", "view=full needs endpoint or operation_id.");
+		if (query.Full && !hasEndpoint)
+			return new ApiReferenceRejection("invalid_arguments", "view=full needs endpoint.");
 		if (query.IncludeBody && !query.Full)
 			return new ApiReferenceRejection("invalid_arguments", "include_body needs view=full.");
-		if (!string.IsNullOrWhiteSpace(query.Group) && lookups > 0)
-			return new ApiReferenceRejection("invalid_arguments", "group filters a listing; pass it without q, endpoint or operation_id.");
+		if (!string.IsNullOrWhiteSpace(query.Group) && (hasQuery || hasEndpoint))
+			return new ApiReferenceRejection("invalid_arguments", "group filters a listing; pass it without q or endpoint.");
 
-		var scope = ToScope(query.Api, query.Version);
 		var page = Math.Max(1, query.Page);
 		var size = Math.Clamp(query.Size, 1, MaxPageSize);
 
-		if (!string.IsNullOrWhiteSpace(query.Q))
+		if (hasQuery)
 		{
 			var hits = await apiGateway.SearchOperationsAsync(
-				new ApiOperationSearch(query.Q, scope, query.IncludeDeprecated, page, size),
+				new ApiOperationSearch(query.Q!, scope, query.IncludeDeprecated, page, size),
 				ct
 			);
 			return new ApiOperationCollectionResponse
@@ -132,12 +131,13 @@ public class ApiReferenceService(IApiGateway apiGateway)
 			};
 		}
 
-		if (exact)
+		if (hasEndpoint)
 		{
-			ApiOperationKey key = string.IsNullOrWhiteSpace(query.Endpoint)
-				? new ApiOperationIdKey(query.OperationId!.Trim())
-				: new ApiEndpointKey(query.Endpoint.Trim());
-			var matches = await apiGateway.FindOperationsAsync(new ApiOperationLookup(scope, key), ct);
+			// Within one API, a route made only of parameters, such as /{index}, can still serve several operations.
+			var matches = await apiGateway.FindOperationsAsync(
+				new ApiOperationLookup(scope, new ApiEndpointKey(query.Endpoint!.Trim())),
+				ct
+			);
 			return new ApiOperationCollectionResponse
 			{
 				TotalHits = matches.Count,
@@ -145,8 +145,6 @@ public class ApiReferenceService(IApiGateway apiGateway)
 			};
 		}
 
-		if (scope is null)
-			return new ApiReferenceRejection("invalid_arguments", "Pass api to list operations, or one of q, endpoint or operation_id.");
 		var operations = await apiGateway.ListOperationsAsync(scope, ct);
 		if (operations.Count == 0)
 			return ApiNotFound(scope);
@@ -166,17 +164,19 @@ public class ApiReferenceService(IApiGateway apiGateway)
 		};
 	}
 
-	/// <summary>Reads one operation by its <see cref="ApiOperationSummary.Id"/>, <c>{api}:{operationId}</c>.</summary>
-	public Task<ApiReferenceReply> GetByIdAsync(string id, string? version, bool includeBody, CancellationToken ct)
-	{
-		// API keys never contain ':', so the first one ends the key and the operation id may contain more.
-		var separator = id.IndexOf(':');
-		return separator <= 0 || separator == id.Length - 1
+	/// <summary>Reads one operation of one API by its operation id.</summary>
+	public Task<ApiReferenceReply> GetOperationAsync(
+		string api,
+		string operationId,
+		string? version,
+		bool includeBody,
+		CancellationToken ct
+	) =>
+		string.IsNullOrWhiteSpace(api)
 			? Task.FromResult<ApiReferenceReply>(
-				new ApiReferenceRejection("invalid_arguments", "An operation id looks like 'elasticsearch:cluster-health'.")
+				new ApiReferenceRejection("invalid_arguments", "Pass an API key, such as 'elasticsearch'.")
 			)
-			: GetAsync(id[..separator], id[(separator + 1)..], null, version, includeBody, ct);
-	}
+			: GetAsync(api, operationId, null, version, includeBody, ct);
 
 	/// <summary>Reads one API by its key.</summary>
 	public async Task<ApiReferenceReply> GetApiAsync(string api, CancellationToken ct)
@@ -298,7 +298,7 @@ public sealed record ApiOperationSearchResponse
 	public required IReadOnlyList<ApiOperationHit> Results { get; init; }
 }
 
-/// <summary>The filters of the operations collection. At most one of <see cref="Q"/>, <see cref="Endpoint"/> or <see cref="OperationId"/>.</summary>
+/// <summary>The filters of one API's operations. At most one of <see cref="Q"/> or <see cref="Endpoint"/>.</summary>
 public sealed record ApiOperationQuery
 {
 	public string? Api { get; init; }
@@ -306,11 +306,10 @@ public sealed record ApiOperationQuery
 	public string? Group { get; init; }
 	public string? Q { get; init; }
 	public string? Endpoint { get; init; }
-	public string? OperationId { get; init; }
 	public bool IncludeDeprecated { get; init; }
 	/// <summary><c>basic</c> (the default) or <c>full</c>; any other value is rejected.</summary>
 	public string? View { get; init; }
-	/// <summary>The <c>full</c> view adds each result's versions and fields; needs <see cref="Endpoint"/> or <see cref="OperationId"/>.</summary>
+	/// <summary>The <c>full</c> view adds each result's versions and fields; needs <see cref="Endpoint"/>.</summary>
 	public bool Full => View == "full";
 	/// <summary>Adds each result's body; needs <see cref="Full"/>.</summary>
 	public bool IncludeBody { get; init; }
@@ -318,14 +317,14 @@ public sealed record ApiOperationQuery
 	public int Size { get; init; } = 10;
 }
 
-/// <summary>A page of the operations collection.</summary>
+/// <summary>A page of one API's operations.</summary>
 public sealed record ApiOperationCollectionResponse
 {
 	public required long TotalHits { get; init; }
 	public required IReadOnlyList<ApiOperationItem> Results { get; init; }
 }
 
-/// <summary>One operation in the collection. Search adds a score and the matched fields; the full view adds versions, fields and the body.</summary>
+/// <summary>One operation in a page. Search adds a score and the matched fields; the full view adds versions, fields and the body.</summary>
 public sealed record ApiOperationItem
 {
 	public required ApiOperationSummary Operation { get; init; }

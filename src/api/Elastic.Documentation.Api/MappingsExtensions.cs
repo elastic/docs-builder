@@ -187,8 +187,9 @@ public static class MappingsExtension
 			return Results.Ok(response);
 		});
 
-	// Two resources: the APIs API Explorer publishes, and their operations, addressed as {api}:{operationId}.
-	// They answer the same lookups as the search_api_operations, get_api_operation and list_api_operations MCP tools.
+	// The APIs API Explorer publishes and, under each, its operations. An operation is always addressed inside its
+	// API: many operation ids and routes exist in several APIs (elasticsearch and elasticsearch-serverless share
+	// most), so a lookup across APIs could only guess. The MCP tools answer the same lookups.
 	private static void MapApiOperations(IEndpointRouteBuilder group)
 	{
 		var apis = group.MapGroup("/apis");
@@ -210,17 +211,14 @@ public static class MappingsExtension
 				Cancel ctx
 			) => ToResult(await apiReference.ListGroupsAsync(api, version, includeDeprecated ?? false, ctx))
 		);
-
-		var operations = group.MapGroup("/api-operations");
-		_ = operations.MapGet(
-			"/",
+		_ = apis.MapGet(
+			"/{api}/operations",
 			async (
-				[FromQuery(Name = "api")] string? api,
+				string api,
 				[FromQuery(Name = "version")] string? version,
 				[FromQuery(Name = "group")] string? apiGroupName,
 				[FromQuery(Name = "q")] string? query,
 				[FromQuery(Name = "endpoint")] string? endpoint,
-				[FromQuery(Name = "operation_id")] string? operationId,
 				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
 				[FromQuery(Name = "view")] string? view,
 				[FromQuery(Name = "include_body")] bool? includeBody,
@@ -237,7 +235,6 @@ public static class MappingsExtension
 						Group = apiGroupName,
 						Q = query,
 						Endpoint = endpoint,
-						OperationId = operationId,
 						IncludeDeprecated = includeDeprecated ?? false,
 						View = view,
 						IncludeBody = includeBody ?? false,
@@ -248,15 +245,16 @@ public static class MappingsExtension
 				)
 			)
 		);
-		_ = operations.MapGet(
-			"/{id}",
+		_ = apis.MapGet(
+			"/{api}/operations/{operationId}",
 			async (
-				string id,
+				string api,
+				string operationId,
 				[FromQuery(Name = "version")] string? version,
 				[FromQuery(Name = "include_body")] bool? includeBody,
 				ApiReferenceService apiReference,
 				Cancel ctx
-			) => ToResult(await apiReference.GetByIdAsync(id, version, includeBody ?? false, ctx))
+			) => ToResult(await apiReference.GetOperationAsync(api, operationId, version, includeBody ?? false, ctx))
 		);
 	}
 

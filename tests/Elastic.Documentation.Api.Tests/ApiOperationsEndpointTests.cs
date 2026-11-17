@@ -46,7 +46,7 @@ public class ApiOperationsEndpointTests
 		using var client = SharedFactory.Value.CreateClient();
 		using var response = await client.GetAsync($"/docs/_api/v1{pathAndQuery}", TestContext.Current!.Execution.CancellationToken);
 		var json = await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken);
-		return (response.StatusCode, JsonElement.Parse(json));
+		return (response.StatusCode, json.Length == 0 ? default : JsonElement.Parse(json));
 	}
 
 	private static ApiOperationDetail Detail(string? body = null, params ApiOperationSummary[] otherMatches) =>
@@ -61,10 +61,11 @@ public class ApiOperationsEndpointTests
 		Description = "Detail level"
 	};
 
-	private static readonly ApiOperationSummary KibanaOperation = Operation with { Api = "kibana", OperationId = "kibana-health" };
+	// Another path to the same operation, so an endpoint lookup has more than one match inside one API.
+	private static readonly ApiOperationSummary IndexOperation = Operation with { OperationId = "indices-get", Path = "/{index}" };
 
-	private static IEnumerable<string?> Ids(JsonElement body) =>
-		body.GetProperty("results").EnumerateArray().Select(r => r.GetProperty("operation").GetProperty("id").GetString());
+	private static IEnumerable<string?> OperationIds(JsonElement body) =>
+		body.GetProperty("results").EnumerateArray().Select(r => r.GetProperty("operation").GetProperty("operationId").GetString());
 
 	[Test]
 	public async Task Search_PassesTheNormalizedScopeAndClampedPageSize()
@@ -76,10 +77,7 @@ public class ApiOperationsEndpointTests
 			.Invokes((ApiOperationSearch search, CancellationToken _) => received = search)
 			.Returns(new ApiOperationPage(1, [new ApiOperationHit(Operation, 2, [Field])]));
 
-		var (status, body) = await Get(
-			gateway,
-			"/api-operations?q=health&api=%20Elasticsearch%20&version=9&include_deprecated=true&size=500"
-		);
+		var (status, body) = await Get(gateway, "/apis/Elasticsearch/operations?q=health&version=9&include_deprecated=true&size=500");
 
 		status.Should().Be(HttpStatusCode.OK);
 		received.Should().Be(
@@ -87,21 +85,19 @@ public class ApiOperationsEndpointTests
 		);
 		body.GetProperty("totalHits").GetInt64().Should().Be(1);
 		var hit = body.GetProperty("results")[0];
-		hit.GetProperty("operation").GetProperty("id").GetString().Should().Be("elasticsearch:cluster-health");
+		hit.GetProperty("operation").GetProperty("operationId").GetString().Should().Be("cluster-health");
 		hit.GetProperty("score").GetSingle().Should().Be(2);
 		hit.GetProperty("matchedFields")[0].GetProperty("path").GetString().Should().Be("level");
 	}
 
 	[Test]
-	[Arguments("/api-operations?q=health&version=9", "version needs api: pass the API key the version belongs to.")]
-	[Arguments("/api-operations?q=health&endpoint=GET%20/x", "Pass at most one of q, endpoint or operation_id.")]
-	[Arguments("/api-operations?q=health&view=full", "view=full needs endpoint or operation_id.")]
-	[Arguments("/api-operations?operation_id=x&include_body=true", "include_body needs view=full.")]
-	[Arguments("/api-operations?api=elasticsearch&group=cluster&q=health", "group filters a listing; pass it without q, endpoint or operation_id.")]
-	[Arguments("/api-operations", "Pass api to list operations, or one of q, endpoint or operation_id.")]
-	[Arguments("/api-operations?operation_id=x&view=everything", "view is 'basic' or 'full'.")]
-	[Arguments("/api-operations/cluster-health", "An operation id looks like 'elasticsearch:cluster-health'.")]
-	[Arguments("/api-operations/elasticsearch:", "An operation id looks like 'elasticsearch:cluster-health'.")]
+	[Arguments("/apis/elasticsearch/operations?q=health&endpoint=GET%20/x", "Pass q or endpoint, not both.")]
+	[Arguments("/apis/elasticsearch/operations?q=health&view=full", "view=full needs endpoint.")]
+	[Arguments("/apis/elasticsearch/operations?endpoint=GET%20/x&include_body=true", "include_body needs view=full.")]
+	[Arguments("/apis/elasticsearch/operations?group=cluster&q=health", "group filters a listing; pass it without q or endpoint.")]
+	[Arguments("/apis/elasticsearch/operations?endpoint=GET%20/x&view=everything", "view is 'basic' or 'full'.")]
+	[Arguments("/apis/%20/operations?q=health", "Pass an API key, such as 'elasticsearch'.")]
+	[Arguments("/apis/%20/operations/cluster-health", "Pass an API key, such as 'elasticsearch'.")]
 	[Arguments("/apis/%20/groups", "Pass an API key, such as 'elasticsearch'.")]
 	public async Task InvalidArguments_AreABadRequestWithoutQueryingTheIndex(string pathAndQuery, string message)
 	{
@@ -116,42 +112,39 @@ public class ApiOperationsEndpointTests
 	}
 
 	[Test]
-	public async Task Endpoint_FullView_ReturnsEveryMatchWithItsFieldsFromOneLookup()
+	[Arguments("/api-operations?q=health")]
+	[Arguments("/api-operations/elasticsearch:cluster-health")]
+	public async Task OperationsOutsideAnApi_AreNotAnEndpoint(string pathAndQuery)
+	{
+		var gateway = A.Fake<IApiGateway>();
+
+		var (status, _) = await Get(gateway, pathAndQuery);
+
+		status.Should().Be(HttpStatusCode.NotFound);
+		A.CallTo(gateway).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task Endpoint_FullView_ReturnsEveryMatchInTheApiWithItsFieldsFromOneLookup()
 	{
 		List<ApiOperationLookup> received = [];
 		var gateway = A.Fake<IApiGateway>();
 		_ = A
 			.CallTo(() => gateway.FindOperationsAsync(A<ApiOperationLookup>._, A<CancellationToken>._))
 			.Invokes((ApiOperationLookup lookup, CancellationToken _) => received.Add(lookup))
-			.Returns([Detail("Body"), Detail() with { Operation = KibanaOperation }]);
+			.Returns([Detail("Body"), Detail() with { Operation = IndexOperation }]);
 
-		var (status, body) = await Get(gateway, "/api-operations?endpoint=GET%20/my-index/_search&view=full&include_body=true");
+		var (status, body) = await Get(gateway, "/apis/elasticsearch/operations?endpoint=GET%20/my-index&view=full&include_body=true");
 
 		status.Should().Be(HttpStatusCode.OK);
-		Ids(body).Should().Equal("elasticsearch:cluster-health", "kibana:kibana-health");
+		OperationIds(body).Should().Equal("cluster-health", "indices-get");
 		var best = body.GetProperty("results")[0];
 		best.GetProperty("fields")[0].GetProperty("path").GetString().Should().Be("level");
 		best.GetProperty("body").GetString().Should().Be("Body");
 		body.GetProperty("results")[1].GetProperty("fields").GetArrayLength().Should().Be(1);
-		ApiOperationKey endpointKey = new ApiEndpointKey("GET /my-index/_search");
-		received.Should().Equal(new ApiOperationLookup(null, endpointKey));
+		ApiOperationKey endpointKey = new ApiEndpointKey("GET /my-index");
+		received.Should().Equal(new ApiOperationLookup(new ApiScope("elasticsearch", null), endpointKey));
 		A.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).MustNotHaveHappened();
-	}
-
-	[Test]
-	public async Task OperationId_BasicView_ListsTheSameIdInEveryApiWithoutFields()
-	{
-		var gateway = A.Fake<IApiGateway>();
-		_ = A.CallTo(() => gateway.FindOperationsAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns([
-			Detail(),
-			Detail() with { Operation = KibanaOperation }
-		]);
-
-		var (status, body) = await Get(gateway, "/api-operations?operation_id=cluster-health");
-
-		status.Should().Be(HttpStatusCode.OK);
-		Ids(body).Should().Equal("elasticsearch:cluster-health", "kibana:kibana-health");
-		body.GetProperty("results")[0].GetProperty("fields").ValueKind.Should().Be(JsonValueKind.Null);
 	}
 
 	[Test]
@@ -160,7 +153,7 @@ public class ApiOperationsEndpointTests
 		var gateway = A.Fake<IApiGateway>();
 		_ = A.CallTo(() => gateway.FindOperationsAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns([]);
 
-		var (status, body) = await Get(gateway, "/api-operations?endpoint=GET%20/nope");
+		var (status, body) = await Get(gateway, "/apis/elasticsearch/operations?endpoint=GET%20/nope");
 
 		status.Should().Be(HttpStatusCode.OK);
 		body.GetProperty("totalHits").GetInt64().Should().Be(0);
@@ -179,16 +172,16 @@ public class ApiOperationsEndpointTests
 			Operation with { OperationId = "s", Path = "/_search", Group = "search" }
 		]);
 
-		var (status, body) = await Get(gateway, "/api-operations?api=elasticsearch&group=CLUSTER&size=2&page=2");
+		var (status, body) = await Get(gateway, "/apis/elasticsearch/operations?group=CLUSTER&size=2&page=2");
 
 		status.Should().Be(HttpStatusCode.OK);
 		body.GetProperty("totalHits").GetInt64().Should().Be(3);
-		Ids(body).Should().Equal("elasticsearch:c");
+		OperationIds(body).Should().Equal("c");
 	}
 
 	[Test]
-	[Arguments("/api-operations?api=nope", "api_not_found")]
-	[Arguments("/api-operations?api=elasticsearch&group=nope", "group_not_found")]
+	[Arguments("/apis/nope/operations", "api_not_found")]
+	[Arguments("/apis/elasticsearch/operations?group=nope", "group_not_found")]
 	[Arguments("/apis/nope/groups", "api_not_found")]
 	public async Task Listing_UnknownApiOrGroup_IsNotFound(string pathAndQuery, string errorType)
 	{
@@ -204,7 +197,7 @@ public class ApiOperationsEndpointTests
 	}
 
 	[Test]
-	public async Task Operation_ById_SplitsAtTheFirstColonAndReturnsTheBodyOnlyWhenAsked()
+	public async Task Operation_ReadsItInsideItsApiAndReturnsTheBodyOnlyWhenAsked()
 	{
 		List<ApiOperationLookup> received = [];
 		var gateway = A.Fake<IApiGateway>();
@@ -213,11 +206,11 @@ public class ApiOperationsEndpointTests
 			.Invokes((ApiOperationLookup lookup, CancellationToken _) => received.Add(lookup))
 			.Returns(Detail("Full body"));
 
-		var (withoutBody, withoutJson) = await Get(gateway, "/api-operations/elasticsearch:cluster-health");
-		var (withBody, withJson) = await Get(gateway, "/api-operations/kibana%3Aa%3Ab?version=9&include_body=true");
+		var (withoutBody, withoutJson) = await Get(gateway, "/apis/elasticsearch/operations/cluster-health");
+		var (withBody, withJson) = await Get(gateway, "/apis/Kibana/operations/a%3Ab?version=9&include_body=true");
 
 		withoutBody.Should().Be(HttpStatusCode.OK);
-		withoutJson.GetProperty("operation").GetProperty("id").GetString().Should().Be("elasticsearch:cluster-health");
+		withoutJson.GetProperty("operation").GetProperty("operationId").GetString().Should().Be("cluster-health");
 		withoutJson.GetProperty("body").ValueKind.Should().Be(JsonValueKind.Null);
 		withoutJson.GetProperty("bodyLength").GetInt32().Should().Be(9);
 		withBody.Should().Be(HttpStatusCode.OK);
@@ -236,7 +229,7 @@ public class ApiOperationsEndpointTests
 		var gateway = A.Fake<IApiGateway>();
 		_ = A.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns((ApiOperationDetail?)null);
 
-		var (status, body) = await Get(gateway, "/api-operations/elasticsearch:nope");
+		var (status, body) = await Get(gateway, "/apis/elasticsearch/operations/nope");
 
 		status.Should().Be(HttpStatusCode.NotFound);
 		body.GetProperty("errorType").GetString().Should().Be("operation_not_found");
@@ -305,7 +298,7 @@ public class ApiOperationsEndpointTests
 		]);
 
 		var (groupsStatus, groups) = await Get(gateway, $"/apis/elasticsearch/groups?version=9{includeDeprecated}");
-		var (listStatus, list) = await Get(gateway, $"/api-operations?api=elasticsearch&group=cluster{includeDeprecated}");
+		var (listStatus, list) = await Get(gateway, $"/apis/elasticsearch/operations?group=cluster{includeDeprecated}");
 
 		groupsStatus.Should().Be(HttpStatusCode.OK);
 		listStatus.Should().Be(HttpStatusCode.OK);

@@ -19,7 +19,7 @@ public class ApiReferenceServiceTests
 		var gateway = A.Fake<IApiGateway>();
 
 		var reply = await new ApiReferenceService(gateway).QueryAsync(
-			new ApiOperationQuery { OperationId = "cluster-health", View = view },
+			new ApiOperationQuery { Api = "elasticsearch", Endpoint = "GET /_cluster/health", View = view },
 			TestContext.Current!.Execution.CancellationToken
 		);
 
