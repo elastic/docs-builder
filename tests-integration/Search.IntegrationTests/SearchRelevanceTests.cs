@@ -257,6 +257,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("search knn", "operation-search");
 		yield return ("knn search", "operation-search");
 		yield return ("cluster health", "operation-cluster-health");
+		yield return ("health cluster", "operation-cluster-health");
+		// One typo in a word of four letters or more still names the operation the correct spelling does.
+		yield return ("clustr health", "operation-cluster-health");
 		yield return ("cat health", "operation-cat-health");
 		yield return ("indices refresh", "operation-indices-refresh");
 		yield return ("cluster state", "operation-cluster-state");
@@ -566,7 +569,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"legacy index template",
 			"install package",
 			"reassign agent",
-			"enrollment api key"
+			"enrollment api key",
+			"clustr helth",
+			"creat index",
+			"serch knn",
+			"snapshot restor"
 		];
 
 	/// <summary>
