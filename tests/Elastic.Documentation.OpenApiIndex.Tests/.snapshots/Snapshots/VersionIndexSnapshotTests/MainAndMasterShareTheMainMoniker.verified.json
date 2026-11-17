@@ -1,0 +1,26 @@
+{
+  "index": {
+    "elastic/has-both": {
+      "openapi.json": {
+        "main": {
+          "version": "main"
+        }
+      }
+    },
+    "elastic/has-both-reversed": {
+      "openapi.json": {
+        "main": {
+          "version": "main"
+        }
+      }
+    },
+    "elastic/has-master": {
+      "openapi.json": {
+        "main": {
+          "version": "master"
+        }
+      }
+    }
+  },
+  "invalidKeys": []
+}

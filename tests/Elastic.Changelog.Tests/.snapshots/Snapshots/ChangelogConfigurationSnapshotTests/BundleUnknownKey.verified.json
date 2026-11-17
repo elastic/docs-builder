@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml:2 Unknown key 'example_unknown' in $.bundle. Valid keys: backports, branch, description, directory, link_allow_repos, output_directory, owner, profiles, release_dates, releases, repo, resolve, …."
+  ]
+}

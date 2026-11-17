@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml bundle.releases.github['v9.*']: profile 'missing' is not defined in bundle.profiles."
+  ]
+}

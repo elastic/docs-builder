@@ -1,7 +1,6 @@
 // The runtime the design-system bundle needs beyond the enhancement modules: htmx navigation, telemetry, code highlighting,
 // math, diagrams, tables and CTA events. These are the framework-free parts of main.ts; the React islands and EUI loader are not
 // part of the design-system bundle, so nothing here pulls them in.
-import { bindApiBetaBanner } from '../api-beta-banner'
 import { initApiDocs } from '../api-docs'
 import { initAppliesSwitch } from '../applies-switch'
 import { initCopyButton } from '../copybutton'
@@ -14,6 +13,7 @@ import { bindCtaClicks, initCtaImpressions } from '../runtime/cta'
 import { applyEditParam } from '../runtime/edit-param'
 import { bindHtmxHooks } from '../runtime/htmx-hooks'
 import { runInitSteps } from '../runtime/init-steps'
+import { bindModalEscape } from '../runtime/modal-escape'
 import { initTelemetry } from '../runtime/telemetry'
 import { initSmoothScroll } from '../smooth-scroll'
 import { initTable } from '../table'
@@ -61,5 +61,5 @@ document.addEventListener('htmx:load', function () {
 
 bindCtaClicks()
 initPrivacyConsent()
-bindApiBetaBanner()
+bindModalEscape()
 bindHtmxHooks()

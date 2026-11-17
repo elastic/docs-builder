@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml Lifecycle 'stable' in changelog.yml is not valid. Valid lifecycles: preview, beta, ga, experimental"
+  ]
+}

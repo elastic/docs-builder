@@ -1,0 +1,167 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.2.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/b-9.2.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.2.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From yaml"
+        ],
+        "entries": [
+          "Feature: From yaml prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.1.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/a-9.1.0.yml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.1.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From yml"
+        ],
+        "entries": [
+          "Feature: From yml prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.1.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "a-9.1.0.yml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.1.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From yml"
+        ],
+        "entries": [
+          "Feature: From yml prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.2.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "b-9.2.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.2.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From yaml"
+        ],
+        "entries": [
+          "Feature: From yaml prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.2.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/b-9.2.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.2.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From yaml"
+        ],
+        "entries": [
+          "Feature: From yaml prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.1.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/a-9.1.0.yml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.1.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From yml"
+        ],
+        "entries": [
+          "Feature: From yml prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

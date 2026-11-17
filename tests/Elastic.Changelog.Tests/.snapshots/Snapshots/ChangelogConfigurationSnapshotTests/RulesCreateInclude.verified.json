@@ -1,0 +1,64 @@
+{
+  "configuration": {
+    "Pivot": null,
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": {
+      "Match": "Any",
+      "Create": {
+        "Labels": [
+          ">changelog"
+        ],
+        "Mode": "Include",
+        "Match": "Any",
+        "ByProduct": null
+      },
+      "Bundle": null,
+      "Publish": null
+    },
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

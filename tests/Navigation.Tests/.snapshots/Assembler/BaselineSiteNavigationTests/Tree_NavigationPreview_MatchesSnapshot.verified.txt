@@ -1,0 +1,434 @@
+SiteNavigation  /docs  "Docs"
+  index: FileNavigationLeaf  /docs  "docs-content"
+  FileNavigationLeaf  /docs/overview  "docs-content overview" [wrong parent]
+  SectionNavigation  /docs/get-started  "Guides" [island]
+    index: SectionIndexLeaf  /docs/get-started  "Guides"
+    TableOfContentsNavigation  /docs/get-started  "docs-content get-started"
+      index: FileNavigationLeaf  /docs/get-started  "docs-content get-started"
+      FileNavigationLeaf  /docs/get-started/overview  "docs-content get-started overview"
+    TableOfContentsNavigation  /docs/solutions  "docs-content solutions"
+      index: FileNavigationLeaf  /docs/solutions  "docs-content solutions"
+      FileNavigationLeaf  /docs/solutions/overview  "docs-content solutions overview"
+    TableOfContentsNavigation  /docs/manage-data  "docs-content manage-data"
+      index: FileNavigationLeaf  /docs/manage-data  "docs-content manage-data"
+      FileNavigationLeaf  /docs/manage-data/overview  "docs-content manage-data overview"
+    TableOfContentsNavigation  /docs/explore-analyze  "docs-content explore-analyze"
+      index: FileNavigationLeaf  /docs/explore-analyze  "docs-content explore-analyze"
+      FileNavigationLeaf  /docs/explore-analyze/overview  "docs-content explore-analyze overview"
+    TableOfContentsNavigation  /docs/deploy-manage  "docs-content deploy-manage"
+      index: FileNavigationLeaf  /docs/deploy-manage  "docs-content deploy-manage"
+      FileNavigationLeaf  /docs/deploy-manage/overview  "docs-content deploy-manage overview"
+    TableOfContentsNavigation  /docs/cloud-account  "Manage your Cloud account"
+      index: FileNavigationLeaf  /docs/cloud-account  "docs-content cloud-account"
+      FileNavigationLeaf  /docs/cloud-account/overview  "docs-content cloud-account overview"
+    TableOfContentsNavigation  /docs/extend  "docs-content extend"
+      index: FileNavigationLeaf  /docs/extend  "docs-content extend"
+      FileNavigationLeaf  /docs/extend/overview  "docs-content extend overview"
+      TableOfContentsNavigation  /docs/extend/kibana  "kibana extend"
+        index: FileNavigationLeaf  /docs/extend/kibana  "kibana extend"
+        FileNavigationLeaf  /docs/extend/kibana/overview  "kibana extend overview"
+      TableOfContentsNavigation  /docs/extend/logstash  "logstash extend"
+        index: FileNavigationLeaf  /docs/extend/logstash  "logstash extend"
+        FileNavigationLeaf  /docs/extend/logstash/overview  "logstash extend overview"
+      TableOfContentsNavigation  /docs/extend/beats  "beats extend"
+        index: FileNavigationLeaf  /docs/extend/beats  "beats extend"
+        FileNavigationLeaf  /docs/extend/beats/overview  "beats extend overview"
+      TableOfContentsNavigation  /docs/extend/elasticsearch  "elasticsearch extend"
+        index: FileNavigationLeaf  /docs/extend/elasticsearch  "elasticsearch extend"
+        FileNavigationLeaf  /docs/extend/elasticsearch/overview  "elasticsearch extend overview"
+      TableOfContentsNavigation  /docs/extend/integrations  "integrations extend"
+        index: FileNavigationLeaf  /docs/extend/integrations  "integrations extend"
+        FileNavigationLeaf  /docs/extend/integrations/overview  "integrations extend overview"
+    TableOfContentsNavigation  /docs/contribute-docs  "docs-content contribute-docs"
+      index: FileNavigationLeaf  /docs/contribute-docs  "docs-content contribute-docs"
+      FileNavigationLeaf  /docs/contribute-docs/overview  "docs-content contribute-docs overview"
+  SectionNavigation  /docs/reference  "Reference" [island]
+    index: SectionIndexLeaf  /docs/reference  "Reference"
+    TableOfContentsNavigation  /docs/reference  "docs-content reference"
+      index: FileNavigationLeaf  /docs/reference  "docs-content reference"
+      FileNavigationLeaf  /docs/reference/overview  "docs-content reference overview"
+      TableOfContentsNavigation  /docs/reference/elasticsearch  "elasticsearch reference/elasticsearch" [island]
+        index: FileNavigationLeaf  /docs/reference/elasticsearch  "elasticsearch reference/elasticsearch"
+        FileNavigationLeaf  /docs/reference/elasticsearch/overview  "elasticsearch reference/elasticsearch overview"
+        TableOfContentsNavigation  /docs/reference/query-languages  "elasticsearch reference/query-languages" [island]
+          index: FileNavigationLeaf  /docs/reference/query-languages  "elasticsearch reference/query-languages"
+          FileNavigationLeaf  /docs/reference/query-languages/overview  "elasticsearch reference/query-languages overview"
+        TableOfContentsNavigation  /docs/reference/text-analysis  "elasticsearch reference/text-analysis"
+          index: FileNavigationLeaf  /docs/reference/text-analysis  "elasticsearch reference/text-analysis"
+          FileNavigationLeaf  /docs/reference/text-analysis/overview  "elasticsearch reference/text-analysis overview"
+        TableOfContentsNavigation  /docs/reference/aggregations  "elasticsearch reference/aggregations"
+          index: FileNavigationLeaf  /docs/reference/aggregations  "elasticsearch reference/aggregations"
+          FileNavigationLeaf  /docs/reference/aggregations/overview  "elasticsearch reference/aggregations overview"
+        TableOfContentsNavigation  /docs/reference/ingest-processor  "elasticsearch reference/ingest-processor"
+          index: FileNavigationLeaf  /docs/reference/ingest-processor  "elasticsearch reference/ingest-processor"
+          FileNavigationLeaf  /docs/reference/ingest-processor/overview  "elasticsearch reference/ingest-processor overview"
+        TableOfContentsNavigation  /docs/reference/elasticsearch/curator  "curator reference" [island]
+          index: FileNavigationLeaf  /docs/reference/elasticsearch/curator  "curator reference"
+          FileNavigationLeaf  /docs/reference/elasticsearch/curator/overview  "curator reference overview"
+        TableOfContentsNavigation  /docs/reference/elasticsearch-clients  "docs-content reference/elasticsearch-clients" [island]
+          index: FileNavigationLeaf  /docs/reference/elasticsearch-clients  "docs-content reference/elasticsearch-clients"
+          FileNavigationLeaf  /docs/reference/elasticsearch-clients/overview  "docs-content reference/elasticsearch-clients overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/eland  "eland reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/eland  "eland reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/eland/overview  "eland reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/go  "go-elasticsearch reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/go  "go-elasticsearch reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/go/overview  "go-elasticsearch reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/java  "elasticsearch-java reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/java  "elasticsearch-java reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/java/overview  "elasticsearch-java reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/javascript  "elasticsearch-js reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/javascript  "elasticsearch-js reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/javascript/overview  "elasticsearch-js reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/javascript-dsl  "elasticsearch-dsl-js reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/javascript-dsl  "elasticsearch-dsl-js reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/javascript-dsl/overview  "elasticsearch-dsl-js reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/dotnet  "elasticsearch-net reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/dotnet  "elasticsearch-net reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/dotnet/overview  "elasticsearch-net reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/php  "elasticsearch-php reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/php  "elasticsearch-php reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/php/overview  "elasticsearch-php reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/python  "elasticsearch-py reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/python  "elasticsearch-py reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/python/overview  "elasticsearch-py reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/ruby  "elasticsearch-ruby reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/ruby  "elasticsearch-ruby reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/ruby/overview  "elasticsearch-ruby reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/rust  "elasticsearch-rs reference" [island]
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/rust  "elasticsearch-rs reference"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/rust/overview  "elasticsearch-rs reference overview"
+          TableOfContentsNavigation  /docs/reference/elasticsearch/clients/community  "elasticsearch reference/community-contributed"
+            index: FileNavigationLeaf  /docs/reference/elasticsearch/clients/community  "elasticsearch reference/community-contributed"
+            FileNavigationLeaf  /docs/reference/elasticsearch/clients/community/overview  "elasticsearch reference/community-contributed overview"
+        TableOfContentsNavigation  /docs/reference/elasticsearch/plugins  "elasticsearch reference/elasticsearch-plugins" [island]
+          index: FileNavigationLeaf  /docs/reference/elasticsearch/plugins  "elasticsearch reference/elasticsearch-plugins"
+          FileNavigationLeaf  /docs/reference/elasticsearch/plugins/overview  "elasticsearch reference/elasticsearch-plugins overview"
+        TableOfContentsNavigation  /docs/reference/scripting-languages  "elasticsearch reference/scripting-languages" [island]
+          index: FileNavigationLeaf  /docs/reference/scripting-languages  "elasticsearch reference/scripting-languages"
+          FileNavigationLeaf  /docs/reference/scripting-languages/overview  "elasticsearch reference/scripting-languages overview"
+      TableOfContentsNavigation  /docs/reference/kibana  "kibana reference" [island]
+        index: FileNavigationLeaf  /docs/reference/kibana  "kibana reference"
+        FileNavigationLeaf  /docs/reference/kibana/overview  "kibana reference overview"
+      TableOfContentsNavigation  /docs/reference/cloud  "private-repo-5 reference" [island]
+        index: FileNavigationLeaf  /docs/reference/cloud  "private-repo-5 reference"
+        FileNavigationLeaf  /docs/reference/cloud/overview  "private-repo-5 reference overview"
+        TableOfContentsNavigation  /docs/reference/cloud-on-k8s  "cloud-on-k8s reference" [island]
+          index: FileNavigationLeaf  /docs/reference/cloud-on-k8s  "cloud-on-k8s reference"
+          FileNavigationLeaf  /docs/reference/cloud-on-k8s/overview  "cloud-on-k8s reference overview"
+        TableOfContentsNavigation  /docs/reference/ecctl  "ecctl reference" [island]
+          index: FileNavigationLeaf  /docs/reference/ecctl  "ecctl reference"
+          FileNavigationLeaf  /docs/reference/ecctl/overview  "ecctl reference overview"
+      TableOfContentsNavigation  /docs/reference/security  "docs-content reference/security" [island]
+        index: FileNavigationLeaf  /docs/reference/security  "docs-content reference/security"
+        FileNavigationLeaf  /docs/reference/security/overview  "docs-content reference/security overview"
+        DocumentationSetNavigation  /docs/reference/security/prebuilt-rules  "detection-rules" [island]
+          index: FileNavigationLeaf  /docs/reference/security/prebuilt-rules  "detection-rules"
+          FileNavigationLeaf  /docs/reference/security/prebuilt-rules/overview  "detection-rules overview"
+      TableOfContentsNavigation  /docs/reference/observability  "docs-content reference/observability" [island]
+        index: FileNavigationLeaf  /docs/reference/observability  "docs-content reference/observability"
+        FileNavigationLeaf  /docs/reference/observability/overview  "docs-content reference/observability overview"
+      TableOfContentsNavigation  /docs/reference/ingestion-tools  "docs-content reference/ingestion-tools" [island]
+        index: FileNavigationLeaf  /docs/reference/ingestion-tools  "docs-content reference/ingestion-tools"
+        FileNavigationLeaf  /docs/reference/ingestion-tools/overview  "docs-content reference/ingestion-tools overview"
+        TableOfContentsNavigation  /docs/reference/apm  "docs-content reference/apm" [island]
+          index: FileNavigationLeaf  /docs/reference/apm  "docs-content reference/apm"
+          FileNavigationLeaf  /docs/reference/apm/overview  "docs-content reference/apm overview"
+          TableOfContentsNavigation  /docs/reference/apm/k8s-attacher  "apm-k8s-attacher reference" [island]
+            index: FileNavigationLeaf  /docs/reference/apm/k8s-attacher  "apm-k8s-attacher reference"
+            FileNavigationLeaf  /docs/reference/apm/k8s-attacher/overview  "apm-k8s-attacher reference overview"
+          TableOfContentsNavigation  /docs/reference/apm/aws-lambda  "apm-aws-lambda reference" [island]
+            index: FileNavigationLeaf  /docs/reference/apm/aws-lambda  "apm-aws-lambda reference"
+            FileNavigationLeaf  /docs/reference/apm/aws-lambda/overview  "apm-aws-lambda reference overview"
+          TableOfContentsNavigation  /docs/reference/apm-agents  "docs-content reference/apm-agents" [island]
+            index: FileNavigationLeaf  /docs/reference/apm-agents  "docs-content reference/apm-agents"
+            FileNavigationLeaf  /docs/reference/apm-agents/overview  "docs-content reference/apm-agents overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/dotnet  "apm-agent-dotnet reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/dotnet  "apm-agent-dotnet reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/dotnet/overview  "apm-agent-dotnet reference overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/go  "apm-agent-go reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/go  "apm-agent-go reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/go/overview  "apm-agent-go reference overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/java  "apm-agent-java reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/java  "apm-agent-java reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/java/overview  "apm-agent-java reference overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/nodejs  "apm-agent-nodejs reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/nodejs  "apm-agent-nodejs reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/nodejs/overview  "apm-agent-nodejs reference overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/php  "apm-agent-php reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/php  "apm-agent-php reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/php/overview  "apm-agent-php reference overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/python  "apm-agent-python reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/python  "apm-agent-python reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/python/overview  "apm-agent-python reference overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/ruby  "apm-agent-ruby reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/ruby  "apm-agent-ruby reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/ruby/overview  "apm-agent-ruby reference overview"
+            TableOfContentsNavigation  /docs/reference/apm/agents/rum-js  "apm-agent-rum-js reference" [island]
+              index: FileNavigationLeaf  /docs/reference/apm/agents/rum-js  "apm-agent-rum-js reference"
+              FileNavigationLeaf  /docs/reference/apm/agents/rum-js/overview  "apm-agent-rum-js reference overview"
+        TableOfContentsNavigation  /docs/reference/beats  "beats reference" [island]
+          index: FileNavigationLeaf  /docs/reference/beats  "beats reference"
+          FileNavigationLeaf  /docs/reference/beats/overview  "beats reference overview"
+        TableOfContentsNavigation  /docs/reference/search-connectors  "elasticsearch reference/search-connectors" [island]
+          index: FileNavigationLeaf  /docs/reference/search-connectors  "elasticsearch reference/search-connectors"
+          FileNavigationLeaf  /docs/reference/search-connectors/overview  "elasticsearch reference/search-connectors overview"
+        TableOfContentsNavigation  /docs/reference/opentelemetry  "opentelemetry reference" [island]
+          index: FileNavigationLeaf  /docs/reference/opentelemetry  "opentelemetry reference"
+          FileNavigationLeaf  /docs/reference/opentelemetry/overview  "opentelemetry reference overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-cloud-forwarder  "opentelemetry reference/edot-cloud-forwarder" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder  "opentelemetry reference/edot-cloud-forwarder"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder/overview  "opentelemetry reference/edot-cloud-forwarder overview"
+            TableOfContentsNavigation  /docs/reference/opentelemetry/edot-cloud-forwarder/aws  "private-repo-1 reference/edot-cf-aws"
+              index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder/aws  "private-repo-1 reference/edot-cf-aws"
+              FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder/aws/overview  "private-repo-1 reference/edot-cf-aws overview"
+            TableOfContentsNavigation  /docs/reference/opentelemetry/edot-cloud-forwarder/azure  "private-repo-2 reference/edot-cf-azure"
+              index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder/azure  "private-repo-2 reference/edot-cf-azure"
+              FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder/azure/overview  "private-repo-2 reference/edot-cf-azure overview"
+            TableOfContentsNavigation  /docs/reference/opentelemetry/edot-cloud-forwarder/gcp  "opentelemetry reference/edot-cloud-forwarder/gcp"
+              index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder/gcp  "opentelemetry reference/edot-cloud-forwarder/gcp"
+              FileNavigationLeaf  /docs/reference/opentelemetry/edot-cloud-forwarder/gcp/overview  "opentelemetry reference/edot-cloud-forwarder/gcp overview"
+          TableOfContentsNavigation  /docs/reference/edot-collector  "elastic-agent reference/edot-collector" [island]
+            index: FileNavigationLeaf  /docs/reference/edot-collector  "elastic-agent reference/edot-collector"
+            FileNavigationLeaf  /docs/reference/edot-collector/overview  "elastic-agent reference/edot-collector overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/android  "apm-agent-android reference/edot-android" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/android  "apm-agent-android reference/edot-android"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/android/overview  "apm-agent-android reference/edot-android overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/dotnet  "elastic-otel-dotnet reference/edot-dotnet" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/dotnet  "elastic-otel-dotnet reference/edot-dotnet"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/dotnet/overview  "elastic-otel-dotnet reference/edot-dotnet overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/ios  "apm-agent-ios reference/edot-ios" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/ios  "apm-agent-ios reference/edot-ios"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/ios/overview  "apm-agent-ios reference/edot-ios overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/react-native  "elastic-otel-react-native reference/edot-react-native" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/react-native  "elastic-otel-react-native reference/edot-react-native"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/react-native/overview  "elastic-otel-react-native reference/edot-react-native overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/java  "elastic-otel-java reference/edot-java" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/java  "elastic-otel-java reference/edot-java"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/java/overview  "elastic-otel-java reference/edot-java overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/node  "elastic-otel-node reference/edot-node" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/node  "elastic-otel-node reference/edot-node"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/node/overview  "elastic-otel-node reference/edot-node overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/php  "elastic-otel-php reference/edot-php" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/php  "elastic-otel-php reference/edot-php"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/php/overview  "elastic-otel-php reference/edot-php overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/python  "elastic-otel-python reference/edot-python" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/python  "elastic-otel-python reference/edot-python"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/python/overview  "elastic-otel-python reference/edot-python overview"
+          TableOfContentsNavigation  /docs/reference/opentelemetry/edot-sdks/browser  "elastic-otel-rum-js reference/edot-browser" [island]
+            index: FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/browser  "elastic-otel-rum-js reference/edot-browser"
+            FileNavigationLeaf  /docs/reference/opentelemetry/edot-sdks/browser/overview  "elastic-otel-rum-js reference/edot-browser overview"
+        TableOfContentsNavigation  /docs/reference/managed-inputs  "docs-content reference/managed-inputs"
+          index: FileNavigationLeaf  /docs/reference/managed-inputs  "docs-content reference/managed-inputs"
+          FileNavigationLeaf  /docs/reference/managed-inputs/overview  "docs-content reference/managed-inputs overview"
+        TableOfContentsNavigation  /docs/reference/managed-integrations  "docs-content reference/managed-integrations"
+          index: FileNavigationLeaf  /docs/reference/managed-integrations  "docs-content reference/managed-integrations"
+          FileNavigationLeaf  /docs/reference/managed-integrations/overview  "docs-content reference/managed-integrations overview"
+        TableOfContentsNavigation  /docs/reference/integrations  "private-repo-3 reference" [island]
+          index: FileNavigationLeaf  /docs/reference/integrations  "private-repo-3 reference"
+          FileNavigationLeaf  /docs/reference/integrations/overview  "private-repo-3 reference overview"
+        TableOfContentsNavigation  /docs/reference/aws-forwarder  "elastic-serverless-forwarder reference" [island]
+          index: FileNavigationLeaf  /docs/reference/aws-forwarder  "elastic-serverless-forwarder reference"
+          FileNavigationLeaf  /docs/reference/aws-forwarder/overview  "elastic-serverless-forwarder reference overview"
+        TableOfContentsNavigation  /docs/reference/elasticsearch-hadoop  "elasticsearch-hadoop reference" [island]
+          index: FileNavigationLeaf  /docs/reference/elasticsearch-hadoop  "elasticsearch-hadoop reference"
+          FileNavigationLeaf  /docs/reference/elasticsearch-hadoop/overview  "elasticsearch-hadoop reference overview"
+        TableOfContentsNavigation  /docs/reference/fleet  "docs-content reference/fleet" [island]
+          index: FileNavigationLeaf  /docs/reference/fleet  "docs-content reference/fleet"
+          FileNavigationLeaf  /docs/reference/fleet/overview  "docs-content reference/fleet overview"
+        TableOfContentsNavigation  /docs/reference/logstash  "logstash reference" [island]
+          index: FileNavigationLeaf  /docs/reference/logstash  "logstash reference"
+          FileNavigationLeaf  /docs/reference/logstash/overview  "logstash reference overview"
+        TableOfContentsNavigation  /docs/reference/logstash/plugins  "private-repo-4 lsr" [island]
+          index: FileNavigationLeaf  /docs/reference/logstash/plugins  "private-repo-4 lsr"
+          FileNavigationLeaf  /docs/reference/logstash/plugins/overview  "private-repo-4 lsr overview"
+        TableOfContentsNavigation  /docs/reference/logstash/versioned-plugins  "private-repo-4 vpr" [island]
+          index: FileNavigationLeaf  /docs/reference/logstash/versioned-plugins  "private-repo-4 vpr"
+          FileNavigationLeaf  /docs/reference/logstash/versioned-plugins/overview  "private-repo-4 vpr overview"
+      TableOfContentsNavigation  /docs/reference/ecs  "ecs reference" [island]
+        index: FileNavigationLeaf  /docs/reference/ecs  "ecs reference"
+        FileNavigationLeaf  /docs/reference/ecs/overview  "ecs reference overview"
+        TableOfContentsNavigation  /docs/reference/ecs/logging  "ecs-logging reference" [island]
+          index: FileNavigationLeaf  /docs/reference/ecs/logging  "ecs-logging reference"
+          FileNavigationLeaf  /docs/reference/ecs/logging/overview  "ecs-logging reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/dotnet  "ecs-dotnet reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/dotnet  "ecs-dotnet reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/dotnet/overview  "ecs-dotnet reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/go-logrus  "ecs-logging-go-logrus reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/go-logrus  "ecs-logging-go-logrus reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/go-logrus/overview  "ecs-logging-go-logrus reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/go-zap  "ecs-logging-go-zap reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/go-zap  "ecs-logging-go-zap reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/go-zap/overview  "ecs-logging-go-zap reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/go-zerolog  "ecs-logging-go-zerolog reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/go-zerolog  "ecs-logging-go-zerolog reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/go-zerolog/overview  "ecs-logging-go-zerolog reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/java  "ecs-logging-java reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/java  "ecs-logging-java reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/java/overview  "ecs-logging-java reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/nodejs  "ecs-logging-nodejs reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/nodejs  "ecs-logging-nodejs reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/nodejs/overview  "ecs-logging-nodejs reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/php  "ecs-logging-php reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/php  "ecs-logging-php reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/php/overview  "ecs-logging-php reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/python  "ecs-logging-python reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/python  "ecs-logging-python reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/python/overview  "ecs-logging-python reference overview"
+          TableOfContentsNavigation  /docs/reference/ecs/logging/ruby  "ecs-logging-ruby reference" [island]
+            index: FileNavigationLeaf  /docs/reference/ecs/logging/ruby  "ecs-logging-ruby reference"
+            FileNavigationLeaf  /docs/reference/ecs/logging/ruby/overview  "ecs-logging-ruby reference overview"
+      DocumentationSetNavigation  /docs/reference/elastic-cli  "cli" [island]
+        index: FileNavigationLeaf  /docs/reference/elastic-cli  "cli"
+        FileNavigationLeaf  /docs/reference/elastic-cli/overview  "cli overview"
+      TableOfContentsNavigation  /docs/reference/machine-learning  "docs-content reference/machine-learning" [island]
+        index: FileNavigationLeaf  /docs/reference/machine-learning  "docs-content reference/machine-learning"
+        FileNavigationLeaf  /docs/reference/machine-learning/overview  "docs-content reference/machine-learning overview"
+      TableOfContentsNavigation  /docs/reference/private-repo-15  "docs-content reference/private-repo-15" [island]
+        index: FileNavigationLeaf  /docs/reference/private-repo-15  "docs-content reference/private-repo-15"
+        FileNavigationLeaf  /docs/reference/private-repo-15/overview  "docs-content reference/private-repo-15 overview"
+        TableOfContentsNavigation  /docs/reference/private-repo-15/elasticsearch  "Elasticsearch" [island]
+          index: FileNavigationLeaf  /docs/reference/private-repo-15/elasticsearch  "private-repo-15 elasticsearch"
+          FileNavigationLeaf  /docs/reference/private-repo-15/elasticsearch/overview  "private-repo-15 elasticsearch overview"
+        TableOfContentsNavigation  /docs/reference/private-repo-15/rules  "Rule ids" [island]
+          index: FileNavigationLeaf  /docs/reference/private-repo-15/rules  "private-repo-15 rules"
+          FileNavigationLeaf  /docs/reference/private-repo-15/rules/overview  "private-repo-15 rules overview"
+      TableOfContentsNavigation  /docs/reference/search-ui  "search-ui reference" [island]
+        index: FileNavigationLeaf  /docs/reference/search-ui  "search-ui reference"
+        FileNavigationLeaf  /docs/reference/search-ui/overview  "search-ui reference overview"
+      TableOfContentsNavigation  /docs/reference/glossary  "docs-content reference/glossary" [island]
+        index: FileNavigationLeaf  /docs/reference/glossary  "docs-content reference/glossary"
+        FileNavigationLeaf  /docs/reference/glossary/overview  "docs-content reference/glossary overview"
+  SectionNavigation  /docs/troubleshoot  "Troubleshoot" [island]
+    index: SectionIndexLeaf  /docs/troubleshoot  "Troubleshoot"
+    TableOfContentsNavigation  /docs/troubleshoot  "docs-content troubleshoot"
+      index: FileNavigationLeaf  /docs/troubleshoot  "docs-content troubleshoot"
+      FileNavigationLeaf  /docs/troubleshoot/overview  "docs-content troubleshoot overview"
+  SectionNavigation  /docs/release-notes  "Release notes" [island]
+    index: SectionIndexLeaf  /docs/release-notes  "Release notes"
+    TableOfContentsNavigation  /docs/release-notes  "docs-content release-notes/intro"
+      index: FileNavigationLeaf  /docs/release-notes  "docs-content release-notes/intro"
+      FileNavigationLeaf  /docs/release-notes/overview  "docs-content release-notes/intro overview"
+      TableOfContentsNavigation  /docs/release-notes/elasticsearch  "elasticsearch release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/elasticsearch  "elasticsearch release-notes"
+        FileNavigationLeaf  /docs/release-notes/elasticsearch/overview  "elasticsearch release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/elasticsearch/clients/java  "elasticsearch-java release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/java  "elasticsearch-java release-notes"
+          FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/java/overview  "elasticsearch-java release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/elasticsearch/clients/javascript  "elasticsearch-js release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/javascript  "elasticsearch-js release-notes"
+          FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/javascript/overview  "elasticsearch-js release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/elasticsearch/clients/dotnet  "elasticsearch-net release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/dotnet  "elasticsearch-net release-notes"
+          FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/dotnet/overview  "elasticsearch-net release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/elasticsearch/clients/php  "elasticsearch-php release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/php  "elasticsearch-php release-notes"
+          FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/php/overview  "elasticsearch-php release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/elasticsearch/clients/python  "elasticsearch-py release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/python  "elasticsearch-py release-notes"
+          FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/python/overview  "elasticsearch-py release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/elasticsearch/clients/ruby  "elasticsearch-ruby release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/ruby  "elasticsearch-ruby release-notes"
+          FileNavigationLeaf  /docs/release-notes/elasticsearch/clients/ruby/overview  "elasticsearch-ruby release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/elasticsearch-hadoop  "elasticsearch-hadoop release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/elasticsearch-hadoop  "elasticsearch-hadoop release-notes"
+          FileNavigationLeaf  /docs/release-notes/elasticsearch-hadoop/overview  "elasticsearch-hadoop release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/kibana  "kibana release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/kibana  "kibana release-notes"
+        FileNavigationLeaf  /docs/release-notes/kibana/overview  "kibana release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/elastic-agent  "elastic-agent release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/elastic-agent  "elastic-agent release-notes"
+        FileNavigationLeaf  /docs/release-notes/elastic-agent/overview  "elastic-agent release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/fleet-server  "fleet-server release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/fleet-server  "fleet-server release-notes"
+        FileNavigationLeaf  /docs/release-notes/fleet-server/overview  "fleet-server release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/logstash  "logstash release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/logstash  "logstash release-notes"
+        FileNavigationLeaf  /docs/release-notes/logstash/overview  "logstash release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/beats  "beats release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/beats  "beats release-notes"
+        FileNavigationLeaf  /docs/release-notes/beats/overview  "beats release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/cloud-serverless  "docs-content release-notes/elastic-cloud-serverless" [island]
+        index: FileNavigationLeaf  /docs/release-notes/cloud-serverless  "docs-content release-notes/elastic-cloud-serverless"
+        FileNavigationLeaf  /docs/release-notes/cloud-serverless/overview  "docs-content release-notes/elastic-cloud-serverless overview"
+      TableOfContentsNavigation  /docs/release-notes/cloud-hosted  "private-repo-5 release-notes/cloud-hosted" [island]
+        index: FileNavigationLeaf  /docs/release-notes/cloud-hosted  "private-repo-5 release-notes/cloud-hosted"
+        FileNavigationLeaf  /docs/release-notes/cloud-hosted/overview  "private-repo-5 release-notes/cloud-hosted overview"
+      TableOfContentsNavigation  /docs/release-notes/cloud-enterprise  "private-repo-5 release-notes/cloud-enterprise" [island]
+        index: FileNavigationLeaf  /docs/release-notes/cloud-enterprise  "private-repo-5 release-notes/cloud-enterprise"
+        FileNavigationLeaf  /docs/release-notes/cloud-enterprise/overview  "private-repo-5 release-notes/cloud-enterprise overview"
+      TableOfContentsNavigation  /docs/release-notes/cloud-on-k8s  "cloud-on-k8s release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/cloud-on-k8s  "cloud-on-k8s release-notes"
+        FileNavigationLeaf  /docs/release-notes/cloud-on-k8s/overview  "cloud-on-k8s release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/observability  "docs-content release-notes/elastic-observability" [island]
+        index: FileNavigationLeaf  /docs/release-notes/observability  "docs-content release-notes/elastic-observability"
+        FileNavigationLeaf  /docs/release-notes/observability/overview  "docs-content release-notes/elastic-observability overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/android  "apm-agent-android release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/android  "apm-agent-android release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/android/overview  "apm-agent-android release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/cloud-forwarder/aws  "private-repo-1 release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/cloud-forwarder/aws  "private-repo-1 release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/cloud-forwarder/aws/overview  "private-repo-1 release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/ios  "apm-agent-ios release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/ios  "apm-agent-ios release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/ios/overview  "apm-agent-ios release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/react-native  "elastic-otel-react-native release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/react-native  "elastic-otel-react-native release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/react-native/overview  "elastic-otel-react-native release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/java  "elastic-otel-java release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/java  "elastic-otel-java release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/java/overview  "elastic-otel-java release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/dotnet  "elastic-otel-dotnet release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/dotnet  "elastic-otel-dotnet release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/dotnet/overview  "elastic-otel-dotnet release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/node  "elastic-otel-node release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/node  "elastic-otel-node release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/node/overview  "elastic-otel-node release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/python  "elastic-otel-python release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/python  "elastic-otel-python release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/python/overview  "elastic-otel-python release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/php  "elastic-otel-php release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/php  "elastic-otel-php release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/php/overview  "elastic-otel-php release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/edot/sdks/rum  "elastic-otel-rum-js release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/edot/sdks/rum  "elastic-otel-rum-js release-notes"
+          FileNavigationLeaf  /docs/release-notes/edot/sdks/rum/overview  "elastic-otel-rum-js release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm  "apm-server release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm  "apm-server release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/overview  "apm-server release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/dotnet  "apm-agent-dotnet release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/dotnet  "apm-agent-dotnet release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/dotnet/overview  "apm-agent-dotnet release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/go  "apm-agent-go release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/go  "apm-agent-go release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/go/overview  "apm-agent-go release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/java  "apm-agent-java release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/java  "apm-agent-java release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/java/overview  "apm-agent-java release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/nodejs  "apm-agent-nodejs release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/nodejs  "apm-agent-nodejs release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/nodejs/overview  "apm-agent-nodejs release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/php  "apm-agent-php release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/php  "apm-agent-php release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/php/overview  "apm-agent-php release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/python  "apm-agent-python release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/python  "apm-agent-python release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/python/overview  "apm-agent-python release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/ruby  "apm-agent-ruby release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/ruby  "apm-agent-ruby release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/ruby/overview  "apm-agent-ruby release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/agents/rum-js  "apm-agent-rum-js release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/agents/rum-js  "apm-agent-rum-js release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/agents/rum-js/overview  "apm-agent-rum-js release-notes overview"
+        TableOfContentsNavigation  /docs/release-notes/apm/aws-lambda  "apm-aws-lambda release-notes"
+          index: FileNavigationLeaf  /docs/release-notes/apm/aws-lambda  "apm-aws-lambda release-notes"
+          FileNavigationLeaf  /docs/release-notes/apm/aws-lambda/overview  "apm-aws-lambda release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/security  "docs-content release-notes/elastic-security" [island]
+        index: FileNavigationLeaf  /docs/release-notes/security  "docs-content release-notes/elastic-security"
+        FileNavigationLeaf  /docs/release-notes/security/overview  "docs-content release-notes/elastic-security overview"
+      TableOfContentsNavigation  /docs/release-notes/ecs  "ecs release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/ecs  "ecs release-notes"
+        FileNavigationLeaf  /docs/release-notes/ecs/overview  "ecs release-notes overview"
+      TableOfContentsNavigation  /docs/release-notes/ecctl  "ecctl release-notes" [island]
+        index: FileNavigationLeaf  /docs/release-notes/ecctl  "ecctl release-notes"
+        FileNavigationLeaf  /docs/release-notes/ecctl/overview  "ecctl release-notes overview"

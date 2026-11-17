@@ -1,0 +1,5 @@
+list continuation tokens: [null]
+invalid keys: []
+puts: 1
+  bucket=example-specs key=index.json contentType=application/json ifMatch="etag-1" ifNoneMatch=null
+  body={"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}

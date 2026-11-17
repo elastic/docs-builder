@@ -4401,3 +4401,75 @@ body[data-api-column-dragging] {
 		display: none;
 	}
 }
+
+/* The dialog "let us know" opens in the beta banner. It sits inside the banner, so it takes back the text the banner centres. */
+.api-beta-feedback {
+	width: min(32rem, calc(100vw - var(--space-6)));
+	max-height: calc(100vh - var(--space-8));
+	margin: auto;
+	padding: 0;
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-size: var(--text-base);
+	text-align: start;
+	box-shadow: var(--shadow-overlay);
+}
+
+.api-beta-feedback[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.api-beta-feedback::backdrop {
+	background: color-mix(in oklab, var(--color-emphasis) 50%, transparent);
+}
+
+.api-beta-feedback__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--space-4) var(--space-5);
+	border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.api-beta-feedback__title {
+	margin: 0;
+	font-size: var(--text-lg);
+}
+
+.api-beta-feedback__header form {
+	margin: 0;
+}
+
+.api-beta-feedback__close {
+	display: inline-flex;
+	padding: var(--space-1);
+	border: 0;
+	background: transparent;
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.api-beta-feedback__close:hover {
+	color: var(--color-heading);
+}
+
+.api-beta-feedback__content {
+	padding: var(--space-5);
+	overflow-y: auto;
+}
+
+.api-beta-feedback__intro {
+	margin: 0 0 var(--space-4);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+/* The widget is the page's feedback widget, which has its own top rule and space above it. */
+.api-beta-feedback .feedback {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}

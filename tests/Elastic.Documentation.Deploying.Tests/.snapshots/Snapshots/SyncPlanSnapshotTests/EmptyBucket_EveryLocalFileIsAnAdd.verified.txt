@@ -1,0 +1,28 @@
+{
+  "deletion_threshold_default": null,
+  "exclude_patterns": [],
+  "remote_listing_completed": true,
+  "total_source_files": 3,
+  "total_remote_files": 0,
+  "total_sync_requests": 3,
+  "delete": [],
+  "add": [
+    {
+      "local_path": "{output}/docs/guide/a.html",
+      "destination_path": "docs/guide/a.html"
+    },
+    {
+      "local_path": "{output}/docs/guide/b.html",
+      "destination_path": "docs/guide/b.html"
+    },
+    {
+      "local_path": "{output}/docs/index.html",
+      "destination_path": "docs/index.html"
+    }
+  ],
+  "update": [],
+  "skip": [],
+  "retain": []
+}
+--- validation: valid=True ratio=NaN threshold=0
+--- diagnostics

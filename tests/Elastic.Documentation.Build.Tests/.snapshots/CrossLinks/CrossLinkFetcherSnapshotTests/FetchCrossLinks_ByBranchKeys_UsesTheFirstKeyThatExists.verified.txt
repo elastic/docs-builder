@@ -1,0 +1,5 @@
+reader calls: registry, links elastic/alpha/8.x/links.json
+origin: https://github.com/example-org/alpha
+no key matches: Repository found in link index however none of: 'main' branches found
+no keys: Repository found in link index however none of: '' branches found
+unknown repository: Repository zeta not found in link index

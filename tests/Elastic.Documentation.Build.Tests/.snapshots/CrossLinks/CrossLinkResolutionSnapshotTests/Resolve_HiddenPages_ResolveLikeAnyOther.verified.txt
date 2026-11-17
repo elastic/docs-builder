@@ -1,0 +1,21 @@
+example-repo://hidden/secret.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/hidden/secret
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/hidden/secret
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/hidden/secret
+  publish                 resolved https://docs.example.test/hidden/secret
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/hidden/secret
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/hidden/secret
+example-repo://hidden/secret.md#inside
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/hidden/secret#inside
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/hidden/secret#inside
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/hidden/secret#inside
+  publish                 resolved https://docs.example.test/hidden/secret#inside
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/hidden/secret#inside
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/hidden/secret#inside
+example-repo://hidden/secret.md#outside
+  isolated                LinkAnchorNotFound: 'hidden/secret.md' has no anchor named: '#outside'.
+  codex-absolute          LinkAnchorNotFound: 'hidden/secret.md' has no anchor named: '#outside'.
+  codex-relative          LinkAnchorNotFound: 'hidden/secret.md' has no anchor named: '#outside'.
+  publish                 LinkAnchorNotFound: 'hidden/secret.md' has no anchor named: '#outside'.
+  publish-prefixed        LinkAnchorNotFound: 'hidden/secret.md' has no anchor named: '#outside'.
+  publish-prefixed-slash  LinkAnchorNotFound: 'hidden/secret.md' has no anchor named: '#outside'.

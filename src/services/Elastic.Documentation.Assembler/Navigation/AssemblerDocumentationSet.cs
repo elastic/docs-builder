@@ -62,7 +62,10 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 
-		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { Output = output, Git = gitConfiguration, });
+		var docFs = DocumentationFileSystem.Resolve(
+			path,
+			new DocumentationScopeOptions { Output = output, Git = gitConfiguration, Inner = context.ReadFileSystem.InnerFileSystem }
+		);
 		var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 		{
 			AvailableExporters = availableExporters,

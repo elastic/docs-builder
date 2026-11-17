@@ -1,0 +1,73 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": null,
+      "Subtypes": null,
+      "Areas": {
+        "Search": ":Search/Search, Team:Search",
+        "Observability": "Team:Search"
+      },
+      "Products": null,
+      "Features": null,
+      "Highlight": null
+    },
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": [
+      "Search",
+      "Observability"
+    ],
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": {
+      ":Search/Search": [
+        "Search"
+      ],
+      "Team:Search": [
+        "Search",
+        "Observability"
+      ]
+    },
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

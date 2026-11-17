@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.Serverless;
 
@@ -99,10 +100,10 @@ public static partial class ServerlessPromotion
 		)
 	};
 
-	[GeneratedRegex(@"^gitops:\s+(?<slices>\S+)")]
+	[GeneratedRegex(@"^gitops:\s+(?<slices>\S+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PromotionSlicesRegex();
 
-	[GeneratedRegex(@"^\s*(?<slice>[A-Za-z0-9-]+):\s*[""']?(?<sha>[0-9a-fA-F]{7,40})[""']?\s*$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^\s*(?<slice>[A-Za-z0-9-]+):\s*[""']?(?<sha>[0-9a-fA-F]{7,40})[""']?\s*$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SliceVersionRegex();
 
 	/// <summary>Whether a gitops commit promoted <paramref name="finalSlice"/>. Its message names the slices,
@@ -117,6 +118,21 @@ public static partial class ServerlessPromotion
 	/// <summary>Reads the version of <paramref name="finalSlice"/> from a <c>versions.yaml</c>, or <c>null</c>.</summary>
 	public static string? ParseFinalSliceVersion(string versionsYaml, string finalSlice) =>
 		SliceVersionRegex().Matches(versionsYaml).FirstOrDefault(m => m.Groups["slice"].Value == finalSlice)?.Groups["sha"].Value;
+
+	/// <summary>The first 12 characters of a ref, in lower case. It names a promotion in serverless-gitops and in its review pull request.</summary>
+	public static string ShortRef(string gitRef) => (gitRef.Length > 12 ? gitRef[..12] : gitRef).ToLowerInvariant();
+
+	/// <summary>
+	/// Adds the short ref of the promotion to a bundle file name. Bundle names are <c>{repo}-{product}-{date}</c>, so two promotions
+	/// on one day would share a name and a later release, including one with no notes, could replace an earlier one when published.
+	/// A name that already ends with the short ref is unchanged.
+	/// </summary>
+	public static string WithShortRef(string fileName, string serviceVersion)
+	{
+		var shortRef = ShortRef(serviceVersion);
+		var stem = Path.GetFileNameWithoutExtension(fileName);
+		return stem.EndsWith($"-{shortRef}", StringComparison.Ordinal) ? fileName : $"{stem}-{shortRef}{Path.GetExtension(fileName)}";
+	}
 
 	/// <summary>Gitops stores 12-character hashes and callers may send a full SHA in any case,
 	/// so two refs are the same when their first 12 characters match, case-insensitively.</summary>

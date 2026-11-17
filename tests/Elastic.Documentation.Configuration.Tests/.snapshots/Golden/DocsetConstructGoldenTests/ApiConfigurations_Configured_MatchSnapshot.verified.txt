@@ -1,0 +1,67 @@
+diagnostics:
+model <ConfigurationFile>:
+  SourceFile: <path /docs/docset.yml>
+  Project: "apis"
+  CrossLinkRepositories: []
+  Registry: Public
+  CrossLinkEntries: []
+  ReleaseNotesProducts: []
+  MaxTocDepth: 2
+  Extensions <EnabledExtensions>:
+    IsDetectionRulesEnabled: False
+    Enabled: []
+  Redirects: null
+  RedirectsSource: <path /docs/redirects.yml>
+  Products: []
+  Features <FeatureFlags>:
+    PrimaryNavEnabled: False
+    DisableGitHubEditLink: False
+    StagingElasticNavEnabled: False
+    WebsiteSearchEnabled: False
+    WebsiteSearchScriptUrl: null
+    WafIntegrationUrl: null
+    AirGappedEnabled: False
+    DiagnosticsPanelEnabled: False
+    AssemblerApiExplorerEnabled: False
+    GuideNavEnabled: False
+    NavigationPreviewEnabled: False
+    PageFeedbackEnabled: False
+  ScopeDirectory: <path /docs>
+  StorybookRegistry: null
+  StorybookRegistryFallback: null
+  ApiConfigurations:
+    elasticsearch <ResolvedApiConfiguration>:
+      ProductKey: "elasticsearch"
+      Product: <Product elasticsearch>
+      SpecFileName: "elasticsearch.json"
+      LocalSpecFile: <path /docs/elasticsearch.json>
+      Repository: "elastic/elasticsearch-specification"
+      Children: []
+      ApiContentDirectory: <path /docs/api/elasticsearch>
+      CatalogCategories:
+        - "ess"
+        - "self"
+    kibana <ResolvedApiConfiguration>:
+      ProductKey: "kibana"
+      Product: <Product kibana>
+      SpecFileName: "kibana.yaml"
+      LocalSpecFile: null
+      Repository: null
+      Children:
+        -: <path /docs/api/kibana/overview.md>
+      ApiContentDirectory: <path /docs/api/kibana>
+      CatalogCategories: []
+  SuppressDiagnostics: []
+  Branding: null
+  Ctas:
+    trial <Cta>:
+      Name: "trial"
+      Label: "Get started free"
+      Url: "https://cloud.elastic.co/registration?page=docs&placement=docs-siderail"
+      Benefits:
+        - "14-day free trial"
+        - "All features included"
+        - "No setup required"
+  DevelopmentDocs: False
+substitutions:
+generated substitutions (version.* and product.* keys): 500

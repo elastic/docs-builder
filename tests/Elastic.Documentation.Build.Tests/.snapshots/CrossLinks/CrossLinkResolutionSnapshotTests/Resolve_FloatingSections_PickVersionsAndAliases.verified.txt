@@ -1,0 +1,100 @@
+example-repo://api/example-api
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api
+  publish                 resolved https://docs.example.test/api/doc/example-api
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api
+example-repo://api/example-api/
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api
+  publish                 resolved https://docs.example.test/api/doc/example-api
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api
+example-repo://api/example-api/operation/operation-search
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-search
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-search
+  publish                 resolved https://docs.example.test/api/doc/example-api/operation/operation-search
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/operation/operation-search
+example-repo://api/example-api/operation/operation-search#fragment
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-search#fragment
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-search#fragment
+  publish                 resolved https://docs.example.test/api/doc/example-api/operation/operation-search#fragment
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/operation/operation-search#fragment
+example-repo://api/example-api/operation/operation-new
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-new
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-new
+  publish                 resolved https://docs.example.test/api/doc/example-api/operation/operation-new
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/operation/operation-new
+example-repo://api/example-api/operation/operation-old
+  isolated                LinkFloatingPageNotFound: 'operation/operation-old' is not a page of 'api/example-api' in the current version.
+  codex-absolute          LinkFloatingPageNotFound: 'operation/operation-old' is not a page of 'api/example-api' in the current version.
+  publish                 LinkFloatingPageNotFound: 'operation/operation-old' is not a page of 'api/example-api' in the current version.
+  publish-prefixed        LinkFloatingPageNotFound: 'operation/operation-old' is not a page of 'api/example-api' in the current version.
+example-repo://api/example-api/operation/operation-missing
+  isolated                LinkFloatingPageNotFound: 'operation/operation-missing' is not a page of 'api/example-api' in the current version.
+  codex-absolute          LinkFloatingPageNotFound: 'operation/operation-missing' is not a page of 'api/example-api' in the current version.
+  publish                 LinkFloatingPageNotFound: 'operation/operation-missing' is not a page of 'api/example-api' in the current version.
+  publish-prefixed        LinkFloatingPageNotFound: 'operation/operation-missing' is not a page of 'api/example-api' in the current version.
+example-repo://api/example-api/8
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/8
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/8
+  publish                 resolved https://docs.example.test/api/doc/example-api/8
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/8
+example-repo://api/example-api/8/operation/operation-search
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/v8/operation/operation-search
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/v8/operation/operation-search
+  publish                 resolved https://docs.example.test/api/doc/example-api/v8/operation/operation-search
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/v8/operation/operation-search
+example-repo://api/example-api/8/operation/operation-search-legacy
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/v8/operation/operation-search
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/v8/operation/operation-search
+  publish                 resolved https://docs.example.test/api/doc/example-api/v8/operation/operation-search
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/v8/operation/operation-search
+example-repo://api/example-api/8/operation/operation-old
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/v8/operation/operation-old
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/v8/operation/operation-old
+  publish                 resolved https://docs.example.test/api/doc/example-api/v8/operation/operation-old
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/v8/operation/operation-old
+example-repo://api/example-api/8/operation/operation-new
+  isolated                LinkFloatingPageNotFound: 'operation/operation-new' is not a page of 'api/example-api' in version '8'.
+  codex-absolute          LinkFloatingPageNotFound: 'operation/operation-new' is not a page of 'api/example-api' in version '8'.
+  publish                 LinkFloatingPageNotFound: 'operation/operation-new' is not a page of 'api/example-api' in version '8'.
+  publish-prefixed        LinkFloatingPageNotFound: 'operation/operation-new' is not a page of 'api/example-api' in version '8'.
+example-repo://api/example-api/main/operation/operation-search
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-search
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api/operation/operation-search
+  publish                 resolved https://docs.example.test/api/doc/example-api/operation/operation-search
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api/operation/operation-search
+example-repo://api/example-api/main/operation/operation-search-legacy
+  isolated                LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in version 'main'.
+  codex-absolute          LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in version 'main'.
+  publish                 LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in version 'main'.
+  publish-prefixed        LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in version 'main'.
+example-repo://api/example-api/main
+  isolated                resolved https://www.elastic.co/docs/api/doc/example-api
+  codex-absolute          resolved https://www.elastic.co/docs/api/doc/example-api
+  publish                 resolved https://docs.example.test/api/doc/example-api
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/api/doc/example-api
+example-repo://api/example-api/9/operation/operation-search
+  isolated                LinkFloatingPageNotFound: '9/operation/operation-search' is not a page of 'api/example-api' in the current version.
+  codex-absolute          LinkFloatingPageNotFound: '9/operation/operation-search' is not a page of 'api/example-api' in the current version.
+  publish                 LinkFloatingPageNotFound: '9/operation/operation-search' is not a page of 'api/example-api' in the current version.
+  publish-prefixed        LinkFloatingPageNotFound: '9/operation/operation-search' is not a page of 'api/example-api' in the current version.
+example-repo://api/example-api/operation/operation-search-legacy
+  isolated                LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in the current version.
+  codex-absolute          LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in the current version.
+  publish                 LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in the current version.
+  publish-prefixed        LinkFloatingPageNotFound: 'operation/operation-search-legacy' is not a page of 'api/example-api' in the current version.
+example-repo://api/other-api/operation/x
+  isolated                LinkNotInIndex: 'api/other-api/operation/x' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'api/other-api/operation/x' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'api/other-api/operation/x' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed        LinkNotInIndex: 'api/other-api/operation/x' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://api
+  isolated                LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed        LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://api/
+  isolated                LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed        LinkNotInIndex: 'api' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json

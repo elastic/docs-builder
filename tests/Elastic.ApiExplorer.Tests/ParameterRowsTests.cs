@@ -334,6 +334,9 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		return fs.File.ReadAllText("/out.html");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("required type-status")]
+	[System.Text.RegularExpressions.GeneratedRegex("required type-status", System.Text.RegularExpressions.RegexOptions.None, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex RequiredStatusRegex();
 }

@@ -1,0 +1,46 @@
+{
+  "index": {
+    "elastic/elasticsearch": {
+      "openapi-serverless.json": {
+        "8": {
+          "version": "8.16"
+        }
+      },
+      "openapi.json": {
+        "10": {
+          "version": "10.1"
+        },
+        "8": {
+          "version": "8.16"
+        },
+        "9": {
+          "version": "9.10"
+        },
+        "main": {
+          "version": "main"
+        }
+      }
+    },
+    "elastic/kibana": {
+      "openapi.json": {
+        "8": {
+          "version": "8.19"
+        },
+        "9": {
+          "version": "9.1"
+        },
+        "main": {
+          "version": "main"
+        }
+      }
+    },
+    "example-org/example-repo": {
+      "spec.yaml": {
+        "1": {
+          "version": "1.0"
+        }
+      }
+    }
+  },
+  "invalidKeys": []
+}

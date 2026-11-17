@@ -1,0 +1,65 @@
+{
+  "configuration": {
+    "Pivot": null,
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": {
+      "Directory": "docs/changelog",
+      "OutputDirectory": "docs/releases",
+      "UseLocalChangelogs": true,
+      "Description": "Line one {version}\nLine two\n",
+      "Repo": null,
+      "Owner": null,
+      "Branch": "main",
+      "LinkAllowRepos": null,
+      "ReleaseDates": false,
+      "Backports": null,
+      "Profiles": null,
+      "Releases": null
+    },
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.elastic.co/docs/get-started</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/get-started/concepts</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/get-started/install</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/apm/agents/java</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/apm/agents/java/setup</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/elasticsearch</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/elasticsearch/query-dsl</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/elasticsearch/query-dsl/term-queries</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/elasticsearch/search-apis</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/kibana</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+  <url>
+    <loc>https://www.elastic.co/docs/reference/kibana/dashboards</loc>
+    <lastmod>{build time}</lastmod>
+  </url>
+</urlset>

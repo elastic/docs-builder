@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -45,6 +46,6 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select($"#{bodyId}").RemoveAttributes("popover-data"));
 	}
 
-	[GeneratedRegex("<(h[1-6])\\b")]
+	[GeneratedRegex("<(h[1-6])\\b", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingOpenTags();
 }

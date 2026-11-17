@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Configuration.Assembler;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -226,6 +227,155 @@ public static class SiteNavigationTestFixture
 		fileSystem.AddFile($"{baseDir}/docs/query-dsl/index.md", new MockFileData("# Query DSL"));
 		fileSystem.AddFile($"{baseDir}/docs/query-dsl/term-queries.md", new MockFileData("# Term Queries"));
 		fileSystem.AddFile($"{baseDir}/docs/query-dsl/full-text-queries.md", new MockFileData("# Full Text Queries"));
+	}
+
+	/// <summary>
+	/// Repositories that exercise mounts <see cref="CreateMultiRepositoryFileSystem"/> does not: a narrative
+	/// repository with nested tocs, <c>apm-server</c> and <c>apm-agents-java</c> whose prefixes start the same way, hidden pages,
+	/// <c>kibana</c>, <c>elasticsearch</c> with release notes, and <c>unlisted</c>, which no navigation file mounts.
+	/// </summary>
+	public static MockFileSystem CreateExtendedRepositoryFileSystem()
+	{
+		var fileSystem = new MockFileSystem();
+
+		AddRepository(
+			fileSystem,
+			NarrativeRepository.RepositoryName,
+			// language=yaml
+			"""
+			project: docs-content
+			toc:
+			  - file: index.md
+			  - file: about.md
+			  - hidden: legal.md
+			  - toc: get-started
+			  - toc: reference
+			  - toc: release-notes
+			""",
+			"index.md",
+			"about.md",
+			"legal.md"
+		);
+		AddToc(
+			fileSystem,
+			NarrativeRepository.RepositoryName,
+			"get-started",
+			// language=yaml
+			"""
+			toc:
+			  - file: index.md
+			  - file: tutorial.md
+			""",
+			"index.md",
+			"tutorial.md"
+		);
+		AddToc(
+			fileSystem,
+			NarrativeRepository.RepositoryName,
+			"reference",
+			// language=yaml
+			"""
+			toc:
+			  - file: index.md
+			  - toc: apm
+			  - toc: apm-agents
+			  - folder: glossary
+			    children:
+			      - file: index.md
+			      - hidden: draft.md
+			      - file: terms.md
+			""",
+			"index.md",
+			"glossary/index.md",
+			"glossary/draft.md",
+			"glossary/terms.md"
+		);
+		AddToc(fileSystem, NarrativeRepository.RepositoryName, "reference/apm", TocWith("overview.md"), "index.md", "overview.md");
+		AddToc(fileSystem, NarrativeRepository.RepositoryName, "reference/apm-agents", TocWith("overview.md"), "index.md", "overview.md");
+		AddToc(
+			fileSystem,
+			NarrativeRepository.RepositoryName,
+			"release-notes",
+			// language=yaml
+			"""
+			toc:
+			  - file: index.md
+			  - toc: elasticsearch-clients
+			""",
+			"index.md"
+		);
+		AddToc(
+			fileSystem,
+			NarrativeRepository.RepositoryName,
+			"release-notes/elasticsearch-clients",
+			TocWith("overview.md"),
+			"index.md",
+			"overview.md"
+		);
+
+		AddRepository(
+			fileSystem,
+			"apm-server",
+			// language=yaml
+			"""
+			project: apm-server
+			toc:
+			  - file: index.md
+			  - hidden: internal.md
+			  - folder: setup
+			    children:
+			      - file: index.md
+			      - hidden: secret.md
+			      - file: install.md
+			""",
+			"index.md",
+			"internal.md",
+			"setup/index.md",
+			"setup/secret.md",
+			"setup/install.md"
+		);
+		AddRepository(fileSystem, "apm-agents-java", DocsetWith("apm-agents-java", "setup.md"), "index.md", "setup.md");
+		AddRepository(fileSystem, "kibana", DocsetWith("kibana", "dashboards.md"), "index.md", "dashboards.md");
+		AddRepository(
+			fileSystem,
+			"elasticsearch",
+			// language=yaml
+			"""
+			project: elasticsearch
+			toc:
+			  - file: index.md
+			  - toc: reference
+			  - toc: release-notes
+			""",
+			"index.md"
+		);
+		AddToc(fileSystem, "elasticsearch", "reference", TocWith("rest-apis.md"), "index.md", "rest-apis.md");
+		AddToc(fileSystem, "elasticsearch", "release-notes", TocWith("changelog.md"), "index.md", "changelog.md");
+		AddRepository(fileSystem, "unlisted", DocsetWith("unlisted", "page.md"), "index.md", "page.md");
+		return fileSystem;
+	}
+
+	private static string TocWith(string page) => $"toc:\n  - file: index.md\n  - file: {page}\n";
+
+	private static string DocsetWith(string project, string page) => $"project: {project}\ntoc:\n  - file: index.md\n  - file: {page}\n";
+
+	/// <summary>Adds <paramref name="repository"/> as a checkout with a docset and a page, titled <c>repository: path</c>, for each of <paramref name="pages"/>.</summary>
+	public static void AddRepository(MockFileSystem fileSystem, string repository, string docsetYaml, params string[] pages)
+	{
+		var baseDir = $"/checkouts/current/{repository}";
+		fileSystem.AddDirectory($"{baseDir}/.git");
+		fileSystem.AddFile($"{baseDir}/docs/docset.yml", new MockFileData(docsetYaml));
+		foreach (var page in pages)
+			fileSystem.AddFile($"{baseDir}/docs/{page}", new MockFileData($"# {repository}: {page.Replace(".md", string.Empty)}"));
+	}
+
+	/// <summary>Adds a nested <c>toc.yml</c> below the docs folder of <paramref name="repository"/> and the pages it lists, relative to that folder.</summary>
+	public static void AddToc(MockFileSystem fileSystem, string repository, string tocPath, string tocYaml, params string[] pages)
+	{
+		var dir = $"/checkouts/current/{repository}/docs/{tocPath}";
+		fileSystem.AddFile($"{dir}/toc.yml", new MockFileData(tocYaml));
+		foreach (var page in pages)
+			fileSystem.AddFile($"{dir}/{page}", new MockFileData($"# {repository}: {tocPath}/{page.Replace(".md", string.Empty)}"));
 	}
 
 	public static TestDocumentationSetContext CreateAssemblerContext(

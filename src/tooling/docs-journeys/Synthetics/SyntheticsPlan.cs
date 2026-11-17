@@ -155,6 +155,6 @@ internal static partial class SyntheticsPlan
 
 	public static void RequireIdentifier(string value, string name) => Require(Identifier(), value, name);
 
-	[GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9_-]*$")]
+	[GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9_-]*$", RegexOptions.None, JourneysRegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex Identifier();
 }

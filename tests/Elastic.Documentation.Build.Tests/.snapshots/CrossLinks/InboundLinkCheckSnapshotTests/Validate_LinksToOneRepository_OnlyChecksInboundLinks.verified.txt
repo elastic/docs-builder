@@ -1,0 +1,3 @@
+passed: false
+error alpha 'page.md' has no anchor named: '#unknown-anchor'.
+error https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/beta/main/links.json 'elastic/alpha' links to unknown file: 'missing.md' in the 'beta' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/beta/main/links.json

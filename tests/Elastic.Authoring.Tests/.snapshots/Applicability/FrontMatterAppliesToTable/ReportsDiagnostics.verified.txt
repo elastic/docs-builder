@@ -1,0 +1,7 @@
+error {repo}/docs/cases/case-08.md Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+error {repo}/docs/cases/case-13.md Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+error {repo}/docs/cases/case-16.md Can't specify a version for 'serverless' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+hint {repo}/docs/cases/case-20.md Unknown key 'unknown' in applies_to. Valid keys: apm_agent_dotnet, deployment, ecctl, ece, ech, eck, elasticsearch, ess, observability, product, security, self, ….
+hint {repo}/docs/cases/case-27.md Unknown key 'Stack' in applies_to. Did you mean 'stack'?
+hint {repo}/docs/cases/case-29.md The 'dev' lifecycle is deprecated and will be removed in a future release.
+warning {repo}/docs/cases/case-21.md Applies block does not use valid yaml keys: :stack

@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Markdig.Syntax;
@@ -15,7 +16,8 @@ namespace Elastic.Markdown.Tests.Directives;
 internal static class MermaidSnapshots
 {
 	/// <summary>The diagram file name carries a hash of the rendered SVG, which changes with the renderer, not with the markup.</summary>
-	public static SnapshotOptions Options => new SnapshotOptions().Scrub(new Regex(@"index-[0-9a-f]{8}\.svg"), "index-{hash}.svg");
+	public static SnapshotOptions Options =>
+		new SnapshotOptions().Scrub(new Regex(@"index-[0-9a-f]{8}\.svg", RegexOptions.None, RegexTimeouts.MatchTimeout), "index-{hash}.svg");
 }
 
 public class MermaidFlowchartTests() : DirectiveTest("""
