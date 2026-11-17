@@ -154,6 +154,7 @@ toc:
       - file: directives.md
       - file: headings.md
       - file: admonitions.md
+      - file: agent-prompt.md
       - file: agent-skill.md
       - file: applies.md
       - file: applies-switch.md

@@ -32,6 +32,7 @@
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
+@import './markdown/agent-prompt.css';
 @import './markdown/agent-skill.css';
 @import './markdown/cli-modifiers.css';
 @import './markdown/contributors.css';
