@@ -34,18 +34,14 @@ public class Aws3LinkIndexReader(
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = registryKey };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		return LinkLoader.LoadRegistry(
-			await ReadTextAsync(stream, cancellationToken),
-			registryKey,
-			getObjectResponse.ETag
-		).OrThrowIfMissing();
+		return LinkLoader.ReadRegistry(await ReadTextAsync(stream, cancellationToken), registryKey, getObjectResponse.ETag);
 	}
 	public async Task<LinkManifest> GetRepositoryLinks(string key, Cancel cancellationToken)
 	{
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = key };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		return LinkLoader.LoadManifest(await ReadTextAsync(stream, cancellationToken), key).OrThrowIfMissing();
+		return LinkLoader.ReadManifest(await ReadTextAsync(stream, cancellationToken), key);
 	}
 
 	private static async Task<string> ReadTextAsync(Stream stream, Cancel cancellationToken)

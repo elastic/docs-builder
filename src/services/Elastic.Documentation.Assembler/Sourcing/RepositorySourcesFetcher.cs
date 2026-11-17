@@ -35,7 +35,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
 		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
-		var linkRegistry = LinkLoader.LoadRegistry(linkRegistrySnapshotStr, linkRegistrySnapshotPath).OrThrowIfMissing();
+		var linkRegistry = LinkLoader.ReadRegistry(linkRegistrySnapshotStr, linkRegistrySnapshotPath);
 		foreach (var repo in repositories.Values)
 		{
 			Paths.ValidateSinglePathSegment(repo.Name, nameof(repo.Name));

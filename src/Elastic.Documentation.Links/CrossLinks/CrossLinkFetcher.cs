@@ -198,7 +198,7 @@ public abstract class CrossLinkFetcher(
 			try
 			{
 				var json = await _fileSystem.File.ReadAllTextAsync(cachedPath);
-				var linkReference = LinkLoader.LoadManifest(json, cachedPath).OrThrowIfMissing();
+				var linkReference = LinkLoader.ReadManifest(json, cachedPath);
 				_ = _cachedLinkReferences.TryAdd(cachedFileName, linkReference);
 				return linkReference;
 			}

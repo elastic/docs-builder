@@ -104,7 +104,7 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 		try
 		{
 			var json = await fileSystem.File.ReadAllTextAsync(localLinksJson.FullName, ctx);
-			var localLinkReference = LinkLoader.LoadManifest(json, localLinksJson.FullName).OrThrowIfMissing();
+			var localLinkReference = LinkLoader.ReadManifest(json, localLinksJson.FullName);
 			crossLinks = resolver.UpdateLinkReference(repository, localLinkReference);
 		}
 		catch (Exception e)

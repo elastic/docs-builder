@@ -82,7 +82,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			);
 
 		var json = await _fileSystem.File.ReadAllTextAsync(registryPath, cancellationToken);
-		return LinkLoader.LoadRegistry(json, registryPath).OrThrowIfMissing();
+		return LinkLoader.ReadRegistry(json, registryPath);
 	}
 
 	/// <inheritdoc />
@@ -95,7 +95,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			throw new FileNotFoundException($"Repository links not found at {linksPath}.");
 
 		var json = await _fileSystem.File.ReadAllTextAsync(linksPath, cancellationToken);
-		return LinkLoader.LoadManifest(json, linksPath).OrThrowIfMissing();
+		return LinkLoader.ReadManifest(json, linksPath);
 	}
 
 	private async Task EnsureCloneAsync(Cancel cancellationToken)

@@ -45,4 +45,20 @@ public static class LinkLoader
 		Loaded<LinkRegistry> loaded when eTag is not null => new Loaded<LinkRegistry>(loaded.Value with { ETag = eTag }, loaded.Findings),
 		var result => result
 	};
+
+	/// <summary>
+	/// The manifest a consumer builds on, read as <c>links.json</c> always was: the same <see cref="JsonException"/> with the parser's message for text
+	/// that does not parse, and <c>null</c> for the literal <c>null</c> (which the loader reports as an empty file). The findings are not reported.
+	/// </summary>
+	public static LinkManifest ReadManifest(string json, string file) =>
+		IsNullLiteral(json) ? null! : LoadManifest(json, file).OrThrowAsJsonException();
+
+	/// <summary>The registry a consumer builds on, read as <c>link-index.json</c> always was; see <see cref="ReadManifest"/>.</summary>
+	public static LinkRegistry ReadRegistry(string json, string file, string? eTag = null) =>
+		IsNullLiteral(json) ? null! : LoadRegistry(json, file, eTag).OrThrowAsJsonException();
+
+	private static bool IsNullLiteral(string json) => json.AsSpan().Trim().SequenceEqual("null");
+
+	private static T OrThrowAsJsonException<T>(this LoadResult<T> result) where T : class =>
+		result.ValueOrNull() ?? throw new JsonException(result.Findings().Last(d => d.Severity == Severity.Error).Message);
 }

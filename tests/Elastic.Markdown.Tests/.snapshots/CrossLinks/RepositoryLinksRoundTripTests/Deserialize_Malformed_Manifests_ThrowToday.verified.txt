@@ -15,4 +15,4 @@ floating-without-pages: throws JsonException: JSON deserialization for type 'Ela
 trailing-comma: throws JsonException: The JSON object contains a trailing comma at the end which is not supported in this mode. Change the reader options. Path: $ | LineNumber: 1 | BytePositionInLine: 84.
 not-json: throws JsonException: 'l' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
 empty-string: throws JsonException: The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
-null-literal: throws JsonException: The links.json is empty.
+null-literal: reads

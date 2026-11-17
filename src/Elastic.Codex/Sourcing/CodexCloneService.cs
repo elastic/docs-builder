@@ -55,7 +55,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			return null;
 
 		var json = await context.ReadFileSystem.File.ReadAllTextAsync(snapshotFilePath, ctx);
-		var linkRegistry = LinkLoader.LoadRegistry(json, snapshotFilePath).OrThrowIfMissing();
+		var linkRegistry = LinkLoader.ReadRegistry(json, snapshotFilePath);
 
 		var checkouts = new List<CodexCheckout>();
 		foreach (var subDir in checkoutDir.GetDirectories())

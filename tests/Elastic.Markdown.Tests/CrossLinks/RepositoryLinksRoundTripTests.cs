@@ -5,8 +5,6 @@
 using System.Text;
 using System.Text.Json;
 using AwesomeAssertions;
-using Elastic.Documentation.Configuration.Loading;
-using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Testing;
@@ -32,16 +30,19 @@ public class RepositoryLinksRoundTripTests
 
 	private static string RoundTrip(string json) => LinkJson.Serialize(LinkManifestJson.Read(json));
 
-	/// <summary>
-	/// Whether a manifest reads, or the first line of the parser's exception. The loader turns that exception into an error finding with the
-	/// same message and returns no manifest, so the finding is what is printed (the parser only ever throws a <see cref="JsonException"/>).
-	/// </summary>
-	private static string Outcome(string json) => LinkLoader.LoadManifest(json, "links.json") switch
+	/// <summary>Whether a manifest reads, or the first line of the exception it throws.</summary>
+	private static string Outcome(string json)
 	{
-		Unreadable<LinkManifest> unreadable =>
-			$"throws {nameof(JsonException)}: {unreadable.Findings.Single().Message.Split('\n')[0].TrimEnd('\r')}",
-		_ => "reads"
-	};
+		try
+		{
+			_ = RoundTrip(json);
+			return "reads";
+		}
+		catch (Exception e)
+		{
+			return $"throws {e.GetType().Name}: {e.Message.Split('\n')[0].TrimEnd('\r')}";
+		}
+	}
 
 	[Test]
 	public void RoundTrip_EmptyManifest_KeepsRequiredProperties() =>

@@ -178,7 +178,7 @@ public class NavigationPrefixChecker
 		try
 		{
 			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
-			return LinkLoader.LoadManifest(json, localLinksJson).OrThrowIfMissing();
+			return LinkLoader.ReadManifest(json, localLinksJson);
 		}
 		catch (Exception e)
 		{

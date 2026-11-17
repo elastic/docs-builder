@@ -151,6 +151,38 @@ public class LinkLoaderTests
 		registry.Should().Be(LinkRegistryOf("kibana"));
 	}
 
+	/// <summary>
+	/// Law: what a consumer reads with <see cref="LinkLoader.ReadManifest"/> and <see cref="LinkLoader.ReadRegistry"/> is what the JSON reader always
+	/// gave: a <see cref="System.Text.Json.JsonException"/> with the parser's message for text that does not parse, and null for a literal null.
+	/// Consequence if broken: callers that catch the exception or log its text behave differently.
+	/// </summary>
+	[Test]
+	[Arguments("{ not json")]
+	[Arguments("")]
+	[Arguments("{}")]
+	public void Read_TextThatDoesNotParse_ThrowsTheParsersJsonException(string text)
+	{
+		var manifest = () => LinkLoader.ReadManifest(text, "links.json");
+		var registry = () => LinkLoader.ReadRegistry(text, "link-index.json");
+
+		manifest.Should().Throw<System.Text.Json.JsonException>();
+		registry.Should().Throw<System.Text.Json.JsonException>();
+		manifest
+			.Should()
+			.Throw<System.Text.Json.JsonException>()
+			.Which
+			.Message
+			.Should()
+			.Be(LinkLoader.LoadManifest(text, "links.json").Findings().Single().Message);
+	}
+
+	[Test]
+	public void Read_ALiteralNull_ReadsAsNullLikeTheJsonReaderDid()
+	{
+		LinkLoader.ReadManifest(" null ", "links.json").Should().BeNull();
+		LinkLoader.ReadRegistry("null", "link-index.json").Should().BeNull();
+	}
+
 	private static LinkRegistry LinkRegistryOf(string repository) =>
 		new()
 		{
