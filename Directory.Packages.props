@@ -44,6 +44,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="11.0.0" />
+    <PackageVersion Include="Nullean.Entities" Version="0.2.0" />
     <PackageVersion Include="Nullean.ScopedFileSystem" Version="0.7.2" />
     <PackageVersion Include="Pagefind.Net" Version="0.6.0" />
     <PackageVersion Include="Pagefind.Net.Frontend" Version="0.6.0" />
