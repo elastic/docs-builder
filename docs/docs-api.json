@@ -62,9 +62,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -72,9 +72,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -82,9 +82,9 @@
           "503": {
             "description": "Service Unavailable",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -127,9 +127,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -137,9 +137,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -147,9 +147,9 @@
           "503": {
             "description": "Service Unavailable",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -180,9 +180,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -190,9 +190,9 @@
           "503": {
             "description": "Service Unavailable",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -224,9 +224,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -234,9 +234,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -268,9 +268,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -278,9 +278,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -288,9 +288,9 @@
           "503": {
             "description": "Service Unavailable",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -362,9 +362,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -372,9 +372,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -382,9 +382,9 @@
           "503": {
             "description": "Service Unavailable",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -505,9 +505,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -515,9 +515,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -525,9 +525,9 @@
           "503": {
             "description": "Service Unavailable",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -556,9 +556,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -597,9 +597,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -607,9 +607,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -662,9 +662,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -672,9 +672,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -682,9 +682,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -802,9 +802,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -812,9 +812,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -822,9 +822,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -832,9 +832,9 @@
           "503": {
             "description": "Service Unavailable",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -887,9 +887,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -897,9 +897,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -907,9 +907,9 @@
           "500": {
             "description": "Internal Server Error",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -920,21 +920,6 @@
   },
   "components": {
     "schemas": {
-      "ApiError": {
-        "required": [
-          "errorType",
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "errorType": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
       "ApiField": {
         "required": [
           "name",
@@ -1856,6 +1841,44 @@
             "format": "int32"
           },
           "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
             "type": [
               "null",
               "string"
