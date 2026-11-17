@@ -1,0 +1,104 @@
+[]
+    []  =>  
+null
+    null
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga", "version": "9.0+" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]  =>  stack: ga 9.0+, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "beta", "version": "9.0-9.2" }, { "type": "stack", "sub_type": "stack", "lifecycle": "ga", "version": "9.3+" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.0-9.2"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.3\u002B"}]  =>  stack: beta 9.0-9.2, ga 9.3+, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga", "version": "all" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]  =>  stack: all
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga", "version": "ALL" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]  =>  stack: all
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga", "version": "bogus" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga", "version": "=9.1" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"=9.1"}]  =>  stack: ga =9.1, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga", "version": "9.0.4!" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0.4!\u002B"}]  =>  stack: ga 9.0.4!+, 
+[{ "type": "stack", "sub_type": "stack" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": null, "version": null }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "PREVIEW" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"preview"}]  =>  stack: preview, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "tech-preview" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "nonsense" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "experimental" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"experimental"}]  =>  stack: experimental, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "deprecated" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"deprecated"}]  =>  stack: deprecated, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "removed" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"removed"}]  =>  stack: removed, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "unavailable" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"unavailable"}]  =>  stack: unavailable, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "development" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"development"}]  =>  stack: dev, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "planned" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"planned"}]  =>  stack: planned, 
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "discontinued" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"discontinued"}]  =>  stack: discontinued, 
+[{ "type": "stack", "sub_type": "ignored", "lifecycle": "ga" }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "type": "deployment", "sub_type": "self", "lifecycle": "ga", "version": "9.0+" }, { "type": "deployment", "sub_type": "ece", "lifecycle": "beta" }, { "type": "deployment", "sub_type": "eck", "lifecycle": "ga" }, { "type": "deployment", "sub_type": "ess", "lifecycle": "ga" }]
+    [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"beta"},{"type":"deployment","sub_type":"eck","lifecycle":"ga"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]  =>  deployment: self=ga 9.0+, , ece=beta, , eck=ga, , ess=ga, 
+[{ "type": "deployment", "sub_type": "ech", "lifecycle": "ga" }]
+    [{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]  =>  deployment: ess=ga, 
+[{ "type": "deployment", "sub_type": "ech", "lifecycle": "ga" }, { "type": "deployment", "sub_type": "ess", "lifecycle": "beta" }]
+    [{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]  =>  deployment: ess=ga, 
+[{ "type": "deployment", "sub_type": "unknown", "lifecycle": "ga" }]
+    []  =>  deployment: 
+[{ "type": "serverless", "sub_type": "elasticsearch", "lifecycle": "ga" }, { "type": "serverless", "sub_type": "observability", "lifecycle": "ga" }, { "type": "serverless", "sub_type": "security", "lifecycle": "beta" }, { "type": "serverless", "sub_type": "vectordb", "lifecycle": "ga" }]
+    [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"beta"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]  =>  serverless: elasticsearch=ga, , observability=ga, , security=beta, , vectordb=ga, 
+[{ "type": "serverless", "sub_type": "vector_db", "lifecycle": "ga" }]
+    []  =>  serverless: 
+[{ "type": "product", "sub_type": "product", "lifecycle": "ga", "version": "9.0+" }]
+    [{"type":"product","sub_type":"product","lifecycle":"ga","version":"9.0\u002B"}]  =>  product: ga 9.0+, 
+[{ "type": "product", "sub_type": "ecctl", "lifecycle": "ga", "version": "1.0+" }, { "type": "product", "sub_type": "apm-agent-java", "lifecycle": "beta" }]
+    [{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"1.0\u002B"},{"type":"product","sub_type":"apm-agent-java","lifecycle":"beta"}]  =>  products: ecctl=ga 1.0+, : not null } => apm-agent-java=beta, 
+[{ "type": "product", "sub_type": "apm_agent_java", "lifecycle": "ga" }]
+    []  =>  products: 
+[{ "type": "product", "sub_type": "no-such-product", "lifecycle": "ga" }]
+    []  =>  products: 
+[{ "type": "elsewhere", "sub_type": "stack", "lifecycle": "ga" }]
+    []  =>  
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga", "extra": 1 }]
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]  =>  stack: ga, 
+[{ "sub_type": "stack", "lifecycle": "ga" }]
+    throws JsonException: Missing type or sub-type
+[{ "type": "stack", "lifecycle": "ga" }]
+    throws JsonException: Missing type or sub-type
+[{ "type": "", "sub_type": "stack" }]
+    throws JsonException: Missing type or sub-type
+[{ "type": "stack", "sub_type": "stack", "lifecycle": 1 }]
+    throws JsonException: The JSON value could not be converted to Elastic.Documentation.AppliesTo.ApplicableTo. Path: $ | LineNumber: 0 | BytePositionInLine: 55.
+[{ "type": "stack", "sub_type": "stack", "version": 9 }]
+    throws JsonException: The JSON value could not be converted to Elastic.Documentation.AppliesTo.ApplicableTo. Path: $ | LineNumber: 0 | BytePositionInLine: 53.
+[{ "type": 1, "sub_type": "stack" }]
+    throws JsonException: The JSON value could not be converted to Elastic.Documentation.AppliesTo.ApplicableTo. Path: $ | LineNumber: 0 | BytePositionInLine: 12.
+[1]
+    throws JsonException: Expected object
+["stack"]
+    throws JsonException: Expected object
+[[]]
+    throws JsonException: Expected object
+{ "type": "stack", "sub_type": "stack" }
+    throws JsonException: Expected array
+{}
+    throws JsonException: Expected array
+"stack"
+    throws JsonException: Expected array
+1
+    throws JsonException: Expected array
+true
+    throws JsonException: Expected array
+[
+    throws JsonException: Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+
+    throws JsonException: The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
+[{ "type": "stack", "sub_type": "stack", "lifecycle": "ga" },]
+    throws JsonException: The JSON array contains a trailing comma at the end which is not supported in this mode. Change the reader options. Path: $ | LineNumber: 0 | BytePositionInLine: 61.

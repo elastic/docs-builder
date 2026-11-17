@@ -1,0 +1,60 @@
+applies_to:
+    null
+applies_to: all
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"all"}]
+applies_to: ''
+    null
+applies_to: nonsense
+    null
+applies_to: /   stack: ga
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+applies_to: /   stack: ga 9.0+
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+applies_to: /   stack: ga 9.2+, beta 9.0-9.1
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.0-9.1"}]
+applies_to: /   stack: preview 9.0, ga 9.1, deprecated 9.3
+    [{"type":"stack","sub_type":"stack","lifecycle":"deprecated","version":"9.3\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.1-9.2"},{"type":"stack","sub_type":"stack","lifecycle":"preview","version":"=9.0"}]
+applies_to: /   stack: nonsense
+    []
+applies_to: /   stack: ga 9
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+applies_to: /   deployment: ga
+    [{"type":"deployment","sub_type":"self","lifecycle":"ga"},{"type":"deployment","sub_type":"ece","lifecycle":"ga"},{"type":"deployment","sub_type":"eck","lifecycle":"ga"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+applies_to: /   deployment: /     ece: ga 3.0+ /     eck: beta /     ess: preview /     self: ga 9.0+
+    [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"beta"},{"type":"deployment","sub_type":"ess","lifecycle":"preview"}]
+applies_to: /   deployment: /     ech: ga
+    [{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+applies_to: /   deployment: /     ess: ga 9.0
+    [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+applies_to: /   serverless: ga
+    [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+applies_to: /   serverless: /     elasticsearch: ga /     security: beta
+    [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"beta"}]
+applies_to: /   serverless: ga 9.0
+    [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"9.0\u002B"}]
+applies_to: /   product: ga 1.0+
+    [{"type":"product","sub_type":"product","lifecycle":"ga","version":"1.0\u002B"}]
+applies_to: /   product: /     ecctl: ga 1.0+
+    [{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"1.0\u002B"}]
+applies_to: /   stack: ga 9.0+ /   serverless: ga /   deployment: /     self: ga
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"self","lifecycle":"ga"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+applies_to: /   unknown: ga
+    []
+applies_to: /   :stack: ga
+    []
+applies_to: /   - stack: ga 9.0+ /   - serverless: ga
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+applies_to: /   - 'stack: ga 9.0+' /   - 'serverless: ga'
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+applies_to: /   - nonsense
+    null
+applies_to: [ga]
+    null
+applies_to: /   stack: [ga]
+    []
+applies_to: /   Stack: ga
+    []
+applies_to: /   stack: GA 9.0+
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+applies_to: /   stack: dev
+    [{"type":"stack","sub_type":"stack","lifecycle":"development"}]

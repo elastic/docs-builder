@@ -1,0 +1,72 @@
+yaml: stack: ga 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: preview 9.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"preview","version":"9.1\u002B"}]
+text: stack: preview 9.1+, 
+
+yaml: stack: tech-preview 9.2
+json: [{"type":"stack","sub_type":"stack","lifecycle":"preview","version":"9.2\u002B"}]
+text: stack: preview 9.2+, 
+
+yaml: stack: experimental 9.3
+json: [{"type":"stack","sub_type":"stack","lifecycle":"experimental","version":"9.3\u002B"}]
+text: stack: experimental 9.3+, 
+
+yaml: stack: beta 9.4
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.4\u002B"}]
+text: stack: beta 9.4+, 
+
+yaml: stack: deprecated 9.5
+json: [{"type":"stack","sub_type":"stack","lifecycle":"deprecated","version":"9.5\u002B"}]
+text: stack: deprecated 9.5+, 
+
+yaml: stack: removed 9.6
+json: [{"type":"stack","sub_type":"stack","lifecycle":"removed","version":"9.6\u002B"}]
+text: stack: removed 9.6+, 
+
+yaml: stack: unavailable 9.7
+json: [{"type":"stack","sub_type":"stack","lifecycle":"unavailable","version":"9.7\u002B"}]
+text: stack: unavailable 9.7+, 
+
+yaml: stack: dev 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"development","version":"9.0\u002B"}]
+text: stack: dev 9.0+, 
+  hint: The 'dev' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: development 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"development","version":"9.0\u002B"}]
+text: stack: dev 9.0+, 
+  hint: The 'development' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: coming 9.9
+json: [{"type":"stack","sub_type":"stack","lifecycle":"planned","version":"9.9\u002B"}]
+text: stack: planned 9.9+, 
+  hint: The 'coming' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: planned 9.9
+json: [{"type":"stack","sub_type":"stack","lifecycle":"planned","version":"9.9\u002B"}]
+text: stack: planned 9.9+, 
+  hint: The 'planned' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: discontinued 8.19
+json: [{"type":"stack","sub_type":"stack","lifecycle":"discontinued","version":"8.19\u002B"}]
+text: stack: discontinued 8.19+, 
+  hint: The 'discontinued' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: ga all
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ga ALL
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: beta all
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"all"}]
+text: stack: beta, 
+
+yaml: stack: removed 10.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"removed","version":"10.0\u002B"}]
+text: stack: removed 10.0+, 

@@ -1,0 +1,149 @@
+yaml:
+  | product:
+  |   ecctl: ga 9.0+
+json: [{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: ecctl=ga 9.0+, 
+
+yaml:
+  | product:
+  |   curator: ga 9.0+
+json: [{"type":"product","sub_type":"curator","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: curator=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_android: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-android","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-android=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_dotnet: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-dotnet","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-dotnet=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_go: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-go","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-go=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_ios: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-ios","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-ios=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_java: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-java","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-java=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_node: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-node","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-node=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_php: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-php","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-php=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_python: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-python","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-python=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_ruby: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-ruby","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-ruby=ga 9.0+, 
+
+yaml:
+  | product:
+  |   apm_agent_rum_js: ga 9.0+
+json: [{"type":"product","sub_type":"apm-agent-rum-js","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: apm-agent-rum-js=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_ios: ga 9.0+
+json: [{"type":"product","sub_type":"edot-ios","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-ios=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_android: ga 9.0+
+json: [{"type":"product","sub_type":"edot-android","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-android=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_collector: ga 9.0+
+json: [{"type":"product","sub_type":"edot-collector","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-collector=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_dotnet: ga 9.0+
+json: [{"type":"product","sub_type":"edot-dotnet","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-dotnet=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_java: ga 9.0+
+json: [{"type":"product","sub_type":"edot-java","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-java=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_node: ga 9.0+
+json: [{"type":"product","sub_type":"edot-node","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-node=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_browser: ga 9.0+
+json: [{"type":"product","sub_type":"edot-browser","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-browser=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_react_native: ga 9.0+
+json: [{"type":"product","sub_type":"edot-react-native","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-react-native=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_php: ga 9.0+
+json: [{"type":"product","sub_type":"edot-php","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-php=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_python: ga 9.0+
+json: [{"type":"product","sub_type":"edot-python","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-python=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_cf_aws: ga 9.0+
+json: [{"type":"product","sub_type":"edot-cf-aws","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-cf-aws=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_cf_azure: ga 9.0+
+json: [{"type":"product","sub_type":"edot-cf-azure","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-cf-azure=ga 9.0+, 
+
+yaml:
+  | product:
+  |   edot_cf_gcp: ga 9.0+
+json: [{"type":"product","sub_type":"edot-cf-gcp","lifecycle":"ga","version":"9.0\u002B"}]
+text: products: edot-cf-gcp=ga 9.0+, 
