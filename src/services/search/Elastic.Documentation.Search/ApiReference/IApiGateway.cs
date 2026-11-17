@@ -50,6 +50,10 @@ public sealed record ApiOperationSummary
 	public required string Method { get; init; }
 	public required string Path { get; init; }
 	public required string OperationId { get; init; }
+
+	/// <summary>The operation's id across APIs, <c>{api}:{operationId}</c>, as the docs API addresses it.</summary>
+	public string Id => $"{Api}:{OperationId}";
+
 	public string? Group { get; init; }
 	public bool Deprecated { get; init; }
 

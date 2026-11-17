@@ -187,78 +187,82 @@ public static class MappingsExtension
 			return Results.Ok(response);
 		});
 
-	// The same lookups as the search_api_operations, get_api_operation and list_api_operations MCP tools.
-	// The literal routes take precedence over {operationId}, so they reserve those ids.
+	// Two resources: the APIs API Explorer publishes, and their operations, addressed as {api}:{operationId}.
+	// They answer the same lookups as the search_api_operations, get_api_operation and list_api_operations MCP tools.
 	private static void MapApiOperations(IEndpointRouteBuilder group)
 	{
-		var operations = group.MapGroup("/api-operations");
-
-		// One collection, filtered by words (q) or by the request an operation serves (endpoint).
-		_ = operations.MapGet(
+		var apis = group.MapGroup("/apis");
+		_ = apis.MapGet(
 			"/",
-			async (
-				[FromQuery(Name = "q")] string? query,
-				[FromQuery(Name = "endpoint")] string? endpoint,
-				[FromQuery(Name = "api")] string? api,
-				[FromQuery(Name = "version")] string? version,
-				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
-				[FromQuery(Name = "page")] int? pageNumber,
-				[FromQuery(Name = "size")] int? pageSize,
-				ApiReferenceService apiReference,
-				Cancel ctx
-			) =>
-				(string.IsNullOrWhiteSpace(query), string.IsNullOrWhiteSpace(endpoint)) switch
-				{
-					(false, true) =>
-						ToResult(
-							await apiReference.SearchAsync(
-								query!,
-								api,
-								version,
-								includeDeprecated ?? false,
-								pageNumber ?? 1,
-								pageSize ?? 10,
-								ctx
-							)
-						),
-					(true, false) => ToResult(await apiReference.ResolveAsync(endpoint!, api, version, ctx)),
-					_ => Results.BadRequest(new ApiReferenceRejection("invalid_arguments", "Pass exactly one of q or endpoint."))
-				}
-		);
-
-		_ = operations.MapGet(
-			"/apis",
 			async (ApiReferenceService apiReference, Cancel ctx) => ToResult(await apiReference.ListAsync(null, null, null, ctx))
 		);
+		_ = apis.MapGet(
+			"/{api}",
+			async (string api, ApiReferenceService apiReference, Cancel ctx) => ToResult(await apiReference.GetApiAsync(api, ctx))
+		);
+		_ = apis.MapGet(
+			"/{api}/groups",
+			async (string api, [FromQuery(Name = "version")] string? version, ApiReferenceService apiReference, Cancel ctx) => ToResult(
+				await apiReference.ListGroupsAsync(api, version, ctx)
+			)
+		);
 
+		var operations = group.MapGroup("/api-operations");
 		_ = operations.MapGet(
-			"/groups",
+			"/",
 			async (
 				[FromQuery(Name = "api")] string? api,
 				[FromQuery(Name = "version")] string? version,
 				[FromQuery(Name = "group")] string? apiGroupName,
+				[FromQuery(Name = "q")] string? query,
+				[FromQuery(Name = "endpoint")] string? endpoint,
+				[FromQuery(Name = "operation_id")] string? operationId,
+				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
+				[FromQuery(Name = "view")] string? view,
+				[FromQuery(Name = "include_body")] bool? includeBody,
+				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "size")] int? pageSize,
 				ApiReferenceService apiReference,
 				Cancel ctx
-			) => ToResult(await apiReference.ListGroupsAsync(api, version, apiGroupName, ctx))
+			) => view is not (null or "basic" or "full")
+				? Results.BadRequest(new ApiReferenceRejection("invalid_arguments", "view is 'basic' or 'full'."))
+				: ToResult(
+					await apiReference.QueryAsync(
+						new ApiOperationQuery
+						{
+							Api = api,
+							Version = version,
+							Group = apiGroupName,
+							Q = query,
+							Endpoint = endpoint,
+							OperationId = operationId,
+							IncludeDeprecated = includeDeprecated ?? false,
+							Full = view == "full",
+							IncludeBody = includeBody ?? false,
+							Page = pageNumber ?? 1,
+							Size = pageSize ?? 10
+						},
+						ctx
+					)
+				)
 		);
-
 		_ = operations.MapGet(
-			"/{operationId}",
+			"/{id}",
 			async (
-				string operationId,
-				[FromQuery(Name = "api")] string? api,
+				string id,
 				[FromQuery(Name = "version")] string? version,
 				[FromQuery(Name = "include_body")] bool? includeBody,
 				ApiReferenceService apiReference,
 				Cancel ctx
-			) => ToResult(await apiReference.GetAsync(api, operationId, null, version, includeBody ?? false, ctx))
+			) => ToResult(await apiReference.GetByIdAsync(id, version, includeBody ?? false, ctx))
 		);
 	}
 
 	private static IResult ToResult(ApiReferenceReply reply) => reply switch
 	{
 		ApiOperationSearchResponse r => Results.Ok(r),
-		ApiEndpointMatchResponse r => Results.Ok(r),
+		ApiOperationCollectionResponse r => Results.Ok(r),
+		ApiSummary r => Results.Ok(r),
 		ApiOperationResponse r => Results.Ok(r),
 		ApiListResponse r => Results.Ok(r),
 		ApiOperationListResponse r => Results.Ok(r),
