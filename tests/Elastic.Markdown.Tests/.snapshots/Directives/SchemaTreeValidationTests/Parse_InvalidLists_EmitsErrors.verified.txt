@@ -1,0 +1,6 @@
+error {repo}/docs/index.md:3 schema-tree requires one unordered Markdown list.
+error {repo}/docs/index.md:7 schema-tree requires one unordered Markdown list.
+error {repo}/docs/index.md:10 schema-tree requires one unordered Markdown list.
+error {repo}/docs/index.md:14 schema-tree child lists must be unordered.
+error {repo}/docs/index.md:19 schema-tree child lists must be unordered.
+error {repo}/docs/index.md:25 Each schema-tree item requires a label paragraph.

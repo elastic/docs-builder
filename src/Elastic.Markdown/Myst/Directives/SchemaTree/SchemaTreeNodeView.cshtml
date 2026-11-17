@@ -1,0 +1,33 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.SchemaTree.SchemaTreeNode>
+@using Elastic.Documentation.Site.Components.Primitives.Icon
+<li class="schema-tree__node">
+	@if (Model.Children.Count > 0)
+	{
+		<details class="schema-tree__branch" open>
+			<summary class="schema-tree__row">
+				<span class="schema-tree__label">@Model.Label</span>
+				@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
+			</summary>
+			<div class="schema-tree__body">
+				@if (!string.IsNullOrWhiteSpace(Model.Description.Value))
+				{
+					<div class="schema-tree__description">@Model.Description</div>
+				}
+				<ul class="schema-tree__nodes">
+					@foreach (var child in Model.Children)
+					{
+						@await RenderPartialAsync(Elastic.Markdown.Myst.Directives.SchemaTree.SchemaTreeNodeView.Create(child))
+					}
+				</ul>
+			</div>
+		</details>
+	}
+	else
+	{
+		<div class="schema-tree__row"><span class="schema-tree__label">@Model.Label</span></div>
+		@if (!string.IsNullOrWhiteSpace(Model.Description.Value))
+		{
+			<div class="schema-tree__description">@Model.Description</div>
+		}
+	}
+</li>

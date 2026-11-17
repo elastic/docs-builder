@@ -24,6 +24,7 @@ using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.RelatedLearning;
+using Elastic.Markdown.Myst.Directives.SchemaTree;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
@@ -98,6 +99,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					WriteLiteralIncludeBlock(renderer, includeBlock);
 				else
 					WriteIncludeBlock(renderer, includeBlock);
+				return;
+			case SchemaTreeBlock tree:
+				RenderRazorSlice(SchemaTreeView.Create(new SchemaTreeViewModel { DirectiveBlock = tree }), renderer);
 				return;
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);

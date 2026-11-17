@@ -1,0 +1,9 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.SchemaTree.SchemaTreeViewModel>
+<div class="schema-tree" role="group" aria-label="@Model.Label">
+	<ul class="schema-tree__nodes">
+		@foreach (var node in Model.Nodes)
+		{
+			@await RenderPartialAsync(Elastic.Markdown.Myst.Directives.SchemaTree.SchemaTreeNodeView.Create(node))
+		}
+	</ul>
+</div>

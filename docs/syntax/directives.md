@@ -84,3 +84,43 @@ The following directives are available:
 - [Tables](tables.md) - Data tables
 - [Version blocks](version-variables.md) - API version information
 - [Vector sizing calculator](vector-sizing-calculator.md) - Interactive dense_vector sizing estimates
+
+## Schema trees
+
+Use `{schema-tree}` to render an unordered Markdown list as an expandable field tree.
+The optional argument is its accessible label. The first paragraph of each list item is the field label;
+following blocks describe it. Direct nested lists define child fields.
+Lists inside description containers, such as notes, keep their normal Markdown meaning.
+Inline Markdown is preserved. A useful convention is `field name` — `type` — nullability.
+The first code span identifies the field name and the second identifies its type for styling.
+Typography and colors come from the documentation theme's shared tokens.
+It does not interpret a schema language or assign meaning to the label text.
+
+Branches start expanded and use native disclosures, so keyboard and mouse interaction work without JavaScript.
+Search and Markdown export retain the underlying list.
+
+```markdown
+:::{schema-tree} Range values
+
+* `value` — `List` — nullable
+
+  Metadata: `elastic:type = date_range`
+
+  * `$data$` — `Struct` — non-null
+    * `from` — `Timestamp[ms]` — nullable
+    * `to` — `Timestamp[ms]` — nullable
+
+:::
+```
+
+:::{schema-tree} Range values
+
+* `value` — `List` — nullable
+
+  Metadata: `elastic:type = date_range`
+
+  * `$data$` — `Struct` — non-null
+    * `from` — `Timestamp[ms]` — nullable
+    * `to` — `Timestamp[ms]` — nullable
+
+:::
