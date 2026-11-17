@@ -74,7 +74,7 @@ public static class ApiStyleGuidePreviews
 		};
 		// The API reference is part of the assembled site, so its pages are written with the assembler chrome.
 		var context = new BuildContext(template.Collector, template.FileSystem, configuration) { BuildType = BuildType.Assembler };
-		context.Configuration.Features.NavigationPreviewEnabled = true;
+		context.OverrideFeatures(f => f.With("navigation-preview", true));
 		return context;
 	}
 
