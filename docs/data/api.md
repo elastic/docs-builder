@@ -78,7 +78,7 @@ Every error is an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem, se
   "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
   "title": "Invalid arguments",
   "status": 400,
-  "detail": "Pass at most one of q, endpoint or operation_id.",
+  "detail": "Pass q or endpoint, not both.",
   "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
 }
 ```
