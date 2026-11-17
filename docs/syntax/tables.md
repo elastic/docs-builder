@@ -191,6 +191,49 @@ The table is rendered server-side and stays fully usable without JavaScript, bec
 
 :::::
 
+### Choose which columns get dropdown filters
+
+The automatic choice offers a dropdown for any column with 2 to 12 distinct values. That suits type and status columns, but it also catches columns of scores or counts, where a dropdown can only match one exact number. Two options let you choose instead:
+
+- `:filterable: search` adds the search box and count, with no dropdown filters.
+- `:filter-columns:` lists the columns that get a dropdown filter, by header text and separated by commas. Every other column gets none. Matching ignores case and inline formatting, so `support status` matches a `**Support** status` header. A listed column gets a dropdown however many distinct values it has, as long as it has at least two. A name that matches no header is a build error.
+
+:::::{tab-set}
+
+::::{tab-item} Output
+:::{table}
+:filterable:
+:filter-columns: Provider
+
+| Provider | Model | Alert analysis | Threat hunting |
+|----------|-------|----------------|----------------|
+| Vendor A | Model 1 | 9 | 9 |
+| Vendor B | Model 2 | 8 | 9 |
+| Vendor A | Model 3 | 7 | 8 |
+| Vendor C | Model 4 | 9 | 7 |
+| Vendor B | Model 5 | 6 | 9 |
+:::
+::::
+
+::::{tab-item} Markdown
+```markdown
+:::{table}
+:filterable:
+:filter-columns: Provider
+
+| Provider | Model | Alert analysis | Threat hunting |
+|----------|-------|----------------|----------------|
+| Vendor A | Model 1 | 9 | 9 |
+| Vendor B | Model 2 | 8 | 9 |
+| Vendor A | Model 3 | 7 | 8 |
+| Vendor C | Model 4 | 9 | 7 |
+| Vendor B | Model 5 | 6 | 9 |
+:::
+```
+::::
+
+:::::
+
 ## Table directive with column widths
 
 The `{table}` directive wraps a pipe table and lets you control column widths using a 12-unit grid system (similar to Bootstrap). Use the `:widths:` option to specify how space is distributed across columns.

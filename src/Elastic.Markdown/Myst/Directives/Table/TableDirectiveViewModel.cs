@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Globalization;
+using System.Net;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Markdown.Helpers;
@@ -24,6 +25,12 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 	/// element for client-side search + facet filtering (progressive enhancement).
 	/// </summary>
 	public required bool Filterable { get; init; }
+
+	/// <summary>When set, the client adds the search box but no dropdown filters.</summary>
+	public bool FilterSearchOnly { get; init; }
+
+	/// <summary>When not empty, only these columns (by header text) get a dropdown filter.</summary>
+	public IReadOnlyList<string> FilterColumns { get; init; } = [];
 
 	/// <summary>
 	/// Renders the table content. When <see cref="ColumnWidths"/> is specified, injects a colgroup and table-layout:fixed.
@@ -68,9 +75,18 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 	/// <summary>
 	/// Wraps the rendered table in a &lt;filterable-table&gt; custom element so the client
 	/// can progressively enhance it with search + facet filters. Without JavaScript the
-	/// table renders exactly as before.
+	/// table renders exactly as before. <c>data-facets="none"</c> turns the dropdown filters
+	/// off, and <c>data-facet-columns</c> lists the only columns that get one.
 	/// </summary>
-	private static string WrapFilterable(string html) => "<filterable-table>" + html + "</filterable-table>";
+	private string WrapFilterable(string html)
+	{
+		var attributes = FilterSearchOnly
+			? " data-facets=\"none\""
+			: FilterColumns.Count > 0
+				? $" data-facet-columns=\"{WebUtility.HtmlEncode(string.Join(",", FilterColumns))}\""
+				: string.Empty;
+		return $"<filterable-table{attributes}>" + html + "</filterable-table>";
+	}
 
 	/// <summary>
 	/// Adds the table-matrix class to the wrapper div's opening tag emitted by WrappedTableRenderer,

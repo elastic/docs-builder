@@ -325,6 +325,202 @@ public class TableDirectiveFilterableWithMatrixAndWidthsTests() : DirectiveTest<
 }
 
 [InheritsTests]
+public class TableDirectiveFilterableSearchOnlyTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable: search
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void ParsesSearchOnly()
+	{
+		Block!.Filterable.Should().BeTrue();
+		Block!.FilterSearchOnly.Should().BeTrue();
+	}
+
+	[Test]
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<filterable-table data-facets="none">
+			<div class="table-wrapper">
+				<table>
+					<thead>
+						<tr>
+							<th>head a</th>
+							<th>head b</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>a</td>
+							<td>b</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</filterable-table>
+		"""
+		);
+
+	[Test]
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+[InheritsTests]
+public class TableDirectiveFilterColumnsTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable:
+:filter-columns: Provider, **Support** status
+
+| Name | Provider | **Support** status |
+| --- | --- | --- |
+| a | Anthropic | Core |
+:::
+"""
+)
+{
+	[Test]
+	public void ParsesFilterColumns() =>
+		Block!.FilterColumns.Should().Equal("Provider", "**Support** status");
+
+	[Test]
+	public void EmitsErrorForUnknownColumn() =>
+		// The second name keeps its Markdown, so it doesn't match the header's
+		// text ("Support status"): this pins down that names match visible text.
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Filter column '**Support** status' doesn't match any column header. Available headers: Name, Provider, Support status.");
+}
+
+[InheritsTests]
+public class TableDirectiveFilterColumnsRenderTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable:
+:filter-columns: provider, Support status
+
+| Name | Provider | **Support** status |
+| --- | --- | --- |
+| a | Anthropic | Core |
+:::
+"""
+)
+{
+	[Test]
+	public void MatchesHeadersCaseInsensitivelyAndIgnoresEmphasis() =>
+		Collector.Diagnostics.Should().BeEmpty();
+
+	[Test]
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<filterable-table data-facet-columns="provider,Support status">
+			<div class="table-wrapper">
+				<table>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Provider</th>
+							<th><strong>Support</strong> status</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>a</td>
+							<td>Anthropic</td>
+							<td>Core</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</filterable-table>
+		"""
+		);
+}
+
+[InheritsTests]
+public class TableDirectiveInvalidFilterableTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable: columns
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Invalid filterable value 'columns'. Use :filterable: on its own for automatic dropdown filters, or :filterable: search for a search box without dropdowns.");
+}
+
+[InheritsTests]
+public class TableDirectiveFilterColumnsWithoutFilterableTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filter-columns: head b
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void EmitsWarning() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 :filter-columns: has no effect without :filterable:. Add :filterable: to the table directive.");
+
+	[Test]
+	public void DoesNotWrap() => Html.Should().NotContain("filterable-table");
+}
+
+[InheritsTests]
+public class TableDirectiveFilterColumnsWithSearchOnlyTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable: search
+:filter-columns: head b
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 :filter-columns: can't be combined with :filterable: search, which shows no dropdown filters. Remove one of the two options.");
+}
+
+[InheritsTests]
 public class TableDirectiveWidthCountMismatchTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
