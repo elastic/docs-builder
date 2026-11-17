@@ -188,7 +188,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		var file = context.WriteFileSystem.File;
 		var canonical = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search", "index.html"));
 		var former = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search-1", "index.html"));
-		canonical.Should().Contain("api-url-also-method");
+		canonical.Should().Contain("class=\"api-method-group\"");
 		former.Should().Contain(
 			"window.location.replace(\"/api/doc/elasticsearch/operation/operation-search\" + window.location.search + window.location.hash)"
 		);

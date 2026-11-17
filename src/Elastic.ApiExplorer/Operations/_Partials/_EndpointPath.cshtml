@@ -1,16 +1,11 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<EndpointPathModel>
-@* One merged route: dominant method badge, "also GET" for methods that behave the same, optional segments dashed. *@
+@* One merged route: one chip listing every method that behaves the same, the dominant one first, optional segments dashed. *@
 @{
 	var row = Model.Row;
 }
 <span class="api-url">
-	@(await RenderPartialAsync<_HttpMethodBadge, string>(row.Method))
-	@if (row.AlsoMethods.Count > 0)
-	{
-		var also = string.Join(", ", row.AlsoMethods.Select(static m => m.ToUpperInvariant()));
-		<span class="api-url-also-method" data-tippy-content="@also works the same way: same parameters, body, and response.">also @also</span>
-	}
+	@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(row.Methods))
 	@* Segments on the brace lines: Razor would otherwise emit the indentation and line breaks as text, which inline layout shows as a space after each optional segment. *@
 	<span class="api-url-path">@if (row.Segments.Count == 0){@("/")}@foreach (var segment in row.Segments)
 	{

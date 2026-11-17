@@ -191,8 +191,7 @@ describe('property rows', () => {
         })
         const lines = container.querySelectorAll('.route-line')
         expect(lines).toHaveLength(1)
-        expect(lines[0]).toHaveTextContent('POST')
-        expect(lines[0]).not.toHaveTextContent('GET')
+        expect(lines[0]).toHaveTextContent('POSTGET')
         expect(lines[0]).toHaveTextContent('/{index}/_search')
         expect(lines[0].querySelector('mark')).toHaveTextContent('search')
         expect(screen.queryByText('Returns search hits')).toBeNull()
@@ -211,7 +210,7 @@ describe('property rows', () => {
             groups: groupSearchResults([withRoutes]),
         })
         expect(container.querySelector('.route-line')).toHaveTextContent(
-            'POST/_search'
+            'POSTGET/_search'
         )
     })
 

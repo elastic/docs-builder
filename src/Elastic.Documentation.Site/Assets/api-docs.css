@@ -102,10 +102,6 @@
 	padding-top: 2px;
 }
 
-.api-url-row > .api-url .api-url-also-method {
-	margin-top: 4px;
-}
-
 /* The first route is the one to read; the alternates below it are compact and muted. */
 .api-page-intro .api-url-listing > li:first-child .api-url {
 	padding: 4px 12px 4px 4px;
@@ -129,12 +125,6 @@
 	height: 20px;
 	padding: 0 5px;
 	font-size: 11px;
-}
-
-.api-page-intro .api-url-listing > li + li .api-url-also-method {
-	margin-top: 3px;
-	font-size: 10px;
-	line-height: 14px;
 }
 
 .api-page-intro .api-url-listing > li + li .api-url .api-url-path {
@@ -650,6 +640,11 @@
 	font-size: 11px;
 }
 
+/* A joined chip is as wide as its methods; each part must not also claim a whole chip width. */
+.api-index-item .api-method-group .api-method {
+	min-width: 0;
+}
+
 .api-index-item-title {
 	min-width: 0;
 	overflow-wrap: anywhere;
@@ -875,12 +870,128 @@
 	display: none;
 }
 
+/*
+ * An operation that accepts several methods: one pill, the dominant method on the left. The chips join on a slanted
+ * edge, each keeps its outline on its outer edges, and the pill owns the corner radius.
+ */
+.api-method-group,
+.nav-v2-api-method-group {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: flex-start;
+	align-self: flex-start;
+}
+
+.api-method-group {
+	border-radius: 8px;
+}
+
+.nav-v2-api-method-group {
+	border-radius: 4px;
+}
+
+.api-method-group > .api-method,
+.nav-v2-api-method-group > .nav-v2-api-method {
+	--method-slant: 0.5em;
+	border-width: 1px 0;
+	border-radius: 0;
+}
+
+.api-method-group > .api-method:first-child,
+.nav-v2-api-method-group > .nav-v2-api-method:first-child {
+	border-left-width: 1px;
+	border-top-left-radius: inherit;
+	border-bottom-left-radius: inherit;
+}
+
+.api-method-group > .api-method:last-child,
+.nav-v2-api-method-group > .nav-v2-api-method:last-child {
+	border-right-width: 1px;
+	border-top-right-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
+.api-method-group > .api-method:not(:last-child),
+.nav-v2-api-method-group > .nav-v2-api-method:not(:last-child) {
+	clip-path: polygon(
+		0 0,
+		100% 0,
+		calc(100% - var(--method-slant)) 100%,
+		0 100%
+	);
+}
+
+.api-method-group > .api-method:not(:first-child),
+.nav-v2-api-method-group > .nav-v2-api-method:not(:first-child) {
+	margin-left: calc(2px - var(--method-slant));
+	clip-path: polygon(var(--method-slant) 0, 100% 0, 100% 100%, 0 100%);
+}
+
+/* Room either side of the seam, so the labels do not crowd the slant. */
+.api-method-group > .api-method:not(:last-child) > :last-child {
+	margin-right: 0.35em;
+}
+
+.api-method-group > .api-method:not(:first-child) > :first-child {
+	margin-left: 0.35em;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:not(:last-child) {
+	padding-right: calc(4px + 0.35em);
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:not(:first-child) {
+	padding-left: calc(4px + 0.35em);
+}
+
+/* The dominant method keeps its colour; the others recede to the old "also" look: no fill, dashed grey outline, muted text. */
+.api-method-group > .api-method:not(:first-child),
+#pages-nav
+	a.sidebar-link
+	.nav-v2-api-method-group
+	> .nav-v2-api-method:not(:first-child) {
+	border-style: dashed;
+	border-color: var(--color-grey-40, #98a2b3);
+	background-color: transparent;
+	color: var(--color-grey-100);
+}
+
+.api-method-group > .api-method:not(:first-child) {
+	font-weight: 400;
+}
+
+#pages-nav .nav-v2-api-method-group {
+	margin-top: 2px;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method {
+	margin-top: 0;
+	border-width: 1px 0;
+	border-radius: 0;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:first-child {
+	border-left-width: 1px;
+	border-top-left-radius: inherit;
+	border-bottom-left-radius: inherit;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:last-child {
+	border-right-width: 1px;
+	border-top-right-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
 /* Legacy rows reserve 32px on the right; a row with a chip needs less. */
-#pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
+#pages-nav
+	li:has(
+		> a.sidebar-link > :is(.nav-v2-api-method, .nav-v2-api-method-group)
+	) {
 	padding-right: 8px;
 }
 
-#pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
+#pages-nav
+	a.sidebar-link:has(> :is(.nav-v2-api-method, .nav-v2-api-method-group)) {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
@@ -3471,21 +3582,6 @@ html:has(.api-page-shell) {
 	#api-examples-panel .api-code-card:not(.example-block--response) {
 		flex-shrink: 0;
 	}
-}
-
-/* Merged endpoint rows: dominant method, "also GET", optional segments dashed. */
-.api-url-also-method {
-	flex-shrink: 0;
-	padding: 0 6px;
-	border: 1px dashed var(--color-grey-40, #98a2b3);
-	border-radius: 999px;
-	color: #516381;
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 11px;
-	font-weight: 500;
-	line-height: 16px;
-	white-space: nowrap;
-	cursor: help;
 }
 
 .api-url-path {

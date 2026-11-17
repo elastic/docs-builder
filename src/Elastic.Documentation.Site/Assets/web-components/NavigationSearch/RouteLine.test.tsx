@@ -46,3 +46,28 @@ describe('RouteLine highlighting', () => {
         expect(marks('/_search', ['_sea', 'search'])).toEqual(['_search'])
     })
 })
+
+describe('RouteLine methods', () => {
+    const chips = (methods: string[]) => {
+        const { container } = renderWithProviders(
+            <RouteLine route={{ path: '/_search', methods }} tokens={[]} />
+        )
+        return {
+            labels: [...container.querySelectorAll('.api-method-label')].map(
+                (l) => l.textContent
+            ),
+            joined: container.querySelector('.api-method-group') !== null,
+        }
+    }
+
+    it('shows one method as a lone chip', () => {
+        expect(chips(['GET'])).toEqual({ labels: ['GET'], joined: false })
+    })
+
+    it('joins every method into one chip, the dominant method first', () => {
+        expect(chips(['POST', 'GET'])).toEqual({
+            labels: ['POST', 'GET'],
+            joined: true,
+        })
+    })
+})

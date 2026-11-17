@@ -4,7 +4,7 @@
 		<div class="api-code-sample-title">
 			@if (!string.IsNullOrEmpty(Model.HttpMethod))
 			{
-				@(await RenderPartialAsync<_HttpMethodBadge, string>(Model.HttpMethod))
+				@(await RenderPartialAsync<_HttpMethodChip, string>(Model.HttpMethod))
 			}
 			@if (!string.IsNullOrEmpty(Model.Route))
 			{

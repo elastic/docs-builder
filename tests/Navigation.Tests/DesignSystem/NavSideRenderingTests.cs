@@ -77,7 +77,7 @@ public class NavSideRenderingTests
 			IsTopLevel = false,
 			NavigationTitle = "Get document source",
 			Url = "/api/doc/elasticsearch/operation/operation-get-source",
-			HttpMethod = "get",
+			HttpMethods = ["get"],
 			Deprecated = deprecated
 		};
 }

@@ -7,7 +7,6 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
-using Elastic.Documentation.Navigation;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -15,17 +14,26 @@ namespace Elastic.ApiExplorer.Tests;
 public class OperationEndpointTests
 {
 	[Test]
-	public void HttpMethod_ListingAddsDominantMethod_UsesDominant()
+	public void Methods_ListingAddsDominantMethod_LeadsWithDominant()
 	{
 		var withListing = Op(HttpMethod.Get, "/{index}/_mvt/{field}");
-		withListing = withListing with
-		{
-			Operation = new OpenApiOperation { Description = Bump(("POST", "/{index}/_mvt/{field}"), ("GET", "/{index}/_mvt/{field}")) }
-		};
+		var listing = Bump(("POST", "/{index}/_mvt/{field}"), ("GET", "/{index}/_mvt/{field}"));
 		var withoutListing = Op(HttpMethod.Get, "/_cluster/health");
 
-		((IApiOperationNavigationModel)withListing).HttpMethod.Should().Be("post");
-		((IApiOperationNavigationModel)withoutListing).HttpMethod.Should().Be("get");
+		OperationEndpoint.Build(withListing, listing, []).Methods.Should().Equal("post", "get");
+		OperationEndpoint.Build(withoutListing, null, []).Methods.Should().Equal("get");
+	}
+
+	[Test]
+	public void Methods_RowsWithDifferentMethods_LeadsWithTheMainRowsDominantMethodThenByRank()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new EndpointVariant("get", "/{index}/_x/{id}"), new EndpointVariant("put", "/_x"), new EndpointVariant("post", "/_x")],
+			"/{index}/_x/{id}"
+		);
+
+		endpoint.Rows[0].Methods.Should().Equal("get");
+		endpoint.Methods.Should().Equal("get", "post", "put");
 	}
 
 	private static ApiOperation Op(HttpMethod method, string route, string? operationId = null, params string[] queryParameters) =>

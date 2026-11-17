@@ -21,7 +21,11 @@ public sealed record EndpointSegment(string Text, bool Optional)
 }
 
 /// <summary>One distinct route of an operation, with its dominant method and the methods that behave the same.</summary>
-public sealed record EndpointRow(string Route, string Method, IReadOnlyList<string> AlsoMethods, IReadOnlyList<EndpointSegment> Segments);
+public sealed record EndpointRow(string Route, string Method, IReadOnlyList<string> AlsoMethods, IReadOnlyList<EndpointSegment> Segments)
+{
+	/// <summary>Every method of the route, the dominant one first: what a method chip lists.</summary>
+	public IReadOnlyList<string> Methods => [Method, .. AlsoMethods];
+}
 
 /// <summary>
 /// Every route and method of one operation merged into display rows: longest route first, the dominant method per
@@ -43,6 +47,17 @@ public sealed partial record OperationEndpoint(
 	/// <summary>The description of the <c>space_id</c> path parameter the page adds.</summary>
 	public const string SpaceParameterDescription = "An identifier for the space. If `space_id` is not provided in the URL, the default space is used. "
 		+ SpacesNote;
+
+	/// <summary>Every method of every route: the leading route's dominant method first, the rest by rank.</summary>
+	public IReadOnlyList<string> Methods =>
+		[
+			Rows[0].Method,
+			.. Rows
+				.SelectMany(static r => r.Methods)
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.Where(m => !string.Equals(m, Rows[0].Method, StringComparison.OrdinalIgnoreCase))
+				.OrderBy(Rank)
+		];
 
 	private static readonly string[] MethodRank = ["post", "put", "patch", "get", "delete", "head", "options", "trace"];
 
