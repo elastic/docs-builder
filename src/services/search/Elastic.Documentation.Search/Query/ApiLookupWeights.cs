@@ -29,13 +29,10 @@ namespace Elastic.Documentation.Search;
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// <item>A method typed before a path lifts by <see cref="Method"/> only and is no word of a title, so <c>GET /_search</c> keeps the
 /// <c>POST</c> operation <c>search</c> first (10.20) above <c>scroll</c> (9.70), where "Get the search shards" led it (9.13).</item>
-/// <item><see cref="OperationWordTypo"/> sits between <see cref="OperationWord"/> and the one-point roles, so an exact operation word on one
-/// operation beats a typo of it on another, and a typo of an operation word still beats a word that only a title, a group or a field name
-/// carries. <c>clustr health</c> is <c>cluster-health</c> above <c>health-report</c> and <c>cat-health</c>, which tied with it at 3.63.</item>
-/// <item><see cref="TitleNamedTypo"/> sits below <see cref="TitleNamed"/>, so a title typed exactly beats one typed with a typo, as in <c>create index</c>
-/// above <c>creat index</c>. At 2.0 it only breaks ties below every endpoint key, and still lists "Delete indices" first for <c>delte index</c>
-/// (5.63 against 4.58) instead of a Kibana operation whose id carries both words. A word one edit from another title, as <c>stats</c> from
-/// <c>state</c>, lifts that title too, so <c>get cluster stats</c> lists <c>cluster-state</c> 2.0 above <c>cluster-stats</c>.</item>
+/// <item><see cref="OperationWordTypo"/> sits between <see cref="OperationWord"/> and the one-point roles, so an exact operation word beats a
+/// typo of it, and a typo of an operation word beats a word that only a title, a group or a field name carries.</item>
+/// <item><see cref="TitleNamedTypo"/> sits below <see cref="TitleNamed"/>, so a title typed exactly beats one typed with a typo, and below every
+/// endpoint key, so it only breaks ties. A word one edit from another title lifts that title too, as <c>stats</c> does for <c>state</c>.</item>
 /// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
 /// explain the typed words equally well. <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
 /// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
@@ -68,10 +65,7 @@ public static class ApiLookupWeights
 	/// </summary>
 	public const float TitleNamed = 6.0f;
 
-	/// <summary>
-	/// The typed words are the whole title of an operation within one edit. It lifts only an operation that
-	/// <see cref="TitleNamed"/> misses, so an exact title never changes its score.
-	/// </summary>
+	/// <summary>The typed words are the whole title of an operation within one edit.</summary>
 	public const float TitleNamedTypo = 2.0f;
 	public const float ListsChildren = 0.5f;
 	public const float Specificity = 0.5f;

@@ -72,39 +72,17 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	public void Build_Words_LiftsTheTitleWithinOneEditBelowTheExactTitleAndExcludesTheExactOne()
-	{
-		using var json = Json(ApiLookupQueryBuilder.Build("delte index"));
-
-		var lift = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
-			.Select(c => c.EnumerateObject().Single().Value)
-			.Single(o => o.TryGetProperty("_name", out var name) && name.GetString() == "title_named_typo");
-		lift.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.TitleNamedTypo);
-		ApiLookupWeights.TitleNamedTypo.Should().BeLessThan(ApiLookupWeights.TitleNamed);
-		var filter = lift.GetProperty("filter").GetProperty("bool");
-		var fuzzy = Clauses(filter.GetProperty("filter")).Single().GetProperty("match").GetProperty("api.title_fingerprint");
-		fuzzy.GetProperty("query").GetString().Should().Be("delte index");
-		fuzzy.GetProperty("fuzziness").GetString().Should().Be("AUTO:4,100");
-		fuzzy.GetProperty("prefix_length").GetInt32().Should().Be(1);
-		Clauses(filter.GetProperty("must_not"))
-			.Single()
-			.GetRawText()
-			.Should()
-			.Contain("title.keyword")
-			.And
-			.Contain("api.title_fingerprint");
-	}
-
-	[Test]
-	public void Build_Words_LiftsTheOperationWhoseWholeTitleTheWordsAre()
+	public void Build_Words_LiftsTheOperationWhoseWholeTitleTheWordsAreAndTheOneWithinOneEdit()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("create index"));
 
-		var lift = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
-			.Select(c => c.EnumerateObject().Single().Value)
-			.Single(o => o.TryGetProperty("_name", out var name) && name.GetString() == "title_named");
-		lift.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.TitleNamed);
-		var options = lift
+		var lift = LiftByName(json, "title_named")
+			.GetProperty("queries")
+			.EnumerateArray()
+			.Select(o => o.GetProperty("constant_score"))
+			.ToArray();
+		lift.Select(o => o.GetProperty("boost").GetSingle()).Should().Equal(ApiLookupWeights.TitleNamed, ApiLookupWeights.TitleNamedTypo);
+		var options = lift[0]
 			.GetProperty("filter")
 			.GetProperty("dis_max")
 			.GetProperty("queries")
@@ -119,6 +97,28 @@ public class ApiLookupQueryBuilderTests
 			.TryGetProperty("analyzer", out _)
 			.Should()
 			.BeFalse("the field carries its own analyzer, and an index without the field must not fail on one");
+		AssertFuzzy(lift[1].GetProperty("filter").GetProperty("match").GetProperty("api.title_fingerprint"), "create index");
+	}
+
+	[Test]
+	public void ApiLookupWeights_TypoRoles_ScoreBelowTheirExactRoles()
+	{
+		ApiLookupWeights.OperationWord.Should().BeGreaterThan(ApiLookupWeights.OperationWordTypo);
+		ApiLookupWeights
+			.OperationWordTypo
+			.Should()
+			.BeGreaterThan(new[] { ApiLookupWeights.GroupWord, ApiLookupWeights.TitleWord, ApiLookupWeights.FieldName }.Max());
+		ApiLookupWeights.TitleNamed.Should().BeGreaterThan(ApiLookupWeights.TitleNamedTypo);
+	}
+
+	[Test]
+	public void Build_WordTooShortForAnEdit_HasNoTypoOption()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("cat"));
+
+		var id = OptionsByName(TokenClause(json, 0))["id_0"];
+
+		id.GetProperty("boost").GetSingle().Should().Be(ApiLookupWeights.OperationWord);
 	}
 
 	[Test]
@@ -136,6 +136,8 @@ public class ApiLookupQueryBuilderTests
 			.ToDictionary(o => o.GetProperty("_name").GetString()!);
 		lifts["title_all"].GetProperty("filter").GetProperty("multi_match").GetProperty("query").GetString().Should().Be(expectedTitleText);
 		lifts["title_named"]
+			.GetProperty("queries")[0]
+			.GetProperty("constant_score")
 			.GetProperty("filter")
 			.GetProperty("dis_max")
 			.GetProperty("queries")[1]
@@ -157,6 +159,18 @@ public class ApiLookupQueryBuilderTests
 	private static JsonElement TokenClause(JsonDocument json, int index) => Clauses(TokensBool(json).GetProperty("should"))[index];
 
 	/// <summary>Each option is one query object, such as <c>{"constant_score": {...}}</c>, carrying its <c>_name</c>.</summary>
+	private static JsonElement LiftByName(JsonDocument json, string name) =>
+		Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Select(c => c.EnumerateObject().Single().Value)
+			.Single(o => o.TryGetProperty("_name", out var n) && n.GetString() == name);
+
+	private static void AssertFuzzy(JsonElement match, string query)
+	{
+		match.GetProperty("query").GetString().Should().Be(query);
+		match.GetProperty("fuzziness").GetString().Should().Be("AUTO:4,100");
+		match.GetProperty("prefix_length").GetInt32().Should().Be(1);
+	}
+
 	private static Dictionary<string, JsonElement> OptionsByName(JsonElement tokenClause) =>
 		tokenClause
 			.GetProperty("dis_max")
@@ -306,9 +320,7 @@ public class ApiLookupQueryBuilderTests
 		var id = options["id_0"].GetProperty("queries").EnumerateArray().Select(o => o.GetProperty("constant_score")).ToArray();
 		id.Select(o => o.GetProperty("boost").GetSingle()).Should().Equal(2.0f, 1.5f);
 		id[0].GetProperty("filter").GetRawText().Should().NotContain("fuzziness");
-		var typo = id[1].GetProperty("filter").GetProperty("match").GetProperty("api.words");
-		typo.GetProperty("fuzziness").GetString().Should().Be("AUTO:4,100");
-		typo.GetProperty("prefix_length").GetInt32().Should().Be(1);
+		AssertFuzzy(id[1].GetProperty("filter").GetProperty("match").GetProperty("api.words"), "cluster");
 		options["group_0"].GetProperty("boost").GetSingle().Should().Be(1.0f);
 		options["title_0"].GetProperty("boost").GetSingle().Should().Be(1.0f);
 		options["body_0"].GetProperty("boost").GetSingle().Should().Be(0.1f);

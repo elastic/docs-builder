@@ -24,7 +24,6 @@ public static class ApiLookupQueryBuilder
 	private const string FieldHitsPrefix = SearchQueryBuilder.ApiPropertyHits + "_";
 	private const string WholeTitleQueryName = "title_all";
 	private const string TitleNamedQueryName = "title_named";
-	private const string TitleNamedTypoQueryName = "title_named_typo";
 	private const string LandingNameQueryName = "landing_name";
 	private const string NotDeprecatedQueryName = "not_deprecated";
 
@@ -303,12 +302,7 @@ public static class ApiLookupQueryBuilder
 
 	private static List<Query> Lifts(string typed, IReadOnlyList<ApiLookupToken> tokens)
 	{
-		List<Query> lifts =
-		[
-			Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName),
-			Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed, TitleNamedQueryName),
-			Constant(TitleNamedTypo(typed), ApiLookupWeights.TitleNamedTypo, TitleNamedTypoQueryName)
-		];
+		List<Query> lifts = [Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName), TitleNamedLift(typed)];
 		if (SearchQueryBuilder.BuildTitleStartsWithQuery(typed) is { } startsWith)
 			lifts.Add(startsWith);
 		lifts.Add(Constant(LandingNamed(typed), ApiLookupWeights.LandingName, LandingNameQueryName));
@@ -348,23 +342,18 @@ public static class ApiLookupQueryBuilder
 		};
 
 	/// <summary>
-	/// The fingerprint is one token, so the edit distance spans the whole title. The exact title is excluded, so a typo only
-	/// lifts what <see cref="TitleNamed"/> misses.
+	/// The fingerprint is one token, so the edit distance spans the whole title. The larger of the two applies, so an exact title
+	/// never scores less than before and a typo only lifts what the exact match misses.
 	/// </summary>
-	private static Query TitleNamedTypo(string typed) =>
-		new BoolQuery
+	private static Query TitleNamedLift(string typed) =>
+		new DisMaxQuery
 		{
-			Filter =
+			QueryName = TitleNamedQueryName,
+			Queries =
 			[
-				new MatchQuery
-				{
-					Field = QueryFieldNames.ApiTitleFingerprint,
-					Query = typed,
-					Fuzziness = SearchQueryBuilder.WordFuzziness,
-					PrefixLength = 1
-				}
-			],
-			MustNot = [TitleNamed(typed)]
+				Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed),
+				Constant(SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.ApiTitleFingerprint, typed), ApiLookupWeights.TitleNamedTypo)
+			]
 		};
 
 	private static Query MethodLift(string method) =>
@@ -372,28 +361,28 @@ public static class ApiLookupQueryBuilder
 
 	/// <summary>
 	/// A word of the operation id, or one edit away from it. Both options share the role name, so a typo still reads as an
-	/// operation word. A word too short for an edit makes the typo option equal to the exact one, which scores lower.
+	/// operation word. A word too short for an edit has no typo option.
 	/// </summary>
-	private static Query OperationWordOption(string text, int index) =>
-		new DisMaxQuery
+	private static Query OperationWordOption(string text, int index)
+	{
+		var name = ApiLookupRoles.QueryName(ApiLookupRole.Id, index);
+		var exact = BoolPrefix(text, OperationWordFields);
+		if (text.Length < SearchQueryBuilder.FuzzyMinimumLength)
+			return Constant(exact, ApiLookupWeights.OperationWord, name);
+
+		return new DisMaxQuery
 		{
-			QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Id, index),
+			QueryName = name,
 			Queries =
 			[
-				Constant(BoolPrefix(text, OperationWordFields), ApiLookupWeights.OperationWord),
-				Constant(OperationWordTypo(text), ApiLookupWeights.OperationWordTypo)
+				Constant(exact, ApiLookupWeights.OperationWord),
+				Constant(
+					SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.ApiWords, text, SynonymsAnalyzer),
+					ApiLookupWeights.OperationWordTypo
+				)
 			]
 		};
-
-	private static Query OperationWordTypo(string text) =>
-		new MatchQuery
-		{
-			Field = QueryFieldNames.ApiWords,
-			Query = text,
-			Analyzer = SynonymsAnalyzer,
-			Fuzziness = SearchQueryBuilder.WordFuzziness,
-			PrefixLength = 1
-		};
+	}
 
 	private static Query TitleQuery(string text) => BoolPrefix(text, TitleCompletionFields);
 
