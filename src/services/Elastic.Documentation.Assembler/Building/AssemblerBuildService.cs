@@ -130,7 +130,12 @@ public class AssemblerBuildService(
 			ctx
 		);
 
-		var siteNavigationFile = assembleContext.Navigation;
+		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(
+			await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx),
+			assembleContext.Collector,
+			navigationFileInfo.FullName
+		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
 		using var apiSections = AssemblerApiSections.For(assembleContext, assembleSources, exporters);
@@ -144,8 +149,11 @@ public class AssemblerBuildService(
 		);
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
-		// loading the navigation checked that all path prefixes are unique, early exit if duplicates are detected
-		if (assembleContext.Collector.Errors > 0)
+		// this validates all path prefixes are unique, early exit if duplicates are detected
+		if (
+			!SiteNavigationLoader.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
+			|| assembleContext.Collector.Errors > 0
+		)
 			return false;
 
 		// AssembleAsync has already resolved the docsets' trees, before any generator existed, so their API sections

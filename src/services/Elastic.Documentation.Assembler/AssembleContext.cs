@@ -2,12 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -61,34 +59,8 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 
 	public PublishEnvironment Environment { get; }
 
-	/// <summary>
-	/// The site navigation this assembly builds: <c>navigation.yml</c> (or <c>navigation_preview.yml</c>) without the mounts and phantoms of
-	/// private repositories when those are skipped.
-	/// </summary>
-	/// <remarks>
-	/// Loaded and checked on first use; this is the one place the navigation's unknown keys and constraint violations are reported
-	/// (to <see cref="Collector"/>), so they appear once per context. Callers that must stop on an invalid navigation check the collector's errors.
-	/// </remarks>
-	[field: AllowNull, MaybeNull]
-	public SiteNavigationDefinition Navigation => field ??= LoadNavigation();
-
 	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
 	public string EnvironmentName => Environment.Name;
-
-	private SiteNavigationDefinition LoadNavigation()
-	{
-		var file = ConfigurationFileProvider.NavigationFile;
-		var navigation = SiteNavigationLoader.Deserialize(file.FileSystem.File.ReadAllText(file.FullName), Collector, file.FullName);
-		var loaded = SiteNavigationLoader.ForAssembly(
-			navigation,
-			Configuration,
-			ConfigurationFileProvider.SkipPrivateRepositories,
-			file.FullName
-		);
-		foreach (var finding in loaded.Findings)
-			Collector.Write(finding);
-		return loaded.Value;
-	}
 
 	public AssembleContext(
 		AssemblyConfiguration configuration,

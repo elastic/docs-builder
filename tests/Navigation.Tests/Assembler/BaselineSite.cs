@@ -145,7 +145,8 @@ internal static class BaselineSite
 		var (configFileSystem, provider) = CreateProvider(options.SkipPrivateRepositories, options.NavigationPreview);
 		using var _ = provider;
 		var configuration = AssemblyLoader.Create(provider);
-		var navigationText = configFileSystem.File.ReadAllText(provider.NavigationFile.FullName).Replace("\r\n", "\n");
+		var navigationFileInfo = provider.CreateNavigationFile(configuration);
+		var navigationText = configFileSystem.File.ReadAllText(navigationFileInfo.FullName).Replace("\r\n", "\n");
 		if (options.RewriteNavigation is { } rewrite)
 			navigationText = rewrite(navigationText);
 
@@ -157,12 +158,7 @@ internal static class BaselineSite
 			fileSystem.FileInfo.New("/docs/navigation.yml")
 		)
 		{ BuildType = BuildType.Assembler };
-		var navigationFile = SiteNavigationLoader.ForAssembly(
-			SiteNavigationLoader.Deserialize(navigationText, siteContext.Collector, "/docs/navigation.yml"),
-			configuration,
-			options.SkipPrivateRepositories,
-			"/docs/navigation.yml"
-		).Value;
+		var navigationFile = SiteNavigationLoader.Deserialize(navigationText, siteContext.Collector, "/docs/navigation.yml");
 
 		var stubRepositories = StubDocsets.Write(fileSystem, navigationFile, configuration, options);
 		var documentationSets = new List<IDocumentationSetNavigation>();

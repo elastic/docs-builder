@@ -26,9 +26,12 @@ public class GlobalNavigationService(
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
-		// loading the navigation checks that all path prefixes are unique, early exit if duplicates are detected
-		_ = assembleContext.Navigation;
-		if (collector.Errors > 0)
+		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
+		var navigationYaml = await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx);
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(navigationYaml, collector, navigationFileInfo.FullName);
+
+		// this validates all path prefixes are unique, early exit if duplicates are detected
+		if (!SiteNavigationLoader.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo) || collector.Errors > 0)
 			return false;
 
 		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);

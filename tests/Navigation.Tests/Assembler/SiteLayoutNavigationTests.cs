@@ -5,9 +5,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
-using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation.Floating;
-using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -248,7 +246,7 @@ public class SiteLayoutNavigationTests
 			);
 
 	[Test]
-	public void DuplicateMount_PathPrefixConstraint_ReportsTheCollision()
+	public void DuplicateMount_ValidatePathPrefixes_ReportsTheCollision()
 	{
 		var result = Build(
 			// language=yaml
@@ -264,10 +262,12 @@ public class SiteLayoutNavigationTests
 		var collector = new TestDiagnosticsCollector();
 		var navigationFile = result.SiteContext.ConfigurationPath;
 
-		var report = SiteNavigationDefinition.Constraints.Report(result.File);
-		foreach (var diagnostic in report.ToDiagnostics(navigationFile.FullName))
-			collector.Write(diagnostic);
-		var valid = !report.HasErrors;
+		var valid = Elastic
+			.Documentation
+			.Configuration
+			.Toc
+			.SiteNavigationLoader
+			.ValidatePathPrefixes(collector, result.File, navigationFile);
 
 		valid.Should().BeFalse();
 		// which of the two a message names first follows the hash order of a set of Uris, which changes with every process

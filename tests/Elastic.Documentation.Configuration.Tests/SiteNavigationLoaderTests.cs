@@ -21,7 +21,7 @@ public class SiteNavigationLoaderTests
 {
 	private const string NavigationPath = "/config/navigation.yml";
 
-	/// <summary>The mappings, then the diagnostics: the rules of the loaded navigation and what mapping it reported.</summary>
+	/// <summary>The mappings, then the diagnostics the mapping wrote.</summary>
 	private static string Describe(string yaml)
 	{
 		var fileSystem = new MockFileSystem();
@@ -29,15 +29,7 @@ public class SiteNavigationLoaderTests
 		var file = fileSystem.FileInfo.New(NavigationPath);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var loaded = SiteNavigationLoader.ForAssembly(
-			SiteNavigationLoader.Deserialize(yaml),
-			AssemblyLoader.Deserialize("references:\n  open:\n"),
-			skipPrivateRepositories: false,
-			NavigationPath
-		);
-		foreach (var finding in loaded.Findings.Where(d => d.RuleId == "mount-has-path-prefix"))
-			collector.Write(finding);
-		var mappings = SiteNavigationLoader.GetTocMappings(loaded.Value, file, collector);
+		var mappings = SiteNavigationLoader.GetTocMappings(yaml, file, collector);
 
 		var lines = mappings.Select(kv => $"{kv.Key} => {kv.Value.SourcePathPrefix}").Concat(collector.Captured.Select(Line));
 		return string.Join('\n', lines);
@@ -105,44 +97,60 @@ public class SiteNavigationLoaderTests
 			repo://f/ => f
 			""");
 
+	// the mapping reader honoured a repo: key beside toc:, which the parser drops: it is reported and the repository is mounted under the enclosing bare toc name
 	[Test]
-	public void ForAssembly_SkippingPrivateRepositories_MountsTheLocalDocsBuilderAfterTheRest()
-	{
-		var assembly = AssemblyLoader.Deserialize(
-			"references:\n  docs-builder:\n  closed:\n    private: true\n",
-			skipPrivateRepositories: true
-		);
-		var navigation = SiteNavigationLoader.Deserialize(
-			"toc:\n  - toc: closed://one\n    path_prefix: one\n    children:\n      - toc: open://two\n        path_prefix: two\n"
-		);
-
-		var loaded = SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: true, NavigationPath);
-
-		string
-			.Join('\n', SiteNavigationConstraints.AllMounts(loaded.Value).Select(m => $"{m.Source} => {m.PathPrefix}"))
+	public void GetTocMappings_RepoBesideToc_ReportsItAndMountsTheRepositoryUnderTheEnclosingName() =>
+		Describe("toc:\n  - toc: get-started\n    children:\n      - toc: repo://c\n        repo: other\n        path_prefix: c\n")
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-				open://two/ => two
-				docs-builder:/// => reference/docs-builder
-				docs-builder://development/ => reference/docs-builder/dev
-				docs-builder://development/link-validation => reference/docs-builder/dev/link-val
+				docs-content://get-started/ => get-started
+				other://get-started/ => get-started/other
+				error 4:9:0 toc config defines 'repo' can not be combined with 'toc': repo://c
 				"""
 			);
-		loaded.Findings.Should().BeEmpty();
-	}
 
 	[Test]
-	public void ForAssembly_ChildrenPromotedBesideASibling_ReportTheCollisionAndKeepTheNavigation()
+	public void GetTocMappings_RepoBesideATopLevelToc_ReportsItAndMountsTheRepositoryUnderItsOwnName() =>
+		Describe("toc:\n  - toc: repo://c\n    repo: other\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			other:/// => /other
+			error 2:5:0 toc config defines 'repo' can not be combined with 'toc': repo://c
+			"""
+			);
+
+	// filtering private repositories leaves a children: with nothing under it behind; the mapping reader warns about it, without a position
+	[Test]
+	public void GetTocMappings_ChildrenWithNothingUnderIt_WarnsWithoutAPosition() =>
+		Describe("toc:\n  - toc: open://a\n    path_prefix: a\n    children:\n  - section: S\n    children:\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				open://a/ => a
+				warning :: 'children' is not an array
+				warning :: 'children' is not an array
+				"""
+			);
+
+	[Test]
+	public void GetTocMappings_UnknownKeyInAnEntry_IsNotReportedByTheMapping() =>
+		Describe("toc:\n  - toc: repo://a\n    path_prefx: a\n    path_prefix: p\n").Should().MatchInlineSnapshot("repo://a/ => p");
+
+	[Test]
+	public void ValidatePathPrefixes_TwoRepositoriesUnderOnePath_WritesOnlyTheCollision()
 	{
-		var assembly = AssemblyLoader.Deserialize("references:\n  closed:\n    private: true\n", skipPrivateRepositories: true);
+		var fileSystem = new MockFileSystem();
+		var file = fileSystem.FileInfo.New(NavigationPath);
+		var collector = new CapturingDiagnosticsCollector();
 		var navigation = SiteNavigationLoader.Deserialize(
-			"toc:\n  - toc: closed://one\n    path_prefix: one\n    children:\n      - toc: open://two\n        path_prefix: same\n  - toc: other://three\n    path_prefix: same\n"
+			"toc:\n  - toc: repoa://a\n    path_prefix: s\n  - toc: repob://b\n  - toc: repoc://c\n    path_prefix: s/\n"
 		);
 
-		var loaded = SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: true, NavigationPath);
+		var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, navigation, file);
 
-		loaded.Findings.Select(f => f.RuleId).Should().Equal("path-prefixes-unique");
-		loaded.Value.TableOfContents.OfCase<SiteTableOfContentsRef>().Select(t => t.PathPrefix).Should().Equal("same", "same");
+		valid.Should().BeFalse();
+		collector.Captured.Should().ContainSingle().Which.Message.Should().StartWith("Duplicate path prefix: ");
 	}
 }

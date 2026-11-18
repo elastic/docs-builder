@@ -203,6 +203,9 @@ public class AssembleSources
 			.ToFrozenDictionary();
 	}
 
-	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context) =>
-		SiteNavigationLoader.GetTocMappings(context.Navigation, context.ConfigurationFileProvider.NavigationFile, context.Collector);
+	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)
+	{
+		var file = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration);
+		return SiteNavigationLoader.GetTocMappings(file.FileSystem.File.ReadAllText(file.FullName), file, context.Collector);
+	}
 }

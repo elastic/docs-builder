@@ -6,14 +6,13 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Loading;
-using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
-public class SiteNavigationFilterTests
+public class CreateNavigationFileTests
 {
 	private static ConfigurationFileProvider CreateProvider(MockFileSystem fileSystem) =>
 		new(
@@ -22,20 +21,6 @@ public class SiteNavigationFilterTests
 			skipPrivateRepositories: true,
 			ConfigurationSource.Embedded
 		);
-
-	/// <summary>The navigation of <paramref name="navigationYaml"/> without the private repositories, as the tree the assembler builds from.</summary>
-	private static string Filter(string navigationYaml, AssemblyConfiguration config) =>
-		SiteNavDump.ToText(
-			SiteNavigationLoader.ForAssembly(
-				SiteNavigationLoader.Deserialize(navigationYaml),
-				config,
-				skipPrivateRepositories: true,
-				"navigation.yml"
-			).Value
-		);
-
-	/// <summary>The tree of the navigation the old text filter wrote for the same input.</summary>
-	private static string Expected(string yaml) => SiteNavDump.ToText(SiteNavigationLoader.Deserialize(yaml));
 
 	private static AssemblyConfiguration CreateConfig(params string[] privateRepoNames)
 	{
@@ -47,6 +32,9 @@ public class SiteNavigationFilterTests
 	[Test]
 	public void ConsecutiveSiblingPrivateEntries_BothRemoved()
 	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
 		// language=yaml
 		var navYaml =
 			"""
@@ -63,12 +51,14 @@ public class SiteNavigationFilterTests
 		                    - toc: public-repo-two://section-d
 		                      path_prefix: section-d
 		              """;
-		var config = CreateConfig("private-a", "private-b");
-		var output = Filter(navYaml, config);
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
-		output.Should().Be(
-			Expected(
-				"""
+		var config = CreateConfig("private-a", "private-b");
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
+
+		output.Should().MatchInlineSnapshot(
+			"""
 			toc:
 			  - toc: docs-content://getting-started
 			    path_prefix: getting-started
@@ -78,13 +68,15 @@ public class SiteNavigationFilterTests
 			      - toc: public-repo-two://section-d
 			        path_prefix: section-d
 			"""
-			)
 		);
 	}
 
 	[Test]
 	public void DeeplyNestedConsecutivePrivateEntries_BothRemoved()
 	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
 		// language=yaml
 		var navYaml =
 			"""
@@ -104,12 +96,14 @@ public class SiteNavigationFilterTests
 		                        - toc: public-repo-two://leaf-d
 		                          path_prefix: leaf-d
 		              """;
-		var config = CreateConfig("private-a", "private-b");
-		var output = Filter(navYaml, config);
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
-		output.Should().Be(
-			Expected(
-				"""
+		var config = CreateConfig("private-a", "private-b");
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
+
+		output.Should().MatchInlineSnapshot(
+			"""
 			toc:
 			  - toc: docs-content://top
 			    path_prefix: top
@@ -122,13 +116,15 @@ public class SiteNavigationFilterTests
 			          - toc: public-repo-two://leaf-d
 			            path_prefix: leaf-d
 			"""
-			)
 		);
 	}
 
 	[Test]
 	public void PrivateRepoWithChildren_EntryRemovedChildrenReindented()
 	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
 		// language=yaml
 		var navYaml =
 			"""
@@ -144,12 +140,14 @@ public class SiteNavigationFilterTests
 		                    - toc: public-repo://after
 		                      path_prefix: after
 		              """;
-		var config = CreateConfig("private-a");
-		var output = Filter(navYaml, config);
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
-		output.Should().Be(
-			Expected(
-				"""
+		var config = CreateConfig("private-a");
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
+
+		output.Should().MatchInlineSnapshot(
+			"""
 			toc:
 			  - toc: docs-content://top
 			    path_prefix: top
@@ -159,13 +157,15 @@ public class SiteNavigationFilterTests
 			      - toc: public-repo://after
 			        path_prefix: after
 			"""
-			)
 		);
 	}
 
 	[Test]
 	public void PublicEntriesBetweenPrivateEntries_Preserved()
 	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
 		// language=yaml
 		var navYaml =
 			"""
@@ -180,12 +180,14 @@ public class SiteNavigationFilterTests
 		                    - toc: private-b://last
 		                      path_prefix: last
 		              """;
-		var config = CreateConfig("private-a", "private-b");
-		var output = Filter(navYaml, config);
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
-		output.Should().Be(
-			Expected(
-				"""
+		var config = CreateConfig("private-a", "private-b");
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
+
+		output.Should().MatchInlineSnapshot(
+			"""
 			toc:
 			  - toc: docs-content://top
 			    path_prefix: top
@@ -193,13 +195,15 @@ public class SiteNavigationFilterTests
 			      - toc: public-repo://middle
 			        path_prefix: middle
 			"""
-			)
 		);
 	}
 
 	[Test]
 	public void IslandProperty_OnPublicEntry_SurvivesPrivateRepoStripping()
 	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
 		// language=yaml
 		var navYaml =
 			"""
@@ -213,13 +217,15 @@ public class SiteNavigationFilterTests
 		                    - toc: public-child://nested
 		                      path_prefix: reference/nested
 		              """;
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
+
 		var config = CreateConfig("private-a");
-		var output = Filter(navYaml, config);
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
 
 		// The public entry and its island: true property are preserved
-		output.Should().Be(
-			Expected(
-				"""
+		output.Should().MatchInlineSnapshot(
+			"""
 			toc:
 			  - toc: public-repo://reference
 			    path_prefix: reference
@@ -228,13 +234,15 @@ public class SiteNavigationFilterTests
 			      - toc: public-child://nested
 			        path_prefix: reference/nested
 			"""
-			)
 		);
 	}
 
 	[Test]
 	public void IslandProperty_OnPrivateEntry_IsRemovedWithEntry()
 	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
 		// language=yaml
 		var navYaml =
 			"""
@@ -247,25 +255,26 @@ public class SiteNavigationFilterTests
 		                - toc: public-after://other
 		                  path_prefix: other
 		              """;
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
+
 		var config = CreateConfig("private-a");
-		var output = Filter(navYaml, config);
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
 
 		// The private entry and its island: true property are removed
-		output.Should().Be(
-			Expected(
-				"""
+		output.Should().MatchInlineSnapshot(
+			"""
 			toc:
 			  - toc: public-repo://reference
 			    path_prefix: reference
 			  - toc: public-after://other
 			    path_prefix: other
 			"""
-			)
 		);
 	}
 
 	[Test]
-	public void NoPrivateRepositories_ReturnsTheNavigationUntouched()
+	public void NoPrivateRepositories_ReturnsOriginalFile()
 	{
 		var fileSystem = new MockFileSystem();
 		var provider = CreateProvider(fileSystem);
@@ -276,6 +285,10 @@ public class SiteNavigationFilterTests
 		var yaml = "narrative:\n  repo: git@github.com:elastic/docs-content.git\nreferences:\n  public-repo:\n    private: false";
 		var config = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: true);
 
-		Filter(originalContent, config).Should().Be(Expected(originalContent));
+		var result = provider.CreateNavigationFile(config);
+
+		result.FullName.Should().Be(provider.NavigationFile.FullName);
+		var output = fileSystem.File.ReadAllText(result.FullName);
+		output.Should().Be(originalContent);
 	}
 }

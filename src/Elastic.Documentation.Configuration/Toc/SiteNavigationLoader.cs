@@ -52,48 +52,32 @@ public static class SiteNavigationLoader
 			TableOfContents = dto.TableOfContents
 		};
 
-	// language=yaml
-	private const string LocalDocsBuilderToc =
-		"""
-		toc:
-		  - toc: docs-builder://
-		    path_prefix: reference/docs-builder
-		    children:
-		      - toc: docs-builder://development
-		        path_prefix: reference/docs-builder/dev
-		        children:
-		          - toc: docs-builder://development/link-validation
-		            path_prefix: reference/docs-builder/dev/link-val
-		""";
-
 	/// <summary>
-	/// The navigation an assembler build uses: when private repositories are skipped, their mounts and phantoms are
-	/// removed (<see cref="SiteNavigationDefinition.WithoutRepositories"/>), and a local docs-builder checkout is mounted so docset changes
-	/// can be tried in an assembled build. The result is checked against <see cref="SiteNavigationConstraints"/> once and carries every finding,
-	/// positioned in <paramref name="file"/>; the navigation rides along when a rule of error severity is broken, and the caller decides whether to stop.
+	/// Reports to <paramref name="collector"/> the paths two mounts claim at once, and returns whether there are none. This is the check the build runs on
+	/// <c>navigation.yml</c> after its mappings are read: the rule is <see cref="SiteNavigationConstraints"/>' <c>path-prefixes-unique</c>, and only its findings are written.
 	/// </summary>
-	public static Loaded<SiteNavigationDefinition> ForAssembly(
-		SiteNavigationDefinition navigation,
-		AssemblyConfiguration assembly,
-		bool skipPrivateRepositories,
-		string file
-	)
+	public static bool ValidatePathPrefixes(IDiagnosticsCollector collector, SiteNavigationDefinition navigation, IFileInfo navigationFile)
 	{
-		if (assembly.PrivateRepositories.Count == 0 || !skipPrivateRepositories)
-			return navigation.Check(file);
-
-		var mountLocalDocsBuilder = assembly.AvailableRepositories.TryGetValue("docs-builder", out var docsBuilder)
-			&& docsBuilder is { Skip: false, Path: not null };
-		return navigation
-			.WithoutRepositories(new HashSet<string>(assembly.PrivateRepositories.Keys))
-			.WithAppended(mountLocalDocsBuilder ? Deserialize(LocalDocsBuilderToc).TableOfContents : [])
-			.Check(file);
+		var duplicates = navigation.Check(navigationFile.FullName).Findings.Where(d => d.RuleId == "path-prefixes-unique").ToList();
+		foreach (var duplicate in duplicates)
+			collector.Write(duplicate);
+		return duplicates.Count == 0;
 	}
 
 	/// <summary>
+	/// <see cref="GetTocMappings(SiteNavigationDefinition, IFileInfo, IDiagnosticsCollector)"/> for the text of a navigation file. Unknown keys are not
+	/// reported here (the parse that reports them runs separately), and the text must be one the parser accepts.
+	/// </summary>
+	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(
+		string yaml,
+		IFileInfo navigationFile,
+		IDiagnosticsCollector collector
+	) => GetTocMappings(Deserialize(yaml, new BufferingDiagnosticsCollector(), navigationFile.FullName), navigationFile, collector);
+
+	/// <summary>
 	/// Where each mounted table of contents is published: its source (normalized to end in <c>/</c>) and path prefix.
-	/// The assembler resolves cross-links through these. A mount without a path prefix is reported by
-	/// <see cref="SiteNavigationConstraints"/> and falls back to its source path.
+	/// The assembler resolves cross-links through these. A mount without a path prefix is reported (rule <c>mount-has-path-prefix</c>) and falls back to its
+	/// source path. A <c>repo:</c> key beside <c>toc:</c> is reported and mounts the repository under the enclosing bare <c>toc:</c> name, as the reader always did.
 	/// </summary>
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(
 		SiteNavigationDefinition navigation,
@@ -101,44 +85,87 @@ public static class SiteNavigationLoader
 		IDiagnosticsCollector collector
 	)
 	{
+		var missingPrefix = navigation
+			.Check(navigationFile.FullName)
+			.Findings
+			.Where(d => d.RuleId == "mount-has-path-prefix")
+			.ToLookup(d => (d.Line, d.Column));
 		var mappings = new Dictionary<Uri, NavigationTocMapping>();
 		foreach (var entry in navigation.TableOfContents)
 		{
+			var walk = new Walk(navigationFile, collector, missingPrefix, mappings);
 			if (entry.Value is SiteTableOfContentsRef toc)
-				AddTocMappings(toc, navigationFile, collector, mappings);
+				AddTocMappings(toc, null, walk);
 			else
+			{
+				if (entry.Value is SiteSectionRef { ChildrenNotAnArray: true })
+					ReportChildrenNotAnArray(walk);
 				foreach (var child in entry.Children)
-					AddTocMappings(child, navigationFile, collector, mappings);
+					AddTocMappings(child, null, walk);
+			}
 		}
 		return mappings.ToFrozenDictionary();
 	}
 
-	private static void AddTocMappings(
-		SiteTableOfContentsRef toc,
-		IFileInfo navigationFile,
-		IDiagnosticsCollector collector,
-		Dictionary<Uri, NavigationTocMapping> mappings
-	)
+	private sealed record Walk(
+		IFileInfo File,
+		IDiagnosticsCollector Collector,
+		ILookup<(int? Line, int? Column), Diagnostic> MissingPrefix,
+		Dictionary<Uri, NavigationTocMapping> Mappings
+	);
+
+	private static void AddTocMappings(SiteTableOfContentsRef toc, string? parent, Walk walk)
 	{
 		var source = SiteNavigationConstraints.NormalizedSource(toc);
+		var pathPrefix = toc.DeclaredPathPrefix;
+		if (toc.ShorthandPath is { } shorthand)
+			parent = shorthand;
+		if (toc.RepoKey is { } repository)
+		{
+			var declared = toc.ShorthandPath is { } name
+				? ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, name)
+				: toc.Source.OriginalString;
+			Emit(walk, toc.Position, $"toc config defines 'repo' can not be combined with 'toc': {declared}");
+			pathPrefix = string.Join("/", [parent, repository]);
+			source = ContentSourceMoniker.CreateString(repository, parent);
+			source = source.EndsWith("://", StringComparison.OrdinalIgnoreCase) ? source : source.TrimEnd('/') + "/";
+		}
+
 		if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
 		{
-			Emit(collector, navigationFile, toc.Position, $"Source toc entry is not a valid uri: {source}");
+			Emit(walk, toc.Position, $"Source toc entry is not a valid uri: {source}");
 			return;
 		}
 
+		if (toc.RepoKey is null && toc.Position is { } position)
+		{
+			foreach (var finding in walk.MissingPrefix[(position.Line, position.Column)])
+				walk.Collector.Write(finding);
+		}
+
 		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
-		mappings[sourceUri] = new NavigationTocMapping { Source = sourceUri, SourcePathPrefix = toc.DeclaredPathPrefix ?? sourcePrefix };
+		walk.Mappings[sourceUri] = new NavigationTocMapping { Source = sourceUri, SourcePathPrefix = pathPrefix ?? sourcePrefix };
+		if (toc.ChildrenNotAnArray)
+			ReportChildrenNotAnArray(walk);
 		foreach (var child in toc.Children)
-			AddTocMappings(child, navigationFile, collector, mappings);
+			AddTocMappings(child, parent, walk);
 	}
 
+	// the toc mapping reader warned, without a position, about a children: with nothing (or a mapping) under it
+	private static void ReportChildrenNotAnArray(Walk walk) =>
+		walk.Collector.Write(new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = walk.File.FullName,
+			Message = "'children' is not an array"
+		});
+
 	// Mirrors YamlStreamReader's positioned errors, so the diagnostics match the reader that used to report them.
-	private static void Emit(IDiagnosticsCollector collector, IFileInfo navigationFile, SourcePosition? position, string message) =>
-		collector.Write(new Diagnostic
+	private static void Emit(Walk walk, SourcePosition? position, string message) =>
+		walk.Collector.Write(new Diagnostic
 		{
 			Severity = Severity.Error,
-			File = navigationFile.FullName,
+			File = walk.File.FullName,
 			Message = message,
 			Line = position?.Line,
 			Column = position?.Column,
@@ -204,6 +231,7 @@ public class SiteTableOfContentsCollectionYamlConverter(
 		var mappingStartEnd = reader.End;
 		_ = reader.Read(); // consume StartMapping
 		var dictionary = new Dictionary<string, object?>();
+		var childrenNotAnArray = false;
 
 		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
@@ -212,11 +240,16 @@ public class SiteTableOfContentsCollectionYamlConverter(
 
 			if (!KnownEntryKeys.Contains(key))
 			{
+				// `repo:` is not read by the parser; the toc mapping reader honoured it, so its value is kept
+				if (key == "repo" && reader.TokenType == YamlTokenType.Scalar)
+					dictionary[key] = reader.ScalarValue;
 				reader.SkipOrReportUnmapped(typeof(SiteNavigationEntry), KnownEntryKeys, key, null);
 				continue;
 			}
 
 			object? value = null;
+			if (key is "children" && reader.TokenType != YamlTokenType.StartSequence)
+				childrenNotAnArray = true;
 			if (reader.TokenType == YamlTokenType.Scalar)
 			{
 				value = reader.ScalarValue;
@@ -263,10 +296,13 @@ public class SiteTableOfContentsCollectionYamlConverter(
 			var floatingKind = dictionary.TryGetValue("floating", out var floatingVal)
 				&& floatingVal is string f
 				&& !string.IsNullOrEmpty(f) ? f : null;
-			return new SiteNavigationEntry(new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks, floatingKind));
+			return new SiteNavigationEntry(new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks, floatingKind)
+			{
+				ChildrenNotAnArray = childrenNotAnArray
+			});
 		}
 
-		return SiteTableOfContentsRefYamlConverter.ToMount(dictionary, mappingStart, mappingStartEnd) is { } mount
+		return SiteTableOfContentsRefYamlConverter.ToMount(dictionary, mappingStart, mappingStartEnd, childrenNotAnArray) is { } mount
 			? new SiteNavigationEntry(mount)
 			: throw SiteTableOfContentsRefYamlConverter.NoTocKey(dictionary);
 	}
@@ -334,6 +370,7 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 		var mappingStartEnd = reader.End;
 		_ = reader.Read(); // consume StartMapping
 		var dictionary = new Dictionary<string, object?>();
+		var childrenNotAnArray = false;
 
 		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
@@ -342,11 +379,15 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 
 			if (!KnownKeys.Contains(key))
 			{
+				if (key == "repo" && reader.TokenType == YamlTokenType.Scalar)
+					dictionary[key] = reader.ScalarValue;
 				reader.SkipOrReportUnmapped(typeof(SiteTableOfContentsRef), KnownKeys, key, null);
 				continue;
 			}
 
 			object? value = null;
+			if (key == "children" && reader.TokenType != YamlTokenType.StartSequence)
+				childrenNotAnArray = true;
 			if (reader.TokenType == YamlTokenType.Scalar)
 			{
 				value = reader.ScalarValue;
@@ -377,11 +418,11 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 		}
 		_ = reader.Read(); // consume EndMapping
 
-		return ToMount(dictionary, mappingStart, mappingStartEnd) ?? throw NoTocKey(dictionary);
+		return ToMount(dictionary, mappingStart, mappingStartEnd, childrenNotAnArray) ?? throw NoTocKey(dictionary);
 	}
 
 	/// <summary>The mount an entry's keys describe, or null when it has no <c>toc:</c> key.</summary>
-	internal static SiteTableOfContentsRef? ToMount(Dictionary<string, object?> dictionary, Mark start, Mark end)
+	internal static SiteTableOfContentsRef? ToMount(Dictionary<string, object?> dictionary, Mark start, Mark end, bool childrenNotAnArray)
 	{
 		if (!dictionary.TryGetValue("toc", out var tocPath) || tocPath is not string sourceString)
 			return null;
@@ -417,7 +458,9 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 		{
 			ShorthandPath = shorthand,
 			DeclaredPathPrefix = DeclaredPathPrefix(dictionary, shorthand),
-			Position = PositionOf(start, end)
+			RepoKey = dictionary.TryGetValue("repo", out var repo) ? repo as string : null,
+			Position = PositionOf(start, end),
+			ChildrenNotAnArray = childrenNotAnArray
 		};
 	}
 
@@ -437,7 +480,7 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 
 	internal static YamlException NoTocKey(Dictionary<string, object?> dictionary)
 	{
-		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));
+		var keys = string.Join(", ", dictionary.Keys.Where(k => k != "repo").Select(k => $"'{k}'"));
 		return new YamlException($"toc entry has no 'toc:' key and will be ignored. " + $"Found keys: {keys}. Check for typos.");
 	}
 

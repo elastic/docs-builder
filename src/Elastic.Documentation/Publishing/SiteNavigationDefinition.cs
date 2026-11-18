@@ -218,6 +218,10 @@ public partial record SiteSectionRef
 
 	public bool IsExternal => ExternalUrl is not null;
 
+	/// <summary>True when <c>children:</c> was written with something other than a list (nothing under it, a mapping), which the parser reads as no children and the toc mapping reader reports.</summary>
+	[IgnoreEquality]
+	public bool ChildrenNotAnArray { get; internal init; }
+
 	/// <summary>True when the section carries a dropdown list instead of tree children.</summary>
 	public bool IsDropdown => DropdownLinks.Count > 0;
 }
@@ -288,6 +292,14 @@ public partial record SiteTableOfContentsRef : ITableOfContentsItem
 	/// An empty <c>path_prefix:</c> stays empty. A mount built by hand declares its <c>path_prefix</c>, or else its bare <c>toc:</c> name.
 	/// </summary>
 	public string? DeclaredPathPrefix { get; internal init; }
+
+	/// <summary>True when <c>children:</c> was written with something other than a list (nothing under it, a mapping), which the parser reads as no children and the toc mapping reader reports.</summary>
+	[IgnoreEquality]
+	public bool ChildrenNotAnArray { get; internal init; }
+
+	/// <summary>The <c>repo:</c> written beside <c>toc:</c>, which the parser drops and the toc mapping reader honours.</summary>
+	[IgnoreEquality]
+	public string? RepoKey { get; internal init; }
 
 	/// <summary>Where the entry's mapping starts in the file; diagnostics about it point here.</summary>
 	[IgnoreEquality]
