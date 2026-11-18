@@ -534,9 +534,9 @@ describe('filterable-table author-chosen dropdowns', () => {
       </filterable-table>`
 
     const facetLabels = () =>
-        Array.from(document.querySelectorAll('.filterable-table-facet')).map(
-            (f) => f.textContent?.split(':')[0]
-        )
+        Array.from(
+            document.querySelectorAll('.filterable-table-facet-label')
+        ).map((label) => label.textContent)
 
     it('offers a dropdown for every qualifying column by default', () => {
         document.body.innerHTML = SCORES_HTML('')
@@ -634,5 +634,243 @@ describe('filterable-table author-chosen dropdowns', () => {
         document.body.innerHTML = SCORES_HTML('data-facet-columns="0,x"')
         customElements.upgrade(document.body)
         expect(facetLabels()).toEqual(['Provider'])
+    })
+})
+
+describe('filterable-table control layout', () => {
+    const clearButton = () =>
+        document.querySelector<HTMLButtonElement>('.filterable-table-clear')!
+    const search = () =>
+        document.querySelector<HTMLInputElement>('.filterable-table-search')!
+    const select = () =>
+        document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+
+    it('puts search, dropdowns, and the count in separate rows', () => {
+        mount()
+        const rows = Array.from(
+            document.querySelector('.filterable-table-controls')!.children
+        ).map((el) => el.className)
+        expect(rows).toEqual([
+            'filterable-table-search-row',
+            'filterable-table-facets',
+            'filterable-table-summary',
+        ])
+        expect(
+            document.querySelector('.filterable-table-facet-label')?.textContent
+        ).toBe('Support status')
+    })
+
+    it('shows Clear filters only while something is filtered', () => {
+        mount()
+        expect(clearButton().hidden).toBe(true)
+
+        search().value = 'apache'
+        search().dispatchEvent(new Event('input'))
+        expect(clearButton().hidden).toBe(false)
+
+        search().value = ''
+        search().dispatchEvent(new Event('input'))
+        expect(clearButton().hidden).toBe(true)
+    })
+
+    it('marks a dropdown that is narrowing the table', () => {
+        mount()
+        const facet = document.querySelector('.filterable-table-facet')!
+        expect(facet.hasAttribute('data-active')).toBe(false)
+
+        select().value = 'Core'
+        select().dispatchEvent(new Event('change'))
+        expect(facet.hasAttribute('data-active')).toBe(true)
+    })
+
+    it('resets search and dropdowns from Clear filters', () => {
+        mount()
+        search().value = 'host'
+        search().dispatchEvent(new Event('input'))
+        select().value = 'Core'
+        select().dispatchEvent(new Event('change'))
+        expect(visibleRows()).toHaveLength(1)
+
+        clearButton().click()
+        expect(search().value).toBe('')
+        expect(select().value).toBe('')
+        expect(visibleRows()).toHaveLength(4)
+        expect(clearButton().hidden).toBe(true)
+        expect(document.activeElement).toBe(search())
+    })
+})
+
+describe('filterable-table empty results', () => {
+    const message = () =>
+        document.querySelector<HTMLElement>('.filterable-table-empty')!
+    const search = (value: string) => {
+        const input = document.querySelector<HTMLInputElement>(
+            '.filterable-table-search'
+        )!
+        input.value = value
+        input.dispatchEvent(new Event('input'))
+    }
+    const choose = (value: string) => {
+        const select = document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+        select.value = value
+        select.dispatchEvent(new Event('change'))
+    }
+
+    it('labels the reset button Clear', () => {
+        mount()
+        expect(
+            document.querySelector('.filterable-table-clear')?.textContent
+        ).toBe('Clear')
+    })
+
+    it('hides the message while rows match', () => {
+        mount()
+        expect(message().hidden).toBe(true)
+        search('apache')
+        expect(message().hidden).toBe(true)
+    })
+
+    it('explains an empty table after a search', () => {
+        mount()
+        search('nothing-matches')
+        expect(message().hidden).toBe(false)
+        expect(message().textContent).toBe('No rows match your search.')
+    })
+
+    it('explains an empty table after filters', () => {
+        // Each value matches some rows, but no row is both an Exporter and
+        // Extended, so only the two filters together empty the table.
+        document.body.innerHTML = `
+          <filterable-table>
+            <table>
+              <thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>a</td><td>Receiver</td><td>Core</td></tr>
+                <tr><td>b</td><td>Receiver</td><td>Extended</td></tr>
+                <tr><td>c</td><td>Exporter</td><td>Core</td></tr>
+              </tbody>
+            </table>
+          </filterable-table>`
+        customElements.upgrade(document.body)
+        const [type, status] = Array.from(
+            document.querySelectorAll<HTMLSelectElement>(
+                '.filterable-table-facet select'
+            )
+        )
+        type.value = 'Exporter'
+        type.dispatchEvent(new Event('change'))
+        status.value = 'Extended'
+        status.dispatchEvent(new Event('change'))
+        expect(message().hidden).toBe(false)
+        expect(message().textContent).toBe('No rows match your filters.')
+    })
+
+    it('names both search and filters when both are set', () => {
+        mount()
+        choose('Extended')
+        search('filelog')
+        expect(message().hidden).toBe(false)
+        expect(message().textContent).toBe(
+            'No rows match your search and filters.'
+        )
+        expect(
+            document
+                .querySelector('filterable-table')!
+                .hasAttribute('data-empty')
+        ).toBe(true)
+    })
+
+    it('hides the message again after Clear', () => {
+        mount()
+        search('nothing-matches')
+        document
+            .querySelector<HTMLButtonElement>('.filterable-table-clear')!
+            .click()
+        expect(message().hidden).toBe(true)
+        expect(
+            document
+                .querySelector('filterable-table')!
+                .hasAttribute('data-empty')
+        ).toBe(false)
+    })
+
+    it('keeps one message when an enhanced host is cloned', () => {
+        mount()
+        const host = document.querySelector<HTMLElement>('filterable-table')!
+        const clone = host.cloneNode(true) as HTMLElement
+        clone.querySelector('.filterable-table-controls')?.remove()
+        delete clone.dataset.enhanced
+        document.body.appendChild(clone)
+        expect(clone.querySelectorAll('.filterable-table-empty')).toHaveLength(
+            1
+        )
+    })
+})
+
+describe('filterable-table collapsible filters', () => {
+    const toggle = () =>
+        document.querySelector<HTMLButtonElement>('.filterable-table-toggle')!
+    const panel = () =>
+        document.querySelector<HTMLElement>('.filterable-table-facets')!
+    const count = () =>
+        document.querySelector('.filterable-table-toggle-count')!.textContent
+
+    it('starts with the dropdowns collapsed behind a Filters button', () => {
+        mount()
+        expect(toggle().hidden).toBe(false)
+        expect(toggle().textContent).toContain('Filters')
+        expect(toggle().getAttribute('aria-expanded')).toBe('false')
+        expect(toggle().getAttribute('aria-controls')).toBe(panel().id)
+        expect(panel().hidden).toBe(true)
+    })
+
+    it('opens and closes the dropdowns from the button', () => {
+        mount()
+        toggle().click()
+        expect(panel().hidden).toBe(false)
+        expect(toggle().getAttribute('aria-expanded')).toBe('true')
+        toggle().click()
+        expect(panel().hidden).toBe(true)
+        expect(toggle().getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('counts the filters that are on, with the panel open or shut', () => {
+        mount()
+        expect(count()).toBe('')
+        expect(toggle().getAttribute('aria-label')).toBe('Filters')
+
+        toggle().click()
+        const select = document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+        select.value = 'Core'
+        select.dispatchEvent(new Event('change'))
+        toggle().click()
+
+        expect(panel().hidden).toBe(true)
+        expect(count()).toBe('1')
+        expect(toggle().getAttribute('aria-label')).toBe('Filters, 1 on')
+    })
+
+    it('gives each table its own panel id', () => {
+        document.body.innerHTML = TABLE_HTML + TABLE_HTML
+        customElements.upgrade(document.body)
+        const ids = Array.from(
+            document.querySelectorAll('.filterable-table-facets')
+        ).map((el) => el.id)
+        expect(new Set(ids).size).toBe(2)
+    })
+
+    it('hides the button when there are no dropdowns', () => {
+        document.body.innerHTML = TABLE_HTML.replace(
+            '<filterable-table>',
+            '<filterable-table data-facets="none">'
+        )
+        customElements.upgrade(document.body)
+        expect(toggle().hidden).toBe(true)
     })
 })

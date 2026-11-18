@@ -23,6 +23,14 @@ const SETTLE_MS = 150
 // htmx swaps) can never trigger a rebuild while someone is using the filters.
 const WATCH_CEILING_MS = 5000
 
+// Gives each dropdown panel a unique id for its button's aria-controls.
+let facetListIds = 0
+
+// The Filters button: a funnel icon, the label, a count of the filters that
+// are on (empty when none), and a chevron that flips when the panel opens.
+// Static markup, with no reader or author text in it.
+const TOGGLE_CONTENT = `<svg class="filterable-table-toggle-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"/></svg><span>Filters</span><span class="filterable-table-toggle-count"></span><svg class="filterable-table-toggle-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>`
+
 type Facet = { colIndex: number; select: HTMLSelectElement }
 type FacetSpec = { colIndex: number; label: string; values: string[] }
 
@@ -35,6 +43,10 @@ class FilterableTableElement extends HTMLElement {
     private facets: Facet[] = []
     private status: HTMLElement | null = null
     private controls: HTMLElement | null = null
+    private facetList: HTMLElement | null = null
+    private clearButton: HTMLButtonElement | null = null
+    private emptyMessage: HTMLElement | null = null
+    private toggleButton: HTMLButtonElement | null = null
     private facetSignature = ''
     private observer: MutationObserver | null = null
     private settleTimer = 0
@@ -204,6 +216,13 @@ class FilterableTableElement extends HTMLElement {
         return specs
     }
 
+    /**
+     * Lays the controls out in rows: the search box with a "Filters" button,
+     * the dropdowns in a grid with their labels above them (collapsed until
+     * the button opens them), and the count with a "Clear" button that shows
+     * only while something is filtered. A message below the table says so
+     * when nothing matches.
+     */
     private buildControls(): void {
         const controls = document.createElement('div')
         controls.className = 'filterable-table-controls'
@@ -214,19 +233,84 @@ class FilterableTableElement extends HTMLElement {
         search.className = 'filterable-table-search'
         search.setAttribute('aria-label', 'Filter table')
         search.addEventListener('input', () => this.applyFilters())
-        controls.appendChild(search)
         this.searchInput = search
+
+        // The dropdowns start collapsed behind a "Filters" button beside the
+        // search box. The button carries a count of the filters that are on,
+        // so readers can tell the table is narrowed even with the panel shut.
+        const facetList = document.createElement('div')
+        facetList.className = 'filterable-table-facets'
+        facetList.id = `filterable-table-facets-${++facetListIds}`
+        facetList.hidden = true
+        this.facetList = facetList
+
+        const toggle = document.createElement('button')
+        toggle.type = 'button'
+        toggle.className = 'filterable-table-toggle'
+        toggle.setAttribute('aria-expanded', 'false')
+        toggle.setAttribute('aria-controls', facetList.id)
+        toggle.innerHTML = TOGGLE_CONTENT
+        toggle.addEventListener('click', () =>
+            this.showFilters(facetList.hidden)
+        )
+        this.toggleButton = toggle
+
+        const searchRow = document.createElement('div')
+        searchRow.className = 'filterable-table-search-row'
+        searchRow.append(search, toggle)
+        controls.append(searchRow, facetList)
+
+        const summary = document.createElement('div')
+        summary.className = 'filterable-table-summary'
 
         const status = document.createElement('span')
         status.className = 'filterable-table-status'
         status.setAttribute('role', 'status')
         status.setAttribute('aria-live', 'polite')
-        controls.appendChild(status)
+        summary.appendChild(status)
         this.status = status
 
+        const clear = document.createElement('button')
+        clear.type = 'button'
+        clear.className = 'filterable-table-clear'
+        clear.textContent = 'Clear'
+        clear.hidden = true
+        clear.addEventListener('click', () => this.clearFilters())
+        summary.appendChild(clear)
+        this.clearButton = clear
+
+        controls.appendChild(summary)
         this.controls = controls
         this.insertBefore(controls, this.firstChild)
+
+        // Shown under the header row when nothing matches, so an empty table
+        // doesn't look broken. It isn't a live region: the count above it
+        // already announces "Showing 0 of N". A fullscreen copy is cloned
+        // from an enhanced host, so drop any message the clone carried over.
+        this.querySelector(':scope > .filterable-table-empty')?.remove()
+        // A div, not a p: the page's paragraph styles would add a top margin.
+        const empty = document.createElement('div')
+        empty.className = 'filterable-table-empty'
+        empty.hidden = true
+        this.appendChild(empty)
+        this.emptyMessage = empty
+
         this.renderFacets()
+    }
+
+    /** Opens or closes the dropdown panel. */
+    private showFilters(open: boolean): void {
+        if (!this.facetList || !this.toggleButton) return
+        this.facetList.hidden = !open
+        this.toggleButton.setAttribute('aria-expanded', String(open))
+    }
+
+    /** Empties the search box, sets every dropdown back to All, and returns focus to search. */
+    private clearFilters(): void {
+        if (this.searchInput) this.searchInput.value = ''
+        for (const facet of this.facets) facet.select.value = ''
+        this.applyFilters()
+        this.searchInput?.focus()
     }
 
     /**
@@ -235,9 +319,8 @@ class FilterableTableElement extends HTMLElement {
      * incidental DOM churn costs nothing.
      */
     private renderFacets(): void {
-        const controls = this.controls
-        const status = this.status
-        if (!controls || !status) return
+        const facetList = this.facetList
+        if (!facetList) return
 
         const specs = this.facetSpecs()
         const signature = JSON.stringify(specs)
@@ -254,7 +337,10 @@ class FilterableTableElement extends HTMLElement {
         for (const spec of specs) {
             const wrapper = document.createElement('label')
             wrapper.className = 'filterable-table-facet'
-            wrapper.append(`${spec.label}: `)
+            const name = document.createElement('span')
+            name.className = 'filterable-table-facet-label'
+            name.textContent = spec.label
+            wrapper.appendChild(name)
 
             const select = document.createElement('select')
             select.setAttribute('aria-label', `Filter by ${spec.label}`)
@@ -268,10 +354,14 @@ class FilterableTableElement extends HTMLElement {
             select.addEventListener('change', () => this.applyFilters())
 
             wrapper.appendChild(select)
-            // Keep the count last in the control row.
-            controls.insertBefore(wrapper, status)
+            facetList.appendChild(wrapper)
             this.facets.push({ colIndex: spec.colIndex, select })
         }
+
+        // No dropdowns, no button: a search-only table shows just the search box.
+        if (this.toggleButton)
+            this.toggleButton.hidden = this.facets.length === 0
+        if (this.facets.length === 0) this.showFilters(false)
     }
 
     private watchLateContent(tbody: HTMLTableSectionElement): void {
@@ -340,6 +430,46 @@ class FilterableTableElement extends HTMLElement {
         // Drives the print rule: a printed copy of a filtered table keeps its
         // count, so it can't be mistaken for the complete table.
         this.dataset.filtered = String(visible < this.rows.length)
+
+        // Mark the dropdowns that narrow the table, and offer a way to undo
+        // everything only while something is set.
+        for (const facet of this.facets)
+            facet.select
+                .closest('label')
+                ?.toggleAttribute('data-active', facet.select.value !== '')
+        if (this.clearButton)
+            this.clearButton.hidden = query === '' && activeFacets.length === 0
+
+        // Count the filters that are on in the Filters button, visibly and in
+        // its accessible name.
+        if (this.toggleButton) {
+            const count = this.toggleButton.querySelector(
+                '.filterable-table-toggle-count'
+            )
+            if (count)
+                count.textContent =
+                    activeFacets.length > 0 ? String(activeFacets.length) : ''
+            this.toggleButton.setAttribute(
+                'aria-label',
+                activeFacets.length > 0
+                    ? `Filters, ${activeFacets.length} on`
+                    : 'Filters'
+            )
+        }
+
+        // Say why the table is empty, naming what's narrowing it.
+        const none = visible === 0
+        this.toggleAttribute('data-empty', none)
+        if (this.emptyMessage) {
+            this.emptyMessage.hidden = !none
+            if (none)
+                this.emptyMessage.textContent =
+                    query !== '' && activeFacets.length > 0
+                        ? 'No rows match your search and filters.'
+                        : query !== ''
+                          ? 'No rows match your search.'
+                          : 'No rows match your filters.'
+        }
 
         const text = `Showing ${visible} of ${this.rows.length}`
         // Only touch the live region when the count really changed, so typing
