@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
@@ -46,7 +47,10 @@ public class FeatureFlagsMatrixTests
 		foreach (var yaml in yamlValues)
 		{
 			foreach (var env in envValues)
-				_ = sb.Append($"yaml={yaml?.ToString().ToLowerInvariant() ?? "absent"} env={env ?? "unset"} => {resolve(yaml, env)}\n");
+				_ = sb.Append(
+					CultureInfo.InvariantCulture,
+					$"yaml={yaml?.ToString().ToLowerInvariant() ?? "absent"} env={env ?? "unset"} => {resolve(yaml, env)}\n"
+				);
 		}
 		return sb.ToString();
 	}
@@ -81,7 +85,7 @@ public class FeatureFlagsMatrixTests
 				var envTrue = new FeatureFlags([]).EnabledKeys().Contains(key);
 				Environment.SetEnvironmentVariable(EnvName(key), null);
 
-				_ = sb.Append($"{key} | {yamlOnly} | {yamlEnvFalse} | {envTrue} | {setterEnvFalse}\n");
+				_ = sb.Append(CultureInfo.InvariantCulture, $"{key} | {yamlOnly} | {yamlEnvFalse} | {envTrue} | {setterEnvFalse}\n");
 			}
 			return sb.ToString();
 		});
@@ -109,12 +113,16 @@ public class FeatureFlagsMatrixTests
 				var flags = new FeatureFlags([]);
 				flags.Set(key, true);
 				_ = sb.Append(
+					CultureInfo.InvariantCulture,
 					$"Set('{key}', true) => PageFeedbackEnabled={flags.PageFeedbackEnabled} enabled=[{string.Join(',', flags.EnabledKeys())}]\n"
 				);
 			}
 
 			var constructed = new FeatureFlags(new Dictionary<string, bool> { ["PAGE_FEEDBACK"] = true, ["page-feedback"] = false });
-			_ = sb.Append($"constructor does not normalise: PAGE_FEEDBACK=true => PageFeedbackEnabled={constructed.PageFeedbackEnabled}\n");
+			_ = sb.Append(
+				CultureInfo.InvariantCulture,
+				$"constructor does not normalise: PAGE_FEEDBACK=true => PageFeedbackEnabled={constructed.PageFeedbackEnabled}\n"
+			);
 
 			foreach (var property in typeof(FeatureFlags)
 				.GetProperties()
@@ -125,7 +133,10 @@ public class FeatureFlagsMatrixTests
 				property.SetValue(flags, true);
 				var afterTrue = string.Join(',', flags.EnabledKeys());
 				property.SetValue(flags, false);
-				_ = sb.Append($"{property.Name}: setter true => [{afterTrue}], then false => [{string.Join(',', flags.EnabledKeys())}]\n");
+				_ = sb.Append(
+					CultureInfo.InvariantCulture,
+					$"{property.Name}: setter true => [{afterTrue}], then false => [{string.Join(',', flags.EnabledKeys())}]\n"
+				);
 			}
 			return sb.ToString();
 		}).Should().MatchSnapshot();
@@ -146,11 +157,15 @@ public class FeatureFlagsMatrixTests
 						.OrderBy(f => f.Key, StringComparer.Ordinal)
 						.Select(f => $"{f.Key}={f.Value.ToString().ToLowerInvariant()}")
 				);
-				_ = sb.Append($"{name}\n  yaml:    {raw}\n  enabled: {string.Join(", ", environment.ToFeatureFlags().EnabledKeys())}\n");
+				_ = sb.Append(
+					CultureInfo.InvariantCulture,
+					$"{name}\n  yaml:    {raw}\n  enabled: {string.Join(", ", environment.ToFeatureFlags().EnabledKeys())}\n"
+				);
 
 				Environment.SetEnvironmentVariable(EnvName("page-feedback"), "false");
 				Environment.SetEnvironmentVariable(EnvName("guide-nav"), "true");
 				_ = sb.Append(
+					CultureInfo.InvariantCulture,
 					$"  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: {string.Join(", ", environment.ToFeatureFlags().EnabledKeys())}\n"
 				);
 				Environment.SetEnvironmentVariable(EnvName("page-feedback"), null);

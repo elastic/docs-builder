@@ -1175,14 +1175,14 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		var files =
-			FileSystem
-				.Directory
-				.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories)
-				.Select(FileSystem.Path.GetFileName)
-				.Order()
-				.ToArray()!;
-		return (success, files!, outputDir);
+		var files = FileSystem
+			.Directory
+			.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories)
+			.Select(FileSystem.Path.GetFileName)
+			.OfType<string>()
+			.Order()
+			.ToArray();
+		return (success, files, outputDir);
 	}
 
 	// Bundles are written into a per-product subdirectory of the output directory.

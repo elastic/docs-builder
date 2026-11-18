@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -38,18 +39,18 @@ public class InMemoryBuildStateSnapshotTests
 	{
 		var sb = new StringBuilder(e.Type);
 		if (e.Errors is not null || e.Warnings is not null || e.Hints is not null)
-			_ = sb.Append($" errors={e.Errors} warnings={e.Warnings} hints={e.Hints}");
+			_ = sb.Append(CultureInfo.InvariantCulture, $" errors={e.Errors} warnings={e.Warnings} hints={e.Hints}");
 		if (e.Status is not null)
-			_ = sb.Append($" status={e.Status}");
+			_ = sb.Append(CultureInfo.InvariantCulture, $" status={e.Status}");
 		if (e.Diagnostic is { } d)
-			_ = sb.Append($" [{Describe(d, docs)}]");
+			_ = sb.Append(CultureInfo.InvariantCulture, $" [{Describe(d, docs)}]");
 		if (e.Diagnostics is { } all)
-			_ = sb.Append($" diagnostics=[{string.Join("; ", all.Select(x => Describe(x, docs)))}]");
+			_ = sb.Append(CultureInfo.InvariantCulture, $" diagnostics=[{string.Join("; ", all.Select(x => Describe(x, docs)))}]");
 		return sb.ToString();
 	}
 
 	private static string Describe(DiagnosticDto d, string docs) =>
-		$"{d.Severity} {d.File.Replace('\\', '/').Replace(docs.Replace('\\', '/'), "{docs}", StringComparison.Ordinal)}:{d.Line?.ToString() ?? "-"}:{d.Column?.ToString() ?? "-"} {d.Message.Replace('\\', '/').Replace(docs.Replace('\\', '/'), "{docs}", StringComparison.Ordinal)}";
+		$"{d.Severity} {d.File.Replace('\\', '/').Replace(docs.Replace('\\', '/'), "{docs}", StringComparison.Ordinal)}:{d.Line?.ToString(CultureInfo.InvariantCulture) ?? "-"}:{d.Column?.ToString(CultureInfo.InvariantCulture) ?? "-"} {d.Message.Replace('\\', '/').Replace(docs.Replace('\\', '/'), "{docs}", StringComparison.Ordinal)}";
 
 	private static string Snapshot(InMemoryBuildState state, string docs) =>
 		$"status={state.Status} errors={state.ErrorCount} warnings={state.WarningCount} hints={state.HintCount} stored={state.GetStoredDiagnostics().Length}\nstate event: {Describe(state.GetCurrentState(), docs)}";
@@ -107,7 +108,7 @@ public class InMemoryBuildStateSnapshotTests
 			_ = sb.Append("event: ").Append(Describe(e, docs)).Append('\n');
 		await shutdown.CancelAsync();
 		await loop;
-		_ = sb.Append($"after: {Snapshot(state, docs)}\n");
+		_ = sb.Append(CultureInfo.InvariantCulture, $"after: {Snapshot(state, docs)}\n");
 		return TempDirectory().Replace(sb.ToString(), "{docs}");
 	}
 

@@ -20,10 +20,10 @@ public class StringExtensionsTests
 	public void JoinOrNull_NoValues_ReturnsNull() => Array.Empty<string>().JoinOrNull(' ').Should().BeNull();
 
 	[Test]
-	public void JoinOrNull_OnlyEmptyValues_ReturnsNull() => new[] { "" }.JoinOrNull(' ').Should().BeNull();
+	public void JoinOrNull_OnlyEmptyValues_ReturnsNull() => new List<string> { "" }.JoinOrNull(' ').Should().BeNull();
 
 	[Test]
-	public void JoinOrNull_Values_JoinsWithTheSeparator() => new[] { "a", "b" }.JoinOrNull(' ').Should().Be("a b");
+	public void JoinOrNull_Values_JoinsWithTheSeparator() => new List<string> { "a", "b" }.JoinOrNull(' ').Should().Be("a b");
 
 	[Test]
 	[Arguments("get-actions-connector-oauth-callback-script", "Get Actions Connector Oauth Callback Script")]

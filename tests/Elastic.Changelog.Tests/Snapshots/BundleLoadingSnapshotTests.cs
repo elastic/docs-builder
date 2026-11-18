@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
@@ -65,7 +66,7 @@ public class BundleLoadingSnapshotTests
 							["owner"] = b.Owner,
 							["filePath"] = NormalisePath(b.FilePath),
 							["description"] = b.Data.Description,
-							["releaseDate"] = b.Data.ReleaseDate?.ToString("yyyy-MM-dd"),
+							["releaseDate"] = b.Data.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
 							["gitRef"] = b.Data.GitRef,
 							["hideFeatures"] = new JsonArray([.. b.HideFeatures.Select(h => (JsonNode?)JsonValue.Create(h))]),
 							["products"] = System.Text.Json.Nodes.JsonNode.Parse(ChangelogConfigurationDump.ToJson(b.Data.Products)),
