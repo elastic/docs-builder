@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Navigation;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
@@ -47,7 +48,7 @@ public class FloatingHubNavigationTests
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		const string docsetPath = "/checkouts/current/observability/docs/docset.yml";
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
-		var obsDocset = DocumentationSetFile.LoadAndResolve(
+		var obsDocset = DocumentationSetLoader.LoadAndResolve(
 			obsContext.Collector,
 			fileSystem.FileInfo.New(docsetPath),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)

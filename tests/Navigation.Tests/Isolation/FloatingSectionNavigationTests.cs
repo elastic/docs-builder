@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -23,19 +25,19 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		  - file: page.md
 		""";
 
-	private (TestDocumentationSetContext Context, DocumentationSetFile DocSet) Arrange()
+	private (TestDocumentationSetContext Context, DocumentationSetDefinition DocSet) Arrange()
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/page.md", new MockFileData("# Page"));
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, Yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, Yaml, fileSystem.NewDirInfo("docs"));
 		return (context, docSet);
 	}
 
 	private static DocumentationSetNavigation<TestDocumentationFile> CreateNavigation(
 		TestDocumentationSetContext context,
-		DocumentationSetFile docSet,
+		DocumentationSetDefinition docSet,
 		FloatingSectionRegistry? registry = null
 	) =>
 		new(
@@ -139,7 +141,7 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 			  - api: demo
 			""";
 
-		_ = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		context
