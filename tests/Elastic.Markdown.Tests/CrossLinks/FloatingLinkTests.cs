@@ -7,6 +7,8 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Markdown.Tests.CrossLinks;
 
@@ -39,7 +41,7 @@ public class FloatingLinkTests
 
 	private static FetchedCrossLinks CrossLinks()
 	{
-		var links = new RepositoryLinks
+		var links = new LinkManifest
 		{
 			Origin = GitCheckoutInformation.Unavailable,
 			UrlPathPrefix = "/elastic/elasticsearch/tree/main",
@@ -50,7 +52,7 @@ public class FloatingLinkTests
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = ["elasticsearch"],
-			LinkReferences = new Dictionary<string, RepositoryLinks> { ["elasticsearch"] = links }.ToFrozenDictionary(),
+			LinkReferences = new Dictionary<string, LinkManifest> { ["elasticsearch"] = links }.ToFrozenDictionary(),
 			LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
 		};
 	}
@@ -216,7 +218,7 @@ public class FloatingLinkTests
 	{
 		var links = CrossLinks().LinkReferences["elasticsearch"];
 
-		var roundTripped = RepositoryLinks.Deserialize(RepositoryLinks.Serialize(links));
+		var roundTripped = LinkManifestJson.Read(LinkJson.Serialize(links));
 
 		var section = roundTripped.Floating.Should().ContainKey("api/elasticsearch").WhoseValue;
 		section.Versions.Should().BeEquivalentTo(Api.Versions, options => options.WithStrictOrdering());
@@ -229,7 +231,7 @@ public class FloatingLinkTests
 	[Test]
 	public void RepositoryLinks_WithAFloatingSection_StatesTheRootOfEachVersionInTheJson()
 	{
-		var json = RepositoryLinks.Serialize(CrossLinks().LinkReferences["elasticsearch"]);
+		var json = LinkJson.Serialize(CrossLinks().LinkReferences["elasticsearch"]);
 
 		json.Should().Contain("\"root\": \"api/doc/elasticsearch/legacy-8\"");
 		json.Should().NotContain("url_root", "the routing is data, not a section-level pattern");
@@ -240,6 +242,6 @@ public class FloatingLinkTests
 	{
 		var links = CrossLinks().LinkReferences["elasticsearch"] with { Floating = null };
 
-		RepositoryLinks.Serialize(links).Should().NotContain("floating");
+		LinkJson.Serialize(links).Should().NotContain("floating");
 	}
 }

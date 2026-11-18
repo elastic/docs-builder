@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Equality;
 
@@ -40,5 +41,74 @@ public sealed class StringListEntryComparer : IEqualityComparer<KeyValuePair<str
 		foreach (var item in obj.Value ?? [])
 			hash.Add(item, StringComparer.Ordinal);
 		return hash.ToHashCode();
+	}
+}
+
+/// <summary>
+/// Entries of <see cref="LinkRegistry.Repositories"/> (repository to branch to entry): equal when the keys match and the inner dictionaries hold equal values
+/// under the same keys, in any order.
+/// </summary>
+public sealed class LinkRegistryEntriesComparer : IEqualityComparer<Dictionary<string, Dictionary<string, LinkRegistryEntry>>>
+{
+	public static LinkRegistryEntriesComparer Default { get; } = new();
+
+	public bool Equals(
+		Dictionary<string, Dictionary<string, LinkRegistryEntry>>? x,
+		Dictionary<string, Dictionary<string, LinkRegistryEntry>>? y
+	) =>
+		ReferenceEquals(x, y)
+			|| (x is not null
+				&& y is not null
+				&& x.Count == y.Count
+				&& x.All(
+					repository => y.TryGetValue(repository.Key, out var other) &&
+						(ReferenceEquals(repository.Value, other) ||
+							(repository.Value is not null &&
+								other is not null && repository.Value.Count == other.Count && repository.Value.All(
+								branch => other.TryGetValue(
+									branch.Key,
+									out var entry
+								) && EqualityComparer<LinkRegistryEntry>.Default.Equals(branch.Value, entry)
+							)))
+				));
+
+	// Order-independent: the repositories and their branch counts identify the registry; Equals settles the rest.
+	public int GetHashCode(Dictionary<string, Dictionary<string, LinkRegistryEntry>> obj)
+	{
+		var hash = 0;
+		foreach (var (key, branches) in obj)
+			hash ^= HashCode.Combine(StringComparer.Ordinal.GetHashCode(key), branches?.Count ?? 0);
+		return hash;
+	}
+}
+
+/// <summary>
+/// <see cref="FloatingLinkSection.Aliases"/> (version to canonical page to aliases): equal when the versions and the canonical pages match and each
+/// holds the same aliases in the same order, with the versions and pages in any order.
+/// </summary>
+public sealed class FloatingAliasesComparer : IEqualityComparer<Dictionary<string, Dictionary<string, string[]>>>
+{
+	public static FloatingAliasesComparer Default { get; } = new();
+
+	public bool Equals(Dictionary<string, Dictionary<string, string[]>>? x, Dictionary<string, Dictionary<string, string[]>>? y) =>
+		ReferenceEquals(x, y)
+			|| (x is not null
+				&& y is not null
+				&& x.Count == y.Count
+				&& x.All(version => y.TryGetValue(version.Key, out var other) && PagesEqual(version.Value, other)));
+
+	private static bool PagesEqual(Dictionary<string, string[]>? x, Dictionary<string, string[]>? y) =>
+		ReferenceEquals(x, y)
+			|| (x is not null
+				&& y is not null
+				&& x.Count == y.Count
+				&& x.All(page => y.TryGetValue(page.Key, out var aliases) && page.Value.AsSpan().SequenceEqual(aliases)));
+
+	public int GetHashCode(Dictionary<string, Dictionary<string, string[]>> obj)
+	{
+		var hash = 0;
+		foreach (var (version, pages) in obj)
+			hash ^= HashCode.Combine(StringComparer.Ordinal.GetHashCode(version), pages?.Count ?? 0);
+		return hash;
 	}
 }

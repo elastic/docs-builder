@@ -10,6 +10,8 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Testing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.Snapshots;
 
@@ -21,7 +23,7 @@ namespace Elastic.Documentation.Build.Tests.CrossLinks;
 /// </summary>
 public class CrossLinkFetcherSnapshotTests
 {
-	private sealed class FakeReader(LinkRegistry registry, Dictionary<string, RepositoryLinks> links) : ILinkIndexReader
+	private sealed class FakeReader(LinkRegistry registry, Dictionary<string, LinkManifest> links) : ILinkIndexReader
 	{
 		public List<string> Calls { get; } = [];
 
@@ -33,7 +35,7 @@ public class CrossLinkFetcherSnapshotTests
 			return Task.FromResult(registry);
 		}
 
-		public Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken = default)
+		public Task<LinkManifest> GetRepositoryLinks(string key, Cancel cancellationToken = default)
 		{
 			Calls.Add($"links {key}");
 			return Task.FromResult(links[key]);
@@ -50,7 +52,7 @@ public class CrossLinkFetcherSnapshotTests
 		public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 		{
 			var registry = await FetchLinkRegistry(ctx);
-			var references = new Dictionary<string, RepositoryLinks>();
+			var references = new Dictionary<string, LinkManifest>();
 			var entries = new Dictionary<string, LinkRegistryEntry>();
 			foreach (var (repository, branches) in registry.Repositories)
 			{
@@ -67,7 +69,7 @@ public class CrossLinkFetcherSnapshotTests
 			};
 		}
 
-		public Task<RepositoryLinks> Fetch(string repository, params string[] keys) => FetchCrossLinks(repository, keys, default);
+		public Task<LinkManifest> Fetch(string repository, params string[] keys) => FetchCrossLinks(repository, keys, default);
 
 		public Task<LinkRegistryEntry> Entry(string repository) => GetLinkIndexEntry(repository, default);
 	}
@@ -82,8 +84,8 @@ public class CrossLinkFetcherSnapshotTests
 			GitReference = "ref"
 		};
 
-	private static RepositoryLinks Links(string repository) =>
-		RepositoryLinks.Deserialize(
+	private static LinkManifest Links(string repository) =>
+		LinkManifestJson.Read(
 			$$"""
 		{
 		  "origin": { "branch": "main", "remote": "https://github.com/example-org/{{repository}}", "ref": "abc" },
@@ -99,7 +101,7 @@ public class CrossLinkFetcherSnapshotTests
 	)
 	{
 		var repositories = new Dictionary<string, Dictionary<string, LinkRegistryEntry>>();
-		var links = new Dictionary<string, RepositoryLinks>();
+		var links = new Dictionary<string, LinkManifest>();
 		foreach (var (repository, branch, etag) in entries)
 		{
 			if (!repositories.TryGetValue(repository, out var branches))
@@ -231,6 +233,6 @@ public class CrossLinkFetcherSnapshotTests
 	{
 		var json = Links("alpha");
 
-		CrossLinkFetcher.Deserialize(RepositoryLinks.Serialize(json)).Should().BeEquivalentTo(json);
+		LinkManifestJson.Read(LinkJson.Serialize(json)).Should().BeEquivalentTo(json);
 	}
 }

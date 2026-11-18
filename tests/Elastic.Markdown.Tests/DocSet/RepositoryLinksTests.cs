@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Testing;
 using Nullean.Snapshots.Json;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -14,7 +16,7 @@ public class RepositoryLinksTests : NavigationTestsBase
 {
 	public RepositoryLinksTests() : base() => Reference = Set.CreateLinkReference();
 
-	private RepositoryLinks Reference { get; }
+	private LinkManifest Reference { get; }
 
 	[Test]
 	public void ShouldNotBeNull() => Reference.Should().NotBeNull();
@@ -51,14 +53,14 @@ public class LinkReferenceSerializationTests
 	[Test]
 	public void SerializesCurrent()
 	{
-		var linkReference = new RepositoryLinks
+		var linkReference = new LinkManifest
 		{
 			Origin = new GitCheckoutInformation { Branch = "branch", Remote = "remote", Ref = "ref" },
 			UrlPathPrefix = "",
 			Links = [],
 			CrossLinks = [],
 		};
-		var json = RepositoryLinks.Serialize(linkReference);
+		var json = LinkJson.Serialize(linkReference);
 		// language=json
 		json.Should().MatchInlineJsonSnapshot(
 			"""
@@ -99,7 +101,7 @@ public class LinkReferenceSerializationTests
 			  "redirects": null
 			}
 			""";
-		var linkReference = RepositoryLinks.Deserialize(json);
+		var linkReference = LinkManifestJson.Read(json);
 		linkReference.Origin.Ref.Should().Be("ref");
 	}
 }

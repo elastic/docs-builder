@@ -2,21 +2,34 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Equality;
+using Generator.Equals;
+using Nullean.Entities;
 
 namespace Elastic.Documentation.Links;
 
-public record LinkRegistry
+/// <summary>The link index of all repositories' published manifests (<c>link-index.json</c>), keyed by repository and branch.</summary>
+[Equatable]
+public sealed partial record LinkRegistry : IHaveConstraints<LinkRegistry>
 {
+	public static ConstraintSet<LinkRegistry> Constraints => LinkRegistryConstraints.All;
+
 	/// Map of branch to <see cref="LinkRegistryEntry"/>
 	[JsonPropertyName("repositories")]
+	[CustomEquality(typeof(LinkRegistryEntriesComparer))]
+#pragma warning disable GE001 // the whole dictionary is compared by LinkRegistryEntriesComparer; the generator's collection attributes compare nested dictionaries by reference
 	public required Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; init; }
+#pragma warning restore GE001
 
 	[JsonIgnore]
 	public string? ETag { get; init; }
 
+	/// <summary>
+	/// The registry with <paramref name="entry"/> filed under its repository and branch: a new repository or branch is added, an existing branch
+	/// is replaced only by a strictly newer entry (<see cref="LinkRegistryEntry.UpdatedAt"/>), otherwise the registry is returned as it was.
+	/// </summary>
+	/// <remarks>The repository dictionary is copied, the branch dictionaries are not: an update to an existing repository shows through the original.</remarks>
 	public LinkRegistry WithLinkRegistryEntry(LinkRegistryEntry entry)
 	{
 		var copiedRepositories = new Dictionary<string, Dictionary<string, LinkRegistryEntry>>(Repositories);
@@ -42,13 +55,6 @@ public record LinkRegistry
 		}
 		return this with { Repositories = copiedRepositories };
 	}
-
-	public static LinkRegistry Deserialize(Stream json) => JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
-
-	public static LinkRegistry Deserialize(string json) => JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
-
-	public static string Serialize(LinkRegistry registry) =>
-		JsonSerializer.Serialize(registry, SourceGenerationContext.Default.LinkRegistry);
 }
 
 public record LinkRegistryEntry
@@ -67,7 +73,10 @@ public record LinkRegistryEntry
 
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("ref")]
-	public string GitReference { get; init; } = "unknown";
+	public string GitReference { get; init; } = UnknownGitReference;
+
+	/// <summary>The git ref of a legacy entry that has not republished since the ref was added.</summary>
+	public const string UnknownGitReference = "unknown";
 
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("updated_at")]

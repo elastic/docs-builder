@@ -94,7 +94,7 @@ public static class CrossLinkResolverAssertions
 		if (collector.Errors > 0)
 			throw new AwesomeAssertions.Execution.AssertionFailedException($"Failed to parse redirects YAML: {collector.Errors} errors");
 
-		var repositoryLinks = new RepositoryLinks
+		var repositoryLinks = new LinkManifest
 		{
 			Origin = GitCheckoutInformation.Unavailable,
 			UrlPathPrefix = null,
@@ -108,7 +108,7 @@ public static class CrossLinkResolverAssertions
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepos,
-			LinkReferences = new Dictionary<string, RepositoryLinks> { [repoName] = repositoryLinks }.ToFrozenDictionary(),
+			LinkReferences = new Dictionary<string, LinkManifest> { [repoName] = repositoryLinks }.ToFrozenDictionary(),
 			LinkIndexEntries = FrozenDictionary<string, LinkRegistryEntry>.Empty
 		};
 	}
