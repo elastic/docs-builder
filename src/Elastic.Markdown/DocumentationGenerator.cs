@@ -77,7 +77,7 @@ public partial class DocumentationGenerator
 		DocumentationSet = docSet;
 		PositionalNavigation = positionalNavigation ?? docSet;
 		Context = docSet.Context;
-		ApiMarkdownExcludePaths = BuildApiMarkdownExcludePaths();
+		ApiMarkdownExcludePaths = Context.Configuration.GetApiMarkdownExcludePaths(Context.DocumentationSourceDirectory.FullName);
 
 		// Use the provided inferrer or create a default one
 		_documentInferrer = documentInferrer
@@ -343,10 +343,10 @@ public partial class DocumentationGenerator
 		}
 	}
 
-	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FilePathRegex();
 
-	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FileNameRegex();
 
 	public static bool IsValidFileName(string strToCheck) => strToCheck switch
@@ -589,21 +589,5 @@ public partial class DocumentationGenerator
 	{
 		var normalized = relativePath.Replace(Path.DirectorySeparatorChar, '/');
 		return ApiMarkdownExcludePaths.Contains(normalized);
-	}
-
-	private HashSet<string> BuildApiMarkdownExcludePaths()
-	{
-		var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		if (Context.Configuration.ApiConfigurations is null)
-			return set;
-
-		var docsRoot = Context.DocumentationSourceDirectory.FullName;
-		foreach (var apiConfig in Context.Configuration.ApiConfigurations.Values)
-		{
-			foreach (var path in apiConfig.GetMarkdownPathsToExclude(docsRoot))
-				_ = set.Add(path);
-		}
-
-		return set;
 	}
 }

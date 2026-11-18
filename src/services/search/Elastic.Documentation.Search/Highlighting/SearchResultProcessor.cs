@@ -97,9 +97,23 @@ public static class SearchResultProcessor
 		var childrenByParent = children.ToLookup(c => (c.Parent, c.Location));
 		var parents = named.Where(p => childrenByParent.Contains(ParentGroup(p))).DistinctBy(ParentGroup).ToArray();
 		var listedGroups = parents.Select(ParentGroup).ToHashSet();
-		var others = named.Except(parents).Take(Math.Max(0, MaxMatchedProperties - parents.Length));
+		var others = OnePerSection(named, parents);
 		var orphans = children.Where(c => !listedGroups.Contains((c.Parent, c.Location)));
 		return [.. parents.SelectMany(p => childrenByParent[ParentGroup(p)].Prepend(p)), .. others, .. orphans];
+	}
+
+	/// <summary>
+	/// The best named row of every section no parent lists, then the next best rows up to <see cref="MaxMatchedProperties"/>,
+	/// in score order. A field repeated within the request body must not hide the same field in the response, so a section
+	/// is listed even past that limit.
+	/// </summary>
+	private static IEnumerable<ApiPropertyEntry> OnePerSection(ApiPropertyEntry[] named, ApiPropertyEntry[] parents)
+	{
+		var covered = parents.Select(p => p.Location).ToHashSet(StringComparer.Ordinal);
+		var candidates = named.Except(parents).ToArray();
+		var picked = candidates.Where(p => !covered.Contains(p.Location)).DistinctBy(p => p.Location).ToHashSet();
+		picked.UnionWith(candidates.Where(p => !picked.Contains(p)).Take(MaxMatchedProperties - parents.Length - picked.Count));
+		return candidates.Where(picked.Contains);
 	}
 
 	/// <summary>

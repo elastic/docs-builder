@@ -83,8 +83,8 @@
 	--spacing: 0.25rem;
 	--max-text-width: clamp(600px, 768px, 100%);
 	--max-sidebar-width: calc(var(--spacing) * 65);
-	--max-examples-width: calc(var(--spacing) * 110);
-	--max-api-content-width: var(--max-text-width);
+	--max-examples-width: calc(var(--spacing) * 120);
+	--max-api-content-width: calc(var(--max-text-width) - var(--spacing) * 10);
 	--offset-top: var(--header-height);
 
 	--outline-size: 2px;

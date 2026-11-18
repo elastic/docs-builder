@@ -119,6 +119,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 		var hasClassifications = classifications.Count > 1;
+		// Tag groups (x-tagGroups) already label the operations, so only a flat list of tags gets the Operations heading.
+		var operationsNavigation = hasClassifications ? null : new OperationsNavigationItem(rootNavigation);
 		foreach (var classification in classifications)
 		{
 			if (hasClassifications)
@@ -144,7 +146,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					apiUrlSuffix,
 					classification,
 					rootNavigation,
-					rootNavigation,
+					operationsNavigation ?? (IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>)rootNavigation,
 					takenMonikers,
 					topLevelNavigationItems
 				);
@@ -168,31 +170,19 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			)
 		);
 
+		if (operationsNavigation is not null && topLevelNavigationItems.Count > 0)
+			operationsNavigation.NavigationItems = topLevelNavigationItems;
+
 		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
-			? topLevelNavigationItems
+			? operationsNavigation is null ? topLevelNavigationItems : [operationsNavigation]
 			: rootNavigation.NavigationItems.Count > 0 ? rootNavigation.NavigationItems.ToArray() : [];
-		AddSection(finalNavigationItems, endpointItems, rootNavigation);
-		// Types are reference material, not endpoints, so a divider sets them apart as it does the topics.
-		AddSection(finalNavigationItems, typesNavigation is null ? [] : [typesNavigation], rootNavigation);
+		finalNavigationItems.AddRange(endpointItems);
+		if (typesNavigation is not null)
+			finalNavigationItems.Add(typesNavigation);
 
 		rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
-	}
-
-	/// <summary>Adds one block of the sidebar, with a divider from whatever comes before it. An empty block adds nothing.</summary>
-	private static void AddSection(
-		List<INavigationItem> navigationItems,
-		IReadOnlyList<INavigationItem> section,
-		LandingNavigationItem rootNavigation
-	)
-	{
-		if (section.Count == 0)
-			return;
-
-		if (navigationItems.Count > 0)
-			navigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
-		navigationItems.AddRange(section);
 	}
 
 	private void CreateTagNavigationItems(
@@ -206,11 +196,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	{
 		foreach (var tag in classification.Tags)
 		{
-			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
 			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
-			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
-			tagNavigationItem.NavigationItems = endpointNavigationItems;
+			tagNavigationItem.NavigationItems = CreateEndpointNavigationItems(
+				apiUrlSuffix,
+				rootNavigation,
+				tag,
+				tagNavigationItem,
+				takenMonikers
+			);
 			tagNavigationItem.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
 				markdownRenderer,
 				tag.Description,
@@ -220,15 +214,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		}
 	}
 
-	private void CreateEndpointNavigationItems(
+	private List<IEndpointOrOperationNavigationItem> CreateEndpointNavigationItems(
 		string apiUrlSuffix,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
-		HashSet<string> takenMonikers,
-		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
+		HashSet<string> takenMonikers
 	)
 	{
+		var operationItems = new List<OperationNavigationItem>();
 		foreach (var endpoint in tag.Endpoints)
 		{
 			// One page can only stand in for several operations when they are the same call; a sibling with
@@ -236,7 +230,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			var differences = endpoint.Operations.Count > 1 ? OperationEndpoint.Differences(endpoint.Operations) : [];
 			if (endpoint.Operations.Count > 1 && differences.Count == 0)
 			{
-				endpointNavigationItems.Add(
+				operationItems.Add(
 					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, takenMonikers)
 				);
 			}
@@ -261,10 +255,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 						rootNavigation,
 						parentNavigationItem
 					);
-					endpointNavigationItems.Add(operationNavigationItem);
+					operationItems.Add(operationNavigationItem);
 				}
 			}
 		}
+		// Spec order looks arbitrary in a long group; readers scan by the route and method each row shows.
+		return [.. operationItems.InListOrder(static item => item.Endpoint.Rows[0])];
 	}
 
 	/// <summary>

@@ -1,0 +1,106 @@
+yaml:
+  | stack: ga 9.0+
+  | deployment:
+  |   self: ga 9.0+
+  |   ece: ga 3.0+
+  |   eck: ga 3.0+
+  |   ess: ga
+  | serverless:
+  |   elasticsearch: ga
+  |   observability: ga
+  |   security: ga
+  |   vectordb: ga
+  | product:
+  |   ecctl: ga 1.0+
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"},{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"1.0\u002B"}]
+text: stack: ga 9.0+, , deployment: self=ga 9.0+, , ece=ga 3.0+, , eck=ga 3.0+, , ess=ga, , serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, , products: ecctl=ga 1.0+, 
+
+yaml:
+  | stack: ga 9.2+, beta 9.0-9.1
+  | deployment:
+  |   ece: ga 3.2+
+  | serverless: preview
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.0-9.1"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.2\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"preview"},{"type":"serverless","sub_type":"observability","lifecycle":"preview"},{"type":"serverless","sub_type":"security","lifecycle":"preview"},{"type":"serverless","sub_type":"vectordb","lifecycle":"preview"}]
+text: stack: ga 9.2+, beta 9.0-9.1, , deployment: ece=ga 3.2+, , serverless: elasticsearch=preview, , observability=preview, , security=preview, , vectordb=preview, 
+
+yaml:
+  | stack: preview 9.1
+  | serverless: unavailable
+  | deployment: unavailable
+json: [{"type":"stack","sub_type":"stack","lifecycle":"preview","version":"9.1\u002B"},{"type":"deployment","sub_type":"self","lifecycle":"unavailable"},{"type":"deployment","sub_type":"ece","lifecycle":"unavailable"},{"type":"deployment","sub_type":"eck","lifecycle":"unavailable"},{"type":"deployment","sub_type":"ess","lifecycle":"unavailable"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"unavailable"},{"type":"serverless","sub_type":"observability","lifecycle":"unavailable"},{"type":"serverless","sub_type":"security","lifecycle":"unavailable"},{"type":"serverless","sub_type":"vectordb","lifecycle":"unavailable"}]
+text: stack: preview 9.1+, , deployment: self=unavailable, , ece=unavailable, , eck=unavailable, , ess=unavailable, , serverless: elasticsearch=unavailable, , observability=unavailable, , security=unavailable, , vectordb=unavailable, 
+
+yaml:
+  | stack: removed 9.0
+  | deployment:
+  |   ess: removed
+  | serverless: removed
+json: [{"type":"stack","sub_type":"stack","lifecycle":"removed","version":"9.0\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"removed"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"removed"},{"type":"serverless","sub_type":"observability","lifecycle":"removed"},{"type":"serverless","sub_type":"security","lifecycle":"removed"},{"type":"serverless","sub_type":"vectordb","lifecycle":"removed"}]
+text: stack: removed 9.0+, , deployment: ess=removed, , serverless: elasticsearch=removed, , observability=removed, , security=removed, , vectordb=removed, 
+
+yaml:
+  | stack: deprecated 9.0
+  | product: deprecated 1.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"deprecated","version":"9.0\u002B"},{"type":"product","sub_type":"product","lifecycle":"deprecated","version":"1.0\u002B"}]
+text: stack: deprecated 9.0+, , product: deprecated 1.0+, 
+
+yaml:
+  | stack: ga 9.0
+  | serverless: ga
+  | deployment: ga
+  | product: ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"self","lifecycle":"ga"},{"type":"deployment","sub_type":"ece","lifecycle":"ga"},{"type":"deployment","sub_type":"eck","lifecycle":"ga"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"},{"type":"product","sub_type":"product","lifecycle":"ga"}]
+text: stack: ga 9.0+, , deployment: self=ga, , ece=ga, , eck=ga, , ess=ga, , serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, , product: ga, 
+
+yaml:
+  | stack: ga
+  | deployment:
+  | serverless:
+  | product:
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"all"}]
+text: stack: ga, , deployment: self=all, ece=all, eck=all, ess=all, serverless: elasticsearch=all, observability=all, security=all, vectordb=all, product: all
+
+yaml:
+  | stack:
+  | deployment:
+  | serverless:
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"}]
+text: stack: all, deployment: self=all, ece=all, eck=all, ess=all, serverless: elasticsearch=all, observability=all, security=all, vectordb=all
+
+yaml:
+  | deployment: ga
+  | serverless:
+  |   elasticsearch: beta
+  | stack: preview 9.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"preview","version":"9.1\u002B"},{"type":"deployment","sub_type":"self","lifecycle":"ga"},{"type":"deployment","sub_type":"ece","lifecycle":"ga"},{"type":"deployment","sub_type":"eck","lifecycle":"ga"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"}]
+text: stack: preview 9.1+, , deployment: self=ga, , ece=ga, , eck=ga, , ess=ga, , serverless: elasticsearch=beta, 
+
+yaml:
+  | stack: ga 9.0
+  | unknown: x
+  | serverless: ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: stack: ga 9.0+, , serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+
+yaml:
+  | stack: nonsense
+  | serverless: ga
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+  error: Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml:
+  | stack: ga 9.0
+  | serverless: nonsense
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, , serverless: 
+  error: Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml:
+  | stack: nonsense
+  | serverless: nonsense
+json: []
+text: serverless: 
+  error: Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+  error: Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.

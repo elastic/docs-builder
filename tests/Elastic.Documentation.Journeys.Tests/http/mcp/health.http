@@ -1,0 +1,5 @@
+### health
+GET /docs/_mcp/health
+
+### alive
+GET /docs/_mcp/alive

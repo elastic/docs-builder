@@ -21,6 +21,7 @@ public class ApiCatalogViewModelTests
 		Entry("cloud-enterprise", "Elastic Cloud Enterprise API"),
 		Entry("kibana", "Kibana APIs", "self", "ece", "ess"),
 		Entry("cloud", "Elastic Cloud API"),
+		Entry("cloud-monitoring", "Elastic Cloud Monitoring API"),
 		Entry("elasticsearch-serverless", "Elasticsearch Serverless API", "serverless")
 	];
 
@@ -39,7 +40,7 @@ public class ApiCatalogViewModelTests
 			.Entries
 			.Select(e => e.Key)
 			.Should()
-			.Equal("cloud", "cloud-billing", "cloud-connect", "cloud-enterprise", "cloud-serverless");
+			.Equal("cloud", "cloud-billing", "cloud-connect", "cloud-enterprise", "cloud-monitoring", "cloud-serverless");
 	}
 
 	[Test]

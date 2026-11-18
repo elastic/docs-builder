@@ -1,0 +1,53 @@
+## empty-redirects-mapping
+  | redirects: {}
+{}
+(no diagnostics)
+
+## redirects-is-null
+  | redirects:
+(null)
+warning /docs/redirects.yml 'redirects' is not a dictionary
+
+## redirects-is-a-list
+  | redirects:
+  |   - 'old.md'
+(null)
+warning /docs/redirects.yml 'redirects' is not a dictionary
+
+## redirects-is-a-scalar
+  | redirects: 'old.md'
+(null)
+warning /docs/redirects.yml 'redirects' is not a dictionary
+
+## empty-file
+  | 
+(null)
+warning /docs/redirects.yml empty redirect file
+
+## only-a-comment
+  | # nothing here
+(null)
+warning /docs/redirects.yml empty redirect file
+
+## top-level-list
+  | - a
+  | - b
+throws InvalidCastException
+error /docs/redirects.yml Could not load docset.yml
+
+## top-level-scalar
+  | just text
+throws InvalidCastException
+error /docs/redirects.yml Could not load docset.yml
+
+## invalid-yaml
+  | redirects:
+  |   'old.md': [unterminated
+throws SemanticErrorException
+error /docs/redirects.yml Could not load docset.yml
+
+## tabs-for-indentation
+  | redirects:
+  | 	'old.md': 'new.md'
+throws SyntaxErrorException
+error /docs/redirects.yml Could not load docset.yml

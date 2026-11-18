@@ -1,0 +1,542 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.2.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.2.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.2.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.2.0"
+        ],
+        "entries": [
+          "Feature: v9.2.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.10.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.10.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.10.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.10.0"
+        ],
+        "entries": [
+          "Feature: v9.10.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0-beta.1",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.3.0-beta.1.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0-beta.1",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.3.0-beta.1"
+        ],
+        "entries": [
+          "Feature: v9.3.0-beta.1 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.3.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.3.0"
+        ],
+        "entries": [
+          "Feature: v9.3.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "2025-06-02",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-2025-06-02.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-06-02",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "serverless june"
+        ],
+        "entries": [
+          "Feature: serverless june prs=[] subtype="
+        ]
+      },
+      {
+        "version": "2025-11-18",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-2025-11-18.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-11-18",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "serverless november"
+        ],
+        "entries": [
+          "Feature: serverless november prs=[] subtype="
+        ]
+      },
+      {
+        "version": "not-a-version",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-not-a-version.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "not-a-version",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "garbage target"
+        ],
+        "entries": [
+          "Feature: garbage target prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.2.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "v-9.2.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.2.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.2.0"
+        ],
+        "entries": [
+          "Feature: v9.2.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.10.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "v-9.10.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.10.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.10.0"
+        ],
+        "entries": [
+          "Feature: v9.10.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0-beta.1",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "v-9.3.0-beta.1.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0-beta.1",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.3.0-beta.1"
+        ],
+        "entries": [
+          "Feature: v9.3.0-beta.1 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "v-9.3.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.3.0"
+        ],
+        "entries": [
+          "Feature: v9.3.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "2025-06-02",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "v-2025-06-02.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-06-02",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "serverless june"
+        ],
+        "entries": [
+          "Feature: serverless june prs=[] subtype="
+        ]
+      },
+      {
+        "version": "2025-11-18",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "v-2025-11-18.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-11-18",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "serverless november"
+        ],
+        "entries": [
+          "Feature: serverless november prs=[] subtype="
+        ]
+      },
+      {
+        "version": "not-a-version",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "v-not-a-version.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "not-a-version",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "garbage target"
+        ],
+        "entries": [
+          "Feature: garbage target prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.10.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.10.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.10.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.10.0"
+        ],
+        "entries": [
+          "Feature: v9.10.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.3.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.3.0"
+        ],
+        "entries": [
+          "Feature: v9.3.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0-beta.1",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.3.0-beta.1.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0-beta.1",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.3.0-beta.1"
+        ],
+        "entries": [
+          "Feature: v9.3.0-beta.1 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.2.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-9.2.0.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.2.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "v9.2.0"
+        ],
+        "entries": [
+          "Feature: v9.2.0 prs=[] subtype="
+        ]
+      },
+      {
+        "version": "2025-11-18",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-2025-11-18.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-11-18",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "serverless november"
+        ],
+        "entries": [
+          "Feature: serverless november prs=[] subtype="
+        ]
+      },
+      {
+        "version": "2025-06-02",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-2025-06-02.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-06-02",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "serverless june"
+        ],
+        "entries": [
+          "Feature: serverless june prs=[] subtype="
+        ]
+      },
+      {
+        "version": "not-a-version",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/v-not-a-version.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "not-a-version",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "garbage target"
+        ],
+        "entries": [
+          "Feature: garbage target prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

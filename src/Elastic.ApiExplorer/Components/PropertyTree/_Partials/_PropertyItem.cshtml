@@ -160,9 +160,9 @@
 	@if (Model.IsCollapsible)
 	{
 		<dd class="expand-toggle-row">
-			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId">
+			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId" data-count="@Model.NestedCount">
 				<span class="toggle-icon">@(Model.DefaultExpanded ? "−" : "+")</span>
-				<span class="toggle-label">@(Model.DefaultExpanded ? "hide" : "show") properties</span>
+				<span class="toggle-label">@PropertyToggle.Label(Model.DefaultExpanded, Model.NestedCount)</span>
 			</button>
 		</dd>
 	}
@@ -187,9 +187,9 @@
 						@if (dict.IsCollapsible)
 						{
 							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId">
+								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId" data-count="@dict.NestedCount">
 									<span class="toggle-icon">@(dict.DefaultExpanded ? "−" : "+")</span>
-									<span class="toggle-label">@(dict.DefaultExpanded ? "hide" : "show") properties</span>
+									<span class="toggle-label">@PropertyToggle.Label(dict.DefaultExpanded, dict.NestedCount)</span>
 								</button>
 							</dd>
 						}

@@ -1,0 +1,6 @@
+ci=True assume-build=unset => proceeds past the assume-build check and then throws FileNotFoundException: Link-index snapshot not found. Run the clone-all command first.
+ci=True assume-build=True => throws InvalidOperationException: The --assume-build flag is not allowed on CI. CI builds must always produce fresh output to ensure reproducibility and prevent stale content.
+ci=True assume-build=False => proceeds past the assume-build check and then throws FileNotFoundException: Link-index snapshot not found. Run the clone-all command first.
+ci=False assume-build=unset => proceeds past the assume-build check and then throws FileNotFoundException: Link-index snapshot not found. Run the clone-all command first.
+ci=False assume-build=True => proceeds past the assume-build check and then throws FileNotFoundException: Link-index snapshot not found. Run the clone-all command first.
+ci=False assume-build=False => proceeds past the assume-build check and then throws FileNotFoundException: Link-index snapshot not found. Run the clone-all command first.

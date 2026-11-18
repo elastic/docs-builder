@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +13,11 @@
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The changelog init template, so a test can load the real file through the configuration loader. -->
+    <EmbeddedResource Include="..\..\config\changelog.example.yml" Link="changelog.example.yml" LogicalName="Elastic.Changelog.Tests.changelog.example.yml" />
   </ItemGroup>
 
   <ItemGroup>

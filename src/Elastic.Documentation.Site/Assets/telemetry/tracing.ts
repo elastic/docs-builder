@@ -9,9 +9,16 @@ import { trace, SpanStatusCode, Span } from '@opentelemetry/api'
  *
  * This ensures that:
  * - The span is automatically set as the active context
- * - Any automatic instrumentation (e.g., fetch, XHR) creates child spans
- * - Nested calls to traceSpan() properly create child spans
+ * - Automatic instrumentation (fetch, XHR) started in `fn` creates child spans
+ *   and sends this span's trace in the `traceparent` header
  * - The span is properly ended even if errors occur
+ *
+ * Browsers cannot carry the active context across a native `await`, so it only
+ * holds for work started before the first `await` in `fn`. Start `fetch` calls and
+ * nested `traceSpan()` calls first. Ones started after an `await` are not children
+ * of this span and begin a new trace. Context does survive timers (50 ms or less),
+ * `then`/`catch`/`finally`, fetch and XHR callbacks. See "Known limitations" in the
+ * EDOT Browser docs (telemetry.md): https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/reference/edot-browser/telemetry.md
  *
  * @param spanName - Name of the span to create
  * @param fn - Async function to execute within the span context

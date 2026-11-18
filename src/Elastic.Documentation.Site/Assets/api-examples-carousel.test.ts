@@ -3,6 +3,7 @@ import {
     initApiExamples,
     packChips,
     syncDescriptions,
+    syncStripHeight,
 } from './api-examples-carousel'
 
 // Java is the only long sample: 20 lines, past the 16-line cap.
@@ -511,28 +512,6 @@ describe('API examples carousel', () => {
         expect(document.querySelector('dialog.api-code-preview')).toBeNull()
     })
 
-    it('closes the preview on Escape even when the page prevents the key', () => {
-        initApiExamples()
-        document.addEventListener('keydown', (e) => e.preventDefault())
-        document
-            .querySelector<HTMLElement>(
-                '[data-scenario="term"] .is-active [data-code-preview]'
-            )!
-            .click()
-        const dialog = document.querySelector<HTMLDialogElement>(
-            'dialog.api-code-preview'
-        )!
-        dialog.close = vi.fn(() => dialog.remove())
-
-        dialog
-            .querySelector('button')!
-            .dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
-            )
-
-        expect(dialog.close).toHaveBeenCalled()
-    })
-
     it('previews the code of a card in a dialog', () => {
         initApiExamples()
         const button = document.querySelector<HTMLElement>(
@@ -847,5 +826,40 @@ describe('API examples chip overflow', () => {
         window.dispatchEvent(new Event('scroll'))
         await frame()
         expect(menu.style.top).toBe('68px')
+    })
+})
+
+describe('syncStripHeight', () => {
+    // 100px of code under an 8px horizontal scrollbar; the strip adds 2px for the card border.
+    function strip(maxHeight?: number): HTMLElement {
+        const carousel = document.createElement('div')
+        carousel.innerHTML = `
+            <div data-carousel-strip>
+                <section class="api-code-carousel-card is-active">
+                    <header></header>
+                    <div class="api-code-carousel-card-body"${maxHeight ? ` style="max-height: ${maxHeight}px"` : ''}></div>
+                </section>
+            </div>`
+        const body = carousel.querySelector('.api-code-carousel-card-body')!
+        for (const [key, value] of [
+            ['scrollHeight', 100],
+            ['clientHeight', 100],
+            ['offsetHeight', 108],
+        ] as const)
+            Object.defineProperty(body, key, { configurable: true, value })
+        syncStripHeight(carousel)
+        return carousel.querySelector<HTMLElement>('[data-carousel-strip]')!
+    }
+
+    it('makes room for a horizontal scrollbar under the code', () => {
+        expect(strip().style.getPropertyValue('--api-strip-height')).toBe(
+            '110px'
+        )
+    })
+
+    it('still stops at the code cap', () => {
+        expect(strip(60).style.getPropertyValue('--api-strip-height')).toBe(
+            '62px'
+        )
     })
 })

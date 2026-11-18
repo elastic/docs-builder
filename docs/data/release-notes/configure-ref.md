@@ -49,32 +49,29 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
 | `bundle.backports.labels` | Exact label names that mark a pull request as a backport, for example `[backport]`. When bundling a commit range, such a pull request is replaced by the original pull request it was backported from, so the entry and the links come from the original. Not a pattern: `backport*` would also match opt-out labels such as `backport-skip`. When omitted, no tracing happens. |
-| `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. |
+| `bundle.link_allow_repos` | No longer read by `changelog bundle`. Remove it from `changelog.yml`. Links in published bundles are scrubbed by the changelog scrubber Lambda, which builds its allowlist from the public repositories in `assembler.yml`. The loader still rejects an entry that is not exactly `owner/repo`. |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). Conventional `{repo}-{product}-{version}.yaml` names are written to a `{product}/` folder here, for example `docs/releases/elasticsearch/`, in profile mode (unless the profile sets `output_directory`) and in option mode when `--output` is omitted. This matches the `bundle/{product}/` layout on the CDN. Passing `--output` as a directory, or setting a profile `output_directory`, writes that same file name in the directory you specify instead, with no `{product}/` folder. When `bundle.output_directory` is not set, the `{product}/` folder is created under `bundle.directory`. |
-| `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
+| `bundle.owner`            | Deprecated for bundle file names, where the owner is derived automatically. Still read for CDN entry sourcing: it is the org segment of the changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and defaults to `elastic` when unset. Keep it when your organization is not `elastic`. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | GitHub repository name for link and file name generation (for example, `elasticsearch`). Written to `products[].repo` so `{changelog}` can resolve bare PR and issue numbers. Also the `{repo}` segment of `{repo}-{product}-{version}.yaml` names, and the repo segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Derived from `GITHUB_REPOSITORY` or git `origin` when omitted. |
+| `bundle.repo`             | Deprecated for bundle file names: the `{repo}` segment of `{repo}-{product}-{version}.yaml` is derived from `GITHUB_REPOSITORY` or the git `origin`, and a `bundle.repo` that differs from the repository the command runs in is a hard error. Still read for CDN entry sourcing and for `products[].repo`, which `{changelog}` uses to resolve bare PR and issue numbers: `changelog bundle` has no git fallback there, so without `bundle.repo` or `--repo` an option-mode bundle built from PR lists or reports reads local entries instead of the CDN pool. Keep it until entry sourcing derives the repository too. |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
 
-:::{important}
-When `bundle.link_allow_repos` is omitted, no link filtering occurs.
-
-- For private repos, set it to `[]` or add related public repos to the list.
-- For public repos, add your `owner/repo` to the list at a minimum.
+:::{note}
+`bundle.link_allow_repos` is no longer read. Remove it from `changelog.yml`. Links in published bundles are scrubbed by the changelog scrubber Lambda from the `assembler.yml` allowlist, not at bundle time.
 :::
 
 ### Entry sourcing [bundle-entry-sourcing]
 
 `changelog bundle` reads the individual changelog entries it aggregates either from the local folder or from the public CDN. Entries are stored on the CDN per **authoring org/repo/branch** (`changelog/{org}/{repo}/{branch}/...`), not per product, so CDN sourcing keys off the resolvable authoring org/repo/branch rather than the bundle's target products.
 
-The authoring repo is resolved with the same precedence as `changelog upload`: `--repo` > `bundle.repo` in `changelog.yml` > the git remote origin. The owner is resolved from `--owner` > `bundle.owner` (default `elastic`), and the branch from `--branch` > `bundle.branch` (default `main`).
+The authoring repo is resolved from `--repo` > `bundle.repo` in `changelog.yml`. There is no git fallback for entry sourcing: without both, entries are read locally. The owner is resolved from `--owner` > `bundle.owner` (default `elastic`), and the branch from `--branch` > `bundle.branch` (default `main`).
 
 Sourcing is decided per run:
 
 - **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
-- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). Product/PR/issue filters fetch `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then apply the bundle's own filters. Path-list / `--files` and `changelog bundle-amend --add` / `--remove` skip the registry: they GET each requested file by name from that same org/repo/branch pool, so the listed paths do not need to exist locally.
+- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). PR filters (`--prs`, `--report`, `--release-version`) probe one `{pr}.yaml` key per PR number in `changelog/{org}/{repo}/{branch}/`; a 404 means no entry for that PR. These filters do not enumerate the pool, so `--all`, `--input-products`, and `--issues` are not supported when sourcing from the CDN; pass `--force-local` or `--directory` for those. Path-list / `--files` and `changelog bundle-amend --add` / `--remove` GET each requested file by name from that same org/repo/branch pool, so the listed paths do not need to exist locally.
 
 Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml` — including path-list / `--files` runs and `changelog bundle-amend --add` / `--remove` that should read freshly authored files from disk instead of the CDN.
 
@@ -90,7 +87,7 @@ When using profiles, you can provide this information in:
 - `bundle.profiles.<name>.description`: Profile-specific description (overrides the default)
 
 Bundle descriptions support these `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` substitution variables.
-When using `{version}` or `{lifecycle}`, you must provide the necessary version argument in the command (for example, `bundle profile 9.2.0`) or define `output_products` in your configuration file.
+When using `{version}` or `{lifecycle}`, you must provide the necessary version argument in the command (for example, `bundle profile 9.2.0`) or set `product` (or the deprecated `output_products`) on the profile.
 
 For complex descriptions with multiple paragraphs, lists, and links, use YAML literal block scalars with the `|` (pipe) syntax:
 
@@ -129,30 +126,37 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
 `output`
-:   Deprecated. Bundle output names are derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product (the first product in `output_products`, or `products`), and the version argument. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting `output` on a profile emits a warning at config load; the value is ignored. Remove the field.
+:   Deprecated. Bundle output names are derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product (`product`, or the first product in the deprecated `output_products` or in `products`), and the version argument. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting `output` on a profile emits a warning at config load; the value is ignored. Remove the field.
 :   When no primary product or version resolves (for example, a promotion-report invocation without a version argument), the output path falls back in order to: the profile's [`output_directory`](#bundle-profiles) (if set), then `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
 :   No two profiles in the same configuration may share a primary output product — they would resolve to the same `{repo}-{product}-{version}.yaml` target for any given version, which is also a hard error.
 
 `output_directory`
-:   Directory for this profile's bundle file. Replaces [`bundle.output_directory`](#bundle-basic) for that profile the same way option-mode `--output` does when it is a directory: the conventional `{repo}-{product}-{version}.yaml` name is written in the folder you specify (for example `docs/releases/cloud-serverless`). The path is used as written (repo-relative); it is not joined as a child of the global `bundle.output_directory`.
-:   A `.yml` or `.yaml` file path is a hard error — that is what `output` used to allow. Omit this setting to write to the `{product}/` folder under the global `bundle.output_directory`.
+:   Deprecated. Omit it: the bundle is written to the `{product}/` folder under [`bundle.output_directory`](#bundle-basic), for example `docs/releases/cloud-serverless/`. Setting it emits a warning at config load. Remove the field.
+:   When set, the value is still used as written (repo-relative), the same way option-mode `--output` does when it is a directory: the conventional `{repo}-{product}-{version}.yaml` name is written in the folder you specify, with no `{product}/` subfolder. A `.yml` or `.yaml` file path is a hard error.
 
 `output_products`
+:   Deprecated. Use `product: <id>` instead. Setting `output_products` emits a warning at config load; the value is still applied.
 :   The bundle's `products` metadata, which affects the bundle rules that are applied and the product and version titles that ultimately appear in documentation.
 :   Supports `{version}` and `{lifecycle}` placeholders.
 :   When not set, the products array is derived from the individual changelog files matched by the filter. This often produces multiple product entries (one per unique product/target/lifecycle combination across all matched files), which may not reflect a single clean release identity.
 :   When set, the products array in the bundle is exactly the value you specify, replacing anything that would be derived from the matched changelogs. Use this to publish a single, authoritative product entry with a specific version and lifecycle.
-:   The `{lifecycle}` placeholder is substituted at runtime with the inferred lifecycle. For `source: github_release` profiles this comes from the release tag suffix. For standard profiles it comes from the version argument. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
+:   The `{lifecycle}` placeholder is substituted at runtime with the lifecycle inferred from the version argument. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
 :   If you omit lifecycle from the pattern (for example, `"elasticsearch {version}"`), the lifecycle field is omitted from the products array entirely.
 :   Example: `"elasticsearch {version} {lifecycle}"` or `"elasticsearch {version} ga"` to hardcode GA regardless of tag. The same omit, derive, and hardcode patterns apply to date-based targets (for example, `"cloud-serverless {version}"`, `"cloud-serverless {version} {lifecycle}"`, or `"cloud-serverless {version} preview"` for exceptional non-GA date releases).
 :   Refer to [](/cli/changelog/bundle.md#product-format).
 
 `owner`
-:   Overrides [bundle.owner](#bundle-basic).
+:   Deprecated. The owner is derived automatically; remove it from the profile. When set, overrides [bundle.owner](#bundle-basic).
+
+`product`
+:   The product ID this profile bundles for, validated against `products.yml`. Replaces `output_products`.
+:   The bundle's `products` metadata becomes this product with the version argument and the lifecycle inferred from it (refer to [](/cli/changelog/bundle.md#lifecycle-inference)). The bundle is written to the `{product}/` folder under [`bundle.output_directory`](#bundle-basic).
+:   When `products` is not set, the input filter is derived as `"<product> {version} {lifecycle}"`, for `changelog bundle` and for `changelog remove` alike. A product-only profile therefore removes the matching files when you run `changelog remove` with it.
+:   Example: `product: cloud-serverless`
 
 `products`
 :   Derive the list of changelogs by matching their `products` values (equivalent to the `--input-products` command option).
-:   Not used when the source of truth for the release is a promotion report, URL list file, or `source: github_release`; in those cases this setting is ignored.
+:   Not used when the source of truth for the release is a promotion report or URL list file; in those cases this setting is ignored.
 :   Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
 :   The value `"* * *"` is equivalent to the `--all` command option.
 :   Example: `"elasticsearch {version} {lifecycle}"`
@@ -162,17 +166,25 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   Overrides [bundle.release_dates](#bundle-basic).
 
 `repo`
-:   Overrides [bundle.repo](#bundle-basic).
-:   Required for `source: github_release` profiles, unless `bundle.repo` is already set. For all other profiles, it's optional.
+:   Deprecated. The repository is derived from `GITHUB_REPOSITORY` or the git `origin` when omitted; remove it from the profile. When set, overrides [bundle.repo](#bundle-basic).
 :   Also the `{repo}` segment of the conventional bundle file name and the `products[].repo` value in the bundle YAML.
 :   This is the GitHub repository you ran the command in, not `products.yml` `repository:`.
 
 `source`
-:   Derive the list of changelogs from the specified source.
-:   Only `github_release` is currently supported (equivalent to the `--release-version` command option), which means a PR list is fetched from the GitHub release identified by the version argument.
-:   Requires `repo` to be set at the profile or `bundle` level.
-:   Mutually exclusive with `products`.
-:   Example: `source: github_release`
+:   Removed. `source: github_release` emits a deprecation warning at config load, and `changelog bundle` stops with an error when it runs a profile that sets it. Remove the field.
+:   To bundle the pull requests of a GitHub release, use [`changelog gh-release`](/cli/changelog/gh-release.md). The runtime error also names `bundle.releases.github`, a map of release tag globs to profile names that the loader validates against `bundle.profiles`.
+
+Example profile configuration:
+
+```yaml
+bundle:
+  output_directory: docs/releases
+  profiles:
+    elasticsearch-release:
+      product: elasticsearch
+    serverless-release:
+      product: cloud-serverless
+```
 
 Example profile usage:
 
@@ -223,13 +235,13 @@ Controls how the `changelog add` command generates changelog file names.
 :::{table}
 :widths: description
 
-| Value                 | Description                                                                    |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `timestamp` (default) | Use Unix timestamp with title slug (for example, `1735689600-fix-search.yaml`) |
-| `pr`                  | Use the PR number (for example, `12345.yaml`)                                  |
-| `issue`               | Use the issue number (for example, `67890.yaml`)                               |
+| Value          | Description                                   |
+| -------------- | --------------------------------------------- |
+| `pr` (default) | Use the PR number (for example, `12345.yaml`) |
 
 :::
+
+`pr` is the only supported value. `timestamp` and `issue` are no longer supported: the configuration fails to load with either value. Changelog entries are keyed by PR number. For items with no PR, use [`changelog note`](/cli/changelog/note.md).
 
 ## Lifecycles [lifecycles]
 

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -26,20 +27,18 @@ public record AuthorizationSectionModel(
 	IReadOnlyList<PrivilegeRow> Privileges,
 	Func<string?, HtmlString> RenderMarkdown,
 	bool AuthenticationOptional = false
-)
-{
-	/// <summary>Every privilege, one name each, for the heading's summary.</summary>
-	public IReadOnlyList<string> PrivilegeNames => [.. Privileges.SelectMany(static r => r.Values)];
+);
 
-	/// <summary>Alternatives read <c>a | b</c> and privileges needed together <c>a + b</c>, as with the credentials.</summary>
-	public SummaryStyle PrivilegeStyle =>
-		Privileges.Any(static r => r.Join == "or")
-			? SummaryStyle.Variants
-			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
-}
+/// <summary>
+/// The figure under a section's label in the strip: a count the section's own list backs up, or the media type when the section has nothing to count.
+/// </summary>
+public record SectionStat(string? Value, string Caption);
 
-/// <summary>One quick link of the bar above an operation's sections.</summary>
-public record SectionLink(string Label, string Anchor);
+/// <summary>The section strip: its links, and the required privileges it carries as its first row.</summary>
+public record SectionStripModel(IReadOnlyList<SectionLink> Links, AuthorizationSectionModel Authorization);
+
+/// <summary>One quick link of the strip and the pinned bar above an operation's sections.</summary>
+public record SectionLink(string Label, string Anchor, SectionStat? Stat = null);
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -64,14 +63,28 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		get
 		{
 			var links = new List<SectionLink>(
-				Page.ParameterSections.Select(static s => new SectionLink(ParameterLabel(s.Location), s.Header.Anchor))
+				Page.ParameterSections.Select(
+					static s => new SectionLink(ParameterLabel(s.Location), s.Header.Anchor, Counted(s.Parameters.Items.Count, "parameter"))
+				)
 			);
 			if (Operation.Operation.RequestBody is not null)
-				links.Add(new SectionLink("Body", "request-body"));
+				links.Add(new SectionLink("Body", "request-body", BodyStat()));
 			if (Page.Responses.Count > 0)
-				links.Add(new SectionLink("Responses", "responses"));
+				links.Add(new SectionLink("Responses", "responses", Counted(Page.Responses.Count, "response")));
 			return links;
 		}
+	}
+
+	private static SectionStat Counted(int count, string unit, string? plural = null) =>
+		new(count.ToString(CultureInfo.InvariantCulture), count == 1 ? unit : (plural ?? (unit + "s")));
+
+	/// <summary>The top-level names the Body section's own summary lists, so the figure matches what the reader opens.</summary>
+	private SectionStat? BodyStat()
+	{
+		var count = Page.RequestPropertyNames.Count;
+		if (count > 0)
+			return Page.RequestSummaryStyle == SummaryStyle.Variants ? Counted(count, "variant") : Counted(count, "property", "properties");
+		return Page.PrimaryRequest is { } primary ? new SectionStat(null, primary.ContentType) : null;
 	}
 
 	private static string ParameterLabel(ParameterLocation location) =>
@@ -115,7 +128,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			tocItems.Add(new TocItem("Request body", "request-body", 2));
 
 		if (operation.Responses is { Count: > 0 })
-			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
+			tocItems.Add(new TocItem("Responses", "responses", 2));
 
 		return tocItems;
 	}

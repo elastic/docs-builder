@@ -1,0 +1,194 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/one.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "One"
+        ],
+        "entries": [
+          "Feature: One prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/two.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Two"
+        ],
+        "entries": [
+          "Feature: Two prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/three.yaml",
+        "description": null,
+        "releaseDate": "2025-02-02",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Three"
+        ],
+        "entries": [
+          "Feature: Three prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "one.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "One"
+        ],
+        "entries": [
+          "Feature: One prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "two.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Two"
+        ],
+        "entries": [
+          "Feature: Two prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "three.yaml",
+        "description": null,
+        "releaseDate": "2025-02-02",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Three"
+        ],
+        "entries": [
+          "Feature: Three prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/one.yaml",
+        "description": null,
+        "releaseDate": "2025-02-02",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "One"
+        ],
+        "entries": [
+          "Feature: One prs=[] subtype=",
+          "Feature: Two prs=[] subtype=",
+          "Feature: Three prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

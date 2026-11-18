@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Nullean.Snapshots.Html;
@@ -107,7 +108,11 @@ public partial class FootnotesMultipleReferencesTests() : InlineTest(
 			DocsHtml.Body()
 		);
 
-	[System.Text.RegularExpressions.GeneratedRegex("href=\"#fn:1\"")]
+	[System.Text.RegularExpressions.GeneratedRegex("href=\"#fn:1\"", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex MyRegex();
 }
 
@@ -177,30 +182,29 @@ public class FootnotesWithCodeTests() : InlineTest(
 	public void ContainsCodeBlockInFootnote() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<p>See the code example<a id="fnref:1" href="#fn:1" class="footnote-ref">
-				<sup>1</sup>
-			</a>.</p>
-		<div class="footnotes">
-			<hr>
-			<h4>Footnotes</h4>
-			<ol>
-				<li id="fn:1">
-					<p>Example code:</p>
-					<div class="highlight-python notranslate">
-						<div class="highlight">
-							<pre>
-								<code class="language-python">def hello():     print("Hello, world!")
-								</code>
-							</pre>
+			<p>See the code example<a id="fnref:1" href="#fn:1" class="footnote-ref">
+					<sup>1</sup>
+				</a>.</p>
+			<div class="footnotes">
+				<hr>
+				<h4>Footnotes</h4>
+				<ol>
+					<li id="fn:1">
+						<p>Example code:</p>
+						<div class="highlight-python notranslate">
+							<div class="highlight">
+								<pre><code class="language-python">def hello():
+			    print("Hello, world!")
+			</code>		</pre>
+							</div>
 						</div>
-					</div>
-					<p>
-						<a href="#fnref:1" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-			</ol>
-		</div>
-		""",
+						<p>
+							<a href="#fnref:1" class="footnote-back-ref">↩</a>
+						</p>
+					</li>
+				</ol>
+			</div>
+			""",
 			DocsHtml.Body()
 		);
 }
@@ -328,7 +332,11 @@ public partial class FootnotesInlineCodeNotParsedTests() : InlineTest(
 		count.Should().Be(1, "Inline code should not be parsed as footnote references");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
@@ -349,28 +357,26 @@ public partial class FootnotesCodeBlockNotParsedTests() : InlineTest(
 	public void CodeBlockRendered() =>
 		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-		<p>Real reference<a id="fnref:1" href="#fn:1" class="footnote-ref">
-				<sup>1</sup>
-			</a>.</p>
-		<div class="highlight-markdown notranslate">
-			<div class="highlight">
-				<pre>
-					<code class="language-markdown">Code block with [^1] reference.
-					</code>
-				</pre>
+			<p>Real reference<a id="fnref:1" href="#fn:1" class="footnote-ref">
+					<sup>1</sup>
+				</a>.</p>
+			<div class="highlight-markdown notranslate">
+				<div class="highlight">
+					<pre><code class="language-markdown">Code block with [^1] reference.
+			</code>		</pre>
+				</div>
 			</div>
-		</div>
-		<div class="footnotes">
-			<hr>
-			<h4>Footnotes</h4>
-			<ol>
-				<li id="fn:1">
-					<p>This is the footnote.<a href="#fnref:1" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-			</ol>
-		</div>
-		""",
+			<div class="footnotes">
+				<hr>
+				<h4>Footnotes</h4>
+				<ol>
+					<li id="fn:1">
+						<p>This is the footnote.<a href="#fnref:1" class="footnote-back-ref">↩</a>
+						</p>
+					</li>
+				</ol>
+			</div>
+			""",
 			DocsHtml.Body()
 		);
 
@@ -382,7 +388,11 @@ public partial class FootnotesCodeBlockNotParsedTests() : InlineTest(
 		count.Should().Be(1, "Code block content should not be parsed as footnote references");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
@@ -427,7 +437,11 @@ public partial class FootnotesCodeBlockInDirectiveTests() : InlineTest(
 		count.Should().Be(2, $"Expected 2 back-refs (one per footnote), got {count}. Code block content may be parsed incorrectly.");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 

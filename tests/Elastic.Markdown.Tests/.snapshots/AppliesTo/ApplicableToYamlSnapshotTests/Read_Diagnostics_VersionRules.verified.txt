@@ -1,0 +1,165 @@
+yaml: stack: ga 9.0, ga 9.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.1\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"=9.0"}]
+text: stack: ga 9.1+, ga =9.0, 
+  hint: Key 'stack': Multiple version declarations found for lifecycle(s): GenerallyAvailable. Only one version per lifecycle is allowed.
+
+yaml: stack: ga 9.0-9.2, ga 9.1-9.3
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.1-9.3"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0-9.2"}]
+text: stack: ga 9.1-9.3, ga 9.0-9.2, 
+  hint: Key 'stack': Multiple version declarations found for lifecycle(s): GenerallyAvailable. Only one version per lifecycle is allowed.
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga 9.0+, ga 9.1+
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.1\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"=9.0"}]
+text: stack: ga 9.1+, ga =9.0, 
+  hint: Key 'stack': Multiple version declarations found for lifecycle(s): GenerallyAvailable. Only one version per lifecycle is allowed.
+
+yaml: stack: ga 9.0.1+, ga 9.1.1+
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.1\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.1+, ga 9.0+, 
+  hint: Key 'stack': Multiple version declarations found for lifecycle(s): GenerallyAvailable. Only one version per lifecycle is allowed.
+  hint: Key 'stack': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga 9.2-9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2-9.0"}]
+text: stack: ga 9.2-9.0, 
+  hint: Key 'stack': Invalid range(s) where first version is greater than last version: GenerallyAvailable (9.2-9.0).
+
+yaml: stack: ga 9.0-9.2, beta 9.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0-9.2"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.1\u002B"}]
+text: stack: ga 9.0-9.2, beta 9.1+, 
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga =9.0, beta =9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"=9.0"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"=9.0"}]
+text: stack: ga =9.0, beta =9.0, 
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga 9.0, beta 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.0\u002B"}]
+text: stack: ga 9.0+, beta 9.0+, 
+  hint: Key 'stack': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga 9.2+, beta 9.0-9.2
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.0-9.2"}]
+text: stack: ga 9.2+, beta 9.0-9.2, 
+
+yaml: stack: ga 9.2+, beta 9.0-9.3
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.0-9.3"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"}]
+text: stack: beta 9.0-9.3, ga 9.2+, 
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga 9.2+, beta 9.3-9.5
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.3-9.5"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"}]
+text: stack: beta 9.3-9.5, ga 9.2+, 
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga 9.2+, beta =9.2
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"=9.2"}]
+text: stack: ga 9.2+, beta =9.2, 
+  hint: Key 'stack': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+
+yaml: stack: ga 9.2+, beta =9.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"=9.1"}]
+text: stack: ga 9.2+, beta =9.1, 
+
+yaml: deployment: ga 9.0, beta 9.1
+json: [{"type":"deployment","sub_type":"self","lifecycle":"beta","version":"9.1\u002B"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"=9.0"},{"type":"deployment","sub_type":"ece","lifecycle":"beta","version":"9.1\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"=9.0"},{"type":"deployment","sub_type":"eck","lifecycle":"beta","version":"9.1\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"=9.0"},{"type":"deployment","sub_type":"ess","lifecycle":"beta","version":"9.1\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"=9.0"}]
+text: deployment: self=beta 9.1+, ga =9.0, , ece=beta 9.1+, ga =9.0, , eck=beta 9.1+, ga =9.0, , ess=beta 9.1+, ga =9.0, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml:
+  | deployment:
+  |   ece: ga 3.0, beta 3.0
+  |   eck: ga 3.0, ga 3.1
+json: [{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"beta","version":"3.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"3.1\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"=3.0"}]
+text: deployment: ece=ga 3.0+, beta 3.0+, , eck=ga 3.1+, ga =3.0, 
+  hint: Key 'ece': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.
+  hint: Key 'ece': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.
+  hint: Key 'eck': Multiple version declarations found for lifecycle(s): GenerallyAvailable. Only one version per lifecycle is allowed.
+
+yaml:
+  | deployment:
+  |   ess: ga 9.0
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: ess=ga 9.0+, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml:
+  | deployment:
+  |   ech: ga 9.0
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: ess=ga 9.0+, 
+  error: Can't specify a version for 'ech' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: deployment: ga 9.0
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: self=ga 9.0+, , ece=ga 9.0+, , eck=ga 9.0+, , ess=ga 9.0+, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: serverless: ga 9.0
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"9.0\u002B"}]
+text: serverless: elasticsearch=ga 9.0+, , observability=ga 9.0+, , security=ga 9.0+, , vectordb=ga 9.0+, 
+  error: Can't specify a version for 'serverless' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga 9.0
+  |   security: beta 9.1
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"security","lifecycle":"beta","version":"9.1\u002B"}]
+text: serverless: elasticsearch=ga 9.0+, , security=beta 9.1+, 
+  error: Can't specify a version for 'elasticsearch' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+  error: Can't specify a version for 'security' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga all
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"}]
+text: serverless: elasticsearch=all
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga, beta
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"}]
+text: serverless: elasticsearch=ga, beta, 
+
+yaml: elasticsearch: ga 9.0
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"9.0\u002B"}]
+text: serverless: elasticsearch=ga 9.0+, 
+  error: Can't specify a version for 'elasticsearch' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: ess: ga 9.0
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: ess=ga 9.0+, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: ess: ga 9.0-9.2
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0-9.2"}]
+text: deployment: ess=ga 9.0-9.2, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: ess: ga all
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"}]
+text: deployment: ess=all
+
+yaml: product: ga 9.0, ga 9.1
+json: [{"type":"product","sub_type":"product","lifecycle":"ga","version":"9.1\u002B"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"=9.0"}]
+text: product: ga 9.1+, ga =9.0, 
+  hint: Key 'product': Multiple version declarations found for lifecycle(s): GenerallyAvailable. Only one version per lifecycle is allowed.
+
+yaml:
+  | product:
+  |   ecctl: ga 1.0, ga 1.1
+  |   curator: ga 5.0-4.0
+json: [{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"1.1\u002B"},{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"=1.0"},{"type":"product","sub_type":"curator","lifecycle":"ga","version":"5.0-4.0"}]
+text: products: ecctl=ga 1.1+, ga =1.0, : not null } => curator=ga 5.0-4.0, 
+  hint: Key 'ecctl': Multiple version declarations found for lifecycle(s): GenerallyAvailable. Only one version per lifecycle is allowed.
+  hint: Key 'curator': Invalid range(s) where first version is greater than last version: GenerallyAvailable (5.0-4.0).
+
+yaml:
+  | product:
+  |   ecctl: ga 1.0+, beta 0.9+
+json: [{"type":"product","sub_type":"ecctl","lifecycle":"ga","version":"1.0\u002B"},{"type":"product","sub_type":"ecctl","lifecycle":"beta","version":"0.9-1.0"}]
+text: products: ecctl=ga 1.0+, beta 0.9-1.0, 

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,6 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Nullean.Snapshots.Http" />
     <PackageReference Include="Nullean.Snapshots.Http.Assertions" />

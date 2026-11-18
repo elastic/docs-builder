@@ -1,0 +1,149 @@
+yaml:
+  | product:
+  |   ecctl: ga
+json: [{"type":"product","sub_type":"ecctl","lifecycle":"ga"}]
+text: products: ecctl=ga, 
+
+yaml:
+  | product:
+  |   curator: ga
+json: [{"type":"product","sub_type":"curator","lifecycle":"ga"}]
+text: products: curator=ga, 
+
+yaml:
+  | product:
+  |   apm-agent-android: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-dotnet: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-go: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-ios: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-java: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-node: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-php: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-python: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-ruby: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   apm-agent-rum-js: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-ios: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-android: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-collector: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-dotnet: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-java: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-node: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-browser: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-react-native: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-php: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-python: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-cf-aws: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-cf-azure: ga
+json: []
+text: 
+
+yaml:
+  | product:
+  |   edot-cf-gcp: ga
+json: []
+text: 

@@ -1,4 +1,5 @@
 import { initAgentSkillCopy } from './agent-skill'
+import { bindApiBetaBanner } from './api-beta-banner'
 import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
 import { initApiMenus } from './api-menu'
@@ -18,6 +19,7 @@ import { bindCtaClicks, initCtaImpressions } from './runtime/cta'
 import { applyEditParam } from './runtime/edit-param'
 import { bindHtmxHooks } from './runtime/htmx-hooks'
 import { runInitSteps } from './runtime/init-steps'
+import { bindModalEscape } from './runtime/modal-escape'
 import { initTelemetry } from './runtime/telemetry'
 import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -87,6 +89,8 @@ initPrivacyConsent()
 initSecondaryNav()
 initApiMenus()
 initApiChromeSync()
+bindApiBetaBanner()
+bindModalEscape()
 bindHtmxHooks({
     forcesFullPageLoad: (targetPath) =>
         // A move between a docs page and an API page, or to another API product: the swap would

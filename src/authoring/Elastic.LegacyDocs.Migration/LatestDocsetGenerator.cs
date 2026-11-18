@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Extensions;
 using Elastic.LegacyDocs.Migration.Asciidoc;
 using Microsoft.Extensions.Logging;
-using Slugify;
 
 namespace Elastic.LegacyDocs.Migration;
 
@@ -17,8 +17,6 @@ public record LatestGeneratorOptions
 
 public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 {
-	private static readonly SlugHelper SlugHelper = new();
-
 	public async Task GenerateAsync(LegacyConf conf, LatestGeneratorOptions options, CancellationToken ct = default)
 	{
 		var books = conf
@@ -95,7 +93,7 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 			fileEntries.Add(new TocEntry { File = filename });
 		}
 
-		var projectName = SlugHelper.GenerateSlug(book.Title);
+		var projectName = book.Title.Slugify();
 		YamlWriter.WriteDocsetYaml(Path.Combine(docsDir, "docset.yml"), projectName, ["."]);
 		YamlWriter.WriteTocYaml(Path.Combine(docsDir, "toc.yml"), fileEntries);
 

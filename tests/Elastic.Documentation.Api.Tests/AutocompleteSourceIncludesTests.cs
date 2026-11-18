@@ -34,4 +34,12 @@ public class AutocompleteSourceIncludesTests
 	[Test]
 	public void AutocompleteSourceIncludes_ContainTheDeprecatedFlag() =>
 		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("api.deprecated");
+
+	[Test]
+	public void AutocompleteSourceIncludes_ContainTheLandingFlag() =>
+		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("api.landing");
+
+	[Test]
+	public void AutocompleteSourceIncludes_ContainTheProduct() =>
+		DefaultSearchService<DocumentationDocument>.AutocompleteSourceIncludes.Should().Contain("product");
 }

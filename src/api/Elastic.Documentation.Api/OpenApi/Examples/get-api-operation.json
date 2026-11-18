@@ -1,0 +1,48 @@
+{
+  "operation": {
+    "api": "elasticsearch",
+    "title": "Get the cluster health status",
+    "url": "/docs/api/doc/elasticsearch/operation/operation-cluster-health",
+    "description": "You can also use the API to get the health status of only specified data streams and indices.\nFor data streams, the API retrieves the health status of the st…",
+    "method": "GET",
+    "path": "/_cluster/health/{index}",
+    "operationId": "cluster-health",
+    "group": "Cluster",
+    "deprecated": false,
+    "endpoints": [
+      "GET /_cluster/health/{index}",
+      "GET /_cluster/health"
+    ]
+  },
+  "versions": [
+    "main"
+  ],
+  "fields": [
+    {
+      "name": "index",
+      "path": "index",
+      "type": "union string | string[]",
+      "location": "path",
+      "description": "A comma-separated list of data streams, indices, and index aliases that limit the request. Wildcard expressions () are supported. To target all data streams…"
+    },
+    {
+      "name": "expand_wildcards",
+      "path": "expand_wildcards",
+      "type": "union oneOf · default: all",
+      "location": "query",
+      "description": "Expand wildcard expression to concrete indices that are open, closed or both. Supported values include: - all: Match any data stream or index, including hidd…"
+    },
+    {
+      "name": "level",
+      "path": "level",
+      "type": "enum · default: cluster",
+      "location": "query",
+      "description": "Return health information at a specific level of detail."
+    }
+  ],
+  "aiShortSummary": "Check Elasticsearch cluster health status via API.",
+  "body": null,
+  "bodyLength": 3639,
+  "bodyNote": null,
+  "otherMatches": []
+}

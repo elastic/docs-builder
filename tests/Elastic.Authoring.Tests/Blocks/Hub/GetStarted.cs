@@ -119,41 +119,39 @@ public class GetStartedWithOptionSteps : MarkdownTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<section class="hub-get-started" id="get-started">
-			<div class="hub-get-started-lead">
-				<h2 class="hub-get-started-title">Get started</h2>
-			</div>
-			<div class="hub-get-started-track" style="--hub-step-columns: 1">
-				<ol class="hub-get-started-first">
-					<li class="hub-get-started-box is-fork">
-						<div class="hub-get-started-head">
-							<span class="hub-get-started-step-num" aria-hidden="true">1</span>
-							<h3 class="hub-get-started-step-title">Preview and publish</h3>
-						</div>
-						<div class="hub-get-started-fork">
-							<div class="hub-get-started-option">
-								<span class="hub-get-started-option-label">Preview locally</span>
-								<p class="hub-get-started-option-desc">Serve with live reload.</p>
-								<div class="hub-get-started-install highlight">
-									<pre>
-										<code class="language-sh">docs-builder serve</code>
-									</pre>
+			<section class="hub-get-started" id="get-started">
+				<div class="hub-get-started-lead">
+					<h2 class="hub-get-started-title">Get started</h2>
+				</div>
+				<div class="hub-get-started-track" style="--hub-step-columns: 1">
+					<ol class="hub-get-started-first">
+						<li class="hub-get-started-box is-fork">
+							<div class="hub-get-started-head">
+								<span class="hub-get-started-step-num" aria-hidden="true">1</span>
+								<h3 class="hub-get-started-step-title">Preview and publish</h3>
+							</div>
+							<div class="hub-get-started-fork">
+								<div class="hub-get-started-option">
+									<span class="hub-get-started-option-label">Preview locally</span>
+									<p class="hub-get-started-option-desc">Serve with live reload.</p>
+									<div class="hub-get-started-install highlight">
+										<pre><code class="language-sh">docs-builder serve</code></pre>
+									</div>
+								</div>
+								<div class="hub-get-started-or" aria-hidden="true">
+									<span>or</span>
+								</div>
+								<div class="hub-get-started-option">
+									<span class="hub-get-started-option-label">Publish</span>
+									<p class="hub-get-started-option-desc">Build and publish.</p>
+									<a class="hub-get-started-option-btn" href="/">How to publish</a>
 								</div>
 							</div>
-							<div class="hub-get-started-or" aria-hidden="true">
-								<span>or</span>
-							</div>
-							<div class="hub-get-started-option">
-								<span class="hub-get-started-option-label">Publish</span>
-								<p class="hub-get-started-option-desc">Build and publish.</p>
-								<a class="hub-get-started-option-btn" href="/">How to publish</a>
-							</div>
-						</div>
-					</li>
-				</ol>
-			</div>
-		</section>
-		"""
+						</li>
+					</ol>
+				</div>
+			</section>
+			"""
 		);
 
 	[Test, DisplayName("has no errors")]
@@ -257,40 +255,38 @@ public class GetStartedWithThreeOptions : MarkdownTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<section class="hub-get-started" id="get-started">
-			<div class="hub-get-started-lead">
-				<h2 class="hub-get-started-title">Get started</h2>
-			</div>
-			<div class="hub-get-started-track" style="--hub-step-columns: 1">
-				<ol class="hub-get-started-first">
-					<li class="hub-get-started-box">
-						<div class="hub-get-started-head">
-							<span class="hub-get-started-step-num" aria-hidden="true">1</span>
-							<h3 class="hub-get-started-step-title">Install</h3>
-						</div>
-						<div class="hub-get-started-options">
-							<div class="hub-get-started-option">
-								<span class="hub-get-started-option-label">Source</span>
-								<div class="hub-get-started-install highlight">
-									<pre>
-										<code class="language-text">dotnet build</code>
-									</pre>
+			<section class="hub-get-started" id="get-started">
+				<div class="hub-get-started-lead">
+					<h2 class="hub-get-started-title">Get started</h2>
+				</div>
+				<div class="hub-get-started-track" style="--hub-step-columns: 1">
+					<ol class="hub-get-started-first">
+						<li class="hub-get-started-box">
+							<div class="hub-get-started-head">
+								<span class="hub-get-started-step-num" aria-hidden="true">1</span>
+								<h3 class="hub-get-started-step-title">Install</h3>
+							</div>
+							<div class="hub-get-started-options">
+								<div class="hub-get-started-option">
+									<span class="hub-get-started-option-label">Source</span>
+									<div class="hub-get-started-install highlight">
+										<pre><code class="language-text">dotnet build</code></pre>
+									</div>
+								</div>
+								<div class="hub-get-started-option">
+									<span class="hub-get-started-option-label">Container</span>
+									<a class="hub-get-started-option-btn" href="/">Get started</a>
+								</div>
+								<div class="hub-get-started-option">
+									<span class="hub-get-started-option-label">Package</span>
+									<a class="hub-get-started-option-btn" href="/">Get started</a>
 								</div>
 							</div>
-							<div class="hub-get-started-option">
-								<span class="hub-get-started-option-label">Container</span>
-								<a class="hub-get-started-option-btn" href="/">Get started</a>
-							</div>
-							<div class="hub-get-started-option">
-								<span class="hub-get-started-option-label">Package</span>
-								<a class="hub-get-started-option-btn" href="/">Get started</a>
-							</div>
-						</div>
-					</li>
-				</ol>
-			</div>
-		</section>
-		"""
+						</li>
+					</ol>
+				</div>
+			</section>
+			"""
 		);
 }
 

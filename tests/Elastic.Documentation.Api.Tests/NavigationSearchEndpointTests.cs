@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
+using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.Tests.Fixtures;
 using Elastic.Documentation.Search;
@@ -30,7 +31,7 @@ public class NavigationSearchEndpointTests
 			SharedFactory.Value.Dispose();
 	}
 
-	private static async Task<(HttpStatusCode Status, NavigationSearchRequest? Received)> Get(string queryString)
+	private static async Task<(HttpStatusCode Status, NavigationSearchRequest? Received, string Body)> Get(string queryString)
 	{
 		NavigationSearchRequest? received = null;
 		var service = A.Fake<INavigationSearchService>();
@@ -45,13 +46,13 @@ public class NavigationSearchEndpointTests
 			$"/docs/_api/v1/navigation-search/?q=knn&type=api{queryString}",
 			TestContext.Current!.Execution.CancellationToken
 		);
-		return (response.StatusCode, received);
+		return (response.StatusCode, received, await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
 	}
 
 	[Test]
 	public async Task Get_NoTreeParameters_SearchesWithoutScope()
 	{
-		var (status, received) = await Get("");
+		var (status, received, _) = await Get("");
 
 		status.Should().Be(HttpStatusCode.OK);
 		received.Should().NotBeNull();
@@ -61,7 +62,7 @@ public class NavigationSearchEndpointTests
 	[Test]
 	public async Task Get_KeyAlone_SearchesFromThatApiWithoutScope()
 	{
-		var (status, received) = await Get("&api_key=elasticsearch");
+		var (status, received, _) = await Get("&api_key=elasticsearch");
 
 		status.Should().Be(HttpStatusCode.OK);
 		received.Should().NotBeNull();
@@ -73,7 +74,7 @@ public class NavigationSearchEndpointTests
 	[Arguments("8")]
 	public async Task Get_KeyAndTree_SearchesInThatTree(string tree)
 	{
-		var (status, received) = await Get($"&api_key=elasticsearch&api_tree={tree}");
+		var (status, received, _) = await Get($"&api_key=elasticsearch&api_tree={tree}");
 
 		status.Should().Be(HttpStatusCode.OK);
 		received.Should().NotBeNull();
@@ -90,9 +91,10 @@ public class NavigationSearchEndpointTests
 	[Arguments("&api_key=&api_tree=8")]
 	public async Task Get_IncompleteOrMalformedScope_ReturnsBadRequestWithoutSearching(string queryString)
 	{
-		var (status, received) = await Get(queryString);
+		var (status, received, body) = await Get(queryString);
 
 		status.Should().Be(HttpStatusCode.BadRequest);
 		received.Should().BeNull();
+		JsonElement.Parse(body).GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("invalid-arguments"));
 	}
 }

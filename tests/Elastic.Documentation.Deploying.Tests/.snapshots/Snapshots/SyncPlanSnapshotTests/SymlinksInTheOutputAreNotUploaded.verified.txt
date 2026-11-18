@@ -1,0 +1,24 @@
+{
+  "deletion_threshold_default": null,
+  "exclude_patterns": [],
+  "remote_listing_completed": true,
+  "total_source_files": 2,
+  "total_remote_files": 0,
+  "total_sync_requests": 2,
+  "delete": [],
+  "add": [
+    {
+      "local_path": "{output}/docs/link.html.target",
+      "destination_path": "docs/link.html.target"
+    },
+    {
+      "local_path": "{output}/docs/real.html",
+      "destination_path": "docs/real.html"
+    }
+  ],
+  "update": [],
+  "skip": [],
+  "retain": []
+}
+--- validation: valid=True ratio=NaN threshold=0
+--- diagnostics

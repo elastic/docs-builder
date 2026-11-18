@@ -89,7 +89,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			);
 			return new FetchedReleaseNotes
 			{
-				BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
+				BundlesByProduct = [],
 				DeclaredProducts = required.ToFrozenSet(StringComparer.Ordinal),
 				NotFoundInferredProducts = []
 			};

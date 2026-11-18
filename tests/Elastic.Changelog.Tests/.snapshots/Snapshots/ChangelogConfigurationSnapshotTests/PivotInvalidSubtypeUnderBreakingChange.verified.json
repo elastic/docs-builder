@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml Subtype 'cosmetic' in pivot.types.breaking-change.subtypes is not a valid subtype. Valid subtypes: api, behavioral, configuration, dependency, subscription, plugin, security, other"
+  ]
+}

@@ -126,12 +126,12 @@ public record DetectionRule
 		{
 			var json = fileSystem.File.ReadAllText(versionLockPath, Encoding.UTF8);
 			var versionData = JsonSerializer.Deserialize(json, VersionLockJsonContext.Default.DictionaryStringVersionLockEntry);
-			VersionLock = versionData?.ToFrozenDictionary() ?? FrozenDictionary<string, VersionLockEntry>.Empty;
+			VersionLock = versionData?.ToFrozenDictionary() ?? [];
 		}
 		catch
 		{
 			// If we can't load the version lock, continue without it
-			VersionLock = FrozenDictionary<string, VersionLockEntry>.Empty;
+			VersionLock = [];
 		}
 	}
 

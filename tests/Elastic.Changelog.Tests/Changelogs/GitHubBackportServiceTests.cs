@@ -24,7 +24,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 	private const string Repo = "widget";
 	private const string TrailerSha = "abcdef0123456789abcdef0123456789abcdef01";
 
-	[GeneratedRegex(@" (?<alias>[pv]\d+): pullRequest\(number: (?<n>\d+)\)")]
+	[GeneratedRegex(@" (?<alias>[pv]\d+): pullRequest\(number: (?<n>\d+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AliasRegex();
 
 	/// <summary>What GitHub knows: backport details, and the pull requests the validation and trailer lookups find.</summary>
@@ -73,7 +73,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 
 			foreach (var (sha, prs) in TrailerPullRequests)
 			{
-				var index = Regex.Match(query, $"(c\\d+): object\\(oid: \"{sha}\"\\)");
+				var index = Regex.Match(query, $"(c\\d+): object\\(oid: \"{sha}\"\\)", RegexOptions.None, RegexTimeouts.MatchTimeout);
 				if (index.Success)
 					fields.Add(
 						$"\"{index.Groups[1].Value}\": {{ \"associatedPullRequests\": {{ \"nodes\": [{string.Join(",", prs.Select(PullRequestNode))}] }} }}"
@@ -106,10 +106,10 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 				? $"{{ \"number\": {n}, \"merged\": {(pr.Merged ? "true" : "false")}, \"baseRefName\": \"{pr.Branch}\", \"baseRepository\": {{ \"nameWithOwner\": \"{pr.Repo}\" }} }}"
 				: "null";
 
-		[GeneratedRegex(@"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""")]
+		[GeneratedRegex(@"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 		private static partial Regex CommitPageRegex();
 
-		[GeneratedRegex(@" v\d+: pullRequest")]
+		[GeneratedRegex(@" v\d+: pullRequest", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 		private static partial Regex ValidationAliasRegex();
 	}
 
@@ -123,11 +123,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 				new StubHandler(req =>
 				{
 					var query =
-						JsonDocument
-							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
-							.RootElement
-							.GetProperty("query")
-							.GetString()!;
+						JsonElement.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).GetProperty("query").GetString()!;
 					return new HttpResponseMessage(HttpStatusCode.OK)
 					{
 						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")
@@ -407,11 +403,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 				new StubHandler(req =>
 				{
 					var query =
-						JsonDocument
-							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
-							.RootElement
-							.GetProperty("query")
-							.GetString()!;
+						JsonElement.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).GetProperty("query").GetString()!;
 					return new HttpResponseMessage(HttpStatusCode.OK)
 					{
 						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")

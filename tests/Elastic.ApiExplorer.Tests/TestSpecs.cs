@@ -40,7 +40,7 @@ internal static class TestSpecs
 	/// <summary>Like <see cref="LoadSpecAsync"/>, but reads from memory and throws when the spec has parse errors.</summary>
 	public static async Task<OpenApiDocument> LoadValidSpecAsync(string json)
 	{
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		using var stream = new ReadOnlyMemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
 		var result = await OpenApiDocument.LoadAsync(stream, settings: new OpenApiReaderSettings { LeaveStreamOpen = false });
 		if (result.Diagnostic?.Errors is { Count: > 0 } errors)
 			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", errors.Select(e => e.Message))}");

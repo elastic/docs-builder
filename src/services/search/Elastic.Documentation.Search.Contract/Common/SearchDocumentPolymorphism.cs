@@ -118,7 +118,7 @@ public static class SearchDocumentPolymorphism
 	/// <summary>
 	/// Combines the contract's source-gen resolver with one or more consumer contexts and
 	/// applies <paramref name="modifiers"/> in order via
-	/// <see cref="JsonTypeInfoResolverChain.WithAddedModifier"/>.
+	/// <c>JsonTypeInfoResolver.WithAddedModifier</c>.
 	/// <para>
 	/// Typical docs search call site:
 	/// <code>

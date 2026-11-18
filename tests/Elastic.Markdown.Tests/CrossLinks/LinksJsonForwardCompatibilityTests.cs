@@ -112,14 +112,8 @@ public class LinksJsonForwardCompatibilityTests
 				LinkReferences = new Dictionary<string, RepositoryLinks> { ["docs-content"] = links }.ToFrozenDictionary(),
 				LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
 			};
-			var resolved = CrossLinkResolver.TryResolve(
-				_ => { },
-				fetched,
-				new IsolatedBuildEnvironmentUriResolver(),
-				new Uri(crossLink),
-				out var uri
-			);
-			return (resolved, uri?.ToString());
+			var uri = CrossLinkResolver.Resolve(fetched, new IsolatedBuildEnvironmentUriResolver(), new Uri(crossLink)).ResolvedUri();
+			return (resolved: uri is not null, uri?.ToString());
 		};
 
 		var without = resolve(RepositoryLinks.Deserialize("{" + Core + "}"));

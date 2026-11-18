@@ -787,9 +787,15 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 			Task.FromResult(Send(request, cancellationToken));
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("(?<=u0022)[0-9a-f]{40}")]
+	[System.Text.RegularExpressions.GeneratedRegex("(?<=u0022)[0-9a-f]{40}", System.Text.RegularExpressions.RegexOptions.None, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex CommitShaRegex();
 
-	[System.Text.RegularExpressions.GeneratedRegex(@" p(\d+): pullRequest")]
+	[System.Text.RegularExpressions.GeneratedRegex(@" p(\d+): pullRequest", System.Text.RegularExpressions.RegexOptions.None, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex AliasedPullRequestRegex();
 }

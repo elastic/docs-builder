@@ -4,6 +4,8 @@
  * for both OperationView and SchemaView pages.
  */
 import { decorateApiCodeTokens } from './api-code-tokens'
+import { initApiColumnResize } from './api-column-resize'
+import { initExamplesBalance } from './api-examples-balance'
 import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
@@ -25,7 +27,14 @@ function setDisclosureToggle(
     const icon = toggleBtn.querySelector('.toggle-icon')
     const label = toggleBtn.querySelector('.toggle-label')
     if (icon) icon.textContent = expanded ? '−' : '+'
-    if (label && noun)
+    const count = Number((toggleBtn as HTMLElement).dataset.count)
+    if (
+        label &&
+        !Number.isNaN(count) &&
+        (toggleBtn as HTMLElement).dataset.count
+    )
+        label.textContent = `${expanded ? 'Hide' : 'Show'} ${count} ${count === 1 ? 'property' : 'properties'}`
+    else if (label && noun)
         label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
 }
 
@@ -100,6 +109,11 @@ const DISCLOSURES: Disclosure[] = [
     RESPONSE_DISCLOSURE,
 ]
 
+// Only clicks within these count; the path list sits in the header, outside them.
+// #elastic-docs-v3 holds the topic, structural and Markdown pages, such as the shared Authentication section.
+const API_ROOTS =
+    '#elastic-api-v3, #elastic-docs-v3, #schema-definition, #paths'
+
 function disclosureFor(el: Element): Disclosure | undefined {
     return DISCLOSURES.find((d) => el.matches(d.container))
 }
@@ -116,8 +130,15 @@ function setDisclosureExpanded(
     if (expanded && d === RESPONSE_DISCLOSURE) onResponseOpened(container)
 }
 
-/** Opening a response keeps the examples rail on the same status code. */
+/** Responses behave as an accordion and keep the examples rail on the same status code. */
 function onResponseOpened(panel: HTMLElement): void {
+    panel
+        .closest('[data-api-responses]')
+        ?.querySelectorAll<HTMLElement>('.response-panel.expanded')
+        .forEach((other) => {
+            if (other !== panel)
+                setDisclosureExpanded(other, RESPONSE_DISCLOSURE, false)
+        })
     const status = panel.dataset.status
     if (!status) return
     document
@@ -155,6 +176,7 @@ export function revealCollapsedAncestors(target: HTMLElement): boolean {
         setDisclosureExpanded(el, d, true)
         revealed = true
     }
+    if (revealed) syncExpandAll()
     return revealed
 }
 
@@ -358,10 +380,17 @@ function initGlobalClickHandlers(): void {
 
         // Only handle clicks within API doc sections; the path list sits in the header, outside them.
         // #elastic-docs-v3 holds the topic, structural and Markdown pages, such as the shared Authentication section.
-        const apiSection = target.closest(
-            '#elastic-api-v3, #elastic-docs-v3, #schema-definition, #paths'
-        ) as HTMLElement
+        const apiSection = target.closest<HTMLElement>(API_ROOTS)
         if (!apiSection) return
+
+        if (target.closest('[data-api-back-to-top]')) {
+            e.preventDefault()
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+            })
+            return
+        }
 
         // Before the generic .expand-toggle branch, which would toggle the enclosing property instead
         const enumValuesToggle = target.closest<HTMLButtonElement>(
@@ -390,6 +419,7 @@ function initGlobalClickHandlers(): void {
                 d,
                 !container.classList.contains('expanded')
             )
+            syncExpandAll()
             // pushState sets the hash without a hashchange, so the page doesn't jump to the
             // title and the section the click just collapsed isn't re-opened.
             if (
@@ -400,9 +430,59 @@ function initGlobalClickHandlers(): void {
             return
         }
 
+        if (target.closest('[data-api-expand-all]')) {
+            e.preventDefault()
+            setAllExpanded(apiSection, !isAllExpanded(apiSection))
+            return
+        }
+
         const link = target.closest<HTMLAnchorElement>('a[href^="#"]')
         if (link) scrollToLinkTarget(e, link)
     })
+}
+
+/**
+ * The disclosures the page control drives: every one with a toggle, so rows with nothing to fold are left out.
+ * Responses are an accordion that follows the examples rail, so the control leaves them to it.
+ */
+function foldables(root: HTMLElement): [HTMLElement, Disclosure][] {
+    return DISCLOSURES.filter((d) => d !== RESPONSE_DISCLOSURE).flatMap((d) =>
+        [...root.querySelectorAll<HTMLElement>(d.container)]
+            .filter((container) => container.querySelector(d.toggle))
+            .map((container): [HTMLElement, Disclosure] => [container, d])
+    )
+}
+
+function isAllExpanded(root: HTMLElement): boolean {
+    return foldables(root).every(([container]) =>
+        container.classList.contains('expanded')
+    )
+}
+
+/** Expand all and Collapse all share one button. */
+export function setAllExpanded(root: HTMLElement, expanded: boolean): void {
+    foldables(root).forEach(([container, d]) =>
+        setDisclosureExpanded(container, d, expanded)
+    )
+    syncExpandAll()
+}
+
+/** The page control offers whichever of the two the page is not in already, and is absent where nothing can fold. */
+function syncExpandAll(): void {
+    document
+        .querySelectorAll<HTMLElement>('[data-api-expand-all]')
+        .forEach((button) => {
+            const root = button.closest<HTMLElement>(API_ROOTS)
+            if (!root) return
+            const nothingToFold = foldables(root).length === 0
+            button.hidden = nothingToFold
+            button
+                .closest('.api-expand-standalone')
+                ?.toggleAttribute('hidden', nothingToFold)
+            button.textContent = isAllExpanded(root)
+                ? 'Collapse all'
+                : 'Expand all'
+        })
 }
 
 /**
@@ -683,20 +763,65 @@ export function initExamplesRailSteadying(): void {
 }
 
 /**
+ * Marks the section-links pin data-stuck while it is pinned under the header: position: sticky has no CSS hook.
+ * The pinned offset is read on every check, since the header height is set by script after the page loads.
+ */
+function initSectionLinksStuck(): void {
+    document
+        .querySelectorAll<HTMLElement>(
+            '[data-section-pin]:not([data-stuck-bound])'
+        )
+        .forEach((bar) => {
+            bar.dataset.stuckBound = ''
+            const listeners = new AbortController()
+            let queued = false
+            const update = () => {
+                queued = false
+                if (!bar.isConnected) {
+                    listeners.abort()
+                    return
+                }
+                const pinnedAt = parseFloat(getComputedStyle(bar).top) || 0
+                bar.toggleAttribute(
+                    'data-stuck',
+                    bar.getBoundingClientRect().top <= pinnedAt + 0.5
+                )
+            }
+            const schedule = () => {
+                if (queued) return
+                queued = true
+                window.requestAnimationFrame(update)
+            }
+            window.addEventListener('scroll', schedule, {
+                passive: true,
+                signal: listeners.signal,
+            })
+            window.addEventListener('resize', schedule, {
+                signal: listeners.signal,
+            })
+            update()
+        })
+}
+
+/**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
  */
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
+    initSectionLinksStuck()
     initTooltips()
     initApiEndpointCopy()
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()
     initApiExamples()
+    initExamplesBalance()
     initUnionChips()
     initApiPageActions()
+    initApiColumnResize()
     initExamplesRailSteadying()
+    syncExpandAll()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
 

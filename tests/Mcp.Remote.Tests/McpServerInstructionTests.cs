@@ -57,12 +57,13 @@ public class McpServerInstructionTests
 
 		instructions.Should().MatchInlineSnapshot(
 			"""
-			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; the API tools search and read those by endpoint, operation id or field.
 
 			<triggers>
 			Use the server when the user:
 			- Wants to find, read, or verify Elastic documentation pages.
 			- Needs to check whether a topic is already covered in Elastic documentation.
+			- Asks which REST API call does something, or about an endpoint, its parameters, or its request and response fields.
 			- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.
 			- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.
 			</triggers>
@@ -71,6 +72,9 @@ public class McpServerInstructionTests
 			- Prefer search_docs over a general web search when looking up Elastic documentation content.
 			- Use find_related_docs when exploring what documentation exists around a topic.
 			- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
+			- Use search_api_operations to find REST API operations by task, endpoint, or field name.
+			- Use get_api_operation to read one operation's parameters, request body and response fields by endpoint or operation id.
+			- Use list_api_operations to browse the available APIs and their operations.
 			- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.
 			</tool_guidance>
 			"""

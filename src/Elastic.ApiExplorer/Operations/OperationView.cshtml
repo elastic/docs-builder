@@ -55,7 +55,20 @@
 	</ul>
 	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
 </header>
-<section id="elastic-api-v3">
+@* The design-system stylesheet has no styles for the strip yet, so the flagged page leaves it out. The strip opens the page, above the description, so what the operation needs and holds is the first thing a reader sees. The section carries a class while the page has the toolbar, so what the toolbar covers can be scrolled clear of it. *@
+@{
+	var sectionLinks = Model.SectionLinks;
+	var showStrip = !Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && sectionLinks is { Count: > 1 };
+}
+<section id="elastic-api-v3" class="@(showStrip ? "api-has-toolbar" : null)">
+	@if (showStrip)
+	{
+		@(await RenderPartialAsync<_SectionLinks, SectionStripModel>(new SectionStripModel(sectionLinks, Model.Authorization)))
+	}
+	else if (Model.Authorization.Privileges.Count > 0)
+	{
+		@(await RenderPartialAsync<_PrivilegesCard, AuthorizationSectionModel>(Model.Authorization))
+	}
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
 	{
 		<div class="api-operation-description" id="description">
@@ -78,11 +91,7 @@
 		</a>
 	}
 	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
-	@* The design-system stylesheet has no styles for the bar yet, so the flagged page leaves it out. *@
-	@if (!Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && Model.SectionLinks is { Count: > 1 } sectionLinks)
-	{
-		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(sectionLinks))
-	}
+	@(await RenderPartialAsync(_ExpandAllControl.Create(true)))
 	@foreach (var section in pageModel.ParameterSections)
 	{
 		@(await RenderPartialAsync<_ParameterListSection, ParameterListSection>(section))

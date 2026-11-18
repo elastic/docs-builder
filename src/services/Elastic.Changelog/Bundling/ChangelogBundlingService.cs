@@ -44,6 +44,13 @@ public record BundleChangelogsArguments
 	public Action? OnEmptyRange { get; init; }
 
 	/// <summary>
+	/// When true, a commit range with nothing to publish still writes a bundle: the profile's products, the release date and
+	/// <c>git_ref</c>, and no entries. A release that shipped without notes then stays on record, and the renderer skips it.
+	/// A pull request whose metadata could not be read is still an error. Takes the place of <see cref="OnEmptyRange"/>.
+	/// </summary>
+	public bool WriteEmptyRange { get; init; }
+
+	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
 	public string? Directory { get; init; }
@@ -250,17 +257,17 @@ public partial class ChangelogBundlingService(
 	/// </summary>
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
-	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
+	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	internal static partial Regex VersionToTargetRegex();
 
-	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubPrUrlRegex();
 
-	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubIssueUrlRegex();
 
 	/// <summary>A profile argument that is a plain version string (safe for conventional file names), not a report URL/path.</summary>
-	[GeneratedRegex(@"^[A-Za-z0-9._+-]+$")]
+	[GeneratedRegex(@"^[A-Za-z0-9._+-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PlanVersionArgumentRegex();
 
 	public async Task<bool> BundleChangelogs(IDiagnosticsCollector collector, BundleChangelogsArguments input, Cancel ctx)
@@ -534,7 +541,8 @@ public partial class ChangelogBundlingService(
 		ChangelogConfiguration? config,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		string outputPath,
-		Cancel ctx
+		Cancel ctx,
+		bool rangeIsIncomplete = false
 	)
 	{
 		// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
@@ -557,9 +565,17 @@ public partial class ChangelogBundlingService(
 			};
 		}
 
-		if (filteredEntries.Count == 0)
+		// An empty result is a release with no notes only when the whole range was read. A pull request whose metadata
+		// could not be fetched may have held the notes, so that is an error, not an empty release.
+		var emptyIsAllowed = input.WriteEmptyRange && !rangeIsIncomplete;
+		if (filteredEntries.Count == 0 && !emptyIsAllowed)
 		{
-			collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle filter");
+			collector.EmitError(
+				string.Empty,
+				input.WriteEmptyRange
+					? "No changelog entries remained after applying rules.bundle filter, and the metadata of some pull requests in the range could not be read. A failed fetch is not recorded as a release with no notes."
+					: "No changelog entries remained after applying rules.bundle filter"
+			);
 			return false;
 		}
 
@@ -643,11 +659,11 @@ public partial class ChangelogBundlingService(
 			bundleData = bundleData with { GitRef = input.EndGitRef };
 
 		// Write bundle file
-		await WriteBundleFileAsync(bundleData, outputPath, ctx);
+		var writtenPath = await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
 		// Notify the caller of the resolved output path (used by ChangelogCommand.Bundle to emit
 		// bundle_path as a GitHub Actions step output so callers don't need to predict the path).
-		input.OnBundlePathResolved?.Invoke(outputPath);
+		input.OnBundlePathResolved?.Invoke(writtenPath);
 
 		return true;
 	}
@@ -1087,7 +1103,7 @@ public partial class ChangelogBundlingService(
 		if (input.DryRun)
 		{
 			// The report is the dry run's product: print it verbatim for release-PR bodies / job summaries.
-			await Console.Out.WriteLineAsync(report);
+			await Console.Out.WriteLineAsync(report, ctx);
 			return result.Success && collector.Errors == 0;
 		}
 
@@ -1101,37 +1117,44 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		if (allEntries.Count == 0)
-			return FinishEmptyRange(collector, input, result, $"{owner}/{sourcing.Repo}");
+			return await FinishEmptyRange(collector, input, config, result, ($"{owner}/{sourcing.Repo}", outputPath), ctx);
 
-		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
+		var rangeIsIncomplete = result.Report.Rows.Any(row => row.Source == GitRangePrSourceKind.Missing);
+		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx, rangeIsIncomplete);
 	}
 
 	/// <summary>
 	/// A range with nothing to publish. DRA bundling allows it: the product shipped with no user-facing changes.
+	/// A caller can ask for an empty bundle instead (<see cref="BundleChangelogsArguments.WriteEmptyRange"/>), which keeps the release on record.
 	/// A pull request whose metadata could not be read is still an error, so a failed fetch is not reported as an empty release.
 	/// </summary>
-	private bool FinishEmptyRange(
+	private async Task<bool> FinishEmptyRange(
 		IDiagnosticsCollector collector,
 		BundleChangelogsArguments input,
+		ChangelogConfiguration? config,
 		GitRangeEntryResolutionResult result,
-		string repository
+		(string Repository, string OutputPath) target,
+		Cancel ctx
 	)
 	{
-		if (input.OnEmptyRange is not null && RangeHasNoNotes(result))
+		if ((input.WriteEmptyRange || input.OnEmptyRange is not null) && RangeHasNoNotes(result))
 		{
 			_logger.LogInformation(
 				"No changelog entries in commit range {Start}..{End} of {Repository}. The release has no notes.",
 				input.StartGitRef,
 				input.EndGitRef,
-				repository
+				target.Repository
 			);
-			input.OnEmptyRange();
+			if (input.WriteEmptyRange)
+				return await BuildAndWriteBundle(collector, input, config, [], target.OutputPath, ctx);
+
+			input.OnEmptyRange!();
 			return true;
 		}
 
 		collector.EmitError(
 			string.Empty,
-			$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {repository}."
+			$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {target.Repository}."
 		);
 		return false;
 	}
@@ -2259,7 +2282,8 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
+	/// <summary>Writes the bundle and returns the path it was written to, which is not <paramref name="outputPath"/> when that file already exists.</summary>
+	private async Task<string> WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
 		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
@@ -2286,6 +2310,7 @@ public partial class ChangelogBundlingService(
 		var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(bundledYaml);
 		await _fileSystem.File.WriteAllTextAsync(outputPath, normalizedYaml, Utf8NoBom, ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
+		return outputPath;
 	}
 
 	/// <summary>

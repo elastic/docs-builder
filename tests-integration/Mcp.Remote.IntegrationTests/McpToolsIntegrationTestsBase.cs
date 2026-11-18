@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.ServiceDefaults;
@@ -64,6 +65,13 @@ public abstract class McpToolsIntegrationTestsBase
 		var documentGateway = new DocumentGateway(clientAccessor, NullLogger<DocumentGateway>.Instance);
 		var documentTools = new DocumentTools(documentGateway, NullLogger<DocumentTools>.Instance);
 		return (documentTools, clientAccessor);
+	}
+
+	protected (ApiTools Tools, ElasticsearchClientAccessor ClientAccessor) CreateApiTools()
+	{
+		var clientAccessor = CreateElasticsearchClientAccessor();
+		var apiGateway = new ApiGateway(clientAccessor, NullLogger<ApiGateway>.Instance);
+		return (new ApiTools(new ApiReferenceService(apiGateway), NullLogger<ApiTools>.Instance), clientAccessor);
 	}
 
 	/// <summary>

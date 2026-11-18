@@ -12,3 +12,49 @@
 	padding: 0 var(--space-1);
 	font-size: 0.625rem;
 }
+
+/* An operation that accepts several methods: one pill, the dominant method on the left. The badges join on a slanted edge and each keeps its outline on its outer edges. */
+.method-group {
+	display: inline-flex;
+	align-items: center;
+	border-radius: var(--radius-sm);
+}
+
+.method-group > .method {
+	--method-slant: 0.5em;
+	border-width: var(--border-width) 0;
+	border-radius: 0;
+}
+
+.method-group > .method:first-child {
+	border-left-width: var(--border-width);
+	border-top-left-radius: var(--radius-sm);
+	border-bottom-left-radius: var(--radius-sm);
+}
+
+.method-group > .method:last-child {
+	border-right-width: var(--border-width);
+	border-top-right-radius: var(--radius-sm);
+	border-bottom-right-radius: var(--radius-sm);
+}
+
+.method-group > .method:not(:last-child) {
+	padding-right: calc(var(--space-1) + 0.35em);
+	clip-path: polygon(
+		0 0,
+		100% 0,
+		calc(100% - var(--method-slant)) 100%,
+		0 100%
+	);
+}
+
+.method-group > .method:not(:first-child) {
+	margin-left: calc(2px - var(--method-slant));
+	padding-left: calc(var(--space-1) + 0.35em);
+	border-left-width: 0;
+	border-style: dashed;
+	border-color: var(--color-border);
+	background: transparent;
+	clip-path: polygon(var(--method-slant) 0, 100% 0, 100% 100%, 0 100%);
+	color: var(--color-text-muted);
+}

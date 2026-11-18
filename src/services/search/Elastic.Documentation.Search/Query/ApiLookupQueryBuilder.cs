@@ -15,7 +15,7 @@ namespace Elastic.Documentation.Search;
 /// The query behind the API navigation search. Each word of the query must be explained by one role on an operation:
 /// its endpoint, a word of its operation id, its group, a word of its title, its HTTP method, a field name, or a word of
 /// its description. An HTTP method typed right before a path joins that path's word and only lifts operations with that
-/// method. The best role counts per word and word order does not matter. Every role option is named
+/// method; it is not a word of any title. The best role counts per word and word order does not matter. Every role option is named
 /// <c>&lt;role&gt;_&lt;index&gt;</c> so the result processor can tell, from the named query scores, which role won each word.
 /// </summary>
 public static class ApiLookupQueryBuilder
@@ -23,6 +23,9 @@ public static class ApiLookupQueryBuilder
 	private const string SynonymsAnalyzer = "synonyms_analyzer";
 	private const string FieldHitsPrefix = SearchQueryBuilder.ApiPropertyHits + "_";
 	private const string WholeTitleQueryName = "title_all";
+	private const string TitleNamedQueryName = "title_named";
+	private const string LandingNameQueryName = "landing_name";
+	private const string NotDeprecatedQueryName = "not_deprecated";
 
 	// Up to two words every word must be explained; from three on, most of them.
 	private const string TokensMinimumShouldMatch = "2<75%";
@@ -59,27 +62,54 @@ public static class ApiLookupQueryBuilder
 		if (clauses.Count == 0)
 			return new MatchNoneQuery();
 
-		var typed = query.Trim();
+		var typed = TitleText(query);
 		return new BoolQuery
 		{
 			Must = [new BoolQuery { Should = clauses, MinimumShouldMatch = TokensMinimumShouldMatch }],
+			MustNot = [LandingPageWithoutName(typed)],
 			Should = Lifts(typed, tokens)
 		};
 	}
 
+	/// <summary>
+	/// An API's landing page has no operation to explain a word, so it qualifies only when every typed word names it through
+	/// its title. Otherwise the words of its description would list it for queries about an operation.
+	/// </summary>
+	private static Query LandingPageWithoutName(string typed) => new BoolQuery { Filter = [LandingTerm()], MustNot = [TitleQuery(typed)] };
+
+	private static Query LandingNamed(string typed) => new BoolQuery { Filter = [LandingTerm(), TitleQuery(typed)] };
+
+	private static Query LandingTerm() => new TermQuery { Field = QueryFieldNames.ApiLanding, Value = true };
+
 	/// <summary>The words of every plain word but the one at <paramref name="index"/>, which a field row may name besides it.</summary>
 	private static string[] OtherWords(string[][] tokenWords, int index) => [.. tokenWords.Where((_, i) => i != index).SelectMany(w => w)];
+
+	/// <summary>
+	/// The typed words a title can answer. A method before a path names the verb of the request, so <c>GET /_search</c> asks
+	/// for the route and never for a title that starts with <c>Get</c>.
+	/// </summary>
+	private static string TitleText(string query)
+	{
+		var words = Words(query);
+		return string.Join(' ', words.Where((_, i) => !IsMethodBeforePath(words, i)));
+	}
+
+	private static string[] Words(string query) =>
+		query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+	private static bool IsMethodBeforePath(string[] words, int index) =>
+		index + 1 < words.Length && HttpMethods.Contains(words[index]) && words[index + 1].StartsWith('/');
 
 	/// <summary>A word typed with a trailing dot, as in <c>retriever.</c>, asks for the children of the field it names.</summary>
 	public static bool ExpandsChildren(string query) => Tokenize(query).Any(t => t.ExpandChildren);
 
 	public static IReadOnlyList<ApiLookupToken> Tokenize(string query)
 	{
-		var words = query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var words = Words(query);
 		var tokens = new List<ApiLookupToken>();
 		for (var i = 0; i < words.Length && tokens.Count < MaxTokens; i++)
 		{
-			if (i + 1 < words.Length && HttpMethods.Contains(words[i]) && words[i + 1].StartsWith('/'))
+			if (IsMethodBeforePath(words, i))
 			{
 				tokens.Add(
 					new ApiLookupToken(ApiLookupTokenKind.Path, $"{words[i]} {words[i + 1]}", ExpandChildren: false, Method: words[i])
@@ -121,7 +151,7 @@ public static class ApiLookupQueryBuilder
 		Query?[] options =
 		[
 			key,
-			Constant(OperationWordQuery(token.Text), ApiLookupWeights.OperationWord, ApiLookupRoles.QueryName(ApiLookupRole.Id, index)),
+			OperationWordOption(token.Text, index),
 			Constant(
 				SynonymsMatch(QueryFieldNames.ApiGroup, token.Text),
 				ApiLookupWeights.GroupWord,
@@ -272,13 +302,10 @@ public static class ApiLookupQueryBuilder
 
 	private static List<Query> Lifts(string typed, IReadOnlyList<ApiLookupToken> tokens)
 	{
-		List<Query> lifts =
-		[
-			Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName),
-			new TermQuery { Field = QueryFieldNames.TitleKeyword, Value = typed.ToLowerInvariant() }
-		];
+		List<Query> lifts = [Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName), TitleNamedLift(typed)];
 		if (SearchQueryBuilder.BuildTitleStartsWithQuery(typed) is { } startsWith)
 			lifts.Add(startsWith);
+		lifts.Add(Constant(LandingNamed(typed), ApiLookupWeights.LandingName, LandingNameQueryName));
 		lifts.AddRange(
 			tokens.Where(t => t.Kind == ApiLookupTokenKind.Plain).Select(
 				t => SearchQueryBuilder.BuildListsFieldsUnderTypedPathBoost(t.Text)
@@ -289,14 +316,70 @@ public static class ApiLookupQueryBuilder
 		lifts.AddRange(SearchQueryBuilder.ScoringQueries);
 		// An operation id of fewer words is more specific, so `esql query` prefers `esql-query` over `esql-async-query-stop`.
 		lifts.Add(new RankFeatureQuery { Field = QueryFieldNames.ApiIdWords, Boost = ApiLookupWeights.Specificity });
-		lifts.Add(new TermQuery { Field = QueryFieldNames.ApiDeprecated, Value = false, Boost = ApiLookupWeights.NotDeprecated });
+		// Current operations carry no flag or an explicit false, so the lift tests that the flag is not true.
+		lifts.Add(
+			Constant(
+				new BoolQuery { MustNot = [new TermQuery { Field = QueryFieldNames.ApiDeprecated, Value = true }] },
+				ApiLookupWeights.NotDeprecated,
+				NotDeprecatedQueryName
+			)
+		);
 		return lifts;
 	}
+
+	/// <summary>
+	/// The match takes no analyzer because the field carries its own, and an index without the field then matches nothing
+	/// instead of failing. The exact lowercase title keeps working on such an index.
+	/// </summary>
+	private static Query TitleNamed(string typed) =>
+		new DisMaxQuery
+		{
+			Queries =
+			[
+				new TermQuery { Field = QueryFieldNames.TitleKeyword, Value = typed.ToLowerInvariant() },
+				new MatchQuery { Field = QueryFieldNames.ApiTitleFingerprint, Query = typed }
+			]
+		};
+
+	/// <summary>
+	/// The fingerprint is one token, so the edit distance spans the whole title. The larger of the two applies, so an exact title
+	/// never scores less than before and a typo only lifts what the exact match misses.
+	/// </summary>
+	private static Query TitleNamedLift(string typed) =>
+		new DisMaxQuery
+		{
+			QueryName = TitleNamedQueryName,
+			Queries =
+			[
+				Constant(TitleNamed(typed), ApiLookupWeights.TitleNamed),
+				Constant(SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.ApiTitleFingerprint, typed), ApiLookupWeights.TitleNamedTypo)
+			]
+		};
 
 	private static Query MethodLift(string method) =>
 		new TermQuery { Field = QueryFieldNames.ApiMethod, Value = method.ToUpperInvariant(), Boost = ApiLookupWeights.Method };
 
-	private static Query OperationWordQuery(string text) => BoolPrefix(text, OperationWordFields);
+	/// <summary>
+	/// A word of the operation id typed whole, as its beginning, or one edit away. The three options share the role name. The
+	/// beginning scores below the whole word because stemming makes <c>stats</c> the beginning of <c>state</c>, and a word too
+	/// short for an edit has no typo option.
+	/// </summary>
+	private static Query OperationWordOption(string text, int index)
+	{
+		List<Query> options =
+		[
+			Constant(SynonymsMatch(QueryFieldNames.ApiWords, text), ApiLookupWeights.OperationWord),
+			Constant(BoolPrefix(text, OperationWordFields), ApiLookupWeights.OperationWordPrefix)
+		];
+		if (text.Length >= SearchQueryBuilder.FuzzyMinimumLength)
+			options.Add(
+				Constant(
+					SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.ApiWords, text, SynonymsAnalyzer),
+					ApiLookupWeights.OperationWordTypo
+				)
+			);
+		return new DisMaxQuery { QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Id, index), Queries = options };
+	}
 
 	private static Query TitleQuery(string text) => BoolPrefix(text, TitleCompletionFields);
 
@@ -313,6 +396,6 @@ public static class ApiLookupQueryBuilder
 	private static Query SynonymsMatch(Field field, string text) =>
 		new MatchQuery { Field = field, Query = text, Analyzer = SynonymsAnalyzer };
 
-	private static Query Constant(Query filter, float boost, string name) =>
+	private static Query Constant(Query filter, float boost, string? name = null) =>
 		new ConstantScoreQuery { Filter = filter, Boost = boost, QueryName = name };
 }

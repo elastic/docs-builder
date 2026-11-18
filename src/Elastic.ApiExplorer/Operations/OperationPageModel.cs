@@ -33,6 +33,7 @@ public partial record OperationPageModel
 
 	/// <summary>The parameter sections the page lists, in page order; a location with no parameters has none.</summary>
 	public IReadOnlyList<ParameterListSection> ParameterSections =>
+		field ??=
 		[
 			.. new[]
 			{
@@ -72,7 +73,7 @@ public partial record OperationPageModel
 				: SummaryStyle.List;
 
 	public IReadOnlyList<string> RequestPropertyNames =>
-		NamesOf(
+		field ??= NamesOf(
 			RequestProperties is not null
 				? RequestProperties.Items.Select(static p => p.Name)
 				: ApiBodyContent.VariantNames(RequestUnionVariants)

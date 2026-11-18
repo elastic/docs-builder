@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.Comments;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -15,17 +16,21 @@ namespace Elastic.Markdown.Myst.InlineParsers;
 
 public static class AutoLinkBuilderExtensions
 {
-	public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline)
+	public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline) => pipeline.UseAutoLinks(checkApiLinks: true);
+
+	/// <summary><paramref name="checkApiLinks"/> is off for text that is not authored in docs, such as changelog entries.</summary>
+	public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline, bool checkApiLinks)
 	{
-		pipeline.Extensions.AddIfNotAlready<AutoLinkBuilderExtension>();
+		if (pipeline.Extensions.Find<AutoLinkBuilderExtension>() is null)
+			pipeline.Extensions.Add(new AutoLinkBuilderExtension(checkApiLinks));
 		return pipeline;
 	}
 }
 
-public class AutoLinkBuilderExtension : IMarkdownExtension
+public class AutoLinkBuilderExtension(bool checkApiLinks) : IMarkdownExtension
 {
 	public void Setup(MarkdownPipelineBuilder pipeline) =>
-		pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AutoLinkInlineParser());
+		pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AutoLinkInlineParser(checkApiLinks));
 
 	public void Setup(MarkdownPipeline pipeline, Markdig.Renderers.IMarkdownRenderer renderer)
 	{
@@ -43,7 +48,13 @@ public class AutoLinkInlineParser : InlineParser
 	// Domains that should never be autolinked (example/placeholder domains)
 	private static readonly string[] ExcludedDomains = ["localhost", "127.0.0.1", "example.com", "example.org", "example.net"];
 
-	public AutoLinkInlineParser() => OpeningCharacters = ['h'];
+	public bool CheckApiLinks { get; }
+
+	public AutoLinkInlineParser(bool checkApiLinks = true)
+	{
+		OpeningCharacters = ['h'];
+		CheckApiLinks = checkApiLinks;
+	}
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
@@ -85,6 +96,9 @@ public class AutoLinkInlineParser : InlineParser
 		linkInline.SetData("isCrossLink", false);
 
 		processor.Inline = linkInline;
+
+		if (CheckApiLinks && processor.Block is not CommentBlock)
+			DiagnosticLinkInlineParser.CheckApiLink(context, url, line, column);
 
 		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
 		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))

@@ -131,6 +131,16 @@ Requires JetBrains AI Assistant plugin version 2025.2 or later.
 | `get_document_by_url` | Retrieves a specific Elastic documentation page by its URL. Accepts a full URL or a path. Returns title, AI summaries, headings, navigation context, and optionally the full body. |
 | `analyze_document_structure` | Analyzes the structure of an Elastic documentation page. Accepts a full URL or a path. Returns heading count, link count, parent pages, and AI enrichment status. |
 
+### API reference tools
+
+These tools read the REST API reference pages that API Explorer publishes. Each API has a key, such as `elasticsearch`, `kibana` or `logstash`, and a version: `main` or a major such as `9`. Without a version, the tools read the API's current version.
+
+| Tool | Description |
+|------|-------------|
+| `search_api_operations` | Searches API operations by task, endpoint (for example `GET /_cluster/health`), or request and response field name. End a field name with a dot, such as `retriever.`, to list its child fields. Supports filtering by API key and version, and leaves out deprecated operations unless asked. |
+| `get_api_operation` | Retrieves one operation by its operation id or by an endpoint, such as `GET /my-index/_search`. Returns its routes, versions, every documented parameter and request and response field, and optionally the page body. |
+| `list_api_operations` | Without an API key, lists every API with its key and versions. With a key, lists the API's operations by group. A large API returns its group names first, and you then pass `group` to list one group's operations. |
+
 ### Coherence tools
 
 | Tool | Description |

@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Mcp.Remote.Tests;
 
@@ -23,7 +24,7 @@ internal static partial class SseScrubbers
 		Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
 	};
 
-	[GeneratedRegex(@"^> data: (?<json>.*)$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^> data: (?<json>.*)$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex DataLine();
 
 	public static string PrettyPrintDataLines(string text) =>

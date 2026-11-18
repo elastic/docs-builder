@@ -62,7 +62,10 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 
-		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { Output = output, Git = gitConfiguration, });
+		var docFs = DocumentationFileSystem.Resolve(
+			path,
+			new DocumentationScopeOptions { Output = output, Git = gitConfiguration, Inner = context.ReadFileSystem.InnerFileSystem }
+		);
 		var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 		{
 			AvailableExporters = availableExporters,
@@ -82,6 +85,8 @@ public record AssemblerDocumentationSet
 				"https://www.elastic.co"
 			), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 			BuildType = BuildType.Assembler,
+			EnvironmentName = env.Name,
+			PublicBaseUrl = Uri.TryCreate(env.Uri, UriKind.Absolute, out var publicUri) ? publicUri : null,
 			ContentSource = env.ContentSource
 		};
 		BuildContext = buildContext;

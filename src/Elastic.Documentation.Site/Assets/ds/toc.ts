@@ -63,7 +63,9 @@ export function initToc(scope: ParentNode = document) {
                         if (heading) active = chosen?.link ?? link
                     }
                 }
-                active ??= targets[0]?.link ?? null
+                // A sticky bar can be on screen above every section, so until one reaches the line none is current.
+                if (!toc.hasAttribute('data-toc-sticky'))
+                    active ??= targets[0]?.link ?? null
                 for (const { link } of targets) {
                     if (link === active) {
                         link.setAttribute('aria-current', 'location')

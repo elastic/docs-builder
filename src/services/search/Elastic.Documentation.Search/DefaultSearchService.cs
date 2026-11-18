@@ -41,6 +41,8 @@ public partial class DefaultSearchService<TDocument>(
 		"description",
 		"parents",
 		"headings",
+		// picks a landing row's icon
+		"product",
 		// every required member of ApiOperationMetadata, or the hit fails to deserialize; properties arrive as inner hits
 		"api.endpoints",
 		"api.method",
@@ -51,7 +53,9 @@ public partial class DefaultSearchService<TDocument>(
 		"api.key",
 		"api.trees",
 		// optional, so the required-member test cannot catch its absence; without it every hit reads as current
-		"api.deprecated"
+		"api.deprecated",
+		// optional too; without it a landing page reads as an operation and loses its row
+		"api.landing"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
@@ -75,10 +79,10 @@ public partial class DefaultSearchService<TDocument>(
 	private static readonly Regex ExcludeFromHighlightRegex = BuildExcludeFromHighlightRegex();
 
 	[GeneratedRegex(@"^(how|why|what|when|where|can|should|is it|do i|does|will|would|could)", RegexOptions.IgnoreCase
-		| RegexOptions.Compiled)]
+		| RegexOptions.Compiled, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildSemanticKeywordsRegex();
 
-	[GeneratedRegex(@"^(how|why|what|when|where|can|should|is|it|do|i|does|will|would|could)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^(how|why|what|when|where|can|should|is|it|do|i|does|will|would|could)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildExcludeFromHighlightRegex();
 
 	private static readonly HighlightOptions FullPageHighlightOptions = new()

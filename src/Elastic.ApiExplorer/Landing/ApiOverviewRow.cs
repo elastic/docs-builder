@@ -174,9 +174,9 @@ public static class ApiOverviewBuilder
 						SchemaId = schemaItem.Model.SchemaId
 					});
 					break;
-				// The landing page lists topics in its own block, so the Topics heading adds no row.
-				case TopicsNavigationItem topics:
-					AddProductRows(topics, rows, versionsConfig, designSystem);
+				// The landing page lists topics in its own block, and Operations only labels the endpoint groups, so neither heading adds a row.
+				case TopicsNavigationItem or OperationsNavigationItem:
+					AddProductRows(navigationItem, rows, versionsConfig, designSystem);
 					break;
 				case TopicNavigationItem or SimpleMarkdownNavigationItem or StructuralNavigationItem:
 					rows.Add(new ApiOverviewRow
@@ -186,7 +186,6 @@ public static class ApiOverviewBuilder
 						Url = navigationItem.Url
 					});
 					break;
-				case ISidebarSeparatorNavigationItem:
 				case IntroHeadingNavigationItem:
 					break;
 				default:
@@ -229,7 +228,7 @@ public static class ApiOverviewBuilder
 		{
 			Kind = OverviewRowKind.Operation,
 			Title = operation.NavigationTitle,
-			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
+			Endpoint = operation.Endpoint,
 			Url = operation.Url,
 			Availability = AvailabilityBadge.FromOperation(
 				operation.Model.Operation,

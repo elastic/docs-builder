@@ -296,13 +296,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 		var navigation = generator.CreateNavigation("elasticsearch/v8", SpecDocument("Elasticsearch 8"));
 
 		navigation.Url.Should().Be("/api/doc/elasticsearch/v8");
-		var operation = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<OperationNavigationItem>()
-			.Single();
+		var operation = navigation.Tags().Single().NavigationItems.OfType<OperationNavigationItem>().Single();
 		operation.Url.Should().Be("/api/doc/elasticsearch/v8/operation/operation-ping");
 	}
 
@@ -370,7 +364,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
 
-		NavigationTreePrinter.Print(root, maxDepth: 3).Should().MatchSnapshot();
+		NavigationTreePrinter.Print(root, maxDepth: 4).Should().MatchSnapshot();
 	}
 
 	[Test]

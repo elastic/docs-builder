@@ -1,0 +1,150 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": {
+        "feature": {
+          "Labels": ">feature",
+          "Subtypes": null
+        },
+        "bug-fix": {
+          "Labels": ">bug",
+          "Subtypes": null
+        },
+        "breaking-change": {
+          "Labels": ">breaking",
+          "Subtypes": {
+            "api": ">api"
+          }
+        }
+      },
+      "Subtypes": null,
+      "Areas": {
+        "Search": ":Search"
+      },
+      "Products": {
+        "elasticsearch": ":es",
+        "kibana": ":kb"
+      },
+      "Features": {
+        "feature:x": "flag:x"
+      },
+      "Highlight": ">highlight"
+    },
+    "RequiredPivots": "Areas",
+    "Types": [
+      "feature",
+      "bug-fix",
+      "breaking-change"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Ga"
+    ],
+    "Areas": [
+      "Search"
+    ],
+    "Products": [
+      "elasticsearch",
+      "kibana",
+      "security"
+    ],
+    "LabelToType": {
+      ">feature": "feature",
+      ">bug": "bug-fix",
+      ">breaking": "breaking-change"
+    },
+    "LabelToAreas": {
+      ":Search": [
+        "Search"
+      ]
+    },
+    "LabelToProducts": {
+      ":es": "elasticsearch",
+      ":kb": "kibana"
+    },
+    "LabelToFeatures": {
+      "flag:x": "feature:x"
+    },
+    "Rules": {
+      "Match": "Any",
+      "Create": {
+        "Labels": [
+          ">test"
+        ],
+        "Mode": "Exclude",
+        "Match": "Any",
+        "ByProduct": null
+      },
+      "Bundle": null,
+      "Publish": null
+    },
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": true
+    },
+    "ProductsConfiguration": {
+      "Available": [
+        "elasticsearch",
+        "kibana",
+        "security"
+      ],
+      "Default": [
+        {
+          "Product": "elasticsearch",
+          "Lifecycle": "ga"
+        }
+      ],
+      "Implies": null
+    },
+    "Filename": "Pr",
+    "Bundle": {
+      "Directory": "docs/changelog",
+      "OutputDirectory": null,
+      "UseLocalChangelogs": false,
+      "Description": null,
+      "Repo": null,
+      "Owner": null,
+      "Branch": null,
+      "LinkAllowRepos": null,
+      "ReleaseDates": null,
+      "Backports": null,
+      "Profiles": {
+        "es": {
+          "Product": "elasticsearch",
+          "Products": null,
+          "Output": null,
+          "OutputDirectory": null,
+          "OutputProducts": null,
+          "Description": null,
+          "Repo": null,
+          "Owner": null,
+          "Branch": null,
+          "HideFeatures": null,
+          "ReleaseDates": null,
+          "Source": null
+        }
+      },
+      "Releases": {
+        "Github": {
+          "v9.*": "es"
+        },
+        "Products": null
+      }
+    },
+    "HighlightLabels": [
+      ">highlight"
+    ]
+  },
+  "diagnostics": []
+}

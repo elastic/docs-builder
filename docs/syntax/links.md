@@ -113,6 +113,16 @@ Link to websites and resources outside the Elastic docs:
 
 External links display an arrow indicator next to the link text.
 
+### Links to API reference pages
+
+Prefer an [API cross-link](../data/openapi/api-explorer.md#api-cross-links) to an API page, because the build fails when the page is missing. A hard-coded `https://www.elastic.co/docs/api/doc/...` link still works, and the build shows a hint when it points at a page that no longer exists in the API pages of the link index. The hint doesn't fail a `--strict` build, and you can silence it with `ApiLinkMissingPage` under [`suppress`](../documentation/isolated/configure/index.md#suppress). It covers inline links, bare URLs, directive links, `redirects.yml` targets and the links between API pages in OpenAPI descriptions, which you fix in the spec.
+
+```markdown
+[Search API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search)
+```
+
+If an endpoint no longer exists in the current API docs, point the link at the versioned tree that still has it, for example `https://www.elastic.co/docs/api/doc/kibana/v8/...`. Only the page is checked, not the `#anchor`, and `<...>` autolinks are not checked. An API the link index holds no pages for is not checked. Old bump.sh URLs are checked at the page the edge redirects them to.
+
 ### Linked images
 
 Wrap an image in a link to make the image itself clickable. Combine the image syntax with the link syntax:

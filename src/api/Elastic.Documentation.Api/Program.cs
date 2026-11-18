@@ -6,6 +6,7 @@ using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
@@ -54,14 +55,17 @@ try
 
 	_ = app.Environment.IsDevelopment()
 		? app.UseDeveloperExceptionPage()
-		: app.UseExceptionHandler(err => err.Run(context =>
+		: app.UseExceptionHandler(new ExceptionHandlerOptions
 		{
-			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-			if (ex != null)
-				logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-			context.Response.StatusCode = 500;
-			return Task.CompletedTask;
-		}));
+			// No handler: with AddProblemDetails the middleware writes the problem, typed by ApiProblems.Customize.
+			StatusCodeSelector = ApiProblems.StatusCodeFor,
+			// A parameter that does not bind is the client's mistake, not an error worth logging.
+			SuppressDiagnosticsCallback = context => context.Exception is BadHttpRequestException
+		});
+
+	// Some binding failures, such as a number that does not parse, end in an empty 400 instead of throwing;
+	// with AddProblemDetails, status code pages give every bodyless error a problem body like the rest.
+	_ = app.UseStatusCodePages();
 
 	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 
@@ -71,6 +75,7 @@ try
 	var v1 = api.MapGroup("/v1");
 
 	v1.MapElasticDocsApiEndpoints();
+	_ = v1.MapOpenApi("/openapi.json");
 	Console.WriteLine("API endpoints mapped");
 
 	Console.WriteLine("Application startup completed successfully");

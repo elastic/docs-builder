@@ -1,0 +1,38 @@
+# The docs version picker is visible on a versioned page, opens, and sits where the layout puts it on a phone.
+# The legacy layout renders <version-dropdown data-testid="docs-version-dropdown"> in the right rail; the Design System
+# layout (navigation-preview) renders a native <details class="link-menu"> at the top of the pages navigation, and
+# renders nothing on a page that has no other versions to offer, so this opens a page that has them.
+# Ported from synthetics/journeys/version-dropdown.journey.ts.
+# @tags versions smoke
+# @requires build-type:assembler
+# @monitor schedule=15
+set viewport 1280 800
+open get-started
+wait --load networkidle
+expect visible find role heading --name "Elastic fundamentals"
+
+# Desktop: the picker is visible and opens.
+feature navigation-preview
+  expect visible "#pages-nav .layout__version .link-menu__trigger"
+  expect --not attr "#pages-nav .layout__version details" open
+  click "#pages-nav .layout__version .link-menu__trigger"
+  expect attr "#pages-nav .layout__version details" open
+  expect visible "#pages-nav .layout__version .link-menu__item"
+end
+feature !navigation-preview
+  expect visible "[data-testid='docs-version-dropdown']"
+  click "[data-testid='docs-version-dropdown'] button"
+  expect attr "[data-testid='docs-version-dropdown'] button" aria-expanded true
+  expect text "[data-testid='docs-version-dropdown']" Current --contains
+  press Escape
+end
+
+# Phone: the picker is visible in the container the layout puts it in.
+set viewport 375 800
+feature navigation-preview
+  click "label[for='pages-nav-hamburger']"
+  expect visible "#pages-nav .layout__version"
+end
+feature !navigation-preview
+  expect visible "#toc-nav [data-testid='docs-version-dropdown']"
+end

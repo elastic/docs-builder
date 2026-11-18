@@ -248,21 +248,31 @@ public partial class ConfigurationFileProvider : IDisposable
 				reindenting = -1;
 			}
 
-			if (spacing != -1 && Regex.IsMatch(line, $@"^\s{{{spacing}}}\S"))
+			if (spacing != -1 && Regex.IsMatch(line, $@"^\s{{{spacing}}}\S", RegexOptions.None, RegexTimeouts.MatchTimeout))
 			{
 				spacing = -1;
 				reindenting = -1;
 			}
-			else if (spacing != -1 && Regex.IsMatch(line, $@"^(\s{{{spacing + 3},}})\S"))
+			else if (spacing != -1 && Regex.IsMatch(line, $@"^(\s{{{spacing + 3},}})\S", RegexOptions.None, RegexTimeouts.MatchTimeout))
 			{
-				var matches = Regex.Match(line, $@"^(?<spacing>\s{{{spacing}}})(?<remainder>.+)$");
+				var matches = Regex.Match(
+					line,
+					$@"^(?<spacing>\s{{{spacing}}})(?<remainder>.+)$",
+					RegexOptions.None,
+					RegexTimeouts.MatchTimeout
+				);
 				line = $"{new string(' ', Math.Max(0, spacing - 4))}{matches.Groups["remainder"].Value}";
 				reindenting = spacing;
 			}
 
 			if (spacing == -1 && TocPrefixRegex().IsMatch(line))
 			{
-				var matches = Regex.Match(line, $@"^(?<spacing>\s+)-\s?toc:\s?(?:{targets})\:");
+				var matches = Regex.Match(
+					line,
+					$@"^(?<spacing>\s+)-\s?toc:\s?(?:{targets})\:",
+					RegexOptions.None,
+					RegexTimeouts.MatchTimeout
+				);
 				if (matches.Success)
 					spacing = matches.Groups["spacing"].Value.Length;
 				if (spacing == 0)
@@ -427,7 +437,7 @@ public partial class ConfigurationFileProvider : IDisposable
 	private static string GetLocalPath(string file) => Path.Join(LocalConfigurationDirectory, file);
 	private static string GetAppDataPath(string file) => Path.Join(AppDataConfigurationDirectory, file);
 
-	[GeneratedRegex(@"^\s+-?\s?toc:\s?")]
+	[GeneratedRegex(@"^\s+-?\s?toc:\s?", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TocPrefixRegex();
 }
 

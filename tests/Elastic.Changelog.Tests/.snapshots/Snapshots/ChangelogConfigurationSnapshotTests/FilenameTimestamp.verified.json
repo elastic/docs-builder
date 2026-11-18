@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml filename: 'timestamp' is no longer supported. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'."
+  ]
+}

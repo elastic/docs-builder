@@ -3,7 +3,7 @@ import { ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR } from '../../telemetry/semconv'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearchWrapper } from './NavigationSearchComponent'
 import { navigationSearchStore } from './navigationSearch.store'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('../../telemetry/logging', async () =>
@@ -278,6 +278,137 @@ describe('NavigationSearchWrapper result navigation', () => {
 
         await userEvent.click(input)
         await waitFor(() => expect(row).toBeVisible())
+    })
+})
+
+describe('NavigationSearchWrapper while htmx loads the result', () => {
+    const operationUrl =
+        '/docs/api/doc/elasticsearch/operation/operation-search'
+
+    beforeEach(() => {
+        sharedQueryClient.clear()
+        navigationSearchStore.getState().actions.clearSearchTerm()
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: operationUrl,
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                    },
+                    {
+                        type: 'api',
+                        url: `${operationUrl}-other`,
+                        title: 'Delete a document',
+                        description: 'Removes a document',
+                        score: 4,
+                        parents: [],
+                    },
+                ],
+            }),
+        })
+    })
+
+    const htmxEvent = (elt: Element, name: string) =>
+        elt.dispatchEvent(
+            new CustomEvent(name, { bubbles: true, detail: { elt } })
+        )
+
+    // htmx listens on the boosted link itself, so its request is sent before React's delegated onClick runs.
+    const openBoostedResult = async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText('Explore APIs')
+        await userEvent.type(input, 'search')
+        const row = await screen.findByRole('link', { name: /Search/ })
+        row.addEventListener('click', (event) => {
+            event.preventDefault()
+            htmxEvent(row, 'htmx:beforeSend')
+        })
+        const aborted = vi.fn()
+        row.addEventListener('htmx:abort', aborted)
+        await waitFor(() => expect(row).toBeVisible())
+        const endRequest = () =>
+            act(() => {
+                htmxEvent(row, 'htmx:afterRequest')
+            })
+        return { input, row, aborted, endRequest }
+    }
+
+    const closeReasons = () =>
+        vi
+            .mocked(logInfo)
+            .mock.calls.filter(([name]) => name === 'navigation_search_closed')
+            .map(([, attrs]) => attrs?.['navigation_search.close_reason'])
+
+    it('stays open with a spinner until the request ends, then closes', async () => {
+        const { input, row, endRequest } = await openBoostedResult()
+        vi.mocked(logInfo).mockClear()
+
+        await userEvent.click(row)
+
+        expect(row).toBeVisible()
+        expect(input).toHaveFocus()
+        expect(screen.getByRole('progressbar')).toBeInTheDocument()
+        expect(closeReasons()).toEqual([])
+
+        endRequest()
+
+        await waitFor(() => expect(row).not.toBeVisible())
+        expect(input).not.toHaveFocus()
+        expect(closeReasons()).toEqual(['navigate'])
+    })
+
+    it('stays open until the request ends when Enter opens the result', async () => {
+        const { row, endRequest } = await openBoostedResult()
+
+        await userEvent.keyboard('{Enter}')
+        expect(row).toBeVisible()
+
+        endRequest()
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it('rejects another result while one is loading', async () => {
+        const { row } = await openBoostedResult()
+        await userEvent.click(row)
+        const other = screen.getByRole('link', { name: /Delete a document/ })
+
+        const second = new CustomEvent('htmx:beforeRequest', {
+            bubbles: true,
+            cancelable: true,
+            detail: { elt: other },
+        })
+        other.dispatchEvent(second)
+
+        expect(second.defaultPrevented).toBe(true)
+    })
+
+    it('aborts the request and closes on Escape', async () => {
+        const { row, aborted } = await openBoostedResult()
+        await userEvent.click(row)
+
+        await userEvent.keyboard('{Escape}')
+
+        expect(aborted).toHaveBeenCalledTimes(1)
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it('aborts the request and keeps the results open when typing', async () => {
+        const { input, row, aborted, endRequest } = await openBoostedResult()
+        await userEvent.click(row)
+
+        await userEvent.type(input, 'x')
+        endRequest()
+
+        expect(aborted).toHaveBeenCalledTimes(1)
+        expect(input).toHaveFocus()
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
     })
 })
 

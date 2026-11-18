@@ -50,5 +50,6 @@ public static class DocumentationMappingExtensions
 				"api.group",
 				f => f.Text().Analyzer(SharedMappingConfig.SynonymsFixedAnalyzer).SearchAnalyzer(SharedMappingConfig.SynonymsAnalyzer)
 			)
-			.AddProperty("api.id_words", f => f.RankFeature().PositiveScoreImpact(false));
+			.AddProperty("api.id_words", f => f.RankFeature().PositiveScoreImpact(false))
+			.AddProperty("api.title_fingerprint", f => f.Text().Analyzer(SharedMappingConfig.TitleFingerprintAnalyzer));
 }

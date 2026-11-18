@@ -48,14 +48,19 @@ public class ApiLanding : IApiGroupingModel
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		return Task.FromResult<string?>(
-			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)
+			LandingCommonMark.Product(
+				context.Model.Info,
+				overviewRows,
+				context.CurrentNavigation.NavigationRoot.Url,
+				ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems)
+			)
 		);
 	}
 
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
-public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>
+public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>, ISidebarWithoutRootIndexNavigationItem
 {
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }

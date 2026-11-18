@@ -22,45 +22,38 @@ For changelogs that don't need a PR link (for example, known issues or security 
   Refer to [Fetch failures](#fetch-failures).
 
 : `--use-pr-number`
-  Use PR numbers for filenames instead of the configured `filename` strategy.
-  Requires `--prs`, `--issues`, or `--report`. Mutually exclusive with `--use-issue-number`.
+  Use PR numbers for filenames. This is also the default `filename` strategy.
+  Requires `--prs`, `--issues`, or `--report`.
   Refer to [Filenames](#filenames).
 
 : `--use-issue-number`
-  Use issue numbers for filenames instead of the configured `filename` strategy.
-  Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
-  Refer to [Filenames](#filenames).
+  No longer supported. The command stops with an error. Changelog entries are keyed by PR number; for items with no PR use `changelog note`.
 
 ## Filenames
 
-By default, output files are named according to the `filename` strategy in `changelog.yml`:
+Output files are named according to the `filename` strategy in `changelog.yml`. `pr` is the only supported value:
 
 | Strategy | Example filename | Description |
 |---|---|---|
-| `timestamp` (default) | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
-| `pr` | `137431.yaml` | Uses the PR number. |
-| `issue` | `2571.yaml` | Uses the issue number. |
+| `pr` (default) | `137431.yaml` | Uses the PR number. |
+
+`timestamp` and `issue` are no longer supported: the configuration fails to load with either value. Changelog entries are keyed by PR number. For items with no PR, use [`changelog note`](/cli/changelog/note.md).
 
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/data/release-notes/configure-ref.md).
 
-You can override those settings with the `--use-pr-number` or `--use-issue-number` flags:
+You can pass the `--use-pr-number` flag explicitly:
 
 ```sh
 docs-builder changelog add \
   --prs 1234 \
   --products "elasticsearch ga" \
   --use-pr-number
-
-docs-builder changelog add \
-  --issues 4567 \
-  --products "elasticsearch" \
-  --use-issue-number
 ```
 
 :::{important}
-`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. `--use-pr-number` requires `--prs`, `--issues`, or `--report`. `--use-issue-number` requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
+`--use-pr-number` requires `--prs`, `--issues`, or `--report`. `--use-issue-number` is no longer supported: the command stops with an error. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
 
-**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
+**Precedence**: `--use-pr-number` > `filename` in `changelog.yml` > default (`pr`).
 :::
 
 ## Product format and resolution

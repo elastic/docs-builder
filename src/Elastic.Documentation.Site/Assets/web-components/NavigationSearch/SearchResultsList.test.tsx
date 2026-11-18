@@ -17,7 +17,7 @@ vi.mock('../../telemetry/logging', async () =>
 )
 
 describe('navigationSearchBreadcrumbs', () => {
-    it('uses API plus the product label, not the product key', () => {
+    it('leads with the product label, not the product key', () => {
         expect(
             navigationSearchBreadcrumbs(
                 [
@@ -27,7 +27,7 @@ describe('navigationSearchBreadcrumbs', () => {
                 'api',
                 'assembler'
             )
-        ).toEqual(['API', 'Elasticsearch API'])
+        ).toEqual(['Elasticsearch API'])
     })
 
     it('keeps an already labelled product crumb', () => {
@@ -43,7 +43,7 @@ describe('navigationSearchBreadcrumbs', () => {
                 'api',
                 'assembler'
             )
-        ).toEqual(['API', 'Kibana API'])
+        ).toEqual(['Kibana API'])
     })
 
     it('keeps the group crumb after the product as written', () => {
@@ -63,11 +63,7 @@ describe('navigationSearchBreadcrumbs', () => {
                 'api',
                 'assembler'
             )
-        ).toEqual([
-            'API',
-            'Elasticsearch API',
-            'Machine learning anomaly detection',
-        ])
+        ).toEqual(['Elasticsearch API', 'Machine learning anomaly detection'])
     })
 
     it('returns only API when the product crumb is missing', () => {
@@ -195,8 +191,7 @@ describe('property rows', () => {
         })
         const lines = container.querySelectorAll('.route-line')
         expect(lines).toHaveLength(1)
-        expect(lines[0]).toHaveTextContent('POST')
-        expect(lines[0]).not.toHaveTextContent('GET')
+        expect(lines[0]).toHaveTextContent('POSTGET')
         expect(lines[0]).toHaveTextContent('/{index}/_search')
         expect(lines[0].querySelector('mark')).toHaveTextContent('search')
         expect(screen.queryByText('Returns search hits')).toBeNull()
@@ -215,7 +210,7 @@ describe('property rows', () => {
             groups: groupSearchResults([withRoutes]),
         })
         expect(container.querySelector('.route-line')).toHaveTextContent(
-            'POST/_search'
+            'POSTGET/_search'
         )
     })
 
@@ -368,5 +363,126 @@ describe('row tooltips', () => {
         showResults(groupSearchResults([page]))
 
         expect(destroy).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('API landing rows', () => {
+    const landing: SearchResultItem = {
+        type: 'api',
+        url: '/docs/api/doc/kibana',
+        title: 'Kibana API',
+        description: 'Manage Kibana saved objects, alerts and more',
+        score: 60,
+        parents: [{ url: '/docs/api', title: 'API' }],
+        landing: true,
+        apiKey: 'kibana',
+        product: 'kibana',
+    }
+
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('kibana api')
+    })
+
+    it("shows the API's mark, title and description in place of a breadcrumb", () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(
+            container.querySelector('[data-api-icon="kibana"] svg')
+        ).not.toBeNull()
+        expect(container.querySelector('.title-text')).toHaveTextContent(
+            'Kibana API'
+        )
+        expect(container).toHaveTextContent(
+            'Manage Kibana saved objects, alerts and more'
+        )
+        expect(container).not.toHaveTextContent('API /')
+    })
+
+    it('names the Enter action after the API', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([landing]),
+        })
+
+        expect(container.querySelector('.jump-to-indicator')).toHaveTextContent(
+            'Go to API'
+        )
+    })
+
+    it('gives a serverless product the mark of its stack product', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, product: 'serverless-kibana' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon] svg')).not.toBeNull()
+    })
+
+    it('shows no mark for an API without one', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...landing, apiKey: 'unknown', product: 'unknown' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon]')).toBeNull()
+    })
+})
+
+describe('API operation rows', () => {
+    const create: SearchResultItem = {
+        type: 'api',
+        url: '/docs/api/doc/elasticsearch/operation/operation-indices-create',
+        title: 'Create an index',
+        description: 'Creates a new index',
+        score: 10,
+        parents: [
+            { url: '/docs/api', title: 'API' },
+            { url: '/docs/api/doc/elasticsearch', title: 'elasticsearch' },
+            {
+                url: '/docs/api/doc/elasticsearch/group/endpoint-indices',
+                title: 'Index',
+            },
+        ],
+        apiKey: 'elasticsearch',
+        product: 'elasticsearch',
+    }
+
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('create index')
+    })
+
+    it("leads the breadcrumb with the API's mark and name", () => {
+        const { container } = renderList({
+            groups: groupSearchResults([create]),
+        })
+
+        const mark = container.querySelector('[data-api-icon="elasticsearch"]')
+        expect(mark?.querySelector('svg')).not.toBeNull()
+        expect(mark?.parentElement).toHaveTextContent('Elasticsearch API')
+        expect(container).toHaveTextContent('Elasticsearch API / Index')
+        expect(container).not.toHaveTextContent('API / Elasticsearch')
+    })
+
+    it('shows the name alone for an API without a mark', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([
+                { ...create, apiKey: 'unknown', product: 'unknown' },
+            ]),
+        })
+
+        expect(container.querySelector('[data-api-icon]')).toBeNull()
+        expect(container).toHaveTextContent('Elasticsearch API / Index')
+    })
+
+    it('keeps docs breadcrumbs free of marks outside the API tab', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([create]),
+            typeFilter: 'all',
+        })
+
+        expect(container.querySelector('[data-api-icon]')).toBeNull()
     })
 })

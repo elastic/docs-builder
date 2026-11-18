@@ -1,0 +1,96 @@
+{
+  "fromFolder": {
+    "warnings": [
+      "Failed to parse changelog bundle 'broken.yaml': (Lin: 0, Col: 11, Chr: 11) - (Lin: 0, Col: 19, Chr: 19): Expected a StartMapping token but found 'Scalar'."
+    ],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/fine.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Fine"
+        ],
+        "entries": [
+          "Feature: Fine prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [
+      "Failed to parse changelog bundle 'broken.yaml': (Lin: 0, Col: 11, Chr: 11) - (Lin: 0, Col: 19, Chr: 19): Expected a StartMapping token but found 'Scalar'."
+    ],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "fine.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Fine"
+        ],
+        "entries": [
+          "Feature: Fine prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/fine.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Fine"
+        ],
+        "entries": [
+          "Feature: Fine prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

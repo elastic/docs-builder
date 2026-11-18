@@ -122,6 +122,39 @@ public class AssembleSources
 		return sources;
 	}
 
+	/// <summary>
+	/// The sources of an assembled build from cross links the caller already has: no link index and no release notes are
+	/// fetched. A seam for tests that assemble a site offline; <see cref="AssembleAsync"/> remains the build's entry point.
+	/// </summary>
+	internal static async Task<AssembleSources> AssembleOfflineAsync(
+		ILoggerFactory logFactory,
+		AssembleContext context,
+		Checkout[] checkouts,
+		IConfigurationContext configurationContext,
+		IReadOnlySet<Exporter> availableExporters,
+		FetchedCrossLinks crossLinks,
+		Cancel ctx
+	)
+	{
+		var navigationTocMappings = GetTocMappings(context);
+		var uriResolver = new PublishEnvironmentUriResolver(navigationTocMappings, context.Environment);
+		var sources = new AssembleSources(
+			logFactory,
+			context,
+			checkouts,
+			configurationContext,
+			navigationTocMappings,
+			configurationContext.LegacyUrlMappings,
+			uriResolver,
+			new CrossLinkResolver(crossLinks, uriResolver),
+			new ReleaseNotesResolver(),
+			availableExporters
+		);
+		foreach (var (_, set) in sources.AssembleSets)
+			await set.DocumentationSet.ResolveDirectoryTree(ctx);
+		return sources;
+	}
+
 	internal static AssembleSources ForTests(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) =>
 		new(context, assembleSets);
 
@@ -129,7 +162,7 @@ public class AssembleSources
 	{
 		AssembleContext = context;
 		AssembleSets = assembleSets;
-		NavigationTocMappings = FrozenDictionary<Uri, NavigationTocMapping>.Empty;
+		NavigationTocMappings = [];
 		LegacyUrlMappings = context.LegacyUrlMappings;
 		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, context.Environment);
 		CrossLinkResolver = NoopCrossLinkResolver.Instance;

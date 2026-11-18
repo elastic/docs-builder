@@ -1,0 +1,11 @@
+# The Elastic global navigation script loads and renders its header on a published docs site.
+# Ported from the second step of synthetics/journeys/navigation-test.journey.ts. The old step also checked the
+# min-height that #elastic-nav-wrapper reserves at three widths, which journeys cannot assert yet (`get styles` only
+# reads), so that part stays in TypeScript.
+# @tags chrome
+# @requires build-type:assembler
+open ./
+wait --load networkidle
+expect visible "#elastic-nav-wrapper"
+expect request "**/elastic-nav.js" --status 2xx
+expect visible find role navigation --name Main

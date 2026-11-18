@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.Snapshots;
 using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -687,8 +688,12 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(docSetFile);
 
-		// the output differs per case, so it is a file snapshot (keyed by the arguments) rather than a shared inline literal
-		collector.Captured.ToSnapshotText().Should().MatchSnapshot();
+		// the output differs per case, so it is a file snapshot named after the case rather than a shared inline literal
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchSnapshot(name: repository.Trim('/'), options: new SnapshotOptions { NameReplacesArguments = true });
 	}
 
 	[Test]

@@ -4,6 +4,7 @@
 
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
@@ -85,12 +86,13 @@ public class DocumentGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 				RelatedProducts = doc.RelatedProducts?.Where(p => p.Id != null)
 					.Select(p => new DocumentProduct { Id = p.Id!, Repository = p.Repository })
 					.ToArray(),
-				Api = doc.Api is { } api
+				// An API's landing page has no operation to describe.
+				Api = doc.Api is { Landing: false } api
 					? new DocumentApi
 					{
 						Method = api.Method,
 						Path = api.Path,
-						Endpoints = [.. api.Routes.SelectMany(r => r.Methods.Select(m => $"{m} {r.Path}"))],
+						Endpoints = ApiRouteMatch.Endpoints(api),
 						OperationId = api.OperationId,
 						Deprecated = api.Deprecated
 					}

@@ -39,6 +39,8 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	public string? ProductName { get; init; }
 
+	public required ApiBetaBanner BetaBanner { get; init; }
+
 	/// <summary>
 	/// Preload hint for API links. Body already hx-boosts into <c>#main-container</c>,
 	/// so the examples rail swaps with the article without a dedicated OOB provider.
@@ -74,6 +76,14 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
 
+	protected virtual string SeoDocumentTitle =>
+		ApiPageTitle.Format(
+			LayoutPageTitle,
+			RenderContext.Product?.DisplayName,
+			Document.Info?.Title,
+			ApiPageTitle.ReleasedVersionLabel(RenderContext.VersionSwitcherItems)
+		);
+
 	/// <summary>Current page name for the structured breadcrumb. Defaults to <see cref="LayoutPageTitle"/>.</summary>
 	protected virtual string? BreadcrumbCurrentTitle => LayoutPageTitle;
 
@@ -92,8 +102,6 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public ApiLayoutViewModel CreateGlobalLayoutModel()
 	{
 		var docTitle = Document.Info?.Title ?? "API Documentation";
-		var pageTitle = LayoutPageTitle;
-		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
 		var catalogUrl = ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix);
 
 		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
@@ -108,7 +116,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		{
 			DocSetName = "Api Explorer",
 			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
-			Title = documentTitle,
+			Title = SeoDocumentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
 			Next = null,
@@ -122,6 +130,8 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Features = BuildContext.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
+			EnvironmentName = BuildContext.EnvironmentName,
+			PublicBaseUrl = BuildContext.PublicBaseUrl,
 			PageFeedbackSurface = "api",
 			TocItems = TocItems,
 			Breadcrumbs = breadcrumbs,
@@ -131,6 +141,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,
+			BetaBanner = ApiBetaBanner.For(BuildContext.CanonicalBaseUrl, CurrentNavigationItem.Url),
 			SiteTopNav = RenderContext.SiteTopNav,
 			ApiCatalogUrl = catalogUrl,
 			ShowSecondaryNav = false,

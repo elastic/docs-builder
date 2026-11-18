@@ -3,6 +3,15 @@ status: 204 No Content
 
 ## a thumbs down needs a reason: PUT /docs/_api/v1/page-feedback/{{$guid}}
 status: 400 Bad Request
+content-type: application/problem+json
+
+{
+  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+  "title": "Invalid arguments",
+  "status": 400,
+  "detail": "The page feedback is invalid. Check pageUrl, pageTitle, reaction, reasons and comment.",
+  "traceId": "{trace-id}"
+}
 
 ## feedback is deleted: DELETE /docs/_api/v1/page-feedback/{{$guid}}
 status: 204 No Content

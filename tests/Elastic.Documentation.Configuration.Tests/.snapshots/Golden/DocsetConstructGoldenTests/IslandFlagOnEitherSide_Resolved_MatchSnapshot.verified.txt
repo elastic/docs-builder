@@ -1,0 +1,96 @@
+diagnostics:
+toc:
+IsolatedTableOfContentsRef  both [island]
+  FileRef  both/a.md (container-relative: a.md)
+IsolatedTableOfContentsRef  inline-only [island]
+  FileRef  inline-only/a.md (container-relative: a.md)
+IsolatedTableOfContentsRef  file-only [island]
+  FileRef  file-only/a.md (container-relative: a.md)
+IsolatedTableOfContentsRef  neither
+  FileRef  neither/a.md (container-relative: a.md)
+model:
+model <DocumentationSetFile>:
+  Project: "constructs"
+  TableOfContents:
+    - <IsolatedTableOfContentsRef>:
+      PathRelativeToDocumentationSet: "both"
+      PathRelativeToContainer: "both"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "both/a.md"
+          PathRelativeToContainer: "a.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/both/toc.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Island: True
+      DefaultCta: null
+    - <IsolatedTableOfContentsRef>:
+      PathRelativeToDocumentationSet: "inline-only"
+      PathRelativeToContainer: "inline-only"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "inline-only/a.md"
+          PathRelativeToContainer: "a.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/inline-only/toc.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Island: True
+      DefaultCta: null
+    - <IsolatedTableOfContentsRef>:
+      PathRelativeToDocumentationSet: "file-only"
+      PathRelativeToContainer: "file-only"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "file-only/a.md"
+          PathRelativeToContainer: "a.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/file-only/toc.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Island: True
+      DefaultCta: null
+    - <IsolatedTableOfContentsRef>:
+      PathRelativeToDocumentationSet: "neither"
+      PathRelativeToContainer: "neither"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "neither/a.md"
+          PathRelativeToContainer: "a.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/neither/toc.yml"
+          DefaultCta: null
+      Context: "/docs/docset.yml"
+      Island: False
+      DefaultCta: null
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta: {}
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}

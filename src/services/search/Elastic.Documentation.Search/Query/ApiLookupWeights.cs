@@ -27,6 +27,18 @@ namespace Elastic.Documentation.Search;
 /// and a row named by a word beats a listed child. With <see cref="FieldSeveralWords"/> it adds up to <see cref="FieldName"/>, so
 /// <c>unrated docs</c> finds <c>unrated_docs</c> as surely as the identifier does.</item>
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
+/// <item>A method typed before a path lifts by <see cref="Method"/> only and is no word of a title, so <c>GET /_search</c> keeps the
+/// <c>POST</c> operation <c>search</c> first (10.20) above <c>scroll</c> (9.70), where "Get the search shards" led it (9.13).</item>
+/// <item><see cref="OperationWordPrefix"/> sits just below <see cref="OperationWord"/>, so a word typed whole beats one that only starts another word.</item>
+/// <item><see cref="OperationWordTypo"/> sits between <see cref="OperationWord"/> and the one-point roles, so an exact operation word beats a
+/// typo of it, and a typo of an operation word beats a word that only a title, a group or a field name carries.</item>
+/// <item><see cref="TitleNamedTypo"/> sits below <see cref="TitleNamed"/>, so a title typed exactly beats one typed with a typo, and below every
+/// endpoint key, so it only breaks ties. A word one edit from another title lifts that title too, as <c>stats</c> does for <c>state</c>.</item>
+/// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
+/// explain the typed words equally well. <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
+/// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
+/// better match beats the demotion. It lifts every operation whose flag is not true, whether the index omits the flag or writes
+/// <c>false</c>.</item>
 /// </list>
 /// </summary>
 public static class ApiLookupWeights
@@ -36,6 +48,8 @@ public static class ApiLookupWeights
 	public const float EndpointCompletion = 5.0f;
 	public const float NamespaceCompletion = 4.5f;
 	public const float OperationWord = 2.0f;
+	public const float OperationWordPrefix = 1.8f;
+	public const float OperationWordTypo = 1.5f;
 	public const float GroupWord = 1.0f;
 	public const float TitleWord = 1.0f;
 	public const float FieldName = 1.0f;
@@ -46,9 +60,25 @@ public static class ApiLookupWeights
 	public const float Method = 0.5f;
 	public const float BodyWord = 0.1f;
 	public const float WholeTitle = 3.0f;
+
+	/// <summary>
+	/// The typed words are the whole title of an operation once stopwords and plurals are ignored. It adds to
+	/// <see cref="WholeTitle"/>, which every operation that mentions the words earns.
+	/// </summary>
+	public const float TitleNamed = 6.0f;
+
+	/// <summary>The typed words are the whole title of an operation within one edit.</summary>
+	public const float TitleNamedTypo = 2.0f;
 	public const float ListsChildren = 0.5f;
 	public const float Specificity = 0.5f;
 	public const float NotDeprecated = 0.2f;
+
+	/// <summary>
+	/// Pins an API's landing page above every operation when the reader typed only words of its name, as in <c>kibana api</c>.
+	/// Far above the best an operation reaches (an endpoint key plus a whole title is about 12), so the landing page leads
+	/// whatever the words also mean to an operation.
+	/// </summary>
+	public const float LandingName = 50.0f;
 
 	/// <summary>
 	/// Lifts the hits of the API the reader is on, which breaks ties between identical operations of sibling APIs. It sits

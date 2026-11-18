@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml YAML parsing error in changelog configuration: {root}/docs/changelog.yml: (Lin: 0, Col: 0, Chr: 0) - (Lin: 0, Col: 13, Chr: 13): Expected a StartMapping token but found 'Scalar'."
+  ]
+}

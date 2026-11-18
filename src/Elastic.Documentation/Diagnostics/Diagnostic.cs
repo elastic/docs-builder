@@ -18,4 +18,7 @@ public readonly record struct Diagnostic
 	/// Used to provide context when the virtual file doesn't exist on disk.
 	/// </summary>
 	public string? OriginalSourceFile { get; init; }
+
+	/// <summary>The id of the domain constraint that produced this diagnostic (<c>"environment-uri-required"</c>), when one did.</summary>
+	public string? RuleId { get; init; }
 }

@@ -14,6 +14,8 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
@@ -175,14 +177,61 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
+	public async Task Operation_NestedProperties_ToggleNamesHowManyPropertiesItFolds()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("toggle-label\">hide properties</span>");
-		html.Should().NotContain("toggle-label\">Show ");
-		html.Should().NotContain("toggle-label\">Hide ");
+		html.Should().MatchRegex("toggle-label\">(Hide|Show) \\d+ propert(y|ies)</span>");
+		html.Should().NotContain("toggle-label\">hide properties");
+		html.Should().NotContain("toggle-label\">show properties");
+	}
+
+	[Test]
+	public async Task Operation_ExpandAllControl_SitsAboveTheFirstSectionAndAtTheEndOfThePinnedBar()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		var bar = html[html.IndexOf("<nav class=\"api-section-links\"", StringComparison.Ordinal)..];
+		bar = bar[..bar.IndexOf("</nav>", StringComparison.Ordinal)];
+		bar
+			.IndexOf("data-api-back-to-top", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(bar.IndexOf("api-section-links-track", StringComparison.Ordinal), "the back to top button opens the bar");
+		bar.Should().Contain(
+			"data-tippy-delay=\"[500, 0]\" data-api-back-to-top",
+			"its tooltip waits, as the pointer crosses the arrow on its way to the links"
+		);
+		bar.TrimEnd().Should().EndWith("class=\"api-expand-toggle\" data-api-expand-all>Expand all</button>");
+		var standalone = html.IndexOf("api-expand-standalone", StringComparison.Ordinal);
+		standalone.Should().BeGreaterThan(
+			html.IndexOf("id=\"description\"", StringComparison.Ordinal),
+			"the row comes after the description"
+		);
+		standalone.Should().BeLessThan(html.IndexOf("id=\"path-params\"", StringComparison.Ordinal), "and just above the first section");
+		html.Should().NotContain("Collapse all", "one button changes its own label");
+	}
+
+	[Test]
+	public async Task Operation_SectionStrip_OpensThePageAboveTheDescription()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html
+			.IndexOf("class=\"api-section-strip", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("id=\"description\"", StringComparison.Ordinal), "the strip comes before the description");
+	}
+
+	[Test]
+	public async Task Operation_SectionStrip_ShowsWhatEachSectionHolds()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-section-strip"));
 	}
 
 	[Test]
@@ -206,6 +255,35 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 			.IndexOf("api-section-links", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"query-params\"", StringComparison.Ordinal), "the bar sits above the sections it links to");
+	}
+
+	[Test]
+	public async Task Operation_ToolbarClass_MarksExactlyThePagesThatShowTheStrip()
+	{
+		var lines = new List<string>();
+		foreach (var nav in fixture
+			.Walk()
+			.OfType<OperationNavigationItem>()
+			.OrderBy(static n => n.Model.Operation.OperationId, StringComparer.Ordinal))
+		{
+			var html = await RenderAsync(nav.Model, nav);
+			var strip = html.Contains("class=\"api-section-strip", StringComparison.Ordinal);
+			var marked = html.Contains("<section id=\"elastic-api-v3\" class=\"api-has-toolbar\">", StringComparison.Ordinal);
+			lines.Add($"{nav.Model.Operation.OperationId}: strip {strip}, section marked {marked}");
+		}
+
+		_ = string
+			.Join('\n', lines)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			: strip False, section marked False
+			: strip False, section marked False
+			docs-get: strip True, section marked True
+			docs-get-source: strip True, section marked True
+			search: strip True, section marked True
+			"""
+			);
 	}
 
 	[Test]
