@@ -325,6 +325,44 @@ public class TableDirectiveFilterableWithMatrixAndWidthsTests() : DirectiveTest<
 }
 
 [InheritsTests]
+public class TableDirectivePinFirstColumnTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:pin-first-column:
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void ParsesPinFirstColumn() => Block!.PinFirstColumn.Should().BeTrue();
+
+	[Test]
+	public void AddsThePinnedClass() => Html.Should().Contain("<div class=\"table-wrapper table-pinned\">");
+}
+
+[InheritsTests]
+public class TableDirectivePinFirstColumnWithMatrixTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:matrix:
+:pin-first-column:
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void AddsBothClasses() => Html.Should().Contain("<div class=\"table-wrapper table-matrix table-pinned\">");
+}
+
+[InheritsTests]
 public class TableDirectiveWidthCountMismatchTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}

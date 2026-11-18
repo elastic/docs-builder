@@ -29,6 +29,12 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	public bool Matrix { get; private set; }
 
 	/// <summary>
+	/// When set, the first column stays in view while the table scrolls sideways, so a reader
+	/// who scrolls to the right-hand columns can still see which row they're reading.
+	/// </summary>
+	public bool PinFirstColumn { get; private set; }
+
+	/// <summary>
 	/// When set, wraps the table in a <c>filterable-table</c> host element so the client
 	/// can progressively enhance it with a search box and per-column facet filters.
 	/// The server-rendered table stays fully usable without JavaScript.
@@ -38,6 +44,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Matrix = PropBool("matrix");
+		PinFirstColumn = PropBool("pin-first-column");
 		Filterable = PropBool("filterable");
 
 		var widthsValue = Prop("widths")?.Trim();
