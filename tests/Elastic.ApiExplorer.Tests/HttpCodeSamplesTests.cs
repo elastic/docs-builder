@@ -515,6 +515,26 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
+	[Arguments("{\"query\":{\"match_all\":{}}}", "POST {{API_URL}}/my-index/_search")]
+	[Arguments("{\"size\":1}", "GET {{API_URL}}/_search")]
+	public void Fill_AuthoredConsoleWithSeveralRequests_SendsTheOneWithTheExampleBody(string body, string request)
+	{
+		const string console = "PUT my-index\n{\"settings\":{}}\n\nPOST my-index/_search\n{\n  \"query\": { \"match_all\": {} }\n}";
+		var scenario = Fill(
+			new OpenApiOperation(),
+			new ExampleScenario
+			{
+				Title = "Search",
+				TabId = "search",
+				RequestJson = body,
+				CodeSamples = [new CodeSample("Console", console, "language-console")]
+			}
+		).Single();
+
+		scenario.CodeSamples.Single(static s => s.IsHttp).Source.Should().StartWith($"###\n{request}\n");
+	}
+
+	[Test]
 	[Arguments("application/json", "application/x-ndjson")]
 	[Arguments("application/ndjson", "application/ndjson")]
 	public void Fill_NdjsonBody_SendsANewlineDelimitedType(string listed, string sent)

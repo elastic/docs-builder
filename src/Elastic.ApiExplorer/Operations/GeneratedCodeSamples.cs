@@ -85,14 +85,43 @@ public static partial class GeneratedCodeSamples
 		return (SampleMethods.Dominant(method, path, endpoint) ?? method, path);
 	}
 
-	/// <summary>The request line of a Console sample the spec wrote, without a <c>kbn:</c> prefix. A generated one already follows <see cref="RequestOf"/>.</summary>
+	/// <summary>
+	/// The request line of a Console sample the spec wrote, without a <c>kbn:</c> prefix. A sample with several requests,
+	/// such as one that creates an index before it searches, names the request whose body is the example's; null when none is.
+	/// A generated Console sample already follows <see cref="RequestOf"/>.
+	/// </summary>
 	private static (string Method, string Path)? AuthoredConsoleLine(ExampleScenario scenario)
 	{
 		var console = scenario.CodeSamples.FirstOrDefault(static c => c.IsConsole && !c.Generated);
-		if (SplitConsole(console?.Source) is not { Line: var (method, target) })
+		if (console is null)
 			return null;
-		var path = target[ConsolePrefix(console!.Source).Length..];
-		return (method, path.StartsWith('/') ? path : "/" + path);
+		var requests = ConsoleRequests(console.Source);
+		var request = requests.Length == 1
+			? requests[0]
+			: requests.FirstOrDefault(
+				r => scenario.RequestJson is { } body && OperationPageModel.Compact(r.Body) == OperationPageModel.Compact(body)
+			);
+		if (request is null)
+			return null;
+		var path = request.Path[ConsolePrefix(console.Source).Length..];
+		return (request.Method, path.StartsWith('/') ? path : "/" + path);
+	}
+
+	private sealed record ConsoleRequest(string Method, string Path, string Body);
+
+	/// <summary>Every request of a Console sample: each line that opens with a method and a path, and the body under it.</summary>
+	private static ConsoleRequest[] ConsoleRequests(string source)
+	{
+		var starts = ConsoleRequestStart().Matches(source);
+		return [
+			.. starts.Select(
+				(match, i) => new ConsoleRequest(
+					match.Groups[1].Value,
+					match.Groups[2].Value,
+					source[(match.Index + match.Length)..(i + 1 < starts.Count ? starts[i + 1].Index : source.Length)]
+				)
+			)
+		];
 	}
 
 	/// <summary><c>Run `GET /my-index/_search?from=40` to …</c> in an example description names its request.</summary>
@@ -158,6 +187,11 @@ public static partial class GeneratedCodeSamples
 	[GeneratedRegex(@"^\s*(GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase
 		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ConsoleRequestLine();
+
+	// Uppercase only: a body line never starts with an uppercase method and a path, the Console highlighter's own rule.
+	[GeneratedRegex(@"^[ \t]*(GET|POST|PUT|PATCH|DELETE|HEAD)[ \t]+(\S+)", RegexOptions.Multiline
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex ConsoleRequestStart();
 
 	[GeneratedRegex(@"-d\s+'(?:[^']|'\\'')*'", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CurlBody();
