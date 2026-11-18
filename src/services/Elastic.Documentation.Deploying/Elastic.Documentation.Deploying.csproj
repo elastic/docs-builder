@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj" />
