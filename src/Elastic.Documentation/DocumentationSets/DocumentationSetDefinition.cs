@@ -44,9 +44,12 @@ public sealed partial record DocumentationSetDefinition : IHaveConstraints<Docum
 	[OrderedEquality]
 	public IReadOnlyList<string> CrossLinks { get; internal init; } = [];
 
-	/// <summary>The <c>product</c> of each <c>release_notes</c> entry as written; null when an entry omits it.</summary>
+	/// <summary>
+	/// <c>release_notes</c> entries as written. An entry written with no value (an empty <c>- </c>) is null: building the
+	/// configuration fails on it, as it always has.
+	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string?> ReleaseNotesProducts { get; internal init; } = [];
+	public IReadOnlyList<ReleaseNotesDeclaration?> ReleaseNotes { get; internal init; } = [];
 
 	/// <summary><c>exclude</c> as written: globs, and <c>!</c>-prefixed paths that re-include a single file.</summary>
 	[OrderedEquality]
@@ -70,7 +73,10 @@ public sealed partial record DocumentationSetDefinition : IHaveConstraints<Docum
 	[OrderedEquality]
 	public IReadOnlyList<ApiDeclaration> Api { get; internal init; } = [];
 
-	/// <summary><c>products[].id</c> as written.</summary>
+	/// <summary>
+	/// <c>products[].id</c> as written. A list item or <c>id</c> written with no value is null: building the configuration fails on it,
+	/// as it always has.
+	/// </summary>
 	[OrderedEquality]
 	public IReadOnlyList<string> Products { get; internal init; } = [];
 
@@ -86,9 +92,12 @@ public sealed partial record DocumentationSetDefinition : IHaveConstraints<Docum
 	/// <summary>Whether a <c>storybook</c> section is present, even without a <c>registry</c>.</summary>
 	public bool HasStorybook { get; internal init; }
 
-	/// <summary><c>cta</c> templates in declaration order.</summary>
+	/// <summary>
+	/// <c>cta</c> templates in declaration order. A template written with no value is null: building the configuration fails on it,
+	/// as it always has.
+	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<CtaDeclaration> Ctas { get; internal init; } = [];
+	public IReadOnlyList<CtaDeclaration?> Ctas { get; internal init; } = [];
 
 	[SetEquality]
 	public IReadOnlySet<HintType> SuppressDiagnostics { get; internal init; } = new HashSet<HintType>();
@@ -133,6 +142,12 @@ public sealed record BrandingDeclaration
 	public string? AppleTouchIcon { get; internal init; }
 
 	public string? Copyright { get; internal init; }
+}
+
+/// <summary>A <c>release_notes</c> entry as written.</summary>
+public sealed record ReleaseNotesDeclaration
+{
+	public string? Product { get; internal init; }
 }
 
 /// <summary>A <c>cta</c> template as written.</summary>

@@ -197,7 +197,7 @@ public record ConfigurationFile
 			CrossLinkRepositories = CrossLinkEntries.Select(e => e.Repository).ToArray();
 
 			// Parse and validate CDN-backed release-notes product declarations
-			ReleaseNotesProducts = ParseReleaseNotesProducts(docSetFile.ReleaseNotesProducts, productsConfig, context);
+			ReleaseNotesProducts = ParseReleaseNotesProducts(docSetFile.ReleaseNotes, productsConfig, context);
 
 			// Extensions
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
@@ -254,9 +254,10 @@ public record ConfigurationFile
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
 			foreach (var declared in docSetFile.Ctas)
 			{
-				if (ValidateCta(declared, context) is not { } cta)
+				// a template written with no value is null and throws inside ValidateCta, as it always has
+				if (ValidateCta(declared!, context) is not { } cta)
 					continue;
-				_ctas[declared.Name] = cta;
+				_ctas[declared!.Name] = cta;
 			}
 
 			foreach (var (pagePath, ctaName) in docSetFile.TocDefaultCtas)
@@ -465,7 +466,7 @@ public record ConfigurationFile
 	}
 
 	private static string[] ParseReleaseNotesProducts(
-		IReadOnlyList<string?> references,
+		IReadOnlyList<ReleaseNotesDeclaration?> references,
 		ProductCatalog productsConfig,
 		IDocumentationSetContext context
 	)
@@ -476,7 +477,8 @@ public record ConfigurationFile
 		var products = new List<string>(references.Count);
 		foreach (var reference in references)
 		{
-			var product = reference?.Trim();
+			// an entry written with no value is null and throws here, as it always has
+			var product = reference!.Product?.Trim();
 			if (string.IsNullOrEmpty(product))
 			{
 				context.EmitError(context.ConfigurationPath, "A 'release_notes' entry is missing a 'product' value.");

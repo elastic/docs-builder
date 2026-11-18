@@ -116,4 +116,31 @@ public class DocumentationSetLoaderTests
 		_ = act.Should().Throw<Exception>();
 		collector.Captured.Should().ContainSingle(d => d.Message.StartsWith("Could not load docset.yml: "));
 	}
+
+	// what main does, per shape: the exception, and the diagnostics in order
+	[Test]
+	[Arguments("release_notes:\n  - \n", new string[0])]
+	[Arguments("release_notes:\n  - product: a\n  - \n", new[]
+	{
+		"Unknown 'release_notes' product 'a'. It must be a product id defined in products.yml."
+	})]
+	[Arguments("cta:\n  x:\n", new string[0])]
+	[Arguments("products:\n  - \n", new string[0])]
+	[Arguments("products:\n  - id:\n", new string[0])]
+	public void Configure_NullInsideAList_FailsWhileTheConfigurationIsBuilt(string declaration, string[] before)
+	{
+		var yaml = $"project: p\n{declaration}toc:\n  - file: index.md\n";
+		var collector = new CapturingDiagnosticsCollector();
+		var fileSystem = DocsetGolden.CreateFileSystem(yaml, new DocFile("index.md"));
+		var dto = DocsetGolden.LoadAndResolve(collector, yaml, new DocFile("index.md"));
+
+		var act = () => DocsetGolden.CreateConfiguration(dto, collector, fileSystem, withGlobalConfig: false);
+
+		_ = act.Should().Throw<NullReferenceException>().WithMessage("Object reference not set to an instance of an object.");
+		collector
+			.Captured
+			.Select(d => d.Message)
+			.Should()
+			.Equal([.. before, "Could not load docset.yml: Object reference not set to an instance of an object."]);
+	}
 }

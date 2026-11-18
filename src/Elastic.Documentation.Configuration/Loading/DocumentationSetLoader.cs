@@ -83,8 +83,10 @@ public static class DocumentationSetLoader
 		ToDefinition(DocumentationSetFile.LoadMetadata(docsetFile), docsetFile, docsetFile.Directory!);
 
 	/// <summary>
-	/// A key written with no value reaches here as null (<c>exclude:</c> and nothing under it). The definition keeps it, so the
-	/// code that builds the configuration fails on it exactly where it always did, with the same message.
+	/// Something written with no value reaches here as null: a key (<c>exclude:</c> and nothing under it) or a list item or map value
+	/// (<c>release_notes:</c> with an empty <c>- </c>, a <c>cta</c> template, a <c>products</c> item). The definition keeps it, so the
+	/// code that builds the configuration fails on it exactly where it always did, with the same message and the same
+	/// <c>Could not load docset.yml:</c> diagnostic. Mapping must not dereference it.
 	/// </summary>
 	internal static DocumentationSetDefinition ToDefinition(
 		DocumentationSetFile dto,
@@ -100,7 +102,7 @@ public static class DocumentationSetLoader
 			DevDocs = dto.DevDocs,
 			Island = dto.Island,
 			CrossLinks = dto.CrossLinks,
-			ReleaseNotesProducts = dto.ReleaseNotes?.Select(r => (string?)r.Product).ToList()!,
+			ReleaseNotes = dto.ReleaseNotes?.Select(r => r is null ? null : new ReleaseNotesDeclaration { Product = r.Product }).ToList()!,
 			Exclude = dto.Exclude,
 			Extensions = dto.Extensions,
 			Substitutions = dto.Subs,
@@ -110,7 +112,7 @@ public static class DocumentationSetLoader
 				? new DeclaredFeatures { PrimaryNav = f.PrimaryNav, DisableGithubEditLink = f.DisableGithubEditLink, GuideNav = f.GuideNav }
 				: null!,
 			Api = dto.Api?.Select(kv => ToApi(kv.Key, kv.Value)).ToList()!,
-			Products = dto.Products?.Select(p => p.Id).ToList()!,
+			Products = dto.Products?.Select(p => p?.Id!).ToList()!,
 			CodexGroup = dto.Codex?.Group,
 			Branding = dto.Branding is { } b
 				? new BrandingDeclaration
@@ -127,13 +129,15 @@ public static class DocumentationSetLoader
 			StorybookRegistry = dto.Storybook?.Registry,
 			Ctas =
 				dto.Cta?.Select(
-					kv => new CtaDeclaration
-					{
-						Name = kv.Key,
-						Label = kv.Value.Button?.Label,
-						Url = kv.Value.Button?.Url,
-						Benefits = kv.Value.Benefits
-					}
+					kv => kv.Value is null
+						? null
+						: new CtaDeclaration
+						{
+							Name = kv.Key,
+							Label = kv.Value.Button?.Label,
+							Url = kv.Value.Button?.Url,
+							Benefits = kv.Value.Benefits
+						}
 				).ToList()!,
 			SuppressDiagnostics = dto.SuppressDiagnostics,
 			DefaultCta = dto.DefaultCta,

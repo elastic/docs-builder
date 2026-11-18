@@ -8,8 +8,9 @@ model <DocumentationSetDefinition>:
   CrossLinks:
     - "docs-content"
     - "public://elasticsearch"
-  ReleaseNotesProducts:
-    - "elasticsearch"
+  ReleaseNotes:
+    - <ReleaseNotesDeclaration>:
+      Product: "elasticsearch"
   Exclude:
     - "_*.md"
     - "!drafts/keep.md"
