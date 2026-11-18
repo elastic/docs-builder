@@ -2843,12 +2843,12 @@ button.example-response-tab:focus-visible {
 }
 
 @media (min-width: 768px) {
-	/* The column gap and the right padding match (32px each), so the content has the same
-	   space beside the nav as beside the window edge. Every API page has the same two
-	   columns (.api-page-grid), so the content keeps its left edge and width when you
-	   move between pages. */
+	/* The column gap is 42px and the right padding 32px, so the content sits a little further
+	   from the nav than from the window edge. Every API page has the same two columns
+	   (.api-page-grid), so the content keeps its left edge and width when you move between
+	   pages. The 1920px cap below counts both: 42px + 32px. */
 	.api-page-shell > .grid {
-		column-gap: 32px;
+		column-gap: 42px;
 		padding-right: 32px;
 	}
 
@@ -3119,7 +3119,7 @@ button.example-response-tab:focus-visible {
 	   reference and the rail keep the width they have at 1920px and sit centred beside the sidebar. */
 	#api-content-grid {
 		--api-column-gap: 32px;
-		max-width: calc(1920px - var(--max-sidebar-width) - 64px);
+		max-width: calc(1920px - var(--max-sidebar-width) - 74px);
 	}
 
 	.api-page-grid {
