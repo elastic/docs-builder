@@ -4396,26 +4396,32 @@ html:has(.api-page-shell) {
 	color: inherit;
 }
 
+/*
+ * Each privilege is one row, its label beside its chips. The rows share two columns, so the labels line up and every
+ * chip starts at the same left edge, whatever the labels are. A long name wraps inside its chip, at an underscore.
+ */
 .api-section-requires .api-privileges {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	display: grid;
+	grid-template-columns: max-content minmax(0, 1fr);
+	gap: 6px 8px;
+	align-items: start;
 	min-width: 0;
 }
 
-/* The label always sits above its chips, so every row shares one left edge whether or not its chip fits beside the label. */
 .api-section-requires .api-privileges-row {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 2px;
-	padding: 0;
-	border: 0;
+	display: contents;
 }
 
+/* As tall as a chip, so a label sits level with the first line of its chips. */
 .api-section-requires .api-privileges-label {
 	font-size: 12px;
-	line-height: 18px;
+	line-height: 24px;
+}
+
+/* A row with no label, or a note, takes both columns. */
+.api-section-requires .api-privileges-row > .api-privileges-values:first-child,
+.api-section-requires .api-privileges-note {
+	grid-column: 1 / -1;
 }
 
 .api-section-requires .api-privileges-values {
