@@ -4848,11 +4848,11 @@ html:has(.api-page-shell) {
 		transform: translateX(calc(-50% - 3.5px));
 	}
 
+	/* The box stays inside the resize target. Only the opaque strip moves onto the divider; both dot columns sit right of it. */
 	.api-column-handle[data-api-column-handle='nav']::before {
-		transform: translateX(-3px);
 		background-position:
-			0 0,
-			calc(50% - 0.5px) 50%;
+			1.5px 0,
+			calc(2.5px - var(--api-column-line-width) / 2) 50%;
 	}
 
 	/* Only the strip over the divider is opaque; the rest of the grip leaves the scrollbar visible and interactive. */
