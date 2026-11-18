@@ -37,6 +37,7 @@ class FilterableTableElement extends HTMLElement {
     private controls: HTMLElement | null = null
     private facetList: HTMLElement | null = null
     private clearButton: HTMLButtonElement | null = null
+    private emptyMessage: HTMLElement | null = null
     private facetSignature = ''
     private observer: MutationObserver | null = null
     private settleTimer = 0
@@ -209,7 +210,8 @@ class FilterableTableElement extends HTMLElement {
     /**
      * Lays the controls out in three rows: the search box on its own, the
      * dropdowns in a grid with their labels above them, and the count with a
-     * "Clear filters" button that shows only while something is filtered.
+     * "Clear" button that shows only while something is filtered. A message
+     * below the table says so when nothing matches.
      */
     private buildControls(): void {
         const controls = document.createElement('div')
@@ -242,7 +244,7 @@ class FilterableTableElement extends HTMLElement {
         const clear = document.createElement('button')
         clear.type = 'button'
         clear.className = 'filterable-table-clear'
-        clear.textContent = 'Clear filters'
+        clear.textContent = 'Clear'
         clear.hidden = true
         clear.addEventListener('click', () => this.clearFilters())
         summary.appendChild(clear)
@@ -251,6 +253,18 @@ class FilterableTableElement extends HTMLElement {
         controls.appendChild(summary)
         this.controls = controls
         this.insertBefore(controls, this.firstChild)
+
+        // Shown under the header row when nothing matches, so an empty table
+        // doesn't look broken. It isn't a live region: the count above it
+        // already announces "Showing 0 of N". A fullscreen copy is cloned
+        // from an enhanced host, so drop any message the clone carried over.
+        this.querySelector(':scope > .filterable-table-empty')?.remove()
+        const empty = document.createElement('p')
+        empty.className = 'filterable-table-empty'
+        empty.hidden = true
+        this.appendChild(empty)
+        this.emptyMessage = empty
+
         this.renderFacets()
     }
 
@@ -383,6 +397,20 @@ class FilterableTableElement extends HTMLElement {
                 ?.toggleAttribute('data-active', facet.select.value !== '')
         if (this.clearButton)
             this.clearButton.hidden = query === '' && activeFacets.length === 0
+
+        // Say why the table is empty, naming what's narrowing it.
+        const none = visible === 0
+        this.toggleAttribute('data-empty', none)
+        if (this.emptyMessage) {
+            this.emptyMessage.hidden = !none
+            if (none)
+                this.emptyMessage.textContent =
+                    query !== '' && activeFacets.length > 0
+                        ? 'No rows match your search and filters.'
+                        : query !== ''
+                          ? 'No rows match your search.'
+                          : 'No rows match your filters.'
+        }
 
         const text = `Showing ${visible} of ${this.rows.length}`
         // Only touch the live region when the count really changed, so typing

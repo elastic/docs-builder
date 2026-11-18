@@ -701,3 +701,112 @@ describe('filterable-table control layout', () => {
         expect(document.activeElement).toBe(search())
     })
 })
+
+describe('filterable-table empty results', () => {
+    const message = () =>
+        document.querySelector<HTMLElement>('.filterable-table-empty')!
+    const search = (value: string) => {
+        const input = document.querySelector<HTMLInputElement>(
+            '.filterable-table-search'
+        )!
+        input.value = value
+        input.dispatchEvent(new Event('input'))
+    }
+    const choose = (value: string) => {
+        const select = document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+        select.value = value
+        select.dispatchEvent(new Event('change'))
+    }
+
+    it('labels the reset button Clear', () => {
+        mount()
+        expect(
+            document.querySelector('.filterable-table-clear')?.textContent
+        ).toBe('Clear')
+    })
+
+    it('hides the message while rows match', () => {
+        mount()
+        expect(message().hidden).toBe(true)
+        search('apache')
+        expect(message().hidden).toBe(true)
+    })
+
+    it('explains an empty table after a search', () => {
+        mount()
+        search('nothing-matches')
+        expect(message().hidden).toBe(false)
+        expect(message().textContent).toBe('No rows match your search.')
+    })
+
+    it('explains an empty table after filters', () => {
+        // Each value matches some rows, but no row is both an Exporter and
+        // Extended, so only the two filters together empty the table.
+        document.body.innerHTML = `
+          <filterable-table>
+            <table>
+              <thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>a</td><td>Receiver</td><td>Core</td></tr>
+                <tr><td>b</td><td>Receiver</td><td>Extended</td></tr>
+                <tr><td>c</td><td>Exporter</td><td>Core</td></tr>
+              </tbody>
+            </table>
+          </filterable-table>`
+        customElements.upgrade(document.body)
+        const [type, status] = Array.from(
+            document.querySelectorAll<HTMLSelectElement>(
+                '.filterable-table-facet select'
+            )
+        )
+        type.value = 'Exporter'
+        type.dispatchEvent(new Event('change'))
+        status.value = 'Extended'
+        status.dispatchEvent(new Event('change'))
+        expect(message().hidden).toBe(false)
+        expect(message().textContent).toBe('No rows match your filters.')
+    })
+
+    it('names both search and filters when both are set', () => {
+        mount()
+        choose('Extended')
+        search('filelog')
+        expect(message().hidden).toBe(false)
+        expect(message().textContent).toBe(
+            'No rows match your search and filters.'
+        )
+        expect(
+            document
+                .querySelector('filterable-table')!
+                .hasAttribute('data-empty')
+        ).toBe(true)
+    })
+
+    it('hides the message again after Clear', () => {
+        mount()
+        search('nothing-matches')
+        document
+            .querySelector<HTMLButtonElement>('.filterable-table-clear')!
+            .click()
+        expect(message().hidden).toBe(true)
+        expect(
+            document
+                .querySelector('filterable-table')!
+                .hasAttribute('data-empty')
+        ).toBe(false)
+    })
+
+    it('keeps one message when an enhanced host is cloned', () => {
+        mount()
+        const host = document.querySelector<HTMLElement>('filterable-table')!
+        const clone = host.cloneNode(true) as HTMLElement
+        clone.querySelector('.filterable-table-controls')?.remove()
+        delete clone.dataset.enhanced
+        document.body.appendChild(clone)
+        expect(clone.querySelectorAll('.filterable-table-empty')).toHaveLength(
+            1
+        )
+    })
+})
