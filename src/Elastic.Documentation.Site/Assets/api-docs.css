@@ -4848,6 +4848,10 @@ html:has(.api-page-shell) {
 		transform: translateX(calc(-50% - 3.5px));
 	}
 
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
+		outline-offset: -2px;
+	}
+
 	/* The box stays inside the resize target. Only the opaque strip moves onto the divider; both dot columns sit right of it. */
 	.api-column-handle[data-api-column-handle='nav']::before {
 		background-position:
