@@ -5,7 +5,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;

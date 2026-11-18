@@ -25,6 +25,8 @@
     <InternalsVisibleTo Include="Elastic.Authoring.Tests" />
     <InternalsVisibleTo Include="Elastic.Markdown.Tests" />
     <InternalsVisibleTo Include="Elastic.Documentation.Tests" />
+    <InternalsVisibleTo Include="Navigation.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Deploying.Tests" />
   </ItemGroup>
 
   <ItemGroup>

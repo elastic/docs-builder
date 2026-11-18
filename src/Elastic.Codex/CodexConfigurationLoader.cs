@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Codex;
@@ -24,17 +25,17 @@ internal static class CodexConfigurationLoader
 		out string environment
 	)
 	{
+		config = default!;
 		environment = string.Empty;
-		if (!TryLoadCore(configFile, originalPath, collector, out config))
+		if (!TryReadText(configFile, originalPath, collector, out var text))
 			return false;
 
-		if (string.IsNullOrWhiteSpace(config.Environment))
-		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
+		var result = CodexSiteLoader.LoadForPublish(text, originalPath);
+		if (!Report(result.Findings(), collector) || result.ValueOrNull() is not { } published)
 			return false;
-		}
 
-		environment = config.Environment;
+		config = published.Configuration;
+		environment = config.Environment!;
 		return true;
 	}
 
@@ -42,21 +43,23 @@ internal static class CodexConfigurationLoader
 	/// Loads a <see cref="CodexConfiguration"/> without requiring the <c>environment</c> field.
 	/// Use for commands that resolve the environment from other sources (CLI argument, env var).
 	/// </summary>
-	internal static bool TryLoad(
-		IFileInfo configFile,
-		string originalPath,
-		IDiagnosticsCollector collector,
-		out CodexConfiguration config
-	) => TryLoadCore(configFile, originalPath, collector, out config);
-
-	private static bool TryLoadCore(
-		IFileInfo configFile,
-		string originalPath,
-		IDiagnosticsCollector collector,
-		out CodexConfiguration config
-	)
+	internal static bool TryLoad(IFileInfo configFile, string originalPath, IDiagnosticsCollector collector, out CodexConfiguration config)
 	{
 		config = default!;
+		if (!TryReadText(configFile, originalPath, collector, out var text))
+			return false;
+
+		var result = CodexSiteLoader.Load(text, originalPath);
+		if (!Report(result.Findings(), collector) || result.ValueOrNull() is not { } loaded)
+			return false;
+
+		config = loaded;
+		return true;
+	}
+
+	private static bool TryReadText(IFileInfo configFile, string originalPath, IDiagnosticsCollector collector, out string text)
+	{
+		text = string.Empty;
 		try
 		{
 			if (!configFile.Exists)
@@ -65,7 +68,7 @@ internal static class CodexConfigurationLoader
 				return false;
 			}
 
-			config = CodexConfiguration.Load(configFile);
+			text = configFile.OpenText().ReadToEnd();
 			return true;
 		}
 		catch (Exception ex)
@@ -73,5 +76,22 @@ internal static class CodexConfigurationLoader
 			collector.EmitGlobalError($"Failed to read codex configuration '{originalPath}': {ex.Message}", ex);
 			return false;
 		}
+	}
+
+	// Errors are global (no file), as the codex commands have always reported them; returns whether there were none.
+	private static bool Report(IReadOnlyList<Diagnostic> findings, IDiagnosticsCollector collector)
+	{
+		var ok = true;
+		foreach (var finding in findings)
+		{
+			if (finding.Severity == Severity.Error)
+			{
+				collector.EmitGlobalError(finding.Message);
+				ok = false;
+			}
+			else
+				collector.Write(finding);
+		}
+		return ok;
 	}
 }
