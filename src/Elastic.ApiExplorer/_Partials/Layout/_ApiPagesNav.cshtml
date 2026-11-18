@@ -4,13 +4,13 @@
 	<nav
 		id="pages-nav"
 		@(Model.Features.NavigationPreviewEnabled ? "hx-preserve" : "")
-		class="sidebar-nav h-full simple-scrollbar">
+		class="sidebar-nav h-full flex flex-col overflow-y-hidden [scrollbar-gutter:auto]">
 		@{
 			var showIdentity = Model.ApiContext is not null;
 		}
 		@if (showIdentity || Model.ShowJumpToPage)
 		{
-			<div class="api-sidebar-chrome sticky top-0 z-10 bg-white px-4 pt-4 pb-3 flex flex-col gap-3 border-b border-grey-20">
+			<div class="api-sidebar-chrome shrink-0 bg-white px-4 pt-4 pb-3 flex flex-col gap-3 border-b border-grey-20">
 				@if (showIdentity)
 				{
 					<div class="api-sidebar-identity">
@@ -23,7 +23,10 @@
 				}
 			</div>
 		}
-		@(new HtmlString(Model.NavigationHtml))
+		@* Only the tree scrolls, so its scrollbar starts under the switcher instead of running beside it. *@
+		<div class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto simple-scrollbar [scrollbar-gutter:stable]">
+			@(new HtmlString(Model.NavigationHtml))
+		</div>
 	</nav>
 	@* ReSharper disable once Html.IdNotResolved *@
 	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">

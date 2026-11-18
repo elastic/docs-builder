@@ -501,7 +501,11 @@ function currentInNav(nav: HTMLElement) {
 }
 
 function getNavScrollContainer(nav: HTMLElement) {
-    return nav.querySelector<HTMLElement>('.pages-nav-v2__scroll') ?? nav
+    return (
+        nav.querySelector<HTMLElement>(
+            '.pages-nav-v2__scroll, .sidebar-nav-scroll'
+        ) ?? nav
+    )
 }
 
 // The smaller golden-ratio share (0.382) puts the active row a little above centre.
@@ -523,12 +527,13 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const navRect = scrollContainer.getBoundingClientRect()
     const currentNavItemRect = currentNavItem.getBoundingClientRect()
 
-    // Sticky chrome (dropdown / back) sits above the scrollport in the Figma shell.
-    const stickyElement = $optional('.pages-nav-v2__chrome, .sticky', nav)
-    const stickyHeight =
+    // Chrome (dropdown / back) outside a separate scroller never covers its rows.
+    // Only sticky chrome inside the scroller itself does.
+    const stickyElement =
         scrollContainer === nav
-            ? (stickyElement?.getBoundingClientRect().height ?? 0)
-            : 0
+            ? $optional('.pages-nav-v2__chrome, .sticky', nav)
+            : null
+    const stickyHeight = stickyElement?.getBoundingClientRect().height ?? 0
 
     const effectiveNavTop = navRect.top + stickyHeight
 
