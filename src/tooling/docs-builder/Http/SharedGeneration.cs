@@ -18,20 +18,22 @@ public sealed class SharedGeneration(Func<Cancel, Task> generate, Func<bool> isS
 
 	public async Task EnsureAsync(Cancel ctx)
 	{
-		// A change that lands during a run marks the output stale again, so the caller that joined that run
-		// waits for one more instead of getting output built from the inputs before the change.
-		do
-			await CurrentRun().WaitAsync(ctx);
-		while (isStale());
+		// A caller leaves only when no run is in flight and the output is fresh, and it decides that under the
+		// gate. A change that lands during a run therefore costs the caller one more run, and a caller that wakes
+		// after another caller started that run joins it, so nobody returns while pages are still being rewritten.
+		while (CurrentRun() is { } run)
+			await run.WaitAsync(ctx);
 	}
 
-	/// <summary>Joins the run in flight, or starts one when the output is stale or the last run failed.</summary>
-	private Task CurrentRun()
+	/// <summary>The run to wait on: the one in flight, or a new one when the output is stale or the last run failed. Null when the output is fresh.</summary>
+	private Task? CurrentRun()
 	{
 		lock (_gate)
 		{
-			if (!_run.IsCompleted || (!isStale() && !_run.IsFaulted))
+			if (!_run.IsCompleted)
 				return _run;
+			if (!isStale() && !_run.IsFaulted)
+				return null;
 
 			return _run = Task.Run(() => generate(_lifetime.Token), _lifetime.Token);
 		}

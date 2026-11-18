@@ -16,6 +16,8 @@ public class SharedGenerationTests
 	{
 		private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 		private readonly TaskCompletionSource _gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+		private readonly TaskCompletionSource _hold = new(TaskCreationOptions.RunContinuationsAsynchronously);
+		private readonly TaskCompletionSource _secondStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
 		private int _runs;
 
 		public bool Stale { get; set; } = true;
@@ -25,17 +27,24 @@ public class SharedGenerationTests
 		/// <summary>Runs after the gate opens, before the run returns. Use it to simulate a change or a failure.</summary>
 		public Action<int>? AtEnd { get; set; }
 
+		/// <summary>The run that waits at its own gate, so a test can hold it open while others wake. Zero holds none.</summary>
+		public int HoldRun { get; set; }
+
 		public Task Started => _started.Task.WaitAsync(Patience);
+		public Task SecondStarted => _secondStarted.Task.WaitAsync(Patience);
 		public void Release() => _gate.TrySetResult();
+		public void ReleaseHeld() => _hold.TrySetResult();
 
 		public async Task GenerateAsync(Cancel ctx)
 		{
 			var run = Interlocked.Increment(ref _runs);
 			Stale = false;
 			_ = _started.TrySetResult();
+			if (run == 2)
+				_ = _secondStarted.TrySetResult();
 			try
 			{
-				await _gate.Task.WaitAsync(ctx);
+				await (run == HoldRun ? _hold : _gate).Task.WaitAsync(ctx);
 			}
 			catch (OperationCanceledException)
 			{
@@ -106,6 +115,35 @@ public class SharedGenerationTests
 
 		fake.Runs.Should().Be(2);
 		fake.Stale.Should().BeFalse();
+	}
+
+	[Test]
+	public async Task EnsureAsync_AnotherCallerStartsTheNextRunFirst_NoCallerReturnsWhileThatRunIsInFlight(
+		CancellationToken cancellationToken
+	)
+	{
+		// Which caller wakes first is the scheduler's choice, so repeat the interleaving until it varies.
+		for (var attempt = 0; attempt < 200; attempt++)
+		{
+			var fake = new FakeGeneration { HoldRun = 2 };
+			fake.AtEnd = run => fake.Stale = run == 1;
+			using var shared = new SharedGeneration(fake.GenerateAsync, () => fake.Stale);
+
+			var first = shared.EnsureAsync(cancellationToken);
+			var second = shared.EnsureAsync(cancellationToken);
+			await fake.Started;
+			fake.Release();
+			await fake.SecondStarted;
+			await Task.Delay(2, cancellationToken);
+
+			// The second run cleared the stale flag when it started, and it is still holding its pages open.
+			first.IsCompleted.Should().BeFalse($"attempt {attempt}: the second run is still in flight");
+			second.IsCompleted.Should().BeFalse($"attempt {attempt}: the second run is still in flight");
+
+			fake.ReleaseHeld();
+			await Task.WhenAll(first, second).WaitAsync(Patience, cancellationToken);
+			fake.Runs.Should().Be(2);
+		}
 	}
 
 	[Test]
