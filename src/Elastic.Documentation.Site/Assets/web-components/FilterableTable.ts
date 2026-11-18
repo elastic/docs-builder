@@ -35,6 +35,8 @@ class FilterableTableElement extends HTMLElement {
     private facets: Facet[] = []
     private status: HTMLElement | null = null
     private controls: HTMLElement | null = null
+    private facetList: HTMLElement | null = null
+    private clearButton: HTMLButtonElement | null = null
     private facetSignature = ''
     private observer: MutationObserver | null = null
     private settleTimer = 0
@@ -204,6 +206,11 @@ class FilterableTableElement extends HTMLElement {
         return specs
     }
 
+    /**
+     * Lays the controls out in three rows: the search box on its own, the
+     * dropdowns in a grid with their labels above them, and the count with a
+     * "Clear filters" button that shows only while something is filtered.
+     */
     private buildControls(): void {
         const controls = document.createElement('div')
         controls.className = 'filterable-table-controls'
@@ -217,16 +224,42 @@ class FilterableTableElement extends HTMLElement {
         controls.appendChild(search)
         this.searchInput = search
 
+        const facetList = document.createElement('div')
+        facetList.className = 'filterable-table-facets'
+        controls.appendChild(facetList)
+        this.facetList = facetList
+
+        const summary = document.createElement('div')
+        summary.className = 'filterable-table-summary'
+
         const status = document.createElement('span')
         status.className = 'filterable-table-status'
         status.setAttribute('role', 'status')
         status.setAttribute('aria-live', 'polite')
-        controls.appendChild(status)
+        summary.appendChild(status)
         this.status = status
 
+        const clear = document.createElement('button')
+        clear.type = 'button'
+        clear.className = 'filterable-table-clear'
+        clear.textContent = 'Clear filters'
+        clear.hidden = true
+        clear.addEventListener('click', () => this.clearFilters())
+        summary.appendChild(clear)
+        this.clearButton = clear
+
+        controls.appendChild(summary)
         this.controls = controls
         this.insertBefore(controls, this.firstChild)
         this.renderFacets()
+    }
+
+    /** Empties the search box, sets every dropdown back to All, and returns focus to search. */
+    private clearFilters(): void {
+        if (this.searchInput) this.searchInput.value = ''
+        for (const facet of this.facets) facet.select.value = ''
+        this.applyFilters()
+        this.searchInput?.focus()
     }
 
     /**
@@ -235,9 +268,8 @@ class FilterableTableElement extends HTMLElement {
      * incidental DOM churn costs nothing.
      */
     private renderFacets(): void {
-        const controls = this.controls
-        const status = this.status
-        if (!controls || !status) return
+        const facetList = this.facetList
+        if (!facetList) return
 
         const specs = this.facetSpecs()
         const signature = JSON.stringify(specs)
@@ -254,7 +286,10 @@ class FilterableTableElement extends HTMLElement {
         for (const spec of specs) {
             const wrapper = document.createElement('label')
             wrapper.className = 'filterable-table-facet'
-            wrapper.append(`${spec.label}: `)
+            const name = document.createElement('span')
+            name.className = 'filterable-table-facet-label'
+            name.textContent = spec.label
+            wrapper.appendChild(name)
 
             const select = document.createElement('select')
             select.setAttribute('aria-label', `Filter by ${spec.label}`)
@@ -268,8 +303,7 @@ class FilterableTableElement extends HTMLElement {
             select.addEventListener('change', () => this.applyFilters())
 
             wrapper.appendChild(select)
-            // Keep the count last in the control row.
-            controls.insertBefore(wrapper, status)
+            facetList.appendChild(wrapper)
             this.facets.push({ colIndex: spec.colIndex, select })
         }
     }
@@ -340,6 +374,15 @@ class FilterableTableElement extends HTMLElement {
         // Drives the print rule: a printed copy of a filtered table keeps its
         // count, so it can't be mistaken for the complete table.
         this.dataset.filtered = String(visible < this.rows.length)
+
+        // Mark the dropdowns that narrow the table, and offer a way to undo
+        // everything only while something is set.
+        for (const facet of this.facets)
+            facet.select
+                .closest('label')
+                ?.toggleAttribute('data-active', facet.select.value !== '')
+        if (this.clearButton)
+            this.clearButton.hidden = query === '' && activeFacets.length === 0
 
         const text = `Showing ${visible} of ${this.rows.length}`
         // Only touch the live region when the count really changed, so typing

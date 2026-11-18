@@ -256,7 +256,8 @@
 	   that reads like the complete table. An unfiltered table prints with no
 	   controls at all, since there is nothing to disclose. */
 	.filterable-table-search,
-	.filterable-table-facet {
+	.filterable-table-facets,
+	.filterable-table-clear {
 		display: none !important;
 	}
 
@@ -275,39 +276,95 @@
 		display: block;
 	}
 
+	/* Three rows: the search box on its own, the dropdowns in a grid, then
+	   the count and the "Clear filters" button. The search box and the
+	   dropdowns never compete for the same row, so neither one squeezes or
+	   wraps the other. */
 	.filterable-table-controls {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
+		flex-direction: column;
 		gap: 0.75rem;
 		margin: 0.75rem 0;
 	}
 
 	.filterable-table-search {
-		min-width: 16rem;
-		padding: 0.375rem 0.625rem;
+		width: 100%;
+		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--color-grey-30);
 		border-radius: 6px;
 		font-size: 0.875rem;
+	}
+
+	/* Equal columns that wrap as the page narrows, so the dropdowns line up
+	   whatever their labels and values are. */
+	.filterable-table-facets {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+		gap: 0.75rem;
+
+		&:empty {
+			display: none;
+		}
 	}
 
 	.filterable-table-facet {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		min-width: 0;
 		font-size: 0.875rem;
+	}
+
+	.filterable-table-facet-label {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-ink-light);
 	}
 
 	.filterable-table-facet select {
-		padding: 0.25rem 0.5rem;
+		width: 100%;
+		min-width: 0;
+		padding: 0.375rem 0.5rem;
 		border: 1px solid var(--color-grey-30);
 		border-radius: 6px;
+		background-color: var(--color-white);
 		font-size: 0.875rem;
+		text-overflow: ellipsis;
+	}
+
+	/* A dropdown that's narrowing the table, so readers can see at a glance
+	   which filters are on. */
+	.filterable-table-facet[data-active] select {
+		border-color: var(--color-blue-elastic);
+		box-shadow: 0 0 0 1px var(--color-blue-elastic);
+	}
+
+	.filterable-table-summary {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
 	}
 
 	.filterable-table-status {
-		margin-inline-start: auto;
 		font-size: 0.8125rem;
 		color: var(--color-grey-100);
+	}
+
+	.filterable-table-clear {
+		padding: 0;
+		border: 0;
+		background: none;
+		font-size: 0.8125rem;
+		color: var(--color-blue-elastic);
+		cursor: pointer;
+
+		&:hover {
+			text-decoration: underline;
+		}
+
+		&[hidden] {
+			display: none;
+		}
 	}
 }

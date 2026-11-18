@@ -534,9 +534,9 @@ describe('filterable-table author-chosen dropdowns', () => {
       </filterable-table>`
 
     const facetLabels = () =>
-        Array.from(document.querySelectorAll('.filterable-table-facet')).map(
-            (f) => f.textContent?.split(':')[0]
-        )
+        Array.from(
+            document.querySelectorAll('.filterable-table-facet-label')
+        ).map((label) => label.textContent)
 
     it('offers a dropdown for every qualifying column by default', () => {
         document.body.innerHTML = SCORES_HTML('')
@@ -634,5 +634,70 @@ describe('filterable-table author-chosen dropdowns', () => {
         document.body.innerHTML = SCORES_HTML('data-facet-columns="0,x"')
         customElements.upgrade(document.body)
         expect(facetLabels()).toEqual(['Provider'])
+    })
+})
+
+describe('filterable-table control layout', () => {
+    const clearButton = () =>
+        document.querySelector<HTMLButtonElement>('.filterable-table-clear')!
+    const search = () =>
+        document.querySelector<HTMLInputElement>('.filterable-table-search')!
+    const select = () =>
+        document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+
+    it('puts search, dropdowns, and the count in separate rows', () => {
+        mount()
+        const rows = Array.from(
+            document.querySelector('.filterable-table-controls')!.children
+        ).map((el) => el.className)
+        expect(rows).toEqual([
+            'filterable-table-search',
+            'filterable-table-facets',
+            'filterable-table-summary',
+        ])
+        expect(
+            document.querySelector('.filterable-table-facet-label')?.textContent
+        ).toBe('Support status')
+    })
+
+    it('shows Clear filters only while something is filtered', () => {
+        mount()
+        expect(clearButton().hidden).toBe(true)
+
+        search().value = 'apache'
+        search().dispatchEvent(new Event('input'))
+        expect(clearButton().hidden).toBe(false)
+
+        search().value = ''
+        search().dispatchEvent(new Event('input'))
+        expect(clearButton().hidden).toBe(true)
+    })
+
+    it('marks a dropdown that is narrowing the table', () => {
+        mount()
+        const facet = document.querySelector('.filterable-table-facet')!
+        expect(facet.hasAttribute('data-active')).toBe(false)
+
+        select().value = 'Core'
+        select().dispatchEvent(new Event('change'))
+        expect(facet.hasAttribute('data-active')).toBe(true)
+    })
+
+    it('resets search and dropdowns from Clear filters', () => {
+        mount()
+        search().value = 'host'
+        search().dispatchEvent(new Event('input'))
+        select().value = 'Core'
+        select().dispatchEvent(new Event('change'))
+        expect(visibleRows()).toHaveLength(1)
+
+        clearButton().click()
+        expect(search().value).toBe('')
+        expect(select().value).toBe('')
+        expect(visibleRows()).toHaveLength(4)
+        expect(clearButton().hidden).toBe(true)
+        expect(document.activeElement).toBe(search())
     })
 })
