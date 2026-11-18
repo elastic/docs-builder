@@ -1,0 +1,5 @@
+###
+POST {{API_URL}}/other?size=2
+Content-Type: application/json
+
+{"size":1}

@@ -271,6 +271,8 @@ const addCopyButtonToCodeCells = (
         const target = searchElement.querySelector(
             trigger.attributes['data-clipboard-target'].value
         )
+        if (target.closest('[data-code-card][data-lang="HTTP" i]'))
+            return target.querySelector('code')?.textContent ?? ''
         // get filtered text
         const excludes = ['.code-callout', '.linenos', '.language-apiheader']
         const text = Array.from(target.querySelectorAll('code'))

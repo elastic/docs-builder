@@ -7,13 +7,36 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Site.FileProviders;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 {
+	[Test]
+	[Arguments("elasticsearch", "ELASTICSEARCH_URL")]
+	[Arguments("serverless-elasticsearch", "ELASTICSEARCH_URL")]
+	[Arguments("kibana", "KIBANA_URL")]
+	[Arguments("logstash", "LOGSTASH_URL")]
+	[Arguments("cloud-enterprise", "API_URL")]
+	public void Create_WithoutServers_PassesTheProductsHostVariableToHttpExamples(string productId, string expected)
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First();
+		var context = fixture.RenderContextFor(nav) with
+		{
+			Model = new OpenApiDocument(),
+			Product = new Product { Id = productId, DisplayName = productId }
+		};
+		var operation = new ApiOperation(HttpMethod.Get, new OpenApiOperation(), "/_cat", new OpenApiPathItem(), "Help");
+
+		var page = OperationPageModel.Create(operation, context);
+
+		page.Scenarios.Single().CodeSamples.Single(static s => s.IsHttp).Source.Should().Be("###\nGET {{" + expected + "}}/_cat\n");
+	}
+
 	[Test]
 	public async Task Render_Operation_PutsBaseUrlInTheRailAboveTheExamples()
 	{

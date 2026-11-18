@@ -1,0 +1,2 @@
+###
+GET {{API_URL}}/?a=chosen&b=other

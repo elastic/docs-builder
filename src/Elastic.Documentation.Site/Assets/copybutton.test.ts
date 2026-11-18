@@ -17,6 +17,23 @@ const card = `
 `
 
 describe('initCopyButton', () => {
+    it('copies a complete HTTP file including its final newline', () => {
+        const source =
+            '@BASE_URL = https://example.test\n\n### Search\nPOST {{BASE_URL}}/_search\nContent-Type: application/json\n\n{"query":"café"}\n'
+        document.body.innerHTML =
+            '<section data-code-card data-lang="HTTP"><span data-code-actions></span><div class="highlight"><pre><code></code></pre></div></section>'
+        document.querySelector('code')!.textContent = source
+        const writeText = vi.fn().mockResolvedValue(undefined)
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText },
+        })
+        initCopyButton()
+
+        document.querySelector<HTMLButtonElement>('.copybtn')!.click()
+
+        expect(writeText).toHaveBeenCalledWith(source)
+    })
     it('overlays the button next to the code when there is no card', () => {
         document.body.innerHTML = plain
 

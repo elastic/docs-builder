@@ -15,6 +15,12 @@ public record AuthRequirement(IReadOnlyList<AuthScheme> Schemes)
 	public string Label => string.Join(" + ", Schemes.Select(static s => s.Label));
 }
 
+public sealed record HttpSecuritySupported(IReadOnlyList<IOpenApiSecurityScheme> Schemes);
+
+public sealed record HttpSecurityUnsupported;
+
+public readonly union HttpSampleSecurity(HttpSecuritySupported, HttpSecurityUnsupported);
+
 /// <summary>Where an endpoint's <c>auth</c> badge points: the Authentication page, the endpoint's own section, or nowhere.</summary>
 public enum AuthBadgeTarget
 {
@@ -45,6 +51,29 @@ public record AuthBadge(AuthBadgeKind Kind, AuthBadgeTarget Target)
 
 public static class OpenApiAuthSchemeResolver
 {
+	internal static HttpSampleSecurity HttpSchemes(OpenApiOperation operation, OpenApiDocument document)
+	{
+		var requirements = operation.Security ?? document.Security;
+		if (requirements is not { Count: > 0 } || AllowsAnonymous(requirements))
+			return new HttpSecuritySupported([]);
+		foreach (var requirement in requirements)
+		{
+			var schemes = requirement.Keys.Select(key => Target(key, document)).ToArray();
+			if (
+				schemes.All(static s => s is not null && SyntheticCodeSamples.SendsHttp(s))
+				&& schemes.OfType<IOpenApiSecurityScheme>().Select(HttpCredentialSlot).Distinct(StringComparer.Ordinal).Count()
+					== schemes.Length
+			)
+				return new HttpSecuritySupported([.. schemes.OfType<IOpenApiSecurityScheme>()]);
+		}
+		return new HttpSecurityUnsupported();
+	}
+
+	private static string HttpCredentialSlot(IOpenApiSecurityScheme scheme) =>
+		scheme.Type == SecuritySchemeType.ApiKey
+			? $"{scheme.In}:{(scheme.In == ParameterLocation.Header ? scheme.Name?.ToUpperInvariant() : scheme.Name)}"
+			: "Header:AUTHORIZATION";
+
 	/// <summary>The alternatives every endpoint inherits: the document's <c>security</c>, or one per declared scheme when the document has none.</summary>
 	public static IReadOnlyList<AuthRequirement> ResolveDocument(OpenApiDocument document)
 	{

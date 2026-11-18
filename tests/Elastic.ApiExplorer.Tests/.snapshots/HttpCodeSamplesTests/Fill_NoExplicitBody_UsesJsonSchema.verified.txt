@@ -1,0 +1,7 @@
+###
+GET {{API_URL}}/_search
+Content-Type: application/json
+
+{
+  "size": 0
+}

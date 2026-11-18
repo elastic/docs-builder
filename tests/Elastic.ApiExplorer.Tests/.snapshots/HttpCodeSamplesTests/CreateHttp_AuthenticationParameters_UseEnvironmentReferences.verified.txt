@@ -1,0 +1,4 @@
+###
+GET {{API_URL}}/things/{{PATH_ID}}?size={{QUERY_SIZE}}&key={{API_KEY_2}}
+X-Trace: {{HEADER_X_TRACE}}
+Authorization: Bearer {{TOKEN}}

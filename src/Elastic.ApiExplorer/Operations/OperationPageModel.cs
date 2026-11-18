@@ -176,6 +176,20 @@ public partial record OperationPageModel
 			),
 			context.Product?.Id
 		);
+		scenarios =
+		[
+			.. HttpCodeSamples.Fill(
+				scenarios,
+				new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
+				{
+					Parameters = parameters,
+					Servers = servers,
+					HostVariable = target.HostVariable
+				},
+				analyzer,
+				OpenApiAuthSchemeResolver.HttpSchemes(operation, document)
+			)
+		];
 		ExternalDocLink? externalDocs = null;
 		if (operation.ExternalDocs?.Url is not null)
 		{
