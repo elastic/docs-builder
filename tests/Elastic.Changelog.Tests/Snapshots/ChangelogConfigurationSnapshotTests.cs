@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Testing;
 using Nullean.Snapshots.Json;
 

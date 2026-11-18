@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.ReleaseNotes;
 using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Serialization;
@@ -32,7 +33,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(ChangelogEntryDto))]
 [YamlSerializable(typeof(BundleDto))]
 [YamlSerializable(typeof(ChangelogConfigMinimalDto))]
-[YamlSerializable(typeof(ChangelogConfigurationYaml))]
+[YamlSerializable(typeof(ChangelogConfigurationDto))]
 [YamlSerializable(typeof(RelatedLearningConfigDto))]
 // PreferredObjectCreationHandling is pinned to the runtime default (Replace). Left unset, the generator emits both
 // the Populate and the Replace reader for every member, which doubles the generated code (6.9 MB, 127k lines) and

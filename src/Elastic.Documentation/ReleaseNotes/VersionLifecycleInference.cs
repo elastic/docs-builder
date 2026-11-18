@@ -4,7 +4,7 @@
 
 using System.Globalization;
 
-namespace Elastic.Documentation.Configuration.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Utility for inferring lifecycle from version prerelease monikers.

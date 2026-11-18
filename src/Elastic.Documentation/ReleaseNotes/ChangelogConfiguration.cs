@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
-using Elastic.Documentation.ReleaseNotes;
 
-namespace Elastic.Documentation.Configuration.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Configuration for changelog generation

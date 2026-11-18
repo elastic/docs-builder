@@ -2,9 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.ReleaseNotes;
-
-namespace Elastic.Documentation.Configuration.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Top-level rules configuration for controlling changelog creation and publishing.

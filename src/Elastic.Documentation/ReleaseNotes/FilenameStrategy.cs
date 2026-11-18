@@ -5,7 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using NetEscapades.EnumGenerators;
 
-namespace Elastic.Documentation.Configuration.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>Controls how changelog files created by 'changelog add' are named.</summary>
 [EnumExtensions]
