@@ -125,7 +125,7 @@ public class DocumentationSetLoaderTests
 		var scoped = new ScopedFileSystem(fileSystem, DocsetGolden.Root);
 
 		var definition = DocumentationSetLoader.Load(collector, docsetFile, scoped).Value;
-		var file = DocumentationSetFile.LoadAndResolve(new DiagnosticsCollector([]), docsetFile, scoped);
+		var file = DocumentationSetDto.LoadAndResolve(new DiagnosticsCollector([]), docsetFile, scoped);
 
 		definition.TableOfContents.Should().BeEquivalentTo(file.TableOfContents);
 	}

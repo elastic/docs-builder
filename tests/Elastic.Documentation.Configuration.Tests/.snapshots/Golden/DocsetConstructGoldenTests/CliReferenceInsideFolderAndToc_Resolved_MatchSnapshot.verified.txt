@@ -8,7 +8,7 @@ FolderRef  tools
 IsolatedTableOfContentsRef  nested
   CliReferenceRef  nested/nested/schema (container-relative: nested/schema)
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <FolderRef>:

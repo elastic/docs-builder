@@ -29,7 +29,7 @@ public class DocsetDiagnosticsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 		diagnostics:
-		throws InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Toc.DocumentationSetFile'.
+		throws InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Toc.DocumentationSetDto'.
 		"""
 			);
 
@@ -1104,7 +1104,7 @@ public class DocsetDiagnosticsGoldenTests
 			new Dictionary<string, System.IO.Abstractions.TestingHelpers.MockFileData>(),
 			DocsetGolden.Root
 		);
-		var docSet = new Elastic.Documentation.Configuration.Toc.DocumentationSetFile();
+		var docSet = new Elastic.Documentation.Configuration.Toc.DocumentationSetDto();
 		var config = DocsetGolden.CreateConfiguration(docSet, collector, fileSystem, withGlobalConfig: false);
 
 		$"{collector.Captured.ToSnapshotText()}project: {config.Project}".Should().MatchInlineSnapshot(

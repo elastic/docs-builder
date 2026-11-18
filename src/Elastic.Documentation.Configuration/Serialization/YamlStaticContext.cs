@@ -25,7 +25,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(VersionsConfigDto))]
 [YamlSerializable(typeof(ProductConfigDto))]
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]
-[YamlSerializable(typeof(DocumentationSetFile))]
+[YamlSerializable(typeof(DocumentationSetDto))]
 [YamlSerializable(typeof(TableOfContentsFile))]
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(SearchConfigDto))]

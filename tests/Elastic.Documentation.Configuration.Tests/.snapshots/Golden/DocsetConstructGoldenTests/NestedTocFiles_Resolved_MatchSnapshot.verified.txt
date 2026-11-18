@@ -14,7 +14,7 @@ FolderRef  area
   IsolatedTableOfContentsRef  area/inner
     FileRef  area/inner/leaf.md (container-relative: leaf.md)
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <IndexFileRef>:

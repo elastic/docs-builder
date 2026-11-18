@@ -324,7 +324,7 @@ public class FileInfoValidationTests() : DocumentationSetNavigationTestBase()
 		advanced.Should().NotBeNull("advanced TOC should exist");
 		advanced.PathRelativeToDocumentationSet.Value.Should().Be("setup/advanced");
 
-		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetDto.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
 			var path = fileSystem.FileInfo.New(

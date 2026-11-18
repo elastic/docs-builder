@@ -123,7 +123,7 @@ public class PhysicalDocsetTests()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetDto.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
 			var path = fileSystem.FileInfo.New(Path.Join(configPath.Directory!.FullName, fileRef.PathRelativeToDocumentationSet));

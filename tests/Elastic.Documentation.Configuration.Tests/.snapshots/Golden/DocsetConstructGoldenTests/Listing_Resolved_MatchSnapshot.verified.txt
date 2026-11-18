@@ -11,7 +11,7 @@ ListingRef  notes listing=ListingOptions { Glob = *.md, Sort = , Exclude = Syste
   IndexFileRef  notes/index.md
   FileRef  notes/a.md [hidden]
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <IndexFileRef>:

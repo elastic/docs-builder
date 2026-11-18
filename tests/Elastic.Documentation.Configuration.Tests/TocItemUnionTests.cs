@@ -32,7 +32,7 @@ public class TocItemUnionTests
 	{
 		var tree = Folder("a", File("a/one.md", File("a/two.md")), Folder("a/b", File("a/b/three.md")));
 
-		DocumentationSetFile
+		DocumentationSetDto
 			.GetFileRefs(tree)
 			.Select(f => f.PathRelativeToDocumentationSet.Value)
 			.Should()
@@ -44,7 +44,7 @@ public class TocItemUnionTests
 	{
 		var listing = new ListingRef(DocsetPath.From("l"), ContainerPath.From("l"), [], "docset.yml", new ListingOptions());
 
-		var act = () => DocumentationSetFile.GetFileRefs(listing);
+		var act = () => DocumentationSetDto.GetFileRefs(listing);
 
 		act.Should().Throw<Exception>().WithMessage("Unexpected item type ListingRef");
 	}
@@ -52,7 +52,7 @@ public class TocItemUnionTests
 	[Test]
 	public void GetFileRefs_InvalidEntry_ThrowsWithItsTypeName()
 	{
-		var act = () => DocumentationSetFile.GetFileRefs(new InvalidTocItemRef("x"));
+		var act = () => DocumentationSetDto.GetFileRefs(new InvalidTocItemRef("x"));
 
 		act.Should().Throw<Exception>().WithMessage("Unexpected item type InvalidTocItemRef");
 	}

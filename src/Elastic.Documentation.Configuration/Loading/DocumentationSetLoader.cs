@@ -29,7 +29,7 @@ public static class DocumentationSetLoader
 	) =>
 		docsetFile.Exists
 			? Load(collector, docsetFile, fileSystem).Value
-			: ToDefinition(new DocumentationSetFile(), docsetFile, docsetFile.Directory!);
+			: ToDefinition(new DocumentationSetDto(), docsetFile, docsetFile.Directory!);
 
 	/// <summary>Loads <paramref name="docsetFile"/> and its table of contents, reporting to <paramref name="collector"/>. A file that is not there throws.</summary>
 	public static Loaded<DocumentationSetDefinition> Load(
@@ -39,7 +39,7 @@ public static class DocumentationSetLoader
 		HashSet<HintType>? noSuppress = null
 	)
 	{
-		var dto = DocumentationSetFile.LoadAndResolve(collector, docsetFile, fileSystem, noSuppress);
+		var dto = DocumentationSetDto.LoadAndResolve(collector, docsetFile, fileSystem, noSuppress);
 		return ToDefinition(dto, docsetFile, docsetFile.Directory!).Check(docsetFile.FullName);
 	}
 
@@ -52,7 +52,7 @@ public static class DocumentationSetLoader
 		HashSet<HintType>? noSuppress = null
 	)
 	{
-		var dto = DocumentationSetFile.LoadAndResolve(collector, yaml, sourceDirectory, fileSystem, noSuppress);
+		var dto = DocumentationSetDto.LoadAndResolve(collector, yaml, sourceDirectory, fileSystem, noSuppress);
 		var docsetFile = sourceDirectory.FileSystem.FileInfo.New(Path.Join(sourceDirectory.FullName, "docset.yml"));
 		return ToDefinition(dto, docsetFile, sourceDirectory).Check(docsetFile.FullName);
 	}
@@ -80,7 +80,7 @@ public static class DocumentationSetLoader
 	/// Not for anything that builds from the result.
 	/// </summary>
 	public static DocumentationSetDefinition LoadMetadata(IFileInfo docsetFile) =>
-		ToDefinition(DocumentationSetFile.LoadMetadata(docsetFile), docsetFile, docsetFile.Directory!);
+		ToDefinition(DocumentationSetDto.LoadMetadata(docsetFile), docsetFile, docsetFile.Directory!);
 
 	/// <summary>
 	/// Something written with no value reaches here as null: a key (<c>exclude:</c> and nothing under it) or a list item or map value
@@ -89,7 +89,7 @@ public static class DocumentationSetLoader
 	/// <c>Could not load docset.yml:</c> diagnostic. Mapping must not dereference it.
 	/// </summary>
 	internal static DocumentationSetDefinition ToDefinition(
-		DocumentationSetFile dto,
+		DocumentationSetDto dto,
 		IFileInfo docsetFile,
 		IDirectoryInfo sourceDirectory
 	) =>

@@ -2,7 +2,7 @@ diagnostics:
 toc:
 IndexFileRef  index.md
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "codex-member"
   TableOfContents:
     - <IndexFileRef>:

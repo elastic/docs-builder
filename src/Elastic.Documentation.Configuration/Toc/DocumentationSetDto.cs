@@ -19,7 +19,7 @@ using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-public class DocumentationSetFile : TableOfContentsFile
+public class DocumentationSetDto : TableOfContentsFile
 {
 	[YamlPropertyName("max_toc_depth")]
 	public int MaxTocDepth { get; set; } = 2;
@@ -112,32 +112,32 @@ public class DocumentationSetFile : TableOfContentsFile
 		};
 	}
 
-	private static DocumentationSetFile Deserialize(string json, string? sourceName = null) =>
-		ConfigurationFileProvider.Deserialize<DocumentationSetFile>(json, sourceName);
+	private static DocumentationSetDto Deserialize(string json, string? sourceName = null) =>
+		ConfigurationFileProvider.Deserialize<DocumentationSetDto>(json, sourceName);
 
 	/// <summary>
 	/// Deserializes a <c>docset.yml</c>, reporting unknown keys to <paramref name="collector"/> instead of
 	/// silently skipping them.
 	/// </summary>
-	private static new DocumentationSetFile Deserialize(string json, IDiagnosticsCollector collector, string sourceName) =>
-		ConfigurationFileProvider.Deserialize<DocumentationSetFile>(json, collector, sourceName);
+	private static new DocumentationSetDto Deserialize(string json, IDiagnosticsCollector collector, string sourceName) =>
+		ConfigurationFileProvider.Deserialize<DocumentationSetDto>(json, collector, sourceName);
 
 	/// <summary>
-	/// Loads a DocumentationSetFile from a file for reading metadata only (e.g. codex section).
+	/// Loads a DocumentationSetDto from a file for reading metadata only (e.g. codex section).
 	/// Does not perform full TOC resolution.
 	/// </summary>
-	public static DocumentationSetFile LoadMetadata(IFileInfo file)
+	public static DocumentationSetDto LoadMetadata(IFileInfo file)
 	{
 		var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 		return Deserialize(yaml, file.FullName);
 	}
 
 	/// <summary>
-	/// Loads a DocumentationSetFile and recursively resolves all IsolatedTableOfContentsRef items,
+	/// Loads a DocumentationSetDto and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(
+	public static DocumentationSetDto LoadAndResolve(
 		IDiagnosticsCollector collector,
 		IFileInfo docsetPath,
 		ScopedFileSystem? fileSystem = null,
@@ -168,11 +168,11 @@ public class DocumentationSetFile : TableOfContentsFile
 	public IReadOnlyDictionary<string, string> TocDefaultCtas { get; private set; } = FrozenDictionary<string, string>.Empty;
 
 	/// <summary>
-	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
+	/// Loads a DocumentationSetDto from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(
+	public static DocumentationSetDto LoadAndResolve(
 		IDiagnosticsCollector collector,
 		string yaml,
 		IDirectoryInfo sourceDirectory,
