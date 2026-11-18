@@ -11,7 +11,27 @@ async function highlightHttp(source: string, language = 'http') {
     return code
 }
 
-it('highlights a generated HTTP file including variables and its JSON body', async () => {
+it('highlights the generated sample: a bare separator, then the request', async () => {
+    const code = await highlightHttp(`###
+POST {{ELASTICSEARCH_URL}}/_search
+Authorization: ApiKey {{API_KEY}}
+Content-Type: application/json
+
+{"size": 1}
+`)
+
+    expect(code.querySelector('.hljs-comment')?.textContent).toBe('###')
+    expect(code.querySelector('.hljs-keyword')?.textContent).toBe('POST')
+    expect(
+        [...code.querySelectorAll('.hljs-subst')].map((e) => e.textContent)
+    ).toEqual(['{{ELASTICSEARCH_URL}}', '{{API_KEY}}'])
+    expect(
+        [...code.querySelectorAll('.hljs-attribute')].map((e) => e.textContent)
+    ).toEqual(['Authorization', 'Content-Type'])
+    expect(code.querySelector('.hljs-attr')?.textContent).toBe('"size"')
+})
+
+it('highlights an authored HTTP file including variables and its JSON body', async () => {
     const code =
         await highlightHttp(`@BASE_URL = https://your-deployment.example
 @API_KEY = REPLACE_ME

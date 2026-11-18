@@ -264,6 +264,7 @@ public class HttpCodeSamplesTests
 
 	[Test]
 	[Arguments("api-key-header", "GET {{API_URL}}/things\nAuthorization: ApiKey {{API_KEY}}")]
+	[Arguments("api-key-custom-header", "GET {{API_URL}}/things\nX-Api-Key: {{API_KEY}}")]
 	[Arguments("api-key-query", "GET {{API_URL}}/things?key={{API_KEY}}")]
 	[Arguments("basic", "GET {{API_URL}}/things\nAuthorization: Basic {{BASIC_CREDENTIALS}}")]
 	[Arguments("bearer", "GET {{API_URL}}/things\nAuthorization: Bearer {{TOKEN}}")]
@@ -275,6 +276,8 @@ public class HttpCodeSamplesTests
 		{
 			"api-key-header" =>
 				new OpenApiSecurityScheme { Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Header, Name = "Authorization" },
+			"api-key-custom-header" =>
+				new OpenApiSecurityScheme { Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Header, Name = "X-Api-Key" },
 			"api-key-query" => new OpenApiSecurityScheme { Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Query, Name = "key" },
 			"basic" => new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "basic" },
 			"bearer" => new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer" },
@@ -287,22 +290,6 @@ public class HttpCodeSamplesTests
 		);
 
 		sample.Source.Should().Be($"###\n{request}\n");
-	}
-
-	[Test]
-	[Arguments("basic")]
-	[Arguments("bearer")]
-	public void CreateHttp_HttpAuthentication_UsesEditableCredential(string scheme)
-	{
-		var sample = SyntheticCodeSamples.CreateHttp(
-			new SyntheticSampleInput(HttpMethod.Get, "/", new OpenApiOperation())
-			{
-				Security = [new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = scheme }]
-			},
-			null
-		);
-
-		sample.Source.Should().MatchSnapshot(scheme, new SnapshotOptions { NameReplacesArguments = true });
 	}
 
 	[Test]
@@ -456,6 +443,48 @@ public class HttpCodeSamplesTests
 		).Single();
 
 		scenario.CodeSamples.Select(static s => s.Language).Should().Equal("Java", "HTTP");
+	}
+
+	[Test]
+	public void Fill_CurlSample_PlacesHttpDirectlyAfterIt()
+	{
+		var scenario = Fill(
+			new OpenApiOperation(),
+			new ExampleScenario
+			{
+				Title = "Read",
+				TabId = "read",
+				CodeSamples =
+				[
+					new CodeSample("Console", "GET /_search", "language-console"),
+					new CodeSample("curl", "curl \"$ELASTICSEARCH_URL/_search\"", "language-curl"),
+					new CodeSample("Python", "client.search()", "language-python")
+				]
+			}
+		).Single();
+
+		scenario.CodeSamples.Select(static s => s.Language).Should().Equal("Console", "curl", "HTTP", "Python");
+	}
+
+	[Test]
+	public void Fill_JsonSuffixMediaType_SendsItAsTheContentType()
+	{
+		var operation = new OpenApiOperation
+		{
+			RequestBody = new OpenApiRequestBody
+			{
+				Content = new Dictionary<string, IOpenApiMediaType> { ["application/vnd.elasticsearch+json"] = new OpenApiMediaType() }
+			}
+		};
+
+		var scenario = Fill(operation, new ExampleScenario { Title = "Write", TabId = "write", RequestJson = "{}" }).Single();
+
+		scenario
+			.CodeSamples
+			.Single(static s => s.IsHttp)
+			.Source
+			.Should()
+			.Be("###\nGET {{API_URL}}/_search\nContent-Type: application/vnd.elasticsearch+json\n\n{}\n");
 	}
 
 	[Test]

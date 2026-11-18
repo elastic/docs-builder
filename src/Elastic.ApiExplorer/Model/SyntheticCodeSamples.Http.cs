@@ -12,10 +12,12 @@ public static partial class SyntheticCodeSamples
 	{
 		var variables = new HttpVariableNames();
 		var serverPrefix = HttpServerPrefix(input, variables);
-		var request = input with { Parameters = [.. input.Parameters.Where(p => !IsHttpCredential(p, input.Security))] };
-		var path = HttpPath(request, variables);
+		// One entry per scheme, so a credential's variable keeps the number of its scheme.
+		var credentials = input.Security.Select(SampleCredential.ForHttpFile).ToArray();
+		var request = input with { Parameters = [.. input.Parameters.Where(p => !credentials.Any(c => c?.Replaces(p) == true))] };
+		var path = HttpPath(request, credentials, variables);
 		var headers = HttpHeaders(request, variables);
-		path = HttpCredentials(input with { Route = path }, headers);
+		path = HttpCredentials(path, credentials, headers);
 		if (input.Body is not null)
 			headers["Content-Type"] = mediaType ?? "application/json";
 
@@ -48,41 +50,13 @@ public static partial class SyntheticCodeSamples
 
 	private static string HttpEnvironmentVariable(string name) => "{{" + Placeholder(name.Trim('$', '{', '}'), forShell: false) + "}}";
 
-	internal static bool SendsHttp(IOpenApiSecurityScheme scheme) => scheme.Type switch
-	{
-		SecuritySchemeType.ApiKey => scheme.In is ParameterLocation.Header or ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name),
-		SecuritySchemeType.Http => scheme.Scheme?.ToLowerInvariant() is "basic" or "bearer",
-		SecuritySchemeType.OAuth2 or SecuritySchemeType.OpenIdConnect => true,
-		_ => false
-	};
-
-	private static bool IsHttpCredential(IOpenApiParameter parameter, IReadOnlyList<IOpenApiSecurityScheme> security) =>
-		security.Any(
-			scheme => scheme.Type == SecuritySchemeType.ApiKey
-				? scheme.In == parameter.In && string.Equals(
-					scheme.Name,
-					parameter.Name,
-					parameter.In == ParameterLocation.Header ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal
-				)
-				: parameter.In == ParameterLocation.Header && string.Equals(
-					parameter.Name,
-					"Authorization",
-					StringComparison.OrdinalIgnoreCase
-				)
-		);
-
-	private static string HttpPath(SyntheticSampleInput input, HttpVariableNames variables)
+	private static string HttpPath(SyntheticSampleInput input, SampleCredential?[] credentials, HttpVariableNames variables)
 	{
 		var target = input.Route;
-		foreach (var scheme in input.Security.Where(static s => s.Type == SecuritySchemeType.ApiKey && s.In == ParameterLocation.Query))
-			target = WithoutHttpQueryKey(target, scheme.Name!);
-		var path = BuildPath(target, [.. input.Parameters.Where(static p => p.In == ParameterLocation.Path)]);
-		var split = path.IndexOf('?', StringComparison.Ordinal);
-		var route = split < 0 ? path : path[..split];
-		var query = split < 0 ? "" : path[(split + 1)..];
-		route = variables.Replace(route, "PATH");
-		query = variables.Replace(query, "QUERY");
-		path = route + (split < 0 ? "" : "?" + query);
+		foreach (var credential in credentials.Where(static c => c?.In == ParameterLocation.Query))
+			target = WithoutHttpQueryKey(target, credential!.Name);
+		var (route, written) = SplitQuery(BuildPath(target, [.. input.Parameters.Where(static p => p.In == ParameterLocation.Path)]));
+		var path = AppendQuery(variables.Replace(route, "PATH"), [.. written.Select(pair => variables.Replace(pair, "QUERY"))]);
 		var existing = QueryNames(path);
 		var pairs = input
 			.Parameters
@@ -106,30 +80,23 @@ public static partial class SyntheticCodeSamples
 				StringComparer.OrdinalIgnoreCase
 			);
 
-	private static string HttpCredentials(SyntheticSampleInput input, Dictionary<string, string> headers)
+	private static string HttpCredentials(string path, SampleCredential?[] credentials, Dictionary<string, string> headers)
 	{
-		var path = input.Route;
-		foreach (var (scheme, index) in input.Security.Select(static (s, i) => (s, i)))
+		foreach (var (credential, index) in credentials.Select(static (c, i) => (c, i)))
 		{
+			if (credential is null)
+				continue;
 			var suffix = index == 0 ? "" : $"_{index + 1}";
-			if (scheme.Type == SecuritySchemeType.ApiKey)
+			var value = credential.Kind switch
 			{
-				var credential = HttpEnvironmentVariable("API_KEY" + suffix);
-				if (scheme.In == ParameterLocation.Query)
-					path = WithHttpQueryCredential(path, scheme.Name!, credential);
-				else
-					headers[scheme.Name!] = scheme.Name!.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
-						? "ApiKey " + credential
-						: credential;
-			}
+				CredentialKind.Basic => "Basic " + HttpEnvironmentVariable("BASIC_CREDENTIALS" + suffix),
+				CredentialKind.Bearer => "Bearer " + HttpEnvironmentVariable("TOKEN" + suffix),
+				_ => (credential.IsAuthorizationHeader ? "ApiKey " : "") + HttpEnvironmentVariable("API_KEY" + suffix)
+			};
+			if (credential.In == ParameterLocation.Query)
+				path = WithHttpQueryCredential(path, credential.Name, value);
 			else
-			{
-				var basic = scheme.Type == SecuritySchemeType.Http
-					&& string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase);
-				headers["Authorization"] = basic
-					? "Basic " + HttpEnvironmentVariable("BASIC_CREDENTIALS" + suffix)
-					: "Bearer " + HttpEnvironmentVariable("TOKEN" + suffix);
-			}
+				headers[credential.Name] = value;
 		}
 		return path;
 	}

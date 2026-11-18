@@ -313,33 +313,16 @@ public static partial class SyntheticCodeSamples
 	}
 
 	/// <summary>Whether a curl has a form for a scheme's credential: a cookie key or mutual TLS has none.</summary>
-	internal static bool Sends(IOpenApiSecurityScheme scheme) => QueryKey(scheme) is not null || AuthFlag(scheme) is not null;
+	internal static bool Sends(IOpenApiSecurityScheme scheme) => SampleCredential.From(scheme) is not null;
 
-	/// <summary>The query pair for an API key that travels in the URL.</summary>
-	private static string? QueryKey(IOpenApiSecurityScheme scheme) =>
-		scheme.Type == SecuritySchemeType.ApiKey && scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name)
-			? $"{scheme.Name}={ApiKeyVariable}"
-			: null;
-
-	/// <summary>The curl flag that sends a scheme's credential, and the header it fills.</summary>
-	private static (string Header, string Flag)? AuthFlag(IOpenApiSecurityScheme scheme) => scheme.Type switch
+	/// <summary>The curl flag that sends a header credential.</summary>
+	private static string CurlFlag(SampleCredential credential) => credential.Kind switch
 	{
-		// An API key in the Authorization header travels behind the ApiKey scheme word, as every Elastic API expects it.
-		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header
-			&& string.Equals(scheme.Name, "Authorization", StringComparison.OrdinalIgnoreCase) =>
-			("Authorization", $"-H \"Authorization: ApiKey {ApiKeyVariable}\""),
-		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
-			(scheme.Name, $"-H \"{DoubleQuoted(scheme.Name)}: {ApiKeyVariable}\""),
-		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>
-			("Authorization", "-u \"${USERNAME}:${PASSWORD}\""),
-		// Digest is a challenge and response, which curl runs itself; a token header could not stand in for it.
-		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "digest", StringComparison.OrdinalIgnoreCase) =>
-			("Authorization", "--digest -u \"${USERNAME}:${PASSWORD}\""),
-		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) =>
-			("Authorization", "-H \"Authorization: Bearer ${TOKEN}\""),
-		SecuritySchemeType.OAuth2 or SecuritySchemeType.OpenIdConnect => ("Authorization", "-H \"Authorization: Bearer ${TOKEN}\""),
-		// Any other HTTP scheme (negotiate, hoba, ...) has no form curl can send from a sample.
-		_ => null
+		CredentialKind.ApiKey when credential.IsAuthorizationHeader => $"-H \"Authorization: ApiKey {ApiKeyVariable}\"",
+		CredentialKind.ApiKey => $"-H \"{DoubleQuoted(credential.Name)}: {ApiKeyVariable}\"",
+		CredentialKind.Basic => "-u \"${USERNAME}:${PASSWORD}\"",
+		CredentialKind.Digest => "--digest -u \"${USERNAME}:${PASSWORD}\"",
+		_ => "-H \"Authorization: Bearer ${TOKEN}\""
 	};
 
 	/// <summary>
@@ -353,18 +336,17 @@ public static partial class SyntheticCodeSamples
 			var flags = new List<string>();
 			var query = new List<string>();
 			var replaced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-			foreach (var scheme in schemes)
+			foreach (var credential in schemes.Select(SampleCredential.From).OfType<SampleCredential>())
 			{
-				if (QueryKey(scheme) is { } pair)
-					query.Add(pair);
+				if (credential.In == ParameterLocation.Query)
+					query.Add($"{credential.Name}={ApiKeyVariable}");
 				// A required header with an example of its own keeps it; one without is a placeholder the credential replaces.
 				else if (
-					AuthFlag(scheme) is { } flag
-					&& !requiredHeaders.Any(h => h.FromSpec && string.Equals(h.Name, flag.Header, StringComparison.OrdinalIgnoreCase))
+					!requiredHeaders.Any(h => h.FromSpec && string.Equals(h.Name, credential.Name, StringComparison.OrdinalIgnoreCase))
 				)
 				{
-					flags.Add(flag.Flag);
-					_ = replaced.Add(flag.Header);
+					flags.Add(CurlFlag(credential));
+					_ = replaced.Add(credential.Name);
 				}
 			}
 
