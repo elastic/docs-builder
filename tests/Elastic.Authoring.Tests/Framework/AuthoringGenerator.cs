@@ -70,7 +70,7 @@ public static class AuthoringGenerator
 			SkipStaticAssetExtraction = true
 		};
 
-		context.Configuration.Features.NavigationPreviewEnabled = options.NavigationPreview;
+		context.OverrideFeatures(f => f.With("navigation-preview", options.NavigationPreview));
 
 		var loggerFactory = new TestLoggerFactory();
 		var conversionCollector = new TestConversionCollector();

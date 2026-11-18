@@ -99,7 +99,7 @@ public sealed partial class PreviewDocset : IAsyncDisposable
 			}
 		);
 		var context = new BuildContext(new DiagnosticsCollector([]), docFs, configuration) { BuildType = options.BuildType };
-		context.Configuration.Features.NavigationPreviewEnabled = true;
+		context.OverrideFeatures(f => f.With("navigation-preview", true));
 
 		var set = new DocumentationSet(context, NullLoggerFactory.Instance, NoopCrossLinkResolver.Instance);
 		if (options.BuildType == BuildType.Assembler && options.NavigationHtml is null)
