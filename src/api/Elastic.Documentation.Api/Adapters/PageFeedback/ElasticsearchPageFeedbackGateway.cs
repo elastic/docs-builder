@@ -5,14 +5,11 @@
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Serialization;
-using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 
 internal sealed class ElasticsearchPageFeedbackGateway(
-	ITransport transport,
-	PageFeedbackIndex index,
 	IngestChannel<PageFeedbackDocument> channel,
 	ILogger<ElasticsearchPageFeedbackGateway> logger
 ) : IPageFeedbackService
@@ -50,29 +47,6 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 		catch (Exception exception)
 		{
 			logger.LogWarning(exception, "Failed to index page feedback {FeedbackId}", record.FeedbackId);
-			return false;
-		}
-	}
-
-	public async Task<bool> DeleteFeedbackAsync(Guid feedbackId, CancellationToken ctx)
-	{
-		try
-		{
-			var response = await transport.DeleteAsync<StringResponse>($"{index.Name}/_doc/{feedbackId}", cancellationToken: ctx);
-
-			if (response.ApiCallDetails.HasSuccessfulStatusCode || response.ApiCallDetails.HttpStatusCode is 404)
-				return true;
-
-			logger.LogWarning(
-				"Failed to delete page feedback {FeedbackId}: HTTP {StatusCode}",
-				feedbackId,
-				response.ApiCallDetails.HttpStatusCode
-			);
-			return false;
-		}
-		catch (Exception exception)
-		{
-			logger.LogWarning(exception, "Failed to delete page feedback {FeedbackId}", feedbackId);
 			return false;
 		}
 	}

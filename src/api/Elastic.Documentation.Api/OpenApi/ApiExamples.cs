@@ -102,7 +102,6 @@ internal static class ApiExamples
 				}
 			}
 		],
-		["delete-page-feedback"] = [new("Withdraw page feedback", "DELETE", $"/docs/_api/v1/page-feedback/{FeedbackId}")],
 		["list-apis"] = [new("Every API", "GET", "/docs/_api/v1/apis") { Response = "list-apis" }],
 		["get-api"] = [new("One API", "GET", "/docs/_api/v1/apis/elasticsearch") { Response = "get-api" }],
 		["list-api-groups"] = [new("Groups of an API", "GET", "/docs/_api/v1/apis/elasticsearch/groups") { Response = "list-api-groups" }],
@@ -154,7 +153,6 @@ internal static class ApiExamples
 		[("put-page-feedback", 400)] =
 			(ApiProblems.InvalidArguments, "The page feedback is invalid. Check pageUrl, pageTitle, reaction, reasons and comment."),
 		[("put-page-feedback", 503)] = (ApiProblems.FeedbackUnavailable, FeedbackUnavailable),
-		[("delete-page-feedback", 503)] = (ApiProblems.FeedbackUnavailable, FeedbackUnavailable),
 		[("get-api", 404)] = ("api-not-found", "No API 'nope'."),
 		[("list-api-groups", 400)] = (ApiProblems.InvalidArguments, "Pass an API key, such as 'elasticsearch'."),
 		[("list-api-operations", 400)] = (ApiProblems.InvalidArguments, "Pass q or endpoint, not both."),
