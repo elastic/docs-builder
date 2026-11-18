@@ -6,10 +6,16 @@ const rect = (left: number, width: number) =>
 // The columns report the widths the script applied through its custom properties, as the real layout does, and the reference takes
 // what is left of the shell. The rail's right edge stays where it is, so growing it moves its left edge. `inset` is space the
 // columns lose beyond the two 32px gaps, such as the legacy grid's right padding.
-function mountShell({ width = 1600, nav = 300, rail = 640, inset = 0 } = {}) {
+function mountShell({
+    width = 1600,
+    nav = 300,
+    rail = 640,
+    inset = 0,
+    padding = 0,
+} = {}) {
     document.body.innerHTML = `<div class="api-page-shell layout--three">
         <aside class="layout__nav"></aside>
-        <main class="layout__content"></main>
+        <main class="layout__content" style="padding: 0 ${padding}px 0 0"></main>
         <aside class="api-page-rail"></aside>
     </div>`
     const shell = document.querySelector<HTMLElement>('.api-page-shell')!
@@ -201,6 +207,44 @@ describe('initApiColumnResize', () => {
 
         expect(shell.style.getPropertyValue('--layout-rail-width')).toBe(
             '876px'
+        )
+    })
+
+    it.each(['nav', 'rail'])(
+        'keeps 360px for article content when dragging %s beside padding',
+        (side) => {
+            mountShell({ padding: 24 })
+            initApiColumnResize()
+
+            handle(side).dispatchEvent(
+                new MouseEvent('pointerdown', { clientX: 1000 })
+            )
+            handle(side).dispatchEvent(
+                new MouseEvent('pointermove', {
+                    clientX: side === 'nav' ? 3000 : 0,
+                })
+            )
+            handle(side).dispatchEvent(new MouseEvent('pointerup'))
+
+            expect(
+                document
+                    .querySelector('.layout__content')!
+                    .getBoundingClientRect().width - 24
+            ).toBe(360)
+        }
+    )
+
+    it('restores saved widths with 360px for article content beside padding', () => {
+        localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
+        mountShell({ width: 1404, padding: 24 })
+        initApiColumnResize()
+
+        expect(
+            document.querySelector('.layout__content')!.getBoundingClientRect()
+                .width - 24
+        ).toBe(360)
+        expect(localStorage.getItem('api-column-widths')).toBe(
+            '{"nav":560,"rail":900}'
         )
     })
 

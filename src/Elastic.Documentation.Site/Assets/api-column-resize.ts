@@ -111,14 +111,21 @@ export function initApiColumnResize() {
     const isSaved = (side: Side) =>
         typeof widths[side] === 'number' && Number.isFinite(widths[side])
 
-    // How far the columns can still grow before the reference would drop under contentMin, read from the reference column itself so
-    // whatever sits between the shell and the columns (padding, gaps, a width cap) is already counted. Negative when they crowd it.
+    // How far the columns can still grow before the reference's content would drop under contentMin. Count both the column's own
+    // padding and whatever sits between the shell and the columns (gaps, a width cap). Negative when they crowd it.
     // The reference stops at zero, so a window far too small for the columns reports only part of the shortage.
     const slack = (): number => {
-        const content = shell
-            .querySelector<HTMLElement>(variant.contentSelector)
-            ?.getBoundingClientRect()
-        return content ? content.width - contentMin : 0
+        const content = shell.querySelector<HTMLElement>(
+            variant.contentSelector
+        )
+        if (!content) return 0
+        const style = getComputedStyle(content)
+        return (
+            content.getBoundingClientRect().width -
+            parseFloat(style.paddingLeft) -
+            parseFloat(style.paddingRight) -
+            contentMin
+        )
     }
     const room = () => Math.max(0, slack())
 
