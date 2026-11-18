@@ -13,6 +13,7 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
@@ -54,7 +55,7 @@ public class CodexBuildSnapshotTests : CodexNavigationTestBase
 			fileSystem.AddFile($"{docs}/draft.md", new MockFileData("# Draft"));
 			var yaml =
 				$"project: '{reference.Name}'\ntoc:\n  - file: index.md\n  - folder: guide\n    children:\n      - file: index.md\n      - file: setup.md\n  - hidden: draft.md\n";
-			var docSet = DocumentationSetFile.LoadAndResolve(new DiagnosticsCollector([]), yaml, fileSystem.DirectoryInfo.New(docs));
+			var docSet = DocumentationSetLoader.LoadAndResolve(new DiagnosticsCollector([]), yaml, fileSystem.DirectoryInfo.New(docs));
 			var context = new TestDocumentationSetContext(
 				fileSystem,
 				fileSystem.DirectoryInfo.New(docs),

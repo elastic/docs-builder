@@ -1,0 +1,99 @@
+model <DocumentationSetDefinition>:
+  SourceFile: <path /docs/docset.yml>
+  SourceDirectory: <path /docs>
+  Project: "settings"
+  MaxTocDepth: 4
+  DevDocs: True
+  Island: False
+  CrossLinks:
+    - "docs-content"
+    - "public://elasticsearch"
+  ReleaseNotes:
+    - <ReleaseNotesDeclaration>:
+      Product: "elasticsearch"
+  Exclude:
+    - "_*.md"
+    - "!drafts/keep.md"
+  Extensions:
+    - "detection-rules"
+  Substitutions:
+    Product: "The Product"
+  Icon: "gear"
+  Registry: "public"
+  Features <DeclaredFeatures>:
+    PrimaryNav: True
+    DisableGithubEditLink: null
+    GuideNav: False
+  Api:
+    - <ApiDeclaration>:
+      ProductKey: "elasticsearch"
+      Entries:
+        - <ApiDeclarationEntry>:
+          Spec: "elasticsearch.json"
+          Product: "elasticsearch"
+          Repository: null
+          Children: []
+          CatalogCategories:
+            - "self"
+          Location <SourceLocation>:
+            Line: 41
+            Column: 7
+          ProductLocation <SourceLocation>:
+            Line: 42
+            Column: 16
+          SpecLocation <SourceLocation>:
+            Line: 41
+            Column: 13
+          RepositoryLocation: null
+          CatalogLocation <SourceLocation>:
+            Line: 44
+            Column: 9
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiDeclarationEntry>:
+        Spec: "elasticsearch.json"
+        Product: "elasticsearch"
+        Repository: null
+        Children: []
+        CatalogCategories:
+          - "self"
+        Location <SourceLocation>:
+          Line: 41
+          Column: 7
+        ProductLocation <SourceLocation>:
+          Line: 42
+          Column: 16
+        SpecLocation <SourceLocation>:
+          Line: 41
+          Column: 13
+        RepositoryLocation: null
+        CatalogLocation <SourceLocation>:
+          Line: 44
+          Column: 9
+        HasSpec: True
+        HasProduct: True
+  Products:
+    - "elasticsearch"
+  CodexGroup: "observability"
+  Branding <BrandingDeclaration>:
+    Icon: null
+    HeaderBg: "#112233"
+    OgImage: null
+    Favicon: null
+    AppleTouchIcon: null
+    Copyright: "Acme"
+  StorybookRegistry: "https://example.com/storybook"
+  HasStorybook: True
+  Ctas:
+    - <CtaDeclaration>:
+      Name: "custom"
+      Label: "Custom"
+      Url: "https://example.com/custom"
+      Benefits:
+        - "one"
+  SuppressDiagnostics:
+    - AutolinkElasticCoDocs
+  DefaultCta: null
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}

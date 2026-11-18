@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
@@ -195,7 +196,7 @@ internal static partial class DocsetGolden
 		var products = withGlobalConfig
 			? GoldenConfig.LoadProducts()
 			: new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary() };
-		return new ConfigurationFile(docSet, context, versions, products);
+		return new ConfigurationFile(DocumentationSetLoader.ToDefinition(docSet, configPath, docsDir), context, versions, products);
 	}
 
 	/// <summary>Names a file system entry by its path, so a dump does not walk the file system behind it.</summary>

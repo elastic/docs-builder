@@ -8,6 +8,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -106,7 +107,12 @@ public class ConfigurationFileReleaseNotesTests
 		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = CreateProductsConfiguration();
 
-		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		var config = new ConfigurationFile(
+			DocumentationSetLoader.ToDefinition(docSet, configPath, docsDir),
+			context,
+			versionsConfig,
+			productsConfig
+		);
 		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 		return (config, recorder.Diagnostics);
 	}

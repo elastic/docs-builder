@@ -12,6 +12,7 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
@@ -163,7 +164,7 @@ internal static class BaselineSite
 		foreach (var repository in stubRepositories)
 		{
 			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, $"/checkouts/current/{repository}");
-			var docset = DocumentationSetFile.LoadAndResolve(
+			var docset = DocumentationSetLoader.LoadAndResolve(
 				context.Collector,
 				fileSystem.FileInfo.New($"/checkouts/current/{repository}/docs/docset.yml"),
 				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
