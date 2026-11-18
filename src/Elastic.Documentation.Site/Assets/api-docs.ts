@@ -385,7 +385,10 @@ function initGlobalClickHandlers(): void {
 
         if (target.closest('[data-api-back-to-top]')) {
             e.preventDefault()
-            window.scrollTo({ top: 0, behavior: 'smooth' })
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+            })
             return
         }
 

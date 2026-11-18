@@ -101,4 +101,20 @@ describe('section links', () => {
 
         expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
     })
+
+    it('scrolls to the top at once when the reader prefers reduced motion', () => {
+        mountPinnedBar(
+            '<button type="button" data-api-back-to-top>Back to top</button>'
+        )
+        const scrollTo = vi.fn()
+        window.scrollTo = scrollTo as unknown as typeof window.scrollTo
+        vi.stubGlobal('matchMedia', () => ({ matches: true }))
+
+        document
+            .querySelector<HTMLButtonElement>('[data-api-back-to-top]')!
+            .click()
+
+        expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' })
+        vi.unstubAllGlobals()
+    })
 })
