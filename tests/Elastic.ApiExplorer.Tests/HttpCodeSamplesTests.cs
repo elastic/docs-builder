@@ -559,13 +559,14 @@ public class HttpCodeSamplesTests
 	[Test]
 	[Arguments("application/json", "application/x-ndjson")]
 	[Arguments("application/ndjson", "application/ndjson")]
+	[Arguments("application/json,application/ndjson;charset=utf-8", "application/ndjson;charset=utf-8")]
 	public void Fill_NdjsonBody_SendsANewlineDelimitedType(string listed, string sent)
 	{
 		var operation = new OpenApiOperation
 		{
 			RequestBody = new OpenApiRequestBody
 			{
-				Content = new Dictionary<string, IOpenApiMediaType> { [listed] = new OpenApiMediaType() }
+				Content = listed.Split(',').ToDictionary(static type => type, static IOpenApiMediaType (_) => new OpenApiMediaType())
 			}
 		};
 		const string body = "{ }\n{\"query\" : {\"match_all\" : {}}}";

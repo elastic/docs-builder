@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Model;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
@@ -37,7 +38,7 @@ public static class HttpCodeSamples
 		var body = scenario.RequestJson ?? RequestBodyExample.Build(analyzer, declared, content?.Value?.Schema);
 		if (input.Operation.RequestBody is not null && body is null)
 			return scenario;
-		var mediaType = body is null ? null : BodyMediaType(body, declared);
+		var mediaType = body is null ? null : BodyMediaType(body, declared, input.Operation.RequestBody);
 		if (body is not null && mediaType is null)
 			return scenario;
 		var (method, route) = GeneratedCodeSamples.RequestOf(scenario, endpoint);
@@ -62,7 +63,7 @@ public static class HttpCodeSamples
 	/// Specs often list only <c>application/json</c> for a newline-delimited body, as Elasticsearch's <c>_msearch</c> does, so
 	/// within those two the body's shape decides. Null for any other declared type or body, which a sample cannot reproduce.
 	/// </summary>
-	private static string? BodyMediaType(string body, string? declared)
+	private static string? BodyMediaType(string body, string? declared, IOpenApiRequestBody? requestBody)
 	{
 		if (RequestBodyExample.IsNdjson(declared))
 			return RequestBodyExample.IsNdjsonDocument(body) ? declared : null;
@@ -70,6 +71,9 @@ public static class HttpCodeSamples
 			return null;
 		if (RequestBodyExample.IsJsonDocument(body))
 			return declared ?? "application/json";
-		return RequestBodyExample.IsNdjsonDocument(body) ? "application/x-ndjson" : null;
+		if (!RequestBodyExample.IsNdjsonDocument(body))
+			return null;
+		// A type the operation advertises, parameters included, before the common one it may not accept.
+		return requestBody?.Content?.Keys.FirstOrDefault(RequestBodyExample.IsNdjson) ?? "application/x-ndjson";
 	}
 }
