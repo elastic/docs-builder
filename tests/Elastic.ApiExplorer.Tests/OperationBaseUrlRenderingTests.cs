@@ -38,6 +38,48 @@ public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Create_SeveralRoutesWithoutSpecSamples_SendsOneRequestFromEveryGeneratedCard()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First();
+		var context = fixture.RenderContextFor(nav) with
+		{
+			Model = new OpenApiDocument(),
+			Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" }
+		};
+		var operation = new OpenApiOperation
+		{
+			Description =
+				"**All methods and paths for this operation:**\n\n<div>\n  <span class=\"operation-verb post\">POST</span>\n  <span class=\"operation-path\">/_search</span>\n</div>\n<div>\n  <span class=\"operation-verb post\">POST</span>\n  <span class=\"operation-path\">/{index}/_search</span>\n</div>\n\n",
+			RequestBody = new OpenApiRequestBody
+			{
+				Content = new Dictionary<string, IOpenApiMediaType>
+				{
+					["application/json"] = new OpenApiMediaType
+					{
+						Examples = new Dictionary<string, IOpenApiExample>
+						{
+							["match"] = new OpenApiExample { Value = new System.Text.Json.Nodes.JsonObject { ["size"] = 1 } }
+						}
+					}
+				}
+			}
+		};
+
+		var page = OperationPageModel.Create(
+			new ApiOperation(HttpMethod.Post, operation, "/{index}/_search", new OpenApiPathItem(), "Search"),
+			context
+		);
+
+		page
+			.Scenarios
+			.Single()
+			.CodeSamples
+			.Select(static s => s.Source.Split('\n')[s.IsHttp ? 1 : 0])
+			.Should()
+			.Equal("POST /_search", "curl -X POST \"${ELASTICSEARCH_URL}/_search\" \\", "POST {{ELASTICSEARCH_URL}}/_search");
+	}
+
+	[Test]
 	public async Task Render_Operation_PutsBaseUrlInTheRailAboveTheExamples()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");

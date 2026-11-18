@@ -77,10 +77,13 @@ public static partial class GeneratedCodeSamples
 	/// The request every sample of a scenario sends: the line its description names, else the line its authored Console
 	/// sample opens with, else the endpoint's shortest route. The method is the dominant one for that path.
 	/// </summary>
-	internal static (string Method, string Path) RequestOf(ExampleScenario scenario, OperationEndpoint endpoint)
+	internal static (string Method, string Path) RequestOf(ExampleScenario scenario, OperationEndpoint endpoint) =>
+		RequestOf(scenario.RequestLine ?? AuthoredConsoleLine(scenario), endpoint);
+
+	/// <summary>The request a sample sends for a named line, else the endpoint's shortest route; the method is the dominant one for the path.</summary>
+	internal static (string Method, string Path) RequestOf((string Method, string Path)? line, OperationEndpoint endpoint)
 	{
-		var (method, path) = scenario.RequestLine
-			?? AuthoredConsoleLine(scenario)
+		var (method, path) = line
 			?? (endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant(), endpoint.ShortestRoute);
 		return (SampleMethods.Dominant(method, path, endpoint) ?? method, path);
 	}

@@ -154,11 +154,15 @@ public partial record OperationPageModel
 		if (codeSamples.Count == 0)
 		{
 			// Built around the first example's body, so the samples attach to that example and carry its request.
-			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
+			var example = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue));
 			// Without an example the body comes from the schema, so the sample of an operation that takes one is not a bare request.
-			body ??= RequestBodyExample.Build(analyzer, requestContentEntry?.Key, requestSchema);
+			var body = example?.JsonValue ?? RequestBodyExample.Build(analyzer, requestContentEntry?.Key, requestSchema);
+			// The same request every other generated sample of the page sends for that example.
+			var (method, route) = GeneratedCodeSamples.RequestOf(example?.RequestLine, endpoint);
 			codeSamples = SyntheticCodeSamples.Create(sampleInput with
 			{
+				Method = new HttpMethod(method),
+				Route = route,
 				Body = body,
 				Security = OpenApiAuthSchemeResolver.CurlSchemes(operation, document),
 				ConsolePrefix = target.ConsolePrefix
