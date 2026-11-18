@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
 using Nullean.ScopedFileSystem;
 

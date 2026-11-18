@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Build.Tests.CrossLinks;

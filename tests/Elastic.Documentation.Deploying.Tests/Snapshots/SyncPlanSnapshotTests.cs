@@ -10,10 +10,12 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
@@ -70,7 +72,7 @@ public class SyncPlanSnapshotTests
 		}
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var context = new AssembleContext(
 			config,
 			configurationContext,

@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
 

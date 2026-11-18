@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Documentation.Site.FileProviders;

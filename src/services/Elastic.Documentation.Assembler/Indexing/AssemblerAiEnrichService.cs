@@ -9,6 +9,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Microsoft.Extensions.Logging;

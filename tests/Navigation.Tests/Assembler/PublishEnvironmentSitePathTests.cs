@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 

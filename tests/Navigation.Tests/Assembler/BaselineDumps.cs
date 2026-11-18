@@ -4,7 +4,9 @@
 
 using System.Text;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing.Linked;
 using Nullean.Snapshots;
 
@@ -100,7 +102,7 @@ internal static class BaselineDumps
 
 	/// <summary>Every repository of the frozen assembler config that is marked private, whatever the build skips.</summary>
 	public static IReadOnlySet<string> PrivateRepositories() =>
-		AssemblyConfiguration.Deserialize(BaselineSite.ReadBaseline("assembler.yml")).AllPrivateRepositoryNames;
+		AssemblyLoader.Deserialize(BaselineSite.ReadBaseline("assembler.yml")).AllPrivateRepositoryNames;
 
 	/// <summary>
 	/// Snapshot options that scrub the private repositories of the frozen config and volatile values, and fail a snapshot, or a

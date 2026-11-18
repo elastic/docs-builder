@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Services;

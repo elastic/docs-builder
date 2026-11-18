@@ -5,7 +5,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -24,7 +26,7 @@ public class UseNavigationPreviewTests
 	{
 		var refsYaml = string.Join("\n", privateRepoNames.Select(name => $"  {name}:\n    private: true"));
 		var yaml = $"narrative:\n  repo: git@github.com:elastic/docs-content.git\nreferences:\n{refsYaml}";
-		return AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: true);
+		return AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: true);
 	}
 
 	[Test]
@@ -84,7 +86,7 @@ public class UseNavigationPreviewTests
 	[Test]
 	public void NavigationPreviewEnabled_FalseWhenNotSet()
 	{
-		var env = new PublishEnvironment { FeatureFlags = [] };
+		var env = new PublishEnvironment { FeatureFlags = new Dictionary<string, bool>() };
 
 		var flags = env.ToFeatureFlags();
 		flags.NavigationPreviewEnabled.Should().BeFalse("flag must be inert when not declared in the environment");

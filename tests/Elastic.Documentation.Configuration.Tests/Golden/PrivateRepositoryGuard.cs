@@ -4,6 +4,8 @@
 
 using System.Runtime.CompilerServices;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing.Linked;
 using Nullean.Snapshots;
 
@@ -28,6 +30,6 @@ internal static class PrivateRepositoryGuard
 		var path = root is null ? null : Path.Join(root.FullName, "config", "assembler.yml");
 		return path is null || !File.Exists(path)
 			? []
-			: PrivateRepositoryScrubbing.Forbidden(AssemblyConfiguration.Deserialize(File.ReadAllText(path)).AllPrivateRepositoryNames);
+			: PrivateRepositoryScrubbing.Forbidden(AssemblyLoader.Deserialize(File.ReadAllText(path)).AllPrivateRepositoryNames);
 	}
 }

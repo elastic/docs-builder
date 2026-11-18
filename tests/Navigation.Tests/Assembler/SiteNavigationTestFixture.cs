@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 

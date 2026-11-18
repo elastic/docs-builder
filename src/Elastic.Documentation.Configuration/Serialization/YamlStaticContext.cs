@@ -21,7 +21,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 // collection, and dictionary type reachable from these roots, unlike YamlDotNet's Vecc
 // analyzer, which required every type to be listed explicitly.
 [YamlSerializable(typeof(CodexConfiguration))]
-[YamlSerializable(typeof(AssemblyConfiguration))]
+[YamlSerializable(typeof(AssemblyConfigurationDto))]
 [YamlSerializable(typeof(VersionsConfigDto))]
 [YamlSerializable(typeof(ProductConfigDto))]
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]

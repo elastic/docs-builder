@@ -9,9 +9,11 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Isolated;
+using Elastic.Documentation.Publishing;
 using Nullean.Snapshots;
 using AssemblerParser = Elastic.Documentation.Assembler.Building.ExporterParser;
 using IsolatedParser = Elastic.Documentation.Isolated.ExporterParser;
@@ -172,7 +174,7 @@ public class BuildOptionsSnapshotTests
 			{
 				var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 				var configContext = TestHelpers.CreateConfigurationContext(fs);
-				var assemblyConfig = AssemblyConfiguration.Create(configContext.ConfigurationFileProvider);
+				var assemblyConfig = AssemblyLoader.Create(configContext.ConfigurationFileProvider);
 				var collector = new DiagnosticsCollector([]);
 				var env = ci ? MockEnvironmentVariables.CreateCI() : MockEnvironmentVariables.CreateLocal();
 				var service = new AssemblerBuildService(new TestLoggerFactory(), assemblyConfig, configContext, new NullCoreService(), env);
