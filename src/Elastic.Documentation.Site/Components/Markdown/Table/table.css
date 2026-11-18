@@ -280,6 +280,14 @@ filterable-table {
 	background-repeat: no-repeat;
 }
 
+/* Forced-colors mode (Windows High Contrast) drops gradient backgrounds, so the drawn arrow would vanish. Bring back the browser's own. */
+@media (forced-colors: active) {
+	.filterable-table-facet select {
+		appearance: auto;
+		padding-inline-end: var(--space-2);
+	}
+}
+
 .filterable-table-facet {
 	display: inline-flex;
 	align-items: center;
