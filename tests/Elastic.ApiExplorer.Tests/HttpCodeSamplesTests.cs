@@ -58,6 +58,26 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
+	public void CreateHttp_RequiredContentTypeParameter_UsesTheBodyMediaType()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters = [new OpenApiParameter { Name = "Content-Type", In = ParameterLocation.Header, Required = true }]
+		};
+		var sample = SyntheticCodeSamples.CreateHttp(
+			new SyntheticSampleInput(HttpMethod.Post, "/things", operation)
+			{
+				HostVariable = "${ELASTICSEARCH_URL}",
+				Parameters = [.. operation.Parameters!],
+				Body = "{}"
+			},
+			"application/json"
+		);
+
+		sample.Source.Should().Be("###\nPOST {{ELASTICSEARCH_URL}}/things\nContent-Type: application/json\n\n{}\n");
+	}
+
+	[Test]
 	public void CreateHttp_PartialServerTemplate_InlinesTheStatedDefault()
 	{
 		var sample = SyntheticCodeSamples.CreateHttp(

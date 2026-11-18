@@ -17,7 +17,7 @@ public static partial class SyntheticCodeSamples
 		var headers = HttpHeaders(request, variables);
 		path = HttpCredentials(input with { Route = path }, headers);
 		if (input.Body is not null)
-			_ = headers.TryAdd("Content-Type", mediaType ?? "application/json");
+			headers["Content-Type"] = mediaType ?? "application/json";
 
 		var lines = new List<string> { "###", $"{input.Method.Method.ToUpperInvariant()} {serverPrefix}{path}" };
 		lines.AddRange(headers.Select(static h => $"{h.Key}: {HttpLine(h.Value)}"));
