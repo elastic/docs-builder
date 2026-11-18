@@ -7,6 +7,7 @@ using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +27,7 @@ public static class MappingsExtension
 		MapFullSearch(group);
 		MapChanges(group);
 		MapPageFeedback(group);
+		MapApiOperations(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -184,6 +186,89 @@ public static class MappingsExtension
 			var response = await changesService.GetChangesAsync(request, ctx);
 			return Results.Ok(response);
 		});
+
+	// The APIs API Explorer publishes and, under each, its operations. An operation is always addressed inside its
+	// API: many operation ids and routes exist in several APIs (elasticsearch and elasticsearch-serverless share
+	// most), so a lookup across APIs could only guess. The MCP tools answer the same lookups.
+	private static void MapApiOperations(IEndpointRouteBuilder group)
+	{
+		var apis = group.MapGroup("/apis");
+		_ = apis.MapGet(
+			"/",
+			async (ApiReferenceService apiReference, Cancel ctx) => ToResult(await apiReference.ListAsync(null, null, null, ctx))
+		);
+		_ = apis.MapGet(
+			"/{api}",
+			async (string api, ApiReferenceService apiReference, Cancel ctx) => ToResult(await apiReference.GetApiAsync(api, ctx))
+		);
+		_ = apis.MapGet(
+			"/{api}/groups",
+			async (
+				string api,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(await apiReference.ListGroupsAsync(api, version, includeDeprecated ?? false, ctx))
+		);
+		_ = apis.MapGet(
+			"/{api}/operations",
+			async (
+				string api,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "group")] string? apiGroupName,
+				[FromQuery(Name = "q")] string? query,
+				[FromQuery(Name = "endpoint")] string? endpoint,
+				[FromQuery(Name = "include_deprecated")] bool? includeDeprecated,
+				[FromQuery(Name = "view")] string? view,
+				[FromQuery(Name = "include_body")] bool? includeBody,
+				[FromQuery(Name = "page")] int? pageNumber,
+				[FromQuery(Name = "size")] int? pageSize,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(
+				await apiReference.QueryAsync(
+					new ApiOperationQuery
+					{
+						Api = api,
+						Version = version,
+						Group = apiGroupName,
+						Q = query,
+						Endpoint = endpoint,
+						IncludeDeprecated = includeDeprecated ?? false,
+						View = view,
+						IncludeBody = includeBody ?? false,
+						Page = pageNumber ?? 1,
+						Size = pageSize ?? 10
+					},
+					ctx
+				)
+			)
+		);
+		_ = apis.MapGet(
+			"/{api}/operations/{operationId}",
+			async (
+				string api,
+				string operationId,
+				[FromQuery(Name = "version")] string? version,
+				[FromQuery(Name = "include_body")] bool? includeBody,
+				ApiReferenceService apiReference,
+				Cancel ctx
+			) => ToResult(await apiReference.GetOperationAsync(api, operationId, version, includeBody ?? false, ctx))
+		);
+	}
+
+	private static IResult ToResult(ApiReferenceReply reply) => reply switch
+	{
+		ApiOperationSearchResponse r => Results.Ok(r),
+		ApiOperationCollectionResponse r => Results.Ok(r),
+		ApiSummary r => Results.Ok(r),
+		ApiOperationResponse r => Results.Ok(r),
+		ApiListResponse r => Results.Ok(r),
+		ApiOperationListResponse r => Results.Ok(r),
+		ApiReferenceRejection r when r.ErrorType.EndsWith("_not_found", StringComparison.Ordinal) => Results.NotFound(r),
+		ApiReferenceRejection r => Results.BadRequest(r)
+	};
 
 	private static void MapPageFeedback(IEndpointRouteBuilder group)
 	{

@@ -66,7 +66,7 @@ internal static class McpFeatureModules
 			"Use {tool:list_api_operations} to browse the available APIs and their operations."
 		],
 		ToolType: typeof(ApiTools),
-		RegisterServices: services => _ = services.AddScoped<IApiGateway, ApiGateway>()
+		RegisterServices: services => _ = services.AddApiReferenceServices()
 	);
 
 	public static readonly McpFeatureModule Coherence = new(Name: "Coherence", Capability: "analyze", WhenToUse: [

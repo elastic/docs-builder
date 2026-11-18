@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Mcp.Remote.Gateways;
+namespace Elastic.Documentation.Search.ApiReference;
 
 /// <summary>Reads API Explorer operations and landing pages from the docs search index.</summary>
 public interface IApiGateway
@@ -11,6 +11,9 @@ public interface IApiGateway
 
 	/// <summary>The best match for <paramref name="lookup"/>, or <c>null</c> when no operation matches.</summary>
 	Task<ApiOperationDetail?> GetOperationAsync(ApiOperationLookup lookup, CancellationToken ct = default);
+
+	/// <summary>Every match for <paramref name="lookup"/>, best first, each with its versions, fields and body, from one index query.</summary>
+	Task<IReadOnlyList<ApiOperationDetail>> FindOperationsAsync(ApiOperationLookup lookup, CancellationToken ct = default);
 
 	Task<IReadOnlyList<ApiSummary>> ListApisAsync(CancellationToken ct = default);
 
@@ -50,6 +53,7 @@ public sealed record ApiOperationSummary
 	public required string Method { get; init; }
 	public required string Path { get; init; }
 	public required string OperationId { get; init; }
+
 	public string? Group { get; init; }
 	public bool Deprecated { get; init; }
 

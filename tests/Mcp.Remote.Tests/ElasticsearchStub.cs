@@ -29,6 +29,9 @@ internal sealed class ElasticsearchStub : IDisposable
 	public Uri Uri { get; }
 	public string LastRequestBody { get; private set; } = string.Empty;
 
+	/// <summary>How many requests the stub has answered.</summary>
+	public int RequestCount { get; private set; }
+
 	/// <summary>A client pointed at this stub, disposed with it.</summary>
 	public ElasticsearchClientAccessor Accessor =>
 		_accessor ??= new(
@@ -86,6 +89,7 @@ internal sealed class ElasticsearchStub : IDisposable
 				: context.Request.InputStream;
 			using (var reader = new StreamReader(body, Encoding.UTF8))
 				LastRequestBody = await reader.ReadToEndAsync();
+			RequestCount++;
 
 			var bytes = Encoding.UTF8.GetBytes(_response);
 			context.Response.StatusCode = _statusCode;

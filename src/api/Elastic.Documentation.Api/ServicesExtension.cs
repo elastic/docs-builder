@@ -221,6 +221,7 @@ public static class ServicesExtension
 
 		// Use the shared search service for DI registration
 		_ = services.AddSearchServices();
+		_ = services.AddApiReferenceServices();
 		logger?.LogInformation("Full search service registered with hybrid RRF support");
 	}
 }
