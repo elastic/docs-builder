@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Nullean.Entities;
 
-namespace Elastic.Documentation.Api.PageFeedback;
+namespace Elastic.Documentation.PageFeedback;
 
 public record PageFeedbackRequest(
 	string PageUrl,
@@ -13,7 +14,10 @@ public record PageFeedbackRequest(
 	IReadOnlyList<PageFeedbackReason>? Reasons,
 	int? ReasonSetVersion,
 	string? Comment
-);
+) : IHaveConstraints<PageFeedbackRequest>
+{
+	public static ConstraintSet<PageFeedbackRequest> Constraints => PageFeedbackRequestConstraints.All;
+}
 
 [JsonConverter(typeof(JsonStringEnumConverter<PageFeedbackReaction>))]
 public enum PageFeedbackReaction

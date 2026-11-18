@@ -4,6 +4,7 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.PageFeedback;
 using Elastic.Mapping;
 
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
