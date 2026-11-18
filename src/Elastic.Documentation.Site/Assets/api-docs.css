@@ -3154,6 +3154,9 @@ button.example-response-tab:focus-visible {
 		flex: 0 1 auto;
 		min-height: 0;
 		overflow-y: auto;
+		scrollbar-gutter: stable;
+		/* Overlay scrollbars do not reserve a gutter, so keep them clear of the cards too. */
+		padding-inline-end: 12px;
 	}
 
 	.api-page-rail > .api-page-actions {
