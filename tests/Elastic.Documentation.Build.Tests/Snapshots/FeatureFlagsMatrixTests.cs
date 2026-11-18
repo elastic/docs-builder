@@ -7,7 +7,9 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Build.Tests.Snapshots;
@@ -132,7 +134,7 @@ public class FeatureFlagsMatrixTests
 	[Test]
 	public void AssemblerEnvironments_EnabledKeysWithoutAndWithOverrides()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var table = WithCleanEnvironment(() =>
 		{
 			var sb = new StringBuilder();

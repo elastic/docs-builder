@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Publishing;
 using SharpYaml;
 using SharpYaml.Serialization;
 

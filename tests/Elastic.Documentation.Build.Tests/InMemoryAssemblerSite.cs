@@ -13,6 +13,7 @@ using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -21,6 +22,7 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Floating;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -136,7 +138,7 @@ public static class InMemoryAssemblerSite
 		_ = collector.StartAsync(ctx);
 
 		var configurationContext = CreateConfigurationContext(fileSystem, content);
-		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var assemblyConfiguration = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var checkoutRoot = fileSystem.DirectoryInfo.New("/checkouts");
 		var outputRoot = fileSystem.DirectoryInfo.New("/output");
 		var checkoutsFileSystem = new CheckoutsFileSystem(checkoutRoot, output: outputRoot, inner: fileSystem);

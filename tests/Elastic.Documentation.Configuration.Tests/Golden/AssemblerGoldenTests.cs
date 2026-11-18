@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Publishing;
 using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
@@ -18,7 +20,7 @@ public partial class AssemblerGoldenTests
 			GoldenConfig.Outcome(
 				GoldenConfig.Assembler,
 				yaml,
-				AssemblyConfiguration.Create,
+				p => AssemblyLoader.Create(p),
 				null,
 				skipPrivateRepositories,
 				"AvailableRepositories",
@@ -85,9 +87,9 @@ public partial class AssemblerGoldenTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-		throws
-		InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Assembler.AssemblyConfiguration'.
-		"""
+				throws
+				InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Assembler.AssemblyConfigurationDto'.
+				"""
 			);
 
 	[Test]
@@ -96,9 +98,9 @@ public partial class AssemblerGoldenTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-		throws
-		InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Assembler.AssemblyConfiguration'.
-		"""
+				throws
+				InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Assembler.AssemblyConfigurationDto'.
+				"""
 			);
 
 	[Test]
