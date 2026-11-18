@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 

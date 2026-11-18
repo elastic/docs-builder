@@ -9,6 +9,7 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Testing;
 
 namespace Elastic.Changelog.Tests.Snapshots;
