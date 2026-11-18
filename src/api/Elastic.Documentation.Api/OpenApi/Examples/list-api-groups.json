@@ -1,0 +1,23 @@
+{
+  "api": "elasticsearch",
+  "version": null,
+  "totalOperations": 549,
+  "groups": [
+    {
+      "name": "Cluster",
+      "count": 20,
+      "operations": null
+    },
+    {
+      "name": "Cluster - Health",
+      "count": 1,
+      "operations": null
+    },
+    {
+      "name": "Compact and aligned text (CAT)",
+      "count": 27,
+      "operations": null
+    }
+  ],
+  "note": null
+}

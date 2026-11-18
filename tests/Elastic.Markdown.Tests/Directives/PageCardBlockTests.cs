@@ -51,8 +51,11 @@ public class PageCardRehomedDocsetLinkTests() : DirectiveTest<PageCardBlock>(
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/other-page.md", new MockFileData("# Other Page\n\nSome content."));
 
-	protected override void ConfigureDocumentationSet(DocumentationSet set) =>
-		((INavigationHomeAccessor)set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", set.Navigation);
+	protected override void ConfigureDocumentationSet(DocumentationSet documentationSet) =>
+		((INavigationHomeAccessor)documentationSet.Navigation).HomeProvider = new NavigationHomeProvider(
+			"/reference/rehomed",
+			documentationSet.Navigation
+		);
 
 	[Test]
 	public void ResolvesUrlWithRehomedPrefix() => Block!.ResolvedUrl.Should().Be("/reference/rehomed/other-page");
@@ -76,8 +79,11 @@ public class PageCardRehomedAnchoredLinkTests() : DirectiveTest<PageCardBlock>(
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/other-page.md", new MockFileData("# Other Page\n\n## Install\n\nContent."));
 
-	protected override void ConfigureDocumentationSet(DocumentationSet set) =>
-		((INavigationHomeAccessor)set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", set.Navigation);
+	protected override void ConfigureDocumentationSet(DocumentationSet documentationSet) =>
+		((INavigationHomeAccessor)documentationSet.Navigation).HomeProvider = new NavigationHomeProvider(
+			"/reference/rehomed",
+			documentationSet.Navigation
+		);
 
 	[Test]
 	public void ResolvesUrlWithRehomedPrefixAndAnchor() => Block!.ResolvedUrl.Should().Be("/reference/rehomed/other-page#install");

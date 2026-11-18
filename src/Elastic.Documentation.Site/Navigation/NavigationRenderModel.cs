@@ -17,8 +17,10 @@ public enum NavigationRenderNodeKind
 	Island,
 	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
 	Heading,
-	/// <summary>Visual divider between intro pages and the rest of the tree.</summary>
-	Separator
+	/// <summary>Visual divider between intro pages and the rest of the tree. Only the design-system samples build one.</summary>
+	Separator,
+	/// <summary>Always-open label over its items: no toggle, no page URL. The API sidebar's Topics, Operations and Types.</summary>
+	Group
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -30,8 +32,8 @@ public sealed record NavigationRenderNode
 	public required string Url { get; init; }
 	/// <summary>Badge parsed from a <c>[ns]</c>/<c>[cmd]</c>/<c>[alias]</c> title prefix; doubles as its CSS class suffix.</summary>
 	public string? Badge { get; init; }
-	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
-	public string? HttpMethod { get; init; }
+	/// <summary>Lowercase HTTP methods for API operation leaves, the dominant one first; drives the sidebar method chip.</summary>
+	public IReadOnlyList<string> HttpMethods { get; init; } = [];
 	/// <summary>True for an API operation leaf the spec marks deprecated.</summary>
 	public bool Deprecated { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
@@ -217,7 +219,7 @@ public sealed record NavigationRenderModel
 		bool isGlobalAssemblyBuild
 	)
 	{
-		if (tree.Index.Hidden)
+		if (tree.Index.Hidden || tree is ISidebarWithoutRootIndexNavigationItem)
 			return null;
 
 		if (isGlobalAssemblyBuild)
@@ -344,18 +346,6 @@ public sealed record NavigationRenderModel
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
 
-			if (item is ISidebarSeparatorNavigationItem)
-			{
-				yield return new NavigationRenderNode
-				{
-					Kind = NavigationRenderNodeKind.Separator,
-					IsTopLevel = isTopLevel,
-					NavigationTitle = "",
-					Url = ""
-				};
-				continue;
-			}
-
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
 				yield return CreateNode(node, isTopLevel);
 			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> or ILeafNavigationItem<INavigationModel>)
@@ -379,32 +369,34 @@ public sealed record NavigationRenderModel
 			};
 		}
 
-		var isHeading = node is ISidebarHeadingNavigationItem;
+		// A group is a heading with no toggle. Its rows are top-level rows of the sidebar; a heading's rows are nested.
+		var isGroup = node is ISidebarGroupNavigationItem;
+		var isHeading = isGroup || node is ISidebarHeadingNavigationItem;
 		return new NavigationRenderNode
 		{
-			Kind = isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
+			Kind = isGroup ? NavigationRenderNodeKind.Group : isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
-			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
+			ShowToggle = !isGroup && !node.NavigationItems.All(n => n.Hidden),
 			Expanded = node is ISidebarExpandedNavigationItem,
-			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
+			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: isGroup)]
 		};
 	}
 
 	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
-		var operation = item is ILeafNavigationItem<INavigationModel> { Model: IApiOperationNavigationModel op } ? op : null;
+		var operation = item as IApiOperationNavigationItem;
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			HttpMethod = operation?.HttpMethod,
+			HttpMethods = operation?.HttpMethods ?? [],
 			Deprecated = operation?.Deprecated ?? false,
 			Url = item.Url
 		};
@@ -465,7 +457,8 @@ public sealed record NavigationRenderModel
 		AppendInt(hash, node.IsTopLevel ? 1 : 0);
 		Append(hash, node.NavigationTitle);
 		Append(hash, node.Badge ?? string.Empty);
-		Append(hash, node.HttpMethod ?? string.Empty);
+		foreach (var method in node.HttpMethods)
+			Append(hash, method);
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);

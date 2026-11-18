@@ -705,7 +705,7 @@ public class OpenApiGenerator(
 
 	private static void CollectPages(INavigationItem item, List<(INavigationItem Item, IApiModel Model)> pages)
 	{
-		if (item is ISidebarSeparatorNavigationItem or IntroHeadingNavigationItem)
+		if (item is IntroHeadingNavigationItem)
 			return;
 
 		if (item is INodeNavigationItem<IApiModel, INavigationItem> node)

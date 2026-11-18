@@ -11,8 +11,5 @@ internal sealed class DebugPageFeedbackService : IPageFeedbackService
 {
 	public Task<bool> UpsertFeedbackAsync(PageFeedbackRecord record, CancellationToken ctx) =>
 		Task.FromResult(true);
-
-	public Task<bool> DeleteFeedbackAsync(Guid feedbackId, CancellationToken ctx) =>
-		Task.FromResult(true);
 }
 #endif

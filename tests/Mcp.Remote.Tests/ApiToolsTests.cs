@@ -4,10 +4,10 @@
 
 using System.Text.Json;
 using AwesomeAssertions;
-using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using ModelContextProtocol;
@@ -39,7 +39,7 @@ public class ApiToolsTests
 	public async Task SearchApiOperations_VersionWithoutApi_RejectsTheCall()
 	{
 		var gateway = A.Fake<IApiGateway>();
-		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+		var tools = new ApiTools(new ApiReferenceService(gateway), NullLogger<ApiTools>.Instance);
 
 		var json = await tools.SearchApiOperations("health", version: "9", cancellationToken: Ct);
 
@@ -55,7 +55,7 @@ public class ApiToolsTests
 			0,
 			[]
 		));
-		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+		var tools = new ApiTools(new ApiReferenceService(gateway), NullLogger<ApiTools>.Instance);
 
 		_ = await tools.SearchApiOperations("health", api: " Elasticsearch ", version: "9", pageSize: 500, cancellationToken: Ct);
 
@@ -73,11 +73,11 @@ public class ApiToolsTests
 	public async Task GetApiOperation_NeedsExactlyOneOfOperationIdAndEndpoint(string? operationId, string? endpoint)
 	{
 		var gateway = A.Fake<IApiGateway>();
-		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+		var tools = new ApiTools(new ApiReferenceService(gateway), NullLogger<ApiTools>.Instance);
 
 		var json = await tools.GetApiOperation("elasticsearch", operationId, endpoint, cancellationToken: Ct);
 
-		Error(json).Should().MatchInlineSnapshot("""Pass exactly one of operationId or endpoint.""");
+		Error(json).Should().MatchInlineSnapshot("""Pass exactly one of an operation id or an endpoint.""");
 		A.CallTo(gateway).MustNotHaveHappened();
 	}
 
@@ -86,7 +86,7 @@ public class ApiToolsTests
 	{
 		var gateway = A.Fake<IApiGateway>();
 		_ = A.CallTo(() => gateway.GetOperationAsync(A<ApiOperationLookup>._, A<CancellationToken>._)).Returns((ApiOperationDetail?)null);
-		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+		var tools = new ApiTools(new ApiReferenceService(gateway), NullLogger<ApiTools>.Instance);
 
 		var json = await tools.GetApiOperation("elasticsearch", endpoint: "GET /_nope", cancellationToken: Ct);
 
@@ -104,7 +104,7 @@ public class ApiToolsTests
 			Fields = [],
 			Body = "Get search hits that match the query."
 		});
-		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+		var tools = new ApiTools(new ApiReferenceService(gateway), NullLogger<ApiTools>.Instance);
 
 		var json = await tools.GetApiOperation("elasticsearch", operationId: "search", cancellationToken: Ct);
 
@@ -124,7 +124,7 @@ public class ApiToolsTests
 			Operation("cluster-health", "Cluster", "/_cluster/health"),
 			Operation("ping", null, "/")
 		]);
-		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+		var tools = new ApiTools(new ApiReferenceService(gateway), NullLogger<ApiTools>.Instance);
 
 		var json = await tools.ListApiOperations("elasticsearch", cancellationToken: Ct);
 
@@ -188,15 +188,13 @@ public class ApiToolsTests
 	public void GroupOperations_LargeApiWithoutGroup_ReturnsGroupNamesOnly()
 	{
 		var operations = Enumerable
-			.Range(0, ApiTools.MaxListedOperations + 1)
+			.Range(0, ApiReferenceService.MaxListedOperations + 1)
 			.Select(i => Operation($"op-{i}", i % 2 == 0 ? "Search" : "Cluster"))
 			.ToList();
 
-		var reply = ApiTools.GroupOperations(new ApiScope("elasticsearch", null), operations, group: null);
+		var reply = ApiReferenceService.GroupOperations(new ApiScope("elasticsearch", null), operations, group: null);
 
-		var json = reply is ToolSucceeded succeeded ? succeeded.Json : null;
-		json.Should().NotBeNull();
-		var response = JsonSerializer.Deserialize(json, McpJsonContext.Default.ApiOperationListResponse);
+		var response = reply is ApiOperationListResponse list ? list : null;
 		response.Should().NotBeNull();
 		response.Groups.Select(g => (g.Name, g.Count)).Should().Equal(("Cluster", 75), ("Search", 76));
 		response.Groups.Should().AllSatisfy(g => g.Operations.Should().BeNull());
@@ -206,9 +204,13 @@ public class ApiToolsTests
 	[Test]
 	public void GroupOperations_UnknownGroup_RejectsTheCall()
 	{
-		var reply = ApiTools.GroupOperations(new ApiScope("elasticsearch", null), [Operation("search", "Search")], group: "nope");
+		var reply = ApiReferenceService.GroupOperations(
+			new ApiScope("elasticsearch", null),
+			[Operation("search", "Search")],
+			group: "nope"
+		);
 
-		(reply is ToolRejected rejected ? rejected.ErrorType : null).Should().Be("group_not_found");
+		(reply is ApiReferenceRejection rejected ? rejected.ErrorType : null).Should().Be("group_not_found");
 	}
 
 	[Test]
@@ -218,7 +220,7 @@ public class ApiToolsTests
 		_ = A.CallTo(() => gateway.SearchOperationsAsync(A<ApiOperationSearch>._, A<CancellationToken>._)).Throws(
 			SearchUnavailableException.Transient("MaxTimeoutReached")
 		);
-		var tools = new ApiTools(gateway, NullLogger<ApiTools>.Instance);
+		var tools = new ApiTools(new ApiReferenceService(gateway), NullLogger<ApiTools>.Instance);
 
 		var search = () => tools.SearchApiOperations("health", cancellationToken: Ct);
 

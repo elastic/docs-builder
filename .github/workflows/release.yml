@@ -1,8 +1,13 @@
 name: Release
 
 on:
-  workflow_dispatch: 
-    
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version, such as 1.80.0. Empty uses the version release-drafter calculates.
+        required: false
+        type: string
+
 permissions: {}
 
 concurrency:
@@ -30,6 +35,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           commitish: ${{ github.sha }}
+          version: ${{ inputs.version }}
       - name: Create tag
         uses: actions/github-script@v9
         with:
@@ -319,7 +325,10 @@ jobs:
       - name: Publish Binaries
         run: ./build.sh publish-zip
         shell: bash
-        
+        # curb already ran locally and on ci, never fail a release because of formatting.
+        env:
+          Curb_Bypass: true
+
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v4
         with:

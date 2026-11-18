@@ -19,12 +19,8 @@ public record ApiOperation(
 	string Route,
 	IOpenApiPathItem Path,
 	string ApiName
-) : IApiModel<OperationPageModel>, IApiOperationNavigationModel
+) : IApiModel<OperationPageModel>
 {
-	// The page header leads with the dominant method, which can come from the description's method listing
-	// rather than the spec; the sidebar badge must agree with it.
-	string IApiOperationNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
-
 	/// <summary>
 	/// The one deprecation fact the page title badge, the overview rows, the sidebar row and the search index all read.
 	/// Collapsed siblings always agree on it, because operations that differ in lifecycle are never collapsed onto one page.
@@ -86,7 +82,7 @@ public class OperationNavigationItem(
 	apiOperation,
 	root,
 	parent
-), IEndpointOrOperationNavigationItem
+), IEndpointOrOperationNavigationItem, IApiOperationNavigationItem
 {
 	/// <summary>Other operations of the same API collapsed onto this page (other methods and routes).</summary>
 	public IReadOnlyList<ApiOperation> Siblings { get; init; } = [];
@@ -96,4 +92,9 @@ public class OperationNavigationItem(
 
 	/// <summary>The routes and methods this page lists, its own and its <see cref="Siblings"/>'.</summary>
 	public OperationEndpoint Endpoint => field ??= OperationEndpoint.Build(Model, Model.Operation.Description, Siblings);
+
+	// The sidebar chip must list what the page header lists, including methods that come from the description's method listing or from collapsed siblings.
+	IReadOnlyList<string> IApiOperationNavigationItem.HttpMethods => Endpoint.Methods;
+
+	bool IApiOperationNavigationItem.Deprecated => Model.Deprecated;
 }

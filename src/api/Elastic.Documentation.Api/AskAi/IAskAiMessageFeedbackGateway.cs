@@ -15,7 +15,8 @@ public interface IAskAiMessageFeedbackService
 	/// </summary>
 	/// <param name="record">The feedback record to store.</param>
 	/// <param name="ctx">Cancellation token.</param>
-	Task RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx);
+	/// <returns><c>false</c> when the feedback could not be stored.</returns>
+	Task<bool> RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx);
 }
 
 /// <summary>

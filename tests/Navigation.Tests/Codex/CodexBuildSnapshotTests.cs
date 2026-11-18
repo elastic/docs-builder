@@ -103,7 +103,7 @@ public class CodexBuildSnapshotTests : CodexNavigationTestBase
 		{
 			_ = sb.Append(group.GroupSlug).Append(" \"").Append(group.DisplayTitle).Append("\" ").Append(group.Url).Append('\n');
 			foreach (var set in group.DocumentationSetInfos)
-				_ = sb.Append("  ").Append(set.Name).Append(" ").Append(set.Url).Append('\n');
+				_ = sb.Append("  ").Append(set.Name).Append(' ').Append(set.Url).Append('\n');
 		}
 		// DocumentationSetInfos comes back in hash order, which changes with every process, so the list is sorted here
 		_ = sb

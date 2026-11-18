@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Search.ApiReference;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,9 +25,6 @@ public static class ServicesExtension
 	/// </summary>
 	public static IServiceCollection AddSearchServices(this IServiceCollection services)
 	{
-		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring Search services");
-
 		_ = services.AddSingleton<ElasticsearchClientAccessor>();
 
 		// ProductsConfiguration already implements IProductNameLookup; surface it via the
@@ -57,7 +55,6 @@ public static class ServicesExtension
 		// Docs-specific adapters preserve the existing API/MCP wire format.
 		_ = services.AddScoped<INavigationSearchService, NavigationSearchService>();
 		_ = services.AddScoped<IFullSearchService, FullSearchService>();
-		logger?.LogInformation("Full search services registered with hybrid RRF support");
 
 		// Changes feed (cursor-paginated changes since a given date)
 		_ = services.AddSingleton<SharedPointInTimeManager>();
@@ -66,10 +63,14 @@ public static class ServicesExtension
 		return services;
 	}
 
-	private static ILogger? GetLogger(IServiceCollection services)
+	/// <summary>
+	/// Registers <see cref="ApiReferenceService"/> over the <c>api.*</c> fields of the docs index.
+	/// Needs the <see cref="ElasticsearchClientAccessor"/> that <see cref="AddSearchServices"/> registers.
+	/// </summary>
+	public static IServiceCollection AddApiReferenceServices(this IServiceCollection services)
 	{
-		using var serviceProvider = services.BuildServiceProvider();
-		var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-		return loggerFactory?.CreateLogger(typeof(ServicesExtension));
+		_ = services.AddScoped<IApiGateway, ApiGateway>();
+		_ = services.AddScoped<ApiReferenceService>();
+		return services;
 	}
 }

@@ -6,6 +6,13 @@ using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation.Api.PageFeedback;
 
+/// <summary>A reader's rating of a documentation page.</summary>
+/// <param name="PageUrl">The page's path, starting with <c>/</c>, at most 2048 characters.</param>
+/// <param name="PageTitle">The page's title, at most 500 characters.</param>
+/// <param name="Reaction"><c>thumbsUp</c> or <c>thumbsDown</c>.</param>
+/// <param name="Reasons">Why, from the reasons that fit the reaction; omit with <c>reasonSetVersion</c> for a reaction alone.</param>
+/// <param name="ReasonSetVersion">The version of the reason set the reasons come from; required with <c>reasons</c>.</param>
+/// <param name="Comment">Free text, at most 2000 characters; it needs <c>reasons</c>.</param>
 public record PageFeedbackRequest(
 	string PageUrl,
 	string PageTitle,
@@ -15,6 +22,7 @@ public record PageFeedbackRequest(
 	string? Comment
 );
 
+/// <summary>How a reader rated a page: <c>thumbsUp</c> or <c>thumbsDown</c>.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<PageFeedbackReaction>))]
 public enum PageFeedbackReaction
 {
@@ -28,6 +36,11 @@ public enum PageFeedbackReaction
 	ThumbsDown
 }
 
+/// <summary>
+/// Why a reader rated a page. For <c>thumbsUp</c>: <c>accurate</c>, <c>solvedProblem</c>, <c>easyToUnderstand</c>,
+/// <c>helpfulExamples</c>, <c>easyToFind</c>. For <c>thumbsDown</c>: <c>inaccurate</c>, <c>missingInformation</c>,
+/// <c>hardToUnderstand</c>, <c>codeSampleErrors</c>, <c>outOfDate</c>. <c>anotherReason</c> fits either.
+/// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<PageFeedbackReason>))]
 public enum PageFeedbackReason
 {

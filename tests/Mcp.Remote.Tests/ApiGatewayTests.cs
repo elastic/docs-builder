@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.Snapshots;
 using Nullean.Snapshots.Json;
@@ -223,6 +223,23 @@ public class ApiGatewayTests
 		detail.Operation.OperationId.Should().Be("get");
 		detail.Operation.Group.Should().Be("Document");
 		detail.OtherMatches.Select(o => o.OperationId).Should().Equal("search");
+	}
+
+	[Test]
+	public async Task FindOperationsAsync_OperationId_ReturnsEveryMatchWithItsDetailsFromOneQuery()
+	{
+		using var stub = ElasticsearchStub.Start(SearchCandidates);
+		var gateway = new ApiGateway(stub.Accessor, NullLogger<ApiGateway>.Instance);
+
+		var matches = await gateway.FindOperationsAsync(
+			new ApiOperationLookup(null, new ApiOperationIdKey("get")),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		matches.Select(m => m.Operation.OperationId).Should().Equal("get", "search");
+		matches.Should().AllSatisfy(m => m.Versions.Should().NotBeNull());
+		matches.Should().AllSatisfy(m => m.OtherMatches.Should().BeEmpty());
+		stub.RequestCount.Should().Be(1);
 	}
 
 	[Test]

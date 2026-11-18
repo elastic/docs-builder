@@ -4,6 +4,8 @@
 
 using System.Net;
 using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Api.Tests.Fixtures;
@@ -17,7 +19,7 @@ namespace Elastic.Documentation.Api.Tests;
 
 // The tests share one host and install their own feedback service on it, so they run one after another.
 [NotInParallel(nameof(PageFeedbackEndpointTests))]
-public class PageFeedbackEndpointTests
+public partial class PageFeedbackEndpointTests
 {
 	private static readonly SwappableService<IPageFeedbackService> FeedbackService = new();
 
@@ -35,6 +37,9 @@ public class PageFeedbackEndpointTests
 	}
 
 	// The id is replaced by its own text, so a record stored under another id than the request's fails the snapshot.
+	[GeneratedRegex("\"traceId\": \"[^\"]+\"")]
+	private static partial Regex TraceId();
+
 	private static SnapshotOptions ScrubFeedbackId(Guid feedbackId) =>
 		new SnapshotOptions().Scrub(text => text.Replace(feedbackId.ToString(), "{feedback-id}", StringComparison.OrdinalIgnoreCase));
 
@@ -52,12 +57,13 @@ public class PageFeedbackEndpointTests
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).Returns(Task.FromResult(true));
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult(true));
 		using var client = CreateClient(feedbackService);
 
 		await HttpFileTest.RunAsync(
 			file,
 			new HttpFileSnapshotOptions { Client = client },
+			// Every problem carries the request's trace id, which differs on each run.
+			new SnapshotOptions().Scrub(text => TraceId().Replace(text, "\"traceId\": \"{trace-id}\"")),
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 	}
@@ -210,6 +216,8 @@ public class PageFeedbackEndpointTests
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
+		var body = JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
+		body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("invalid-arguments"));
 	}
 
 	[Test]
@@ -262,6 +270,8 @@ public class PageFeedbackEndpointTests
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
+		var body = JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
+		body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("invalid-arguments"));
 	}
 
 	[Test]
@@ -277,23 +287,23 @@ public class PageFeedbackEndpointTests
 		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+		var body = JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
+		body.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri("feedback-unavailable"));
 	}
 
 	[Test]
-	public async Task Delete_ExistingFeedback_DeletesFeedback()
+	public async Task Delete_Feedback_ReturnsMethodNotAllowed()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
-		var feedbackId = Guid.NewGuid();
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).Returns(Task.FromResult(true));
 		using var client = CreateClient(feedbackService);
 
 		using var response = await client.DeleteAsync(
-			$"/docs/_api/v1/page-feedback/{feedbackId}",
+			$"/docs/_api/v1/page-feedback/{Guid.NewGuid()}",
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+		response.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
 	private const string ValidPayload = /*lang=json,strict*/

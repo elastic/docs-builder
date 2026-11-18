@@ -69,8 +69,7 @@ public class EndpointOrderTests
 		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(spec);
 		var navigation = generator.CreateNavigation("test", document);
 		var rows = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
+			.Tags()
 			.Single()
 			.NavigationItems
 			.OfType<OperationNavigationItem>()

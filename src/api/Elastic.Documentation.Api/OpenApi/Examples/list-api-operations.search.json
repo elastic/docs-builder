@@ -1,0 +1,27 @@
+{
+  "totalHits": 9,
+  "results": [
+    {
+      "operation": {
+        "api": "elasticsearch",
+        "title": "Get the cluster health status",
+        "url": "/docs/api/doc/elasticsearch/operation/operation-cluster-health",
+        "description": "You can also use the API to get the health status of only specified data streams and indices.\nFor data streams, the API retrieves the health status of the st…",
+        "method": "GET",
+        "path": "/_cluster/health/{index}",
+        "operationId": "cluster-health",
+        "group": "Cluster",
+        "deprecated": false,
+        "endpoints": [
+          "GET /_cluster/health/{index}",
+          "GET /_cluster/health"
+        ]
+      },
+      "score": 11.618973,
+      "matchedFields": [],
+      "versions": null,
+      "fields": null,
+      "body": null
+    }
+  ]
+}

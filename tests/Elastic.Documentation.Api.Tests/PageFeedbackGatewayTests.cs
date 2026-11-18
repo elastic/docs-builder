@@ -20,12 +20,7 @@ public class PageFeedbackGatewayTests
 		var transport = CreateTransport(201);
 		var index = CreateIndex();
 		using var channel = CreateChannel(transport, index);
-		var gateway = new ElasticsearchPageFeedbackGateway(
-			transport,
-			index,
-			channel,
-			NullLogger<ElasticsearchPageFeedbackGateway>.Instance
-		);
+		var gateway = new ElasticsearchPageFeedbackGateway(channel, NullLogger<ElasticsearchPageFeedbackGateway>.Instance);
 
 		var result = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
 
@@ -38,12 +33,7 @@ public class PageFeedbackGatewayTests
 		var transport = CreateTransport(400);
 		var index = CreateIndex();
 		using var channel = CreateChannel(transport, index);
-		var gateway = new ElasticsearchPageFeedbackGateway(
-			transport,
-			index,
-			channel,
-			NullLogger<ElasticsearchPageFeedbackGateway>.Instance
-		);
+		var gateway = new ElasticsearchPageFeedbackGateway(channel, NullLogger<ElasticsearchPageFeedbackGateway>.Instance);
 
 		var result = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
 

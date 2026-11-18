@@ -119,6 +119,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 		var hasClassifications = classifications.Count > 1;
+		// Tag groups (x-tagGroups) already label the operations, so only a flat list of tags gets the Operations heading.
+		var operationsNavigation = hasClassifications ? null : new OperationsNavigationItem(rootNavigation);
 		foreach (var classification in classifications)
 		{
 			if (hasClassifications)
@@ -144,7 +146,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					apiUrlSuffix,
 					classification,
 					rootNavigation,
-					rootNavigation,
+					operationsNavigation ?? (IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>)rootNavigation,
 					takenMonikers,
 					topLevelNavigationItems
 				);
@@ -168,31 +170,19 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			)
 		);
 
+		if (operationsNavigation is not null && topLevelNavigationItems.Count > 0)
+			operationsNavigation.NavigationItems = topLevelNavigationItems;
+
 		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
-			? topLevelNavigationItems
+			? operationsNavigation is null ? topLevelNavigationItems : [operationsNavigation]
 			: rootNavigation.NavigationItems.Count > 0 ? rootNavigation.NavigationItems.ToArray() : [];
-		AddSection(finalNavigationItems, endpointItems, rootNavigation);
-		// Types are reference material, not endpoints, so a divider sets them apart as it does the topics.
-		AddSection(finalNavigationItems, typesNavigation is null ? [] : [typesNavigation], rootNavigation);
+		finalNavigationItems.AddRange(endpointItems);
+		if (typesNavigation is not null)
+			finalNavigationItems.Add(typesNavigation);
 
 		rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
-	}
-
-	/// <summary>Adds one block of the sidebar, with a divider from whatever comes before it. An empty block adds nothing.</summary>
-	private static void AddSection(
-		List<INavigationItem> navigationItems,
-		IReadOnlyList<INavigationItem> section,
-		LandingNavigationItem rootNavigation
-	)
-	{
-		if (section.Count == 0)
-			return;
-
-		if (navigationItems.Count > 0)
-			navigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
-		navigationItems.AddRange(section);
 	}
 
 	private void CreateTagNavigationItems(

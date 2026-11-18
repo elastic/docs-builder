@@ -12,7 +12,7 @@ using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.Contract.DocumentationDocument>;
 
-namespace Elastic.Documentation.Mcp.Remote.Gateways;
+namespace Elastic.Documentation.Search.ApiReference;
 
 /// <summary>Queries the <c>api.*</c> fields API Explorer pages carry in the docs search index.</summary>
 public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiGateway> logger) : IApiGateway
@@ -85,28 +85,34 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 	/// <inheritdoc />
 	public async Task<ApiOperationDetail?> GetOperationAsync(ApiOperationLookup lookup, CancellationToken ct = default)
 	{
+		var matches = await FindOperationsAsync(lookup, ct);
+		return matches.Count == 0 ? null : matches[0] with { OtherMatches = [.. matches.Skip(1).Select(m => m.Operation)] };
+	}
+
+	/// <inheritdoc />
+	public async Task<IReadOnlyList<ApiOperationDetail>> FindOperationsAsync(ApiOperationLookup lookup, CancellationToken ct = default)
+	{
 		var ranked = lookup.Key switch
 		{
 			ApiOperationIdKey id => await FindByOperationId(lookup.Scope, id.OperationId, ct),
 			ApiEndpointKey endpoint => await FindByEndpoint(lookup.Scope, ApiRouteMatch.Parse(endpoint.Endpoint), ct)
 		};
 		if (ranked.Count == 0)
-		{
 			logger.LogDebug("No API operation matches {Lookup}", lookup);
-			return null;
-		}
 
-		var best = ranked[0];
-		var api = best.Api!;
-		return new ApiOperationDetail
-		{
-			Operation = ToSummary(best, lookup.Scope),
-			Versions = [.. api.Trees.Select(t => t.Tree)],
-			Fields = [.. api.Properties.Select(ToField)],
-			AiShortSummary = best.AiShortSummary,
-			Body = best.Body,
-			OtherMatches = [.. ranked.Skip(1).Select(d => ToSummary(d, lookup.Scope))]
-		};
+		// Both lookups read DetailSource, so every match already carries its trees, properties and body.
+		return [
+			.. ranked.Select(
+				d => new ApiOperationDetail
+				{
+					Operation = ToSummary(d, lookup.Scope),
+					Versions = [.. d.Api!.Trees.Select(t => t.Tree)],
+					Fields = [.. d.Api.Properties.Select(ToField)],
+					AiShortSummary = d.AiShortSummary,
+					Body = d.Body
+				}
+			)
+		];
 	}
 
 	/// <inheritdoc />

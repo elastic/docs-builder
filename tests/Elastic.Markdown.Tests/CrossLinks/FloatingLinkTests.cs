@@ -154,7 +154,7 @@ public class FloatingLinkTests
 	{
 		foreach (var relative in new[] { false, true })
 		{
-			var resolver = new CodexAwareUriResolver(new[] { "other" }.ToFrozenSet(), relative);
+			var resolver = new CodexAwareUriResolver(new List<string> { "other" }.ToFrozenSet(), relative);
 			var uri = CrossLinkResolver.Resolve(
 				CrossLinks(),
 				resolver,

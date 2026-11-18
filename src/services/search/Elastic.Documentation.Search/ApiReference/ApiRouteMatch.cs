@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Search.Contract;
 
-namespace Elastic.Documentation.Mcp.Remote.Gateways;
+namespace Elastic.Documentation.Search.ApiReference;
 
 /// <summary>A route as typed: its method, if any, and the path through <see cref="ApiEndpointPath.NormalizeQuery"/>.</summary>
 public sealed record TypedEndpoint(string? Method, string Path)

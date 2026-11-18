@@ -11,11 +11,13 @@ namespace Elastic.Documentation.Search.Contract;
 public record ApiRouteEntry
 {
 	/// <summary>Spec path, verbatim, e.g. <c>/{index}/_search</c>.</summary>
+	/// <example>"/_cluster/health/{index}"</example>
 	[Keyword(Index = false)]
 	[JsonPropertyName("path")]
 	public required string Path { get; init; }
 
 	/// <summary>Upper-case HTTP methods, the one the page leads with first, e.g. <c>POST</c>, <c>GET</c>.</summary>
+	/// <example>["GET"]</example>
 	[Keyword(Index = false)]
 	[JsonPropertyName("methods")]
 	public required string[] Methods { get; init; }

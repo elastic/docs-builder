@@ -48,7 +48,7 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_SingleStatus_KeepsSingularHeading()
+	public async Task Render_SingleStatus_UsesThePluralHeading()
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
 

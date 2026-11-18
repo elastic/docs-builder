@@ -88,7 +88,7 @@ public static class WidgetStageExtensions
 {
 	public static IReadOnlyList<string> RuleIds(this WidgetStage stage) => stage switch
 	{
-		DraftWidget draft => [.. DraftWidget.Constraints.Report(draft).Violations.Select(v => v.ConstraintId)],
-		PublishedWidget published => [.. PublishedWidget.Constraints.Report(published).Violations.Select(v => v.ConstraintId)]
+		DraftWidget draft => [.. DraftWidget.Constraints.Report(draft).Violations.Select(v => v.ConstraintId!)],
+		PublishedWidget published => [.. PublishedWidget.Constraints.Report(published).Violations.Select(v => v.ConstraintId!)]
 	};
 }

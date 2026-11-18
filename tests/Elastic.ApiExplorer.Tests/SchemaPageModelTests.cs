@@ -72,8 +72,7 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 			.Text
 			.RegularExpressions
 			.Regex
-			.Matches(html, "data-api-expand-all", System.Text.RegularExpressions.RegexOptions.None, RegexTimeouts.MatchTimeout)
-			.Count
+			.Count(html, "data-api-expand-all", System.Text.RegularExpressions.RegexOptions.None, RegexTimeouts.MatchTimeout)
 			.Should()
 			.Be(1);
 		html

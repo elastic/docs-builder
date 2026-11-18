@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Mcp.Remote.Gateways;
+using Elastic.Documentation.Search.ApiReference;
 using Elastic.Documentation.Search.Contract;
 
 namespace Mcp.Remote.Tests;

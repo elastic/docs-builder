@@ -901,6 +901,90 @@ describe('shouldRetargetApiContentSwap', () => {
     })
 })
 
+describe('API sidebar scroller', () => {
+    const operation = '/api/doc/es/operation/operation-search'
+
+    // The switcher sits outside the scroller, so the tree scrolls on its own and the nav itself never does.
+    function apiSidebar() {
+        document.body.innerHTML = `
+            <div id="api-content-grid"></div>
+            <nav id="pages-nav">
+                <div class="api-sidebar-chrome">switcher</div>
+                <div class="sidebar-nav-scroll" id="tree-scroll">
+                    <ul id="nav-tree-es">
+                        <li><a class="sidebar-link current" href="${operation}">Run a search</a></li>
+                    </ul>
+                </div>
+            </nav>
+        `
+        return document.querySelector<HTMLElement>('#tree-scroll')!
+    }
+
+    const sameTreeResponse = `<html><head><meta name="docs:nav-active" content="${operation}"></head><body><nav id="pages-nav"><div class="api-sidebar-chrome">switcher</div><div class="sidebar-nav-scroll"><ul id="nav-tree-es"></ul></div></nav></body></html>`
+
+    function setScrollTop(el: HTMLElement, value: number) {
+        Object.defineProperty(el, 'scrollTop', {
+            configurable: true,
+            writable: true,
+            value,
+        })
+    }
+
+    afterEach(() => {
+        vi.useRealTimers()
+        window.history.pushState({}, '', '/')
+    })
+
+    it('keeps the tree scroll position across a same-tree swap', () => {
+        vi.useFakeTimers()
+        const scroll = apiSidebar()
+        setScrollTop(scroll, 80)
+
+        pinPagesNavScroll()
+        syncPagesNavFromResponse(sameTreeResponse)
+        scroll.scrollTop = 0
+        initNav()
+        vi.advanceTimersByTime(150)
+
+        expect(scroll.scrollTop).toBe(80)
+    })
+
+    it('scrolls the current row into view inside the tree, not the nav', () => {
+        vi.useFakeTimers()
+        const scroll = apiSidebar()
+        const nav = document.querySelector<HTMLElement>('#pages-nav')!
+        const link = document.querySelector<HTMLElement>(
+            `a[href="${operation}"]`
+        )!
+        setScrollTop(scroll, 80)
+        setScrollTop(nav, 0)
+        vi.spyOn(scroll, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 0, width: 100, height: 200 })
+        )
+        vi.spyOn(link, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 500, width: 100, height: 20 })
+        )
+
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: { xhr: { response: sameTreeResponse } },
+            })
+        )
+        document.head.insertAdjacentHTML(
+            'beforeend',
+            `<meta name="docs:nav-active" content="${operation}">`
+        )
+        initNav()
+        vi.advanceTimersByTime(150)
+
+        expect(scroll.scrollTop).toBeCloseTo(
+            80 + 500 - (200 * 0.381966 - 10),
+            1
+        )
+        expect(nav.scrollTop).toBe(0)
+    })
+})
+
 describe('API nav deep link', () => {
     const operation = '/api/doc/es/operation/operation-search'
 

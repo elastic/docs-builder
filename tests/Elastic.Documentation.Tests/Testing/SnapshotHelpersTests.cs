@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
 using Elastic.Documentation.Testing.Linked;
@@ -12,8 +14,11 @@ using Nullean.Snapshots.Html;
 
 namespace Elastic.Documentation.Tests.Testing;
 
-public class SnapshotHelpersTests
+public partial class SnapshotHelpersTests
 {
+	[GeneratedRegex("[0-9a-fA-F]{32}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex HexGuid();
+
 	[Test]
 	public void ToSnapshotText_NoDiagnostics_IsEmpty() => new List<Diagnostic>().ToSnapshotText().Should().MatchInlineSnapshot("");
 
@@ -86,9 +91,7 @@ public class SnapshotHelpersTests
 	[Test]
 	public void TempScrubber_GuidFolderName_IsReplacedSoTheSnapshotIsStable() =>
 		SnapshotScrubbing
-			.Under("/tmp", "{temp}", new System.Text.RegularExpressions.Regex("[0-9a-fA-F]{32}"))(
-				"error /tmp/diff-validate-test-1d248de3468f4d58849398ff8b320802/docs/redirects.yml Missing"
-			)
+			.Under("/tmp", "{temp}", HexGuid())("error /tmp/diff-validate-test-1d248de3468f4d58849398ff8b320802/docs/redirects.yml Missing")
 			.Should()
 			.MatchInlineSnapshot("error {temp}/diff-validate-test-{id}/docs/redirects.yml Missing");
 

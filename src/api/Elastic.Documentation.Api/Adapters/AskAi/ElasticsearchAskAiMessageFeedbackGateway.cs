@@ -22,7 +22,7 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway(
 {
 	private readonly string _indexName = $"ask-ai-message-feedback-{appEnvironment.Current.ToStringFast(true)}";
 
-	public async Task RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx)
+	public async Task<bool> RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx)
 	{
 		var feedbackId = Guid.NewGuid();
 		var document = new MessageFeedbackDocument
@@ -47,18 +47,18 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway(
 				record.MessageId,
 				response.ApiCallDetails.HttpStatusCode
 			);
+			return false;
 		}
-		else
-		{
-			logger.LogInformation(
-				"Message feedback recorded: {Reaction} for message {MessageId} in conversation {ConversationId}. ES _id: {EsId}, Index: {Index}",
-				record.Reaction,
-				record.MessageId,
-				record.ConversationId,
-				feedbackId,
-				_indexName
-			);
-		}
+
+		logger.LogInformation(
+			"Message feedback recorded: {Reaction} for message {MessageId} in conversation {ConversationId}. ES _id: {EsId}, Index: {Index}",
+			record.Reaction,
+			record.MessageId,
+			record.ConversationId,
+			feedbackId,
+			_indexName
+		);
+		return true;
 	}
 }
 
