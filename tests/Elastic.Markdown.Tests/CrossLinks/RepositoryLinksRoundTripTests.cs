@@ -197,11 +197,17 @@ public class RepositoryLinksRoundTripTests
 
 	[Test]
 	public void RoundTrip_UrlPathPrefixShapes_AreKeptVerbatim() =>
-		new[] { "\"url_path_prefix\": \"\"", "\"url_path_prefix\": \"/\"", "\"url_path_prefix\": \"/a/b/\"", "\"url_path_prefix\": null" }
+		new List<string>
+		{
+			"\"url_path_prefix\": \"\"",
+			"\"url_path_prefix\": \"/\"",
+			"\"url_path_prefix\": \"/a/b/\"",
+			"\"url_path_prefix\": null"
+		}
 			.Select(
 				prefix => $$"""{ "origin": { "branch": "main", "remote": "r", "ref": "x" }, {{prefix}}, "cross_links": [], "links": {} }"""
 			)
-			.Select(json => JsonDocument.Parse(RoundTrip(json)).RootElement.GetProperty("url_path_prefix").GetRawText())
+			.Select(json => JsonElement.Parse(RoundTrip(json)).GetProperty("url_path_prefix").GetRawText())
 			.Aggregate(new StringBuilder(), (sb, v) => sb.AppendLine(v), sb => sb.ToString())
 			.Should()
 			.MatchInlineSnapshot("""

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 using Amazon.S3;
@@ -117,6 +118,7 @@ public class SyncPlanSnapshotTests
 			.Replace("\\\\", "/", StringComparison.Ordinal);
 		var sb = new StringBuilder(json);
 		_ = sb.Append(
+			CultureInfo.InvariantCulture,
 			$"\n--- validation: valid={validation.Valid} ratio={validation.DeleteRatio:0.####} threshold={validation.DeleteThreshold:0.####}\n"
 		);
 		_ = sb.Append("--- diagnostics\n").Append(collector.Diagnostics.ToSnapshotText());
@@ -267,7 +269,8 @@ public class SyncPlanSnapshotTests
 			};
 			var result = validator.Validate(plan);
 			_ = sb.Append(
-				$"{r.Source} {r.Remote} {r.Deletes} {r.Completed} {r.Threshold?.ToString() ?? "default"} => {result.Valid} {result.DeleteRatio:0.####} {result.DeleteThreshold:0.####}\n"
+				CultureInfo.InvariantCulture,
+				$"{r.Source} {r.Remote} {r.Deletes} {r.Completed} {r.Threshold?.ToString(CultureInfo.InvariantCulture) ?? "default"} => {result.Valid} {result.DeleteRatio:0.####} {result.DeleteThreshold:0.####}\n"
 			);
 		}
 		sb.ToString().Should().MatchSnapshot();

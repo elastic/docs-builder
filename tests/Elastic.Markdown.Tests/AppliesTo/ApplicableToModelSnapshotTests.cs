@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -218,7 +219,7 @@ public class ApplicableToModelSnapshotTests
 				.Append("    json again identical: ")
 				.AppendLine(Compact(back) == json ? "yes" : "no")
 				.Append("    models equal:         ")
-				.AppendLine(Equals(parsed with { Diagnostics = null }, back) ? "yes" : "no")
+				.AppendLine(Equals(parsed! with { Diagnostics = null }, back) ? "yes" : "no")
 				.Append("    text before: ")
 				.AppendLine(parsed?.ToString())
 				.Append("    text after:  ")
@@ -278,7 +279,7 @@ public class ApplicableToModelSnapshotTests
 	[Test]
 	public void Ordering_Applicabilities_SortByVersionWithUnversionedLast()
 	{
-		var items = new[]
+		var items = new List<string>
 		{
 			"ga",
 			"ga 9.0",
@@ -393,7 +394,7 @@ public class ApplicableToModelSnapshotTests
 			var diagnostics = new List<(Severity, string)>();
 			var ok = AppliesCollection.TryParse(input, diagnostics, out var collection);
 			_ = sb
-				.Append($"'{input}'")
+				.Append(CultureInfo.InvariantCulture, $"'{input}'")
 				.Line(
 					$" -> parsed: {(ok ? "yes" : "no")}, count: {collection?.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-"}, text: {collection}"
 				)

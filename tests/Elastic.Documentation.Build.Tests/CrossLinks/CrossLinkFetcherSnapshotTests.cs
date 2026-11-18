@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 using AwesomeAssertions;
@@ -189,7 +190,7 @@ public class CrossLinkFetcherSnapshotTests
 		foreach (var (name, fetcher) in new[] { ("no default branch", noDefault), ("unknown repository", nothing) })
 		{
 			var error = await Assert.That(async () => await fetcher.Entry("alpha")).Throws<Exception>();
-			_ = sb.AppendLine($"{name}: {error!.Message}");
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"{name}: {error!.Message}");
 		}
 
 		sb
@@ -218,11 +219,11 @@ public class CrossLinkFetcherSnapshotTests
 		foreach (var (name, keys) in new (string, string[])[] { ("no key matches", ["main"]), ("no keys", []) })
 		{
 			var error = await Assert.That(async () => await fetcher.Fetch("alpha", keys)).Throws<Exception>();
-			_ = sb.AppendLine($"{name}: {error!.Message}");
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"{name}: {error!.Message}");
 		}
 
 		var unknown = await Assert.That(async () => await fetcher.Fetch("zeta", "main")).Throws<Exception>();
-		_ = sb.AppendLine($"unknown repository: {unknown!.Message}");
+		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"unknown repository: {unknown!.Message}");
 		sb.ToString().Should().MatchSnapshot();
 	}
 

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -20,6 +21,8 @@ namespace Elastic.Documentation.OpenApiIndex.Tests.Snapshots;
 /// </summary>
 public class VersionIndexSnapshotTests
 {
+	private static readonly JsonSerializerOptions EmptyOptions = new();
+
 	private static string Render(IEnumerable<string> keys)
 	{
 		var (index, invalid) = VersionIndexBuilder.Build(keys);
@@ -27,7 +30,7 @@ public class VersionIndexSnapshotTests
 			index,
 			VersionIndexJsonContext.Default.SortedDictionaryStringSortedDictionaryStringSortedDictionaryStringVersionIndexEntry
 		);
-		var invalidJson = JsonSerializer.Serialize(invalid, new JsonSerializerOptions());
+		var invalidJson = JsonSerializer.Serialize(invalid, EmptyOptions);
 		return $$"""{"index":{{json}},"invalidKeys":{{invalidJson}}}""";
 	}
 
@@ -169,11 +172,12 @@ public class VersionIndexSnapshotTests
 		var invalid = await new VersionIndexPublisher(s3, "example-specs").RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var sb = new StringBuilder();
-		_ = sb.Append($"list continuation tokens: [{string.Join(", ", tokens.Select(t => t ?? "null"))}]\n");
-		_ = sb.Append($"invalid keys: [{string.Join(", ", invalid)}]\n");
-		_ = sb.Append($"puts: {puts.Count}\n");
+		_ = sb.Append(CultureInfo.InvariantCulture, $"list continuation tokens: [{string.Join(", ", tokens.Select(t => t ?? "null"))}]\n");
+		_ = sb.Append(CultureInfo.InvariantCulture, $"invalid keys: [{string.Join(", ", invalid)}]\n");
+		_ = sb.Append(CultureInfo.InvariantCulture, $"puts: {puts.Count}\n");
 		foreach (var put in puts)
 			_ = sb.Append(
+				CultureInfo.InvariantCulture,
 				$"  bucket={put.BucketName} key={put.Key} contentType={put.ContentType} ifMatch={put.IfMatch ?? "null"} ifNoneMatch={put.IfNoneMatch ?? "null"}\n  body={put.ContentBody}\n"
 			);
 		return sb.ToString();

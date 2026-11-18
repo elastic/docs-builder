@@ -112,7 +112,7 @@ public class ApplicableToYamlSnapshotTests
 	[Test]
 	public void Read_Lifecycles_EverySpellingOnStack() =>
 		Table(
-			new[]
+			new List<string>
 			{
 				"ga",
 				"GA",
@@ -147,7 +147,7 @@ public class ApplicableToYamlSnapshotTests
 	[Test]
 	public void Read_LifecyclesWithAVersion_EverySpellingOnStack() =>
 		Table(
-			new[]
+			new List<string>
 			{
 				"ga 9.0",
 				"preview 9.1",
@@ -172,7 +172,7 @@ public class ApplicableToYamlSnapshotTests
 	[Test]
 	public void Read_VersionSpecs_AllShapesOnStack() =>
 		Table(
-			new[]
+			new List<string>
 			{
 				"ga 9",
 				"ga 9.0",

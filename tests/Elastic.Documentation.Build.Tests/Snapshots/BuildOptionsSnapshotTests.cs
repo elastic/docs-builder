@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 using AwesomeAssertions;
@@ -79,7 +80,7 @@ public class BuildOptionsSnapshotTests
 	{
 		var sb = new StringBuilder();
 		foreach (var input in ExporterInputs)
-			_ = sb.Append($"'{input}' => {TryParse(parse, input)}\n");
+			_ = sb.Append(CultureInfo.InvariantCulture, $"'{input}' => {TryParse(parse, input)}\n");
 		return sb.ToString();
 	}
 
@@ -195,7 +196,7 @@ public class BuildOptionsSnapshotTests
 				{
 					outcome = $"proceeds past the assume-build check and then throws {e.GetType().Name}: {e.Message.Split('\n')[0]}";
 				}
-				_ = sb.Append($"ci={ci} assume-build={assume?.ToString() ?? "unset"} => {outcome}\n");
+				_ = sb.Append(CultureInfo.InvariantCulture, $"ci={ci} assume-build={assume?.ToString() ?? "unset"} => {outcome}\n");
 			}
 		}
 		sb.ToString().Should().MatchSnapshot();

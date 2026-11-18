@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Globalization;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
@@ -104,7 +105,7 @@ internal static partial class DocsetGolden
 				.OrderBy(kvp => kvp.Key, StringComparer.Ordinal))
 				_ = sb.Append("  ").Append(key).Append(": ").AppendLine(value);
 			_ = sb.Append("generated substitutions (version.* and product.* keys): ").AppendLine(
-				config.Substitutions.Count(kvp => IsGenerated(kvp.Key)).ToString()
+				config.Substitutions.Count(kvp => IsGenerated(kvp.Key)).ToString(CultureInfo.InvariantCulture)
 			);
 		}
 		catch (Exception e)

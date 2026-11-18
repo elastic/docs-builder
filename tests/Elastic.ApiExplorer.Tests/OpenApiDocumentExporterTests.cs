@@ -769,7 +769,9 @@ public class OpenApiDocumentExporterTests
 	public void Collapse_LandingPageOfEveryTree_OneVisibleLandingDocumentListingTheTrees()
 	{
 		var exporter = TestHelpers.CurrentStackExporter();
-		var landings = new[] { "main", "9", "8" }.Select(t => exporter.ConvertToLandingDocument(TestHelpers.EsTree(t, TreeSpec())));
+		var landings = new List<string> { "main", "9", "8" }.Select(
+			t => exporter.ConvertToLandingDocument(TestHelpers.EsTree(t, TreeSpec()))
+		);
 
 		var docs = ApiTreeCollapse.Collapse(landings, defaultTree: "9").ToList();
 

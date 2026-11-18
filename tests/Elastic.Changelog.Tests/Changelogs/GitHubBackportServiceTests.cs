@@ -123,11 +123,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 				new StubHandler(req =>
 				{
 					var query =
-						JsonDocument
-							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
-							.RootElement
-							.GetProperty("query")
-							.GetString()!;
+						JsonElement.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).GetProperty("query").GetString()!;
 					return new HttpResponseMessage(HttpStatusCode.OK)
 					{
 						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")
@@ -407,11 +403,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 				new StubHandler(req =>
 				{
 					var query =
-						JsonDocument
-							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
-							.RootElement
-							.GetProperty("query")
-							.GetString()!;
+						JsonElement.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).GetProperty("query").GetString()!;
 					return new HttpResponseMessage(HttpStatusCode.OK)
 					{
 						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")
