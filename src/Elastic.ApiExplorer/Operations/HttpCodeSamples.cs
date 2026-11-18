@@ -11,13 +11,15 @@ public static class HttpCodeSamples
 	public static IReadOnlyList<ExampleScenario> Fill(
 		IReadOnlyList<ExampleScenario> scenarios,
 		SyntheticSampleInput input,
+		OperationEndpoint endpoint,
 		SchemaAnalyzer analyzer,
 		HttpSampleSecurity security
-	) => [.. scenarios.Select(scenario => FillScenario(scenario, input, analyzer, security))];
+	) => [.. scenarios.Select(scenario => FillScenario(scenario, input, endpoint, analyzer, security))];
 
 	private static ExampleScenario FillScenario(
 		ExampleScenario scenario,
 		SyntheticSampleInput input,
+		OperationEndpoint endpoint,
 		SchemaAnalyzer analyzer,
 		HttpSampleSecurity security
 	)
@@ -37,7 +39,7 @@ public static class HttpCodeSamples
 		var body = scenario.RequestJson ?? RequestBodyExample.Build(analyzer, mediaType, content?.Value?.Schema);
 		if (input.Operation.RequestBody is not null && body is null)
 			return scenario;
-		var (method, route) = scenario.RequestLine ?? (input.Method.Method, input.Route);
+		var (method, route) = GeneratedCodeSamples.RequestOf(scenario, endpoint);
 		var sample = SyntheticCodeSamples.CreateHttp(
 			input with { Method = new HttpMethod(method), Route = route, Body = body, Security = supported.Schemes },
 			mediaType

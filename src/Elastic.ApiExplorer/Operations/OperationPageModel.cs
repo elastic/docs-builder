@@ -186,6 +186,7 @@ public partial record OperationPageModel
 					Servers = servers,
 					HostVariable = target.HostVariable
 				},
+				endpoint,
 				analyzer,
 				OpenApiAuthSchemeResolver.HttpSchemes(operation, document)
 			)

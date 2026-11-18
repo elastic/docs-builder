@@ -42,7 +42,6 @@ public static partial class GeneratedCodeSamples
 		var console = specSamples.FirstOrDefault(static s => s.IsConsole);
 		var curl = specSamples.FirstOrDefault(static s => s.IsCurl);
 		var prefix = console is not null ? ConsolePrefix(console.Source) : productConsolePrefix;
-		var fallbackMethod = endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant();
 
 		return [
 			.. scenarios.Select(scenario =>
@@ -50,8 +49,7 @@ public static partial class GeneratedCodeSamples
 				if (scenario.CodeSamples.Count > 0 || string.IsNullOrWhiteSpace(scenario.RequestJson))
 					return scenario;
 
-				var (method, path) = scenario.RequestLine is { } line ? line : (fallbackMethod, endpoint.ShortestRoute);
-				method = SampleMethods.Dominant(method, path, endpoint) ?? method;
+				var (method, path) = RequestOf(scenario, endpoint);
 				var samples = new List<CodeSample>();
 				if (prefix is not null)
 				{
@@ -71,6 +69,17 @@ public static partial class GeneratedCodeSamples
 				return samples.Count == 0 ? scenario : scenario with { CodeSamples = samples, CodeSamplesIncludeRequest = true };
 			})
 		];
+	}
+
+	/// <summary>
+	/// The request every sample of a scenario sends: the line its description names, else the endpoint's shortest route.
+	/// The method is the dominant one for that path.
+	/// </summary>
+	internal static (string Method, string Path) RequestOf(ExampleScenario scenario, OperationEndpoint endpoint)
+	{
+		var (method, path) = scenario.RequestLine
+			?? (endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant(), endpoint.ShortestRoute);
+		return (SampleMethods.Dominant(method, path, endpoint) ?? method, path);
 	}
 
 	/// <summary><c>Run `GET /my-index/_search?from=40` to …</c> in an example description names its request.</summary>

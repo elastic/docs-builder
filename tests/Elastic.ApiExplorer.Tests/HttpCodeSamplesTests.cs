@@ -398,6 +398,34 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
+	public void Fill_NoRequestLine_UsesTheShortestRouteAndDominantMethod()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[
+				new EndpointVariant("post", "/{index}/_search"),
+				new EndpointVariant("post", "/_search"),
+				new EndpointVariant("get", "/_search")
+			],
+			"/{index}/_search"
+		);
+
+		var scenario = HttpCodeSamples.Fill(
+			[new ExampleScenario { Title = "Search", TabId = "search", RequestJson = "{\"size\":1}" }],
+			new SyntheticSampleInput(HttpMethod.Get, "/{index}/_search", JsonOperation()) { HostVariable = "${ELASTICSEARCH_URL}" },
+			endpoint,
+			new SchemaAnalyzer(new OpenApiDocument()),
+			new HttpSecuritySupported([])
+		).Single();
+
+		scenario
+			.CodeSamples
+			.Single(static s => s.IsHttp)
+			.Source
+			.Should()
+			.Be("###\nPOST {{ELASTICSEARCH_URL}}/_search\nContent-Type: application/json\n\n{\"size\":1}\n");
+	}
+
+	[Test]
 	public void Fill_NoExplicitBody_UsesJsonSchema()
 	{
 		var scenario = Fill(JsonOperation(), new ExampleScenario { Title = "Search", TabId = "search" }).Single();
@@ -476,6 +504,7 @@ public class HttpCodeSamplesTests
 		var scenario = HttpCodeSamples.Fill(
 			[new ExampleScenario { Title = "Read", TabId = "read" }],
 			new SyntheticSampleInput(HttpMethod.Get, "/", new OpenApiOperation()),
+			OperationEndpoint.FromVariants([new EndpointVariant("get", "/")], "/"),
 			new SchemaAnalyzer(new OpenApiDocument()),
 			new HttpSecurityUnsupported()
 		).Single();
@@ -595,6 +624,7 @@ public class HttpCodeSamplesTests
 		HttpCodeSamples.Fill(
 			scenarios,
 			new SyntheticSampleInput(HttpMethod.Get, "/_search", operation),
+			OperationEndpoint.FromVariants([new EndpointVariant("get", "/_search")], "/_search"),
 			new SchemaAnalyzer(new OpenApiDocument()),
 			new HttpSecuritySupported([])
 		);
