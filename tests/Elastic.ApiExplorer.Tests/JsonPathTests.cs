@@ -88,13 +88,14 @@ public class JsonPathTests
 	}
 
 	[Test]
-	public async Task Render_Row_PutsPathOnName()
+	public async Task Render_Row_PrintsPathOnce()
 	{
 		var list = await BuildAsync("");
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("""<code data-tippy-content="bool.must[].field" data-tippy-theme="mono">field</code>""");
+		// The name's tooltip reads the path from the permalink label (tooltip.ts), so the row does not print it twice.
+		html.Split("bool.must[].field").Should().HaveCount(2);
 	}
 
 	[Test]
@@ -165,6 +166,6 @@ public class JsonPathTests
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("""aria-label="Link to bool.must[].field" """.TrimEnd());
+		html.Should().Contain("aria-label=\"Link to bool.must[].field\"");
 	}
 }
