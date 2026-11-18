@@ -43,10 +43,10 @@ public class ListingGroupInferenceTests() : DocumentationSetNavigationTestBase()
 			.Children
 			.OfType<FileRef>()
 			.Where(f => f is not IndexFileRef)
-			.Select(f => f.PathRelativeToDocumentationSet);
+			.Select(f => f.PathRelativeToDocumentationSet.Value);
 
 	private static IEnumerable<string> UngroupedPages(ListingRef listing) =>
-		listing.Children.OfType<FileRef>().Where(f => f is not IndexFileRef).Select(f => f.PathRelativeToDocumentationSet);
+		listing.Children.OfType<FileRef>().Where(f => f is not IndexFileRef).Select(f => f.PathRelativeToDocumentationSet.Value);
 
 	[Test]
 	public void FileInGroupFolderWithoutFrontMatter_IsGroupedByItsFolder()

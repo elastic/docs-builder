@@ -20,8 +20,8 @@ public record DetectionRuleOverviewRef : FileRef
 	public FileRef? DeprecatedSiblingRef { get; init; }
 
 	public DetectionRuleOverviewRef(
-		string pathRelativeToDocumentationSet,
-		string pathRelativeToContainer,
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
 		IReadOnlyCollection<string> detectionRulesFolders,
 		IReadOnlyCollection<ITableOfContentsItem> children,
 		string context,
@@ -88,9 +88,9 @@ public record DetectionRuleOverviewRef : FileRef
 				// baseDirectory is 'docs' rules live relative to docs parent '/'
 				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
 				if (f.Extension == ".toml")
-					return new DetectionRuleRef(f, relativePath, context);
+					return new DetectionRuleRef(f, DocsetPath.From(relativePath), context);
 
-				return new FileRef(relativePath, relativePath, false, [], context);
+				return new FileRef(DocsetPath.From(relativePath), ContainerPath.From(relativePath), false, [], context);
 			})
 			.ToArray();
 
@@ -115,7 +115,7 @@ public record DetectionRuleOverviewRef : FileRef
 			.Select(f =>
 			{
 				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
-				return (ITableOfContentsItem)new DetectionRuleRef(f, relativePath, context);
+				return (ITableOfContentsItem)new DetectionRuleRef(f, DocsetPath.From(relativePath), context);
 			})
 			.ToArray();
 

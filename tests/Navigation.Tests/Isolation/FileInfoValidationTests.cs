@@ -322,7 +322,7 @@ public class FileInfoValidationTests() : DocumentationSetNavigationTestBase()
 		setup.Children.Count.Should().Be(3, "should include 2 children");
 		var advanced = setup.Children.OfType<IsolatedTableOfContentsRef>().FirstOrDefault();
 		advanced.Should().NotBeNull("advanced TOC should exist");
-		advanced.PathRelativeToDocumentationSet.Should().Be("setup/advanced");
+		advanced.PathRelativeToDocumentationSet.Value.Should().Be("setup/advanced");
 
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)

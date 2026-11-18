@@ -36,7 +36,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/beta.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
@@ -65,7 +65,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
@@ -95,7 +95,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/beta.md"], options => options.WithStrictOrdering());
 	}
 
@@ -123,7 +123,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
 
@@ -153,7 +153,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		// index.md should be excluded too — the user explicitly asked for it
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}

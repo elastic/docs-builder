@@ -6,6 +6,7 @@ using System.Collections;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 
@@ -40,6 +41,7 @@ internal static class ModelDump
 	private static void WriteValue(StringBuilder sb, string label, object? value, int depth, List<object> path, Context context)
 	{
 		var pad = new string(' ', depth * 2);
+		value = AsText(value);
 		if (value is null || IsScalar(value))
 		{
 			_ = sb.Append(pad).Append(label).Append(": ").Append(Scalar(value)).Append('\n');
@@ -167,6 +169,14 @@ internal static class ModelDump
 			d++;
 		return d;
 	}
+
+	// a typed table-of-contents path reads as the string it wraps, as it did before it had a type
+	private static object? AsText(object? value) => value switch
+	{
+		DocsetPath docsetPath => docsetPath.Value,
+		ContainerPath containerPath => containerPath.Value,
+		_ => value
+	};
 
 	private static bool IsScalar(object value) =>
 		value is string or bool or char or Enum or Uri or DateTime or DateTimeOffset or TimeSpan or Guid or Version or DateOnly

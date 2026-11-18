@@ -13,8 +13,8 @@ namespace Elastic.Documentation.Configuration.Toc;
 /// </summary>
 internal record InvalidTocItemRef(string RawValue) : ITableOfContentsItem
 {
-	public string PathRelativeToDocumentationSet => RawValue;
-	public string PathRelativeToContainer => RawValue;
+	public DocsetPath PathRelativeToDocumentationSet => DocsetPath.From(RawValue);
+	public ContainerPath PathRelativeToContainer => ContainerPath.From(RawValue);
 	public string Context => "";
 }
 

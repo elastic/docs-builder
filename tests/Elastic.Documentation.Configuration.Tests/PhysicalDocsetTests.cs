@@ -60,7 +60,7 @@ public class PhysicalDocsetTests
 		docSet.TableOfContents.Should().NotBeEmpty();
 
 		var firstItem = docSet.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		firstItem.PathRelativeToDocumentationSet.Should().Be("index.md");
+		firstItem.PathRelativeToDocumentationSet.Value.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 
 		var hiddenFiles = docSet.TableOfContents.OfType<FileRef>().Where(f => f.Hidden).ToList();
@@ -80,7 +80,7 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
-		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
+		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet.Value).ToList();
 
 		folderNames.Should().Contain("getting-started");
 		folderNames.Should().Contain("syntax");
@@ -89,7 +89,11 @@ public class PhysicalDocsetTests
 		folderNames.Should().Contain("integrations");
 
 		// development is a toc: reference, not a folder
-		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().Select(t => t.PathRelativeToDocumentationSet).ToList();
+		var tocRefs = docSet
+			.TableOfContents
+			.OfType<IsolatedTableOfContentsRef>()
+			.Select(t => t.PathRelativeToDocumentationSet.Value)
+			.ToList();
 		tocRefs.Should().Contain("development");
 
 		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
@@ -109,7 +113,7 @@ public class PhysicalDocsetTests
 			.First(f => f.PathRelativeToDocumentationSet == "documentation");
 		documentationFolder.Children.Should().NotBeEmpty();
 
-		var nestedFolders = documentationFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
+		var nestedFolders = documentationFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet.Value).ToList();
 		nestedFolders.Should().Contain("isolated");
 		nestedFolders.Should().Contain("assembler");
 		nestedFolders.Should().Contain("codex");

@@ -165,11 +165,11 @@ public record SiteTableOfContentsRef(
 ) : ISiteNavigationEntry, ITableOfContentsItem
 {
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
-	public string PathRelativeToDocumentationSet => PathPrefix;
+	public DocsetPath PathRelativeToDocumentationSet => DocsetPath.From(PathPrefix);
 
 	// For site-level TOC refs, PathRelativeToContainer is the same as PathRelativeToDocumentationSet
 	// since they're all defined in the same navigation.yml file
-	public string PathRelativeToContainer => PathPrefix;
+	public ContainerPath PathRelativeToContainer => ContainerPath.From(PathPrefix);
 
 	// For site-level TOC refs, the Context is the navigation.yml file path
 	// This will be set during site navigation loading

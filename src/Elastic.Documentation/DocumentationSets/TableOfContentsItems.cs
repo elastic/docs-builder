@@ -101,7 +101,7 @@ public interface ITableOfContentsItem
 	/// For folders: the folder path (e.g., "guides/advanced")
 	/// For TOCs: the path to the toc.yml directory (e.g., "development" or "guides/advanced")
 	/// </summary>
-	string PathRelativeToDocumentationSet { get; }
+	DocsetPath PathRelativeToDocumentationSet { get; }
 
 	/// <summary>
 	/// The full path of this item relative to the container docset.yml or toc.yml file.
@@ -109,7 +109,7 @@ public interface ITableOfContentsItem
 	/// For folders: the folder path (e.g., "guides/advanced")
 	/// For TOCs: the path to the toc.yml directory (e.g., "development" or "guides/advanced")
 	/// </summary>
-	string PathRelativeToContainer { get; }
+	ContainerPath PathRelativeToContainer { get; }
 
 	/// <summary>
 	/// The path to the YAML file (docset.yml or toc.yml) that defined this item.
@@ -123,8 +123,8 @@ public interface ITableOfContentsItem
 /// unless a nearer entry, nested <c>toc.yml</c>, or page frontmatter selects another template.
 /// </param>
 public record FileRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
@@ -132,8 +132,8 @@ public record FileRef(
 ) : ITableOfContentsItem;
 
 public record IndexFileRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
@@ -145,8 +145,8 @@ public record IndexFileRef(
 /// Children of this file should resolve relative to the folder path, not the parent TOC path.
 /// </summary>
 public record FolderIndexFileRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
@@ -163,18 +163,18 @@ public record CrossLinkRef(
 {
 	//TODO ensure we pass these to cross-links to
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
-	public string PathRelativeToDocumentationSet => CrossLinkUri.ToString();
+	public DocsetPath PathRelativeToDocumentationSet => DocsetPath.From(CrossLinkUri.ToString());
 
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
-	public string PathRelativeToContainer => CrossLinkUri.ToString();
+	public ContainerPath PathRelativeToContainer => ContainerPath.From(CrossLinkUri.ToString());
 }
 
 /// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
 /// <param name="DefaultCta">Optional <c>default_cta</c> declared on this entry; applies to every page inside the folder.</param>
 public record FolderRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
 	string? Sort = null,
@@ -189,8 +189,8 @@ public record FolderRef(
 /// because its path contains '/'.
 /// </summary>
 public record DeepLinkedFolderRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
 	string? DefaultCta = null
@@ -201,8 +201,8 @@ public record DeepLinkedFolderRef(
 /// <c>- toc: x</c> entry and the child <c>toc.yml</c> root (OR semantics).
 /// </param>
 public record IsolatedTableOfContentsRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
 	bool Island = false,
@@ -256,8 +256,8 @@ public record ListingOptions(
 /// (subject to <see cref="ListingOptions.Visual"/>), and generates a grouped index page.
 /// </summary>
 public record ListingRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
 	ListingOptions Options
@@ -268,8 +268,38 @@ public record ListingRef(
 /// </summary>
 public record ListingGroupRef(
 	string GroupKey,
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context
 ) : ITableOfContentsItem;
+
+/// <summary>
+/// One entry of a table of contents. Subtypes of a case (<see cref="IndexFileRef"/> under <see cref="FileRef"/>,
+/// <see cref="DeepLinkedFolderRef"/> under <see cref="FolderRef"/>) match their case's pattern too, so switch on the
+/// most specific type first. A union is a struct wrapping its case: use <see cref="TocItems.OfCase{T}"/>, not
+/// <c>OfType</c>, to filter a sequence of them.
+/// </summary>
+public readonly union TocItem(FileRef, FolderRef, IsolatedTableOfContentsRef, CrossLinkRef, ListingRef, ListingGroupRef, CliReferenceRef);
+
+public static class TocItems
+{
+	/// <summary>
+	/// The entry as a <see cref="TocItem"/>, or <c>null</c> for an entry that is none of its cases
+	/// (such as the sentinel for an invalid YAML entry).
+	/// </summary>
+	public static TocItem? From(ITableOfContentsItem item) => item switch
+	{
+		FileRef file => file,
+		FolderRef folder => folder,
+		IsolatedTableOfContentsRef toc => toc,
+		CrossLinkRef crossLink => crossLink,
+		ListingRef listing => listing,
+		ListingGroupRef group => group,
+		CliReferenceRef cli => cli,
+		_ => null
+	};
+
+	/// <summary>The entries whose case value is a <typeparamref name="T"/>.</summary>
+	public static IEnumerable<T> OfCase<T>(this IEnumerable<TocItem> items) => items.Select(i => i.Value).OfType<T>();
+}
