@@ -259,7 +259,8 @@ class FilterableTableElement extends HTMLElement {
         // already announces "Showing 0 of N". A fullscreen copy is cloned
         // from an enhanced host, so drop any message the clone carried over.
         this.querySelector(':scope > .filterable-table-empty')?.remove()
-        const empty = document.createElement('p')
+        // A div, not a p: the page's paragraph styles would add a top margin.
+        const empty = document.createElement('div')
         empty.className = 'filterable-table-empty'
         empty.hidden = true
         this.appendChild(empty)
