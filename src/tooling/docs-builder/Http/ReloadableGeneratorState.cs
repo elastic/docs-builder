@@ -160,12 +160,12 @@ public class ReloadableGeneratorState : IDisposable
 		var config = _generator.DocumentationSet.Configuration;
 		_apiReferencesStale = false;
 		var force = Interlocked.Exchange(ref _forceApiRegeneration, 0) == 1;
-		if (!force && !HaveOpenApiSpecsChanged(config))
-			return;
-
-		UpdateOpenApiSpecTimestamps(config);
 		try
 		{
+			if (!force && !HaveOpenApiSpecsChanged(config))
+				return;
+
+			UpdateOpenApiSpecTimestamps(config);
 			await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
 		}
 		catch
