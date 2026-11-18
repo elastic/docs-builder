@@ -79,7 +79,7 @@ server can run without Elasticsearch. They prevent startup in `staging`, `edge`,
 and `prod`.
 
 Runtime credentials require permission to manage component and index templates,
-create the environment's index, and write and delete its documents.
+create the environment's index, and write its documents.
 
 Template updates do not modify existing indices. For a mapping change, increment
 the schema version in the index name, deploy the new template, and migrate any

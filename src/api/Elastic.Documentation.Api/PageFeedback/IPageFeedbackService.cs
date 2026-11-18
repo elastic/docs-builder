@@ -7,7 +7,6 @@ namespace Elastic.Documentation.Api.PageFeedback;
 public interface IPageFeedbackService
 {
 	Task<bool> UpsertFeedbackAsync(PageFeedbackRecord record, CancellationToken ctx);
-	Task<bool> DeleteFeedbackAsync(Guid feedbackId, CancellationToken ctx);
 }
 
 public record PageFeedbackRecord(

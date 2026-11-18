@@ -373,8 +373,7 @@ public static class MappingsExtension
 		return builder;
 	}
 
-	private static void MapPageFeedback(IEndpointRouteBuilder group)
-	{
+	private static void MapPageFeedback(IEndpointRouteBuilder group) =>
 		_ = group
 			.MapPut("/page-feedback/{feedbackId:guid}", async (
 				Guid feedbackId,
@@ -405,31 +404,6 @@ public static class MappingsExtension
 			.WithSummary("Record or update feedback on a page")
 			.Produces(StatusCodes.Status204NoContent)
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
-
-		_ = group
-			.MapDelete("/page-feedback/{feedbackId:guid}", async (
-				Guid feedbackId,
-				IPageFeedbackService feedbackService,
-				ILogger<Program> logger,
-				Cancel ctx
-			) =>
-			{
-				if (!await feedbackService.DeleteFeedbackAsync(feedbackId, ctx))
-				{
-					logger.LogWarning("Failed to delete page feedback {FeedbackId}", feedbackId);
-					return FeedbackUnavailable();
-				}
-
-				logger.LogInformation("Deleted page feedback {FeedbackId}", feedbackId);
-				return Results.NoContent();
-			})
-			.DisableAntiforgery()
-			.WithTags(FeedbackTag)
-			.WithName("delete-page-feedback")
-			.WithSummary("Delete feedback on a page")
-			.Produces(StatusCodes.Status204NoContent)
-			.ProducesErrors(StatusCodes.Status503ServiceUnavailable);
-	}
 
 	private static bool IsValidPageFeedback(PageFeedbackRequest request) =>
 		!string.IsNullOrWhiteSpace(request.PageUrl)
