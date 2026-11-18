@@ -4518,8 +4518,9 @@ html:has(.api-page-shell) {
 .api-section-links {
 	position: absolute;
 	top: 0;
-	right: 0;
-	left: 0;
+	/* 16px past the column on each side, so the toolbar reads as wider than the content it floats over. */
+	right: -16px;
+	left: -16px;
 	display: flex;
 	flex-wrap: nowrap;
 	align-items: center;
