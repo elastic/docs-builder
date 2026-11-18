@@ -63,6 +63,31 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 	[Test]
 	public async Task ShortWindow_ScrollingRail_KeepsScrollbarClearOfCards()
 	{
+		var report = await MeasureRailAsync(1280, 320).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"""
+			rail scrolls: True
+			card clear of the scrollbar: True
+			"""
+		);
+	}
+
+	[Test]
+	public async Task StackedLayout_Rail_GivesCardsTheFullWidth()
+	{
+		var report = await MeasureRailAsync(800, 320).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"""
+			rail scrolls: False
+			card clear of the scrollbar: False
+			"""
+		);
+	}
+
+	private async Task<string> MeasureRailAsync(int width, int height)
+	{
 		if (target.Name != "isolated")
 			Skip.Test($"The API pages these tests open are part of the isolated site, not '{target.Name}'.");
 
@@ -72,15 +97,14 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 		await using var browser = await Browser.LaunchAsync(new BrowserLaunchOptions()).ConfigureAwait(false);
 		await using var context = await browser.NewContextAsync().ConfigureAwait(false);
 		var page = await context.NewPageAsync().ConfigureAwait(false);
-		// Wide enough for the desktop rail, too short for the chips, headers and captions plus the examples.
-		await page.SetViewportAsync(1280, 320, 1).ConfigureAwait(false);
+		await page.SetViewportAsync(width, height, 1).ConfigureAwait(false);
 		await page.GotoAsync(url.ToString()).ConfigureAwait(false);
 		await page.WaitForLoadStateAsync("networkidle").ConfigureAwait(false);
 
 		var report = await page.EvaluateAsync(
 			$$"""
 			(() => {
-				const panel = document.querySelector('.api-page-rail > #api-examples-panel');
+				const panel = document.querySelector('#api-examples-panel');
 				const visibleRight = panel.getBoundingClientRect().left + panel.clientLeft + panel.clientWidth;
 				const card = panel.querySelector('{{Scenario}} .api-code-carousel-card.is-active');
 				return {
@@ -91,11 +115,10 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 			"""
 		).ConfigureAwait(false);
 
-		_ = $"rail scrolls: {report.GetProperty("scrolls").GetBoolean()}\ncard clear of the scrollbar: {report.GetProperty("clearance").GetInt32() >= 12}".Should().MatchInlineSnapshot(
-			"""
-				rail scrolls: True
-				card clear of the scrollbar: True
-				"""
+		return string.Join(
+			'\n',
+			$"rail scrolls: {report.GetProperty("scrolls").GetBoolean()}",
+			$"card clear of the scrollbar: {report.GetProperty("clearance").GetInt32() >= 12}"
 		);
 	}
 
