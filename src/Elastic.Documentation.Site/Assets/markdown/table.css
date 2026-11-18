@@ -256,6 +256,7 @@
 	   that reads like the complete table. An unfiltered table prints with no
 	   controls at all, since there is nothing to disclose. */
 	.filterable-table-search,
+	.filterable-table-toggle,
 	.filterable-table-facets,
 	.filterable-table-clear {
 		display: none !important;
@@ -287,8 +288,15 @@
 		margin: 0.75rem 0;
 	}
 
+	/* The search box takes the row, with the Filters button beside it. */
+	.filterable-table-search-row {
+		display: flex;
+		gap: 0.5rem;
+	}
+
 	.filterable-table-search {
-		width: 100%;
+		flex: 1 1 auto;
+		min-width: 0;
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--color-grey-30);
 		border-radius: 6px;
@@ -301,6 +309,63 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
 		gap: 0.75rem;
+
+		/* display:grid would otherwise override the hidden attribute. */
+		&:empty,
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.filterable-table-toggle {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.75rem;
+		border: 1px solid var(--color-grey-30);
+		border-radius: 6px;
+		background: var(--color-white);
+		font-size: 0.875rem;
+		color: var(--color-ink-dark);
+		white-space: nowrap;
+		cursor: pointer;
+
+		&:hover,
+		&[aria-expanded='true'] {
+			background: var(--color-grey-10);
+		}
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.filterable-table-toggle-icon,
+	.filterable-table-toggle-chevron {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.filterable-table-toggle-chevron {
+		transition: transform 0.15s ease;
+
+		[aria-expanded='true'] > & {
+			transform: rotate(180deg);
+		}
+	}
+
+	/* How many filters are on, so the count stays visible with the panel shut. */
+	.filterable-table-toggle-count {
+		min-width: 1.25rem;
+		padding: 0 0.375rem;
+		border-radius: 999px;
+		background: var(--color-blue-elastic);
+		font-size: 0.75rem;
+		font-weight: 600;
+		line-height: 1.25rem;
+		text-align: center;
+		color: var(--color-white);
 
 		&:empty {
 			display: none;

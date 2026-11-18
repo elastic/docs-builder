@@ -653,7 +653,7 @@ describe('filterable-table control layout', () => {
             document.querySelector('.filterable-table-controls')!.children
         ).map((el) => el.className)
         expect(rows).toEqual([
-            'filterable-table-search',
+            'filterable-table-search-row',
             'filterable-table-facets',
             'filterable-table-summary',
         ])
@@ -808,5 +808,69 @@ describe('filterable-table empty results', () => {
         expect(clone.querySelectorAll('.filterable-table-empty')).toHaveLength(
             1
         )
+    })
+})
+
+describe('filterable-table collapsible filters', () => {
+    const toggle = () =>
+        document.querySelector<HTMLButtonElement>('.filterable-table-toggle')!
+    const panel = () =>
+        document.querySelector<HTMLElement>('.filterable-table-facets')!
+    const count = () =>
+        document.querySelector('.filterable-table-toggle-count')!.textContent
+
+    it('starts with the dropdowns collapsed behind a Filters button', () => {
+        mount()
+        expect(toggle().hidden).toBe(false)
+        expect(toggle().textContent).toContain('Filters')
+        expect(toggle().getAttribute('aria-expanded')).toBe('false')
+        expect(toggle().getAttribute('aria-controls')).toBe(panel().id)
+        expect(panel().hidden).toBe(true)
+    })
+
+    it('opens and closes the dropdowns from the button', () => {
+        mount()
+        toggle().click()
+        expect(panel().hidden).toBe(false)
+        expect(toggle().getAttribute('aria-expanded')).toBe('true')
+        toggle().click()
+        expect(panel().hidden).toBe(true)
+        expect(toggle().getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('counts the filters that are on, with the panel open or shut', () => {
+        mount()
+        expect(count()).toBe('')
+        expect(toggle().getAttribute('aria-label')).toBe('Filters')
+
+        toggle().click()
+        const select = document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+        select.value = 'Core'
+        select.dispatchEvent(new Event('change'))
+        toggle().click()
+
+        expect(panel().hidden).toBe(true)
+        expect(count()).toBe('1')
+        expect(toggle().getAttribute('aria-label')).toBe('Filters, 1 on')
+    })
+
+    it('gives each table its own panel id', () => {
+        document.body.innerHTML = TABLE_HTML + TABLE_HTML
+        customElements.upgrade(document.body)
+        const ids = Array.from(
+            document.querySelectorAll('.filterable-table-facets')
+        ).map((el) => el.id)
+        expect(new Set(ids).size).toBe(2)
+    })
+
+    it('hides the button when there are no dropdowns', () => {
+        document.body.innerHTML = TABLE_HTML.replace(
+            '<filterable-table>',
+            '<filterable-table data-facets="none">'
+        )
+        customElements.upgrade(document.body)
+        expect(toggle().hidden).toBe(true)
     })
 })
