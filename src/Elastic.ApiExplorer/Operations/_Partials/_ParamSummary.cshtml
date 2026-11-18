@@ -9,7 +9,7 @@
 	var braces = style is SummaryStyle.Fields or SummaryStyle.ArrayOfFields && Model.Names.Count > 0;
 	var variants = style == SummaryStyle.Variants;
 }
-<span class="api-param-summary@(style is SummaryStyle.Variants or SummaryStyle.All ? $" is-{style.ToString().ToLowerInvariant()}" : "")" data-param-summary @(variants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
+<span class="api-param-summary@(variants ? " is-variants" : "")" data-param-summary @(variants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
 	@if (braces)
 	{
 		<span class="api-param-summary-brace">@open</span>

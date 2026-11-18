@@ -2,6 +2,6 @@
   "shards": [
     { "name": "site", "classes": ["A11yJourneys", "ChromeJourneys", "ContentJourneys", "FeedbackJourneys", "LandingJourneys", "SynthJourneys", "NavigationJourneys", "PageActionsJourneys"] },
     { "name": "http-and-tool", "classes": ["DocsApiHttp", "DocsJourneysCliTests", "DocsJourneysContextTests", "DocsJourneysEmbeddedTests", "DocsJourneysExportConformanceTests", "DocsJourneysExportTests", "DocsJourneysRetryTests", "DocsJourneysWaitTests", "MarkdownAlternatesHttp", "McpHttp"] },
-    { "name": "api-examples", "classes": ["ApiExampleScrollingTests"] }
+    { "name": "api-examples", "classes": ["ApiExampleScrollingTests", "ApiSectionToolbarTests"] }
   ]
 }
