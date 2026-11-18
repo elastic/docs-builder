@@ -149,21 +149,17 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		Dictionary<string, List<string>> seenPrs
 	)
 	{
-		var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var allValid = true;
+		// Continue past invalid entries so every problem in the bundle is reported in one pass.
+		var findings = BundleLoader.CheckForRender(bundledData, bundleInput.BundleFile);
+		foreach (var finding in findings)
+			collector.Write(finding);
 
 		foreach (var entry in bundledData.Entries)
 		{
-			// Track file names for duplicate detection
+			// Track file names across bundles
 			if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
 				var fileName = entry.File.Name;
-
-				// Check for duplicates within the same bundle
-				if (!fileNamesInThisBundle.Add(fileName))
-					collector.EmitWarning(bundleInput.BundleFile, $"Changelog file '{fileName}' appears multiple times in the same bundle");
-
-				// Track across bundles
 				if (!seenFileNames.TryGetValue(fileName, out var bundleList))
 				{
 					bundleList = [];
@@ -172,40 +168,15 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 				bundleList.Add(bundleInput.BundleFile);
 			}
 
-			// Continue past invalid entries so every problem in the bundle is reported in one pass.
-			if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
-				allValid = false;
+			if (entry.HasInlineContent && entry.HasProducts)
+				TrackPrs(bundleInput.BundleFile, entry, seenPrs);
 		}
 
-		return allValid;
+		return findings.All(f => f.Severity != Severity.Error);
 	}
 
-	private static bool ValidateResolvedEntry(
-		IDiagnosticsCollector collector,
-		string bundleFile,
-		BundledEntry entry,
-		Dictionary<string, List<string>> seenPrs
-	)
+	private static void TrackPrs(string bundleFile, BundledEntry entry, Dictionary<string, List<string>> seenPrs)
 	{
-		// Bundles are always self-contained: an entry without inline content is invalid.
-		if (string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null)
-		{
-			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
-			collector.EmitError(
-				bundleFile,
-				$"Entry '{entryName}' in bundle has no inline content: title and type are required. " +
-					"Re-create the bundle with 'changelog bundle'."
-			);
-			return false;
-		}
-
-		if (entry.Products == null || entry.Products.Count == 0)
-		{
-			collector.EmitError(bundleFile, $"Entry '{entry.Title}' in bundle is missing required field: products");
-			return false;
-		}
-
-		// Track PRs for duplicate detection
 		foreach (var pr in entry.Prs ?? [])
 		{
 			if (string.IsNullOrWhiteSpace(pr))
@@ -218,8 +189,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 			prBundleList.Add(bundleFile);
 		}
-
-		return true;
 	}
 
 	private static void EmitDuplicateWarnings(
