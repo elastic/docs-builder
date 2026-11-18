@@ -133,7 +133,7 @@ jobs:
 
       # The nullean/curb action always runs the moving `edge` image, so call the release image by digest instead.
       - name: Lint
-        uses: docker://ghcr.io/nullean/curb@sha256:fd955b3a58d7ba79f5d03f425166d137ef333dea6226a651b23f894dfac8e370 # 0.9.0
+        uses: docker://ghcr.io/nullean/curb@sha256:c390ed126d0b8aa39a1085317e91f59b96a1b1ae1ef05605238192995376ef1e # 0.15.1
         with:
           args: check .
 
