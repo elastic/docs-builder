@@ -380,7 +380,7 @@ public class HttpCodeSamplesTests
 		var scenario = scenarios.Single();
 		var http = scenario.CodeSamples.Single(static s => s.IsHttp);
 		http.Source.Should().MatchSnapshot();
-		scenario.ShowRequest.Should().BeFalse();
+		scenario.ShowRequest.Should().BeTrue("the Python sample does not carry the body");
 		scenario.CodeSamples[0].Language.Should().Be("Python");
 	}
 
@@ -410,6 +410,18 @@ public class HttpCodeSamplesTests
 			.Source
 			.Should()
 			.Be("###\nPOST {{ELASTICSEARCH_URL}}/_search\nContent-Type: application/json\n\n{\"size\":1}\n");
+	}
+
+	[Test]
+	public void Fill_OnlySample_CarriesTheRequest()
+	{
+		var scenario = Fill(
+			JsonOperation(),
+			new ExampleScenario { Title = "Search", TabId = "search", RequestJson = "{\"size\":1}" }
+		).Single();
+
+		scenario.CodeSamples.Should().ContainSingle(static s => s.IsHttp);
+		scenario.ShowRequest.Should().BeFalse();
 	}
 
 	[Test]

@@ -50,8 +50,9 @@ public static class HttpCodeSamples
 		return scenario with
 		{
 			CodeSamples = samples,
+			// The flag covers every language, so HTTP takes the request out of the rail only when it is the only sample.
 			CodeSamplesIncludeRequest = scenario.CodeSamplesIncludeRequest
-				|| (scenario.RequestJson is not null && body == scenario.RequestJson)
+				|| (scenario.CodeSamples.Count == 0 && scenario.RequestJson is not null && body == scenario.RequestJson)
 		};
 	}
 }
