@@ -5,31 +5,39 @@ const rect = (left: number, width: number) =>
 
 // The columns report the widths the script applied through its custom properties, as the real layout does, and the reference takes
 // what is left of the shell. The rail's right edge stays where it is, so growing it moves its left edge. `inset` is space the
-// columns lose beyond the two 32px gaps, such as the legacy grid's right padding.
+// columns lose beyond the layout's gaps and outer padding.
 function mountShell({
     width = 1600,
     nav = 300,
     rail = 640,
     inset = 0,
     padding = 0,
+    legacy = false,
 } = {}) {
-    document.body.innerHTML = `<div class="api-page-shell layout--three">
-        <aside class="layout__nav"></aside>
-        <main class="layout__content" style="padding: 0 ${padding}px 0 0"></main>
+    const navClass = legacy ? 'sidebar' : 'layout__nav'
+    const contentClass = legacy ? 'api-page-main' : 'layout__content'
+    document.body.innerHTML = `<div class="api-page-shell${legacy ? '' : ' layout--three'}"><div>
+        <aside class="${navClass}"></aside>
+        <main class="${contentClass}" style="padding: 0 ${padding}px 0 0"></main>
         <aside class="api-page-rail"></aside>
-    </div>`
+    </div></div>`
     const shell = document.querySelector<HTMLElement>('.api-page-shell')!
     const applied = (name: string, fallback: number) =>
         parseFloat(shell.style.getPropertyValue(name)) || fallback
-    const navWidth = () => applied('--layout-nav-width', nav)
-    const railWidth = () => applied('--layout-rail-width', rail)
+    const navWidth = () =>
+        applied(legacy ? '--max-sidebar-width' : '--layout-nav-width', nav)
+    const railWidth = () =>
+        applied(legacy ? '--max-examples-width' : '--layout-rail-width', rail)
     shell.getBoundingClientRect = () => rect(0, width)
-    document.querySelector('.layout__nav')!.getBoundingClientRect = () =>
+    document.querySelector(`.${navClass}`)!.getBoundingClientRect = () =>
         rect(0, navWidth())
-    document.querySelector('.layout__content')!.getBoundingClientRect = () =>
+    document.querySelector(`.${contentClass}`)!.getBoundingClientRect = () =>
         rect(
-            navWidth() + 32,
-            Math.max(0, width - navWidth() - railWidth() - 64 - inset)
+            navWidth() + (legacy ? 40 : 32),
+            Math.max(
+                0,
+                width - navWidth() - railWidth() - (legacy ? 104 : 64) - inset
+            )
         )
     document.querySelector('.api-page-rail')!.getBoundingClientRect = () =>
         rect(1000 + rail - railWidth(), railWidth())
@@ -210,42 +218,49 @@ describe('initApiColumnResize', () => {
         )
     })
 
-    it.each(['nav', 'rail'])(
-        'keeps 360px for article content when dragging %s beside padding',
-        (side) => {
-            mountShell({ padding: 24 })
-            initApiColumnResize()
+    describe.each([false, true])('article padding with legacy=%s', (legacy) => {
+        it.each(['nav', 'rail'])(
+            'keeps 360px for article content when dragging %s beside padding',
+            (side) => {
+                mountShell({ padding: 24, legacy })
+                initApiColumnResize()
 
-            handle(side).dispatchEvent(
-                new MouseEvent('pointerdown', { clientX: 1000 })
-            )
-            handle(side).dispatchEvent(
-                new MouseEvent('pointermove', {
-                    clientX: side === 'nav' ? 3000 : 0,
-                })
-            )
-            handle(side).dispatchEvent(new MouseEvent('pointerup'))
+                handle(side).dispatchEvent(
+                    new MouseEvent('pointerdown', { clientX: 1000 })
+                )
+                handle(side).dispatchEvent(
+                    new MouseEvent('pointermove', {
+                        clientX: side === 'nav' ? 3000 : 0,
+                    })
+                )
+                handle(side).dispatchEvent(new MouseEvent('pointerup'))
+
+                expect(
+                    document
+                        .querySelector(
+                            legacy ? '.api-page-main' : '.layout__content'
+                        )!
+                        .getBoundingClientRect().width - 24
+                ).toBe(360)
+            }
+        )
+
+        it('restores saved widths with 360px for article content beside padding', () => {
+            localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
+            mountShell({ width: 1404, padding: 24, legacy })
+            initApiColumnResize()
 
             expect(
                 document
-                    .querySelector('.layout__content')!
+                    .querySelector(
+                        legacy ? '.api-page-main' : '.layout__content'
+                    )!
                     .getBoundingClientRect().width - 24
             ).toBe(360)
-        }
-    )
-
-    it('restores saved widths with 360px for article content beside padding', () => {
-        localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
-        mountShell({ width: 1404, padding: 24 })
-        initApiColumnResize()
-
-        expect(
-            document.querySelector('.layout__content')!.getBoundingClientRect()
-                .width - 24
-        ).toBe(360)
-        expect(localStorage.getItem('api-column-widths')).toBe(
-            '{"nav":560,"rail":900}'
-        )
+            expect(localStorage.getItem('api-column-widths')).toBe(
+                '{"nav":560,"rail":900}'
+            )
+        })
     })
 
     it('follows a drag and saves the width only when the drag ends', () => {
