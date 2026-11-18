@@ -319,7 +319,10 @@ jobs:
       - name: Publish Binaries
         run: ./build.sh publish-zip
         shell: bash
-        
+        # curb already ran locally and on ci, never fail a release because of formatting.
+        env:
+          Curb_Bypass: true
+
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v4
         with:

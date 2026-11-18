@@ -71,12 +71,27 @@ const markRanges = (
     return nodes
 }
 
-/** The route a query named: the method the page leads with and the path. */
+const MethodChip = ({ method }: { method: string }) => (
+    <span className={`api-method api-method-${method.toLowerCase()}`}>
+        <span className="api-method-label">{method}</span>
+    </span>
+)
+
+/** One chip per method, joined into one when the route takes several, the method the page leads with first. */
+const MethodChips = ({ methods }: { methods: string[] }) =>
+    methods.length === 1 ? (
+        <MethodChip method={methods[0]} />
+    ) : (
+        <span className="api-method-group">
+            {methods.map((method) => (
+                <MethodChip key={method} method={method} />
+            ))}
+        </span>
+    )
+
+/** The route a query named: every method it takes and the path. */
 export const RouteLine = ({
-    route: {
-        path,
-        methods: [method],
-    },
+    route: { path, methods },
     tokens,
 }: {
     route: ApiRoute
@@ -110,8 +125,11 @@ export const RouteLine = ({
                 .api-method {
                     height: calc(${euiTheme.size.base} + ${euiTheme.size.xxs});
                     padding: 0 ${euiTheme.size.xs};
-                    border-radius: ${euiTheme.size.xs};
                     font-size: 10px;
+                }
+                > .api-method,
+                .api-method-group {
+                    border-radius: ${euiTheme.size.xs};
                 }
                 code {
                     display: flex;
@@ -139,9 +157,7 @@ export const RouteLine = ({
                 }
             `}
         >
-            <span className={`api-method api-method-${method.toLowerCase()}`}>
-                <span className="api-method-label">{method}</span>
-            </span>
+            <MethodChips methods={methods} />
             <code title={path}>{spans}</code>
         </div>
     )

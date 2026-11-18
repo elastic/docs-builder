@@ -14,9 +14,15 @@ public sealed record NavTreeModel
 	/// <summary>The tree's content hash. Pages that share a tree share this id.</summary>
 	public required string Id { get; init; }
 
-	public static bool TryParseMethod(string? method, out HttpVerb parsed)
+	/// <summary>The methods the badge can show, in the order given; a method with no badge, such as OPTIONS, is skipped.</summary>
+	public static IReadOnlyList<HttpVerb> ParseMethods(IEnumerable<string> methods)
 	{
-		parsed = HttpVerb.Get;
-		return method is not null && Enum.TryParse(method, ignoreCase: true, out parsed);
+		var parsed = new List<HttpVerb>();
+		foreach (var method in methods)
+		{
+			if (Enum.TryParse<HttpVerb>(method, ignoreCase: true, out var verb))
+				parsed.Add(verb);
+		}
+		return parsed;
 	}
 }

@@ -51,7 +51,7 @@ public class OperationDeprecatedProjectionTests(ApiExplorerFixture fixture)
 
 		var deprecated = leaves.Single(n => n.Url == Operation("docs-get-source").Url);
 		deprecated.Deprecated.Should().BeTrue();
-		deprecated.HttpMethod.Should().Be("get");
+		deprecated.HttpMethods.Should().Equal("get");
 		leaves.Single(n => n.Url == Operation("docs-get").Url).Deprecated.Should().BeFalse();
 	}
 

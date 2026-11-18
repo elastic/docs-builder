@@ -32,8 +32,8 @@ public sealed record NavigationRenderNode
 	public required string Url { get; init; }
 	/// <summary>Badge parsed from a <c>[ns]</c>/<c>[cmd]</c>/<c>[alias]</c> title prefix; doubles as its CSS class suffix.</summary>
 	public string? Badge { get; init; }
-	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
-	public string? HttpMethod { get; init; }
+	/// <summary>Lowercase HTTP methods for API operation leaves, the dominant one first; drives the sidebar method chip.</summary>
+	public IReadOnlyList<string> HttpMethods { get; init; } = [];
 	/// <summary>True for an API operation leaf the spec marks deprecated.</summary>
 	public bool Deprecated { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
@@ -390,14 +390,14 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
-		var operation = item is ILeafNavigationItem<INavigationModel> { Model: IApiOperationNavigationModel op } ? op : null;
+		var operation = item as IApiOperationNavigationItem;
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			HttpMethod = operation?.HttpMethod,
+			HttpMethods = operation?.HttpMethods ?? [],
 			Deprecated = operation?.Deprecated ?? false,
 			Url = item.Url
 		};
@@ -458,7 +458,8 @@ public sealed record NavigationRenderModel
 		AppendInt(hash, node.IsTopLevel ? 1 : 0);
 		Append(hash, node.NavigationTitle);
 		Append(hash, node.Badge ?? string.Empty);
-		Append(hash, node.HttpMethod ?? string.Empty);
+		foreach (var method in node.HttpMethods)
+			Append(hash, method);
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);
