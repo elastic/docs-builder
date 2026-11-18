@@ -75,15 +75,15 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		}
 	}
 
-	private static SectionStat Counted(int count, string unit) =>
-		new(count.ToString(CultureInfo.InvariantCulture), count == 1 ? unit : unit + "s");
+	private static SectionStat Counted(int count, string unit, string? plural = null) =>
+		new(count.ToString(CultureInfo.InvariantCulture), count == 1 ? unit : (plural ?? (unit + "s")));
 
 	/// <summary>The top-level names the Body section's own summary lists, so the figure matches what the reader opens.</summary>
 	private SectionStat? BodyStat()
 	{
 		var count = Page.RequestPropertyNames.Count;
 		if (count > 0)
-			return Counted(count, Page.RequestSummaryStyle == SummaryStyle.Variants ? "variant" : "field");
+			return Page.RequestSummaryStyle == SummaryStyle.Variants ? Counted(count, "variant") : Counted(count, "property", "properties");
 		return Page.PrimaryRequest is { } primary ? new SectionStat(null, primary.ContentType) : null;
 	}
 
