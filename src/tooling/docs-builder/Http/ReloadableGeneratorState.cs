@@ -55,6 +55,7 @@ public class ReloadableGeneratorState : IDisposable
 		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
 		_generator = new DocumentationGenerator(new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance), logFactory);
+		_apiGeneration = new SharedGeneration(RegenerateApiReferencesAsync, () => _apiReferencesStale);
 	}
 
 	public DocumentationGenerator Generator => _generator;
@@ -68,11 +69,9 @@ public class ReloadableGeneratorState : IDisposable
 	private volatile bool _apiReferencesStale = true;
 	// 1 when the next /api/ request must regenerate; consumed atomically so a concurrent invalidation is never lost.
 	private int _forceApiRegeneration;
-	private readonly Lock _apiLock = new();
 	// The generation belongs to the server, not to the request that started it, so a client that gives up
 	// stops waiting without cancelling the work the next request would otherwise redo from scratch.
-	private Task _apiGeneration = Task.CompletedTask;
-	private readonly CancellationTokenSource _lifetime = new();
+	private readonly SharedGeneration _apiGeneration;
 	// Outlives each regeneration so specs are not downloaded again; the version index is re-fetched each time.
 	private readonly SpecBodyCache _specBodies = new();
 
@@ -139,26 +138,7 @@ public class ReloadableGeneratorState : IDisposable
 	}
 
 	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
-	public async Task EnsureApiReferencesAsync(Cancel ctx)
-	{
-		// A change that lands during a run marks the pages stale again, so the request that joined that run
-		// waits for one more instead of being served pages built from the inputs before the change.
-		do
-			await CurrentApiGeneration().WaitAsync(ctx);
-		while (_apiReferencesStale);
-	}
-
-	/// <summary>Joins the generation in flight, or starts one when the pages are stale.</summary>
-	private Task CurrentApiGeneration()
-	{
-		lock (_apiLock)
-		{
-			if (!_apiGeneration.IsCompleted || !_apiReferencesStale)
-				return _apiGeneration;
-
-			return _apiGeneration = Task.Run(() => RegenerateApiReferencesAsync(_lifetime.Token), _lifetime.Token);
-		}
-	}
+	public Task EnsureApiReferencesAsync(Cancel ctx) => _apiGeneration.EnsureAsync(ctx);
 
 	private async Task RegenerateApiReferencesAsync(Cancel ctx)
 	{
@@ -279,8 +259,7 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
-		_lifetime.Cancel();
-		_lifetime.Dispose();
+		_apiGeneration.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}
