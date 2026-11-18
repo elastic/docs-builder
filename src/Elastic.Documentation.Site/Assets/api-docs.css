@@ -4796,6 +4796,7 @@ html:has(.api-page-shell) {
 
 @media (min-width: 1280px) {
 	.api-column-handle {
+		--api-column-line-width: 1px;
 		display: block;
 		position: absolute;
 		top: 0;
@@ -4811,13 +4812,18 @@ html:has(.api-page-shell) {
 		display: none;
 	}
 
+	.api-column-handle:hover,
+	.api-column-handle[data-dragging] {
+		--api-column-line-width: 2px;
+	}
+
 	.api-column-handle::after {
 		content: '';
 		position: absolute;
 		top: 0;
 		bottom: 0;
 		left: 50%;
-		width: 1px;
+		width: var(--api-column-line-width);
 		transform: translateX(-50%);
 		background: var(--color-grey-20);
 		transition: background-color 100ms;
@@ -4825,7 +4831,6 @@ html:has(.api-page-shell) {
 
 	.api-column-handle:hover::after,
 	.api-column-handle[data-dragging]::after {
-		width: 2px;
 		background: var(--color-grey-60);
 	}
 
@@ -4844,15 +4849,13 @@ html:has(.api-page-shell) {
 	}
 
 	.api-column-handle[data-api-column-handle='nav']::before {
-		width: 10px;
-		transform: translateX(2px);
-		background-size: 5px 6px;
-		box-shadow:
-			0 -3px var(--color-white),
-			0 3px var(--color-white);
+		transform: translateX(-3px);
+		background-position:
+			0 0,
+			calc(50% - 0.5px) 50%;
 	}
 
-	/* The grip interrupts the divider but ignores pointer input so its overflow cannot cover the sidebar scrollbar. */
+	/* Only the strip over the divider is opaque; the rest of the grip leaves the scrollbar visible and interactive. */
 	.api-column-handle::before {
 		content: '';
 		display: block;
@@ -4863,14 +4866,16 @@ html:has(.api-page-shell) {
 		margin-inline: auto;
 		z-index: 1;
 		color: var(--color-grey-80);
-		background-color: var(--color-white);
-		background-image: radial-gradient(
-			circle,
-			currentColor 1.25px,
-			transparent 1.5px
-		);
-		background-size: 6px 6px;
-		box-shadow: 0 0 0 3px var(--color-white);
+		background-image:
+			radial-gradient(circle, currentColor 1.25px, transparent 1.5px),
+			linear-gradient(var(--color-white), var(--color-white));
+		background-size:
+			6px 6px,
+			var(--api-column-line-width) 100%;
+		background-position:
+			0 0,
+			50% 50%;
+		background-repeat: repeat, no-repeat;
 		pointer-events: none;
 		transition: color 100ms;
 	}
