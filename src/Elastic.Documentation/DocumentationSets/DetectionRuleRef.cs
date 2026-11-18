@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 
-namespace Elastic.Documentation.Configuration.Toc.DetectionRules;
+namespace Elastic.Documentation.DocumentationSets;
 
 public record DetectionRuleRef(IFileInfo FileInfo, string PathRelativeToDocumentationSet, string Context) : FileRef(
 	PathRelativeToDocumentationSet,

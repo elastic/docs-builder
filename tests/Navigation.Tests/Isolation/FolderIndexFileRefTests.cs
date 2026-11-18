@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;

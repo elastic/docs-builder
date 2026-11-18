@@ -8,7 +8,7 @@ using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc.CliReference;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Configuration.Toc.Listing;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
