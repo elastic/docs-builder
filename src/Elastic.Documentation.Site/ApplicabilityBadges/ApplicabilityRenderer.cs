@@ -49,7 +49,7 @@ public static class ApplicabilityRenderer
 		VersioningSystem versioningSystem
 	)
 	{
-		var allApplications = new AppliesCollection([.. applicabilities]);
+		var allApplications = AppliesCollection.Of(applicabilities);
 
 		// Sort by version (highest first), then by lifecycle priority as tiebreaker
 		var sortedApplicabilities = applicabilities

@@ -37,21 +37,29 @@ public interface IApplicableToElement
 	ApplicableTo? AppliesTo { get; }
 }
 
+/// <summary>The <c>applies_to</c> block of a page, section or toc entry: which stack, serverless, deployment and product versions a piece of documentation applies to, and in which lifecycle.</summary>
+/// <remarks>
+/// Constructed with <c>ApplicableToYamlConverter</c> or <c>ApplicableToJsonConverter</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 [JsonConverter(typeof(ApplicableToJsonConverter))]
-public record ApplicableTo
+public record ApplicableTo : Nullean.Entities.IHaveConstraints<ApplicableTo>
 {
-	public AppliesCollection? Stack { get; set; }
+	[YamlIgnore]
+	public static Nullean.Entities.ConstraintSet<ApplicableTo> Constraints => ApplicableToConstraints.All;
 
-	public DeploymentApplicability? Deployment { get; set; }
+	public AppliesCollection? Stack { get; internal init; }
 
-	public ServerlessProjectApplicability? Serverless { get; set; }
+	public DeploymentApplicability? Deployment { get; internal init; }
 
-	public AppliesCollection? Product { get; set; }
+	public ServerlessProjectApplicability? Serverless { get; internal init; }
 
-	public ProductApplicability? ProductApplicability { get; set; }
+	public AppliesCollection? Product { get; internal init; }
+
+	public ProductApplicability? ProductApplicability { get; internal init; }
 
 	[JsonIgnore]
-	public ApplicabilityDiagnosticsCollection? Diagnostics { get; set; }
+	public ApplicabilityDiagnosticsCollection? Diagnostics { get; internal init; }
 
 	// Static singletons, not YAML members — the source generator doesn't filter static properties
 	// on its own, so these must be explicitly ignored to avoid CS0176 in the generated (de)serializer.
@@ -63,6 +71,19 @@ public record ApplicableTo
 		Deployment = DeploymentApplicability.All,
 		Product = AppliesCollection.GenerallyAvailable
 	};
+
+	/// <summary>Only the stack applicability: the block <c>stack: &lt;lifecycle&gt; &lt;version&gt;</c> declares.</summary>
+	public static ApplicableTo ForStack(AppliesCollection stack) => new() { Stack = stack };
+
+	/// <summary>Only the stack applicability, of one lifecycle (<paramref name="version"/> null means every version).</summary>
+	public static ApplicableTo ForStack(ProductLifecycle lifecycle, VersionSpec? version) =>
+		ForStack(AppliesCollection.Of([new Applicability { Lifecycle = lifecycle, Version = version }]));
+
+	/// <summary>
+	/// The same applicability once its parse diagnostics were reported: a reader collects them where it has no collector, the renderer reports them
+	/// and drops them so they are not reported again.
+	/// </summary>
+	public ApplicableTo WithoutDiagnostics() => this with { Diagnostics = null };
 
 	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v : AllVersionsSpec.Instance;
 
@@ -200,15 +221,20 @@ public record ApplicableTo
 	}
 }
 
+/// <summary>The <c>deployment</c> part of an <c>applies_to</c> block: self-managed, ECE, ECK and Elastic Cloud Hosted.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record DeploymentApplicability
 {
-	public AppliesCollection? Self { get; set; }
+	public AppliesCollection? Self { get; internal init; }
 
-	public AppliesCollection? Ece { get; set; }
+	public AppliesCollection? Ece { get; internal init; }
 
-	public AppliesCollection? Eck { get; set; }
+	public AppliesCollection? Eck { get; internal init; }
 
-	public AppliesCollection? Ess { get; set; }
+	public AppliesCollection? Ess { get; internal init; }
 
 	[YamlIgnore]
 	public static DeploymentApplicability All { get; } = new()
@@ -258,15 +284,20 @@ public record DeploymentApplicability
 	}
 }
 
+/// <summary>The <c>serverless</c> part of an <c>applies_to</c> block, one entry per project type.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record ServerlessProjectApplicability
 {
-	public AppliesCollection? Elasticsearch { get; set; }
+	public AppliesCollection? Elasticsearch { get; internal init; }
 
-	public AppliesCollection? Observability { get; set; }
+	public AppliesCollection? Observability { get; internal init; }
 
-	public AppliesCollection? Security { get; set; }
+	public AppliesCollection? Security { get; internal init; }
 
-	public AppliesCollection? VectorDatabase { get; set; }
+	public AppliesCollection? VectorDatabase { get; internal init; }
 
 	/// <summary>
 	/// Returns if all serverless project types share the same applicability.
