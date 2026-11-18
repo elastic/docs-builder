@@ -101,8 +101,9 @@ public record DetectionRuleOverviewFile : MarkdownFile
 
 	private string GetMarkdown()
 	{
-		var rules = RuleNavigations.Select(navigation => (Navigation: navigation, Model: (DetectionRuleFile)navigation.Model)).ToList();
-		var groupedRules = rules.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified").OrderBy(g => g.Key).ToArray();
+		var entries = RuleNavigations.Select(navigation => (Navigation: navigation, Model: (DetectionRuleFile)navigation.Model)).Select(
+			r => new DetectionRuleOverviewEntry(r.Model.Rule.Name, r.Navigation.Url, r.Model.Rule)
+		);
 		// language=markdown
 		var markdown =
 			"""
@@ -112,27 +113,11 @@ public record DetectionRuleOverviewFile : MarkdownFile
 All prebuilt machine learning rules are tagged with `ML`, and their rule type is `machine_learning`. Before using prebuilt machine learning rules, ensure you have all of the appropriate requirements.
 :::
 
-""";
-
-		foreach (var group in groupedRules)
-		{
-			markdown +=
-				$"""
-
-## {group.Key}
+To find a rule, search by name or narrow the list by domain, severity, rule type, operating system, or MITRE ATT&CK® tactic.
 
 """;
-			foreach (var (navigation, model) in group.OrderBy(r => r.Model.Rule.Name))
-			{
-				// TODO update this to use the new URL from navigation
-				markdown +=
-					$"""
-[{model.Rule.Name}](!{navigation.Url}) <br>
-""";
-			}
-		}
 
-		return markdown;
+		return markdown + DetectionRuleOverviewTable.ToMarkdown(entries);
 	}
 }
 
