@@ -112,25 +112,9 @@ public class BundleBuilder
 		else
 			bundledProducts = [];
 
-		var productsByProductId = bundledProducts
-			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
-			.Where(g => g.Count() > 1)
-			.ToList();
-
-		foreach (var productGroup in productsByProductId)
-		{
-			var targets = productGroup.Select(p =>
-			{
-				var target = string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target;
-				if (p.Lifecycle != null)
-					target = $"{target} {p.Lifecycle.Value.ToStringFast(true)}";
-				return target;
-			}).ToList();
-			collector.EmitWarning(
-				string.Empty,
-				$"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}"
-			);
-		}
+		var outcome = AuthoredBundle.Constraints.ApplyDetailed(AuthoredBundle.Empty, b => b.WithProducts(bundledProducts));
+		foreach (var diagnostic in outcome.ToDiagnostics(string.Empty))
+			collector.Write(diagnostic);
 
 		return bundledProducts;
 	}

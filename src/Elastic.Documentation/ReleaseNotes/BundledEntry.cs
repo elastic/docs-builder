@@ -53,4 +53,13 @@ public record BundledEntry
 	/// Preserved through the scrub round-trip so the public pool can resolve markers end-to-end.
 	/// </summary>
 	public string? Link { get; init; }
+
+	/// <summary>Whether the entry carries its own content: a bundle's entries are inlined, so one without a title and a type cannot be rendered.</summary>
+	public bool HasInlineContent => !string.IsNullOrWhiteSpace(Title) && Type is not null;
+
+	/// <summary>Whether the entry names at least one product.</summary>
+	public bool HasProducts => Products is { Count: > 0 };
+
+	/// <summary>The name the entry is reported by: its file, otherwise its title.</summary>
+	public string DisplayName => !string.IsNullOrWhiteSpace(File?.Name) ? File.Name : Title ?? "<unnamed>";
 }

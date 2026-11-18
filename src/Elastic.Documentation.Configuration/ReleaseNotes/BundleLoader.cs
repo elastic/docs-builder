@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 using SharpYaml;
@@ -14,6 +16,11 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// </summary>
 public class BundleLoader(IFileSystem fileSystem)
 {
+	/// <summary>
+	/// The findings of a bundle handed to <c>changelog render</c> (amend files already merged): <see cref="BundleToRender"/>'s rules, at <paramref name="file"/>.
+	/// </summary>
+	public static IReadOnlyList<Diagnostic> CheckForRender(Bundle bundle, string file) => new BundleToRender(bundle).Check(file).Findings;
+
 	/// <summary>
 	/// Loads all changelog bundles from a folder.
 	/// </summary>
