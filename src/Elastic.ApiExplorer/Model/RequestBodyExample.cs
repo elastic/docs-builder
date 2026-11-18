@@ -56,10 +56,12 @@ public static class RequestBodyExample
 		}
 	}
 
-	/// <summary>One JSON value per line, as <c>_bulk</c> and <c>_msearch</c> take them. Blank lines are allowed.</summary>
+	/// <summary>
+	/// One JSON value per line, as <c>_bulk</c> and <c>_msearch</c> take them. A blank line between values is not allowed,
+	/// because <c>_msearch</c> pairs each header with the line after it.
+	/// </summary>
 	internal static bool IsNdjsonDocument(string text) =>
-		text.Split('\n').Select(static line => line.Trim()).Where(static line => line.Length > 0).ToArray() is { Length: > 0 } lines
-			&& lines.All(IsJsonDocument);
+		text.Trim().Split('\n').All(static line => line.Trim().Length > 0 && IsJsonDocument(line));
 
 	private static JsonNode? Value(SchemaAnalyzer analyzer, IOpenApiSchema? schema, int depth)
 	{

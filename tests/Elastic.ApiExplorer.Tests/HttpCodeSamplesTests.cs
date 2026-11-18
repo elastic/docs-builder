@@ -546,6 +546,17 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
+	public void Fill_NdjsonBodyWithABlankLine_DoesNotGenerateHttp()
+	{
+		var scenario = Fill(
+			new OpenApiOperation(),
+			new ExampleScenario { Title = "Search", TabId = "search", RequestJson = "{ }\n\n{\"query\" : {\"match_all\" : {}}}\n" }
+		).Single();
+
+		scenario.CodeSamples.Should().BeEmpty();
+	}
+
+	[Test]
 	[Arguments("application/json", "application/x-ndjson")]
 	[Arguments("application/ndjson", "application/ndjson")]
 	public void Fill_NdjsonBody_SendsANewlineDelimitedType(string listed, string sent)
