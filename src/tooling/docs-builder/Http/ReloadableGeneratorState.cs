@@ -139,7 +139,14 @@ public class ReloadableGeneratorState : IDisposable
 	}
 
 	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
-	public Task EnsureApiReferencesAsync(Cancel ctx) => CurrentApiGeneration().WaitAsync(ctx);
+	public async Task EnsureApiReferencesAsync(Cancel ctx)
+	{
+		// A change that lands during a run marks the pages stale again, so the request that joined that run
+		// waits for one more instead of being served pages built from the inputs before the change.
+		do
+			await CurrentApiGeneration().WaitAsync(ctx);
+		while (_apiReferencesStale);
+	}
 
 	/// <summary>Joins the generation in flight, or starts one when the pages are stale.</summary>
 	private Task CurrentApiGeneration()
