@@ -188,7 +188,7 @@ public class TagMetadataTests
 	private static TagNavigationItem? FindTagNavigationItem(LandingNavigationItem navigation, string tagName)
 	{
 		// Navigate through the structure to find the tag
-		// Structure can be: root -> [classification] -> tag or root -> tag directly
+		// Structure can be: root -> classification -> tag or root -> Operations -> tag
 
 		// Check direct children first
 		foreach (var item in navigation.NavigationItems)
@@ -196,12 +196,12 @@ public class TagMetadataTests
 			if (item is TagNavigationItem tagItem && IsTagForName(tagItem, tagName))
 				return tagItem;
 
-			// Check children of classification items
-			if (item is ClassificationNavigationItem classificationItem)
+			// Check children of classification items and of the Operations group
+			if (item is ClassificationNavigationItem or OperationsNavigationItem)
 			{
-				foreach (var classificationChild in classificationItem.NavigationItems)
+				foreach (var child in ((INodeNavigationItem<INavigationModel, INavigationItem>)item).NavigationItems)
 				{
-					if (classificationChild is TagNavigationItem nestedTagItem && IsTagForName(nestedTagItem, tagName))
+					if (child is TagNavigationItem nestedTagItem && IsTagForName(nestedTagItem, tagName))
 						return nestedTagItem;
 				}
 			}
@@ -274,7 +274,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "Charlie", "Fruit Store"
-		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var tagItems = navigation.Tags().ToList();
 		tagItems.Should().HaveCount(3);
 
 		// Verify sorted order
@@ -330,7 +330,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted case-insensitively: "Alpha Service", "beta Service"
-		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var tagItems = navigation.Tags().ToList();
 		tagItems.Should().HaveCount(2);
 
 		tagItems[0].NavigationTitle.Should().Be("Alpha Service", "Should sort case-insensitively");
@@ -395,7 +395,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted alphabetically by canonical name: "Alpha", "Mike", "Zebra"
-		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var tagItems = navigation.Tags().ToList();
 		tagItems.Should().HaveCount(3);
 
 		tagItems[0].NavigationTitle.Should().Be("Alpha", "Should sort by canonical name");
@@ -491,7 +491,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		navigation.NavigationItems.OfType<ClassificationNavigationItem>().Should().BeEmpty();
-		navigation.NavigationItems.OfType<TagNavigationItem>().Should().HaveCount(2);
+		navigation.Tags().Should().HaveCount(2);
 	}
 
 	[Test]
@@ -556,7 +556,7 @@ public class TagMetadataTests
 		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		var items = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var items = navigation.Tags().ToList();
 		items.Should().HaveCount(1);
 		var tag = items[0].Index.Model.Should().BeOfType<ApiTag>().Subject;
 		tag.Name.Should().Be("only");
@@ -615,13 +615,7 @@ public class TagMetadataTests
 		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
-		var operation = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<OperationNavigationItem>()
-			.Single();
+		var operation = navigation.Tags().Single().NavigationItems.OfType<OperationNavigationItem>().Single();
 
 		operation.Url.Should().Be("/api/doc/elasticsearch/operation/operation-search-op");
 	}

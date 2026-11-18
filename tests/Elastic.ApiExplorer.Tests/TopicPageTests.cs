@@ -78,18 +78,14 @@ public partial class TopicPageTests
 
 		var items = navigation.NavigationItems.ToList();
 		var topics = items[0].Should().BeOfType<TopicsNavigationItem>().Subject;
-		topics.Should().BeAssignableTo<ISidebarHeadingNavigationItem>();
+		topics.Should().BeAssignableTo<ISidebarGroupNavigationItem>();
 		topics
 			.NavigationItems
 			.Cast<TopicNavigationItem>()
 			.Select(t => (t.NavigationTitle, t.Url))
 			.Should()
 			.Equal(("Rate limiting", "/api/doc/cloud/topic/topic-rate-limiting"), ("Principles", "/api/doc/cloud/topic/topic-principles"));
-		items.Should().ContainSingle(item => item is SidebarSeparatorNavigationItem);
-		items
-			.IndexOf(items.OfType<SidebarSeparatorNavigationItem>().Single())
-			.Should()
-			.BeLessThan(items.FindIndex(item => item is TagNavigationItem));
+		items.FindIndex(item => item is OperationsNavigationItem).Should().BeGreaterThan(0, "Operations follows the topics");
 	}
 
 	[Test]
@@ -261,17 +257,11 @@ public partial class TopicPageTests
 			.Contain("<label class=\"tabs-label\"");
 		// The page shows the credentials open, under its own title, with no collapsible Authentication heading.
 		authentication.Should().NotContain("data-section=\"authentication\"").And.NotContain("api-param-section-toggle");
-		// The Topics heading is expanded on pages outside it too, such as the product landing page.
+		// Topics is a static label, so it is there on pages outside it too, such as the product landing page, with no toggle to open.
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
-		// Only the Topics toggle is checked there: every other group stays collapsed.
-		CheckedToggleRegex()
-			.Matches(landing)
-			.Select(m => m.Value)
-			.Should()
-			.ContainSingle()
-			.Which
-			.Should()
-			.Contain("checked data-nav-default-open");
+		landing.Should().Contain("class=\"nav-group-label\">Topics</span>").And.Contain("class=\"nav-group-label\">Operations</span>");
+		// Every folder stays collapsed there.
+		CheckedToggleRegex().Matches(landing).Should().BeEmpty();
 		// elastic/docs-infra redirects the bump.sh topic URL; the build writes no page there.
 		files.Exists(Path.Join(root, "topic", "topic-authentication", "index.html")).Should().BeFalse();
 	}

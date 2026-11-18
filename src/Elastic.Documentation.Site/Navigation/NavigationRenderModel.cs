@@ -17,8 +17,10 @@ public enum NavigationRenderNodeKind
 	Island,
 	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
 	Heading,
-	/// <summary>Visual divider between intro pages and the rest of the tree.</summary>
-	Separator
+	/// <summary>Visual divider between intro pages and the rest of the tree. Only the design-system samples build one.</summary>
+	Separator,
+	/// <summary>Always-open label over its items: no toggle, no page URL. The API sidebar's Topics, Operations and Types.</summary>
+	Group
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -100,10 +102,11 @@ public sealed record NavigationRenderModel
 	/// <summary>Whether the NAVIGATION_PREVIEW feature flag is enabled; drives nav-v2 vs legacy tree rendering.</summary>
 	public bool NavigationPreviewEnabled { get; init; }
 	/// <summary>
-	/// True when <see cref="Tree"/> already owns a divider. <c>_TocTree</c> then skips the
-	/// automatic rule after <see cref="RootIndex"/> so overview stays with the intro pages.
+	/// True when <see cref="Tree"/> sets its own start: it holds a divider, or opens with a group label.
+	/// <c>_TocTree</c> then skips the automatic rule after <see cref="RootIndex"/> so overview stays with the intro pages.
 	/// </summary>
-	public bool TreeHasSeparator => Tree.Any(static n => n.Kind == NavigationRenderNodeKind.Separator);
+	public bool TreeSetsItsOwnStart =>
+		Tree is [{ Kind: NavigationRenderNodeKind.Group }, ..] || Tree.Any(static n => n.Kind == NavigationRenderNodeKind.Separator);
 
 	public static NavigationRenderModel Create(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
@@ -344,18 +347,6 @@ public sealed record NavigationRenderModel
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
 
-			if (item is ISidebarSeparatorNavigationItem)
-			{
-				yield return new NavigationRenderNode
-				{
-					Kind = NavigationRenderNodeKind.Separator,
-					IsTopLevel = isTopLevel,
-					NavigationTitle = "",
-					Url = ""
-				};
-				continue;
-			}
-
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
 				yield return CreateNode(node, isTopLevel);
 			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> or ILeafNavigationItem<INavigationModel>)
@@ -379,18 +370,20 @@ public sealed record NavigationRenderModel
 			};
 		}
 
-		var isHeading = node is ISidebarHeadingNavigationItem;
+		// A group is a heading with no toggle. Its rows are top-level rows of the sidebar; a heading's rows are nested.
+		var isGroup = node is ISidebarGroupNavigationItem;
+		var isHeading = isGroup || node is ISidebarHeadingNavigationItem;
 		return new NavigationRenderNode
 		{
-			Kind = isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
+			Kind = isGroup ? NavigationRenderNodeKind.Group : isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
-			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
+			ShowToggle = !isGroup && !node.NavigationItems.All(n => n.Hidden),
 			Expanded = node is ISidebarExpandedNavigationItem,
-			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
+			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: isGroup)]
 		};
 	}
 

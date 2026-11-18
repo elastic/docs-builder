@@ -100,8 +100,6 @@ public static class NavigationItemExtensions
 	{
 		switch (item)
 		{
-			case ISidebarSeparatorNavigationItem:
-				break;
 			case ILeafNavigationItem<INavigationModel> leaf:
 				var fileIndex = Interlocked.Increment(ref navigationIndex);
 				leaf.NavigationIndex = fileIndex;
@@ -157,7 +155,6 @@ public static class NavigationItemExtensions
 		{
 			// CrossLinkNavigationLeaf is not added to NavigationDocumentationFileLookup or NavigationIndexedByOrder
 			case CrossLinkNavigationLeaf:
-			case ISidebarSeparatorNavigationItem:
 				break;
 			case IFloatingSectionRoot floatingRoot:
 				_ = navigationByOrder.TryAdd(floatingRoot.NavigationIndex, floatingRoot);

@@ -345,4 +345,90 @@ public class TocTreeRenderingTests
 
 		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
+
+	[Test]
+	public async Task LegacyGroupRow_RendersALabelOverItsItemsWithNoToggle()
+	{
+		var html = await _TocTree.Create(GroupModel(navigationPreviewEnabled: false)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		// The label is text, not a link or a toggle: the only checkbox in the tree belongs to the Search folder.
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("li.nav-group"));
+	}
+
+	[Test]
+	public async Task NavSideGroupRow_RendersALabelOverItsItemsWithNoToggle()
+	{
+		var html = await _TocTree.Create(GroupModel(navigationPreviewEnabled: true)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("li.nav-tree__group"));
+	}
+
+	[Test]
+	public async Task PagesNavGroupRow_RendersALabelOverItsItemsWithNoToggle()
+	{
+		var html = await _TocTreeNav.Create(GroupModel(navigationPreviewEnabled: false).Tree).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("li.nav-group"));
+	}
+
+	[Test]
+	public async Task RootIndexBeforeAGroup_AddsNoAutomaticDivider()
+	{
+		var model = GroupModel(navigationPreviewEnabled: false) with
+		{
+			RootIndex = new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = true,
+				NavigationTitle = "Api Overview",
+				Url = "/api/doc/es/"
+			}
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		// The group label starts the next block, so no rule sits between the overview link and it.
+		html.Should().NotContain("role=\"separator\"").And.Contain("nav-group-label");
+	}
+
+	private static NavigationRenderModel GroupModel(bool navigationPreviewEnabled) =>
+		new()
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "API",
+			CurrentTopLevelUrl = "/api/doc/es/",
+			DropdownItems = [],
+			BackLinks = [],
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Group,
+					IsTopLevel = true,
+					NavigationTitle = "Operations",
+					Url = "",
+					Id = "api-operations",
+					NavigationItems =
+					[
+						new NavigationRenderNode
+						{
+							Kind = NavigationRenderNodeKind.Node,
+							IsTopLevel = false,
+							NavigationTitle = "Search",
+							Url = "/api/doc/es/group/endpoint-search",
+							Id = "search",
+							ShowToggle = true
+						}
+					]
+				}
+			],
+			ContentHash = "group-row",
+			NavigationPreviewEnabled = navigationPreviewEnabled
+		};
 }

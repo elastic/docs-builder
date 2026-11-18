@@ -90,7 +90,7 @@ else
 			<li class="flex group/li pr-8 mt-6">
 				<a href="@rootIndex.Url" class="sidebar-link nav-link">@rootIndex.NavigationTitle</a>
 			</li>
-			@if (!Model.TreeHasSeparator)
+			@if (!Model.TreeSetsItsOwnStart)
 			{
 				<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
 			}

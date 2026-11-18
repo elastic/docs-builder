@@ -33,6 +33,15 @@
 			</div>
 		</li>
 	}
+	else if (item.Kind == NavigationRenderNodeKind.Group)
+	{
+		<li class="nav-group mt-7">
+			<span id="@item.Id-label" class="nav-group-label">@item.NavigationTitle</span>
+			<ul class="nav-group-items" aria-labelledby="@item.Id-label">
+				@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
+			</ul>
+		</li>
+	}
 	else if (item.Kind == NavigationRenderNodeKind.Heading)
 	{
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
