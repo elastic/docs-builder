@@ -20,7 +20,13 @@ namespace Elastic.Documentation.Api.OpenApi;
 internal static class ApiExamples
 {
 	/// <summary>The public host the examples call.</summary>
-	internal const string Server = "https://www.elastic.co";
+	internal const string Origin = "https://www.elastic.co";
+
+	/// <summary>Where the API is mounted on <see cref="Origin"/>; paths in the document are relative to it.</summary>
+	internal const string BasePath = "/docs/_api/v1";
+
+	/// <summary>The document's server: every path in it follows this URL.</summary>
+	internal const string Server = Origin + BasePath;
 
 	private const string ResourcePrefix = "openapi-examples/";
 
@@ -186,13 +192,13 @@ internal static class ApiExamples
 		return samples;
 	}
 
-	/// <summary>A curl command for an example request, against <see cref="Server"/>.</summary>
+	/// <summary>A curl command for an example request, against <see cref="Origin"/>.</summary>
 	internal static string Curl(Example example)
 	{
 		var curl = new StringBuilder("curl");
 		if (example.Method != "GET")
 			_ = curl.Append(" -X ").Append(example.Method);
-		_ = curl.Append(" '").Append(Server).Append(example.PathAndQuery).Append('\'');
+		_ = curl.Append(" '").Append(Origin).Append(example.PathAndQuery).Append('\'');
 		if (example.Body is { } body)
 			_ = curl.Append(" \\\n  -H 'Content-Type: application/json' \\\n  -d '").Append(body.ToJsonString()).Append('\'');
 		return curl.ToString();
@@ -314,5 +320,14 @@ internal static class ApiExamples
 			new AskAiEvent.ConversationEnd("5", 1763380001500)
 		];
 		return string.Concat(events.Select(e => $"data: {JsonSerializer.Serialize(e, AskAiEventJsonContext.Default.AskAiEvent)}\n\n"));
+	}
+
+	/// <summary>Makes every path relative to <see cref="Server"/>, which already names <see cref="BasePath"/>.</summary>
+	internal static void RelativizePaths(OpenApiDocument document)
+	{
+		var paths = new OpenApiPaths();
+		foreach (var (path, item) in document.Paths)
+			paths[path.StartsWith(BasePath + "/", StringComparison.Ordinal) ? path[BasePath.Length..] : path] = item;
+		document.Paths = paths;
 	}
 }

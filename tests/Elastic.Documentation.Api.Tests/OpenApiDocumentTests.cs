@@ -50,18 +50,18 @@ public class OpenApiDocumentTests
 			.ToList();
 
 		operations.Should().Equal(
-			"DELETE /docs/_api/v1/page-feedback/{feedbackId} 204,500,503",
-			"GET /docs/_api/v1/apis 200,500",
-			"GET /docs/_api/v1/apis/{api} 200,404,500",
-			"GET /docs/_api/v1/apis/{api}/groups 200,400,404,500",
-			"GET /docs/_api/v1/apis/{api}/operations 200,400,404,500,503",
-			"GET /docs/_api/v1/apis/{api}/operations/{operationId} 200,400,404,500",
-			"GET /docs/_api/v1/changes 200,400,500,503",
-			"GET /docs/_api/v1/navigation-search 200,400,500,503",
-			"GET /docs/_api/v1/search 200,400,500,503",
-			"POST /docs/_api/v1/ask-ai/message-feedback 204,400,500,503",
-			"POST /docs/_api/v1/ask-ai/stream 200,400,500",
-			"PUT /docs/_api/v1/page-feedback/{feedbackId} 204,400,500,503"
+			"DELETE /page-feedback/{feedbackId} 204,500,503",
+			"GET /apis 200,500",
+			"GET /apis/{api} 200,404,500",
+			"GET /apis/{api}/groups 200,400,404,500",
+			"GET /apis/{api}/operations 200,400,404,500,503",
+			"GET /apis/{api}/operations/{operationId} 200,400,404,500",
+			"GET /changes 200,400,500,503",
+			"GET /navigation-search 200,400,500,503",
+			"GET /search 200,400,500,503",
+			"POST /ask-ai/message-feedback 204,400,500,503",
+			"POST /ask-ai/stream 200,400,500",
+			"PUT /page-feedback/{feedbackId} 204,400,500,503"
 		);
 	}
 
@@ -122,6 +122,16 @@ public class OpenApiDocumentTests
 		document.GetProperty("info").GetProperty("title").GetString().Should().Be("Elastic Docs API");
 		// The CDN no longer gates the API behind a cookie, so the description names none.
 		document.GetProperty("info").GetProperty("description").GetString().Should().NotContainEquivalentOf("cookie");
-		document.GetProperty("servers")[0].GetProperty("url").GetString().Should().Be("https://www.elastic.co");
+		document.GetProperty("servers")[0].GetProperty("url").GetString().Should().Be("https://www.elastic.co/docs/_api/v1");
+	}
+
+	[Test]
+	public async Task Paths_AreRelativeToTheServer()
+	{
+		var document = await Document();
+
+		var paths = document.GetProperty("paths").EnumerateObject().Select(p => p.Name).ToList();
+		paths.Should().Contain(["/search", "/apis/{api}/operations/{operationId}"]);
+		paths.Should().AllSatisfy(p => p.Should().NotStartWith("/docs"));
 	}
 }

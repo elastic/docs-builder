@@ -87,6 +87,7 @@ public static class ServicesExtension
 					Description = "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs."
 				};
 				document.Servers = [new OpenApiServer { Url = OpenApi.ApiExamples.Server }];
+				OpenApi.ApiExamples.RelativizePaths(document);
 				return Task.CompletedTask;
 			}));
 
