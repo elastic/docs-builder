@@ -146,8 +146,19 @@ public partial record OperationPageModel
 			for (var i = 0; i < scenarios.Count; i++)
 				scenarios[i] = scenarios[i] with { Responses = MergeSharedResponses(scenarios[i].Responses, sharedResponses) };
 		}
+		// Response-only examples are one example, unless samples name several of them: those samples are the requests
+		// that tell the examples apart, as on a GET with one sample per example. Unnamed ones (error statuses) are shared.
 		else if (!hasRequestScenarios && scenarios.Count > 1)
-			scenarios = CollapseIntoSingleScenario(scenarios);
+		{
+			var named = scenarios.Where(s => NamedBySample(s, codeSamples)).ToList();
+			if (named.Count > 1)
+			{
+				var shared = scenarios.Except(named).SelectMany(s => s.Responses).SelectMany(r => r.Examples).ToList();
+				scenarios = [.. named.Select(s => s with { Responses = MergeSharedResponses(s.Responses, shared) })];
+			}
+			else
+				scenarios = CollapseIntoSingleScenario(scenarios);
+		}
 
 		// Samples that name an example, by language suffix (cURL_tag_names) or by title, belong to that example.
 		var tied = codeSamples.Where(static c => c.IsTied).ToArray();
@@ -268,6 +279,9 @@ public partial record OperationPageModel
 
 		return merged;
 	}
+
+	private static bool NamedBySample(ExampleScenario scenario, IReadOnlyList<CodeSample> codeSamples) =>
+		codeSamples.Any(sample => string.Equals(sample.ExampleTitle, scenario.Title, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>
 	/// Response-only operations often name each status differently; fold them into one

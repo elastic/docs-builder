@@ -192,6 +192,61 @@ public class OpenApiExamplesTests
 		}
 	}
 
+	private static JsonElement ProblemExample(
+		IReadOnlyList<(string Method, string Path, JsonElement Operation)> operations,
+		string operationId,
+		string status
+	) =>
+		operations
+			.Single(o => o.Operation.GetProperty("operationId").GetString() == operationId)
+			.Operation
+			.GetProperty("responses")
+			.GetProperty(status)
+			.GetProperty("content")
+			.GetProperty("application/problem+json")
+			.GetProperty("example");
+
+	[Test]
+	[Arguments("put-page-feedback", "503", "feedback-unavailable")]
+	[Arguments("delete-page-feedback", "503", "feedback-unavailable")]
+	[Arguments("ask-ai-message-feedback", "503", "feedback-unavailable")]
+	[Arguments("search", "503", "search-unavailable")]
+	[Arguments("get-api-operation", "404", "operation-not-found")]
+	[Arguments("get-api", "404", "api-not-found")]
+	[Arguments("list-api-operations", "404", "api-not-found")]
+	public async Task ErrorExamples_ShowTheTypeTheOperationReturns(string operationId, string status, string type)
+	{
+		var problem = ProblemExample(await Operations(), operationId, status);
+
+		problem.GetProperty("type").GetString().Should().Be(ApiProblems.TypeUri(type));
+		problem.GetProperty("title").GetString().Should().Be(ApiProblems.TitleOf(type));
+	}
+
+	[Test]
+	public async Task SearchBadRequestExample_IsWhatTheApiAnswersWithoutAQuery()
+	{
+		var example = ProblemExample(await Operations(), "search", "400");
+		using var client = SharedFactory.Value.CreateClient();
+
+		using var response = await client.GetAsync("/docs/_api/v1/search", TestContext.Current!.Execution.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+		var actual = JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken));
+		actual.GetProperty("type").GetString().Should().Be(example.GetProperty("type").GetString());
+		actual.GetProperty("detail").GetString().Should().Be(example.GetProperty("detail").GetString());
+	}
+
+	[Test]
+	public async Task EveryCurlSample_SendsTheCookieTheCdnStillRequires()
+	{
+		var curls = (await Operations())
+			.SelectMany(o => o.Operation.GetProperty("x-codeSamples").EnumerateArray())
+			.Where(s => s.GetProperty("lang").GetString() == "curl")
+			.Select(s => s.GetProperty("source").GetString());
+
+		curls.Should().AllSatisfy(curl => curl.Should().Contain($"-b '{ApiExamples.GateCookie}'"));
+	}
+
 	[Test]
 	[Arguments("search", "q", "cluster health")]
 	[Arguments("get-api-operation", "operationId", "cluster-health")]

@@ -24,6 +24,9 @@ internal static class ApiExamples
 
 	private const string ResourcePrefix = "openapi-examples/";
 
+	/// <summary>The cookie www.elastic.co's CDN requires on the API until the gate is removed.</summary>
+	internal const string GateCookie = "feature_search_or_askai_enabled=true";
+
 	/// <summary>One example request of an operation, with what it answers.</summary>
 	internal sealed record Example(string Title, string Method, string PathAndQuery)
 	{
@@ -121,20 +124,45 @@ internal static class ApiExamples
 		]
 	};
 
-	// The problem each error status answers with in the examples; ApiProblems defines the types.
+	// The problem each error status answers with, unless the operation answers that status with its own type or detail
+	// below. Clients match on the type, so an example shows a type the operation really returns. ApiProblems defines them.
 	private static readonly Dictionary<int, (string Type, string Detail)> ProblemByStatus = new()
 	{
-		[StatusCodes.Status400BadRequest] = (ApiProblems.InvalidArguments, "Pass q or endpoint, not both."),
+		[StatusCodes.Status400BadRequest] = (ApiProblems.InvalidArguments, "A parameter is missing or does not parse."),
 		[StatusCodes.Status404NotFound] = ("api-not-found", "No operations found for API 'nope'."),
 		[StatusCodes.Status500InternalServerError] = (ApiProblems.InternalError, "An unexpected error occurred."),
 		[StatusCodes.Status503ServiceUnavailable] =
 			(ApiProblems.SearchUnavailable, "Search backend is temporarily unavailable (MaxTimeoutReached). Transient — retry in a few seconds.")
 	};
 
+	private const string FeedbackUnavailable = "The feedback could not be stored. Try again later.";
+
+	private static readonly Dictionary<(string Operation, int Status), (string Type, string Detail)> ProblemByOperation = new()
+	{
+		[("search", 400)] = (ApiProblems.InvalidArguments, "Required parameter \"string query\" was not provided from query string."),
+		[("navigation-search", 400)] =
+			(ApiProblems.InvalidArguments, "api_key must be a lowercase API key, and api_tree 'main' or a major version with api_key."),
+		[("list-changes", 400)] = (ApiProblems.InvalidArguments, "cursor is not a nextCursor that /changes returned."),
+		[("ask-ai-stream", 400)] =
+			(ApiProblems.InvalidArguments, "Failed to read parameter \"AskAiRequest askAiRequest\" from the request body as JSON."),
+		[("ask-ai-message-feedback", 400)] =
+			(ApiProblems.InvalidArguments, "Failed to read parameter \"AskAiMessageFeedbackRequest request\" from the request body as JSON."),
+		[("ask-ai-message-feedback", 503)] = (ApiProblems.FeedbackUnavailable, FeedbackUnavailable),
+		[("put-page-feedback", 400)] =
+			(ApiProblems.InvalidArguments, "The page feedback is invalid. Check pageUrl, pageTitle, reaction, reasons and comment."),
+		[("put-page-feedback", 503)] = (ApiProblems.FeedbackUnavailable, FeedbackUnavailable),
+		[("delete-page-feedback", 503)] = (ApiProblems.FeedbackUnavailable, FeedbackUnavailable),
+		[("get-api", 404)] = ("api-not-found", "No API 'nope'."),
+		[("list-api-groups", 400)] = (ApiProblems.InvalidArguments, "Pass an API key, such as 'elasticsearch'."),
+		[("list-api-operations", 400)] = (ApiProblems.InvalidArguments, "Pass q or endpoint, not both."),
+		[("get-api-operation", 400)] = (ApiProblems.InvalidArguments, "Pass an API key, such as 'elasticsearch'."),
+		[("get-api-operation", 404)] = ("operation-not-found", "No API operation matches nope in elasticsearch.")
+	};
+
 	/// <summary>The operation transformer that adds the examples.</summary>
 	public static Task Apply(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken _)
 	{
-		AddProblemExamples(operation);
+		AddProblemExamples(operation, operation.OperationId);
 		if (operation.OperationId is not { } id || !ByOperation.TryGetValue(id, out var examples))
 			return Task.CompletedTask;
 
@@ -168,6 +196,8 @@ internal static class ApiExamples
 		if (example.Method != "GET")
 			_ = curl.Append(" -X ").Append(example.Method);
 		_ = curl.Append(" '").Append(Server).Append(example.PathAndQuery).Append('\'');
+		// shortcut: www.elastic.co's CDN still gates the API on this cookie; drop it once elastic/docs-infra#523 is applied.
+		_ = curl.Append(" \\\n  -b '").Append(GateCookie).Append('\'');
 		if (example.Body is { } body)
 			_ = curl.Append(" \\\n  -H 'Content-Type: application/json' \\\n  -d '").Append(body.ToJsonString()).Append('\'');
 		return curl.ToString();
@@ -248,16 +278,17 @@ internal static class ApiExamples
 		}
 	}
 
-	private static void AddProblemExamples(OpenApiOperation operation)
+	private static void AddProblemExamples(OpenApiOperation operation, string? operationId)
 	{
 		if (operation.Responses is null)
 			return;
 		foreach (var (status, response) in operation.Responses)
 		{
+			if (!int.TryParse(status, out var code) || response.Content is not { } content)
+				continue;
 			if (
-				!int.TryParse(status, out var code)
-				|| !ProblemByStatus.TryGetValue(code, out var problem)
-				|| response.Content is not { } content
+				!(operationId is not null && ProblemByOperation.TryGetValue((operationId, code), out var problem))
+				&& !ProblemByStatus.TryGetValue(code, out problem)
 			)
 				continue;
 			if (content.TryGetValue("application/problem+json", out var media) && media is OpenApiMediaType mediaType)
