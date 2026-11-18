@@ -60,6 +60,72 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 		);
 	}
 
+	[Test]
+	public async Task ShortWindow_ScrollingRail_KeepsScrollbarClearOfCards()
+	{
+		var report = await MeasureRailAsync(1280, 320).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"""
+			rail scrolls: True
+			request card clear of the scrollbar: True
+			response card clear of the scrollbar: True
+			"""
+		);
+	}
+
+	[Test]
+	public async Task StackedLayout_Rail_GivesCardsTheFullWidth()
+	{
+		var report = await MeasureRailAsync(800, 320).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"""
+			rail scrolls: False
+			request card clear of the scrollbar: False
+			response card clear of the scrollbar: False
+			"""
+		);
+	}
+
+	private async Task<string> MeasureRailAsync(int width, int height)
+	{
+		if (target.Name != "isolated")
+			Skip.Test($"The API pages these tests open are part of the isolated site, not '{target.Name}'.");
+
+		var url = new Uri(target.BaseUrl, Operation);
+		await WaitForPageAsync(url).ConfigureAwait(false);
+
+		await using var browser = await Browser.LaunchAsync(new BrowserLaunchOptions()).ConfigureAwait(false);
+		await using var context = await browser.NewContextAsync().ConfigureAwait(false);
+		var page = await context.NewPageAsync().ConfigureAwait(false);
+		await page.SetViewportAsync(width, height, 1).ConfigureAwait(false);
+		await page.GotoAsync(url.ToString()).ConfigureAwait(false);
+		await page.WaitForLoadStateAsync("networkidle").ConfigureAwait(false);
+
+		var report = await page.EvaluateAsync(
+			$$"""
+			(() => {
+				const panel = document.querySelector('#api-examples-panel');
+				const visibleRight = panel.getBoundingClientRect().left + panel.clientLeft + panel.clientWidth;
+				const clearance = selector => Math.round(visibleRight - panel.querySelector(selector).getBoundingClientRect().right);
+				return {
+					scrolls: panel.scrollHeight > panel.clientHeight,
+					request: clearance('{{Scenario}} .api-code-carousel-card.is-active'),
+					response: clearance('{{Scenario}} .example-block--response'),
+				};
+			})()
+			"""
+		).ConfigureAwait(false);
+
+		return string.Join(
+			'\n',
+			$"rail scrolls: {report.GetProperty("scrolls").GetBoolean()}",
+			$"request card clear of the scrollbar: {report.GetProperty("request").GetInt32() >= 12}",
+			$"response card clear of the scrollbar: {report.GetProperty("response").GetInt32() >= 12}"
+		);
+	}
+
 	private async Task<string> ScrollSidewaysAsync(string body)
 	{
 		if (target.Name != "isolated")
