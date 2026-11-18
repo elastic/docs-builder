@@ -128,7 +128,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			tocItems.Add(new TocItem("Request body", "request-body", 2));
 
 		if (operation.Responses is { Count: > 0 })
-			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
+			tocItems.Add(new TocItem("Responses", "responses", 2));
 
 		return tocItems;
 	}
