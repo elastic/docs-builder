@@ -557,6 +557,25 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
+	[Arguments("PUT my-index\n{\"settings\":{}}\n\nPOST kbn:/api/things\n{\"size\":1}", "POST {{API_URL}}/api/things")]
+	[Arguments("POST kbn:/api/setup\n{}\n\nPOST /x\n{\"size\":1}", "POST {{API_URL}}/x")]
+	public void Fill_AuthoredConsoleMixingTargets_StripsThePrefixOfThePickedRequest(string console, string request)
+	{
+		var scenario = Fill(
+			new OpenApiOperation(),
+			new ExampleScenario
+			{
+				Title = "Things",
+				TabId = "things",
+				RequestJson = "{\"size\":1}",
+				CodeSamples = [new CodeSample("Console", console, "language-console")]
+			}
+		).Single();
+
+		scenario.CodeSamples.Single(static s => s.IsHttp).Source.Should().StartWith($"###\n{request}\n");
+	}
+
+	[Test]
 	[Arguments("application/json", "application/x-ndjson")]
 	[Arguments("application/ndjson", "application/ndjson")]
 	[Arguments("application/json,application/ndjson;charset=utf-8", "application/ndjson;charset=utf-8")]

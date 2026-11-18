@@ -106,7 +106,10 @@ public static partial class GeneratedCodeSamples
 			);
 		if (request is null)
 			return null;
-		var path = request.Path[ConsolePrefix(console.Source).Length..];
+		// Each request carries its own target, so the prefix is read from the request that was picked, not the first one.
+		var path = request.Path.StartsWith(KibanaConsolePrefix, StringComparison.OrdinalIgnoreCase)
+			? request.Path[KibanaConsolePrefix.Length..]
+			: request.Path;
 		return (request.Method, path.StartsWith('/') ? path : "/" + path);
 	}
 
