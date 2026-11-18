@@ -3230,11 +3230,6 @@ button.example-response-tab:focus-visible {
 		column-gap: 40px;
 	}
 
-	/* Keep the scrollbar clear of the resize grip's background and focus outline. */
-	.api-page-shell .sidebar-nav-scroll {
-		margin-right: 12px;
-	}
-
 	.api-page-main {
 		padding-right: 24px;
 	}
@@ -4849,7 +4844,12 @@ html:has(.api-page-shell) {
 	}
 
 	.api-column-handle[data-api-column-handle='nav']::before {
-		transform: translateX(-3px);
+		width: 10px;
+		transform: translateX(2px);
+		background-size: 5px 6px;
+		box-shadow:
+			0 -3px var(--color-white),
+			0 3px var(--color-white);
 	}
 
 	/* The grip interrupts the divider but ignores pointer input so its overflow cannot cover the sidebar scrollbar. */
