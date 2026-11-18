@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -154,33 +155,10 @@ public class BundleBuilder
 
 	private static bool IsResolvedEntryValid(IDiagnosticsCollector collector, MatchedChangelogFile entry)
 	{
-		var data = entry.Data;
-
-		if (string.IsNullOrWhiteSpace(data.Title))
-		{
-			collector.EmitError(entry.FilePath, "Changelog file is missing required field: title");
-			return false;
-		}
-
-		if (data.Type == ChangelogEntryType.Invalid)
-		{
-			collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
-			return false;
-		}
-
-		if (data.Products == null || data.Products.Count == 0)
-		{
-			collector.EmitError(entry.FilePath, "Changelog file is missing required field: products");
-			return false;
-		}
-
-		if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
-		{
-			collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");
-			return false;
-		}
-
-		return true;
+		var findings = BundleLoader.CheckForBundling(entry.Data, entry.FilePath);
+		foreach (var finding in findings)
+			collector.Write(finding);
+		return findings.Count == 0;
 	}
 }
 
