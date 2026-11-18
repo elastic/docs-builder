@@ -57,7 +57,8 @@ public class DetectionRuleOverviewTableTests
 		lines[0].Should().Be(":::{table}");
 		lines[1].Should().Be(":filterable:");
 		lines[2].Should().Be($":filter-columns: {DetectionRuleOverviewTable.FilterColumns}");
-		lines[3].Should().Be("| Rule | Domain | Severity | Rule type | OS | Tactic |");
+		lines[3].Should().Be(":pin-first-column:");
+		lines[4].Should().Be("| Rule | Domain | Severity | Rule type | OS | Tactic |");
 		lines[^1].Should().Be(":::");
 	}
 
@@ -66,9 +67,9 @@ public class DetectionRuleOverviewTableTests
 	{
 		var lines = Lines();
 		// Alpha sorts first. It has no domain, OS, or tactic tags.
-		lines[5].Should().Be("| [Alpha Rule](!/rules/alpha) | Unspecified | Low | Indicator match |  |  |");
+		lines[6].Should().Be("| [Alpha Rule](!/rules/alpha) | Unspecified | Low | Indicator match |  |  |");
 		// The ES|QL label escapes its pipe so it stays in one cell.
-		lines[6].Should().Be("| [Zebra Rule](!/rules/zebra) | Endpoint | High | ES\\|QL | Windows, Linux | Execution, Persistence |");
+		lines[7].Should().Be("| [Zebra Rule](!/rules/zebra) | Endpoint | High | ES\\|QL | Windows, Linux | Execution, Persistence |");
 	}
 
 	[Test]

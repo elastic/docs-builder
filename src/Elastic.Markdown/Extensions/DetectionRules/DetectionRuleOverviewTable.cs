@@ -35,6 +35,8 @@ public static class DetectionRuleOverviewTable
 		_ = sb.AppendLine(":::{table}");
 		_ = sb.AppendLine(":filterable:");
 		_ = sb.AppendLine($":filter-columns: {FilterColumns}");
+		// Six columns are wider than the page, so keep the rule name in view while readers scroll.
+		_ = sb.AppendLine(":pin-first-column:");
 		_ = sb.AppendLine();
 		_ = sb.AppendLine("| Rule | Domain | Severity | Rule type | OS | Tactic |");
 		_ = sb.AppendLine("| --- | --- | --- | --- | --- | --- |");
