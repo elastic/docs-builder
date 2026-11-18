@@ -4847,7 +4847,7 @@ html:has(.api-page-shell) {
 		transform: translateX(-3px);
 	}
 
-	/* Six dots distinguish the grip from a scrollbar; its surface interrupts the divider behind it. */
+	/* The grip interrupts the divider but ignores pointer input so its overflow cannot cover the sidebar scrollbar. */
 	.api-column-handle::before {
 		content: '';
 		display: block;
@@ -4866,6 +4866,7 @@ html:has(.api-page-shell) {
 		);
 		background-size: 6px 6px;
 		box-shadow: 0 0 0 3px var(--color-white);
+		pointer-events: none;
 		transition: color 100ms;
 	}
 
