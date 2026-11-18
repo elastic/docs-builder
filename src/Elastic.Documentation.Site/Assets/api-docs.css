@@ -4848,8 +4848,18 @@ html:has(.api-page-shell) {
 		transform: translateX(calc(-50% - 3.5px));
 	}
 
+	/* No room for a ring that clears the dots inside the target, so keyboard focus turns the divider blue and 2px wide instead. */
+	.api-column-handle[data-api-column-handle='nav']:focus-visible {
+		--api-column-line-width: 2px;
+		--api-column-strip: var(--color-blue-elastic);
+	}
+
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::after {
+		background: var(--color-blue-elastic);
+	}
+
 	.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
-		outline-offset: -2px;
+		outline: none;
 	}
 
 	/* The box stays inside the resize target. Only the opaque strip moves onto the divider; both dot columns sit right of it. */
@@ -4872,7 +4882,10 @@ html:has(.api-page-shell) {
 		color: var(--color-grey-80);
 		background-image:
 			radial-gradient(circle, currentColor 1.25px, transparent 1.5px),
-			linear-gradient(var(--color-white), var(--color-white));
+			linear-gradient(
+				var(--api-column-strip, var(--color-white)),
+				var(--api-column-strip, var(--color-white))
+			);
 		background-size:
 			6px 6px,
 			var(--api-column-line-width) 100%;
