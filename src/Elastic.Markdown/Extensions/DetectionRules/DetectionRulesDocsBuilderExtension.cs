@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.Exporters;

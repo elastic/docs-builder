@@ -7,6 +7,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;

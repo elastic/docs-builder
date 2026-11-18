@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 
-namespace Elastic.Documentation.Configuration.Toc.CliReference;
+namespace Elastic.Documentation.DocumentationSets;
 
 /// <summary>
 /// Represents a CLI reference entry in the table of contents, parsed from:

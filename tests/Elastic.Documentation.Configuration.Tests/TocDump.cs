@@ -4,6 +4,7 @@
 
 using System.Text;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
