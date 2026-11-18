@@ -9,6 +9,7 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.Codex;
 using Elastic.Codex.Navigation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -197,17 +198,11 @@ public class CodexBuildSnapshotTests : CodexNavigationTestBase
 				NullLoggerFactory.Instance,
 				new ConfigurationFileSystem(new FileSystem())
 			),
-			VersionsConfiguration = new VersionsConfiguration
-			{
-				VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-			},
-			ProductsConfiguration = new ProductsConfiguration
-			{
-				Products = FrozenDictionary<string, Product>.Empty,
-				PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-				ProductDisplayNames = FrozenDictionary<string, string>.Empty
-			},
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
+			Catalog = new GlobalCatalog(
+				new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
+				new ProductCatalog { Products = FrozenDictionary<string, Product>.Empty },
+				new LegacyUrlMappingCatalog { Mappings = [] }
+			),
 			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 }

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;

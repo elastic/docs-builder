@@ -25,7 +25,7 @@ public record ApiTag(
 	public object? CreatePageModel(ApiRenderContext context) =>
 		ApiOverviewBuilder.BuildTagChildren(
 			context.CurrentNavigation,
-			context.BuildContext.VersionsConfiguration,
+			context.BuildContext.Catalog.VersioningSystems,
 			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 		);
 
@@ -35,7 +35,7 @@ public record ApiTag(
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.BuildTagChildren(
 				context.CurrentNavigation,
-				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Catalog.VersioningSystems,
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };
@@ -51,7 +51,7 @@ public record ApiTag(
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.BuildTagChildren(
 				context.CurrentNavigation,
-				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Catalog.VersioningSystems,
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };

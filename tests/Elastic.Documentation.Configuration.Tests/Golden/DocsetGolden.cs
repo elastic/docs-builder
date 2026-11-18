@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
@@ -190,15 +191,10 @@ internal static partial class DocsetGolden
 		var context = new TestDocumentationSetContext(collector, fileSystem, configPath, docsDir);
 		var versions = withGlobalConfig
 			? GoldenConfig.LoadVersions()
-			: new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+			: new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var products = withGlobalConfig
 			? GoldenConfig.LoadProducts()
-			: new ProductsConfiguration
-			{
-				Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-				PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-				ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-			};
+			: new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary() };
 		return new ConfigurationFile(docSet, context, versions, products);
 	}
 

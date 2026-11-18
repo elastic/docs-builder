@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.Documentation.LegacyDocs;
 
@@ -11,12 +11,12 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 {
 	private LegacyPageService LegacyPageService { get; }
 	private string DefaultVersion { get; }
-	private LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
+	private LegacyUrlMappingCatalog LegacyUrlMappings { get; }
 
 	public PageLegacyUrlMapper(
 		LegacyPageService legacyPageService,
-		VersionsConfiguration versions,
-		LegacyUrlMappingConfiguration legacyUrlMappings
+		VersioningSystemCatalog versions,
+		LegacyUrlMappingCatalog legacyUrlMappings
 	)
 	{
 		LegacyPageService = legacyPageService;

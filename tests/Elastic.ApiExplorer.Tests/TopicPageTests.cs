@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
@@ -383,7 +384,7 @@ public partial class TopicPageTests
 		);
 
 		var index = ApiOverviewBuilder.SplitTopics(
-			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.VersionsConfiguration))
+			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.Catalog.VersioningSystems))
 		);
 
 		index.Topics.Select(row => row.Url).Should().Equal("/api/doc/cloud/authentication", "/api/doc/cloud/topic/topic-principles");

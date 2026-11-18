@@ -113,7 +113,7 @@ internal sealed class UnifiedReleaseCommands(
 	)
 	{
 		var (selected, unknown) = UnifiedBundlePlanner.FilterProducts(
-			UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
+			UnifiedBundlePlanner.SelectDraProducts(configurationContext.Catalog.Products.Products.Values),
 			products
 		);
 		if (unknown.Count > 0)

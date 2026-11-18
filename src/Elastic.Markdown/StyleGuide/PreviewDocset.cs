@@ -78,11 +78,9 @@ public sealed partial class PreviewDocset : IAsyncDisposable
 
 		var configuration = new ConfigurationContext
 		{
-			VersionsConfiguration = template.VersionsConfiguration,
+			Catalog = template.Catalog,
 			ConfigurationFileProvider = template.ConfigurationFileProvider,
 			Endpoints = template.Endpoints,
-			ProductsConfiguration = template.ProductsConfiguration,
-			LegacyUrlMappings = template.LegacyUrlMappings,
 			SearchConfiguration = template.SearchConfiguration
 		};
 		var docFs = DocumentationFileSystem.Resolve(

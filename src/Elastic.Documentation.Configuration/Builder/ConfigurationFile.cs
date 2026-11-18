@@ -7,10 +7,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
@@ -143,8 +142,8 @@ public record ConfigurationFile
 	public ConfigurationFile(
 		DocumentationSetFile docSetFile,
 		IDocumentationSetContext context,
-		VersionsConfiguration versionsConfig,
-		ProductsConfiguration productsConfig
+		VersioningSystemCatalog versionsConfig,
+		ProductCatalog productsConfig
 	)
 	{
 		_context = context;
@@ -454,7 +453,7 @@ public record ConfigurationFile
 
 	private static string[] ParseReleaseNotesProducts(
 		IReadOnlyList<ReleaseNotesProductReference> references,
-		ProductsConfiguration productsConfig,
+		ProductCatalog productsConfig,
 		IDocumentationSetContext context
 	)
 	{
@@ -513,7 +512,7 @@ public record ConfigurationFile
 	private static ResolvedApiConfiguration? ResolveApiEntry(
 		string productKey,
 		ApiProductSequence apiSequence,
-		ProductsConfiguration productsConfig,
+		ProductCatalog productsConfig,
 		IDocumentationSetContext context
 	)
 	{

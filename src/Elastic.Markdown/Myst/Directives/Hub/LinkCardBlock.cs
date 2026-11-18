@@ -45,8 +45,7 @@ public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		try
 		{
-			Data = YamlSerialization.Deserialize<LinkCardData>(yaml, Build.ProductsConfiguration, this.YamlReporting())
-				?? LinkCardData.Empty;
+			Data = YamlSerialization.Deserialize<LinkCardData>(yaml, Build.Catalog.Products, this.YamlReporting()) ?? LinkCardData.Empty;
 		}
 		catch (YamlException ex)
 		{

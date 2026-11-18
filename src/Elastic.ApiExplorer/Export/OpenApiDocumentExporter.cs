@@ -12,8 +12,8 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Inference;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
@@ -26,7 +26,10 @@ namespace Elastic.ApiExplorer.Export;
 /// <summary>
 /// Converts the OpenAPI specifications the API explorer renders into DocumentationDocument instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
+public partial class OpenApiDocumentExporter(
+	VersioningSystemCatalog versionsConfiguration,
+	IDocumentInferrerService? documentInferrer = null
+)
 {
 	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationListIntroRegex();
