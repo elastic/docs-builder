@@ -149,7 +149,7 @@ The `{table}` directive's `:matrix:` option highlights the whole row *and* colum
 
 ## Filterable table
 
-The `{table}` directive's `:filterable:` option adds a search box above the table, plus a dropdown filter for each column that has a small number of repeated values — for example a type or status column. Search matches text in every column. Search and filters combine — each one you set narrows the results further. A live "Showing N of M" count is announced to assistive technologies. While a search or filter is set, a **Clear** button next to the count resets them all. When nothing matches, a message under the header row says so.
+The `{table}` directive's `:filterable:` option adds a search box above the table, plus a dropdown filter for each column that has a small number of repeated values — for example a type or status column. The dropdowns start collapsed behind a **Filters** button next to the search box, which shows how many filters are on. Search matches text in every column. Search and filters combine — each one you set narrows the results further. A live "Showing N of M" count is announced to assistive technologies. While a search or filter is set, a **Clear** button next to the count resets them all. When nothing matches, a message under the header row says so.
 
 The table is rendered server-side and stays fully usable without JavaScript, because the controls are added only as a progressive enhancement. The filter inputs don't print. A filter stays applied when you print, so a printed filtered table keeps its "Showing N of M" count to show that rows are missing.
 
