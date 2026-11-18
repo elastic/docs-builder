@@ -167,7 +167,7 @@ public record SearchDocumentBase : ISearchDocument
 	/// Editorial weight — one of <see cref="ContentTiers"/>. Used to demote low-value content
 	/// (marketing, legal, downloads) without a hand-maintained downstream section list.
 	/// Defaults to <see cref="ContentTiers.Reference"/> — a NEUTRAL default, unlike
-	/// <see cref="NavigationDepth"/>/<see cref="NavigationTableOfContents"/> which default to a
+	/// <c>NavigationDepth</c>/<c>NavigationTableOfContents</c> which default to a
 	/// penalty value. Every producer (essc and docs-builder) sets its own value on this shared field.
 	/// </summary>
 	[Keyword]

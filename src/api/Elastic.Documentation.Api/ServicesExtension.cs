@@ -65,18 +65,31 @@ public static class ServicesExtension
 		// Every error answers RFC 9457 problem details; binding failures throw, so they get a precise detail.
 		_ = services.AddProblemDetails(options => options.CustomizeProblemDetails = ApiProblems.Customize);
 		_ = services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
-		_ = services.AddOpenApi(options => options.AddDocumentTransformer((document, _, _) =>
-		{
-			document.Info = new OpenApiInfo
+		_ = services.AddOpenApi(options => options
+			.AddOperationTransformer((operation, _, _) =>
 			{
-				Title = "Elastic Docs API",
-				Version = "v1",
-				Description = "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs. "
-					+ "Requests through www.elastic.co need the cookie feature_search_or_askai_enabled=true; without it the CDN answers 403."
-			};
-			document.Servers = [new OpenApiServer { Url = "https://www.elastic.co" }];
-			return Task.CompletedTask;
-		}));
+				OpenApi.ApiDescriptions.ApplyToOperation(operation);
+				return Task.CompletedTask;
+			})
+			.AddOperationTransformer(OpenApi.ApiExamples.Apply)
+			.AddSchemaTransformer(OpenApi.ApiDescriptions.ApplyToSchema)
+			.AddDocumentTransformer((document, _, _) =>
+			{
+				OpenApi.ApiDescriptions.ApplyToDocument(document);
+				return Task.CompletedTask;
+			})
+			.AddDocumentTransformer((document, _, _) =>
+			{
+				document.Info = new OpenApiInfo
+				{
+					Title = "Elastic Docs API",
+					Version = "v1",
+					Description = "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs. "
+						+ "Requests through www.elastic.co need the cookie feature_search_or_askai_enabled=true; without it the CDN answers 403."
+				};
+				document.Servers = [new OpenApiServer { Url = OpenApi.ApiExamples.Server }];
+				return Task.CompletedTask;
+			}));
 
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });

@@ -34,6 +34,9 @@ public static class ApiProblems
 		[FeedbackUnavailable] = "Feedback unavailable"
 	};
 
+	/// <summary>The fixed title of a problem type, such as <see cref="InvalidArguments"/>.</summary>
+	public static string TitleOf(string type) => Titles[type];
+
 	/// <summary>The absolute <c>type</c> URI of a problem type, such as <see cref="InvalidArguments"/>.</summary>
 	public static string TypeUri(string type) => TypeBase + type;
 
