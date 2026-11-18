@@ -68,7 +68,8 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 		_ = report.Should().MatchInlineSnapshot(
 			"""
 			rail scrolls: True
-			card clear of the scrollbar: True
+			request card clear of the scrollbar: True
+			response card clear of the scrollbar: True
 			"""
 		);
 	}
@@ -81,7 +82,8 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 		_ = report.Should().MatchInlineSnapshot(
 			"""
 			rail scrolls: False
-			card clear of the scrollbar: False
+			request card clear of the scrollbar: False
+			response card clear of the scrollbar: False
 			"""
 		);
 	}
@@ -106,10 +108,11 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 			(() => {
 				const panel = document.querySelector('#api-examples-panel');
 				const visibleRight = panel.getBoundingClientRect().left + panel.clientLeft + panel.clientWidth;
-				const card = panel.querySelector('{{Scenario}} .api-code-carousel-card.is-active');
+				const clearance = selector => Math.round(visibleRight - panel.querySelector(selector).getBoundingClientRect().right);
 				return {
 					scrolls: panel.scrollHeight > panel.clientHeight,
-					clearance: Math.round(visibleRight - card.getBoundingClientRect().right),
+					request: clearance('{{Scenario}} .api-code-carousel-card.is-active'),
+					response: clearance('{{Scenario}} .example-block--response'),
 				};
 			})()
 			"""
@@ -118,7 +121,8 @@ public class ApiExampleScrollingTests(JourneyTarget target)
 		return string.Join(
 			'\n',
 			$"rail scrolls: {report.GetProperty("scrolls").GetBoolean()}",
-			$"card clear of the scrollbar: {report.GetProperty("clearance").GetInt32() >= 12}"
+			$"request card clear of the scrollbar: {report.GetProperty("request").GetInt32() >= 12}",
+			$"response card clear of the scrollbar: {report.GetProperty("response").GetInt32() >= 12}"
 		);
 	}
 
