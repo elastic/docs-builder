@@ -37,9 +37,12 @@ internal sealed record SampleCredential(CredentialKind Kind, ParameterLocation I
 		_ => null
 	};
 
-	/// <summary>Digest is a challenge and response that curl runs itself; a <c>.http</c> file has no form for it.</summary>
+	/// <summary>
+	/// The credential a <c>.http</c> file can send. Digest is a challenge and response that curl runs itself, so the file has
+	/// no form for it. A key in the <c>Content-Type</c> header would collide with the body's media type.
+	/// </summary>
 	public static SampleCredential? ForHttpFile(IOpenApiSecurityScheme scheme) =>
-		From(scheme) is { Kind: not CredentialKind.Digest } credential ? credential : null;
+		From(scheme) is { Kind: not CredentialKind.Digest } credential && credential.Slot != "header:CONTENT-TYPE" ? credential : null;
 
 	/// <summary>Whether a declared parameter is this credential, so the sample writes the credential and not the parameter.</summary>
 	public bool Replaces(IOpenApiParameter parameter) =>
