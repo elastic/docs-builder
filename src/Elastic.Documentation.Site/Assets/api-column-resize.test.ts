@@ -247,9 +247,19 @@ describe('initApiColumnResize', () => {
 
         it('restores saved widths with 360px for article content beside padding', () => {
             localStorage.setItem('api-column-widths', '{"nav":560,"rail":900}')
-            mountShell({ width: 1404, padding: 24, legacy })
+            const shell = mountShell({ width: 1404, padding: 24, legacy })
             initApiColumnResize()
 
+            expect(
+                shell.style.getPropertyValue(
+                    legacy ? '--max-sidebar-width' : '--layout-nav-width'
+                )
+            ).toBe(legacy ? '476px' : '560px')
+            expect(
+                shell.style.getPropertyValue(
+                    legacy ? '--max-examples-width' : '--layout-rail-width'
+                )
+            ).toBe(legacy ? '440px' : '396px')
             expect(
                 document
                     .querySelector(
