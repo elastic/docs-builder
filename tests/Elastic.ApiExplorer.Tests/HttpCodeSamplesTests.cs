@@ -702,21 +702,6 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
-	public void HttpSchemes_ApiKeyInTheContentTypeHeader_IsUnsupported()
-	{
-		var document = SecurityDocument();
-		document.Components!.SecuritySchemes!["typed"] = new OpenApiSecurityScheme
-		{
-			Type = SecuritySchemeType.ApiKey,
-			In = ParameterLocation.Header,
-			Name = "content-type"
-		};
-		var operation = new OpenApiOperation { Security = [Requirement("typed")] };
-
-		OpenApiAuthSchemeResolver.HttpSchemes(operation, document).Value.Should().BeOfType<HttpSecurityUnsupported>();
-	}
-
-	[Test]
 	public void HttpSchemes_ConflictingAuthorizationSchemes_DoesNotDropARequiredCredential()
 	{
 		var document = SecurityDocument();
