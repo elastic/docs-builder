@@ -47,7 +47,7 @@ public static partial class SiteNavigationConstraints
 	{
 		var source = toc.ShorthandPath is { } shorthand
 			? ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, shorthand)
-			: toc.Source.OriginalString;
+			: toc.UnparsableSource ?? toc.Source.OriginalString;
 		return source.EndsWith("://", StringComparison.OrdinalIgnoreCase) ? source : source.TrimEnd('/') + "/";
 	}
 

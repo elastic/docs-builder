@@ -66,13 +66,26 @@ public static class SiteNavigationLoader
 
 	/// <summary>
 	/// <see cref="GetTocMappings(SiteNavigationDefinition, IFileInfo, IDiagnosticsCollector)"/> for the text of a navigation file. Unknown keys are not
-	/// reported here (the parse that reports them runs separately), and the text must be one the parser accepts.
+	/// reported here (the parse that reports them runs separately), and an entry the parser rejects is read leniently: the parse that follows throws.
 	/// </summary>
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(
 		string yaml,
 		IFileInfo navigationFile,
 		IDiagnosticsCollector collector
-	) => GetTocMappings(Deserialize(yaml, new BufferingDiagnosticsCollector(), navigationFile.FullName), navigationFile, collector);
+	)
+	{
+		SiteNavigationDefinition navigation;
+		SiteTableOfContentsRefYamlConverter.Lenient = true;
+		try
+		{
+			navigation = Deserialize(yaml, new BufferingDiagnosticsCollector(), navigationFile.FullName);
+		}
+		finally
+		{
+			SiteTableOfContentsRefYamlConverter.Lenient = false;
+		}
+		return GetTocMappings(navigation, navigationFile, collector);
+	}
 
 	/// <summary>
 	/// Where each mounted table of contents is published: its source (normalized to end in <c>/</c>) and path prefix.
@@ -122,10 +135,13 @@ public static class SiteNavigationLoader
 			parent = shorthand;
 		if (toc.RepoKey is { } repository)
 		{
-			var declared = toc.ShorthandPath is { } name
-				? ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, name)
-				: toc.Source.OriginalString;
-			Emit(walk, toc.Position, $"toc config defines 'repo' can not be combined with 'toc': {declared}");
+			if (!toc.NoToc)
+			{
+				var declared = toc.ShorthandPath is { } name
+					? ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, name)
+					: toc.UnparsableSource ?? toc.Source.OriginalString;
+				Emit(walk, toc.Position, $"toc config defines 'repo' can not be combined with 'toc': {declared}");
+			}
 			pathPrefix = string.Join("/", [parent, repository]);
 			source = ContentSourceMoniker.CreateString(repository, parent);
 			source = source.EndsWith("://", StringComparison.OrdinalIgnoreCase) ? source : source.TrimEnd('/') + "/";
@@ -302,9 +318,9 @@ public class SiteTableOfContentsCollectionYamlConverter(
 			});
 		}
 
-		return SiteTableOfContentsRefYamlConverter.ToMount(dictionary, mappingStart, mappingStartEnd, childrenNotAnArray) is { } mount
-			? new SiteNavigationEntry(mount)
-			: throw SiteTableOfContentsRefYamlConverter.NoTocKey(dictionary);
+		if (SiteTableOfContentsRefYamlConverter.ToMount(dictionary, mappingStart, mappingStartEnd, childrenNotAnArray) is { } mount)
+			return new SiteNavigationEntry(mount);
+		return SiteTableOfContentsRefYamlConverter.Lenient ? null : throw SiteTableOfContentsRefYamlConverter.NoTocKey(dictionary);
 	}
 
 	private static List<SiteDropdownLinkRef> ReadDropdown(YamlReader reader)
@@ -418,14 +434,30 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 		}
 		_ = reader.Read(); // consume EndMapping
 
-		return ToMount(dictionary, mappingStart, mappingStartEnd, childrenNotAnArray) ?? throw NoTocKey(dictionary);
+		return ToMount(dictionary, mappingStart, mappingStartEnd, childrenNotAnArray) ?? (Lenient ? null : throw NoTocKey(dictionary));
 	}
+
+	/// <summary>
+	/// Set while the toc mappings are read: the mapping reader never rejected an entry the parser does, so an entry without a <c>toc:</c> key is skipped
+	/// (or mounted by its <c>repo:</c>), and an unparsable source is kept for the mapping to report. The parse that follows is not lenient and throws.
+	/// </summary>
+	[ThreadStatic]
+	internal static bool Lenient;
+
+	private static readonly Uri Unparsable = new("unparsable://source/");
 
 	/// <summary>The mount an entry's keys describe, or null when it has no <c>toc:</c> key.</summary>
 	internal static SiteTableOfContentsRef? ToMount(Dictionary<string, object?> dictionary, Mark start, Mark end, bool childrenNotAnArray)
 	{
-		if (!dictionary.TryGetValue("toc", out var tocPath) || tocPath is not string sourceString)
-			return null;
+		string sourceString;
+		if (!dictionary.TryGetValue("toc", out var tocPath) || tocPath is not string tocText)
+		{
+			if (!Lenient || !dictionary.ContainsKey("repo"))
+				return null;
+			// an entry with a repo: and no toc: is mounted by its repo, as the mapping reader did
+			return Mount(Unparsable, null, dictionary, start, end, childrenNotAnArray);
+		}
+		sourceString = tocText;
 
 		var uriString = sourceString.Contains("://") ? sourceString : $"docs-content://{sourceString}";
 
@@ -435,10 +467,27 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 		// crashing. The original InvalidOperationException is preserved as the inner exception.
 		if (!Uri.TryCreate(uriString, UriKind.Absolute, out var source))
 		{
+			if (Lenient)
+				return Mount(Unparsable, sourceString, dictionary, start, end, childrenNotAnArray);
 			var invalidUri = new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
 			throw new YamlException(invalidUri.Message, invalidUri);
 		}
 
+		return Mount(source, sourceString.Contains("://") ? null : sourceString, dictionary, start, end, childrenNotAnArray);
+	}
+
+	// `unparsableText` is the source as written when it is not a URI (lenient reads only); `shorthand` is the bare toc name
+	private static SiteTableOfContentsRef Mount(
+		Uri source,
+		string? shorthandOrUnparsable,
+		Dictionary<string, object?> dictionary,
+		Mark start,
+		Mark end,
+		bool childrenNotAnArray
+	)
+	{
+		var unparsable = ReferenceEquals(source, Unparsable) ? shorthandOrUnparsable : null;
+		var shorthand = ReferenceEquals(source, Unparsable) ? null : shorthandOrUnparsable;
 		var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
 		IReadOnlyList<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
@@ -453,14 +502,15 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 			&& titleObj is string title
 			&& !string.IsNullOrWhiteSpace(title) ? title : null;
 
-		var shorthand = sourceString.Contains("://") ? null : sourceString;
 		return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle)
 		{
 			ShorthandPath = shorthand,
 			DeclaredPathPrefix = DeclaredPathPrefix(dictionary, shorthand),
 			RepoKey = dictionary.TryGetValue("repo", out var repo) ? repo as string : null,
 			Position = PositionOf(start, end),
-			ChildrenNotAnArray = childrenNotAnArray
+			ChildrenNotAnArray = childrenNotAnArray,
+			UnparsableSource = unparsable,
+			NoToc = !dictionary.ContainsKey("toc")
 		};
 	}
 

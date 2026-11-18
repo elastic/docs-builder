@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Publishing;
 using Nullean.Snapshots;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -133,6 +134,30 @@ public class SiteNavigationLoaderTests
 				warning :: 'children' is not an array
 				"""
 			);
+
+	// the mapping reader accepted entries the parser rejects: a repo with no toc is mounted by its repo, an entry with neither is skipped, an unparsable source is reported
+	[Test]
+	public void GetTocMappings_RepoWithoutToc_IsMountedByItsRepo() =>
+		Describe("toc:\n  - repo: other\n  - path_prefix: x\n  - toc: open://a\n    path_prefix: a\n")
+			.Should()
+			.MatchInlineSnapshot("""
+				other:/// => /other
+				open://a/ => a
+				""");
+
+	[Test]
+	public void GetTocMappings_UnparsableSource_IsReported() =>
+		Describe("toc:\n  - toc: 'bad://[x'\n    path_prefix: x\n")
+			.Should()
+			.MatchInlineSnapshot("error 2:5:0 Source toc entry is not a valid uri: bad://[x/");
+
+	[Test]
+	public void Deserialize_RepoWithoutToc_StillThrows() =>
+		FluentActions
+			.Invoking(() => SiteNavigationLoader.Deserialize("toc:\n  - repo: other\n"))
+			.Should()
+			.Throw<YamlException>()
+			.WithMessage("toc entry has no 'toc:' key and will be ignored. Found keys: . Check for typos.");
 
 	[Test]
 	public void GetTocMappings_UnknownKeyInAnEntry_IsNotReportedByTheMapping() =>

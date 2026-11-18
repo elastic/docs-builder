@@ -19,7 +19,16 @@ public class NavigationGoldenTests
 	private const string NavigationPath = "/config/navigation.yml";
 
 	// members the record gained after these snapshots were taken: where an entry sits in the file, and how the toc mapping reads its prefix
-	private static readonly string[] NewMembers = ["Position", "ShorthandPath", "DeclaredPathPrefix", "RepoKey", "ChildrenNotAnArray"];
+	private static readonly string[] NewMembers =
+	[
+		"Position",
+		"ShorthandPath",
+		"DeclaredPathPrefix",
+		"RepoKey",
+		"ChildrenNotAnArray",
+		"UnparsableSource",
+		"NoToc"
+	];
 
 	/// <summary>The diagnostics the load wrote, then the model, or what it threw.</summary>
 	private static string Load(string yaml, bool dumpModel = true)

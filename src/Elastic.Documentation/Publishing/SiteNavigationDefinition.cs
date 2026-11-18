@@ -297,6 +297,14 @@ public partial record SiteTableOfContentsRef : ITableOfContentsItem
 	[IgnoreEquality]
 	public bool ChildrenNotAnArray { get; internal init; }
 
+	/// <summary>The <c>toc:</c> value when it is not a URI; set only while the toc mappings are read, which report it. <see cref="Source"/> is then a placeholder.</summary>
+	[IgnoreEquality]
+	public string? UnparsableSource { get; internal init; }
+
+	/// <summary>True for an entry written with a <c>repo:</c> and no <c>toc:</c>; set only while the toc mappings are read. <see cref="Source"/> is then a placeholder.</summary>
+	[IgnoreEquality]
+	public bool NoToc { get; internal init; }
+
 	/// <summary>The <c>repo:</c> written beside <c>toc:</c>, which the parser drops and the toc mapping reader honours.</summary>
 	[IgnoreEquality]
 	public string? RepoKey { get; internal init; }

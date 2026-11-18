@@ -15,6 +15,7 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
+using SharpYaml;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -24,20 +25,9 @@ namespace Elastic.Documentation.Navigation.Tests.Assembler;
 /// </summary>
 public class NavigationDiagnosticOrderTests
 {
-	[Test]
-	public void Build_NavigationWithAllThreeProblems_ReportsThemInTheOrderOfTheSteps()
+	/// <summary>The steps of <c>AssemblerBuildService</c> on <paramref name="navigation"/>: the mappings, the parse, the prefix check. What each reported, then what threw.</summary>
+	private static (IReadOnlyList<string> Messages, Exception? Thrown, bool? Valid) Steps(string navigation)
 	{
-		// language=yaml
-		const string navigation =
-			"""
-			toc:
-			  - toc: repoa://a
-			    path_prefix: shared
-			  - toc: repob://b
-			    path_prefix: shared/
-			    pathprefx: typo
-			  - toc: repoc://c
-			""";
 		var configFileSystem = new MockFileSystem();
 		var directory = ConfigurationFileProvider.AppDataConfigurationDirectory;
 		foreach (var (file, content) in new[]
@@ -78,25 +68,72 @@ public class NavigationDiagnosticOrderTests
 			"/output"
 		);
 
-		// the steps of AssemblerBuildService, in its order
 		_ = AssembleSources.GetTocMappings(context);
+		Exception? thrown = null;
+		bool? valid = null;
 		var navigationFile = provider.NavigationFile;
-		var parsed = SiteNavigationLoader.Deserialize(
-			configFileSystem.File.ReadAllText(navigationFile.FullName),
-			collector,
-			navigationFile.FullName
-		);
-		var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, parsed, navigationFile);
-
-		valid.Should().BeFalse();
-		collector
-			.Diagnostics
-			.Select(d => d.Message.Split(':')[0])
-			.Should()
-			.Equal(
-				"Path prefix is not defined for",
-				"Unknown key 'pathprefx' in $.toc[1]. Did you mean 'path_prefix'?",
-				"Duplicate path prefix"
+		try
+		{
+			var parsed = SiteNavigationLoader.Deserialize(
+				configFileSystem.File.ReadAllText(navigationFile.FullName),
+				collector,
+				navigationFile.FullName
 			);
+			valid = SiteNavigationLoader.ValidatePathPrefixes(collector, parsed, navigationFile);
+		}
+		catch (Exception e)
+		{
+			thrown = e;
+		}
+		return ([.. collector.Diagnostics.Select(d => d.Message.Split(':')[0])], thrown, valid);
+	}
+
+	[Test]
+	public void Build_NavigationWithAllThreeProblems_ReportsThemInTheOrderOfTheSteps()
+	{
+		// language=yaml
+		const string navigation =
+			"""
+			toc:
+			  - toc: repoa://a
+			    path_prefix: shared
+			  - toc: repob://b
+			    path_prefix: shared/
+			    pathprefx: typo
+			  - toc: repoc://c
+			""";
+		var (messages, thrown, valid) = Steps(navigation);
+
+		thrown.Should().BeNull();
+		valid.Should().BeFalse();
+		messages.Should().Equal(
+			"Path prefix is not defined for",
+			"Unknown key 'pathprefx' in $.toc[1]. Did you mean 'path_prefix'?",
+			"Duplicate path prefix"
+		);
+	}
+
+	// the mapping reader accepted entries the parser rejects, so what it reports comes first and the parse then throws
+	[Test]
+	public void Build_EntryWithARepoAndNoToc_MapsAndReportsBeforeTheParseThrows()
+	{
+		// language=yaml
+		const string navigation = """
+			toc:
+			  - toc: repoc://c
+			  - repo: other
+			""";
+
+		var (messages, thrown, valid) = Steps(navigation);
+
+		messages.Should().Equal("Path prefix is not defined for", "Unknown key 'repo' in $.toc[1]. Valid keys");
+		valid.Should().BeNull();
+		thrown
+			.Should()
+			.BeOfType<YamlException>()
+			.Which
+			.Message
+			.Should()
+			.StartWith("toc entry has no 'toc:' key and will be ignored. Found keys: . Check for typos.");
 	}
 }
