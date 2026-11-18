@@ -4403,13 +4403,19 @@ html:has(.api-page-shell) {
 	min-width: 0;
 }
 
+/* The label always sits above its chips, so every row shares one left edge whether or not its chip fits beside the label. */
 .api-section-requires .api-privileges-row {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: 4px 8px;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
 	padding: 0;
 	border: 0;
+}
+
+.api-section-requires .api-privileges-label {
+	font-size: 12px;
+	line-height: 18px;
 }
 
 .api-section-requires .api-privileges-values {
@@ -4417,6 +4423,8 @@ html:has(.api-page-shell) {
 }
 
 .api-section-requires .api-privilege {
+	padding: 1px 6px;
+	font-size: 12px;
 	overflow-wrap: anywhere;
 }
 
