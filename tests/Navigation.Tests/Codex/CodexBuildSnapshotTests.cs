@@ -14,12 +14,12 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Testing;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -203,6 +203,6 @@ public class CodexBuildSnapshotTests : CodexNavigationTestBase
 				new ProductCatalog { Products = FrozenDictionary<string, Product>.Empty },
 				new LegacyUrlMappingCatalog { Mappings = [] }
 			),
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 }

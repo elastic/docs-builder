@@ -35,7 +35,7 @@ public static class ServicesExtension
 		_ = services.AddScoped<IProductNameLookup>(sp => sp.GetRequiredService<ProductCatalog>());
 
 		// Inner search service: docs-builder pairs the typed contract with the docs index alias.
-		// SearchQueryConfiguration is a lean projection of the richer docs-builder SearchConfiguration,
+		// SearchQueryConfiguration is a lean projection of the richer docs-builder SearchTuning,
 		// carrying only the four values the query path reads.
 		_ = services.AddScoped<ISearchService<DocumentationDocument>>(sp =>
 		{

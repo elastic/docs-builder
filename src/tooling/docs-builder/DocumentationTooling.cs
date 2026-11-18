@@ -10,8 +10,8 @@ using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -50,13 +50,13 @@ public static class DocumentationTooling
 				var endpoints = sp.GetRequiredService<DocumentationEndpoints>();
 				var configurationFileProvider = sp.GetRequiredService<ConfigurationFileProvider>();
 				var catalog = sp.GetRequiredService<GlobalCatalog>();
-				var search = sp.GetRequiredService<SearchConfiguration>();
+				var search = sp.GetRequiredService<SearchTuning>();
 				return new ConfigurationContext
 				{
 					ConfigurationFileProvider = configurationFileProvider,
 					Catalog = catalog,
 					Endpoints = endpoints,
-					SearchConfiguration = search
+					SearchTuning = search
 				};
 			});
 

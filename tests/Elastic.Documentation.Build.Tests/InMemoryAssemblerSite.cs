@@ -121,7 +121,7 @@ public static class InMemoryAssemblerSite
 			Endpoints = basis.Endpoints,
 			ConfigurationFileProvider = provider,
 			Catalog = new GlobalCatalog(versions, basis.Catalog.Products, basis.Catalog.LegacyUrlMappings),
-			SearchConfiguration = basis.SearchConfiguration
+			SearchTuning = basis.SearchTuning
 		};
 	}
 

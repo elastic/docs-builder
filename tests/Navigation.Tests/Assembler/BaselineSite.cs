@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
@@ -21,6 +20,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
@@ -128,7 +128,7 @@ internal static class BaselineSite
 				new ProductCatalog { Products = FrozenDictionary<string, Product>.Empty },
 				new LegacyUrlMappingCatalog { Mappings = [] }
 			),
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 		var fileSystem = new MockFileSystem();
 		var collector = new TestDiagnosticsCollector();

@@ -81,7 +81,7 @@ public sealed partial class PreviewDocset : IAsyncDisposable
 			Catalog = template.Catalog,
 			ConfigurationFileProvider = template.ConfigurationFileProvider,
 			Endpoints = template.Endpoints,
-			SearchConfiguration = template.SearchConfiguration
+			SearchTuning = template.SearchTuning
 		};
 		var docFs = DocumentationFileSystem.Resolve(
 			fileSystem.DirectoryInfo.New(docs),

@@ -6,10 +6,10 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Assembler;
 
@@ -34,7 +34,7 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 	/// <inheritdoc />
 	public DocumentationEndpoints Endpoints { get; }
 
-	public SearchConfiguration SearchConfiguration { get; }
+	public SearchTuning SearchTuning { get; }
 
 	// Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 	/// <inheritdoc />
@@ -80,7 +80,7 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		ConfigurationPath = ConfigurationFileProvider.AssemblerFile;
 		_configurationContext = configurationContext;
 		Catalog = configurationContext.Catalog;
-		SearchConfiguration = configurationContext.SearchConfiguration;
+		SearchTuning = configurationContext.SearchTuning;
 		Endpoints = configurationContext.Endpoints;
 		Endpoints.BuildType = "assembler";
 
