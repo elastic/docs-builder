@@ -4638,10 +4638,11 @@ html:has(.api-page-shell) {
 }
 
 /*
- * On a page with the toolbar, a property reached from a link stops below it. The global scroll margin only clears the
- * header, and the toolbar sits 8px under it and is 42px tall, so 66px leaves a 16px gap. Other pages keep the global one.
+ * On a page with the toolbar, a property or response header reached from a link stops below it. The global scroll
+ * margin only clears the header, and the toolbar sits 8px under it and is 42px tall, so 66px leaves a 16px gap. Both
+ * kinds are a dt with an id, one in a property row and one in a header row. Other pages keep the global margin.
  */
-#elastic-api-v3.api-has-toolbar .property-item > dt[id] {
+#elastic-api-v3.api-has-toolbar dt[id] {
 	scroll-margin-top: calc(var(--offset-top, 0px) + 66px);
 }
 
