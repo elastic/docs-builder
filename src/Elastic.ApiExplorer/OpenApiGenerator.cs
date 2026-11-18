@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using System.Text;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -741,7 +742,8 @@ public class OpenApiGenerator(
 
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
-		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
+		// Rendered in memory so the page can be minified before it reaches disk.
+		await using var stream = new MemoryFileSystemStream(outputFile.FullName);
 
 		// Build the expensive page model once and pass it to both render paths so that
 		// OperationPageModel.Create / SchemaPageModel.Create / StructuralViewModel.Create
@@ -757,6 +759,8 @@ public class OpenApiGenerator(
 			await page.RenderAsync(stream, renderContext, ctx);
 		}
 
+		var html = ApiHtmlMinifier.Minify(Encoding.UTF8.GetString(stream.ToArray()), current.Url, _logger);
+		await _writeFileSystem.File.WriteAllTextAsync(outputFile.FullName, html, ctx).ConfigureAwait(false);
 		return outputFile;
 
 		IFileInfo OutputFile(INavigationItem currentNavigation)

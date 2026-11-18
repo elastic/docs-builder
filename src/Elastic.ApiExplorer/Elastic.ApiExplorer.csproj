@@ -18,6 +18,7 @@
     <PackageReference Include="RazorSlices"/>
     <PackageReference Include="SharpYaml"/>
     <PackageReference Include="Utf8StreamReader"/>
+    <PackageReference Include="WebMarkupMin.Core"/>
   </ItemGroup>
 
   <ItemGroup>

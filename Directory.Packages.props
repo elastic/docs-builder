@@ -31,6 +31,7 @@
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.1" />
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="3.0.1" />
     <PackageVersion Include="AngleSharp" Version="1.10.4" />
+    <PackageVersion Include="WebMarkupMin.Core" Version="2.24.0" />
     <PackageVersion Include="HtmlSanitizer" Version="11.0.26" />
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.1.0" />
     <PackageVersion Include="Elastic.Transport" Version="1.1.0" />
