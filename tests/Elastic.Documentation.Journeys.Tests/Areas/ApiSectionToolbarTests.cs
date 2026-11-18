@@ -22,6 +22,7 @@ namespace Elastic.Documentation.Journeys.Tests.Areas;
 public class ApiSectionToolbarTests(JourneyTarget target)
 {
 	private const string Operation = "api/doc/cloud-connect/operation/operation-patchcluster";
+	private static readonly int[] int32Array = new[] { 200, 60, 40 };
 
 	[Test]
 	public async Task ScrollingPastTheStrip_ShowsTheToolbarAtOnceAndKeepsItPinned()
@@ -32,7 +33,7 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 			var lines = new List<string> { $"at rest: {await DescribeAsync(page).ConfigureAwait(false)}" };
 
 			// The strip's bottom edge, in pixels below the top of the window: the header is about 48px, so 60 is still behind it.
-			foreach (var edge in new[] { 200, 60, 40 })
+			foreach (var edge in int32Array)
 			{
 				await ScrollStripBottomToAsync(page, edge).ConfigureAwait(false);
 				lines.Add($"strip bottom at {edge}px: {await DescribeAsync(page).ConfigureAwait(false)}");
@@ -62,6 +63,85 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 
 		_ = report.Should().MatchInlineSnapshot(
 			"strip on screen False, toolbar visible True, at the pinned offset True, current section Responses"
+		);
+	}
+
+	[Test]
+	public async Task OpeningAPropertyFragment_StopsItBelowTheToolbar()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			// A property well down the page, with room below it to scroll to its margin.
+			var id = (await page.EvaluateAsync(
+				"""
+					(() => {
+						const all = [...document.querySelectorAll('.property-item dt[id]')];
+						const room = document.documentElement.scrollHeight - innerHeight;
+						const at = (e) => e.getBoundingClientRect().top + scrollY;
+						return (all.find(e => at(e) > 700 && at(e) < room) ?? all[all.length - 1]).id;
+					})()
+					"""
+			).ConfigureAwait(false)).GetString();
+			_ = await page.EvaluateAsync($"location.hash = {JsonSerializer.Serialize(id)}; true").ConfigureAwait(false);
+			await Task.Delay(800).ConfigureAwait(false);
+
+			var state = await page.EvaluateAsync(
+				$$"""
+				(() => {
+					const property = document.getElementById({{JsonSerializer.Serialize(id)}});
+					const toolbar = document.querySelector('.api-section-links');
+					const top = property.getBoundingClientRect().top;
+					const state = {
+						toolbarVisible: getComputedStyle(toolbar).visibility === 'visible',
+						atItsScrollMargin: Math.abs(top - parseFloat(getComputedStyle(property).scrollMarginTop)) < 2,
+						clearOfToolbar: top >= toolbar.getBoundingClientRect().bottom,
+					};
+					// Without the class the page has no toolbar, and a property keeps the margin every element has.
+					document.getElementById('elastic-api-v3').classList.remove('api-has-toolbar');
+					state.globalWithoutToolbar = getComputedStyle(property).scrollMarginTop === getComputedStyle(document.body).scrollMarginTop;
+					return state;
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"toolbar visible {state.GetProperty("toolbarVisible").GetBoolean()}, property at its scroll margin {state.GetProperty("atItsScrollMargin").GetBoolean()}, " +
+					$"property clear of the toolbar {state.GetProperty("clearOfToolbar").GetBoolean()}, " +
+					$"global margin without the toolbar {state.GetProperty("globalWithoutToolbar").GetBoolean()}"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"toolbar visible True, property at its scroll margin True, property clear of the toolbar True, global margin without the toolbar True"
+		);
+	}
+
+	[Test]
+	public async Task ScrollMargin_StaysTheGlobalOneForEverythingElse()
+	{
+		const string Probe =
+			"""
+			(() => {
+				const body = getComputedStyle(document.body).scrollMarginTop;
+				const heading = document.querySelector('h2[id], h3[id]') ?? document.querySelector('[id]');
+				return { sameAsEverywhere: getComputedStyle(heading).scrollMarginTop === body };
+			})()
+			""";
+		var apiPage = false;
+		var docsPage = false;
+		await WithPageAsync(
+			string.Empty,
+			async page => apiPage = (await page.EvaluateAsync(Probe).ConfigureAwait(false)).GetProperty("sameAsEverywhere").GetBoolean()
+		).ConfigureAwait(false);
+		await WithPageAsync(
+			string.Empty,
+			async page => docsPage = (await page.EvaluateAsync(Probe).ConfigureAwait(false)).GetProperty("sameAsEverywhere").GetBoolean(),
+			"syntax/admonitions"
+		).ConfigureAwait(false);
+
+		_ = $"an API page heading keeps the global scroll margin {apiPage}, a docs page heading keeps it {docsPage}".Should().MatchInlineSnapshot(
+			"an API page heading keeps the global scroll margin True, a docs page heading keeps it True"
 		);
 	}
 
@@ -102,12 +182,12 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 			)
 		).ConfigureAwait(false);
 
-	private async Task WithPageAsync(string fragment, Func<Page, Task> body)
+	private async Task WithPageAsync(string fragment, Func<Page, Task> body, string path = Operation)
 	{
 		if (target.Name != "isolated")
 			Skip.Test($"The API pages these tests open are part of the isolated site, not '{target.Name}'.");
 
-		var url = new Uri(target.BaseUrl, Operation);
+		var url = new Uri(target.BaseUrl, path);
 		await WaitForPageAsync(url).ConfigureAwait(false);
 
 		await using var browser = await Browser.LaunchAsync(new BrowserLaunchOptions()).ConfigureAwait(false);

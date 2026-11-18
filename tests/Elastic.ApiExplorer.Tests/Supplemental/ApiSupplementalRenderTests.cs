@@ -14,6 +14,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
@@ -254,6 +255,35 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 			.IndexOf("api-section-links", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"query-params\"", StringComparison.Ordinal), "the bar sits above the sections it links to");
+	}
+
+	[Test]
+	public async Task Operation_ToolbarClass_MarksExactlyThePagesThatShowTheStrip()
+	{
+		var lines = new List<string>();
+		foreach (var nav in fixture
+			.Walk()
+			.OfType<OperationNavigationItem>()
+			.OrderBy(static n => n.Model.Operation.OperationId, StringComparer.Ordinal))
+		{
+			var html = await RenderAsync(nav.Model, nav);
+			var strip = html.Contains("class=\"api-section-strip", StringComparison.Ordinal);
+			var marked = html.Contains("<section id=\"elastic-api-v3\" class=\"api-has-toolbar\">", StringComparison.Ordinal);
+			lines.Add($"{nav.Model.Operation.OperationId}: strip {strip}, section marked {marked}");
+		}
+
+		_ = string
+			.Join('\n', lines)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			: strip False, section marked False
+			: strip False, section marked False
+			docs-get: strip True, section marked True
+			docs-get-source: strip True, section marked True
+			search: strip True, section marked True
+			"""
+			);
 	}
 
 	[Test]

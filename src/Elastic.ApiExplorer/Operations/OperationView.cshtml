@@ -55,12 +55,12 @@
 	</ul>
 	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
 </header>
-<section id="elastic-api-v3">
-	@* The design-system stylesheet has no styles for the strip yet, so the flagged page leaves it out. It opens the page, above the description, so what the operation needs and holds is the first thing a reader sees. *@
-	@{
-		var sectionLinks = Model.SectionLinks;
-		var showStrip = !Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && sectionLinks is { Count: > 1 };
-	}
+@* The design-system stylesheet has no styles for the strip yet, so the flagged page leaves it out. The strip opens the page, above the description, so what the operation needs and holds is the first thing a reader sees. The section carries a class while the page has the toolbar, so what the toolbar covers can be scrolled clear of it. *@
+@{
+	var sectionLinks = Model.SectionLinks;
+	var showStrip = !Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && sectionLinks is { Count: > 1 };
+}
+<section id="elastic-api-v3" class="@(showStrip ? "api-has-toolbar" : null)">
 	@if (showStrip)
 	{
 		@(await RenderPartialAsync<_SectionLinks, SectionStripModel>(new SectionStripModel(sectionLinks, Model.Authorization)))
