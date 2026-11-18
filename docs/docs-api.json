@@ -2,7 +2,7 @@
   "openapi": "3.2.0",
   "info": {
     "title": "Elastic Docs API",
-    "description": "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs. Requests through www.elastic.co need the cookie feature_search_or_askai_enabled=true; without it the CDN answers 403.",
+    "description": "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs.",
     "version": "v1"
   },
   "servers": [
@@ -17,27 +17,33 @@
           "Changes"
         ],
         "summary": "List the pages that changed since a date",
+        "description": "Lists the pages whose content changed since a date, a batch at a time. Pass the `nextCursor` of a reply as `cursor` to read the next batch, until `hasMore` is false.",
         "operationId": "list-changes",
         "parameters": [
           {
             "name": "since",
             "in": "query",
+            "description": "Pages changed at or after this date and time, in ISO 8601.",
             "required": true,
             "schema": {
               "type": "string",
               "format": "date-time"
-            }
+            },
+            "example": "2026-11-17T00:00:00Z"
           },
           {
             "name": "cursor",
             "in": "query",
+            "description": "The `nextCursor` of the previous reply.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "WzE3OTQ4OTYyMTE3NzIsIi9kb2NzL3JlZmVyZW5jZS9vcGVudGVsZW1ldHJ5L2Vkb3Qtc2Rrcy9qYXZhL21pZ3JhdGlvbiJd"
           },
           {
             "name": "size",
             "in": "query",
+            "description": "The number of pages per batch.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -45,51 +51,91 @@
                 "string"
               ],
               "format": "int32"
-            }
+            },
+            "example": 1
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "A batch of changed pages.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChangesResponse"
+                },
+                "example": {
+                  "pages": [
+                    {
+                      "url": "/docs/reference/opentelemetry/edot-sdks/java/configuration",
+                      "title": "Configure the EDOT Java agent",
+                      "lastUpdated": "2026-11-17T06:16:51.7648902+00:00"
+                    }
+                  ],
+                  "hasMore": true,
+                  "nextCursor": "WzE3OTQ4OTYyMTE3NzIsIi9kb2NzL3JlZmVyZW5jZS9vcGVudGVsZW1ldHJ5L2Vkb3Qtc2Rrcy9qYXZhL21pZ3JhdGlvbiJd"
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "cursor is not a nextCursor that /changes returned.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "503": {
-            "description": "Service Unavailable",
+            "description": "A backend is temporarily unavailable: a `search-unavailable` or `feedback-unavailable` problem. Retry after the `Retry-After` seconds.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#search-unavailable",
+                  "title": "Search unavailable",
+                  "status": 503,
+                  "detail": "Search backend is temporarily unavailable (MaxTimeoutReached). Transient — retry in a few seconds.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Pages changed since a date",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/changes?since=2026-11-17T00:00:00Z&size=1'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/page-feedback/{feedbackId}": {
@@ -98,16 +144,19 @@
           "Page feedback"
         ],
         "summary": "Record or update feedback on a page",
+        "description": "Records or replaces a reader's rating of a page. The id is chosen by the client, so sending it again updates the same feedback.",
         "operationId": "put-page-feedback",
         "parameters": [
           {
             "name": "feedbackId",
             "in": "path",
+            "description": "The id of the feedback, a UUID the client chooses.",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "example": "4f9d2c1a-7b3e-4c6d-9a8f-2e1b0c5d7a63"
           }
         ],
         "requestBody": {
@@ -115,6 +164,16 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PageFeedbackRequest"
+              },
+              "example": {
+                "pageUrl": "/docs/deploy-manage/monitor/cluster-health",
+                "pageTitle": "Cluster health",
+                "reaction": "thumbsDown",
+                "reasons": [
+                  "missingInformation"
+                ],
+                "reasonSetVersion": 1,
+                "comment": "An example of the yellow status would help."
               }
             }
           },
@@ -122,82 +181,134 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "The feedback was stored."
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "The page feedback is invalid. Check pageUrl, pageTitle, reaction, reasons and comment.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "503": {
-            "description": "Service Unavailable",
+            "description": "A backend is temporarily unavailable: a `search-unavailable` or `feedback-unavailable` problem. Retry after the `Retry-After` seconds.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#feedback-unavailable",
+                  "title": "Feedback unavailable",
+                  "status": 503,
+                  "detail": "The feedback could not be stored. Try again later.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Rate a page",
+            "source": "curl -X PUT 'https://www.elastic.co/docs/_api/v1/page-feedback/4f9d2c1a-7b3e-4c6d-9a8f-2e1b0c5d7a63' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"pageUrl\":\"/docs/deploy-manage/monitor/cluster-health\",\"pageTitle\":\"Cluster health\",\"reaction\":\"thumbsDown\",\"reasons\":[\"missingInformation\"],\"reasonSetVersion\":1,\"comment\":\"An example of the yellow status would help.\"}'"
+          }
+        ]
       },
       "delete": {
         "tags": [
           "Page feedback"
         ],
         "summary": "Delete feedback on a page",
+        "description": "Deletes a reader's rating of a page.",
         "operationId": "delete-page-feedback",
         "parameters": [
           {
             "name": "feedbackId",
             "in": "path",
+            "description": "The id of the feedback, a UUID the client chooses.",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "example": "4f9d2c1a-7b3e-4c6d-9a8f-2e1b0c5d7a63"
           }
         ],
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "The feedback was deleted."
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "503": {
-            "description": "Service Unavailable",
+            "description": "A backend is temporarily unavailable: a `search-unavailable` or `feedback-unavailable` problem. Retry after the `Retry-After` seconds.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#feedback-unavailable",
+                  "title": "Feedback unavailable",
+                  "status": 503,
+                  "detail": "The feedback could not be stored. Try again later.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Withdraw page feedback",
+            "source": "curl -X DELETE 'https://www.elastic.co/docs/_api/v1/page-feedback/4f9d2c1a-7b3e-4c6d-9a8f-2e1b0c5d7a63'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/ask-ai/stream": {
@@ -206,12 +317,17 @@
           "Ask AI"
         ],
         "summary": "Stream an Ask AI answer as server-sent events",
+        "description": "Answers a question with Elastic's documentation, as a stream of server-sent events. Each `data:` line is a JSON event: `conversation_start`, search and tool calls, `message_chunk` parts of the answer, and `conversation_end`. Pass the conversation id to ask a follow-up.",
         "operationId": "ask-ai-stream",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AskAiRequest"
+              },
+              "example": {
+                "message": "How do I check the health of a cluster?",
+                "conversationId": null
               }
             }
           },
@@ -219,29 +335,63 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The answer, as server-sent events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "data: {\"type\":\"conversation_start\",\"conversationId\":\"7c8d9e0f-1a2b-4c3d-9e4f-5a6b7c8d9e0f\",\"id\":\"1\",\"timestamp\":1763380000000}\n\ndata: {\"type\":\"search_tool_call\",\"toolCallId\":\"call_1\",\"searchQuery\":\"check cluster health\",\"id\":\"2\",\"timestamp\":1763380000400}\n\ndata: {\"type\":\"message_chunk\",\"content\":\"Call \\u0060GET /_cluster/health\\u0060. \",\"id\":\"3\",\"timestamp\":1763380001200}\n\ndata: {\"type\":\"message_chunk\",\"content\":\"A \\u0060green\\u0060 status means every shard is assigned.\",\"id\":\"4\",\"timestamp\":1763380001300}\n\ndata: {\"type\":\"conversation_end\",\"id\":\"5\",\"timestamp\":1763380001500}\n\n"
+              }
+            }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "Failed to read parameter \"AskAiRequest askAiRequest\" from the request body as JSON.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Ask a question",
+            "source": "curl -X POST 'https://www.elastic.co/docs/_api/v1/ask-ai/stream' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"message\":\"How do I check the health of a cluster?\",\"conversationId\":null}'"
+          },
+          {
+            "lang": "Shell",
+            "label": "Elastic CLI",
+            "source": "elastic docs ask \"How do I check the health of a cluster?\""
+          }
+        ]
       }
     },
     "/docs/_api/v1/ask-ai/message-feedback": {
@@ -250,12 +400,18 @@
           "Ask AI"
         ],
         "summary": "Record a reaction to an Ask AI answer",
+        "description": "Records whether an Ask AI answer helped.",
         "operationId": "ask-ai-message-feedback",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AskAiMessageFeedbackRequest"
+              },
+              "example": {
+                "messageId": "0b6f1e2d-3c4a-4b5d-8e7f-9a0b1c2d3e4f",
+                "conversationId": "7c8d9e0f-1a2b-4c3d-9e4f-5a6b7c8d9e0f",
+                "reaction": "thumbsUp"
               }
             }
           },
@@ -263,39 +419,67 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "The rating was stored."
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "Failed to read parameter \"AskAiMessageFeedbackRequest request\" from the request body as JSON.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "503": {
-            "description": "Service Unavailable",
+            "description": "A backend is temporarily unavailable: a `search-unavailable` or `feedback-unavailable` problem. Retry after the `Retry-After` seconds.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#feedback-unavailable",
+                  "title": "Feedback unavailable",
+                  "status": 503,
+                  "detail": "The feedback could not be stored. Try again later.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Rate an answer",
+            "source": "curl -X POST 'https://www.elastic.co/docs/_api/v1/ask-ai/message-feedback' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"messageId\":\"0b6f1e2d-3c4a-4b5d-8e7f-9a0b1c2d3e4f\",\"conversationId\":\"7c8d9e0f-1a2b-4c3d-9e4f-5a6b7c8d9e0f\",\"reaction\":\"thumbsUp\"}'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/navigation-search": {
@@ -304,19 +488,23 @@
           "Search"
         ],
         "summary": "Search page titles and the navigation",
+        "description": "Searches page titles and the navigation, as the docs site's search box does. On an API Explorer page, pass `api_key` and `api_tree` to rank that API's operations first.",
         "operationId": "navigation-search",
         "parameters": [
           {
             "name": "q",
             "in": "query",
+            "description": "The search terms.",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "cluster health"
           },
           {
             "name": "page",
             "in": "query",
+            "description": "The page to return, from 1.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -324,72 +512,140 @@
                 "string"
               ],
               "format": "int32"
-            }
+            },
+            "example": 1
           },
           {
             "name": "type",
             "in": "query",
+            "description": "Only results of this type, such as `docs` or `api`.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "docs"
           },
           {
             "name": "api_key",
             "in": "query",
+            "description": "The API of the API Explorer page the search runs on, such as `elasticsearch`.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "elasticsearch"
           },
           {
             "name": "api_tree",
             "in": "query",
+            "description": "The version tree of that page, `main` or a major such as `9`. It needs `api_key`.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "9"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The matching pages and API operations, best first.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NavigationSearchResponse"
+                },
+                "example": {
+                  "results": [
+                    {
+                      "properties": [ ],
+                      "routes": [ ],
+                      "deprecated": false,
+                      "landing": false,
+                      "apiKey": null,
+                      "product": "elasticsearch",
+                      "type": "docs",
+                      "url": "/docs/troubleshoot/elasticsearch/red-yellow-cluster-status",
+                      "title": "Red or yellow <mark>cluster</mark> <mark>health</mark> status",
+                      "description": "and cleanup activities until the <mark>cluster</mark> returns to green <mark>health</mark> status. In many cases, your <mark>cluster</mark> will recover to g…",
+                      "parents": [
+                        {
+                          "title": "Docs",
+                          "url": "/docs"
+                        }
+                      ],
+                      "score": 4.7976103
+                    }
+                  ],
+                  "totalResults": 314,
+                  "pageNumber": 1,
+                  "pageSize": 20,
+                  "aggregations": {
+                    "type": {
+                      "docs": 306,
+                      "api": 8
+                    }
+                  },
+                  "pageCount": 16
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "api_key must be a lowercase API key, and api_tree 'main' or a major version with api_key.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "503": {
-            "description": "Service Unavailable",
+            "description": "A backend is temporarily unavailable: a `search-unavailable` or `feedback-unavailable` problem. Retry after the `Retry-After` seconds.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#search-unavailable",
+                  "title": "Search unavailable",
+                  "status": 503,
+                  "detail": "Search backend is temporarily unavailable (MaxTimeoutReached). Transient — retry in a few seconds.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Search page titles",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/navigation-search?q=cluster%20health'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/search": {
@@ -398,19 +654,23 @@
           "Search"
         ],
         "summary": "Search the documentation",
+        "description": "Searches every documentation page by full text, combining keyword and semantic ranking. Filter by type, navigation section, deployment, product or version, and sort by relevance, date or title. Matched words come back wrapped in `<mark>` tags.",
         "operationId": "search",
         "parameters": [
           {
             "name": "q",
             "in": "query",
+            "description": "The search terms.",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "cluster health"
           },
           {
             "name": "page",
             "in": "query",
+            "description": "The page to return, from 1.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -418,11 +678,13 @@
                 "string"
               ],
               "format": "int32"
-            }
+            },
+            "example": 1
           },
           {
             "name": "size",
             "in": "query",
+            "description": "The number of results per page, from 1 to 50.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -430,109 +692,225 @@
                 "string"
               ],
               "format": "int32"
-            }
+            },
+            "example": 1
           },
           {
             "name": "type",
             "in": "query",
+            "description": "Only results of this type, such as `docs` or `api`. Repeat it to allow several.",
             "required": true,
             "schema": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            }
+            },
+            "example": [
+              "docs"
+            ]
           },
           {
             "name": "section",
             "in": "query",
+            "description": "Only pages in this navigation section, such as `reference`. Repeat it to allow several.",
             "required": true,
             "schema": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            }
+            },
+            "example": [
+              "reference"
+            ]
           },
           {
             "name": "deployment",
             "in": "query",
+            "description": "Only pages that apply to this deployment type. Repeat it to allow several.",
             "required": true,
             "schema": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            }
+            },
+            "example": [
+              "self"
+            ]
           },
           {
             "name": "product",
             "in": "query",
+            "description": "Only pages about this product id, such as `elasticsearch`. Repeat it to require several.",
             "required": true,
             "schema": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            }
+            },
+            "example": [
+              "elasticsearch"
+            ]
           },
           {
             "name": "version",
             "in": "query",
+            "description": "The version to read, such as `main` or `9`. Without it, the current version.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "9"
           },
           {
             "name": "sort",
             "in": "query",
+            "description": "`relevance` (the default), `recent` or `alpha`.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "relevance"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The matching pages, best first.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FullSearchResponse"
+                },
+                "example": {
+                  "results": [
+                    {
+                      "type": "docs",
+                      "url": "/docs/troubleshoot/elasticsearch/red-yellow-cluster-status",
+                      "title": "Red or yellow <mark>cluster</mark> <mark>health</mark> status",
+                      "description": "and cleanup activities until the <mark>cluster</mark> returns to green <mark>health</mark> status. In many cases, your <mark>cluster</mark> will recover to g…",
+                      "parents": [
+                        {
+                          "title": "Docs",
+                          "url": "/docs"
+                        }
+                      ],
+                      "score": 4.7976103,
+                      "aiShortSummary": "Fix red or yellow Elasticsearch cluster health status.",
+                      "aiRagOptimizedSummary": "A red Elasticsearch cluster health status indicates unassigned primary shards causing potential search and indexing failures, while yellow status means unass…",
+                      "navigationSection": "troubleshoot",
+                      "lastUpdated": "2026-11-17T19:20:53.9554741+00:00",
+                      "product": {
+                        "id": "elasticsearch",
+                        "displayName": "Elasticsearch"
+                      },
+                      "relatedProducts": [
+                        {
+                          "id": "elasticsearch",
+                          "displayName": "Elasticsearch"
+                        }
+                      ]
+                    }
+                  ],
+                  "totalResults": 314,
+                  "pageNumber": 1,
+                  "pageSize": 1,
+                  "aggregations": {
+                    "type": {
+                      "docs": 306,
+                      "api": 8
+                    },
+                    "navigationSection": {
+                      "reference": 150,
+                      "deploy and manage": 78,
+                      "troubleshoot": 33
+                    },
+                    "deploymentType": { },
+                    "product": {
+                      "elastic docs": {
+                        "count": 155,
+                        "displayName": "elastic docs"
+                      },
+                      "elasticsearch": {
+                        "count": 99,
+                        "displayName": "Elasticsearch"
+                      },
+                      "cloud kubernetes": {
+                        "count": 62,
+                        "displayName": "cloud kubernetes"
+                      }
+                    }
+                  },
+                  "isSemanticQuery": false,
+                  "pageCount": 314
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "Required parameter \"string query\" was not provided from query string.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "503": {
-            "description": "Service Unavailable",
+            "description": "A backend is temporarily unavailable: a `search-unavailable` or `feedback-unavailable` problem. Retry after the `Retry-After` seconds.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#search-unavailable",
+                  "title": "Search unavailable",
+                  "status": 503,
+                  "detail": "Search backend is temporarily unavailable (MaxTimeoutReached). Transient — retry in a few seconds.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Search the documentation",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/search?q=cluster%20health&size=1'"
+          },
+          {
+            "lang": "Shell",
+            "label": "Elastic CLI",
+            "source": "elastic docs search \"cluster health\""
+          }
+        ]
       }
     },
     "/docs/_api/v1/apis": {
@@ -541,29 +919,75 @@
           "API reference"
         ],
         "summary": "List every API",
+        "description": "Lists every API that API Explorer documents, with the keys and versions the other requests take.",
         "operationId": "list-apis",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Every API.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiListResponse"
+                },
+                "example": {
+                  "apis": [
+                    {
+                      "key": "cloud",
+                      "title": "Elastic Cloud API",
+                      "url": "/docs/api/doc/cloud",
+                      "description": "This RESTful API enables you to perform most of the operations available in the UI console through API calls.",
+                      "versions": [
+                        "main"
+                      ]
+                    },
+                    {
+                      "key": "cloud-billing",
+                      "title": "Cloud Billing API",
+                      "url": "/docs/api/doc/cloud-billing",
+                      "description": "The Cloud Billing API enables you to retrieve cost and usage information.",
+                      "versions": [
+                        "main"
+                      ]
+                    },
+                    {
+                      "key": "cloud-connect",
+                      "title": "Elastic Cloud Connected API",
+                      "url": "/docs/api/doc/cloud-connect",
+                      "description": "This API enables you to use Elastic Cloud services in your ECE, ECK, or self-managed cluster without having to install and maintain their infrastructure...",
+                      "versions": [
+                        "main"
+                      ]
+                    }
+                  ]
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Every API",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/apis'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/apis/{api}": {
@@ -572,49 +996,83 @@
           "API reference"
         ],
         "summary": "Read one API",
+        "description": "Reads one API by its key.",
         "operationId": "get-api",
         "parameters": [
           {
             "name": "api",
             "in": "path",
+            "description": "The API key, such as `elasticsearch`. `GET /docs/_api/v1/apis` lists them.",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "elasticsearch"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The API.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiSummary"
+                },
+                "example": {
+                  "key": "elasticsearch",
+                  "title": "Elasticsearch API",
+                  "url": "/docs/api/doc/elasticsearch",
+                  "description": "Elasticsearch provides REST APIs that are used by the UI components and can be called directly to configure and access Elasticsearch features.",
+                  "versions": [
+                    "main",
+                    "9"
+                  ]
                 }
               }
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "Nothing matches: an `api-not-found`, `group-not-found` or `operation-not-found` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#api-not-found",
+                  "title": "API not found",
+                  "status": 404,
+                  "detail": "No API 'nope'.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "One API",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/apis/elasticsearch'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/apis/{api}/groups": {
@@ -623,73 +1081,131 @@
           "API reference"
         ],
         "summary": "Count one API's operations by group",
+        "description": "Counts an API's operations by group, without listing them. Deprecated operations count only with `include_deprecated=true`, as in a listing, so a group's count is its listing's `totalHits`.",
         "operationId": "list-api-groups",
         "parameters": [
           {
             "name": "api",
             "in": "path",
+            "description": "The API key, such as `elasticsearch`. `GET /docs/_api/v1/apis` lists them.",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "elasticsearch"
           },
           {
             "name": "version",
             "in": "query",
+            "description": "The version to read, such as `main` or `9`. Without it, the current version.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "9"
           },
           {
             "name": "include_deprecated",
             "in": "query",
+            "description": "Include deprecated operations. The default is `false`.",
             "schema": {
               "type": "boolean"
-            }
+            },
+            "example": false
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The API's groups with their operation counts.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiOperationListResponse"
+                },
+                "example": {
+                  "api": "elasticsearch",
+                  "version": null,
+                  "totalOperations": 549,
+                  "groups": [
+                    {
+                      "name": "Cluster",
+                      "count": 20,
+                      "operations": null
+                    },
+                    {
+                      "name": "Cluster - Health",
+                      "count": 1,
+                      "operations": null
+                    },
+                    {
+                      "name": "Compact and aligned text (CAT)",
+                      "count": 27,
+                      "operations": null
+                    }
+                  ],
+                  "note": null
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "Pass an API key, such as 'elasticsearch'.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "Nothing matches: an `api-not-found`, `group-not-found` or `operation-not-found` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#api-not-found",
+                  "title": "API not found",
+                  "status": 404,
+                  "detail": "No operations found for API 'nope'.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Groups of an API",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/apis/elasticsearch/groups'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/apis/{api}/operations": {
@@ -698,68 +1214,86 @@
           "API reference"
         ],
         "summary": "Search, look up by endpoint, or list one API's operations",
+        "description": "Reads an API's operations in one of three ways. With `q`, it searches them by words, a route such as `GET /_cluster/health`, or a field path. With `endpoint`, it finds the operations that serve a request, such as `GET /my-index/_search`, best route first; add `view=full` for their fields. With neither, it lists them by path, one `group` at a time if you like.",
         "operationId": "list-api-operations",
         "parameters": [
           {
             "name": "api",
             "in": "path",
+            "description": "The API key, such as `elasticsearch`. `GET /docs/_api/v1/apis` lists them.",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "elasticsearch"
           },
           {
             "name": "version",
             "in": "query",
+            "description": "The version to read, such as `main` or `9`. Without it, the current version.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "9"
           },
           {
             "name": "group",
             "in": "query",
+            "description": "Only the operations of this group, such as `Cluster`. Case doesn't matter.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "Cluster"
           },
           {
             "name": "q",
             "in": "query",
+            "description": "Words, a route such as `GET /_cluster/health`, or a field path. End a field with `.`, as in `retriever.`, to list its child fields.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "cluster health"
           },
           {
             "name": "endpoint",
             "in": "query",
+            "description": "A request as you would send it, such as `GET /my-index/_search`, with or without the method.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "GET /_cluster/health"
           },
           {
             "name": "include_deprecated",
             "in": "query",
+            "description": "Include deprecated operations. The default is `false`.",
             "schema": {
               "type": "boolean"
-            }
+            },
+            "example": false
           },
           {
             "name": "view",
             "in": "query",
+            "description": "`basic` (the default) or `full`, which adds each result's versions and fields. It needs `endpoint`.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "full"
           },
           {
             "name": "include_body",
             "in": "query",
+            "description": "Include the operation page's text. In a lookup by endpoint, it needs `view=full`.",
             "schema": {
               "type": "boolean"
-            }
+            },
+            "example": true
           },
           {
             "name": "page",
             "in": "query",
+            "description": "The page of a search or listing to return, from 1.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -767,11 +1301,13 @@
                 "string"
               ],
               "format": "int32"
-            }
+            },
+            "example": 1
           },
           {
             "name": "size",
             "in": "query",
+            "description": "The number of operations per page, from 1 to 50.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -779,61 +1315,223 @@
                 "string"
               ],
               "format": "int32"
-            }
+            },
+            "example": 1
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "A page of operations. A lookup that matches nothing is an empty page, not a 404.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiOperationCollectionResponse"
+                },
+                "examples": {
+                  "Search an API": {
+                    "summary": "Search an API",
+                    "value": {
+                      "totalHits": 9,
+                      "results": [
+                        {
+                          "operation": {
+                            "api": "elasticsearch",
+                            "title": "Get the cluster health status",
+                            "url": "/docs/api/doc/elasticsearch/operation/operation-cluster-health",
+                            "description": "You can also use the API to get the health status of only specified data streams and indices.\nFor data streams, the API retrieves the health status of the st…",
+                            "method": "GET",
+                            "path": "/_cluster/health/{index}",
+                            "operationId": "cluster-health",
+                            "group": "Cluster",
+                            "deprecated": false,
+                            "endpoints": [
+                              "GET /_cluster/health/{index}",
+                              "GET /_cluster/health"
+                            ]
+                          },
+                          "score": 11.618973,
+                          "matchedFields": [ ],
+                          "versions": null,
+                          "fields": null,
+                          "body": null
+                        }
+                      ]
+                    }
+                  },
+                  "Look up an endpoint": {
+                    "summary": "Look up an endpoint",
+                    "value": {
+                      "totalHits": 1,
+                      "results": [
+                        {
+                          "operation": {
+                            "api": "elasticsearch",
+                            "title": "Get the cluster health status",
+                            "url": "/docs/api/doc/elasticsearch/operation/operation-cluster-health",
+                            "description": "You can also use the API to get the health status of only specified data streams and indices.\nFor data streams, the API retrieves the health status of the st…",
+                            "method": "GET",
+                            "path": "/_cluster/health/{index}",
+                            "operationId": "cluster-health",
+                            "group": "Cluster",
+                            "deprecated": false,
+                            "endpoints": [
+                              "GET /_cluster/health/{index}",
+                              "GET /_cluster/health"
+                            ]
+                          },
+                          "score": null,
+                          "matchedFields": null,
+                          "versions": [
+                            "main"
+                          ],
+                          "fields": [
+                            {
+                              "name": "index",
+                              "path": "index",
+                              "type": "union string | string[]",
+                              "location": "path",
+                              "description": "A comma-separated list of data streams, indices, and index aliases that limit the request. Wildcard expressions () are supported. To target all data streams…"
+                            },
+                            {
+                              "name": "expand_wildcards",
+                              "path": "expand_wildcards",
+                              "type": "union oneOf · default: all",
+                              "location": "query",
+                              "description": "Expand wildcard expression to concrete indices that are open, closed or both. Supported values include: - all: Match any data stream or index, including hidd…"
+                            },
+                            {
+                              "name": "level",
+                              "path": "level",
+                              "type": "enum · default: cluster",
+                              "location": "query",
+                              "description": "Return health information at a specific level of detail."
+                            }
+                          ],
+                          "body": null
+                        }
+                      ]
+                    }
+                  },
+                  "List a group": {
+                    "summary": "List a group",
+                    "value": {
+                      "totalHits": 1,
+                      "results": [
+                        {
+                          "operation": {
+                            "api": "elasticsearch",
+                            "title": "Get the cluster health",
+                            "url": "/docs/api/doc/elasticsearch/operation/operation-health-report",
+                            "description": "Get a report with the health status of an Elasticsearch cluster.\nThe report contains a list of indicators that compose Elasticsearch functionality.\n\nEach ind…",
+                            "method": "GET",
+                            "path": "/_health_report/{feature}",
+                            "operationId": "health-report",
+                            "group": "Cluster - Health",
+                            "deprecated": false,
+                            "endpoints": [
+                              "GET /_health_report/{feature}",
+                              "GET /_health_report"
+                            ]
+                          },
+                          "score": null,
+                          "matchedFields": null,
+                          "versions": null,
+                          "fields": null,
+                          "body": null
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "Pass q or endpoint, not both.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "Nothing matches: an `api-not-found`, `group-not-found` or `operation-not-found` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#api-not-found",
+                  "title": "API not found",
+                  "status": 404,
+                  "detail": "No operations found for API 'nope'.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "503": {
-            "description": "Service Unavailable",
+            "description": "A backend is temporarily unavailable: a `search-unavailable` or `feedback-unavailable` problem. Retry after the `Retry-After` seconds.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#search-unavailable",
+                  "title": "Search unavailable",
+                  "status": 503,
+                  "detail": "Search backend is temporarily unavailable (MaxTimeoutReached). Transient — retry in a few seconds.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "Search an API",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/apis/elasticsearch/operations?q=cluster%20health&size=1'"
+          },
+          {
+            "lang": "curl",
+            "label": "Look up an endpoint",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/apis/elasticsearch/operations?endpoint=GET%20%2F_cluster%2Fhealth&view=full'"
+          },
+          {
+            "lang": "curl",
+            "label": "List a group",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/apis/elasticsearch/operations?group=Cluster%20-%20Health'"
+          }
+        ]
       }
     },
     "/docs/_api/v1/apis/{api}/operations/{operationId}": {
@@ -842,81 +1540,166 @@
           "API reference"
         ],
         "summary": "Read one operation of an API",
+        "description": "Reads one operation of an API, with its routes, versions and every documented field.",
         "operationId": "get-api-operation",
         "parameters": [
           {
             "name": "api",
             "in": "path",
+            "description": "The API key, such as `elasticsearch`. `GET /docs/_api/v1/apis` lists them.",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "elasticsearch"
           },
           {
             "name": "operationId",
             "in": "path",
+            "description": "The operation id, such as `cluster-health`, unique within the API.",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "cluster-health"
           },
           {
             "name": "version",
             "in": "query",
+            "description": "The version to read, such as `main` or `9`. Without it, the current version.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "9"
           },
           {
             "name": "include_body",
             "in": "query",
+            "description": "Include the operation page's text. In a lookup by endpoint, it needs `view=full`.",
             "schema": {
               "type": "boolean"
-            }
+            },
+            "example": true
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The operation with its fields.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiOperationResponse"
+                },
+                "example": {
+                  "operation": {
+                    "api": "elasticsearch",
+                    "title": "Get the cluster health status",
+                    "url": "/docs/api/doc/elasticsearch/operation/operation-cluster-health",
+                    "description": "You can also use the API to get the health status of only specified data streams and indices.\nFor data streams, the API retrieves the health status of the st…",
+                    "method": "GET",
+                    "path": "/_cluster/health/{index}",
+                    "operationId": "cluster-health",
+                    "group": "Cluster",
+                    "deprecated": false,
+                    "endpoints": [
+                      "GET /_cluster/health/{index}",
+                      "GET /_cluster/health"
+                    ]
+                  },
+                  "versions": [
+                    "main"
+                  ],
+                  "fields": [
+                    {
+                      "name": "index",
+                      "path": "index",
+                      "type": "union string | string[]",
+                      "location": "path",
+                      "description": "A comma-separated list of data streams, indices, and index aliases that limit the request. Wildcard expressions () are supported. To target all data streams…"
+                    },
+                    {
+                      "name": "expand_wildcards",
+                      "path": "expand_wildcards",
+                      "type": "union oneOf · default: all",
+                      "location": "query",
+                      "description": "Expand wildcard expression to concrete indices that are open, closed or both. Supported values include: - all: Match any data stream or index, including hidd…"
+                    },
+                    {
+                      "name": "level",
+                      "path": "level",
+                      "type": "enum · default: cluster",
+                      "location": "query",
+                      "description": "Return health information at a specific level of detail."
+                    }
+                  ],
+                  "aiShortSummary": "Check Elasticsearch cluster health status via API.",
+                  "body": null,
+                  "bodyLength": 3639,
+                  "bodyNote": null,
+                  "otherMatches": [ ]
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "A parameter is missing, doesn't parse, or contradicts another one: an `invalid-arguments` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+                  "title": "Invalid arguments",
+                  "status": 400,
+                  "detail": "Pass an API key, such as 'elasticsearch'.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "Nothing matches: an `api-not-found`, `group-not-found` or `operation-not-found` problem.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#operation-not-found",
+                  "title": "API operation not found",
+                  "status": 404,
+                  "detail": "No API operation matches nope in elasticsearch.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "An unexpected failure: an `internal-error` problem. Its detail never names the cause; quote the `traceId`.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "detail": "An unexpected error occurred.",
+                  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "One operation",
+            "source": "curl 'https://www.elastic.co/docs/_api/v1/apis/elasticsearch/operations/cluster-health'"
+          }
+        ]
       }
     }
   },
@@ -933,21 +1716,42 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "examples": [
+              "index"
+            ],
+            "type": "string",
+            "description": "The field's name."
           },
           "path": {
-            "type": "string"
+            "examples": [
+              "index"
+            ],
+            "type": "string",
+            "description": "The field's dotted path, such as `query.match`."
           },
           "type": {
-            "type": "string"
+            "examples": [
+              "union string | string[]"
+            ],
+            "type": "string",
+            "description": "The field's type, such as `string` or `object`."
           },
           "location": {
-            "type": "string"
+            "examples": [
+              "path"
+            ],
+            "type": "string",
+            "description": "Where the field lives: `path`, `query`, `header`, `request` or `response`."
           },
           "description": {
-            "type": "string"
+            "examples": [
+              "A comma-separated list of data streams, indices, and index aliases that limit the request. Wildcard expressions () are supported. To target all data streams…"
+            ],
+            "type": "string",
+            "description": "The field's description."
           }
-        }
+        },
+        "description": "A parameter, request body field or response field of an operation."
       },
       "ApiListResponse": {
         "required": [
@@ -959,9 +1763,11 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApiSummary"
-            }
+            },
+            "description": "Every API, by key."
           }
-        }
+        },
+        "description": "Every API with its key and versions."
       },
       "ApiOperationCollectionResponse": {
         "required": [
@@ -971,20 +1777,26 @@
         "type": "object",
         "properties": {
           "totalHits": {
+            "examples": [
+              9
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "Every operation that matches, across pages.",
             "format": "int64"
           },
           "results": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApiOperationItem"
-            }
+            },
+            "description": "The operations on this page."
           }
-        }
+        },
+        "description": "A page of one API's operations."
       },
       "ApiOperationGroupDto": {
         "required": [
@@ -994,14 +1806,22 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "examples": [
+              "Cluster"
+            ],
+            "type": "string",
+            "description": "The group's name, such as `Cluster`."
           },
           "count": {
+            "examples": [
+              20
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The number of operations in the group.",
             "format": "int32"
           },
           "operations": {
@@ -1011,9 +1831,11 @@
             ],
             "items": {
               "$ref": "#/components/schemas/ApiOperationListItemDto"
-            }
+            },
+            "description": "The group's operations; null when only counts are asked for."
           }
-        }
+        },
+        "description": "A group of an API's operations."
       },
       "ApiOperationItem": {
         "required": [
@@ -1022,15 +1844,20 @@
         "type": "object",
         "properties": {
           "operation": {
+            "description": "The operation.",
             "$ref": "#/components/schemas/ApiOperationSummary"
           },
           "score": {
+            "examples": [
+              11.618973
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
               "number",
               "string"
             ],
+            "description": "The relevance score of a search result; null outside a search.",
             "format": "float"
           },
           "matchedFields": {
@@ -1040,16 +1867,23 @@
             ],
             "items": {
               "$ref": "#/components/schemas/ApiField"
-            }
+            },
+            "description": "The fields of the operation that match the search; null outside a search."
           },
           "versions": {
+            "examples": [
+              [
+                "main"
+              ]
+            ],
             "type": [
               "null",
               "array"
             ],
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The API versions that document the operation; only with `view=full`."
           },
           "fields": {
             "type": [
@@ -1058,15 +1892,21 @@
             ],
             "items": {
               "$ref": "#/components/schemas/ApiField"
-            }
+            },
+            "description": "Every documented field of the operation; only with `view=full`."
           },
           "body": {
+            "examples": [
+              "Returns the health status of a cluster, or of the data streams and indices you name."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The operation page's text; only with `include_body=true`."
           }
-        }
+        },
+        "description": "One operation in a page. Search adds a score and the matched fields; the full view adds versions, fields and the body."
       },
       "ApiOperationListItemDto": {
         "required": [
@@ -1079,24 +1919,49 @@
         "type": "object",
         "properties": {
           "title": {
-            "type": "string"
+            "examples": [
+              "Get the cluster health status"
+            ],
+            "type": "string",
+            "description": "The operation's title."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs/api/doc/elasticsearch/operation/operation-cluster-health"
+            ],
+            "type": "string",
+            "description": "The operation's page on www.elastic.co."
           },
           "method": {
-            "type": "string"
+            "examples": [
+              "GET"
+            ],
+            "type": "string",
+            "description": "The HTTP method of the operation's main route."
           },
           "path": {
-            "type": "string"
+            "examples": [
+              "/_cluster/health"
+            ],
+            "type": "string",
+            "description": "The path of the operation's main route."
           },
           "operationId": {
-            "type": "string"
+            "examples": [
+              "cluster-health"
+            ],
+            "type": "string",
+            "description": "The operation id, unique within the API."
           },
           "deprecated": {
-            "type": "boolean"
+            "examples": [
+              false
+            ],
+            "type": "boolean",
+            "description": "True when the spec marks the operation deprecated."
           }
-        }
+        },
+        "description": "An operation in a group listing."
       },
       "ApiOperationListResponse": {
         "required": [
@@ -1107,35 +1972,53 @@
         "type": "object",
         "properties": {
           "api": {
-            "type": "string"
+            "examples": [
+              "elasticsearch"
+            ],
+            "type": "string",
+            "description": "The API key."
           },
           "version": {
+            "examples": [
+              "9"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The version read; null for the current one."
           },
           "totalOperations": {
+            "examples": [
+              549
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The number of operations counted.",
             "format": "int32"
           },
           "groups": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApiOperationGroupDto"
-            }
+            },
+            "description": "The API's groups, by name."
           },
           "note": {
+            "examples": [
+              "This API has 549 operations. Pass group to list the operations of one group."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "A hint about the reply, such as how to list a large API; null when there is none."
           }
-        }
+        },
+        "description": "The operations of one API, by group."
       },
       "ApiOperationResponse": {
         "required": [
@@ -1147,53 +2030,79 @@
         "type": "object",
         "properties": {
           "operation": {
+            "description": "The operation.",
             "$ref": "#/components/schemas/ApiOperationSummary"
           },
           "versions": {
+            "examples": [
+              [
+                "main"
+              ]
+            ],
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The API versions that document the operation."
           },
           "fields": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApiField"
-            }
+            },
+            "description": "Every documented parameter, header, and request and response field."
           },
           "aiShortSummary": {
+            "examples": [
+              "Check Elasticsearch cluster health status via API."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "A one-sentence summary of the operation, generated by AI, when there is one."
           },
           "body": {
+            "examples": [
+              "Returns the health status of a cluster, or of the data streams and indices you name."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The operation page's text; only with `include_body=true`."
           },
           "bodyLength": {
+            "examples": [
+              3639
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The length of the page's text, also when it isn't included.",
             "format": "int32"
           },
           "bodyNote": {
+            "examples": [
+              "The body is omitted by default. Call this tool again with includeBody=true to read it."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Set by callers that can tell the reader how to ask for an omitted body."
           },
           "otherMatches": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApiOperationSummary"
-            }
+            },
+            "description": "Other operations the lookup matched."
           }
-        }
+        },
+        "description": "One operation with its routes, versions and documented fields."
       },
       "ApiOperationSummary": {
         "required": [
@@ -1208,45 +2117,89 @@
         "type": "object",
         "properties": {
           "api": {
-            "type": "string"
+            "examples": [
+              "elasticsearch"
+            ],
+            "type": "string",
+            "description": "The key of the API the operation belongs to, such as `elasticsearch`."
           },
           "title": {
-            "type": "string"
+            "examples": [
+              "Get the cluster health status"
+            ],
+            "type": "string",
+            "description": "The operation's title."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs/api/doc/elasticsearch/operation/operation-cluster-health"
+            ],
+            "type": "string",
+            "description": "The operation's page on www.elastic.co."
           },
           "description": {
+            "examples": [
+              "You can also use the API to get the health status of only specified data streams and indices.\nFor data streams, the API retrieves the health status of the st…"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "What the operation does."
           },
           "method": {
-            "type": "string"
+            "examples": [
+              "GET"
+            ],
+            "type": "string",
+            "description": "The HTTP method of the operation's main route."
           },
           "path": {
-            "type": "string"
+            "examples": [
+              "/_cluster/health/{index}"
+            ],
+            "type": "string",
+            "description": "The path of the operation's main route, such as `/_cluster/health/{index}`."
           },
           "operationId": {
-            "type": "string"
+            "examples": [
+              "cluster-health"
+            ],
+            "type": "string",
+            "description": "The operation id from the API's spec, unique within the API."
           },
           "group": {
+            "examples": [
+              "Cluster"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The group the operation is listed under, such as `Cluster`."
           },
           "deprecated": {
-            "type": "boolean"
+            "examples": [
+              false
+            ],
+            "type": "boolean",
+            "description": "True when the spec marks the operation deprecated."
           },
           "endpoints": {
+            "examples": [
+              [
+                "GET /_cluster/health/{index}",
+                "GET /_cluster/health"
+              ]
+            ],
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Every route the page lists as `METHOD /spec/path`."
           }
-        }
+        },
+        "description": "An operation of an API, as API Explorer documents it."
       },
       "ApiRouteEntry": {
         "required": [
@@ -1256,15 +2209,26 @@
         "type": "object",
         "properties": {
           "path": {
-            "type": "string"
+            "examples": [
+              "/_cluster/health/{index}"
+            ],
+            "type": "string",
+            "description": "Spec path, verbatim, e.g. `/{index}/_search`."
           },
           "methods": {
+            "examples": [
+              [
+                "GET"
+              ]
+            ],
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Upper-case HTTP methods, the one the page leads with first, e.g. `POST`, `GET`."
           }
-        }
+        },
+        "description": "One route of an operation with every method it accepts. Stored for display in search results, not searched."
       },
       "ApiSummary": {
         "required": [
@@ -1276,27 +2240,50 @@
         "type": "object",
         "properties": {
           "key": {
-            "type": "string"
+            "examples": [
+              "cloud"
+            ],
+            "type": "string",
+            "description": "The API key that the other requests take, such as `elasticsearch`."
           },
           "title": {
-            "type": "string"
+            "examples": [
+              "Elastic Cloud API"
+            ],
+            "type": "string",
+            "description": "The API's title."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs/api/doc/cloud"
+            ],
+            "type": "string",
+            "description": "The API's landing page on www.elastic.co."
           },
           "description": {
+            "examples": [
+              "This RESTful API enables you to perform most of the operations available in the UI console through API calls."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "What the API is for."
           },
           "versions": {
+            "examples": [
+              [
+                "main"
+              ]
+            ],
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The versions you can pass as `version`, such as `main` or `9`."
           }
-        }
+        },
+        "description": "An API that API Explorer publishes."
       },
       "AskAiMessageFeedbackRequest": {
         "required": [
@@ -1307,17 +2294,27 @@
         "type": "object",
         "properties": {
           "messageId": {
+            "examples": [
+              "0b6f1e2d-3c4a-4b5d-8e7f-9a0b1c2d3e4f"
+            ],
             "type": "string",
+            "description": "The id of the answer, from its stream events.",
             "format": "uuid"
           },
           "conversationId": {
+            "examples": [
+              "7c8d9e0f-1a2b-4c3d-9e4f-5a6b7c8d9e0f"
+            ],
             "type": "string",
+            "description": "The id of the conversation, from its `conversation_start` event.",
             "format": "uuid"
           },
           "reaction": {
+            "description": "Whether the answer helped.",
             "$ref": "#/components/schemas/Reaction"
           }
-        }
+        },
+        "description": "Request model for submitting feedback on a specific Ask AI message.\nUsing Guid type ensures automatic validation during JSON deserialization."
       },
       "AskAiRequest": {
         "required": [
@@ -1327,16 +2324,25 @@
         "type": "object",
         "properties": {
           "message": {
-            "type": "string"
+            "examples": [
+              "How do I check the health of a cluster?"
+            ],
+            "type": "string",
+            "description": "The question, in plain language."
           },
           "conversationId": {
+            "examples": [
+              "7c8d9e0f-1a2b-4c3d-9e4f-5a6b7c8d9e0f"
+            ],
             "type": [
               "null",
               "string"
             ],
+            "description": "The conversation to continue, from an earlier `conversation_start` event; null starts a new one.",
             "format": "uuid"
           }
-        }
+        },
+        "description": "A question for Ask AI."
       },
       "ChangedPageDto": {
         "required": [
@@ -1347,16 +2353,29 @@
         "type": "object",
         "properties": {
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs/reference/opentelemetry/edot-sdks/java/configuration"
+            ],
+            "type": "string",
+            "description": "The page's path on www.elastic.co."
           },
           "title": {
-            "type": "string"
+            "examples": [
+              "Configure the EDOT Java agent"
+            ],
+            "type": "string",
+            "description": "The page title."
           },
           "lastUpdated": {
+            "examples": [
+              "2026-11-17T06:16:51.7648902+00:00"
+            ],
             "type": "string",
+            "description": "When the page's content last changed.",
             "format": "date-time"
           }
-        }
+        },
+        "description": "A single changed page in the API response."
       },
       "ChangesResponse": {
         "required": [
@@ -1369,23 +2388,39 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ChangedPageDto"
-            }
+            },
+            "description": "The changed pages in this batch."
           },
           "hasMore": {
-            "type": "boolean"
+            "examples": [
+              true
+            ],
+            "type": "boolean",
+            "description": "True when more changed pages follow. Pass `nextCursor` as `cursor` to read them."
           },
           "nextCursor": {
+            "examples": [
+              "WzE3OTQ4OTYyMTE3NzIsIi9kb2NzL3JlZmVyZW5jZS9vcGVudGVsZW1ldHJ5L2Vkb3Qtc2Rrcy9qYXZhL21pZ3JhdGlvbiJd"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The cursor of the next batch; null on the last one."
           }
-        }
+        },
+        "description": "API response for the changes feed endpoint."
       },
       "FullSearchAggregations": {
         "type": "object",
         "properties": {
           "type": {
+            "examples": [
+              {
+                "docs": 306,
+                "api": 8
+              }
+            ],
             "type": "object",
             "additionalProperties": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -1394,9 +2429,17 @@
                 "string"
               ],
               "format": "int64"
-            }
+            },
+            "description": "Result counts by result type, such as `docs` or `api`."
           },
           "navigationSection": {
+            "examples": [
+              {
+                "reference": 150,
+                "deploy and manage": 78,
+                "troubleshoot": 33
+              }
+            ],
             "type": "object",
             "additionalProperties": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -1405,9 +2448,13 @@
                 "string"
               ],
               "format": "int64"
-            }
+            },
+            "description": "Result counts by top-level navigation section, such as `reference`."
           },
           "deploymentType": {
+            "examples": [
+              { }
+            ],
             "type": "object",
             "additionalProperties": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -1416,15 +2463,34 @@
                 "string"
               ],
               "format": "int64"
-            }
+            },
+            "description": "Result counts by the deployment types the pages apply to."
           },
           "product": {
+            "examples": [
+              {
+                "elastic docs": {
+                  "count": 155,
+                  "displayName": "elastic docs"
+                },
+                "elasticsearch": {
+                  "count": 99,
+                  "displayName": "Elasticsearch"
+                },
+                "cloud kubernetes": {
+                  "count": 62,
+                  "displayName": "cloud kubernetes"
+                }
+              }
+            ],
             "type": "object",
             "additionalProperties": {
               "$ref": "#/components/schemas/ProductAggregationBucket"
-            }
+            },
+            "description": "Result counts by product id, with each product's display name."
           }
-        }
+        },
+        "description": "Aggregation buckets for full-page search facets."
       },
       "FullSearchProduct": {
         "required": [
@@ -1434,12 +2500,21 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "examples": [
+              "elasticsearch"
+            ],
+            "type": "string",
+            "description": "The product id, such as `elasticsearch`."
           },
           "displayName": {
-            "type": "string"
+            "examples": [
+              "Elasticsearch"
+            ],
+            "type": "string",
+            "description": "The product's name for display."
           }
-        }
+        },
+        "description": "Product reference in search results with id and display name."
       },
       "FullSearchResponse": {
         "required": [
@@ -1454,47 +2529,70 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FullSearchResultItem"
-            }
+            },
+            "description": "The results on this page."
           },
           "totalResults": {
+            "examples": [
+              314
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "Every result the query matches, across pages.",
             "format": "int32"
           },
           "pageNumber": {
+            "examples": [
+              1
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The page returned, from 1.",
             "format": "int32"
           },
           "pageSize": {
+            "examples": [
+              1
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The number of results per page, from 1 to 50.",
             "format": "int32"
           },
           "aggregations": {
+            "description": "Result counts by type, navigation section, deployment type and product, for building filters.",
             "$ref": "#/components/schemas/FullSearchAggregations"
           },
           "isSemanticQuery": {
-            "type": "boolean"
+            "examples": [
+              false
+            ],
+            "type": "boolean",
+            "description": "True when the query also ran as a semantic search and both rankings were combined."
           },
           "pageCount": {
+            "examples": [
+              314
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The number of pages at this page size.",
             "format": "int32"
           }
-        }
+        },
+        "description": "Response model for full-page search (unified API+service response)."
       },
       "FullSearchResultItem": {
         "required": [
@@ -1507,54 +2605,91 @@
         "type": "object",
         "properties": {
           "type": {
-            "type": "string"
+            "examples": [
+              "docs"
+            ],
+            "type": "string",
+            "description": "`docs` for a documentation page, `api` for an API reference page."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs/troubleshoot/elasticsearch/red-yellow-cluster-status"
+            ],
+            "type": "string",
+            "description": "The page's path on www.elastic.co, such as `/docs/deploy-manage`."
           },
           "title": {
-            "type": "string"
+            "examples": [
+              "Red or yellow &lt;mark&gt;cluster&lt;/mark&gt; &lt;mark&gt;health&lt;/mark&gt; status"
+            ],
+            "type": "string",
+            "description": "The page title, with matched words in `&lt;mark&gt;` tags."
           },
           "description": {
-            "type": "string"
+            "examples": [
+              "and cleanup activities until the &lt;mark&gt;cluster&lt;/mark&gt; returns to green &lt;mark&gt;health&lt;/mark&gt; status. In many cases, your &lt;mark&gt;cluster&lt;/mark&gt; will recover to g…"
+            ],
+            "type": "string",
+            "description": "A passage of the page, with matched words in `&lt;mark&gt;` tags."
           },
           "parents": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FullSearchResultParent"
-            }
+            },
+            "description": "The page's breadcrumb, from the docs root down."
           },
           "score": {
+            "examples": [
+              4.7976103
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "number",
               "string"
             ],
+            "description": "The relevance score. Compare it only within one response.",
             "format": "float"
           },
           "aiShortSummary": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "aiRagOptimizedSummary": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "navigationSection": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "lastUpdated": {
+            "examples": [
+              "Fix red or yellow Elasticsearch cluster health status."
+            ],
             "type": [
               "null",
               "string"
             ],
+            "description": "A one-sentence summary of the page, generated by AI, when there is one."
+          },
+          "aiRagOptimizedSummary": {
+            "examples": [
+              "A red Elasticsearch cluster health status indicates unassigned primary shards causing potential search and indexing failures, while yellow status means unass…"
+            ],
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A longer AI-generated summary of the page, written for answer generation, when there is one."
+          },
+          "navigationSection": {
+            "examples": [
+              "troubleshoot"
+            ],
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The top-level navigation section the page is in."
+          },
+          "lastUpdated": {
+            "examples": [
+              "2026-11-17T19:20:53.9554741+00:00"
+            ],
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the page's content last changed.",
             "format": "date-time"
           },
           "product": {
@@ -1563,6 +2698,7 @@
                 "type": "null"
               },
               {
+                "description": "The product the page is about.",
                 "$ref": "#/components/schemas/FullSearchProduct"
               }
             ]
@@ -1574,9 +2710,11 @@
             ],
             "items": {
               "$ref": "#/components/schemas/FullSearchProduct"
-            }
+            },
+            "description": "Other products the page applies to."
           }
-        }
+        },
+        "description": "Individual search result item for full-page search."
       },
       "FullSearchResultParent": {
         "required": [
@@ -1586,17 +2724,32 @@
         "type": "object",
         "properties": {
           "title": {
-            "type": "string"
+            "examples": [
+              "Docs"
+            ],
+            "type": "string",
+            "description": "The parent page's title."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs"
+            ],
+            "type": "string",
+            "description": "The parent page's path."
           }
-        }
+        },
+        "description": "Parent document reference in breadcrumb trail."
       },
       "NavigationSearchAggregations": {
         "type": "object",
         "properties": {
           "type": {
+            "examples": [
+              {
+                "docs": 306,
+                "api": 8
+              }
+            ],
             "type": "object",
             "additionalProperties": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -1605,9 +2758,11 @@
                 "string"
               ],
               "format": "int64"
-            }
+            },
+            "description": "Result counts by result type, such as `docs` or `api`."
           }
-        }
+        },
+        "description": "Result counts for building filters."
       },
       "NavigationSearchProperty": {
         "required": [
@@ -1622,27 +2777,56 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "examples": [
+              "wait_for_status"
+            ],
+            "type": "string",
+            "description": "The field name."
           },
           "path": {
-            "type": "string"
+            "examples": [
+              "wait_for_status"
+            ],
+            "type": "string",
+            "description": "The field's dotted path, such as `query.match`."
           },
           "type": {
-            "type": "string"
+            "examples": [
+              "enum"
+            ],
+            "type": "string",
+            "description": "The field's type, such as `string` or `object`."
           },
           "description": {
-            "type": "string"
+            "examples": [
+              "Wait (until the timeout expires) for the cluster to reach a specific health status (or a better status)."
+            ],
+            "type": "string",
+            "description": "The field's description."
           },
           "anchor": {
-            "type": "string"
+            "examples": [
+              "query-wait_for_status"
+            ],
+            "type": "string",
+            "description": "The field's anchor on the operation page."
           },
           "location": {
-            "type": "string"
+            "examples": [
+              "query"
+            ],
+            "type": "string",
+            "description": "Where the field is: `path`, `query`, `header`, `request` or `response`."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs/api/doc/elasticsearch/operation/operation-cluster-health#query-wait_for_status"
+            ],
+            "type": "string",
+            "description": "The operation page, with the field's anchor."
           }
-        }
+        },
+        "description": "A request or response field of an API operation that matches the query."
       },
       "NavigationSearchResponse": {
         "required": [
@@ -1657,44 +2841,63 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NavigationSearchResultItem"
-            }
+            },
+            "description": "The results on this page."
           },
           "totalResults": {
+            "examples": [
+              314
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "Every result the query matches, across pages.",
             "format": "int32"
           },
           "pageNumber": {
+            "examples": [
+              1
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The page returned, from 1.",
             "format": "int32"
           },
           "pageSize": {
+            "examples": [
+              20
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The number of results per page.",
             "format": "int32"
           },
           "aggregations": {
+            "description": "Result counts by type, for building filters.",
             "$ref": "#/components/schemas/NavigationSearchAggregations"
           },
           "pageCount": {
+            "examples": [
+              16
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The number of pages at this page size.",
             "format": "int32"
           }
-        }
+        },
+        "description": "Pages and API operations whose title or navigation entry matches the query."
       },
       "NavigationSearchResultItem": {
         "required": [
@@ -1710,59 +2913,99 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NavigationSearchProperty"
-            }
+            },
+            "description": "The operation's request and response fields that match the query; empty for a docs page."
           },
           "routes": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApiRouteEntry"
-            }
+            },
+            "description": "The operation's routes with their methods; empty for a docs page."
           },
           "deprecated": {
-            "type": "boolean"
+            "examples": [
+              false
+            ],
+            "type": "boolean",
+            "description": "True when the result is an API operation the spec marks deprecated; false for a docs page."
           },
           "landing": {
-            "type": "boolean"
+            "examples": [
+              false
+            ],
+            "type": "boolean",
+            "description": "True when the result is an API's landing page, which has no operation."
           },
           "apiKey": {
+            "examples": [
+              "elasticsearch"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Key of the API the result belongs to, e.g. `kibana`; null for a docs page."
           },
           "product": {
+            "examples": [
+              "elasticsearch"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Product id the page was inferred to, e.g. `cloud-hosted`. Picks the landing row's icon, as it does on the catalog."
           },
           "type": {
-            "type": "string"
+            "examples": [
+              "docs"
+            ],
+            "type": "string",
+            "description": "`docs` for a documentation page, `api` for an API reference page."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs/troubleshoot/elasticsearch/red-yellow-cluster-status"
+            ],
+            "type": "string",
+            "description": "The page's path on www.elastic.co."
           },
           "title": {
-            "type": "string"
+            "examples": [
+              "Red or yellow &lt;mark&gt;cluster&lt;/mark&gt; &lt;mark&gt;health&lt;/mark&gt; status"
+            ],
+            "type": "string",
+            "description": "The page title, with matched words in `&lt;mark&gt;` tags."
           },
           "description": {
-            "type": "string"
+            "examples": [
+              "and cleanup activities until the &lt;mark&gt;cluster&lt;/mark&gt; returns to green &lt;mark&gt;health&lt;/mark&gt; status. In many cases, your &lt;mark&gt;cluster&lt;/mark&gt; will recover to g…"
+            ],
+            "type": "string",
+            "description": "A passage of the page, with matched words in `&lt;mark&gt;` tags."
           },
           "parents": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NavigationSearchResultItemParent"
-            }
+            },
+            "description": "The page's breadcrumb, from the docs root down."
           },
           "score": {
+            "examples": [
+              4.7976103
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "number",
               "string"
             ],
+            "description": "The relevance score. Compare it only within one response.",
             "format": "float"
           }
-        }
+        },
+        "description": "A page or an API operation that matches the query."
       },
       "NavigationSearchResultItemParent": {
         "required": [
@@ -1772,19 +3015,29 @@
         "type": "object",
         "properties": {
           "title": {
-            "type": "string"
+            "examples": [
+              "Docs"
+            ],
+            "type": "string",
+            "description": "The parent page's title."
           },
           "url": {
-            "type": "string"
+            "examples": [
+              "/docs"
+            ],
+            "type": "string",
+            "description": "The parent page's path."
           }
-        }
+        },
+        "description": "One step of a result's breadcrumb."
       },
       "PageFeedbackReaction": {
         "enum": [
           "unspecified",
           "thumbsUp",
           "thumbsDown"
-        ]
+        ],
+        "description": "How a reader rated a page: `thumbsUp` or `thumbsDown`."
       },
       "PageFeedbackReason": {
         "enum": [
@@ -1799,7 +3052,8 @@
           "codeSampleErrors",
           "outOfDate",
           "anotherReason"
-        ]
+        ],
+        "description": "Why a reader rated a page. For `thumbsUp`: `accurate`, `solvedProblem`, `easyToUnderstand`,\n`helpfulExamples`, `easyToFind`. For `thumbsDown`: `inaccurate`, `missingInformation`,\n`hardToUnderstand`, `codeSampleErrors`, `outOfDate`. `anotherReason` fits either."
       },
       "PageFeedbackRequest": {
         "required": [
@@ -1813,77 +3067,122 @@
         "type": "object",
         "properties": {
           "pageUrl": {
-            "type": "string"
+            "examples": [
+              "/docs/deploy-manage/monitor/cluster-health"
+            ],
+            "type": "string",
+            "description": "The page's path, starting with `/`, at most 2048 characters."
           },
           "pageTitle": {
-            "type": "string"
+            "examples": [
+              "Cluster health"
+            ],
+            "type": "string",
+            "description": "The page's title, at most 500 characters."
           },
           "reaction": {
+            "description": "`thumbsUp` or `thumbsDown`.",
             "$ref": "#/components/schemas/PageFeedbackReaction"
           },
           "reasons": {
+            "examples": [
+              [
+                "missingInformation"
+              ]
+            ],
             "type": [
               "null",
               "array"
             ],
             "items": {
               "$ref": "#/components/schemas/PageFeedbackReason"
-            }
+            },
+            "description": "Why, from the reasons that fit the reaction; omit with `reasonSetVersion` for a reaction alone."
           },
           "reasonSetVersion": {
+            "examples": [
+              1
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
               "integer",
               "string"
             ],
+            "description": "The version of the reason set the reasons come from; required with `reasons`.",
             "format": "int32"
           },
           "comment": {
+            "examples": [
+              "An example of the yellow status would help."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Free text, at most 2000 characters; it needs `reasons`."
           }
-        }
+        },
+        "description": "A reader's rating of a documentation page."
       },
       "ProblemDetails": {
         "type": "object",
         "properties": {
           "type": {
+            "examples": [
+              "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The problem type, a URI that resolves to its description on the REST API page."
           },
           "title": {
+            "examples": [
+              "Invalid arguments"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The problem type's name; the same for every occurrence."
           },
           "status": {
+            "examples": [
+              400
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
               "integer",
               "string"
             ],
+            "description": "The HTTP status code of the response.",
             "format": "int32"
           },
           "detail": {
+            "examples": [
+              "Pass q or endpoint, not both."
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "What went wrong in this request."
           },
           "instance": {
+            "examples": [
+              "/docs/_api/v1/apis/elasticsearch/operations"
+            ],
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The request the problem is about, when known."
           }
-        }
+        },
+        "description": "An RFC 9457 problem. Match on `type`; `title` and `detail` are for people."
       },
       "ProductAggregationBucket": {
         "required": [
@@ -1893,41 +3192,56 @@
         "type": "object",
         "properties": {
           "count": {
+            "examples": [
+              155
+            ],
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
               "string"
             ],
+            "description": "The number of results for the product.",
             "format": "int64"
           },
           "displayName": {
-            "type": "string"
+            "examples": [
+              "elastic docs"
+            ],
+            "type": "string",
+            "description": "The product's name for display."
           }
-        }
+        },
+        "description": "Product aggregation bucket with count and display name."
       },
       "Reaction": {
         "enum": [
           "thumbsUp",
           "thumbsDown"
-        ]
+        ],
+        "description": "The user's reaction to an Ask AI message."
       }
     }
   },
   "tags": [
     {
-      "name": "API reference"
+      "name": "API reference",
+      "description": "The REST APIs that API Explorer documents, and their operations. Every operation lookup names its API: many operation ids and routes exist in several APIs, such as elasticsearch and elasticsearch-serverless."
     },
     {
-      "name": "Ask AI"
+      "name": "Ask AI",
+      "description": "Ask questions about Elastic in plain language and rate the answers."
     },
     {
-      "name": "Changes"
+      "name": "Changes",
+      "description": "Follow which documentation pages changed, to keep a copy or an index up to date."
     },
     {
-      "name": "Page feedback"
+      "name": "Page feedback",
+      "description": "Ratings that readers leave on documentation pages. Browser only: requests need an AWS WAF token."
     },
     {
-      "name": "Search"
+      "name": "Search",
+      "description": "Search the documentation on elastic.co/docs, by full text or by page title."
     }
   ]
 }
