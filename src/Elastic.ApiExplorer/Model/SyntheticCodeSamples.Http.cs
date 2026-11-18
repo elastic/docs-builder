@@ -55,8 +55,12 @@ public static partial class SyntheticCodeSamples
 		var target = input.Route;
 		foreach (var credential in credentials.Where(static c => c?.In == ParameterLocation.Query))
 			target = WithoutHttpQueryKey(target, credential!.Name);
-		var (route, written) = SplitQuery(BuildPath(target, [.. input.Parameters.Where(static p => p.In == ParameterLocation.Path)]));
-		var path = AppendQuery(variables.Replace(route, "PATH"), [.. written.Select(pair => variables.Replace(pair, "QUERY"))]);
+		var built = BuildPath(target, [.. input.Parameters.Where(static p => p.In == ParameterLocation.Path)]);
+		// Placeholders are named before the query splits on `&`, which a parameter name may contain.
+		var split = built.IndexOf('?', StringComparison.Ordinal);
+		var path = split < 0
+			? variables.Replace(built, "PATH")
+			: variables.Replace(built[..split], "PATH") + "?" + variables.Replace(built[(split + 1)..], "QUERY");
 		var existing = QueryNames(path);
 		var pairs = input
 			.Parameters

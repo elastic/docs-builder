@@ -78,6 +78,17 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
+	public void CreateHttp_QueryPlaceholderWithAnAmpersand_StaysOneReference()
+	{
+		var sample = SyntheticCodeSamples.CreateHttp(
+			new SyntheticSampleInput(HttpMethod.Get, "/things?a%26b={a&b}", new OpenApiOperation()),
+			null
+		);
+
+		sample.Source.Should().Be("###\nGET {{API_URL}}/things?a%26b={{QUERY_A_B}}\n");
+	}
+
+	[Test]
 	public void CreateHttp_PartialServerTemplate_InlinesTheStatedDefault()
 	{
 		var sample = SyntheticCodeSamples.CreateHttp(
