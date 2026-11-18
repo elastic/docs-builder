@@ -113,21 +113,8 @@ public static partial class SyntheticCodeSamples
 	internal static string SingleQuotedBody(string body)
 	{
 		var trimmed = body.Trim();
-		var laidOut = IsJsonDocument(trimmed) ? trimmed.Replace("\n", "\n  ", StringComparison.Ordinal) : body;
+		var laidOut = RequestBodyExample.IsJsonDocument(trimmed) ? trimmed.Replace("\n", "\n  ", StringComparison.Ordinal) : body;
 		return $"-d '{laidOut.Replace("'", "'\\''", StringComparison.Ordinal)}'";
-	}
-
-	private static bool IsJsonDocument(string text)
-	{
-		try
-		{
-			_ = JsonNode.Parse(text);
-			return true;
-		}
-		catch (JsonException)
-		{
-			return false;
-		}
 	}
 
 	/// <summary>

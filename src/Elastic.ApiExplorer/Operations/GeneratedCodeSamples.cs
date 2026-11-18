@@ -72,14 +72,25 @@ public static partial class GeneratedCodeSamples
 	}
 
 	/// <summary>
-	/// The request every sample of a scenario sends: the line its description names, else the endpoint's shortest route.
-	/// The method is the dominant one for that path.
+	/// The request every sample of a scenario sends: the line its description names, else the line its authored Console
+	/// sample opens with, else the endpoint's shortest route. The method is the dominant one for that path.
 	/// </summary>
 	internal static (string Method, string Path) RequestOf(ExampleScenario scenario, OperationEndpoint endpoint)
 	{
 		var (method, path) = scenario.RequestLine
+			?? AuthoredConsoleLine(scenario)
 			?? (endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant(), endpoint.ShortestRoute);
 		return (SampleMethods.Dominant(method, path, endpoint) ?? method, path);
+	}
+
+	/// <summary>The request line of a Console sample the spec wrote, without a <c>kbn:</c> prefix. A generated one already follows <see cref="RequestOf"/>.</summary>
+	private static (string Method, string Path)? AuthoredConsoleLine(ExampleScenario scenario)
+	{
+		var console = scenario.CodeSamples.FirstOrDefault(static c => c.IsConsole && !c.Generated);
+		if (SplitConsole(console?.Source) is not { Line: var (method, target) })
+			return null;
+		var path = target[ConsolePrefix(console!.Source).Length..];
+		return (method, path.StartsWith('/') ? path : "/" + path);
 	}
 
 	/// <summary><c>Run `GET /my-index/_search?from=40` to …</c> in an example description names its request.</summary>

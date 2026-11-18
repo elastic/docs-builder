@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Model;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
@@ -33,11 +34,12 @@ public static class HttpCodeSamples
 		)
 			return scenario;
 		var content = OperationPageModel.PrimaryRequestContent(input.Operation.RequestBody);
-		var mediaType = scenario.MediaType ?? content?.Key;
-		if (mediaType is not null && !RequestBodyExample.IsJson(mediaType))
-			return scenario;
-		var body = scenario.RequestJson ?? RequestBodyExample.Build(analyzer, mediaType, content?.Value?.Schema);
+		var declared = scenario.MediaType ?? content?.Key;
+		var body = scenario.RequestJson ?? RequestBodyExample.Build(analyzer, declared, content?.Value?.Schema);
 		if (input.Operation.RequestBody is not null && body is null)
+			return scenario;
+		var mediaType = body is null ? null : BodyMediaType(body, declared, input.Operation.RequestBody);
+		if (body is not null && mediaType is null)
 			return scenario;
 		var (method, route) = GeneratedCodeSamples.RequestOf(scenario, endpoint);
 		var sample = SyntheticCodeSamples.CreateHttp(
@@ -54,5 +56,18 @@ public static class HttpCodeSamples
 			CodeSamplesIncludeRequest = scenario.CodeSamplesIncludeRequest
 				|| (scenario.CodeSamples.Count == 0 && scenario.RequestJson is not null && body == scenario.RequestJson)
 		};
+	}
+
+	/// <summary>
+	/// The type the body is sent as: a JSON type for one JSON document, the operation's newline-delimited type for one JSON
+	/// value per line. Null for anything else, which a sample cannot reproduce from the spec.
+	/// </summary>
+	private static string? BodyMediaType(string body, string? declared, IOpenApiRequestBody? requestBody)
+	{
+		if ((declared is null || RequestBodyExample.IsJson(declared)) && RequestBodyExample.IsJsonDocument(body))
+			return declared ?? "application/json";
+		if (!RequestBodyExample.IsNdjsonDocument(body))
+			return null;
+		return RequestBodyExample.IsNdjson(declared) ? declared : requestBody?.Content?.Keys.FirstOrDefault(RequestBodyExample.IsNdjson);
 	}
 }

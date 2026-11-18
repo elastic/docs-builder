@@ -500,8 +500,64 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
+	[Arguments("POST my-index-000001/_msearch", "POST {{API_URL}}/my-index-000001/_msearch")]
+	[Arguments("GET kbn:/api/status?v8format=true", "GET {{API_URL}}/api/status?v8format=true")]
+	public void Fill_AuthoredConsoleWithoutRunLine_SendsTheConsoleRequest(string console, string request)
+	{
+		var scenario = Fill(
+			new OpenApiOperation(),
+			new ExampleScenario { Title = "Read", TabId = "read", CodeSamples = [new CodeSample("Console", console, "language-console")] }
+		).Single();
+
+		scenario.CodeSamples.Single(static s => s.IsHttp).Source.Should().Be($"###\n{request}\n");
+	}
+
+	[Test]
+	public void Fill_NdjsonBody_SendsTheOperationsNdjsonType()
+	{
+		var operation = new OpenApiOperation
+		{
+			RequestBody = new OpenApiRequestBody
+			{
+				Content = new Dictionary<string, IOpenApiMediaType>
+				{
+					["application/json"] = new OpenApiMediaType(),
+					["application/x-ndjson"] = new OpenApiMediaType()
+				}
+			}
+		};
+		const string body = "{ }\n{\"query\" : {\"match_all\" : {}}}";
+
+		var scenario = Fill(operation, new ExampleScenario { Title = "Search", TabId = "search", RequestJson = body }).Single();
+
+		scenario
+			.CodeSamples
+			.Single(static s => s.IsHttp)
+			.Source
+			.Should()
+			.Be("###\nGET {{API_URL}}/_search\nContent-Type: application/x-ndjson\n\n" + body + "\n");
+	}
+
+	[Test]
+	public void Fill_NdjsonBodyWithoutAnNdjsonType_DoesNotGenerateHttp()
+	{
+		var operation = new OpenApiOperation
+		{
+			RequestBody = new OpenApiRequestBody
+			{
+				Content = new Dictionary<string, IOpenApiMediaType> { ["application/json"] = new OpenApiMediaType() }
+			}
+		};
+
+		Fill(operation, new ExampleScenario { Title = "Search", TabId = "search", RequestJson = "{}\n{}" })
+			.Single()
+			.CodeSamples
+			.Should()
+			.BeEmpty();
+	}
+
+	[Test]
 	[Arguments("text/plain")]
-	[Arguments("application/x-ndjson")]
 	[Arguments("multipart/form-data")]
 	public void Fill_UnsupportedBody_DoesNotGenerateHttp(string mediaType)
 	{
