@@ -17,6 +17,8 @@ public sealed record SampleTarget(string? ConsolePrefix, string HostVariable);
 
 public static partial class GeneratedCodeSamples
 {
+	private const string KibanaConsolePrefix = "kbn:";
+
 	/// <summary>
 	/// What a product's generated samples address: what Console puts before the route (empty for Elasticsearch, <c>kbn:</c> for
 	/// Kibana, null where Console can't call the API), and the host variable the product's own curl samples use for a spec
@@ -26,7 +28,7 @@ public static partial class GeneratedCodeSamples
 	{
 		null => new SampleTarget("", "${API_URL}"),
 		"elasticsearch" or "serverless-elasticsearch" => new SampleTarget("", "${ELASTICSEARCH_URL}"),
-		"kibana" => new SampleTarget("kbn:", "${KIBANA_URL}"),
+		"kibana" => new SampleTarget(KibanaConsolePrefix, "${KIBANA_URL}"),
 		"logstash" => new SampleTarget(null, "${LOGSTASH_URL}"),
 		_ => new SampleTarget(null, "${API_URL}")
 	};
@@ -109,14 +111,13 @@ public static partial class GeneratedCodeSamples
 		return ((match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value), consoleSource[(match.Index + match.Length)..]);
 	}
 
-	/// <summary>The target prefix Console samples put before the route, e.g. <c>kbn:</c> for Kibana. Empty for Elasticsearch.</summary>
-	private static string ConsolePrefix(string? consoleSource)
-	{
-		if (SplitConsole(consoleSource) is not { Line.Path: var target })
-			return "";
-		var colon = target.IndexOf(':');
-		return colon < 0 ? "" : target[..(colon + 1)];
-	}
+	/// <summary>
+	/// The target prefix Console samples put before the route: <c>kbn:</c> for Kibana, else empty. Any other colon belongs to
+	/// the request, as in <c>remote:my-index/_search</c> or <c>?q=user.id:kimchy</c>.
+	/// </summary>
+	private static string ConsolePrefix(string? consoleSource) =>
+		SplitConsole(consoleSource) is { Line.Path: var target }
+			&& target.StartsWith(KibanaConsolePrefix, StringComparison.OrdinalIgnoreCase) ? KibanaConsolePrefix : "";
 
 	/// <summary>Reuses the spec's curl sample (host, auth headers) with this example's method, path, and body.</summary>
 	private static string? Curl(string? curlSource, string method, string path, string body)

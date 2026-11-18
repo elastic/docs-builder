@@ -502,6 +502,8 @@ public class HttpCodeSamplesTests
 	[Test]
 	[Arguments("POST my-index-000001/_msearch", "POST {{API_URL}}/my-index-000001/_msearch")]
 	[Arguments("GET kbn:/api/status?v8format=true", "GET {{API_URL}}/api/status?v8format=true")]
+	[Arguments("GET my-index/_search?q=user.id:kimchy", "GET {{API_URL}}/my-index/_search?q=user.id:kimchy")]
+	[Arguments("GET remote:my-index/_search", "GET {{API_URL}}/remote:my-index/_search")]
 	public void Fill_AuthoredConsoleWithoutRunLine_SendsTheConsoleRequest(string console, string request)
 	{
 		var scenario = Fill(
