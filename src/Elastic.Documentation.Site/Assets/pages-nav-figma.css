@@ -341,6 +341,25 @@ body.navigation-preview {
 		content: none;
 	}
 
+	#pages-nav li.nav-group {
+		padding-block-start: 20px;
+	}
+
+	#pages-nav li.nav-group:first-child {
+		padding-block-start: 4px;
+	}
+
+	/* The type, case and colour come from .nav-group-label in styles.css; this chrome only sets its own face and inset. */
+	#pages-nav .nav-group-label {
+		padding: 0 12px 4px;
+		font-family: var(--font-body);
+	}
+
+	#pages-nav .nav-group-items {
+		margin: 0;
+		padding: 0;
+	}
+
 	#pages-nav .nav-v2-separator {
 		padding-block: 8px 4px;
 	}

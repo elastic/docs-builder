@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
 using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
@@ -25,6 +26,14 @@ namespace Elastic.ApiExplorer.Tests;
 
 public static class TestHelpers
 {
+	/// <summary>The tags of a spec without tag groups. The sidebar lists them under the Operations label.</summary>
+	public static IEnumerable<TagNavigationItem> Tags(this LandingNavigationItem navigation) =>
+		navigation
+			.NavigationItems
+			.OfType<OperationsNavigationItem>()
+			.SelectMany(static operations => operations.NavigationItems)
+			.OfType<TagNavigationItem>();
+
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
 		VersionsConfiguration? versionsConfiguration = null,

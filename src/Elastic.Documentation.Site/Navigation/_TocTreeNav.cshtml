@@ -31,6 +31,15 @@
 			</div>
 		</li>
 	}
+	else if (item.Kind == NavigationRenderNodeKind.Group)
+	{
+		<li class="nav-group">
+			<span id="@item.Id-label" class="nav-group-label">@item.NavigationTitle</span>
+			<ul class="nav-group-items" aria-labelledby="@item.Id-label">
+				@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
+			</ul>
+		</li>
+	}
 	else if (item.Kind == NavigationRenderNodeKind.Heading)
 	{
 		<li class="nav-folder">

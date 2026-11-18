@@ -184,6 +184,19 @@ body {
 		@apply relative flex flex-wrap;
 	}
 
+	/* An always-open label over its items: the API sidebar's Topics, Operations and Types.
+	   Styled like .api-menu-group-label in the spec switcher (api-identity.css). */
+	.nav-group-label {
+		display: block;
+		font-size: 11px;
+		font-weight: 500;
+		letter-spacing: 0.04em;
+		line-height: 16px;
+		text-transform: uppercase;
+		color: #637290;
+		user-select: none;
+	}
+
 	.nav-subtree-clip {
 		@apply w-full;
 	}
@@ -194,9 +207,10 @@ body {
 
 	.nav-chevron {
 		@apply w-3.5 shrink-0 -rotate-90 group-has-checked/label:rotate-0;
-		fill: none;
-		stroke-width: 1.5;
-		stroke: currentColor;
+
+		/* The symbols are filled hairline paths; a stroke on top of the fill makes them heavy. */
+		fill: currentColor;
+		stroke: none;
 	}
 
 	.nav-subtree {
@@ -564,4 +578,10 @@ h1:has(.cli-badge-ns, .cli-badge-cmd) {
 	background: #fffbeb;
 	color: #b45309;
 	border: 1px solid #fde68a;
+}
+
+/* A group label takes one row slot: rows inside a group are 16px apart, like the nested rows under an open folder,
+   and the label sits that far above its first row. Unlayered, so it wins over the utility margin the nav rows carry. */
+.nav-group-items > li {
+	margin-top: 16px;
 }

@@ -17,8 +17,10 @@ public enum NavigationRenderNodeKind
 	Island,
 	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
 	Heading,
-	/// <summary>Visual divider between intro pages and the rest of the tree.</summary>
-	Separator
+	/// <summary>Visual divider between intro pages and the rest of the tree. Only the design-system samples build one.</summary>
+	Separator,
+	/// <summary>Always-open label over its items: no toggle, no page URL. The API sidebar's Topics, Operations and Types.</summary>
+	Group
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -217,7 +219,7 @@ public sealed record NavigationRenderModel
 		bool isGlobalAssemblyBuild
 	)
 	{
-		if (tree.Index.Hidden)
+		if (tree.Index.Hidden || tree is ISidebarWithoutRootIndexNavigationItem)
 			return null;
 
 		if (isGlobalAssemblyBuild)
@@ -344,18 +346,6 @@ public sealed record NavigationRenderModel
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
 
-			if (item is ISidebarSeparatorNavigationItem)
-			{
-				yield return new NavigationRenderNode
-				{
-					Kind = NavigationRenderNodeKind.Separator,
-					IsTopLevel = isTopLevel,
-					NavigationTitle = "",
-					Url = ""
-				};
-				continue;
-			}
-
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
 				yield return CreateNode(node, isTopLevel);
 			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> or ILeafNavigationItem<INavigationModel>)
@@ -379,18 +369,20 @@ public sealed record NavigationRenderModel
 			};
 		}
 
-		var isHeading = node is ISidebarHeadingNavigationItem;
+		// A group is a heading with no toggle. Its rows are top-level rows of the sidebar; a heading's rows are nested.
+		var isGroup = node is ISidebarGroupNavigationItem;
+		var isHeading = isGroup || node is ISidebarHeadingNavigationItem;
 		return new NavigationRenderNode
 		{
-			Kind = isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
+			Kind = isGroup ? NavigationRenderNodeKind.Group : isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
-			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
+			ShowToggle = !isGroup && !node.NavigationItems.All(n => n.Hidden),
 			Expanded = node is ISidebarExpandedNavigationItem,
-			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
+			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: isGroup)]
 		};
 	}
 
