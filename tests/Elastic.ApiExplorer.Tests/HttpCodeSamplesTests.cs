@@ -513,17 +513,15 @@ public class HttpCodeSamplesTests
 	}
 
 	[Test]
-	public void Fill_NdjsonBody_SendsTheOperationsNdjsonType()
+	[Arguments("application/json", "application/x-ndjson")]
+	[Arguments("application/ndjson", "application/ndjson")]
+	public void Fill_NdjsonBody_SendsANewlineDelimitedType(string listed, string sent)
 	{
 		var operation = new OpenApiOperation
 		{
 			RequestBody = new OpenApiRequestBody
 			{
-				Content = new Dictionary<string, IOpenApiMediaType>
-				{
-					["application/json"] = new OpenApiMediaType(),
-					["application/x-ndjson"] = new OpenApiMediaType()
-				}
+				Content = new Dictionary<string, IOpenApiMediaType> { [listed] = new OpenApiMediaType() }
 			}
 		};
 		const string body = "{ }\n{\"query\" : {\"match_all\" : {}}}";
@@ -535,25 +533,7 @@ public class HttpCodeSamplesTests
 			.Single(static s => s.IsHttp)
 			.Source
 			.Should()
-			.Be("###\nGET {{API_URL}}/_search\nContent-Type: application/x-ndjson\n\n" + body + "\n");
-	}
-
-	[Test]
-	public void Fill_NdjsonBodyWithoutAnNdjsonType_DoesNotGenerateHttp()
-	{
-		var operation = new OpenApiOperation
-		{
-			RequestBody = new OpenApiRequestBody
-			{
-				Content = new Dictionary<string, IOpenApiMediaType> { ["application/json"] = new OpenApiMediaType() }
-			}
-		};
-
-		Fill(operation, new ExampleScenario { Title = "Search", TabId = "search", RequestJson = "{}\n{}" })
-			.Single()
-			.CodeSamples
-			.Should()
-			.BeEmpty();
+			.Be($"###\nGET {{{{API_URL}}}}/_search\nContent-Type: {sent}\n\n{body}\n");
 	}
 
 	[Test]

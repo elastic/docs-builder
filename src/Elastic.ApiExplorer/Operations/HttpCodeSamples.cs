@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Model;
-using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
@@ -38,7 +37,7 @@ public static class HttpCodeSamples
 		var body = scenario.RequestJson ?? RequestBodyExample.Build(analyzer, declared, content?.Value?.Schema);
 		if (input.Operation.RequestBody is not null && body is null)
 			return scenario;
-		var mediaType = body is null ? null : BodyMediaType(body, declared, input.Operation.RequestBody);
+		var mediaType = body is null ? null : BodyMediaType(body, declared);
 		if (body is not null && mediaType is null)
 			return scenario;
 		var (method, route) = GeneratedCodeSamples.RequestOf(scenario, endpoint);
@@ -59,15 +58,18 @@ public static class HttpCodeSamples
 	}
 
 	/// <summary>
-	/// The type the body is sent as: a JSON type for one JSON document, the operation's newline-delimited type for one JSON
-	/// value per line. Null for anything else, which a sample cannot reproduce from the spec.
+	/// The type the body is sent as: a JSON type for one JSON document, a newline-delimited type for one JSON value per line.
+	/// Specs often list only <c>application/json</c> for a newline-delimited body, as Elasticsearch's <c>_msearch</c> does, so
+	/// within those two the body's shape decides. Null for any other declared type or body, which a sample cannot reproduce.
 	/// </summary>
-	private static string? BodyMediaType(string body, string? declared, IOpenApiRequestBody? requestBody)
+	private static string? BodyMediaType(string body, string? declared)
 	{
-		if ((declared is null || RequestBodyExample.IsJson(declared)) && RequestBodyExample.IsJsonDocument(body))
-			return declared ?? "application/json";
-		if (!RequestBodyExample.IsNdjsonDocument(body))
+		if (RequestBodyExample.IsNdjson(declared))
+			return RequestBodyExample.IsNdjsonDocument(body) ? declared : null;
+		if (declared is not null && !RequestBodyExample.IsJson(declared))
 			return null;
-		return RequestBodyExample.IsNdjson(declared) ? declared : requestBody?.Content?.Keys.FirstOrDefault(RequestBodyExample.IsNdjson);
+		if (RequestBodyExample.IsJsonDocument(body))
+			return declared ?? "application/json";
+		return RequestBodyExample.IsNdjsonDocument(body) ? "application/x-ndjson" : null;
 	}
 }
