@@ -2951,8 +2951,7 @@ button.example-response-tab:focus-visible {
 @media (min-width: 768px) {
 	/* The column gap is 42px and the right padding 32px, so the content sits a little further
 	   from the nav than from the window edge. Every API page has the same two columns
-	   (.api-page-grid), so the content keeps its left edge and width when you move between
-	   pages. The 1920px cap below counts both: 42px + 32px. */
+	   (.api-page-grid), so the content keeps its left edge and width when you move between pages. */
 	.api-page-shell > .grid {
 		column-gap: 42px;
 		padding-right: 32px;
@@ -3113,6 +3112,11 @@ button.example-response-tab:focus-visible {
 		display: none;
 	}
 
+	/* Leave room for the floating toolbar's 16px overhang before the column divider. */
+	.api-page-main {
+		padding-right: 16px;
+	}
+
 	.api-page-grid {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 44%);
 		grid-template-rows: auto auto;
@@ -3221,11 +3225,25 @@ button.example-response-tab:focus-visible {
 		);
 	}
 
-	/* Three real columns up to a 1920px window: the reference takes whatever the sidebar and the rail leave. Past that the
+	/* The toolbar overhangs the article by 16px; keep it 24px from each divider. */
+	.api-page-shell > .grid {
+		column-gap: 40px;
+	}
+
+	.api-page-main {
+		padding-right: 24px;
+	}
+
+	/* The divider sits 16px before the rail, so 8px inside it completes the 24px gutter. */
+	.api-page-rail {
+		padding-left: 8px;
+	}
+
+	/* Three real columns up to a 1920px window, minus the sidebar, 40px nav gap and 32px outer padding. Past that the
 	   reference and the rail keep the width they have at 1920px and sit centred beside the sidebar. */
 	#api-content-grid {
 		--api-column-gap: 32px;
-		max-width: calc(1920px - var(--max-sidebar-width) - 74px);
+		max-width: calc(1920px - var(--max-sidebar-width) - 72px);
 	}
 
 	.api-page-grid {
@@ -4778,6 +4796,7 @@ html:has(.api-page-shell) {
 
 @media (min-width: 1280px) {
 	.api-column-handle {
+		--api-column-line-width: 1px;
 		display: block;
 		position: absolute;
 		top: 0;
@@ -4793,78 +4812,103 @@ html:has(.api-page-shell) {
 		display: none;
 	}
 
+	.api-column-handle:hover,
+	.api-column-handle[data-dragging] {
+		--api-column-line-width: 2px;
+	}
+
 	.api-column-handle::after {
 		content: '';
 		position: absolute;
 		top: 0;
 		bottom: 0;
 		left: 50%;
-		width: 2px;
+		width: var(--api-column-line-width);
 		transform: translateX(-50%);
+		background: var(--color-grey-20);
 		transition: background-color 100ms;
 	}
 
 	.api-column-handle:hover::after,
-	.api-column-handle:focus-visible::after,
 	.api-column-handle[data-dragging]::after {
-		background: var(--color-blue-elastic);
+		background: var(--color-grey-60);
 	}
 
 	.api-column-handle:focus-visible {
 		outline: none;
 	}
 
-	/* The sidebar handle's box starts 3px inside the sidebar, so most of it stays off the scrollbar. The sidebar's own border is 1px wide
-	   and ends on the edge, so its centre is half a pixel inside it. The line and the bar are odd widths drawn on that pixel, so they
-	   overhang the border by the same amount on both sides. The bar takes its position from a whole-pixel margin, because a half-pixel
-	   offset is snapped in layout and then smeared across a seventh column. */
+	.api-column-handle:focus-visible::before {
+		outline: 2px solid var(--color-blue-elastic);
+		outline-offset: 4px;
+	}
+
+	/* Keep the sidebar's resize target mostly clear of its scrollbar, with the line centred on its existing border. */
 	.api-column-handle[data-api-column-handle='nav']::after {
-		width: 3px;
 		transform: translateX(calc(-50% - 3.5px));
 	}
 
+	/* No room for a ring that clears the dots inside the target, so keyboard focus turns the divider blue and 2px wide instead. */
+	.api-column-handle[data-api-column-handle='nav']:focus-visible {
+		--api-column-line-width: 2px;
+		--api-column-strip: var(--color-blue-elastic);
+	}
+
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::after {
+		background: var(--color-blue-elastic);
+	}
+
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
+		outline: none;
+	}
+
+	/* Forced colors override the blue divider, so keep an inset ring there; it covers part of the dots but stays off the scrollbar. */
+	@media (forced-colors: active) {
+		.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
+		}
+	}
+
+	/* The box stays inside the resize target. Only the opaque strip moves onto the divider; both dot columns sit right of it. */
 	.api-column-handle[data-api-column-handle='nav']::before {
-		width: 5px;
-		margin-inline: 0;
-		border-radius: 2px;
-		transition:
-			background-color 100ms,
-			width 100ms,
-			margin-left 100ms,
-			border-radius 100ms;
+		background-position:
+			1.5px 0,
+			calc(2.5px - var(--api-column-line-width) / 2) 50%;
 	}
 
-	.api-column-handle[data-api-column-handle='nav']:hover::before,
-	.api-column-handle[data-api-column-handle='nav']:focus-visible::before,
-	.api-column-handle[data-api-column-handle='nav'][data-dragging]::before {
-		width: 7px;
-		margin-left: -1px;
-		border-radius: 3px;
-	}
-
-	/* The grab bar sits at the middle of the window, so it stays in reach however far the page is scrolled. */
+	/* Only the strip over the divider is opaque; the rest of the grip leaves the scrollbar visible and interactive. */
 	.api-column-handle::before {
 		content: '';
 		display: block;
 		position: sticky;
-		top: calc(50vh - 20px);
-		width: 4px;
-		height: 40px;
+		top: calc(50vh - 9px);
+		width: 12px;
+		height: 18px;
 		margin-inline: auto;
-		border-radius: 2px;
-		background: #b6c0d1;
-		transition:
-			background-color 100ms,
-			width 100ms,
-			border-radius 100ms;
+		z-index: 1;
+		color: var(--color-grey-80);
+		background-image:
+			radial-gradient(circle, currentColor 1.25px, transparent 1.5px),
+			linear-gradient(
+				var(--api-column-strip, var(--color-white)),
+				var(--api-column-strip, var(--color-white))
+			);
+		background-size:
+			6px 6px,
+			var(--api-column-line-width) 100%;
+		background-position:
+			0 0,
+			50% 50%;
+		background-repeat: repeat, no-repeat;
+		pointer-events: none;
+		transition: color 100ms;
 	}
 
 	.api-column-handle:hover::before,
 	.api-column-handle:focus-visible::before,
 	.api-column-handle[data-dragging]::before {
-		width: 6px;
-		border-radius: 3px;
-		background: var(--color-blue-elastic);
+		color: var(--color-grey-100);
 	}
 }
 
