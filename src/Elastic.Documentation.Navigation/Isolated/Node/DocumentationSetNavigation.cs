@@ -6,14 +6,14 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
-using ListingGroupRef = Elastic.Documentation.Configuration.Toc.ListingGroupRef;
-using ListingRef = Elastic.Documentation.Configuration.Toc.ListingRef;
-using ListingVisual = Elastic.Documentation.Configuration.Toc.ListingVisual;
+using ListingGroupRef = Elastic.Documentation.DocumentationSets.ListingGroupRef;
+using ListingRef = Elastic.Documentation.DocumentationSets.ListingRef;
+using ListingVisual = Elastic.Documentation.DocumentationSets.ListingVisual;
 
 namespace Elastic.Documentation.Navigation.Isolated.Node;
 

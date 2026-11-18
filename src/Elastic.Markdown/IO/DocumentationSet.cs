@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;

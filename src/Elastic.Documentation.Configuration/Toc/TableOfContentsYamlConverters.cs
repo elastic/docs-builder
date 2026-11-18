@@ -4,8 +4,8 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Toc.CliReference;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;

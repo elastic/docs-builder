@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;

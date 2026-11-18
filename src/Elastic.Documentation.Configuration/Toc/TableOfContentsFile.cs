@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
