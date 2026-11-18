@@ -1,0 +1,62 @@
+{
+  "results": [
+    {
+      "type": "docs",
+      "url": "/docs/troubleshoot/elasticsearch/red-yellow-cluster-status",
+      "title": "Red or yellow <mark>cluster</mark> <mark>health</mark> status",
+      "description": "and cleanup activities until the <mark>cluster</mark> returns to green <mark>health</mark> status. In many cases, your <mark>cluster</mark> will recover to g…",
+      "parents": [
+        {
+          "title": "Docs",
+          "url": "/docs"
+        }
+      ],
+      "score": 4.7976103,
+      "aiShortSummary": "Fix red or yellow Elasticsearch cluster health status.",
+      "aiRagOptimizedSummary": "A red Elasticsearch cluster health status indicates unassigned primary shards causing potential search and indexing failures, while yellow status means unass…",
+      "navigationSection": "troubleshoot",
+      "lastUpdated": "2026-11-17T19:20:53.9554741+00:00",
+      "product": {
+        "id": "elasticsearch",
+        "displayName": "Elasticsearch"
+      },
+      "relatedProducts": [
+        {
+          "id": "elasticsearch",
+          "displayName": "Elasticsearch"
+        }
+      ]
+    }
+  ],
+  "totalResults": 314,
+  "pageNumber": 1,
+  "pageSize": 1,
+  "aggregations": {
+    "type": {
+      "docs": 306,
+      "api": 8
+    },
+    "navigationSection": {
+      "reference": 150,
+      "deploy and manage": 78,
+      "troubleshoot": 33
+    },
+    "deploymentType": {},
+    "product": {
+      "elastic docs": {
+        "count": 155,
+        "displayName": "elastic docs"
+      },
+      "elasticsearch": {
+        "count": 99,
+        "displayName": "Elasticsearch"
+      },
+      "cloud kubernetes": {
+        "count": 62,
+        "displayName": "cloud kubernetes"
+      }
+    }
+  },
+  "isSemanticQuery": false,
+  "pageCount": 314
+}

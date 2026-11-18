@@ -6,7 +6,7 @@ navigation_title: REST API
 
 {{dbuild}} includes a REST API server (`Elastic.Documentation.Api`) that powers search, AI assistance, and content change feeds for the documentation site.
 
-The server describes itself in an OpenAPI document at `/docs/_api/v1/openapi.json`, generated from its endpoints. It lists every endpoint with its parameters, request bodies, responses, and error codes. Requests through `www.elastic.co` need the cookie `feature_search_or_askai_enabled=true`; without it, the CDN answers `403`.
+The server describes itself in an OpenAPI document at `/docs/_api/v1/openapi.json`, generated from its endpoints. It lists every endpoint with its parameters, request bodies, responses, and error codes.
 
 ## Endpoints
 
@@ -88,7 +88,7 @@ Every error is an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem, se
 - `detail` explains this occurrence, for people.
 - `traceId` names the request's trace. Quote it when you report a problem.
 
-Errors from the CDN, such as the `403` for a missing cookie, aren't problems and aren't JSON.
+Errors from the CDN, such as a `403` from its firewall, aren't problems and aren't JSON.
 
 ### Invalid arguments [invalid-arguments]
 

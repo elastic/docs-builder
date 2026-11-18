@@ -98,7 +98,7 @@ public static class MappingsExtension
 			.WithTags(AskAiTag)
 			.WithName("ask-ai-stream")
 			.WithSummary("Stream an Ask AI answer as server-sent events")
-			.Produces(StatusCodes.Status200OK, contentType: "text/event-stream")
+			.Produces<string>(StatusCodes.Status200OK, "text/event-stream")
 			.ProducesErrors(StatusCodes.Status400BadRequest);
 
 		// UUID validation is automatic via Guid type deserialization (returns 400 if invalid)

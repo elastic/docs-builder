@@ -78,6 +78,77 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_ResponseOnlyExamplesThatSamplesName_KeepTheirOwnResponses()
+	{
+		// A GET has no request examples; its samples, one per example, are what tells the examples apart.
+		ExampleDisplay[] responses =
+		[
+			new("Search an API", null, /*lang=json,strict*/ """{"results":["search"]}""", null, "200"),
+			new("Look up an endpoint", null, /*lang=json,strict*/ """{"results":["endpoint"]}""", null, "200"),
+			new("List a group", null, /*lang=json,strict*/ """{"results":["group"]}""", null, "200")
+		];
+		CodeSample[] samples =
+		[
+			new("curl", "curl '/x?q=health'", "language-curl") { ExampleTitle = "Search an API" },
+			new("curl", "curl '/x?endpoint=GET%20/_cluster/health'", "language-curl") { ExampleTitle = "Look up an endpoint" },
+			new("curl", "curl '/x?group=Cluster'", "language-curl") { ExampleTitle = "List a group" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], responses, samples);
+
+		scenarios.Select(s => s.Title).Should().Equal("Search an API", "Look up an endpoint", "List a group");
+		scenarios
+			.Select(s => s.Responses.Should().ContainSingle().Subject.Examples.Should().ContainSingle().Subject.JsonValue)
+			.Should()
+			.Equal("""{"results":["search"]}""", """{"results":["endpoint"]}""", """{"results":["group"]}""");
+		scenarios
+			.Select(s => s.CodeSamples.Should().ContainSingle().Subject.Source)
+			.Should()
+			.Equal("curl '/x?q=health'", "curl '/x?endpoint=GET%20/_cluster/health'", "curl '/x?group=Cluster'");
+	}
+
+	[Test]
+	public void BuildExampleScenarios_ResponseOnlyExamplesThatSamplesName_ShareTheUnnamedErrorStatuses()
+	{
+		ExampleDisplay[] responses =
+		[
+			new("Search an API", null, /*lang=json,strict*/ """{"results":["search"]}""", null, "200"),
+			new("Look up an endpoint", null, /*lang=json,strict*/ """{"results":["endpoint"]}""", null, "200"),
+			new("400", null, /*lang=json,strict*/ """{"status":400}""", null, "400"),
+			new("404", null, /*lang=json,strict*/ """{"status":404}""", null, "404")
+		];
+		CodeSample[] samples =
+		[
+			new("curl", "curl '/x?q=health'", "language-curl") { ExampleTitle = "Search an API" },
+			new("curl", "curl '/x?endpoint=GET%20/_cluster/health'", "language-curl") { ExampleTitle = "Look up an endpoint" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], responses, samples);
+
+		scenarios.Select(s => s.Title).Should().Equal("Search an API", "Look up an endpoint");
+		scenarios
+			.Select(s => s.Responses.Single(r => r.StatusCode == "200").Examples.Should().ContainSingle().Subject.JsonValue)
+			.Should()
+			.Equal("""{"results":["search"]}""", """{"results":["endpoint"]}""");
+		scenarios.Should().AllSatisfy(s => s.Responses.Select(r => r.StatusCode).Should().Equal("200", "400", "404"));
+	}
+
+	[Test]
+	public void BuildExampleScenarios_ResponseOnlyExamplesNoSampleNames_ShowAsOneExample()
+	{
+		ExampleDisplay[] responses =
+		[
+			new("First", null, /*lang=json,strict*/ """{"r":1}""", null, "200"),
+			new("Second", null, /*lang=json,strict*/ """{"r":2}""", null, "200")
+		];
+		CodeSample[] samples = [new("curl", "curl '/x'", "language-curl")];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], responses, samples);
+
+		scenarios.Should().ContainSingle();
+	}
+
+	[Test]
 	public void BuildExampleScenarios_SuffixMatchesTheHumanizedKeyOfAnExampleWithoutSummary()
 	{
 		var first = new ExampleDisplay("First", null, /*lang=json,strict*/ """{"a":1}""", null);
