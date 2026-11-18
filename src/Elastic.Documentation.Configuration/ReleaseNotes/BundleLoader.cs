@@ -21,6 +21,10 @@ public class BundleLoader(IFileSystem fileSystem)
 	/// </summary>
 	public static IReadOnlyList<Diagnostic> CheckForRender(Bundle bundle, string file) => new BundleToRender(bundle).Check(file).Findings;
 
+	/// <summary>The findings of a changelog file about to be inlined into a bundle: <see cref="EntryToBundle"/>'s rules, at <paramref name="file"/>.</summary>
+	public static IReadOnlyList<Diagnostic> CheckForBundling(ChangelogEntry entry, string file) =>
+		new EntryToBundle(entry).Check(file).Findings;
+
 	/// <summary>
 	/// Loads all changelog bundles from a folder.
 	/// </summary>
