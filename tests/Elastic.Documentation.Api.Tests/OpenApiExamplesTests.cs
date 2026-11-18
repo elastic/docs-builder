@@ -237,14 +237,15 @@ public class OpenApiExamplesTests
 	}
 
 	[Test]
-	public async Task EveryCurlSample_SendsTheCookieTheCdnStillRequires()
+	public async Task CurlSamples_SendNoCookie()
 	{
 		var curls = (await Operations())
 			.SelectMany(o => o.Operation.GetProperty("x-codeSamples").EnumerateArray())
 			.Where(s => s.GetProperty("lang").GetString() == "curl")
 			.Select(s => s.GetProperty("source").GetString());
 
-		curls.Should().AllSatisfy(curl => curl.Should().Contain($"-b '{ApiExamples.GateCookie}'"));
+		// The CDN no longer gates the API behind a cookie (elastic/docs-infra#523).
+		curls.Should().AllSatisfy(curl => curl.Should().NotContain(" -b ").And.NotContainEquivalentOf("cookie"));
 	}
 
 	[Test]

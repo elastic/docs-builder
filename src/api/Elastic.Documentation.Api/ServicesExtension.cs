@@ -84,8 +84,7 @@ public static class ServicesExtension
 				{
 					Title = "Elastic Docs API",
 					Version = "v1",
-					Description = "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs. "
-						+ "Requests through www.elastic.co need the cookie feature_search_or_askai_enabled=true; without it the CDN answers 403."
+					Description = "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs."
 				};
 				document.Servers = [new OpenApiServer { Url = OpenApi.ApiExamples.Server }];
 				return Task.CompletedTask;

@@ -24,9 +24,6 @@ internal static class ApiExamples
 
 	private const string ResourcePrefix = "openapi-examples/";
 
-	/// <summary>The cookie www.elastic.co's CDN requires on the API until the gate is removed.</summary>
-	internal const string GateCookie = "feature_search_or_askai_enabled=true";
-
 	/// <summary>One example request of an operation, with what it answers.</summary>
 	internal sealed record Example(string Title, string Method, string PathAndQuery)
 	{
@@ -196,8 +193,6 @@ internal static class ApiExamples
 		if (example.Method != "GET")
 			_ = curl.Append(" -X ").Append(example.Method);
 		_ = curl.Append(" '").Append(Server).Append(example.PathAndQuery).Append('\'');
-		// shortcut: www.elastic.co's CDN still gates the API on this cookie; drop it once elastic/docs-infra#523 is applied.
-		_ = curl.Append(" \\\n  -b '").Append(GateCookie).Append('\'');
 		if (example.Body is { } body)
 			_ = curl.Append(" \\\n  -H 'Content-Type: application/json' \\\n  -d '").Append(body.ToJsonString()).Append('\'');
 		return curl.ToString();

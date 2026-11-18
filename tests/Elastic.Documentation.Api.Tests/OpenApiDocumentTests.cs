@@ -120,7 +120,8 @@ public class OpenApiDocumentTests
 		var document = await Document();
 
 		document.GetProperty("info").GetProperty("title").GetString().Should().Be("Elastic Docs API");
-		document.GetProperty("info").GetProperty("description").GetString().Should().Contain("feature_search_or_askai_enabled=true");
+		// The CDN no longer gates the API behind a cookie, so the description names none.
+		document.GetProperty("info").GetProperty("description").GetString().Should().NotContainEquivalentOf("cookie");
 		document.GetProperty("servers")[0].GetProperty("url").GetString().Should().Be("https://www.elastic.co");
 	}
 }
