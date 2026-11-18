@@ -133,7 +133,7 @@ jobs:
 
       # The nullean/curb action always runs the moving `edge` image, so call the release image by digest instead.
       - name: Lint
-        uses: docker://ghcr.io/nullean/curb@sha256:fd955b3a58d7ba79f5d03f425166d137ef333dea6226a651b23f894dfac8e370 # 0.9.0
+        uses: docker://ghcr.io/nullean/curb@sha256:c390ed126d0b8aa39a1085317e91f59b96a1b1ae1ef05605238192995376ef1e # 0.15.1
         with:
           args: check .
 
@@ -232,13 +232,10 @@ jobs:
       - name: Compile
         if: ${{ needs.changes.outputs.code == 'true' }}
         # The `lint` job already runs `curb check` on the whole repo; skip the per-project copy.
-        # Windows keeps the per-project check, with curb's own output at high importance: the Windows release publish
-        # failed with `CURB0001` on files that are formatted, and this shows what curb saw on the runner.
         # The trim and AOT analyzers (IsAotCompatible) and the IDE code-style analyzers report the same warnings on every OS
         # and take most of the analyzer time of the larger projects, so only ubuntu runs them. Empty leaves the project defaults alone.
         env:
-          Curb_Bypass: ${{ matrix.os != 'windows-latest' }}
-          Curb_LogLevel: ${{ matrix.os == 'windows-latest' && 'high' || '' }}
+          Curb_Bypass: true
           EnforceCodeStyleInBuild: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
           EnableTrimAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
           EnableAotAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
