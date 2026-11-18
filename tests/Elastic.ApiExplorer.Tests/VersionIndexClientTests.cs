@@ -11,6 +11,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.ApiExplorer.Tests;
 

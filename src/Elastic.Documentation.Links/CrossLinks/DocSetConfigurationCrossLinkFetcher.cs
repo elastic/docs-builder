@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.LinkIndex;
 using Microsoft.Extensions.Logging;
 

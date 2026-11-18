@@ -66,6 +66,38 @@ public class DocumentationSetLoaderTests
 		""";
 
 	[Test]
+	public void Resolve_EveryDocsetKey_IsOnTheResolvedSet()
+	{
+		var fileSystem = DocsetGolden.CreateFileSystem(FullDocset, new DocFile("index.md"));
+		var configPath = fileSystem.FileInfo.New($"{DocsetGolden.Root}/docset.yml");
+		var context = DocsetGolden.CreateContext(new DiagnosticsCollector([]), fileSystem);
+		var definition = DocumentationSetLoader.Load(
+			new DiagnosticsCollector([]),
+			configPath,
+			new ScopedFileSystem(fileSystem, DocsetGolden.Root)
+		).Value;
+
+		ResolvedDocumentationSet Resolve() =>
+			DocumentationSetResolver.Resolve(definition, context, GoldenConfig.LoadVersions(), GoldenConfig.LoadProducts());
+
+		var resolved = Resolve();
+
+		resolved.Should().Be(Resolve());
+		resolved.Project.Should().Be("settings");
+		resolved.MaxTocDepth.Should().Be(4);
+		resolved.DevelopmentDocs.Should().BeTrue();
+		resolved.Exclusions.ExcludeGlobs.Should().Equal("_*.md");
+		resolved.Exclusions.IncludeOverrides.Should().Equal("drafts/keep.md");
+		resolved.CrossLinkEntries.Select(e => e.Repository).Should().Equal("docs-content", "elasticsearch");
+		resolved.Extensions.IsDetectionRulesEnabled.Should().BeTrue();
+		resolved.Ctas.Keys.Should().BeEquivalentTo(Cta.DefaultName, "custom");
+		resolved.Branding!.HeaderBg.Should().Be("#112233");
+		resolved.FeatureToggles.Should().BeEquivalentTo(new Dictionary<string, bool> { ["primary-nav"] = true, ["guide-nav"] = false });
+		resolved.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().Equal("self");
+		resolved.Products.Select(p => p.Id).Should().Equal("elasticsearch");
+	}
+
+	[Test]
 	public void Load_EveryDocsetKey_IsOnTheDefinition()
 	{
 		var fileSystem = DocsetGolden.CreateFileSystem(FullDocset, new DocFile("index.md"));

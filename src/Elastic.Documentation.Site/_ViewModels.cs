@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.DocumentationSets;
 using System;
 using System.IO;
 using System.Text.Json;
@@ -205,7 +206,7 @@ public record GlobalLayoutViewModel
 	public bool IsElasticOrg => GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 
 	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
-	public BrandingConfiguration? Branding { get; init; }
+	public Branding? Branding { get; init; }
 
 	/// <summary>Static URL of the branding icon, if configured.</summary>
 	public string? BrandingIconStaticPath => Branding?.Icon is { } icon ? Static(Path.GetFileName(icon)) : null;
