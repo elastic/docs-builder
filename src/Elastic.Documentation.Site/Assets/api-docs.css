@@ -3230,6 +3230,11 @@ button.example-response-tab:focus-visible {
 		column-gap: 40px;
 	}
 
+	/* Keep the scrollbar clear of the resize grip's background and focus outline. */
+	.api-page-shell .sidebar-nav-scroll {
+		margin-right: 12px;
+	}
+
 	.api-page-main {
 		padding-right: 24px;
 	}
