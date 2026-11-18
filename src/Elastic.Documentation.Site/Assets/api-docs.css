@@ -4862,6 +4862,14 @@ html:has(.api-page-shell) {
 		outline: none;
 	}
 
+	/* Forced colors override the blue divider, so keep an inset ring there; it covers part of the dots but stays off the scrollbar. */
+	@media (forced-colors: active) {
+		.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
+		}
+	}
+
 	/* The box stays inside the resize target. Only the opaque strip moves onto the divider; both dot columns sit right of it. */
 	.api-column-handle[data-api-column-handle='nav']::before {
 		background-position:
