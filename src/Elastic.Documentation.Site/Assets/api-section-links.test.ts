@@ -46,6 +46,29 @@ describe('section links', () => {
         expect(current[0].getAttribute('href')).toBe('#query-params')
     })
 
+    it('marks no link while the bar is on screen above every section', () => {
+        document.body.innerHTML = `
+            <section id="elastic-api-v3">
+                <nav class="api-section-links" data-toc data-toc-sticky>
+                    <a href="#query-params" data-toc-link>Query</a>
+                    <a href="#responses" data-toc-link>Response</a>
+                </nav>
+                <h2 id="query-params"></h2>
+                <h2 id="responses"></h2>
+            </section>`
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            value: 5000,
+            configurable: true,
+        })
+        const top = { 'query-params': 600, responses: 1500 }
+        for (const [id, y] of Object.entries(top))
+            document.getElementById(id)!.getBoundingClientRect = () =>
+                ({ top: y }) as DOMRect
+        initApiDocs()
+
+        expect(document.querySelectorAll('[aria-current]')).toHaveLength(0)
+    })
+
     it('flags the pin as stuck while it sits at its pinned offset, and clears the flag above it', async () => {
         const bar = mountPinnedBar()
         bar.style.top = '56px'

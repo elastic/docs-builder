@@ -187,7 +187,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_ExpandAllControl_SitsUnderTheStripAndAtTheEndOfThePinnedBar()
+	public async Task Operation_ExpandAllControl_SitsAboveTheFirstSectionAndAtTheEndOfThePinnedBar()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
@@ -205,14 +205,23 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		bar.TrimEnd().Should().EndWith("class=\"api-expand-toggle\" data-api-expand-all>Expand all</button>");
 		var standalone = html.IndexOf("api-expand-standalone", StringComparison.Ordinal);
 		standalone.Should().BeGreaterThan(
-			html.LastIndexOf("class=\"api-section-cell\"", StringComparison.Ordinal),
-			"the row sits under the strip"
+			html.IndexOf("id=\"description\"", StringComparison.Ordinal),
+			"the row comes after the description"
 		);
-		standalone.Should().BeGreaterThan(
-			html.IndexOf("data-section-pin", StringComparison.Ordinal),
-			"after the pinned bar's wrapper, which sits right under the strip"
-		);
+		standalone.Should().BeLessThan(html.IndexOf("id=\"path-params\"", StringComparison.Ordinal), "and just above the first section");
 		html.Should().NotContain("Collapse all", "one button changes its own label");
+	}
+
+	[Test]
+	public async Task Operation_SectionStrip_OpensThePageAboveTheDescription()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html
+			.IndexOf("class=\"api-section-strip", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("id=\"description\"", StringComparison.Ordinal), "the strip comes before the description");
 	}
 
 	[Test]

@@ -2308,11 +2308,11 @@ a.docs-reference-btn::after {
 
 /* Required privileges: a small card about the caller, apart from the folding parameter sections. */
 .api-privileges-card {
-	margin: 24px 0 0;
+	margin: 16px 0 24px;
 	padding: 14px 16px 16px;
-	background: #f6f8fc;
-	border: 1px solid #e3e8f2;
-	border-radius: 12px;
+	background: #fff;
+	border: 1px solid var(--color-grey-20, #e5e9f0);
+	border-radius: 10px;
 }
 
 /* Id-qualified like the section headings: the page's own h2 rule would otherwise set the size and padding. */
@@ -4372,25 +4372,25 @@ html:has(.api-page-shell) {
 	grid-auto-columns: minmax(0, 1fr);
 	grid-auto-flow: column;
 	gap: 1px;
-	margin: 24px 0 0;
+	margin: 16px 0 0;
 	overflow: hidden;
-	background: #e3e8f2;
-	border: 1px solid #e3e8f2;
-	border-radius: 12px;
+	background: var(--color-grey-20, #e5e9f0);
+	border: 1px solid var(--color-grey-20, #e5e9f0);
+	border-radius: 10px;
 }
 
 .api-section-requires {
 	display: flex;
 	flex-direction: column;
 	grid-column: span 2;
-	gap: 8px;
+	gap: 4px;
 	padding: 14px 20px 16px;
 	background: #fff;
 	color: #516381;
 }
 
 #elastic-api-v3 .api-section-requires-title {
-	margin: 0;
+	margin: 0 0 2px;
 	padding: 0;
 	border: 0;
 	color: inherit;
@@ -4399,7 +4399,7 @@ html:has(.api-page-shell) {
 .api-section-requires .api-privileges {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 6px;
 	min-width: 0;
 }
 
@@ -4420,11 +4420,6 @@ html:has(.api-page-shell) {
 	overflow-wrap: anywhere;
 }
 
-/* The word for what the names are, in the place the other cells put theirs. */
-.api-section-requires .api-section-cell-caption {
-	margin-top: -2px;
-}
-
 /* Qualified by the strip so the page's own link colour and underline do not apply to a cell. */
 .api-section-strip .api-section-cell {
 	display: flex;
@@ -4438,7 +4433,7 @@ html:has(.api-page-shell) {
 }
 
 .api-section-strip .api-section-cell:hover {
-	background: #f6f8fc;
+	background: var(--color-grey-10, #f6f9fc);
 }
 
 .api-section-strip .api-section-cell:focus-visible {
@@ -4502,6 +4497,8 @@ html:has(.api-page-shell) {
 	top: calc(var(--offset-top, 0px) + 8px);
 	z-index: 5;
 	height: 0;
+	/* The space after the strip is here, not on the strip: the wrapper must sit at the strip's bottom edge, or the toolbar shows late. */
+	margin-bottom: 24px;
 }
 
 .api-section-links {
@@ -4515,7 +4512,7 @@ html:has(.api-page-shell) {
 	gap: 8px;
 	padding: 4px;
 	background: #fff;
-	border: 1px solid #e3e8f2;
+	border: 1px solid var(--color-grey-20, #e5e9f0);
 	border-radius: 12px;
 	box-shadow:
 		0 2px 6px rgb(17 28 44 / 0.08),
