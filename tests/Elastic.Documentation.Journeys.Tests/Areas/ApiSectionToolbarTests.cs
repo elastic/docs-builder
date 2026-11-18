@@ -97,9 +97,13 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 						atItsScrollMargin: Math.abs(top - parseFloat(getComputedStyle(property).scrollMarginTop)) < 2,
 						clearOfToolbar: top >= toolbar.getBoundingClientRect().bottom,
 					};
+					const global = getComputedStyle(document.body).scrollMarginTop;
+					// Another element with an id in the same section, measured while the toolbar class is on: a rule written too widely would reach it.
+					const description = document.getElementById('description');
+					state.descriptionKeepsGlobal = description !== null && getComputedStyle(description).scrollMarginTop === global;
 					// Without the class the page has no toolbar, and a property keeps the margin every element has.
 					document.getElementById('elastic-api-v3').classList.remove('api-has-toolbar');
-					state.globalWithoutToolbar = getComputedStyle(property).scrollMarginTop === getComputedStyle(document.body).scrollMarginTop;
+					state.globalWithoutToolbar = getComputedStyle(property).scrollMarginTop === global;
 					return state;
 				})()
 				"""
@@ -108,40 +112,13 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 				CultureInfo.InvariantCulture,
 				$"toolbar visible {state.GetProperty("toolbarVisible").GetBoolean()}, property at its scroll margin {state.GetProperty("atItsScrollMargin").GetBoolean()}, " +
 					$"property clear of the toolbar {state.GetProperty("clearOfToolbar").GetBoolean()}, " +
-					$"global margin without the toolbar {state.GetProperty("globalWithoutToolbar").GetBoolean()}"
+					$"global margin without the toolbar {state.GetProperty("globalWithoutToolbar").GetBoolean()}, " +
+					$"description keeps the global margin {state.GetProperty("descriptionKeepsGlobal").GetBoolean()}"
 			);
 		}).ConfigureAwait(false);
 
 		_ = report.Should().MatchInlineSnapshot(
-			"toolbar visible True, property at its scroll margin True, property clear of the toolbar True, global margin without the toolbar True"
-		);
-	}
-
-	[Test]
-	public async Task ScrollMargin_StaysTheGlobalOneForEverythingElse()
-	{
-		const string Probe =
-			"""
-			(() => {
-				const body = getComputedStyle(document.body).scrollMarginTop;
-				const heading = document.querySelector('h2[id], h3[id]') ?? document.querySelector('[id]');
-				return { sameAsEverywhere: getComputedStyle(heading).scrollMarginTop === body };
-			})()
-			""";
-		var apiPage = false;
-		var docsPage = false;
-		await WithPageAsync(
-			string.Empty,
-			async page => apiPage = (await page.EvaluateAsync(Probe).ConfigureAwait(false)).GetProperty("sameAsEverywhere").GetBoolean()
-		).ConfigureAwait(false);
-		await WithPageAsync(
-			string.Empty,
-			async page => docsPage = (await page.EvaluateAsync(Probe).ConfigureAwait(false)).GetProperty("sameAsEverywhere").GetBoolean(),
-			"syntax/admonitions"
-		).ConfigureAwait(false);
-
-		_ = $"an API page heading keeps the global scroll margin {apiPage}, a docs page heading keeps it {docsPage}".Should().MatchInlineSnapshot(
-			"an API page heading keeps the global scroll margin True, a docs page heading keeps it True"
+			"toolbar visible True, property at its scroll margin True, property clear of the toolbar True, global margin without the toolbar True, description keeps the global margin True"
 		);
 	}
 
