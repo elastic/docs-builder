@@ -57,49 +57,6 @@ internal static class BaselineDumps
 		_ = sb.Append('\n');
 	}
 
-	/// <summary>
-	/// What changed between two texts, line by line: <c>-</c> for a removed line and <c>+</c> for an added or re-indented one, with the
-	/// unchanged line before each change as an anchor. Short enough to review, where the whole filtered file is not.
-	/// </summary>
-	public static string LineDiff(string before, string after)
-	{
-		var a = before.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
-		var b = after.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
-		var lcs = new int[a.Length + 1, b.Length + 1];
-		for (var i = a.Length - 1; i >= 0; i--)
-		{
-			for (var j = b.Length - 1; j >= 0; j--)
-				lcs[i, j] = a[i] == b[j] ? lcs[i + 1, j + 1] + 1 : Math.Max(lcs[i + 1, j], lcs[i, j + 1]);
-		}
-
-		var sb = new StringBuilder();
-		string? anchor = null;
-		var pendingAnchor = false;
-		int x = 0, y = 0;
-		while (x < a.Length || y < b.Length)
-		{
-			if (x < a.Length && y < b.Length && a[x] == b[y])
-			{
-				anchor = a[x];
-				pendingAnchor = true;
-				x++;
-				y++;
-				continue;
-			}
-
-			if (pendingAnchor)
-			{
-				_ = sb.Append("  ").Append(anchor).Append('\n');
-				pendingAnchor = false;
-			}
-			if (y >= b.Length || (x < a.Length && lcs[x + 1, y] >= lcs[x, y + 1]))
-				_ = sb.Append("- ").Append(a[x++]).Append('\n');
-			else
-				_ = sb.Append("+ ").Append(b[y++]).Append('\n');
-		}
-		return sb.ToString();
-	}
-
 	/// <summary>Every repository of the frozen assembler config that is marked private, whatever the build skips.</summary>
 	public static IReadOnlySet<string> PrivateRepositories() =>
 		AssemblyLoader.Deserialize(BaselineSite.ReadBaseline("assembler.yml")).AllPrivateRepositoryNames;

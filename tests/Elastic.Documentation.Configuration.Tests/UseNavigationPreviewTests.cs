@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -105,13 +106,10 @@ public class UseNavigationPreviewTests
 	}
 
 	[Test]
-	public void UseNavigationPreview_ThenCreateNavigationFile_StripsPrivateReposFromPreview()
+	public void UseNavigationPreview_ThenFilter_StripsPrivateReposFromPreview()
 	{
 		// The ordering guarantee: private-repo filtering is applied to the preview content,
-		// and island: lines on public entries survive.
-		var fileSystem = new MockFileSystem();
-		var provider = CreateProvider(fileSystem);
-
+		// and island: on public entries survive.
 		// language=yaml
 		var previewYaml =
 			"""
@@ -123,15 +121,16 @@ public class UseNavigationPreviewTests
 		                      path_prefix: private-ref
 		                  """;
 
-		// Write as if UseNavigationPreview already ran (point NavigationFile at preview content)
-		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, previewYaml);
+		var filtered = SiteNavigationLoader.ForAssembly(
+			SiteNavigationLoader.Deserialize(previewYaml),
+			CreateConfig("private-a"),
+			skipPrivateRepositories: true,
+			"navigation_preview.yml"
+		).Value;
 
-		var config = CreateConfig("private-a");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
-
+		var output = SiteNavDump.ToText(filtered);
 		output.Should().NotContain("private-a://");
 		output.Should().Contain("public-repo://reference");
-		output.Should().Contain("island: true", "island marker on public entry survives private-repo stripping");
+		output.Should().Contain("[island]", "island marker on public entry survives private-repo stripping");
 	}
 }

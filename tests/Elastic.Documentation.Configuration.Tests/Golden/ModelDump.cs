@@ -40,6 +40,9 @@ internal static class ModelDump
 	private static void WriteValue(StringBuilder sb, string label, object? value, int depth, List<object> path, Context context)
 	{
 		var pad = new string(' ', depth * 2);
+		// a union is its case: the dump shows the value it wraps, as it showed the case before the union existed
+		if (value?.GetType().GetInterfaces().Any(i => i.FullName == "System.Runtime.CompilerServices.IUnion") == true)
+			value = value.GetType().GetProperty("Value")!.GetValue(value);
 		if (value is null || IsScalar(value))
 		{
 			_ = sb.Append(pad).Append(label).Append(": ").Append(Scalar(value)).Append('\n');
@@ -188,7 +191,7 @@ internal static class ModelDump
 
 	// generic types are matched by name: the unbound form `typeof(X<,>)` is formatted differently by different curb versions
 	/// <summary>
-	/// The verified snapshots name these four records as they were called when the snapshots were taken: the dump stays byte-identical
+	/// The verified snapshots name these records as they were called when the snapshots were taken: the dump stays byte-identical
 	/// across the rename to the catalog types.
 	/// </summary>
 	private static string NameOf(Type type) => type.Name switch
@@ -197,6 +200,7 @@ internal static class ModelDump
 		"VersioningSystemCatalog" => "VersionsConfiguration",
 		"LegacyUrlMappingCatalog" => "LegacyUrlMappingConfiguration",
 		"RelatedLearningCatalog" => "RelatedLearningConfiguration",
+		"SiteNavigationDefinition" => "SiteNavigationFile",
 		var name => name
 	};
 

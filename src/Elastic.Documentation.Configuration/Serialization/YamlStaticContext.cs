@@ -27,7 +27,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]
 [YamlSerializable(typeof(DocumentationSetFile))]
 [YamlSerializable(typeof(TableOfContentsFile))]
-[YamlSerializable(typeof(SiteNavigationFile))]
+[YamlSerializable(typeof(SiteNavigationDto))]
 [YamlSerializable(typeof(SearchConfigDto))]
 [YamlSerializable(typeof(ChangelogEntryDto))]
 [YamlSerializable(typeof(BundleDto))]
@@ -38,10 +38,14 @@ namespace Elastic.Documentation.Configuration.Serialization;
 // the Populate and the Replace reader for every member, which doubles the generated code (6.9 MB, 127k lines) and
 // makes the trim analyzer take minutes. Nothing sets Populate at runtime or per member.
 [YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
-// TableOfContents and SiteTableOfContents hold polymorphic interface-typed items
-// (ITableOfContentsItem / ISiteNavigationEntry) that the generator can't auto-generate
+// TableOfContents holds polymorphic interface-typed items (ITableOfContentsItem) and
+// SiteTableOfContentsDto holds a union of entries, which the generator can't auto-generate
 // metadata for. These collection converters are always registered with real instances
 // via YamlSerializerOptions.Converters at runtime (see ConfigurationFileProvider); the
 // generator only needs the type here to know the member is handled.
-Converters = [typeof(TocItemCollectionYamlConverter), typeof(SiteTableOfContentsCollectionYamlConverter)])]
+Converters = [
+	typeof(TocItemCollectionYamlConverter),
+	typeof(SiteTableOfContentsCollectionYamlConverter),
+	typeof(SiteTableOfContentsRefYamlConverter)
+])]
 public partial class YamlStaticContext : YamlSerializerContext;

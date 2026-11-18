@@ -4,6 +4,7 @@
 
 using System.Text;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -13,7 +14,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 /// </summary>
 public static class SiteNavDump
 {
-	public static string ToText(SiteNavigationFile file)
+	public static string ToText(SiteNavigationDefinition file)
 	{
 		var sb = new StringBuilder();
 		foreach (var phantom in file.Phantoms)
@@ -23,10 +24,10 @@ public static class SiteNavDump
 		return sb.ToString();
 	}
 
-	private static void Write(StringBuilder sb, ISiteNavigationEntry entry, int depth)
+	private static void Write(StringBuilder sb, SiteNavigationEntry entry, int depth)
 	{
 		sb.Append(' ', depth * 2);
-		switch (entry)
+		switch (entry.Value)
 		{
 			case SiteTableOfContentsRef toc:
 				sb.Append("toc  ").Append(toc.Source).Append("  path_prefix=\"").Append(toc.PathPrefix).Append('"');
@@ -46,6 +47,6 @@ public static class SiteNavDump
 
 		sb.Append('\n');
 		foreach (var child in entry.Children)
-			Write(sb, child, depth + 1);
+			Write(sb, new SiteNavigationEntry(child), depth + 1);
 	}
 }

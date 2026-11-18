@@ -28,13 +28,6 @@ public class BaselineSiteNavigationTests
 		BaselineSite.Build(Prod).SiteContext.Diagnostics.ToSnapshotText().Should().MatchSnapshot(options: BaselineDumps.Scrubbed());
 
 	[Test]
-	public void NavigationFile_SkipPrivateRepositories_MatchesSnapshot() =>
-		BaselineDumps
-			.LineDiff(BaselineSite.ReadBaseline("navigation.yml"), BaselineSite.Build(SkipPrivate).NavigationText)
-			.Should()
-			.MatchSnapshot(options: BaselineDumps.Scrubbed());
-
-	[Test]
 	public void Tree_SkipPrivateRepositories_MatchesSnapshot() =>
 		NavigationDump.ToText(BaselineSite.Build(SkipPrivate).Navigation).Should().MatchSnapshot(options: BaselineDumps.Scrubbed());
 
@@ -53,13 +46,6 @@ public class BaselineSiteNavigationTests
 	[Test]
 	public void TopNav_NavigationPreview_MatchesSnapshot() =>
 		BaselineDumps.TopNavToText(BaselineSite.Build(Preview).Navigation.TopNav).Should().MatchSnapshot(options: BaselineDumps.Scrubbed());
-
-	[Test]
-	public void NavigationFile_NavigationPreviewSkipPrivate_MatchesSnapshot() =>
-		BaselineDumps
-			.LineDiff(BaselineSite.ReadBaseline("navigation_preview.yml"), BaselineSite.Build(PreviewSkipPrivate).NavigationText)
-			.Should()
-			.MatchSnapshot(options: BaselineDumps.Scrubbed());
 
 	[Test]
 	public void Tree_NavigationPreviewSkipPrivate_MatchesSnapshot() =>

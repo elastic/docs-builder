@@ -18,6 +18,9 @@ public class NavigationGoldenTests
 {
 	private const string NavigationPath = "/config/navigation.yml";
 
+	// members the record gained after these snapshots were taken: where an entry sits in the file, and how the toc mapping reads its prefix
+	private static readonly string[] NewMembers = ["Position", "ShorthandPath", "DeclaredPathPrefix"];
+
 	/// <summary>The diagnostics the load wrote, then the model, or what it threw.</summary>
 	private static string Load(string yaml, bool dumpModel = true)
 	{
@@ -25,9 +28,9 @@ public class NavigationGoldenTests
 		var sb = new StringBuilder();
 		try
 		{
-			var file = SiteNavigationFile.Deserialize(yaml, collector, NavigationPath);
+			var file = SiteNavigationLoader.Deserialize(yaml, collector, NavigationPath);
 			_ = sb.AppendLine("diagnostics:").Append(collector.Captured.ToSnapshotText());
-			_ = sb.Append(dumpModel ? ModelDump.ToText(file) : SiteNavDump.ToText(file));
+			_ = sb.Append(dumpModel ? ModelDump.ToText(file, NewMembers) : SiteNavDump.ToText(file));
 		}
 		catch (Exception e)
 		{
@@ -43,10 +46,10 @@ public class NavigationGoldenTests
 	}
 
 	// the derived path properties repeat the path prefix; the small cases below show them in full
-	private static string ModelWithoutDerivedPaths(SiteNavigationFile file) =>
-		ModelDump.ToText(file, "PathRelativeToDocumentationSet", "PathRelativeToContainer", "Context");
+	private static string ModelWithoutDerivedPaths(SiteNavigationDefinition file) =>
+		ModelDump.ToText(file, [.. NewMembers, "PathRelativeToDocumentationSet", "PathRelativeToContainer", "Context"]);
 
-	private static SiteNavigationFile Parse(string yaml) => SiteNavigationFile.Deserialize(yaml);
+	private static SiteNavigationDefinition Parse(string yaml) => SiteNavigationLoader.Deserialize(yaml);
 
 	[Test]
 	public void Baseline_Navigation_MatchSnapshot()
@@ -77,8 +80,22 @@ public class NavigationGoldenTests
 	private static string DiagnosticsOf(string yaml)
 	{
 		var collector = new CapturingDiagnosticsCollector();
-		_ = SiteNavigationFile.Deserialize(yaml, collector, NavigationPath);
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, NavigationPath);
 		return collector.Captured.ToSnapshotText();
+	}
+
+	/// <summary>Whether no two mounts claim the same path prefix, the one rule of the navigation that used to be checked on its own; the errors go to the collector.</summary>
+	private static bool ValidatePathPrefixes(CapturingDiagnosticsCollector collector, SiteNavigationDefinition file)
+	{
+		var duplicates = SiteNavigationDefinition
+			.Constraints
+			.Report(file)
+			.Violations
+			.Where(v => v.ConstraintId == "path-prefixes-unique")
+			.ToList();
+		foreach (var duplicate in duplicates)
+			collector.Write(duplicate.ToDiagnostic(NavigationPath));
+		return duplicates.Count == 0;
 	}
 
 	[Test]
@@ -90,14 +107,19 @@ public class NavigationGoldenTests
 			var file = Parse(GoldenConfig.BaselineText(name));
 			_ = sb.Append("== ").AppendLine(name);
 			_ = sb.AppendLine("declared sources:");
-			foreach (var source in SiteNavigationFile.GetAllDeclaredSources(file).Select(u => u.ToString()).Order(StringComparer.Ordinal))
+			foreach (var source in SiteNavigationDefinition
+				.GetAllDeclaredSources(file)
+				.Select(u => u.ToString())
+				.Order(StringComparer.Ordinal))
 				_ = sb.Append("  ").AppendLine(source);
 			_ = sb.AppendLine("phantom prefixes:");
-			foreach (var prefix in SiteNavigationFile.GetPhantomPrefixes(file).Select(u => u.ToString()).Order(StringComparer.Ordinal))
+			foreach (var prefix in SiteNavigationDefinition
+				.GetPhantomPrefixes(file)
+				.Select(u => u.ToString())
+				.Order(StringComparer.Ordinal))
 				_ = sb.Append("  ").AppendLine(prefix);
 			var collector = new CapturingDiagnosticsCollector();
-			var fileSystem = new MockFileSystem();
-			var valid = SiteNavigationFile.ValidatePathPrefixes(collector, file, fileSystem.FileInfo.New(NavigationPath));
+			var valid = ValidatePathPrefixes(collector, file);
 			_ = sb.Append("path prefixes valid: ").AppendLine(valid.ToString());
 			_ = sb.Append(collector.Captured.ToSnapshotText());
 		}
@@ -105,51 +127,56 @@ public class NavigationGoldenTests
 	}
 
 	[Test]
-	public void Baseline_PrivateRepositoriesFiltered_Navigation() => FilteredNavigation(GoldenConfig.Navigation, previewFirst: false);
+	public void Baseline_PrivateRepositoriesFiltered_Navigation() => FilteredNavigation(GoldenConfig.Navigation);
 
 	[Test]
-	public void Baseline_PrivateRepositoriesFiltered_NavigationPreview() =>
-		FilteredNavigation(GoldenConfig.NavigationPreview, previewFirst: true);
+	public void Baseline_PrivateRepositoriesFiltered_NavigationPreview() => FilteredNavigation(GoldenConfig.NavigationPreview);
 
-	private static void FilteredNavigation(string name, bool previewFirst)
+	private static void FilteredNavigation(string name)
 	{
 		using var provider = GoldenConfig.CreateProvider(skipPrivateRepositories: true);
-		if (previewFirst)
-			_ = provider.UseNavigationPreview();
 		var config = AssemblyLoader.Create(provider);
-		var filtered = provider.CreateNavigationFile(config);
-		var text = filtered.OpenText().ReadToEnd();
-		var unfiltered = GoldenConfig.BaselineText(name);
+		var unfiltered = Parse(GoldenConfig.BaselineText(name));
+		var filtered = SiteNavigationLoader.ForAssembly(unfiltered, config, skipPrivateRepositories: true, NavigationPath).Value;
 
-		text.Should().MatchSnapshot(name: "filtered-yaml");
-		SiteNavDump.ToText(Parse(text)).Should().MatchSnapshot(name: "filtered-tree");
-		// the filter is asked again: the same file comes back
-		provider.CreateNavigationFile(config).FullName.Should().Be(filtered.FullName);
-		unfiltered.Should().NotBe(text);
+		SiteNavDump.ToText(filtered).Should().MatchSnapshot(name: "filtered-tree");
+		SiteNavDump.ToText(filtered).Should().NotBe(SiteNavDump.ToText(unfiltered));
 	}
 
 	[Test]
-	public void FilterWithoutPrivateRepositories_Filtered_ReturnsTheFileUntouched()
+	public void FilterWithoutPrivateRepositories_Filtered_ReturnsTheNavigationUntouched()
 	{
-		using var provider = GoldenConfig.CreateProvider(skipPrivateRepositories: true);
 		var config = AssemblyLoader.Deserialize("references:\n  open:\n", skipPrivateRepositories: true);
-		provider.CreateNavigationFile(config).FullName.Should().Be(provider.NavigationFile.FullName);
+		var navigation = Parse(GoldenConfig.BaselineText(GoldenConfig.Navigation));
+		SiteNavigationLoader
+			.ForAssembly(navigation, config, skipPrivateRepositories: true, NavigationPath)
+			.Value
+			.Should()
+			.BeSameAs(navigation);
 	}
 
 	[Test]
-	public void FilterWhenNotSkippingPrivate_Filtered_ReturnsTheFileUntouched()
+	public void FilterWhenNotSkippingPrivate_Filtered_ReturnsTheNavigationUntouched()
 	{
-		using var provider = GoldenConfig.CreateProvider();
 		var config = AssemblyLoader.Deserialize("references:\n  closed:\n    private: true\n");
-		provider.CreateNavigationFile(config).FullName.Should().Be(provider.NavigationFile.FullName);
+		var navigation = Parse(GoldenConfig.BaselineText(GoldenConfig.Navigation));
+		SiteNavigationLoader
+			.ForAssembly(navigation, config, skipPrivateRepositories: false, NavigationPath)
+			.Value
+			.Should()
+			.BeSameAs(navigation);
 	}
 
+	/// <summary>The tree of the navigation left after filtering; the cases below compare it with the tree of the yaml the old text filter wrote.</summary>
 	private static string Filter(string navigationYaml, string assemblerYaml)
 	{
-		using var provider = GoldenConfig.CreateProvider(GoldenConfig.Navigation, navigationYaml, skipPrivateRepositories: true);
 		var config = AssemblyLoader.Deserialize(assemblerYaml, skipPrivateRepositories: true);
-		return provider.CreateNavigationFile(config).OpenText().ReadToEnd();
+		return SiteNavDump.ToText(
+			SiteNavigationLoader.ForAssembly(Parse(navigationYaml), config, skipPrivateRepositories: true, NavigationPath).Value
+		);
 	}
+
+	private static string Expected(string yaml) => SiteNavDump.ToText(Parse(yaml));
 
 	[Test]
 	public void FilterRemovesAPrivateTocAndMovesItsChildrenUp_Filtered_Outcome() =>
@@ -172,8 +199,9 @@ public class NavigationGoldenTests
 			"references:\n  open:\n  closed:\n    private: true\n"
 		)
 			.Should()
-			.MatchInlineSnapshot(
-				"""
+			.Be(
+				Expected(
+					"""
 			toc:
 			  - toc: open://one
 			    path_prefix: one
@@ -185,6 +213,7 @@ public class NavigationGoldenTests
 			  - toc: open://five
 			    path_prefix: five
 			"""
+				)
 			);
 
 	[Test]
@@ -192,22 +221,22 @@ public class NavigationGoldenTests
 		Filter(
 			"toc:\n  - toc: closed://one\n    path_prefix: one\n  - toc: open://two\n    path_prefix: two\n",
 			"references:\n  open:\n  closed:\n    private: true\n"
-		).Should().MatchInlineSnapshot("""
+		).Should().Be(Expected("""
 			toc:
 			  - toc: open://two
 			    path_prefix: two
-			""");
+			"""));
 
 	[Test]
 	public void FilterOfSkippedPrivateRepository_Filtered_IsNotRemoved() =>
 		Filter("toc:\n  - toc: closed://one\n    path_prefix: one\n", "references:\n  closed:\n    private: true\n    skip: true\n")
 			.Should()
-			.MatchInlineSnapshot(
-				"""
+			.Be(
+				Expected("""
 				toc:
 				  - toc: closed://one
 				    path_prefix: one
-				"""
+				""")
 			);
 
 	[Test]
@@ -217,13 +246,11 @@ public class NavigationGoldenTests
 			"references:\n  closed:\n    private: true\n"
 		)
 			.Should()
-			.MatchInlineSnapshot(
-				"""
+			.Be(Expected("""
 			toc:
 			  - toc: closed-but-longer://one
 			    path_prefix: one
-			"""
-			);
+			"""));
 
 	[Test]
 	public void EmptyFile_Loaded_Outcome() =>
@@ -232,7 +259,7 @@ public class NavigationGoldenTests
 			.MatchInlineSnapshot(
 				"""
 		diagnostics:
-		throws InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Toc.SiteNavigationFile'.
+		throws InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Toc.SiteNavigationDto'.
 		"""
 			);
 
@@ -952,7 +979,7 @@ public class NavigationGoldenTests
 			"toc:\n  - toc: repo://a\n    path_prefix: same\n  - toc: repo://b\n    path_prefix: same/\n  - section: S\n    children:\n      - toc: repo://c\n        path_prefix: same\n"
 		);
 		var collector = new CapturingDiagnosticsCollector();
-		var valid = SiteNavigationFile.ValidatePathPrefixes(collector, file, new MockFileSystem().FileInfo.New(NavigationPath));
+		var valid = ValidatePathPrefixes(collector, file);
 		$"valid: {valid}\n{collector.Captured.ToSnapshotText()}".Should().MatchInlineSnapshot("valid: True");
 	}
 
@@ -965,7 +992,7 @@ public class NavigationGoldenTests
 			"toc:\n  - toc: repo://a\n    path_prefix: Same\n  - toc: other://b\n    path_prefix: same\n  - toc: repo://c\n    path_prefix: ''\n  - toc: repo://d\n"
 		);
 		var collector = new CapturingDiagnosticsCollector();
-		var valid = SiteNavigationFile.ValidatePathPrefixes(collector, file, new MockFileSystem().FileInfo.New(NavigationPath));
+		var valid = ValidatePathPrefixes(collector, file);
 		$"valid: {valid}\nerrors: {collector.Captured.Count}".Should().MatchInlineSnapshot(
 			"""
 			valid: False
@@ -982,9 +1009,9 @@ public class NavigationGoldenTests
 		);
 		var sources = string.Join(
 			'\n',
-			SiteNavigationFile.GetAllDeclaredSources(file).Select(u => u.ToString()).Order(StringComparer.Ordinal)
+			SiteNavigationDefinition.GetAllDeclaredSources(file).Select(u => u.ToString()).Order(StringComparer.Ordinal)
 		);
-		var phantoms = string.Join('\n', SiteNavigationFile.GetPhantomPrefixes(file).Select(u => u.ToString()));
+		var phantoms = string.Join('\n', SiteNavigationDefinition.GetPhantomPrefixes(file).Select(u => u.ToString()));
 		$"{sources}\n--\n{phantoms}".Should().MatchInlineSnapshot(
 			"""
 			repo://a/

@@ -41,7 +41,7 @@ public class SiteNavigationTests()
 		               path_prefix: /serverless/search
 		           """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation instances for the referenced repos
@@ -120,7 +120,7 @@ public class SiteNavigationTests()
 		                   path_prefix: /platform/cloud
 		           """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation for platform
@@ -186,7 +186,7 @@ public class SiteNavigationTests()
 		               path_prefix: observability
 		           """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
@@ -231,7 +231,7 @@ public class SiteNavigationTests()
 		               path_prefix: observability
 		           """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
@@ -360,7 +360,7 @@ public class SiteNavigationTests()
 		                    - toc: product-b://
 		                      path_prefix: /product-b
 		                  """;
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var documentationSets = new List<IDocumentationSetNavigation> { productANav, productBNav };
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
@@ -399,7 +399,7 @@ public class SiteNavigationTests()
 		               path_prefix: search
 		           """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");

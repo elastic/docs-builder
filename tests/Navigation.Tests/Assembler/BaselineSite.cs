@@ -50,7 +50,7 @@ internal sealed record BaselineOptions
 
 internal sealed record BaselineSiteResult(
 	SiteNavigation Navigation,
-	SiteNavigationFile NavigationFile,
+	SiteNavigationDefinition NavigationFile,
 	AssemblyConfiguration Configuration,
 	TestDocumentationSetContext SiteContext,
 	string NavigationText,
@@ -145,8 +145,7 @@ internal static class BaselineSite
 		var (configFileSystem, provider) = CreateProvider(options.SkipPrivateRepositories, options.NavigationPreview);
 		using var _ = provider;
 		var configuration = AssemblyLoader.Create(provider);
-		var navigationFileInfo = provider.CreateNavigationFile(configuration);
-		var navigationText = configFileSystem.File.ReadAllText(navigationFileInfo.FullName).Replace("\r\n", "\n");
+		var navigationText = configFileSystem.File.ReadAllText(provider.NavigationFile.FullName).Replace("\r\n", "\n");
 		if (options.RewriteNavigation is { } rewrite)
 			navigationText = rewrite(navigationText);
 
@@ -158,7 +157,12 @@ internal static class BaselineSite
 			fileSystem.FileInfo.New("/docs/navigation.yml")
 		)
 		{ BuildType = BuildType.Assembler };
-		var navigationFile = SiteNavigationFile.Deserialize(navigationText, siteContext.Collector, "/docs/navigation.yml");
+		var navigationFile = SiteNavigationLoader.ForAssembly(
+			SiteNavigationLoader.Deserialize(navigationText, siteContext.Collector, "/docs/navigation.yml"),
+			configuration,
+			options.SkipPrivateRepositories,
+			"/docs/navigation.yml"
+		).Value;
 
 		var stubRepositories = StubDocsets.Write(fileSystem, navigationFile, configuration, options);
 		var documentationSets = new List<IDocumentationSetNavigation>();
@@ -196,14 +200,14 @@ internal static class StubDocsets
 {
 	public static IReadOnlyCollection<string> Write(
 		MockFileSystem fileSystem,
-		SiteNavigationFile navigationFile,
+		SiteNavigationDefinition navigationFile,
 		AssemblyConfiguration configuration,
 		BaselineOptions options
 	)
 	{
 		var tocsByRepository = new SortedDictionary<string, SortedSet<string>>(StringComparer.Ordinal);
-		foreach (var source in SiteNavigationFile.GetAllDeclaredSources(navigationFile).Concat(
-			SiteNavigationFile.GetPhantomPrefixes(navigationFile)
+		foreach (var source in SiteNavigationDefinition.GetAllDeclaredSources(navigationFile).Concat(
+			SiteNavigationDefinition.GetPhantomPrefixes(navigationFile)
 		))
 			Add(tocsByRepository, source.Scheme, SourcePath(source));
 		foreach (var (name, repository) in configuration.AvailableRepositories)

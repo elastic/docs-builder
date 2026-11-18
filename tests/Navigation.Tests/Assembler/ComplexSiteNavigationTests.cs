@@ -51,7 +51,7 @@ public class ComplexSiteNavigationTests()
 
 		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 		var siteNavigation = new SiteNavigation(
-			SiteNavigationFile.Deserialize(siteNavYaml),
+			SiteNavigationLoader.Deserialize(siteNavYaml),
 			siteContext,
 			documentationSets,
 			sitePrefix: null
@@ -95,7 +95,7 @@ public class ComplexSiteNavigationTests()
 		                      path_prefix: /elasticsearch/reference
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create all DocumentationSetNavigation instances
@@ -195,7 +195,7 @@ public class ComplexSiteNavigationTests()
 		                          path_prefix: /docs/platform/cloud-guide
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
@@ -254,7 +254,7 @@ public class ComplexSiteNavigationTests()
 		                          path_prefix: /platform/cloud-guide
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
@@ -314,7 +314,7 @@ public class ComplexSiteNavigationTests()
 
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
@@ -377,7 +377,7 @@ public class ComplexSiteNavigationTests()
 
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
