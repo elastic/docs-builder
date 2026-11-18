@@ -11,6 +11,9 @@ namespace Elastic.Documentation.Journeys.Cli.Commands;
 
 internal sealed class RunCommand
 {
+	// The tag the landing page of an assembler build carries: the docs-builder version that rendered it.
+	private const string BuildSelector = "meta[name='docs:build']";
+
 	private static readonly string[] DefaultAllow =
 	[
 		"*.elastic.co",
@@ -36,6 +39,13 @@ internal sealed class RunCommand
 	/// <param name="feature">The feature flags that are on, comma separated, for <c>@requires</c> and <c>feature</c> blocks. Defaults to the site's <c>docs:features</c> tag, or none.</param>
 	/// <param name="probe">The page that is read for the site's <c>docs:*</c> tags. Default: /docs, falling back to / when it does not answer</param>
 	/// <param name="parallel">-p, How many journeys run at once. Default: 4</param>
+	/// <param name="retries">How many times a journey that fails is run again, so one stalled navigation on a live site does not fail the run. A journey that passes on a retry passes and is reported as flaky, with what its failed attempts stopped at. Default: 0</param>
+	/// <param name="build">Wait until the landing page names this docs-builder version in its <c>docs:build</c> tag before any journey runs, such as the build a deploy just shipped. A site that predates the tag, or whose deploy or cache has not caught up, ends the run with exit code 4.</param>
+	/// <param name="waitFor">Wait until the site shows this before any journey runs (repeatable): <c>header:Name==value</c>, <c>selector==value</c> (text) or <c>selector@attribute==value</c>; <c>=~</c> matches a regular expression and <c>=*</c> contains. Unmet ends the run with exit code 4.</param>
+	/// <param name="waitPath">The page <c>--build</c> and <c>--wait-for</c> look at, against the site. Default: ./ (the landing page of an assembler site)</param>
+	/// <param name="waitTimeout">How long the wait lasts in all: 10s, 500ms or 2m. Default: 10s</param>
+	/// <param name="waitInterval">How long to wait between looks. Default: 500ms</param>
+	/// <param name="waitRetries">How many looks that fail (the page did not load, the connection dropped) are tried again before the wait gives up. A look that shows another value is not one. Default: 2</param>
 	/// <param name="allow">Extra host patterns the journeys may reach, comma separated, on top of the elastic.co defaults.</param>
 	/// <param name="realUserAgent">Do not identify as a monitor: the site's telemetry then runs, and its exports are allowed as writes.</param>
 	/// <param name="allowWrites">Do not refuse requests that are not GET, HEAD or OPTIONS.</param>
@@ -58,6 +68,13 @@ internal sealed class RunCommand
 		string? feature = null,
 		string probe = "/docs",
 		int parallel = 4,
+		int retries = 0,
+		string? build = null,
+		string[]? waitFor = null,
+		string? waitPath = null,
+		string? waitTimeout = null,
+		string? waitInterval = null,
+		int? waitRetries = null,
 		string? allow = null,
 		bool realUserAgent = false,
 		bool allowWrites = false,
@@ -72,6 +89,16 @@ internal sealed class RunCommand
 	)
 	{
 		var baseUrl = SiteContext.ParseUrl(url);
+		var wait = JourneyWait.Parse(new JourneyWaitFlags
+		{
+			Checks = build is null ? waitFor ?? [] : [.. waitFor ?? [], $"{BuildSelector}@content=={build}"],
+			Path = waitPath,
+			Timeout = waitTimeout,
+			Interval = waitInterval,
+			Retries = waitRetries,
+		});
+		if (wait.Problem is { } waitProblem)
+			throw new ArgumentException(waitProblem);
 		if (changedOnly is not null && journeys is null)
 			throw new ArgumentException(
 				"--changed-only compares journey files with a git ref, so it needs --journeys <folder> in a checkout."
@@ -98,51 +125,63 @@ internal sealed class RunCommand
 			!allowWrites,
 			SiteContext.Split(writable).Concat(realUserAgent ? RunIdentity.TelemetryWrites : []).ToList()
 		);
-		var site = await ResolveSiteAsync(
-			baseUrl,
-			new SiteContextOptions(env, buildType, feature is null ? null : SiteContext.Split(feature), probe),
-			identity,
-			ct
-		).ConfigureAwait(false);
-		var journeyBase = SiteContext.JourneyBase(baseUrl, site.BuildType);
-		Console.Out.WriteLine(
-			ConsoleJourneyReporter.UseInteractive
-				? ConsoleJourneyReporter.ContextBlock(
-					"docs-journeys",
-					ContextRows(site, journeyBase, (env, buildType, feature)),
-					site.ProbeNotes
-				)
-				: $"context: {site.Describe}"
-		);
+		var siteOptions = new SiteContextOptions(env, buildType, feature is null ? null : SiteContext.Split(feature), probe);
+		var site = await ResolveSiteAsync(baseUrl, siteOptions, identity, ct).ConfigureAwait(false);
+		Console.Out.WriteLine(Describe(site, SiteContext.JourneyBase(baseUrl, site.BuildType)));
 
 		var headers = new Dictionary<string, string>();
 		if (identity.Synthetic)
 			headers[RunIdentity.MonitorHeader] = "true";
-		var options = new JourneyRunOptions
+
+		JourneyRunOptions Options(SiteContext current, bool beforeWait) =>
+			new()
+			{
+				Files = [.. files.Select(f => new JourneyRunFile(f.Id, f.Path) { Display = f.DisplayPath(folder) })],
+				BaseUrl = SiteContext.JourneyBase(baseUrl, current.BuildType),
+				AllowedHosts = [.. DefaultAllow, .. SiteContext.Split(allow)],
+				ArtifactsFor = artifacts is null ? null : f => Path.Combine(artifacts, f.Id.TrimStart('/', '\\')),
+				Features = current.Features,
+				BuildType = current.BuildType,
+				Env = current.Env,
+				ReadOnly = identity.ReadOnly,
+				AllowMutations = allowMutations || allowWrites,
+				WritableUrls = identity.Writable,
+				Viewport = new JourneyViewport(1280, 800),
+				UserAgent = identity.Synthetic ? RunIdentity.UserAgent : null,
+				Headers = headers,
+				Tags = SiteContext.Split(tag),
+				Parallel = parallel,
+				Retries = retries,
+				Preconditions = beforeWait ? wait.Preconditions : [],
+				// A deploy the wait is for can turn flags on or off: read the site again once it shows the build, so the journeys are
+				// judged against what is live and not against what the first read saw.
+				RefreshAfterPreconditions = beforeWait && wait.Preconditions.Count > 0 ? RefreshAsync : null,
+				AllowAllSkipped = allowAllSkipped && !current.ProbeFailed,
+				Verbose = verbose,
+				ScreenshotOnFailure = screenshotOnFailure,
+				JUnitPath = junit,
+				Rerun = RerunCommand(url, journeys, (env, buildType, feature)),
+				ParseErrorExitCode = 1,
+			};
+
+		return await JourneyConsoleRunner.RunAsync(Options(site, beforeWait: true), Console.Out, Console.Error, ct).ConfigureAwait(false);
+
+		async Task<JourneyRunOptions> RefreshAsync(object? _, CancellationToken token)
 		{
-			Files = [.. files.Select(f => new JourneyRunFile(f.Id, f.Path) { Display = f.DisplayPath(folder) })],
-			BaseUrl = journeyBase,
-			AllowedHosts = [.. DefaultAllow, .. SiteContext.Split(allow)],
-			ArtifactsFor = artifacts is null ? null : f => Path.Combine(artifacts, f.Id.TrimStart('/', '\\')),
-			Features = site.Features,
-			BuildType = site.BuildType,
-			Env = site.Env,
-			ReadOnly = identity.ReadOnly,
-			AllowMutations = allowMutations || allowWrites,
-			WritableUrls = identity.Writable,
-			Viewport = new JourneyViewport(1280, 800),
-			UserAgent = identity.Synthetic ? RunIdentity.UserAgent : null,
-			Headers = headers,
-			Tags = SiteContext.Split(tag),
-			Parallel = parallel,
-			AllowAllSkipped = allowAllSkipped && !site.ProbeFailed,
-			Verbose = verbose,
-			ScreenshotOnFailure = screenshotOnFailure,
-			JUnitPath = junit,
-			Rerun = RerunCommand(url, journeys, (env, buildType, feature)),
-			ParseErrorExitCode = 1,
-		};
-		return await JourneyConsoleRunner.RunAsync(options, Console.Out, Console.Error, ct).ConfigureAwait(false);
+			var refreshed = await ResolveSiteAsync(baseUrl, siteOptions, identity, token).ConfigureAwait(false);
+			if (refreshed.Describe != site.Describe)
+				Console.Out.WriteLine(Describe(refreshed, SiteContext.JourneyBase(baseUrl, refreshed.BuildType)));
+			return Options(refreshed, beforeWait: false);
+		}
+
+		string Describe(SiteContext current, Uri journeyBase) =>
+			ConsoleJourneyReporter.UseInteractive
+				? ConsoleJourneyReporter.ContextBlock(
+					"docs-journeys",
+					ContextRows(current, journeyBase, (env, buildType, feature)),
+					current.ProbeNotes
+				)
+				: $"context: {current.Describe}";
 	}
 
 	private static List<ContextRow> ContextRows(

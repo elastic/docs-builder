@@ -180,7 +180,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Deprecated = apiOperation.Deprecated,
 					Words = ApiSearchWords.Of(operationId, path.Key),
 					Group = groupParent?.Title ?? "",
-					IdWords = ApiSearchWords.OfOperationId(operationId).Length
+					IdWords = ApiSearchWords.OfOperationId(operationId).Length,
+					TitleFingerprint = title
 				};
 
 				yield return new DocumentationDocument

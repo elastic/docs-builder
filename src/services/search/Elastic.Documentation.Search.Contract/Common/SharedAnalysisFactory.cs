@@ -27,6 +27,17 @@ public static class SharedAnalysisFactory
 			.Analyzer("starts_with_analyzer_search", a => a.Custom().Tokenizer("keyword").Filter("lowercase"))
 			.Analyzer("highlight_analyzer", a => a.Custom().Tokenizer("group_tokenizer").Filters("lowercase", "english_stop"))
 			.Analyzer("hierarchy_analyzer", a => a.Custom().Tokenizer("path_tokenizer"))
+			// One token per text: its stemmed content words, sorted and joined. "Create an index", "create index" and
+			// "index create" all become "create index", so a query matches a title that has the same words in any order.
+			.Analyzer(
+				SharedMappingConfig.TitleFingerprintAnalyzer,
+				a => a
+					.Custom()
+					.Tokenizer("standard")
+					.Filters("lowercase", "english_stop", "title_fingerprint_stem_filter", "kstem", "fingerprint")
+			)
+			// kstem keeps "indices" apart from "index", which would leave "Delete indices" unreachable for "delete index".
+			.TokenFilter("title_fingerprint_stem_filter", tf => tf.StemmerOverride().Rules("indices => index"))
 			.CharFilter("strip_non_word_chars", cf => cf.PatternReplace().Pattern(@"\W").Replacement(" "))
 			.TokenFilter("english_stop", tf => tf.Stop().Stopwords("_english_"))
 			.Tokenizer(

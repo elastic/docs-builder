@@ -280,6 +280,14 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Test]
+	public void Operation_Summary_IsIndexedAsTheTitleFingerprint()
+	{
+		var doc = ExportOperation("Create an index\n", "Adds a new index.", "indices-create");
+
+		doc.Api!.TitleFingerprint.Should().Be("Create an index");
+	}
+
+	[Test]
 	public async Task ConvertToDocuments_UnionsThatDifferOnlyByDescription_IndexBothListings()
 	{
 		var spec = await TestSpecs.LoadSpecAsync(

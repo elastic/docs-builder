@@ -5,6 +5,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
+    <None Include="slugify-4.0.1.golden.tsv" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsCheck" />
+    <PackageReference Include="Generator.Equals" />
+    <PackageReference Include="Nullean.Entities.CsCheck" />
   </ItemGroup>
 
 </Project>

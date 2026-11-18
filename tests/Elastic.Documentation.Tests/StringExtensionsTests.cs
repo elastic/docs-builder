@@ -54,4 +54,40 @@ public class StringExtensionsTests
 
 	[Test]
 	public void Slugify_NullInput_ReturnsEmptyString() => ((string?)null).Slugify().Should().BeEmpty();
+
+	[Test]
+	[Arguments("", "")]
+	[Arguments("   ", "")]
+	[Arguments("  Hello   World  ", "hello-world")]
+	[Arguments("a - b", "a-b")]
+	[Arguments("-a-", "-a-")]
+	[Arguments("Café Ünï", "cafe-uni")]
+	[Arguments("1.2.3 a_b", "1.2.3-a_b")]
+	[Arguments("C# (a/b?c)", "c-abc")]
+	[Arguments("日本語 text", "-text")]
+	[Arguments("a\tb", "a-b")]
+	[Arguments("a\u00a0b\nc", "a-b-c")]
+	public void Slugify_Rules_AreStable(string input, string expected) => input.Slugify().Should().Be(expected);
+
+	/// <summary>
+	/// <c>slugify-4.0.1.golden.tsv</c> holds what Slugify.Core 4.0.1 produced for the headings in <c>docs/</c> plus edge cases,
+	/// so a slug (and every link to it) stays the same now that the package is gone.
+	/// </summary>
+	[Test]
+	public void Slugify_MatchesSlugifyCore401Output()
+	{
+		var path = Path.Combine(AppContext.BaseDirectory, "slugify-4.0.1.golden.tsv");
+		var lines = File.ReadAllLines(path);
+		lines.Should().NotBeEmpty();
+		var mismatches = new List<string>();
+		foreach (var line in lines)
+		{
+			var tab = line.LastIndexOf('\t');
+			var input = line[..tab].Replace("\\t", "\t").Replace("\\\\", "\\");
+			var expected = line[(tab + 1)..];
+			if (input.Slugify() != expected)
+				mismatches.Add($"[{input}] expected [{expected}] got [{input.Slugify()}]");
+		}
+		mismatches.Should().BeEmpty();
+	}
 }

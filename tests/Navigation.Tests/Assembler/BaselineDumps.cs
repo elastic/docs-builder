@@ -102,6 +102,12 @@ internal static class BaselineDumps
 	public static IReadOnlySet<string> PrivateRepositories() =>
 		AssemblyConfiguration.Deserialize(BaselineSite.ReadBaseline("assembler.yml")).AllPrivateRepositoryNames;
 
-	/// <summary>Snapshot options that scrub the private repositories of the frozen config and volatile values.</summary>
-	public static SnapshotOptions Scrubbed() => PrivateRepositoryScrubbing.Options(PrivateRepositories());
+	/// <summary>
+	/// Snapshot options that scrub the private repositories of the frozen config and volatile values, and fail a snapshot, or a
+	/// verified file, that names a private repository of the shipped config.
+	/// </summary>
+	public static SnapshotOptions Scrubbed() =>
+		PrivateRepositoryScrubbing.Options(PrivateRepositories()).Forbid(
+			PrivateRepositoryScrubbing.Forbidden(PrivateRepositoryScrubbingTests.ShippedPrivateRepositories())
+		);
 }

@@ -25,7 +25,7 @@ public class BundleLoadingSnapshotTests
 		var fileSystem = new MockFileSystem();
 		fileSystem.Directory.CreateDirectory(Folder);
 		foreach (var (name, yaml) in files)
-			fileSystem.File.WriteAllText($"{Folder}/{name}", yaml.ReplaceLineEndings("\n"));
+			fileSystem.File.WriteAllText($"{Folder}/{name}", yaml);
 
 		var loader = new BundleLoader(fileSystem);
 
@@ -33,10 +33,7 @@ public class BundleLoadingSnapshotTests
 		var fromFolder = loader.LoadBundles(Folder, folderWarnings.Add);
 
 		var contentWarnings = new List<string>();
-		var fromContent = loader.LoadBundlesFromContent(
-			[.. files.Select(f => (f.Name, f.Yaml.ReplaceLineEndings("\n")))],
-			contentWarnings.Add
-		);
+		var fromContent = loader.LoadBundlesFromContent([.. files.Select(f => (f.Name, f.Yaml))], contentWarnings.Add);
 
 		var root = new JsonObject
 		{

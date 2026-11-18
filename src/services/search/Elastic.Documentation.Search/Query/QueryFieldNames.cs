@@ -22,11 +22,13 @@ public static class QueryFieldNames
 	public static string ApiEndpoints { get; } = $"{Doc.Fields.Api}.endpoints";
 	public static string ApiEndpointsBare { get; } = $"{Doc.Fields.Api}.endpoints_bare";
 	public static string ApiProperties { get; } = $"{Doc.Fields.Api}.properties";
+	public static string ApiWords { get; } = $"{Doc.Fields.Api}.words";
 	public static string ApiWordsCompletion { get; } = $"{Doc.Fields.Api}.words.completion";
 	public static string ApiWordsCompletion2Gram { get; } = $"{Doc.Fields.Api}.words.completion._2gram";
 	public static string ApiWordsCompletion3Gram { get; } = $"{Doc.Fields.Api}.words.completion._3gram";
 	public static string ApiGroup { get; } = $"{Doc.Fields.Api}.group";
 	public static string ApiIdWords { get; } = $"{Doc.Fields.Api}.id_words";
+	public static string ApiTitleFingerprint { get; } = $"{Doc.Fields.Api}.title_fingerprint";
 	public static string ApiMethod { get; } = $"{Doc.Fields.Api}.method";
 	public static string ApiLanding { get; } = $"{Doc.Fields.Api}.landing";
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";

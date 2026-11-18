@@ -257,6 +257,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("search knn", "operation-search");
 		yield return ("knn search", "operation-search");
 		yield return ("cluster health", "operation-cluster-health");
+		yield return ("health cluster", "operation-cluster-health");
+		// One typo in a word of four letters or more still names the operation the correct spelling does.
+		yield return ("clustr health", "operation-cluster-health");
 		yield return ("cat health", "operation-cat-health");
 		yield return ("indices refresh", "operation-indices-refresh");
 		yield return ("cluster state", "operation-cluster-state");
@@ -267,6 +270,14 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("run a search", "operation-search");
 		yield return ("GET /_search knn", "operation-search");
 		yield return ("POST /_count", "operation-count");
+		// The route decides: a method that differs from the operation's canonical one never lets a title that starts with the
+		// same verb, such as "Get the search shards", lead the operation the route names.
+		yield return ("GET /_search", "operation-search");
+		yield return ("POST /_search", "operation-search");
+		yield return ("/_search", "operation-search");
+		yield return ("/_search knn", "operation-search");
+		yield return ("GET /_cluster/health", "operation-cluster-health");
+		yield return ("GET /_search_shards", "operation-search-shards");
 		yield return ("snapshot restore", "operation-snapshot-restore");
 		yield return ("search template", "operation-search-template");
 		yield return ("/_cluster health", "operation-cluster-health");
@@ -283,6 +294,57 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("/_cat/ind", "operation-cat-indices");
 		yield return ("/{index}/_sear", "operation-search");
 		yield return ("/_cluster/hea", "operation-cluster-health");
+		// The words are the whole title once its stopwords and plurals are ignored, so the operation leads the ones that only
+		// mention them, such as the `_create` endpoint of a document.
+		yield return ("create index", "operation-indices-create");
+		yield return ("index create", "operation-indices-create");
+		yield return ("delete index", "operation-indices-delete");
+		// The titles are plain words and the operation id carries the same words: the whole-title lift must not move them.
+		yield return ("create an index", "operation-indices-create");
+		yield return ("create data stream", "operation-indices-create-data-stream");
+		// The word is an endpoint of four operations, and the current one outranks the three deprecated legacy ones.
+		yield return ("template", "operation-indices-exists-template");
+		yield return ("esql query", "operation-esql-query");
+		// A deprecated twin or a sibling operation never leads the one the words name.
+		yield return ("isolate endpoint", "operation-endpointisolateaction");
+		yield return ("release isolated endpoint", "operation-endpointunisolateaction");
+		yield return ("agent status", "operation-get-fleet-agent-status");
+		yield return ("service token", "operation-security-create-service-token");
+		// Words people type most. Each leads by more than a stray point over the next operation, and the Serverless twin of an
+		// operation ties with the stack one.
+		yield return ("reindex", "operation-reindex");
+		yield return ("msearch", "operation-msearch");
+		yield return ("mget", "operation-mget");
+		yield return ("count", "operation-count");
+		yield return ("refresh", "operation-indices-refresh");
+		yield return ("rollover", "operation-indices-rollover");
+		yield return ("analyze", "operation-indices-analyze");
+		yield return ("force merge", "operation-indices-forcemerge");
+		yield return ("put mapping", "operation-indices-put-mapping");
+		yield return ("get mapping", "operation-indices-get-mapping");
+		yield return ("cat indices", "operation-cat-indices");
+		yield return ("nodes stats", "operation-nodes-stats");
+		yield return ("snapshot create", "operation-snapshot-create");
+		yield return ("allocation explain", "operation-cluster-allocation-explain");
+		yield return ("field capabilities", "operation-field-caps");
+		// One typo in a word of four letters or more names the operation the correct spelling does. A word with no typo of its
+		// own in the title still reaches the operation through its id.
+		yield return ("cluser health", "operation-cluster-health");
+		yield return ("clustr state", "operation-cluster-state");
+		yield return ("snaphot restore", "operation-snapshot-restore");
+		yield return ("snapshot restor", "operation-snapshot-restore");
+		yield return ("snapshto restore", "operation-snapshot-restore");
+		yield return ("reindx", "operation-reindex");
+		yield return ("bulck", "operation-bulk");
+		yield return ("indx refresh", "operation-indices-refresh");
+		// `stats` stems to `stat`, which begins `state`: a word typed whole beats one that only starts another word.
+		yield return ("cluster stats", "operation-cluster-stats");
+		yield return ("clustr stats", "operation-cluster-stats");
+		// A typo in a word only the title carries: the typed words are the whole title within one edit.
+		yield return ("creat index", "operation-indices-create");
+		yield return ("delte index", "operation-indices-delete");
+		yield return ("refesh index", "operation-indices-refresh");
+		yield return ("get cluser health status", "operation-cluster-health");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -495,12 +557,66 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			.OnlyContain(u => u.Contains("api-key", StringComparison.Ordinal) && !u.Contains("/kibana", StringComparison.Ordinal));
 	}
 
+	[Test]
+	public async Task ApiSearchWordsOfAnApisNameListItsLandingPageFirst()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "kibana api", PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		searchResult.Results.First().Url.Should().Be("/docs/api/doc/kibana");
+	}
+
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
 	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
 
 	/// <summary>
+	/// Queries the report lists with no expected result, so a weight change shows what it moves beyond the judged cases.
+	/// </summary>
+	public static IEnumerable<string> ApiSearchUnjudgedReportQueries() =>
+		[
+			"get index",
+			"create index template",
+			"close index",
+			"open index",
+			"delete data stream",
+			"refresh index",
+			"index document",
+			"delete document",
+			"get document",
+			"put mapping",
+			"create alias",
+			"clear cache",
+			"force merge",
+			"create snapshot",
+			"get cluster stats",
+			"create pipeline",
+			"search templates",
+			"create role",
+			"create user",
+			"reindex",
+			"legacy index template",
+			"install package",
+			"reassign agent",
+			"enrollment api key",
+			"clustr helth",
+			"serch knn",
+			// Typos the fuzzy id word does not fix yet: a route key is not fuzzed, and a title-only word misses the whole-title lift.
+			"serch",
+			"clustr settings",
+			"pipline"
+		];
+
+	/// <summary>
 	/// Not an assertion: prints the top three operations of every judged API query, with each word's winning role, for
-	/// whoever tunes <see cref="ApiLookupWeights"/> next.
+	/// whoever tunes <see cref="ApiLookupWeights"/> next. With <c>API_SEARCH_REPORT_PATH</c> set it also writes the report
+	/// there, so a run before and a run after a change can be diffed.
 	/// </summary>
 	[Test]
 	[Explicit]
@@ -511,7 +627,18 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var ct = TestContext.Current!.Execution.CancellationToken;
 		Skip.Unless(await gateway.CanConnect(ct), "Elasticsearch is not connected");
 
-		var judged = ApiSearchQueryTestCases().Concat(ApiSearchFieldTestCases().Select(c => (c.Item1, c.Item2))).Distinct();
+		var judged = ApiSearchQueryTestCases()
+			.Concat(ApiSearchFieldTestCases().Select(c => (c.Item1, c.Item2)))
+			.Concat(ApiSearchUnjudgedReportQueries().Select(q => (q, "unjudged")))
+			.Distinct();
+		var lines = new List<string>();
+
+		void Report(string line)
+		{
+			lines.Add(line);
+			TestContext.Current?.Output.WriteLine(line);
+		}
+
 		foreach (var (query, expectedOperation) in judged)
 		{
 			var tokens = ApiLookupQueryBuilder.Tokenize(query);
@@ -525,15 +652,18 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 					.IncludeNamedQueriesScore(true),
 				ct
 			);
-			TestContext.Current?.Output.WriteLine($"\n{query}  (expected {expectedOperation})");
+			Report($"\n{query}  (expected {expectedOperation})");
 			foreach (var hit in response.Hits)
 			{
 				var scored = hit.MatchedQueries?.Match(_ => null, scores => scores) ?? new Dictionary<string, double>();
 				var roles = ApiLookupRoles.Resolve(scored).Select(r => $"{tokens[r.Index].Text}={r.Role.ToString().ToLowerInvariant()}");
 				var score = (hit.Score ?? 0).ToString("F2", CultureInfo.InvariantCulture);
-				TestContext.Current?.Output.WriteLine($"  {score,7}  {hit.Source?.Path}  [{string.Join(", ", roles)}]");
+				Report($"  {score,7}  {hit.Source?.Path}  [{string.Join(", ", roles)}]");
 			}
 		}
+
+		if (Environment.GetEnvironmentVariable("API_SEARCH_REPORT_PATH") is { Length: > 0 } reportPath)
+			await File.WriteAllLinesAsync(reportPath, lines, ct);
 	}
 
 	[Test]

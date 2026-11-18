@@ -7,6 +7,8 @@
     <RepositoryUrl>https://github.com/elastic/elastic-otel-dotnet</RepositoryUrl>
     <PackageProjectUrl>https://github.com/elastic/elastic-otel-dotnet</PackageProjectUrl>
     <PackageReleaseNotes>https://github.com/elastic/elastic-otel-dotnet/releases</PackageReleaseNotes>
+    <!-- NetEscapades.EnumGenerators now defaults to [EnumMember]; our enums use [Display] -->
+    <EnumGenerator_EnumMetadataSource>DisplayAttribute</EnumGenerator_EnumMetadataSource>
   </PropertyGroup>
   
   <PropertyGroup>
