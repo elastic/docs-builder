@@ -5,4 +5,4 @@
 namespace Elastic.Documentation;
 
 /// <summary>A heading on a rendered page: its plain-text title, the slug of its anchor id, and its level.</summary>
-public sealed record TocItem(string Heading, string Slug, int Level);
+public sealed record HeadingItem(string Heading, string Slug, int Level);

@@ -6,6 +6,6 @@ namespace Elastic.Documentation.Site.Components.Navigation.Toc;
 
 public sealed record TocModel
 {
-	public required IReadOnlyList<TocItem> Items { get; init; }
+	public required IReadOnlyList<HeadingItem> Items { get; init; }
 	public string Title { get; init; } = "On this page";
 }

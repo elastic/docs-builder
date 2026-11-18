@@ -24,11 +24,11 @@ public class ApiTocRenderingTests
 	[Test]
 	public async Task Render_WithTocItems_IncludesHeadings()
 	{
-		var html = await Render([new TocItem("Paths", "paths", 2)]);
+		var html = await Render([new HeadingItem("Paths", "paths", 2)]);
 
 		html.Should().MatchHtmlSnapshot();
 	}
 
-	private static async Task<string> Render(IReadOnlyList<TocItem> tocItems) =>
+	private static async Task<string> Render(IReadOnlyList<HeadingItem> tocItems) =>
 		await _ApiToc.Create(tocItems).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 }

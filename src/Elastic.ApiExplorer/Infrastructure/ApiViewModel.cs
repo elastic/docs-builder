@@ -19,7 +19,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
-	public required IReadOnlyList<TocItem> TocItems { get; init; }
+	public required IReadOnlyList<HeadingItem> TocItems { get; init; }
 
 	public required INavigationItem[] Breadcrumbs { get; init; }
 
@@ -67,9 +67,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
-	public IReadOnlyList<TocItem> TocItems => field ??= GetTocItems();
+	public IReadOnlyList<HeadingItem> TocItems => field ??= GetTocItems();
 
-	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
+	protected virtual IReadOnlyList<HeadingItem> GetTocItems() => [];
 
 	protected virtual bool ShowPageActions => true;
 
