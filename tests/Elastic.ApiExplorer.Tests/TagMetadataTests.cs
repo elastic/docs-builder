@@ -17,6 +17,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.OpenApi;
 using Nullean.Snapshots.Html;
 
@@ -581,6 +582,33 @@ public class TagMetadataTests
 	[Arguments("APM agent configuration", "endpoint-apm-agent-configuration")]
 	[Arguments("Elastic Package Manager (EPM)", "endpoint-elastic-package-manager-epm")]
 	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected) => ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task Sidebar_ApiTree_HasNoRowForTheOverviewAndNoDividerBeforeItsFirstGroup(bool withTagGroups)
+	{
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
+			[new("search"), new("indices")]
+		)
+		{ TagGroups = withTagGroups ? [new("Search", ["search"]), new("Cluster", ["indices"])] : [] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+
+		var model = NavigationRenderModel.Create(
+			navigation,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false
+		);
+
+		// The product switcher already leads to the overview, so the tree starts at its first group. With no root row there is nothing for an automatic rule to sit under.
+		model.RootIndex.Should().BeNull();
+		model.Tree.Should().NotBeEmpty();
+		model.Tree.Should().NotContain(n => n.Kind == NavigationRenderNodeKind.Separator);
+	}
 
 	[Test]
 	public async Task Tag_Url_Uses_Group_Segment()

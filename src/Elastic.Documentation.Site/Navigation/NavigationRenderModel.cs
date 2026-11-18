@@ -102,11 +102,10 @@ public sealed record NavigationRenderModel
 	/// <summary>Whether the NAVIGATION_PREVIEW feature flag is enabled; drives nav-v2 vs legacy tree rendering.</summary>
 	public bool NavigationPreviewEnabled { get; init; }
 	/// <summary>
-	/// True when <see cref="Tree"/> sets its own start: it holds a divider, or opens with a group label.
-	/// <c>_TocTree</c> then skips the automatic rule after <see cref="RootIndex"/> so overview stays with the intro pages.
+	/// True when <see cref="Tree"/> already owns a divider. <c>_TocTree</c> then skips the
+	/// automatic rule after <see cref="RootIndex"/> so overview stays with the intro pages.
 	/// </summary>
-	public bool TreeSetsItsOwnStart =>
-		Tree is [{ Kind: NavigationRenderNodeKind.Group }, ..] || Tree.Any(static n => n.Kind == NavigationRenderNodeKind.Separator);
+	public bool TreeHasSeparator => Tree.Any(static n => n.Kind == NavigationRenderNodeKind.Separator);
 
 	public static NavigationRenderModel Create(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
@@ -220,7 +219,7 @@ public sealed record NavigationRenderModel
 		bool isGlobalAssemblyBuild
 	)
 	{
-		if (tree.Index.Hidden)
+		if (tree.Index.Hidden || tree is ISidebarWithoutRootIndexNavigationItem)
 			return null;
 
 		if (isGlobalAssemblyBuild)

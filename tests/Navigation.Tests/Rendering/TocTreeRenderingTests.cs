@@ -377,26 +377,6 @@ public class TocTreeRenderingTests
 		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("li.nav-group"));
 	}
 
-	[Test]
-	public async Task RootIndexBeforeAGroup_AddsNoAutomaticDivider()
-	{
-		var model = GroupModel(navigationPreviewEnabled: false) with
-		{
-			RootIndex = new NavigationRenderNode
-			{
-				Kind = NavigationRenderNodeKind.Leaf,
-				IsTopLevel = true,
-				NavigationTitle = "Api Overview",
-				Url = "/api/doc/es/"
-			}
-		};
-
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
-
-		// The group label starts the next block, so no rule sits between the overview link and it.
-		html.Should().NotContain("role=\"separator\"").And.Contain("nav-group-label");
-	}
-
 	private static NavigationRenderModel GroupModel(bool navigationPreviewEnabled) =>
 		new()
 		{
