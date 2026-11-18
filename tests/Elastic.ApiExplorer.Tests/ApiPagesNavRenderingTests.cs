@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 using RazorSlices;
 
@@ -206,7 +207,7 @@ public partial class ApiPagesNavRenderingTests
 				IsTopLevel = false,
 				NavigationTitle = title,
 				Url = "/api/doc/elasticsearch/operation/example",
-				HttpMethod = method
+				HttpMethods = [method]
 			}
 		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
@@ -231,7 +232,7 @@ public partial class ApiPagesNavRenderingTests
 				IsTopLevel = false,
 				NavigationTitle = "Get a document source",
 				Url = "/api/doc/elasticsearch/operation/operation-get-source",
-				HttpMethod = "get",
+				HttpMethods = ["get"],
 				Deprecated = true
 			}
 		];
@@ -350,5 +351,32 @@ public partial class ApiPagesNavRenderingTests
 		}
 
 		return count;
+	}
+
+	[Test]
+	public async Task Render_MultiMethodOperationRow_JoinsEveryMethodIntoOneChipDominantFirst()
+	{
+		var html = await _TocTreeNav.Create([
+			new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Search",
+				Url = "/api/doc/elasticsearch/operation/search",
+				HttpMethods = ["post", "get"]
+			}
+		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		OperationLink(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<a href="/api/doc/elasticsearch/operation/search" class="sidebar-link nav-link nav-v2-link">
+							<span class="nav-v2-nav-text">Search</span>
+							<span class="nav-v2-api-method-group"><span class="nav-v2-api-method nav-v2-api-method-post">POST</span><span class="nav-v2-api-method nav-v2-api-method-get">GET</span></span>
+
+						</a>
+			"""
+			);
 	}
 }
