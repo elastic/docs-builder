@@ -374,6 +374,14 @@ filterable-table {
 	text-overflow: ellipsis;
 }
 
+/* Forced-colors mode (Windows High Contrast) drops gradient backgrounds, so the drawn arrow would vanish. Bring back the browser's own. */
+@media (forced-colors: active) {
+	.filterable-table-facet select {
+		appearance: auto;
+		padding-inline-end: var(--space-2);
+	}
+}
+
 /* A dropdown that's narrowing the table, so readers can see at a glance which filters are on. */
 .filterable-table-facet[data-active] select {
 	border-color: var(--color-accent);

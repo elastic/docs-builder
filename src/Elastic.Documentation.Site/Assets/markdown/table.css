@@ -432,6 +432,15 @@
 		gap: 0.75rem;
 	}
 
+	/* Forced-colors mode (Windows High Contrast) drops gradient backgrounds,
+	   so the drawn arrow would vanish. Bring back the browser's own. */
+	@media (forced-colors: active) {
+		.filterable-table-facet select {
+			appearance: auto;
+			padding-right: 0.5rem;
+		}
+	}
+
 	.filterable-table-status {
 		font-size: 0.8125rem;
 		color: var(--color-grey-100);
