@@ -18,9 +18,6 @@ public record InputMessage(string Role, MessagePart[] Parts);
 
 public record OutputMessage(string Role, MessagePart[] Parts, string FinishReason);
 
-/// <summary>The body of an error response: a stable <paramref name="ErrorType"/> and a message for people.</summary>
-public sealed record ApiError(string ErrorType, string Message);
-
 [JsonSerializable(typeof(AskAiRequest))]
 [JsonSerializable(typeof(AskAiMessageFeedbackRequest))]
 [JsonSerializable(typeof(Reaction))]
@@ -49,7 +46,13 @@ public sealed record ApiError(string ErrorType, string Message);
 [JsonSerializable(typeof(Search.ApiReference.ApiOperationCollectionResponse))]
 [JsonSerializable(typeof(Search.ApiReference.ApiSummary))]
 [JsonSerializable(typeof(Search.ApiReference.ApiOperationListResponse))]
-[JsonSerializable(typeof(Search.ApiReference.ApiReferenceRejection))]
-[JsonSerializable(typeof(ApiError))]
+// Route and query parameter types: the OpenAPI document describes them, and under Native AOT
+// it can only describe types this context knows.
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(bool?))]
+[JsonSerializable(typeof(int?))]
+[JsonSerializable(typeof(Guid))]
+[JsonSerializable(typeof(DateTimeOffset))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;

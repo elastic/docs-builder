@@ -157,6 +157,9 @@ public partial class ChangesService(
 		return new ChangesResult { Pages = pages, NextCursor = nextCursor };
 	}
 
+	/// <summary>Whether <paramref name="cursor"/> is a <c>nextCursor</c> this service returned, so a caller can reject one it did not.</summary>
+	public static bool IsValidCursor(string cursor) => DecodeCursor(cursor) is not null;
+
 	private static ChangesPageCursor? DecodeCursor(string? cursor)
 	{
 		if (string.IsNullOrWhiteSpace(cursor))

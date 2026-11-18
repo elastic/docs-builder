@@ -55,27 +55,17 @@ try
 
 	_ = app.Environment.IsDevelopment()
 		? app.UseDeveloperExceptionPage()
-		: app.UseExceptionHandler(err => err.Run(async context =>
+		: app.UseExceptionHandler(new ExceptionHandlerOptions
 		{
-			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-			ApiError error;
-			if (ex is SearchUnavailableException)
-			{
-				// Transient by construction (timeout, overload): tell clients and the CDN to retry instead of failing.
-				logger.LogWarning(ex, "Search unavailable on {Method} {Path}", context.Request.Method, context.Request.Path);
-				context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-				context.Response.Headers.RetryAfter = "5";
-				error = new ApiError("search_unavailable", ex.Message);
-			}
-			else
-			{
-				if (ex != null)
-					logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-				context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-				error = new ApiError("internal_error", "An unexpected error occurred.");
-			}
-			await context.Response.WriteAsJsonAsync(error, ApiJsonContext.Default.ApiError);
-		}));
+			// No handler: with AddProblemDetails the middleware writes the problem, typed by ApiProblems.Customize.
+			StatusCodeSelector = ApiProblems.StatusCodeFor,
+			// A parameter that does not bind is the client's mistake, not an error worth logging.
+			SuppressDiagnosticsCallback = context => context.Exception is BadHttpRequestException
+		});
+
+	// Some binding failures, such as a number that does not parse, end in an empty 400 instead of throwing;
+	// with AddProblemDetails, status code pages give every bodyless error a problem body like the rest.
+	_ = app.UseStatusCodePages();
 
 	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 
@@ -85,6 +75,7 @@ try
 	var v1 = api.MapGroup("/v1");
 
 	v1.MapElasticDocsApiEndpoints();
+	_ = v1.MapOpenApi("/openapi.json");
 	Console.WriteLine("API endpoints mapped");
 
 	Console.WriteLine("Application startup completed successfully");

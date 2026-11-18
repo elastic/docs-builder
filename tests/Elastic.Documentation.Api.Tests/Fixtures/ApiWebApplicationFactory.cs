@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.ServiceDefaults;
@@ -97,6 +98,15 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			_ = otelBuilder.WithLogging(logging =>
 			{
 				_ = logging.AddInMemoryExporter(ExportedLogRecords);
+			});
+
+			// The API publishes with Native AOT, where its JSON options have no reflection fallback.
+			// Drop the fallback here too, so a type missing from ApiJsonContext fails a test instead of production.
+			_ = services.PostConfigure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+			{
+				var reflection = options.SerializerOptions.TypeInfoResolverChain.OfType<DefaultJsonTypeInfoResolver>().ToList();
+				foreach (var resolver in reflection)
+					_ = options.SerializerOptions.TypeInfoResolverChain.Remove(resolver);
 			});
 
 			// Apply test-specific service replacements (if any)

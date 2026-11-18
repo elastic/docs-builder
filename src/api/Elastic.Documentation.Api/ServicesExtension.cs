@@ -15,9 +15,12 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Transport;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
+using OpenApiInfo = Microsoft.OpenApi.OpenApiInfo;
+using OpenApiServer = Microsoft.OpenApi.OpenApiServer;
 
 namespace Elastic.Documentation.Api;
 
@@ -59,6 +62,21 @@ public static class ServicesExtension
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
+		// Every error answers RFC 9457 problem details; binding failures throw, so they get a precise detail.
+		_ = services.AddProblemDetails(options => options.CustomizeProblemDetails = ApiProblems.Customize);
+		_ = services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
+		_ = services.AddOpenApi(options => options.AddDocumentTransformer((document, _, _) =>
+		{
+			document.Info = new OpenApiInfo
+			{
+				Title = "Elastic Docs API",
+				Version = "v1",
+				Description = "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs. "
+					+ "Requests through www.elastic.co need the cookie feature_search_or_askai_enabled=true; without it the CDN answers 403."
+			};
+			document.Servers = [new OpenApiServer { Url = "https://www.elastic.co" }];
+			return Task.CompletedTask;
+		}));
 
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });

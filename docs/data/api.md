@@ -6,6 +6,8 @@ navigation_title: REST API
 
 {{dbuild}} includes a REST API server (`Elastic.Documentation.Api`) that powers search, AI assistance, and content change feeds for the documentation site.
 
+The server describes itself in an OpenAPI document at `/docs/_api/v1/openapi.json`, generated from its endpoints. It lists every endpoint with its parameters, request bodies, responses, and error codes. Requests through `www.elastic.co` need the cookie `feature_search_or_askai_enabled=true`; without it, the CDN answers `403`.
+
 ## Endpoints
 
 | Endpoint | Description |
@@ -53,7 +55,7 @@ The response has `totalHits` and `results`. Each result has its `operation`, plu
 
 ### Errors
 
-A request these resources can't answer returns `{ "errorType": "...", "message": "..." }`. The status is `404` when `errorType` ends in `_not_found`: `operation_not_found`, `api_not_found`, or `group_not_found`. Invalid arguments return `400` with `invalid_arguments`.
+The API operations resources report errors like every other endpoint; see [Errors](#errors).
 
 ## Ask AI provider
 
@@ -67,6 +69,55 @@ Each deployment of the API server picks its Ask AI provider with the `DOCUMENTAT
 
 The value is case-insensitive. Any other value stops the Ask AI service with a configuration error. LLM Gateway needs `LLM_GATEWAY_FUNCTION_URL` and `LLM_GATEWAY_SERVICE_ACCOUNT`. Agent Builder needs `DOCUMENTATION_KIBANA_URL` and `DOCUMENTATION_KIBANA_APIKEY`. A deployment that uses Agent Builder, such as Codex, must set `DOCUMENTATION_ASK_AI_PROVIDER=AgentBuilder`.
 
-:::{note}
-A formal OpenAPI specification should be generated from the API server as a follow-up. This page will be updated with full endpoint details, request/response schemas, and authentication requirements once the spec is available.
-:::
+## Errors
+
+Every error is an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem, served as `application/problem+json`:
+
+```json
+{
+  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#invalid-arguments",
+  "title": "Invalid arguments",
+  "status": 400,
+  "detail": "Pass q or endpoint, not both.",
+  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+}
+```
+
+- `type` identifies the problem and links to its section below. Match on it, not on `title` or `detail`.
+- `title` is the same for every occurrence of a type.
+- `detail` explains this occurrence, for people.
+- `traceId` names the request's trace. Quote it when you report a problem.
+
+Errors from the CDN, such as the `403` for a missing cookie, aren't problems and aren't JSON.
+
+### Invalid arguments [invalid-arguments]
+
+`400`. A parameter is missing, doesn't parse, or contradicts another one. `detail` says which.
+
+### Not found [not-found]
+
+`404`. No endpoint matches the path.
+
+### API operation not found [operation-not-found]
+
+`404`. No API operation has that id, or serves that endpoint, in the requested API and version.
+
+### API not found [api-not-found]
+
+`404`. No API has that key, or it has no operations in the requested version.
+
+### API group not found [group-not-found]
+
+`404`. The API has no group with that name.
+
+### Internal error [internal-error]
+
+`500`. An unexpected failure. `detail` doesn't include its cause; use `traceId` to report it.
+
+### Search unavailable [search-unavailable]
+
+`503`. Elasticsearch timed out or is overloaded. Retry after the seconds in the `Retry-After` header.
+
+### Feedback unavailable [feedback-unavailable]
+
+`503`. Feedback could not be stored. Retry later.
