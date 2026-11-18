@@ -18,6 +18,10 @@ namespace Elastic.Documentation.Api;
 
 public static class MappingsExtension
 {
+	// An ActivitySource stays registered with the runtime until disposed, so create each one once.
+	private static readonly ActivitySource AskAiActivitySource = new(TelemetryConstants.AskAiSourceName);
+	private static readonly ActivitySource AskAiFeedbackActivitySource = new(TelemetryConstants.AskAiFeedbackSourceName);
+
 	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group)
 	{
 		_ = group.MapGet("/", () => Results.Empty);
@@ -46,13 +50,12 @@ public static class MappingsExtension
 			context.Response.Headers.CacheControl = "no-cache";
 			context.Response.Headers.Connection = "keep-alive";
 
-			var askAiActivitySource = new ActivitySource(TelemetryConstants.AskAiSourceName);
 			logger.LogInformation(
 				"Starting AskAI chat with {AgentProvider} and {AgentId}",
 				streamTransformer.AgentProvider,
 				streamTransformer.AgentId
 			);
-			var activity = askAiActivitySource.StartActivity($"chat {streamTransformer.AgentProvider}", ActivityKind.Client);
+			var activity = AskAiActivitySource.StartActivity($"chat {streamTransformer.AgentProvider}", ActivityKind.Client);
 			_ = activity?.SetTag("gen_ai.operation.name", "chat");
 			_ = activity?.SetTag("gen_ai.provider.name", streamTransformer.AgentProvider);
 			_ = activity?.SetTag("gen_ai.agent.id", streamTransformer.AgentId);
@@ -65,18 +68,29 @@ public static class MappingsExtension
 			logger.LogInformation("AskAI input message: <{ask_ai.input.message}>", SanitizeForLog(askAiRequest.Message));
 			logger.LogInformation("Streaming AskAI response");
 
-			var response = await askAiService.AskAi(askAiRequest, ctx);
+			Stream transformedStream;
+			try
+			{
+				var response = await askAiService.AskAi(askAiRequest, ctx);
 
-			var conversationId = response.GeneratedConversationId ?? askAiRequest.ConversationId;
-			if (conversationId is not null)
-				_ = activity?.SetTag("gen_ai.conversation.id", conversationId.ToString());
+				var conversationId = response.GeneratedConversationId ?? askAiRequest.ConversationId;
+				if (conversationId is not null)
+					_ = activity?.SetTag("gen_ai.conversation.id", conversationId.ToString());
 
-			var transformedStream = await streamTransformer.TransformAsync(
-				response.Stream,
-				response.GeneratedConversationId,
-				activity,
-				ctx
-			);
+				transformedStream = await streamTransformer.TransformAsync(
+					response.Stream,
+					response.GeneratedConversationId,
+					activity,
+					ctx
+				);
+			}
+			catch (Exception ex)
+			{
+				// The transformer ends the activity once it owns the stream; until then this handler must.
+				_ = activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+				activity?.Dispose();
+				throw;
+			}
 			await transformedStream.CopyToAsync(context.Response.Body, ctx);
 		});
 
@@ -91,8 +105,7 @@ public static class MappingsExtension
 		{
 			var euid = TryGetEuid(context);
 
-			var feedbackActivitySource = new ActivitySource(TelemetryConstants.AskAiFeedbackSourceName);
-			using var activity = feedbackActivitySource.StartActivity("record message-feedback", ActivityKind.Internal);
+			using var activity = AskAiFeedbackActivitySource.StartActivity("record message-feedback", ActivityKind.Internal);
 			_ = activity?.SetTag("gen_ai.conversation.id", request.ConversationId);
 			_ = activity?.SetTag("ask_ai.message.id", request.MessageId);
 			_ = activity?.SetTag("ask_ai.feedback.reaction", request.Reaction.ToString().ToLowerInvariant());
@@ -106,7 +119,8 @@ public static class MappingsExtension
 
 			var record = new AskAiMessageFeedbackRecord(request.MessageId, request.ConversationId, request.Reaction, euid);
 
-			await feedbackService.RecordFeedbackAsync(record, ctx);
+			if (!await feedbackService.RecordFeedbackAsync(record, ctx))
+				return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 			return Results.NoContent();
 		}).DisableAntiforgery();
 	}

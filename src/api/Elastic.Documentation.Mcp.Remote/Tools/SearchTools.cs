@@ -44,8 +44,8 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 			var request = new FullSearchRequest
 			{
 				Query = query,
-				PageNumber = Math.Max(1, pageNumber),
-				PageSize = Math.Clamp(pageSize, 1, 50),
+				PageNumber = pageNumber,
+				PageSize = pageSize,
 				ProductFilter = productFilter != null ? [productFilter] : null,
 				SectionFilter = sectionFilter != null ? [sectionFilter] : null,
 				IncludeHighlighting = false

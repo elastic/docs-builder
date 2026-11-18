@@ -25,9 +25,6 @@ public static class ServicesExtension
 	/// </summary>
 	public static IServiceCollection AddSearchServices(this IServiceCollection services)
 	{
-		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring Search services");
-
 		_ = services.AddSingleton<ElasticsearchClientAccessor>();
 
 		// ProductsConfiguration already implements IProductNameLookup; surface it via the
@@ -58,7 +55,6 @@ public static class ServicesExtension
 		// Docs-specific adapters preserve the existing API/MCP wire format.
 		_ = services.AddScoped<INavigationSearchService, NavigationSearchService>();
 		_ = services.AddScoped<IFullSearchService, FullSearchService>();
-		logger?.LogInformation("Full search services registered with hybrid RRF support");
 
 		// Changes feed (cursor-paginated changes since a given date)
 		_ = services.AddSingleton<SharedPointInTimeManager>();
@@ -76,12 +72,5 @@ public static class ServicesExtension
 		_ = services.AddScoped<IApiGateway, ApiGateway>();
 		_ = services.AddScoped<ApiReferenceService>();
 		return services;
-	}
-
-	private static ILogger? GetLogger(IServiceCollection services)
-	{
-		using var serviceProvider = services.BuildServiceProvider();
-		var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-		return loggerFactory?.CreateLogger(typeof(ServicesExtension));
 	}
 }
