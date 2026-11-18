@@ -8,6 +8,7 @@ using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
 
@@ -67,7 +68,7 @@ public sealed class VersionIndexClient : IDisposable
 
 	private readonly SemaphoreSlim _rootIndexLock = new(1, 1);
 	private bool _rootIndexFetched;
-	private RootVersionIndex? _rootIndex;
+	private VersionIndex? _rootIndex;
 	private string? _rootIndexFetchError;
 
 	public VersionIndexClient(
@@ -117,10 +118,10 @@ public sealed class VersionIndexClient : IDisposable
 		if (fetchError is not null)
 			return MissingEntryFallback(apiKey, apiConfig, $"Version index at {_indexUri} could not be fetched ({fetchError})", collector);
 
-		if (index is null || index.Count == 0)
+		if (index is null || index.Repositories.Count == 0)
 			return MissingEntryFallback(apiKey, apiConfig, $"Version index at {_indexUri} declares no repositories", collector);
 
-		if (!index.TryGetValue(repository, out var specsForRepo))
+		if (!index.TryGetRepository(repository, out var specsForRepo))
 			return MissingEntryFallback(
 				apiKey,
 				apiConfig,
@@ -128,7 +129,7 @@ public sealed class VersionIndexClient : IDisposable
 				collector
 			);
 
-		if (!specsForRepo.TryGetValue(apiConfig.SpecFileName, out var versions) || versions.Count == 0)
+		if (!specsForRepo.TryGetSpec(apiConfig.SpecFileName, out var versions) || versions.Count == 0)
 		{
 			return MissingEntryFallback(
 				apiKey,
@@ -139,20 +140,20 @@ public sealed class VersionIndexClient : IDisposable
 		}
 
 		var resolved = new List<ResolvedApiVersion>(versions.Count);
-		foreach (var (moniker, entry) in versions)
+		foreach (var (moniker, version) in versions)
 		{
 			if (moniker == "main" && apiConfig.LocalSpecFile is { } localFile)
 			{
-				resolved.Add(new ResolvedApiVersion { Moniker = moniker, Version = entry.Version, IsLocal = true, LocalFile = localFile });
+				resolved.Add(new ResolvedApiVersion { Moniker = moniker, Version = version, IsLocal = true, LocalFile = localFile });
 				continue;
 			}
 
 			resolved.Add(new ResolvedApiVersion
 			{
 				Moniker = moniker,
-				Version = entry.Version,
+				Version = version,
 				IsLocal = false,
-				ObjectKey = $"{repository}/{entry.Version}/{apiConfig.SpecFileName}"
+				ObjectKey = $"{repository}/{version}/{apiConfig.SpecFileName}"
 			});
 		}
 
@@ -249,7 +250,7 @@ public sealed class VersionIndexClient : IDisposable
 		return [];
 	}
 
-	private async Task<(RootVersionIndex? Index, string? Error)> GetRootIndexAsync(Cancel ctx)
+	private async Task<(VersionIndex? Index, string? Error)> GetRootIndexAsync(Cancel ctx)
 	{
 		if (_rootIndexFetched)
 			return (_rootIndex, _rootIndexFetchError);
@@ -262,8 +263,12 @@ public sealed class VersionIndexClient : IDisposable
 
 			try
 			{
-				_rootIndex = await FetchIndexAsync(ctx).ConfigureAwait(false);
-				_rootIndexFetchError = _rootIndex is null ? "the response was empty or could not be parsed" : null;
+				var loaded = await FetchIndexAsync(ctx).ConfigureAwait(false);
+				_rootIndex = loaded.ValueOrNull();
+				_rootIndexFetchError = _rootIndex is null
+					? loaded.Findings().Where(d => d.Severity == Severity.Error).Select(d => d.Message).LastOrDefault()
+						?? VersionIndexLoader.EmptyMessage
+					: null;
 			}
 			catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException)
 			{
@@ -282,7 +287,7 @@ public sealed class VersionIndexClient : IDisposable
 		}
 	}
 
-	private async Task<RootVersionIndex?> FetchIndexAsync(Cancel ctx)
+	private async Task<LoadResult<VersionIndex>> FetchIndexAsync(Cancel ctx)
 	{
 		Exception? lastError = null;
 		for (var attempt = 1; attempt <= _maxAttempts; attempt++)
@@ -291,11 +296,9 @@ public sealed class VersionIndexClient : IDisposable
 			try
 			{
 				await using var stream = await FetchStreamAsync(_indexUri, attempt, ctx).ConfigureAwait(false);
-				return await JsonSerializer.DeserializeAsync(
-					stream,
-					VersionIndexJsonContext.Default.DictionaryStringDictionaryStringDictionaryStringVersionIndexEntry,
-					ctx
-				).ConfigureAwait(false);
+				using var reader = new StreamReader(stream);
+				var text = await reader.ReadToEndAsync(ctx).ConfigureAwait(false);
+				return VersionIndexLoader.Load(text, _indexUri.AbsoluteUri);
 			}
 			catch (HttpRequestException ex)
 			{
@@ -308,7 +311,9 @@ public sealed class VersionIndexClient : IDisposable
 
 		if (lastError is not null)
 			throw lastError;
-		return null;
+		return new Unreadable<VersionIndex>([
+			new Diagnostic { Severity = Severity.Error, File = _indexUri.AbsoluteUri, Message = VersionIndexLoader.EmptyMessage }
+		]);
 	}
 
 	private Task<Stream> FetchStreamAsync(Uri uri, int attempt, Cancel ctx)

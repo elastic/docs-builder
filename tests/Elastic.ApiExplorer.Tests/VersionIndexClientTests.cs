@@ -366,6 +366,97 @@ public class VersionIndexClientTests
 	}
 
 	[Test]
+	public async Task ResolveVersionsAsync_KeepsTheMonikerOrderTheIndexWrote()
+	{
+		// not sorted: reading monikers in sorted order is a separate behaviour change
+		const string index =
+			"""
+			{ "elastic/elasticsearch": { "elasticsearch-openapi.json": { "9": { "version": "9.5" }, "main": { "version": "main" }, "8": { "version": "8.19" } } } }
+			""";
+		var handler = new StubHandler(_ => IndexResponse(index));
+		using var client = CreateClient(handler);
+
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			new CapturingDiagnosticsCollector(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		versions.Select(v => v.Moniker).Should().Equal("9", "main", "8");
+	}
+
+	[Test]
+	public async Task ResolveVersionsAsync_AnIndexThatBreaksItsRules_IsReadAsItIsAndReportsNothing()
+	{
+		// the key '8' resolving to 9.1 breaks a rule of the model; reporting that is a separate behaviour change
+		const string index =
+			"""
+			{ "elastic/elasticsearch": { "elasticsearch-openapi.json": { "main": { "version": "main" }, "8": { "version": "9.1" } } } }
+			""";
+		var handler = new StubHandler(_ => IndexResponse(index));
+		using var client = CreateClient(handler);
+		var collector = new CapturingDiagnosticsCollector();
+
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		versions.Should().HaveCount(2);
+		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(0);
+	}
+
+	[Test]
+	[Arguments("""{ "elastic/elasticsearch": null }""")]
+	[Arguments("""{ "elastic/elasticsearch": { "elasticsearch-openapi.json": null } }""")]
+	[Arguments("""{ "elastic/elasticsearch": { "elasticsearch-openapi.json": { "main": null } } }""")]
+	public async Task ResolveVersionsAsync_ANullWhereTheLookupGoes_ThrowsNullReference(string index)
+	{
+		// a JSON null is not reported as a fetch error: it fails where the lookup reaches it, and OpenApiGenerator reports the exception
+		var handler = new StubHandler(_ => IndexResponse(index));
+		using var client = CreateClient(handler);
+
+		var resolve =
+			async () => await client.ResolveVersionsAsync(
+				GitFor("https://github.com/elastic/elasticsearch.git"),
+				"elasticsearch",
+				ApiConfig(),
+				new CapturingDiagnosticsCollector(),
+				TestContext.Current!.Execution.CancellationToken
+			);
+
+		_ = await resolve.Should().ThrowAsync<NullReferenceException>();
+		client.RootIndexFetchError.Should().BeNull();
+	}
+
+	[Test]
+	public async Task ResolveVersionsAsync_ANullElsewhereInTheIndex_DoesNotMatter()
+	{
+		const string index =
+			"""
+			{ "elastic/kibana": null, "elastic/elasticsearch": { "other.json": null, "elasticsearch-openapi.json": { "main": { "version": "main" } } } }
+			""";
+		var handler = new StubHandler(_ => IndexResponse(index));
+		using var client = CreateClient(handler);
+
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			new CapturingDiagnosticsCollector(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		versions.Should().ContainSingle().Which.Moniker.Should().Be("main");
+	}
+
+	[Test]
 	public async Task ResolveVersionsAsync_IndexRecoversAfterRetry_ReturnsVersions()
 	{
 		var attempts = 0;
