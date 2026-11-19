@@ -1,17 +1,17 @@
 @using Elastic.Documentation.Extensions
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Image.ImageViewModel>
 <a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-@Model.UniqueImageId">
-	<img loading="lazy" title="@Model.Title.NullIfEmpty()" alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
+	<img loading="lazy" title="@Model.Title.NullIfEmpty()" alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
 	@Model.RenderBlock()
 </a>
 
-<dialog id="modal-@Model.UniqueImageId" class="modal" aria-label="@(Model.Alt == string.Empty ? new HtmlString("Image") : new HtmlString(Model.Alt))">
+<dialog id="modal-@Model.UniqueImageId" class="modal" aria-label="@(string.IsNullOrEmpty(Model.Alt) ? "Image" : Model.Alt)">
 	<div class="modal-content">
 		<form method="dialog" class="modal-close">
 			<button type="submit" class="close-button" aria-label="Close">&times;</button>
 		</form>
 		<a class="reference internal image-reference" href="@Model.ImageUrl" target="_blank">
-			<img loading="lazy" title="@Model.Title.NullIfEmpty()"  alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" />
+			<img loading="lazy" title="@Model.Title.NullIfEmpty()"  alt="@Model.Alt" src="@Model.ImageUrl" />
 		</a>
 	</div>
 </dialog>
