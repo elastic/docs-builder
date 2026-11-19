@@ -20,8 +20,8 @@ feature !navigation-preview
   click "#api-version-switcher a[href*='/docs/api/elasticsearch/v8']"
 end
 feature navigation-preview
-  expect visible "#api-version-switcher summary"
-  click "#api-version-switcher summary"
+  expect visible "#api-version-switcher button"
+  click "#api-version-switcher button"
   click "#api-version-switcher a[href*='/docs/api/elasticsearch/v8']"
 end
 wait --url **/docs/api/elasticsearch/v8*
@@ -31,7 +31,7 @@ feature !navigation-preview
   expect text ".api-identity-version-label" v8 --contains
 end
 feature navigation-preview
-  expect attr "#api-version-switcher summary" aria-label "API version: v8"
+  expect attr "#api-version-switcher button" aria-label "API version: v8"
 end
 
 # Open an operation of that version: its page shows the method and the route under "Paths". Waiting for a link of the

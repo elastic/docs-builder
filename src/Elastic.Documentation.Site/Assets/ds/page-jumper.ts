@@ -1,5 +1,7 @@
 // The page jumper: a search field that lists matching pages in a panel under it as you type, with no dialog.
 // Without script the field is a plain search form, so this only adds the listing. Hooks are data attributes.
+// The panel is a manual popover placed under the field by floating.ts. Focus stays in the field, so the browser's light dismiss would
+// close the panel on every click into it; this closes it on Escape and on a click outside the form instead.
 import { drawResults, querySearch } from './search'
 
 const debounceMs = 250
@@ -48,8 +50,12 @@ class PageJumper {
         this.list.addEventListener('click', () => this.show(false))
     }
 
+    private isOpen(): boolean {
+        return this.panel.matches(':popover-open')
+    }
+
     private show(open: boolean) {
-        this.panel.hidden = !open
+        if (open !== this.isOpen()) this.panel.togglePopover(open)
         this.input.setAttribute('aria-expanded', String(open))
     }
 
@@ -130,7 +136,7 @@ class PageJumper {
         } else if (event.key === 'Enter' && this.active >= 0) {
             const link =
                 this.items()[this.active]?.querySelector<HTMLAnchorElement>('a')
-            if (link && !this.panel.hidden) {
+            if (link && this.isOpen()) {
                 event.preventDefault()
                 link.click()
             }
@@ -139,6 +145,8 @@ class PageJumper {
 }
 
 export function initPageJumpers(scope: ParentNode = document) {
+    // Without the Popover API the panel cannot show, and the field stays a plain search form.
+    if (typeof HTMLElement.prototype.showPopover !== 'function') return
     scope
         .querySelectorAll<HTMLElement>(
             '[data-page-jumper]:not([data-page-jumper-bound])'

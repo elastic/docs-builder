@@ -17,8 +17,11 @@ import {
  * Floating UI places it beside its anchor, flipping and shifting to stay on screen, and follows the anchor while
  * the menu is open. `data-placement` picks the side (default `bottom-start`); `data-anchor` names the id of an
  * anchor other than the button; `data-boundary` is a selector for an ancestor the menu must also stay inside
- * sideways, for a menu whose button can sit at either end of its container. The menu fires a bubbling `floating:placed` event the first time it is placed; it is
- * invisible, so unfocusable, until then. Listeners are delegated on the document, so they survive htmx swaps.
+ * sideways, for a menu whose button can sit at either end of its container. `data-hover` also opens the menu while
+ * a mouse rests on its button or on the menu itself, and a click on the button keeps it open after the mouse
+ * leaves; touch and keyboard still use the click. Choosing a link closes the menu it is in. The menu fires a
+ * bubbling `floating:placed` event the first time it is placed; it is invisible, so unfocusable, until then.
+ * Listeners are delegated on the document, so they survive htmx swaps.
  */
 
 const PLACED = 'data-placed'
@@ -134,9 +137,15 @@ function onToggle(event: Event) {
     if (!(popover instanceof HTMLElement) || !popover.hasAttribute(FLOATING))
         return
     const open = (event as ToggleEvent).newState === 'open'
+    // The markup carries no `aria-expanded`, so without script the browser reports the button's own state.
     for (const invoker of invokers(popover))
         invoker.setAttribute('aria-expanded', String(open))
     release(popover)
+    if (!open) {
+        openedByHover.delete(popover)
+        // A close timer that outlives the menu would shut it again when it is reopened before the delay ends.
+        window.clearTimeout(hoverTimers.get(popover))
+    }
     const anchor = anchorOf(popover)
     if (!open || !anchor) return
     stopTracking.set(
@@ -145,13 +154,85 @@ function onToggle(event: Event) {
     )
 }
 
-/** A swap removes the page's popovers; close them first so their tracking is released. */
-function closeAll() {
+/** Closes the open popovers inside `root` and stops tracking them. Removing an open popover fires no `toggle`, so whoever removes a subtree calls this first. */
+export function closePopoversWithin(root: Node) {
     for (const popover of [...stopTracking.keys()]) {
+        // A removed popover is in no root, so it is always released.
+        if (popover.isConnected && !root.contains(popover)) continue
         if (popover.isConnected && popover.matches(':popover-open'))
             popover.hidePopover()
         release(popover)
     }
+}
+
+/** A swap removes the page's popovers; close them first so their tracking is released. */
+function closeAll() {
+    closePopoversWithin(document)
+}
+
+const HOVER_CLOSE_MS = 150
+const hoverTimers = new WeakMap<HTMLElement, number>()
+/** Menus open only because the mouse rests on them: leaving closes them, and a click on the button keeps them open. Both collections are weak, so a menu an htmx swap detaches is not kept alive by its hover state. */
+const openedByHover = new WeakSet<HTMLElement>()
+
+/** The `data-hover` menu that `target` is inside of, or opens. */
+function hoverMenuAt(target: EventTarget | null): HTMLElement | null {
+    if (!(target instanceof Element)) return null
+    const inside = target.closest<HTMLElement>('[popover][data-hover]')
+    if (inside) return inside
+    const id = target.closest('[popovertarget]')?.getAttribute('popovertarget')
+    const menu = id ? document.getElementById(id) : null
+    return menu?.hasAttribute('data-hover') ? menu : null
+}
+
+function onPointerOver(event: PointerEvent) {
+    if (event.pointerType !== 'mouse') return
+    const menu = hoverMenuAt(event.target)
+    if (!menu) return
+    window.clearTimeout(hoverTimers.get(menu))
+    // `pointerover` also fires between the children of the button, so a menu the reader just closed with a click must not reopen.
+    if (hoverMenuAt(event.relatedTarget) === menu) return
+    if (menu.matches(':popover-open')) return
+    menu.showPopover()
+    openedByHover.add(menu)
+}
+
+/** Leaving the button for the menu (or back) crosses a gap, so the close waits long enough for the pointer to arrive. */
+function onPointerOut(event: PointerEvent) {
+    if (event.pointerType !== 'mouse') return
+    const menu = hoverMenuAt(event.target)
+    if (!menu || !openedByHover.has(menu)) return
+    if (hoverMenuAt(event.relatedTarget) === menu) return
+    window.clearTimeout(hoverTimers.get(menu))
+    hoverTimers.set(
+        menu,
+        window.setTimeout(() => {
+            if (menu.isConnected && menu.matches(':popover-open'))
+                menu.hidePopover()
+        }, HOVER_CLOSE_MS)
+    )
+}
+
+/** The click that follows hovering a `data-hover` button would toggle the open menu shut; it keeps the menu open instead. */
+function keepHoverMenuOpen(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return
+    const id = event.target
+        .closest('[popovertarget]')
+        ?.getAttribute('popovertarget')
+    const menu = id ? document.getElementById(id) : null
+    if (!menu || !openedByHover.delete(menu)) return
+    window.clearTimeout(hoverTimers.get(menu))
+    // Cancelling the click cancels the button's popover toggle.
+    event.preventDefault()
+}
+
+/** A link that does not swap the page, such as a download or a new tab, would otherwise leave its menu open. */
+function onClick(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return
+    const menu = event.target
+        .closest('a[href]')
+        ?.closest<HTMLElement>(`[popover][${FLOATING}]`)
+    if (menu?.matches(':popover-open')) menu.hidePopover()
 }
 
 let initialized = false
@@ -165,4 +246,12 @@ export function initFloating() {
     document.addEventListener('beforetoggle', onBeforeToggle, true)
     document.addEventListener('toggle', onToggle, true)
     document.addEventListener('htmx:beforeSwap', closeAll)
+    document.addEventListener('pointerover', onPointerOver)
+    document.addEventListener('pointerout', onPointerOut)
+    document.addEventListener('click', keepHoverMenuOpen, true)
+    document.addEventListener('click', onClick)
+    // A middle click opens the link in a new tab through `auxclick`, not `click`.
+    document.addEventListener('auxclick', (event) => {
+        if (event.button === 1) onClick(event)
+    })
 }

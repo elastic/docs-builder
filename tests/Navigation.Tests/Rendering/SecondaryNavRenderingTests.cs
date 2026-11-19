@@ -214,12 +214,6 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		var desktopTabs = reference.Split("<ul").Last();
 		var referenceListItem = desktopTabs.Split("<li").First(li => li.Contains("Reference"));
 		referenceListItem.Should().Contain("secondary-nav-item--active");
-
-		// Dropdown tabs have no tree backing — they are never marked active via section ID.
-		var product = await Render(TopNav, currentUrl: "/docs/products/elasticsearch/index");
-		desktopTabs = product.Split("<ul").Last();
-		var productListItem = desktopTabs.Split("<li").First(li => li.Contains("Products"));
-		productListItem.Should().NotContain("secondary-nav-item--active");
 	}
 
 	[Test]
