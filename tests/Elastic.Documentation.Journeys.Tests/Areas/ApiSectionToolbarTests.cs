@@ -151,22 +151,30 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 					const heading = document.getElementById('supplemental-guide');
 					const bar = document.querySelector('.api-section-links').getBoundingClientRect();
 					const top = heading.getBoundingClientRect().top;
-					return {
+					const state = {
 						rowOnScreen: bar.bottom > 0 && bar.top < innerHeight,
 						clearOfRow: top >= bar.bottom,
 						atItsScrollMargin: Math.abs(top - parseFloat(getComputedStyle(heading).scrollMarginTop)) < 2,
 					};
+					// Without the class the page has no row, as a single-section operation with supplemental sections does, and
+					// the heading keeps the margin every element has.
+					document.getElementById('elastic-api-v3').classList.remove('api-has-toolbar');
+					state.globalWithoutRow = getComputedStyle(heading).scrollMarginTop === getComputedStyle(document.body).scrollMarginTop;
+					return state;
 				})()
 				"""
 			).ConfigureAwait(false);
 			report = string.Create(
 				CultureInfo.InvariantCulture,
 				$"row on screen {state.GetProperty("rowOnScreen").GetBoolean()}, heading clear of the row {state.GetProperty("clearOfRow").GetBoolean()}, " +
-					$"heading at its scroll margin {state.GetProperty("atItsScrollMargin").GetBoolean()}"
+					$"heading at its scroll margin {state.GetProperty("atItsScrollMargin").GetBoolean()}, " +
+					$"global margin without the row {state.GetProperty("globalWithoutRow").GetBoolean()}"
 			);
 		}).ConfigureAwait(false);
 
-		_ = report.Should().MatchInlineSnapshot("row on screen True, heading clear of the row True, heading at its scroll margin True");
+		_ = report.Should().MatchInlineSnapshot(
+			"row on screen True, heading clear of the row True, heading at its scroll margin True, global margin without the row True"
+		);
 	}
 
 	[Test]

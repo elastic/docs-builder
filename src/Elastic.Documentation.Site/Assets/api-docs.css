@@ -4601,10 +4601,16 @@ html:has(.api-page-shell) {
 	}
 }
 
-/* A section reached from the bar stops below the bar instead of under it: every section heading (the parameter and
-   response sections, and the supplemental ones, which are plain h2.section-header) and the privileges block. */
-#elastic-api-v3 h2.section-header,
+/* A section reached from the bar stops below the bar instead of under it. */
+#elastic-api-v3 .api-param-section-header,
+#elastic-api-v3 .responses-header,
 #elastic-api-v3 #required-privileges {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 52px);
+}
+
+/* A supplemental section is a plain h2.section-header. A single-section operation can have them too but renders no
+   row, so only a page with the row clears it; the others keep the site's usual margin. */
+#elastic-api-v3.api-has-toolbar h2.section-header {
 	scroll-margin-top: calc(var(--offset-top, 0px) + 52px);
 }
 
