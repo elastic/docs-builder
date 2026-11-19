@@ -20,6 +20,9 @@ namespace Elastic.Documentation.Journeys.Tests.Areas;
 [NotInParallel]
 public class TooltipColorTests(JourneyTarget target)
 {
+	// WCAG 2 level AA for normal-size text; the tooltip's text is 14px.
+	private const double MinimumContrast = 4.5;
+
 	[Test]
 	public async Task Tooltip_OnTheIsolatedSite_HasAnOpaqueBackgroundAndReadableText()
 	{
@@ -54,13 +57,15 @@ public class TooltipColorTests(JourneyTarget target)
 		var report = string.Join(
 			'\n',
 			$"background is opaque: {colours.GetProperty("opaque").GetBoolean()}",
-			$"text differs from background: {colours.GetProperty("background").GetString() != colours.GetProperty("text").GetString()}",
+			FormattableString.Invariant(
+				$"text contrast is at least {MinimumContrast}:1: {colours.GetProperty("contrast").GetDouble() >= MinimumContrast}"
+			),
 			$"arrow matches background: {colours.GetProperty("background").GetString() == colours.GetProperty("arrow").GetString()}"
 		);
 		_ = report.Should().MatchInlineSnapshot(
 			"""
 			background is opaque: True
-			text differs from background: True
+			text contrast is at least 4.5:1: True
 			arrow matches background: True
 			"""
 		);
@@ -88,10 +93,21 @@ public class TooltipColorTests(JourneyTarget target)
 						return Array.from(ctx.getImageData(0, 0, 1, 1).data);
 					};
 					const background = pixel(style.backgroundColor);
+					const text = pixel(style.color);
+					// WCAG 2 contrast of the text, blended over the background, against the background.
+					const luminance = ([r, g, b]) => {
+						const linear = value => {
+							const channel = value / 255;
+							return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+						};
+						return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+					};
+					const blended = text.slice(0, 3).map((channel, i) => channel * (text[3] / 255) + background[i] * (1 - text[3] / 255));
+					const [lighter, darker] = [luminance(blended), luminance(background)].sort((a, b) => b - a);
 					return {
 						opaque: background[3] === 255,
+						contrast: (lighter + 0.05) / (darker + 0.05),
 						background: background.join(','),
-						text: pixel(style.color).join(','),
 						arrow: pixel(tip.dataset.side === 'bottom' ? arrow.borderBottomColor : arrow.borderTopColor).join(','),
 					};
 				})()
