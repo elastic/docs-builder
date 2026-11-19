@@ -129,24 +129,50 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 			await page.SetViewportAsync(260, 700, 1).ConfigureAwait(false);
 			await Task.Delay(500).ConfigureAwait(false);
 
-			var state = await page.EvaluateAsync(
+			var before = await page.EvaluateAsync(
+				"""
+				(() => {
+					const track = document.querySelector('.api-section-links-track');
+					// A scrollbar that takes layout room, as on a system without overlay scrollbars. Headless Chrome may draw
+					// none, so where it does not, reserve the same room with padding: the track must stay inside the row either way.
+					if (track.offsetHeight - track.clientHeight === 0) track.style.paddingBottom = '12px';
+					track.scrollIntoView({ block: 'center' });
+					const t = track.getBoundingClientRect();
+					return {
+						overflows: track.scrollWidth > track.clientWidth + 1,
+						scrollLeft: track.scrollLeft,
+						centerX: t.left + t.width / 2,
+						centerY: t.top + t.height / 2,
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+
+			// A sideways wheel over the links, as a trackpad swipe or shift+wheel sends it: a track a reader cannot scroll this
+			// way would pass a test that sets scrollLeft from a script.
+			await page.SendAsync("Input.dispatchMouseEvent", writer =>
+			{
+				writer.WriteString("type", "mouseWheel");
+				writer.WriteNumber("x", before.GetProperty("centerX").GetDouble());
+				writer.WriteNumber("y", before.GetProperty("centerY").GetDouble());
+				writer.WriteNumber("deltaX", 600);
+				writer.WriteNumber("deltaY", 0);
+			}).ConfigureAwait(false);
+			await Task.Delay(500).ConfigureAwait(false);
+
+			var after = await page.EvaluateAsync(
 				"""
 				(() => {
 					const bar = document.querySelector('.api-section-links');
 					const track = bar.querySelector('.api-section-links-track');
 					const links = [...track.querySelectorAll('a')];
 					const last = links[links.length - 1];
-					const overflows = track.scrollWidth > track.clientWidth + 1;
-					// A scrollbar that takes layout room, as on a system without overlay scrollbars. Headless Chrome may draw
-					// none, so where it does not, reserve the same room with padding: the track must stay inside the row either way.
-					if (track.offsetHeight - track.clientHeight === 0) track.style.paddingBottom = '12px';
-					track.scrollLeft = track.scrollWidth;
 					const row = bar.getBoundingClientRect();
 					const rowBottom = row.bottom - parseFloat(getComputedStyle(bar).borderBottomWidth);
 					const t = track.getBoundingClientRect();
 					const l = last.getBoundingClientRect();
 					return {
-						overflows,
+						scrollLeft: track.scrollLeft,
 						lastLabel: last.textContent.trim(),
 						lastReachable: l.left >= t.left - 1 && l.right <= t.right + 1,
 						trackInsideRow: t.top >= row.top - 1 && t.bottom <= rowBottom + 1,
@@ -157,13 +183,14 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 			).ConfigureAwait(false);
 			report = string.Create(
 				CultureInfo.InvariantCulture,
-				$"links overflow {state.GetProperty("overflows").GetBoolean()}, last link {state.GetProperty("lastLabel").GetString()} reachable {state.GetProperty("lastReachable").GetBoolean()}, " +
-					$"track inside the row {state.GetProperty("trackInsideRow").GetBoolean()}, links inside the track {state.GetProperty("linksInsideTrack").GetBoolean()}"
+				$"links overflow {before.GetProperty("overflows").GetBoolean()}, wheel scrolled the track {after.GetProperty("scrollLeft").GetDouble() > before.GetProperty("scrollLeft").GetDouble()}, " +
+					$"last link {after.GetProperty("lastLabel").GetString()} reachable {after.GetProperty("lastReachable").GetBoolean()}, " +
+					$"track inside the row {after.GetProperty("trackInsideRow").GetBoolean()}, links inside the track {after.GetProperty("linksInsideTrack").GetBoolean()}"
 			);
 		}).ConfigureAwait(false);
 
 		_ = report.Should().MatchInlineSnapshot(
-			"links overflow True, last link Responses reachable True, track inside the row True, links inside the track True"
+			"links overflow True, wheel scrolled the track True, last link Responses reachable True, track inside the row True, links inside the track True"
 		);
 	}
 
