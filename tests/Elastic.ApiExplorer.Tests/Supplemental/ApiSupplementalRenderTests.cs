@@ -434,6 +434,43 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_SupplementalOverviewSection_KeepsItsAnchorBesideTheIntro()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(
+			nav.Model,
+			nav,
+			operations: Doc("search", """
+			## Overview
+
+			SUPP_OP_OVERVIEW
+			""")
+		);
+
+		Occurrences(html, "id=\"api-operation-overview\"").Should().Be(1, "the intro has its own id");
+		html.Should().Contain("<header class=\"api-page-intro\" id=\"api-operation-overview\">", "and it sits on the intro");
+		Occurrences(html, "id=\"overview\"").Should().Be(1, "the supplemental section keeps #overview");
+		var section = html.IndexOf("id=\"overview\"", StringComparison.Ordinal);
+		section.Should().BeLessThan(html.IndexOf("SUPP_OP_OVERVIEW", StringComparison.Ordinal), "on the heading of its own section");
+		section.Should().BeGreaterThan(
+			html.IndexOf("id=\"responses\"", StringComparison.Ordinal),
+			"after the operation's sections, not on the intro"
+		);
+	}
+
+	private static int Occurrences(string html, string text)
+	{
+		var count = 0;
+		for (var i = html.IndexOf(text, StringComparison.Ordinal); i >= 0; i = html.IndexOf(
+			text,
+			i + text.Length,
+			StringComparison.Ordinal
+		))
+			count++;
+		return count;
+	}
+
+	[Test]
 	public void SplitHeading_ReadsExplicitId()
 	{
 		var (title, id) = ApiPostSection.SplitHeading("Errors {#errors-guide}");
