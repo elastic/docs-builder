@@ -83,6 +83,7 @@ describe('tooltips', () => {
             <span id="empty" data-tooltip="">e</span>
             <button id="copy" class="copybtn" data-tooltip="Copy">c</button>
             <button id="plain" data-tooltip="Back to top">b</button>
+            <button id="icon-button" data-tooltip="Copy"><span id="icon">i</span></button>
             <p id="elsewhere">text</p>`
     })
 
@@ -163,6 +164,31 @@ describe('tooltips', () => {
         )
 
         expect(shown()).toBeNull()
+    })
+
+    it('stays away after Escape until the pointer leaves, even when the target content changes under it', async () => {
+        pointer('pointerover', byId('icon'))
+        await vi.advanceTimersByTimeAsync(80)
+        document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        )
+
+        // The icon is swapped while the pointer rests on the button.
+        byId('icon').replaceWith(
+            Object.assign(document.createElement('span'), { id: 'icon' })
+        )
+        pointer('pointerover', byId('icon'))
+        await vi.advanceTimersByTimeAsync(80)
+        expect(shown()).toBeNull()
+
+        pointer('pointerout', byId('icon'), {
+            relatedTarget: byId('elsewhere'),
+        })
+        pointer('pointerover', byId('icon'), {
+            relatedTarget: byId('elsewhere'),
+        })
+        await vi.advanceTimersByTimeAsync(80)
+        expect(shown()).toBe('Copy')
     })
 
     it('hides before an htmx swap, so it keeps nothing of the old page', async () => {

@@ -32,6 +32,9 @@ type State =
 
 let state: State = { kind: 'idle' }
 let tooltip: HTMLElement | null = null
+// A target whose tooltip Escape or a click put away. It stays away while the pointer is on the target, even when the
+// target's content changes under the pointer (a copy button swaps its icon), and shows again once the pointer leaves.
+let dismissed: HTMLElement | null = null
 
 function tooltipElement(): HTMLElement {
     // A swap of the whole body takes the tooltip with it, so it is made again.
@@ -114,9 +117,18 @@ function delayOf(target: HTMLElement): number {
     return target.dataset.tooltipDelay === 'slow' ? SLOW_DELAY_MS : DELAY_MS
 }
 
+/** Whether the event moves the pointer or focus from inside `el` to outside it. */
+function leaves(el: HTMLElement, event: PointerEvent | FocusEvent): boolean {
+    if (!(event.target instanceof Node) || !el.contains(event.target))
+        return false
+    return !(
+        event.relatedTarget instanceof Node && el.contains(event.relatedTarget)
+    )
+}
+
 function onPointerOver(event: PointerEvent) {
     const target = targetOf(event.target)
-    if (!target || target === current()) return
+    if (!target || target === current() || target === dismissed) return
     // A touch starts with pointerover and ends with pointerout, so holding for the delay is what shows it.
     schedule(
         target,
@@ -125,21 +137,16 @@ function onPointerOver(event: PointerEvent) {
 }
 
 function onPointerOut(event: PointerEvent) {
+    if (dismissed && leaves(dismissed, event)) dismissed = null
     const target = current()
-    if (!target || !(event.target instanceof Node)) return
-    if (!target.contains(event.target)) return
-    if (
-        event.relatedTarget instanceof Node &&
-        target.contains(event.relatedTarget)
-    )
-        return
-    hide()
+    if (target && leaves(target, event)) hide()
 }
 
 function onPointerDown(event: PointerEvent) {
     if (event.pointerType === 'touch') return
     const target = targetOf(event.target)
     if (target && target === current() && target.matches(KEEP_ON_CLICK)) return
+    dismissed = target
     hide()
 }
 
@@ -153,18 +160,18 @@ function onFocusIn(event: FocusEvent) {
 
 function onFocusOut(event: FocusEvent) {
     const target = current()
-    if (!target || !(event.target instanceof Node)) return
-    if (!target.contains(event.target)) return
-    if (
-        event.relatedTarget instanceof Node &&
-        target.contains(event.relatedTarget)
-    )
-        return
-    hide()
+    if (target && leaves(target, event)) hide()
 }
 
 function onKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') hide()
+    if (event.key !== 'Escape') return
+    dismissed = current()
+    hide()
+}
+
+function onSwap() {
+    dismissed = null
+    hide()
 }
 
 let initialized = false
@@ -181,7 +188,7 @@ export function initTooltips(): void {
     document.addEventListener('focusout', onFocusOut)
     document.addEventListener('keydown', onKeydown)
     // Nothing keeps a hovered element of the old page once it is swapped out.
-    document.addEventListener('htmx:beforeSwap', hide)
+    document.addEventListener('htmx:beforeSwap', onSwap)
 }
 
 const flashes = new WeakMap<HTMLElement, { original: string; timer: number }>()
