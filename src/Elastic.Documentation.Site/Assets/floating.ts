@@ -5,6 +5,7 @@ import {
     offset,
     shift,
     size,
+    type ComputePositionReturn,
     type Placement,
 } from '@floating-ui/dom'
 
@@ -42,13 +43,13 @@ function anchorOf(popover: HTMLElement): HTMLElement | null {
 
 /**
  * Puts `floating` beside `anchor`. Sets `--floating-anchor-width` and `--floating-available-height` on it, so its
- * own CSS decides how wide and tall it may grow.
+ * own CSS decides how wide and tall it may grow. Resolves with where it went, which flip may have changed.
  */
-function place(
+export function place(
     anchor: Element,
     floating: HTMLElement,
     placement: Placement
-): Promise<void> {
+): Promise<ComputePositionReturn> {
     return computePosition(anchor, floating, {
         strategy: 'fixed',
         placement,
@@ -70,7 +71,8 @@ function place(
                 },
             }),
         ],
-    }).then(({ x, y }) => {
+    }).then((position) => {
+        const { x, y } = position
         const first = !floating.hasAttribute(PLACED)
         Object.assign(floating.style, { left: `${x}px`, top: `${y}px` })
         // Hidden until placed (floating.css), so it never flashes at the wrong spot.
@@ -80,6 +82,7 @@ function place(
             floating.dispatchEvent(
                 new Event('floating:placed', { bubbles: true })
             )
+        return position
     })
 }
 
