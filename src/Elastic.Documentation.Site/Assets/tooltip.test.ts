@@ -250,6 +250,21 @@ describe('tooltips', () => {
         expect(shown()).toBeNull()
     })
 
+    it('shows at once when keyboard focus reaches a target the pointer only queued', async () => {
+        pointer('pointerover', byId('slow'))
+        await vi.advanceTimersByTimeAsync(100)
+        expect(shown()).toBeNull()
+
+        byId('slow').tabIndex = 0
+        byId('slow').focus()
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(shown()).toBe('took')
+        // The queued timer is gone, so it neither re-shows nor hides it later.
+        await vi.advanceTimersByTimeAsync(500)
+        expect(shown()).toBe('took')
+    })
+
     it('hides on a click, except on a copy button whose text changes in place', async () => {
         pointer('pointerover', byId('plain'))
         await vi.advanceTimersByTimeAsync(80)

@@ -154,8 +154,9 @@ function onPointerDown(event: PointerEvent) {
 function onFocusIn(event: FocusEvent) {
     const target = targetOf(event.target)
     // A click focuses too; only keyboard focus shows the tooltip, and at once, since the delay is for a passing mouse.
-    if (!target || target === current() || !target.matches(':focus-visible'))
-        return
+    // A tooltip the pointer only queued is promoted: show() clears its timer.
+    if (!target || !target.matches(':focus-visible')) return
+    if (state.kind === 'shown' && state.target === target) return
     show(target)
 }
 
