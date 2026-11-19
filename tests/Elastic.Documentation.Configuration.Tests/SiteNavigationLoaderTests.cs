@@ -151,6 +151,30 @@ public class SiteNavigationLoaderTests
 			.Should()
 			.MatchInlineSnapshot("error 2:5:0 Source toc entry is not a valid uri: bad://[x/");
 
+	// a bare name that is not a URI is still expanded to the narrative before it is reported, as the old walker did
+	[Test]
+	public void GetTocMappings_UnparsableBareName_IsReportedAsTheNarrativeSource() =>
+		Describe("toc:\n  - toc: 'my docs'\n    path_prefix: p\n")
+			.Should()
+			.MatchInlineSnapshot("error 2:5:0 Source toc entry is not a valid uri: docs-content://my docs/");
+
+	[Test]
+	public void GetTocMappings_UnparsableBareNameWithARepo_ReportsBothAgainstTheNarrativeName() =>
+		Describe("toc:\n  - toc: 'my docs'\n    repo: foo\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				error 2:5:0 toc config defines 'repo' can not be combined with 'toc': docs-content://my docs/
+				error 2:5:0 Source toc entry is not a valid uri: foo://my docs/
+				"""
+			);
+
+	[Test]
+	public void GetTocMappings_UnparsableBareNameWithChildren_DoesNotMapTheChildren() =>
+		Describe("toc:\n  - toc: 'my docs'\n    children:\n      - repo: foo\n")
+			.Should()
+			.MatchInlineSnapshot("error 2:5:0 Source toc entry is not a valid uri: docs-content://my docs/");
+
 	[Test]
 	public void Deserialize_RepoWithoutToc_StillThrows() =>
 		FluentActions

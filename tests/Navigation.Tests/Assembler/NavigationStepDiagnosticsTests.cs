@@ -20,12 +20,14 @@ using SharpYaml;
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
 /// <summary>
-/// The order in which an assembler build reports what is wrong with <c>navigation.yml</c>: the toc mappings come first (a mount without a path prefix),
-/// then the parse of the file reports its unknown keys, and the check that no two mounts share a path prefix comes last, after the docsets were assembled.
+/// What the three steps that <c>AssemblerBuildService.BuildAll</c> runs on <c>navigation.yml</c> report, run one after the other in the order BuildAll runs them:
+/// the toc mappings (a mount without a path prefix), the parse of the file (its unknown keys) and the check that no two mounts share a path prefix.
+/// BuildAll itself needs git checkouts and the live link index, so the sequence is reproduced here: this pins each step's diagnostics and what the
+/// next step still reports after an earlier one did, not that BuildAll calls the steps in this order.
 /// </summary>
-public class NavigationDiagnosticOrderTests
+public class NavigationStepDiagnosticsTests
 {
-	/// <summary>The steps of <c>AssemblerBuildService</c> on <paramref name="navigation"/>: the mappings, the parse, the prefix check. What each reported, then what threw.</summary>
+	/// <summary>The steps <c>AssemblerBuildService</c> runs on <paramref name="navigation"/>, in its order: the mappings, the parse, the prefix check. What each reported, then what threw.</summary>
 	private static (IReadOnlyList<string> Messages, Exception? Thrown, bool? Valid) Steps(string navigation)
 	{
 		var configFileSystem = new MockFileSystem();
@@ -89,7 +91,7 @@ public class NavigationDiagnosticOrderTests
 	}
 
 	[Test]
-	public void Build_NavigationWithAllThreeProblems_ReportsThemInTheOrderOfTheSteps()
+	public void Steps_NavigationWithAllThreeProblems_ReportEachInTheirTurn()
 	{
 		// language=yaml
 		const string navigation =
@@ -115,7 +117,7 @@ public class NavigationDiagnosticOrderTests
 
 	// the mapping reader accepted entries the parser rejects, so what it reports comes first and the parse then throws
 	[Test]
-	public void Build_EntryWithARepoAndNoToc_MapsAndReportsBeforeTheParseThrows()
+	public void Steps_EntryWithARepoAndNoToc_MapsAndReportsBeforeTheParseThrows()
 	{
 		// language=yaml
 		const string navigation = """

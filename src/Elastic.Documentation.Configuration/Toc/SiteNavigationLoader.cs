@@ -455,7 +455,7 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 			if (!Lenient || !dictionary.ContainsKey("repo"))
 				return null;
 			// an entry with a repo: and no toc: is mounted by its repo, as the mapping reader did
-			return Mount(Unparsable, null, dictionary, start, end, childrenNotAnArray);
+			return Mount(Unparsable, null, null, dictionary, start, end, childrenNotAnArray);
 		}
 		sourceString = tocText;
 
@@ -468,26 +468,37 @@ public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfCont
 		if (!Uri.TryCreate(uriString, UriKind.Absolute, out var source))
 		{
 			if (Lenient)
-				return Mount(Unparsable, sourceString, dictionary, start, end, childrenNotAnArray);
+			{
+				// a bare name still expands to the narrative and becomes the parent of the entries below it, as the old reader did
+				var bare = !sourceString.Contains("://");
+				return Mount(
+					Unparsable,
+					bare ? sourceString : null,
+					bare ? null : sourceString,
+					dictionary,
+					start,
+					end,
+					childrenNotAnArray
+				);
+			}
 			var invalidUri = new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
 			throw new YamlException(invalidUri.Message, invalidUri);
 		}
 
-		return Mount(source, sourceString.Contains("://") ? null : sourceString, dictionary, start, end, childrenNotAnArray);
+		return Mount(source, sourceString.Contains("://") ? null : sourceString, null, dictionary, start, end, childrenNotAnArray);
 	}
 
-	// `unparsableText` is the source as written when it is not a URI (lenient reads only); `shorthand` is the bare toc name
+	// `unparsable` is the source as written when it is a scheme-ful text that is not a URI (lenient reads only); `shorthand` is the bare toc name
 	private static SiteTableOfContentsRef Mount(
 		Uri source,
-		string? shorthandOrUnparsable,
+		string? shorthand,
+		string? unparsable,
 		Dictionary<string, object?> dictionary,
 		Mark start,
 		Mark end,
 		bool childrenNotAnArray
 	)
 	{
-		var unparsable = ReferenceEquals(source, Unparsable) ? shorthandOrUnparsable : null;
-		var shorthand = ReferenceEquals(source, Unparsable) ? null : shorthandOrUnparsable;
 		var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
 		IReadOnlyList<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
