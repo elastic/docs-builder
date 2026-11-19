@@ -38,7 +38,7 @@ public static class ApiHtmlMinifier
 
 	// WebMarkupMin treats hidden as a plain boolean and rewrites hidden="until-found" to hidden, which stops find in page
 	// opening folded rows. The value is swapped for an attribute it leaves alone, and back. Text never holds the raw
-	// attribute: Razor encodes its quotes.
+	// attribute: Razor encodes its quotes. Remove the swap once https://github.com/Taritsyn/WebMarkupMin/issues/185 ships.
 	private const string UntilFound = " hidden=\"until-found\"";
 	private const string UntilFoundStandIn = " data-api-hidden-until-found";
 
