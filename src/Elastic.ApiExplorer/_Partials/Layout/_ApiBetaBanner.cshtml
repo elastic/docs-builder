@@ -1,13 +1,13 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @using Elastic.Documentation.Site.Components.Chrome.Feedback
 @* Outside #main-container, so no boosted swap carries it. api-beta-banner.ts matches it to each new page.
-   Where page feedback runs, "let us know" opens it in a dialog; elsewhere, and without script, it stays a link to the issue form. *@
+   Where page feedback runs, the feedback link opens it in a dialog; elsewhere, and without script, it stays a link to the issue form. *@
 @{
 	const string dialogId = "api-beta-feedback";
 	var opensDialog = Model.ShowPageFeedback;
 }
 <aside id="api-beta-banner" class="api-beta-banner" aria-label="About this API reference">
-	<p class="api-beta-banner__message"><span class="api-beta-banner__label">Beta</span> This is our new API reference.<span class="api-beta-banner__detail"> It's now part of the main Elastic docs, and we're still tuning it.</span> If something looks wrong or is missing, @if (opensDialog){<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl" data-api-beta-feedback-open="@dialogId" aria-haspopup="dialog">let us know</a>}else{<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl">let us know</a>}.</p>
+	<p class="api-beta-banner__message">We're giving our API reference a new engine and a fresh look. @if (opensDialog){<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl" data-api-beta-feedback-open="@dialogId" aria-haspopup="dialog">We'd love to hear what you think</a>}else{<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl">We'd love to hear what you think</a>}.</p>
 	@if (opensDialog)
 	{
 		<dialog class="api-beta-feedback" id="@dialogId" aria-labelledby="@(dialogId)-title">
@@ -16,7 +16,7 @@
 				<form method="dialog"><button class="api-beta-feedback__close" type="submit" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button></form>
 			</header>
 			<div class="api-beta-feedback__content">
-			<p class="api-beta-feedback__intro">This API reference is new, and we're still tuning it. Tell us what looks wrong or is missing.</p>
+			<p class="api-beta-feedback__intro">Tell us what looks wrong or is missing.</p>
 			@if (Model.Features.NavigationPreviewEnabled)
 			{
 				@await RenderPartialAsync(_Feedback.Create(new FeedbackModel
