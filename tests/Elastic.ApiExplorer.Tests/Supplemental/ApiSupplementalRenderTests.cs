@@ -195,7 +195,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 		var bar = SectionLinksBar(html);
 		bar.Should().Contain(
-			"<a href=\"#overview\" data-toc-link data-api-back-to-top>Overview</a>",
+			"<a href=\"#api-operation-overview\" data-toc-link data-api-back-to-top>Overview</a>",
 			"Overview opens the bar and goes back to the top"
 		);
 		bar.TrimEnd().Should().EndWith("class=\"api-expand-toggle\" data-api-expand-all>Expand all</button>");

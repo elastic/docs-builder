@@ -6,7 +6,7 @@ function mountBar(): void {
     document.body.innerHTML = `
         <section id="elastic-api-v3">
             <nav class="api-section-links" data-toc data-toc-sticky>
-                <a href="#overview" data-toc-link data-api-back-to-top>Overview</a>
+                <a href="#api-operation-overview" data-toc-link data-api-back-to-top>Overview</a>
                 <a href="#responses" data-toc-link>Responses</a>
             </nav>
             <h2 id="responses"></h2>

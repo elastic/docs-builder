@@ -4553,7 +4553,9 @@ html:has(.api-page-shell) {
  * the scroll-spy marks one of them current, the reader is still above them, where the page's own Expand all sits.
  * Hidden, not removed, so the row does not shift when it shows.
  */
-.api-section-links:not(:has([aria-current]:not([href='#overview'])))
+.api-section-links:not(
+		:has([aria-current]:not([href='#api-operation-overview']))
+	)
 	.api-expand-toggle {
 	visibility: hidden;
 }
