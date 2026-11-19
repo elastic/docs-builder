@@ -706,10 +706,8 @@ export function initApiPageActions(): void {
 
         event.preventDefault()
         const root = trigger.closest('.api-page-actions')
-        const dropdown = root?.querySelector<HTMLDetailsElement>(
-            '.api-page-actions-dropdown'
-        )
-        if (dropdown) dropdown.open = false
+        const menu = trigger.closest<HTMLElement>('[popover]')
+        if (menu?.matches(':popover-open')) menu.hidePopover()
         void copyPageMarkdown(trigger.dataset.copyPage, root).catch((error) => {
             console.error(error)
         })
