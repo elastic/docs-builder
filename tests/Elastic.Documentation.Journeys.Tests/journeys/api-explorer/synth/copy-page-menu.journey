@@ -6,7 +6,7 @@
 # @requires !navigation-preview
 # @monitor schedule=60
 set viewport 375 800
-open api/doc/cloud-connect
+open api/cloud-connect
 wait --load networkidle
 expect visible ".api-page-actions-chevron"
 expect attr ".api-page-actions-chevron" aria-expanded false
