@@ -1,4 +1,5 @@
 import { fullscreenIcon } from './icons'
+import { anchorZoomDialog } from './image-modal'
 import { lockPageScroll } from './scroll-lock'
 
 // Zoom configuration
@@ -150,7 +151,7 @@ function setupControls(
 
     // Fullscreen handler
     fullscreenBtn.addEventListener('click', () => {
-        openFullscreenModal(imgSrc)
+        openFullscreenModal(imgSrc, container)
     })
 
     // Pan with mouse drag
@@ -205,7 +206,7 @@ function calculateFitScale(
 /**
  * Open fullscreen modal with the diagram
  */
-function openFullscreenModal(imgSrc: string): void {
+function openFullscreenModal(imgSrc: string, opener: Element): void {
     const modal = document.createElement('dialog')
     modal.className = 'mermaid-modal'
     modal.setAttribute('aria-label', 'Mermaid diagram')
@@ -330,6 +331,7 @@ function openFullscreenModal(imgSrc: string): void {
         modal.remove()
     })
 
+    anchorZoomDialog(modal, opener)
     document.body.appendChild(modal)
     modal.showModal()
 

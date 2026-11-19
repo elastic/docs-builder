@@ -23,13 +23,27 @@ function open(dialog: HTMLDialogElement): void {
     )
 }
 
-// Closes the open image or diagram dialogs inside scope; their close handlers release the scroll lock.
-export function closeOpenZoomDialogs(scope: ParentNode = document): void {
-    scope
+// A diagram dialog lives in <body>, outside the content a swap replaces, so it records the container that opened it.
+const openers = new WeakMap<HTMLDialogElement, Element>()
+
+export function anchorZoomDialog(
+    dialog: HTMLDialogElement,
+    opener: Element
+): void {
+    openers.set(dialog, opener)
+}
+
+// Closes the open image or diagram dialogs that sit in scope or were opened from it; their close handlers release the scroll lock.
+export function closeOpenZoomDialogs(scope: Node = document): void {
+    document
         .querySelectorAll<HTMLDialogElement>(
             'dialog.modal[open], dialog.mermaid-modal[open]'
         )
-        .forEach((dialog) => dialog.close())
+        .forEach((dialog) => {
+            const opener = openers.get(dialog)
+            if (scope.contains(dialog) || (opener && scope.contains(opener)))
+                dialog.close()
+        })
 }
 
 type BeforeSwapDetail = { shouldSwap?: boolean; target?: Element }

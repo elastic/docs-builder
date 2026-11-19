@@ -1,3 +1,4 @@
+import { bindImageModals } from './image-modal'
 import { initMermaid } from './mermaid'
 
 function diagram(name: string): string {
@@ -120,6 +121,7 @@ describe('mermaid fullscreen', () => {
         document.querySelector<HTMLDialogElement>('dialog.mermaid-modal')
 
     beforeAll(() => {
+        bindImageModals()
         // jsdom has no modal dialogs; these do what the browser does to the attribute and events.
         HTMLDialogElement.prototype.showModal = function (
             this: HTMLDialogElement
@@ -218,6 +220,28 @@ describe('mermaid fullscreen', () => {
         move(90, 90)
 
         expect(closing.style.transform).toBe('scale(1) translate(30px, 15px)')
+    })
+
+    it('closes with the diagram it was opened from when htmx swaps that page, but not for another swap', () => {
+        document.body.innerHTML =
+            '<div id="main-container">' +
+            diagram('a') +
+            '</div><div id="elsewhere"></div>'
+        initMermaid()
+        openFullscreen('a')
+        const swap = (target: Element) =>
+            document.dispatchEvent(
+                new CustomEvent('htmx:beforeSwap', {
+                    detail: { shouldSwap: true, target },
+                })
+            )
+
+        swap(document.getElementById('elsewhere')!)
+        expect(dialog()?.open).toBe(true)
+
+        swap(document.getElementById('main-container')!)
+        expect(dialog()).toBeNull()
+        expect(document.documentElement.style.overflow).toBe('')
     })
 
     it('cleans up when the browser closes it, as it does on Escape', () => {
