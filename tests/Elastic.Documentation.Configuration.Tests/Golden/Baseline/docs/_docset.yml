@@ -46,7 +46,7 @@ features:
 # Mirrors the api: block in elastic/docs-content docset.yml, including Kibana's children: page, so the
 # preview groups and counts the same way as production. Keep the two in sync.
 # Assembler builds omit them; this checkout is still loaded in preview (skip: true).
-# Isolated serve (no --watch) drops the prefix from URLs: /api/doc/elasticsearch/, /api/doc/kibana/, …
+# Isolated serve (no --watch) drops the prefix from URLs: /api/elasticsearch/, /api/kibana/, …
 api:
   docs-builder-elasticsearch:
     - spec: elasticsearch.json

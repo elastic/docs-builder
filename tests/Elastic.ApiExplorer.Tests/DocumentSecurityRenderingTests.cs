@@ -70,7 +70,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First();
 
 		nav.NavigationRoot.Should().BeOfType<ClassificationNavigationItem>();
-		LandingNavigationItem.Of(nav.NavigationRoot)!.AuthenticationUrl.Should().Be("/api/doc/fixture/authentication");
+		LandingNavigationItem.Of(nav.NavigationRoot)!.AuthenticationUrl.Should().Be("/api/fixture/authentication");
 	}
 
 	[Test]
@@ -88,7 +88,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 		var topics = fixture.Walk().OfType<TopicsNavigationItem>().Single();
 
 		topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Which.Hidden.Should().BeFalse();
-		fixture.Navigation.AuthenticationUrl.Should().Be("/api/doc/fixture/authentication");
+		fixture.Navigation.AuthenticationUrl.Should().Be("/api/fixture/authentication");
 	}
 
 	[Test]

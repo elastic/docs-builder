@@ -27,8 +27,8 @@ public class ApiLayoutVersionDropdownTests
 		layout.Breadcrumbs.Select(b => b.Url).Should().Equal("/", "/api");
 		layout.StructuredBreadcrumbsJson.Should().Contain("Elasticsearch API");
 		layout.StructuredBreadcrumbsJson.Should().NotContain("Api Overview");
-		layout.ApiContext!.Spec.JsonUrl.Should().Be("/api/doc/elasticsearch.json");
-		layout.ApiContext.Spec.YamlUrl.Should().Be("/api/doc/elasticsearch.yaml");
+		layout.ApiContext!.Spec.JsonUrl.Should().Be("/api/elasticsearch.json");
+		layout.ApiContext.Spec.YamlUrl.Should().Be("/api/elasticsearch.yaml");
 	}
 
 	[Test]
@@ -37,11 +37,7 @@ public class ApiLayoutVersionDropdownTests
 		var isolated = CreateLayout();
 		var assembler = CreateLayout(buildType: BuildType.Assembler);
 
-		isolated.DesignSystemPageActions!
-			.Downloads
-			.Select(d => d.Url)
-			.Should()
-			.Equal("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml");
+		isolated.DesignSystemPageActions!.Downloads.Select(d => d.Url).Should().Equal("/api/elasticsearch.json", "/api/elasticsearch.yaml");
 		isolated.PageActions!.Spec.Should().NotBeNull();
 		// The assembler's docs bar carries the download.
 		assembler.DesignSystemPageActions!.Downloads.Should().BeEmpty();
@@ -71,9 +67,9 @@ public class ApiLayoutVersionDropdownTests
 	[Test]
 	public void CreateGlobalLayoutModel_NamesTheSelectedVersionInTheTrailOfADeepPage()
 	{
-		var landing = new LandingNavigationItem("/api/doc/elasticsearch/v9/");
+		var landing = new LandingNavigationItem("/api/elasticsearch/v9/");
 		var operation = A.Fake<INavigationItem>();
-		A.CallTo(() => operation.Url).Returns("/api/doc/elasticsearch/v9/operation/search");
+		A.CallTo(() => operation.Url).Returns("/api/elasticsearch/v9/operation/search");
 		A.CallTo(() => operation.NavigationTitle).Returns("Run a search");
 		A.CallTo(() => operation.Parent).Returns(landing);
 		A.CallTo(() => operation.NavigationRoot).Returns(landing);
@@ -121,8 +117,8 @@ public class ApiLayoutVersionDropdownTests
 
 	private static readonly ApiCatalogEntry[] Catalog =
 	[
-		new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/", "elasticsearch"),
-		new("kibana", "Kibana", "/docs/api/doc/kibana/", "kibana")
+		new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch/", "elasticsearch"),
+		new("kibana", "Kibana", "/docs/api/kibana/", "kibana")
 	];
 
 	private static ApiLayoutViewModel CreateLayout(
@@ -146,7 +142,7 @@ public class ApiLayoutVersionDropdownTests
 		)
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = current ?? new LandingNavigationItem("/api/doc/elasticsearch/").Index,
+			CurrentNavigation = current ?? new LandingNavigationItem("/api/elasticsearch/").Index,
 			MarkdownRenderer = PassthroughMarkdownRenderer.Instance,
 			VersionSwitcherItems = switcherItems,
 			Product = product,

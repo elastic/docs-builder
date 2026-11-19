@@ -150,7 +150,7 @@ public class ApiAdmonitionsTests
 		)
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = new LandingNavigationItem("/api/doc/kibana").Index,
+			CurrentNavigation = new LandingNavigationItem("/api/kibana").Index,
 			MarkdownRenderer = renderer,
 			ApiExplorerLog = null
 		};

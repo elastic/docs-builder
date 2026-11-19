@@ -59,7 +59,7 @@ describe('NavigationSearchWrapper type attribute', () => {
 
     it('navigates into a matching property and records its anchor on Enter', async () => {
         const url =
-            '/docs/api/doc/elasticsearch/operation/operation-search#req-track_total_hits'
+            '/docs/api/elasticsearch/operation/operation-search#req-track_total_hits'
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -158,8 +158,7 @@ describe('NavigationSearchWrapper type attribute', () => {
 })
 
 describe('NavigationSearchWrapper result navigation', () => {
-    const operationUrl =
-        '/docs/api/doc/elasticsearch/operation/operation-search'
+    const operationUrl = '/docs/api/elasticsearch/operation/operation-search'
     const propertyUrl = `${operationUrl}#req-retriever`
 
     beforeEach(() => {
@@ -282,8 +281,7 @@ describe('NavigationSearchWrapper result navigation', () => {
 })
 
 describe('NavigationSearchWrapper while htmx loads the result', () => {
-    const operationUrl =
-        '/docs/api/doc/elasticsearch/operation/operation-search'
+    const operationUrl = '/docs/api/elasticsearch/operation/operation-search'
 
     beforeEach(() => {
         sharedQueryClient.clear()

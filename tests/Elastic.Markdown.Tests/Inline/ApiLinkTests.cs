@@ -33,7 +33,7 @@ public static class ApiLinkAssertions
 
 public class ApiInlineLinkMissingTests() : InlineTest(
 	"""
-[Gone](https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing#responses)
+[Gone](https://www.elastic.co/docs/api/kibana/operation/operation-missing#responses)
 """
 )
 {
@@ -46,7 +46,7 @@ public class ApiInlineLinkMissingTests() : InlineTest(
 
 public class ApiInlineLinkExistsTests() : InlineTest(
 	"""
-[Here](https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists) and [there](https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-only-in-8).
+[Here](https://www.elastic.co/docs/api/kibana/operation/operation-exists) and [there](https://www.elastic.co/docs/api/kibana/v8/operation/operation-only-in-8).
 """
 )
 {
@@ -56,7 +56,7 @@ public class ApiInlineLinkExistsTests() : InlineTest(
 
 public class ApiInlineLinkVersionMissingTests() : InlineTest(
 	"""
-[Gone](https://www.elastic.co/docs/api/doc/kibana/operation/operation-only-in-8)
+[Gone](https://www.elastic.co/docs/api/kibana/operation/operation-only-in-8)
 """
 )
 {
@@ -66,7 +66,7 @@ public class ApiInlineLinkVersionMissingTests() : InlineTest(
 
 public class ApiLinkWithoutASectionTests() : InlineTest(
 	"""
-[Unknown API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search) and [guide](https://www.elastic.co/docs/solutions/search).
+[Unknown API](https://www.elastic.co/docs/api/elasticsearch/operation/operation-search) and [guide](https://www.elastic.co/docs/solutions/search).
 """
 )
 {
@@ -76,7 +76,7 @@ public class ApiLinkWithoutASectionTests() : InlineTest(
 
 public class ApiBareAutoLinkMissingTests() : InlineTest(
 	"""
-See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for details.
+See https://www.elastic.co/docs/api/kibana/operation/operation-missing for details.
 """
 )
 {
@@ -86,8 +86,8 @@ See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for d
 
 public class ApiLinksInCommentsTests() : InlineTest(
 	"""
-% https://www.elastic.co/docs/api/doc/kibana/operation/old-bare
-% [old](https://www.elastic.co/docs/api/doc/kibana/operation/old-inline)
+% https://www.elastic.co/docs/api/kibana/operation/old-bare
+% [old](https://www.elastic.co/docs/api/kibana/operation/old-inline)
 
 Text.
 """
@@ -99,7 +99,7 @@ Text.
 
 public class ApiRedirectedPageTests() : InlineTest(
 	"""
-[Old root](https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists) and [Servers](https://www.elastic.co/docs/api/doc/kibana/topic/topic-kibana-spaces).
+[Old root](https://www.elastic.co/docs/api/kibana/operation/operation-exists) and [Servers](https://www.elastic.co/docs/api/kibana/topic/topic-kibana-spaces).
 """
 )
 {

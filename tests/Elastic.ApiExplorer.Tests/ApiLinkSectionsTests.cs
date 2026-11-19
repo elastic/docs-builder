@@ -39,9 +39,9 @@ public class ApiLinkSectionsTests
 		var links = ApiLinkSections.Create("elasticsearch", trees);
 
 		links.TryResolvePage("main", "operation/operation-search-1", out var main).Should().BeTrue();
-		main.Should().Be("api/doc/elasticsearch/operation/operation-search");
+		main.Should().Be("api/elasticsearch/operation/operation-search");
 		links.TryResolvePage("8", "operation/operation-search", out var v8).Should().BeTrue();
-		v8.Should().Be("api/doc/elasticsearch/v8/operation/operation-search-1");
+		v8.Should().Be("api/elasticsearch/v8/operation/operation-search-1");
 	}
 
 	[Test]

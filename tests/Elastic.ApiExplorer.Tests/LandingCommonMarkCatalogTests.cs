@@ -44,5 +44,5 @@ public class LandingCommonMarkCatalogTests
 		markdown.Should().NotContain("## ");
 	}
 
-	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");
+	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/{key}/");
 }

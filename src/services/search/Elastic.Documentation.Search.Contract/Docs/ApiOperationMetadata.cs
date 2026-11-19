@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public record ApiOperationMetadata
 {
-	/// <summary>Key the explorer publishes the API under, e.g. <c>elasticsearch</c> in <c>/docs/api/doc/elasticsearch</c>.</summary>
+	/// <summary>Key the explorer publishes the API under, e.g. <c>elasticsearch</c> in <c>/docs/api/elasticsearch</c>.</summary>
 	[Keyword]
 	[JsonPropertyName("key")]
 	public string Key { get; init; } = "";

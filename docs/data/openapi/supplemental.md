@@ -110,7 +110,7 @@ The version file uses the same heading rules as the base file. The two files mer
 
 If a version has no `.vN.md` file, that version uses the base file only.
 
-The unversioned `/api/doc/{key}/` tree uses the overlay of the highest numeric major that this product renders. Versionless products render only `main`. They have no numeric major, so they get no overlay.
+The unversioned `/api/{key}/` tree uses the overlay of the highest numeric major that this product renders. Versionless products render only `main`. They have no numeric major, so they get no overlay.
 
 {{dbuild}} checks a version-suffixed file against that major's spec. `op-search.v8.md` must match an `operationId` in the v8 spec.
 

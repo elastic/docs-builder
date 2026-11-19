@@ -43,8 +43,8 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           	  "floating": {
 		           		"api/kibana": {
 		           		  "versions": [
-		           			{ "name": "8", "root": "api/doc/kibana/v8", "hidden": true },
-		           			{ "name": "main", "root": "api/doc/kibana", "current": true }
+		           			{ "name": "8", "root": "api/kibana/v8", "hidden": true },
+		           			{ "name": "main", "root": "api/kibana", "current": true }
 		           		  ],
 		           		  "pages": {
 		           			"": 3,

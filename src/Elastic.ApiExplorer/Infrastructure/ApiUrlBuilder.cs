@@ -16,7 +16,7 @@ public static partial class ApiUrlBuilder
 {
 	public static string ApiRoot(string? urlPathPrefix) => $"{urlPathPrefix?.TrimEnd('/')}/api";
 
-	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
+	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/{apiUrlSuffix}";
 
 	/// <summary>
 	/// URL path suffix for one API product version: <c>{key}</c> for <c>main</c>,

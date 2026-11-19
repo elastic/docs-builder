@@ -49,7 +49,7 @@ if (isAssemblerApiExplorerEnabled()) {
                 .first()
                 .click()
             await expect(page).toHaveURL(
-                new RegExp(`${escapeRegex(host)}/docs/api/doc/elasticsearch/?$`)
+                new RegExp(`${escapeRegex(host)}/docs/api/elasticsearch/?$`)
             )
         })
 
@@ -61,7 +61,7 @@ if (isAssemblerApiExplorerEnabled()) {
 
             await picker.locator('button').click()
             const target = page
-                .locator('a[href*="/docs/api/doc/elasticsearch/v"]')
+                .locator('a[href*="/docs/api/elasticsearch/v"]')
                 .first()
             await expect(target).toBeVisible()
 

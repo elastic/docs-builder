@@ -24,7 +24,7 @@ public class ApiVersionSwitcherTests
 
 		items.Should().HaveCount(3);
 		items.Select(i => i.Label).Should().Equal("main", "v9 (latest)", "v8");
-		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8");
+		items.Select(i => i.Url).Should().Equal("/api/elasticsearch", "/api/elasticsearch/v9", "/api/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v8");
 	}
 
@@ -34,7 +34,7 @@ public class ApiVersionSwitcherTests
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
 
 		items.Select(i => i.Label).Should().Equal("main", "v9 (latest)", "v8");
-		items.Single(i => i.Selected).Url.Should().Be("/api/doc/elasticsearch");
+		items.Single(i => i.Selected).Url.Should().Be("/api/elasticsearch");
 	}
 
 	[Test]
@@ -65,51 +65,43 @@ public class ApiVersionSwitcherTests
 	[Test]
 	public void ForPage_PageExistsInOtherVersion_LinksToSamePage()
 	{
-		var items = ApiVersionSwitcher.ForPage(Items("main"), "/api/doc/elasticsearch/operation/operation-ping/");
+		var items = ApiVersionSwitcher.ForPage(Items("main"), "/api/elasticsearch/operation/operation-ping/");
 
 		items
 			.Select(i => i.Url)
 			.Should()
-			.Equal(
-				"/api/doc/elasticsearch/operation/operation-ping",
-				"/api/doc/elasticsearch/v9/operation/operation-ping",
-				"/api/doc/elasticsearch/v8"
-			);
+			.Equal("/api/elasticsearch/operation/operation-ping", "/api/elasticsearch/v9/operation/operation-ping", "/api/elasticsearch/v8");
 	}
 
 	[Test]
 	public void ForPage_PageMissingInOtherVersions_LinksToVersionRoots()
 	{
-		var items = ApiVersionSwitcher.ForPage(Items("main"), "/api/doc/elasticsearch/operation/operation-newop");
+		var items = ApiVersionSwitcher.ForPage(Items("main"), "/api/elasticsearch/operation/operation-newop");
 
 		items
 			.Select(i => i.Url)
 			.Should()
-			.Equal("/api/doc/elasticsearch/operation/operation-newop", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8");
+			.Equal("/api/elasticsearch/operation/operation-newop", "/api/elasticsearch/v9", "/api/elasticsearch/v8");
 	}
 
 	[Test]
 	public void ForPage_FromOlderVersion_LinksBackToSamePageInMain()
 	{
-		var items = ApiVersionSwitcher.ForPage(Items("9"), "/api/doc/elasticsearch/v9/operation/operation-ping");
+		var items = ApiVersionSwitcher.ForPage(Items("9"), "/api/elasticsearch/v9/operation/operation-ping");
 
 		items
 			.Select(i => i.Url)
 			.Should()
-			.Equal(
-				"/api/doc/elasticsearch/operation/operation-ping",
-				"/api/doc/elasticsearch/v9/operation/operation-ping",
-				"/api/doc/elasticsearch/v8"
-			);
+			.Equal("/api/elasticsearch/operation/operation-ping", "/api/elasticsearch/v9/operation/operation-ping", "/api/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v9 (latest)");
 	}
 
 	[Test]
 	public void ForPage_LandingPage_LinksToEachRoot()
 	{
-		var items = ApiVersionSwitcher.ForPage(Items("main"), "/api/doc/elasticsearch/");
+		var items = ApiVersionSwitcher.ForPage(Items("main"), "/api/elasticsearch/");
 
-		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8");
+		items.Select(i => i.Url).Should().Equal("/api/elasticsearch", "/api/elasticsearch/v9", "/api/elasticsearch/v8");
 	}
 
 	[Test]
@@ -130,13 +122,13 @@ public class ApiVersionSwitcherTests
 					["8"] = Pages([""], ["/operation/operation-search-2"])
 				}
 			),
-			"/api/doc/elasticsearch/operation/operation-search"
+			"/api/elasticsearch/operation/operation-search"
 		);
 
 		items
 			.Select(i => i.Url)
 			.Should()
-			.Equal("/api/doc/elasticsearch/operation/operation-search", "/api/doc/elasticsearch/v8/operation/operation-search-2");
+			.Equal("/api/elasticsearch/operation/operation-search", "/api/elasticsearch/v8/operation/operation-search-2");
 	}
 
 	[Test]
@@ -157,12 +149,12 @@ public class ApiVersionSwitcherTests
 					["8"] = Pages([""], ["/operation/operation-search-2"])
 				}
 			),
-			"/api/doc/elasticsearch/v8/operation/operation-search-2"
+			"/api/elasticsearch/v8/operation/operation-search-2"
 		);
 
 		items
 			.Select(i => i.Url)
 			.Should()
-			.Equal("/api/doc/elasticsearch/operation/operation-search", "/api/doc/elasticsearch/v8/operation/operation-search-2");
+			.Equal("/api/elasticsearch/operation/operation-search", "/api/elasticsearch/v8/operation/operation-search-2");
 	}
 }

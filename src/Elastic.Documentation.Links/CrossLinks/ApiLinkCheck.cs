@@ -10,15 +10,12 @@ namespace Elastic.Documentation.Links.CrossLinks;
 public static class ApiLinkCheck
 {
 	/// <summary>
-	/// Returns a hint when <paramref name="url"/> targets an API page that the resolver knows does not exist, and
-	/// <c>null</c> for any other link, and for an API it holds no section for. A link to a root with no pages at all always hints. Old bump.sh URLs are checked at the
-	/// page the edge redirects them to.
+	/// Returns a hint when <paramref name="url"/> targets an API page that the resolver knows does not exist, or uses the
+	/// legacy <c>/docs/api/doc/</c> prefix, and <c>null</c> for any other link. A link to a root with no pages at all
+	/// always hints. Old bump.sh URLs are checked at the page the edge redirects them to.
 	/// </summary>
 	public static string? GetHint(ICrossLinkResolver resolver, string? url, string? urlPathPrefix, HashSet<HintType>? suppressions)
 	{
-		if (suppressions.ShouldSuppress(HintType.ApiLinkMissingPage))
-			return null;
-
 		if (
 			!ApiLinkMatcher.TryCanonicalize(url, urlPathPrefix, out var canonical) || !ApiLinkMatcher.TryGetApiPath(canonical, out var path)
 		)
@@ -28,9 +25,19 @@ public static class ApiLinkCheck
 		if (Path.GetExtension(path) is ".json" or ".yaml")
 			return null;
 
-		return ApiLegacyRedirects.IsGone(path) || resolver.CheckApiPage(ApiLegacyRedirects.Resolve(path)) == ApiPageStatus.Missing
-			? $"API link '{canonical}' does not resolve to a page of that API. Link to a page that exists, such as one in a versioned tree like "
-				+ "/docs/api/doc/<product>/v8/..., or confirm the endpoint was removed intentionally. Links in API descriptions are fixed in the OpenAPI spec."
-			: null;
+		var legacy = ApiLegacyRedirects.IsLegacy(path);
+		var page = legacy ? ApiLegacyRedirects.Resolve(path) : path;
+		if ((legacy && ApiLegacyRedirects.IsGone(path)) || resolver.CheckApiPage(page) == ApiPageStatus.Missing)
+			return suppressions.ShouldSuppress(HintType.ApiLinkMissingPage)
+				? null
+				: $"API link '{canonical}' does not resolve to a page of that API. Link to a page that exists, such as one in a versioned tree like "
+					+ "/docs/api/<product>/v8/..., or confirm the endpoint was removed intentionally. Links in API descriptions are fixed in the OpenAPI spec.";
+
+		if (!legacy || suppressions.ShouldSuppress(HintType.ApiLinkLegacyPrefix))
+			return null;
+
+		var fragment = canonical.IndexOf('#') is var hash and >= 0 ? canonical[hash..] : string.Empty;
+		return $"API link '{canonical}' uses the legacy {ApiLegacyRedirects.LegacyPrefix} prefix. After the API Explorer cutover this page lives at "
+			+ $"'https://www.elastic.co{page}{fragment}'.";
 	}
 }

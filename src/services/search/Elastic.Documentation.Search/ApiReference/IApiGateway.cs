@@ -54,7 +54,7 @@ public sealed record ApiOperationSummary
 	/// <example>"Get the cluster health status"</example>
 	public required string Title { get; init; }
 	/// <summary>The operation's page on www.elastic.co.</summary>
-	/// <example>"/docs/api/doc/elasticsearch/operation/operation-cluster-health"</example>
+	/// <example>"/docs/api/elasticsearch/operation/operation-cluster-health"</example>
 	public required string Url { get; init; }
 	/// <summary>What the operation does.</summary>
 	/// <example>"You can also use the API to get the health status of only specified data streams and indices.\nFor data streams, the API retrieves the health status of the st…"</example>
@@ -128,7 +128,7 @@ public sealed record ApiSummary
 	/// <example>"Elastic Cloud API"</example>
 	public required string Title { get; init; }
 	/// <summary>The API's landing page on www.elastic.co.</summary>
-	/// <example>"/docs/api/doc/cloud"</example>
+	/// <example>"/docs/api/cloud"</example>
 	public required string Url { get; init; }
 	/// <summary>What the API is for.</summary>
 	/// <example>"This RESTful API enables you to perform most of the operations available in the UI console through API calls."</example>

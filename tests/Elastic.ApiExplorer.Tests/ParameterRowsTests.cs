@@ -101,7 +101,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		var required = page.QueryParameters with { Items = [page.QueryParameters.Items[0] with { IsRequired = true }] };
 		var markdown = new System.Text.StringBuilder();
 
-		ApiPropertyMarkdown.WriteList(markdown, required, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, required, "/api/fixture");
 
 		page
 			.ParameterSections
@@ -154,7 +154,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		html.Should().MatchHtmlSnapshot();
 		RequiredStatusRegex().Matches(html).Should().ContainSingle("only the parameter every route needs reads required");
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, list, "/api/fixture");
 		markdown
 			.ToString()
 			.Should()

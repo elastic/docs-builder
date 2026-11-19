@@ -23,7 +23,7 @@ public interface ICrossLinkResolver
 
 	/// <summary>
 	/// Whether the API page at <paramref name="sitePath"/>, a path from the site root such as
-	/// <c>/docs/api/doc/elasticsearch/operation/operation-search</c>, exists in the API sections of the link index.
+	/// <c>/docs/api/elasticsearch/operation/operation-search</c>, exists in the API sections of the link index.
 	/// A resolver that holds no section for that API cannot tell, and answers <see cref="ApiPageStatus.Unknown"/>.
 	/// </summary>
 	ApiPageStatus CheckApiPage(string sitePath) => ApiPageStatus.Unknown;
@@ -69,10 +69,10 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		// API keys are unique across a build, so the key in the path names the one section that can hold the page.
 		var path = sitePath.Trim('/');
 		var rest = path.StartsWith("docs/", StringComparison.Ordinal) ? path["docs/".Length..] : path;
-		if (!rest.StartsWith("api/doc/", StringComparison.Ordinal))
+		if (!rest.StartsWith("api/", StringComparison.Ordinal))
 			return ApiPageStatus.Unknown;
 
-		var key = rest["api/doc/".Length..].Split('/', 2)[0];
+		var key = rest["api/".Length..].Split('/', 2)[0];
 		foreach (var links in _crossLinks.LinkReferences.Values)
 		{
 			if (links.Floating is { Count: > 0 } floating && floating.TryGetValue($"api/{key}", out var section))
@@ -189,6 +189,8 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (!match.Section.TryResolvePage(match.Version, match.Page, out var sitePath))
 			return new LinkFloatingPageNotFound(match.Page, match.SectionKey, match.Version);
 
+		if (uriResolver.LegacyApiUrls)
+			sitePath = ApiLegacyRedirects.ToLegacy(sitePath);
 		return new LinkResolved(uriResolver.ResolveSitePath(crossLinkUri, sitePath + crossLinkUri.Fragment));
 	}
 

@@ -29,5 +29,10 @@ public enum HintType
 	/// <summary>
 	/// Hint about a link to an API reference page that does not exist in the API pages of the link index.
 	/// </summary>
-	ApiLinkMissingPage
+	ApiLinkMissingPage,
+
+	/// <summary>
+	/// Hint about a link to an API reference page that uses the legacy <c>/docs/api/doc/</c> prefix.
+	/// </summary>
+	ApiLinkLegacyPrefix
 }

@@ -16,7 +16,7 @@ public class AuthenticationCommonMarkTests
 	private static string Write(AuthRequirement requirement)
 	{
 		var markdown = new StringBuilder();
-		OperationCommonMark.WriteRequirement(markdown, requirement, "/api/doc/fixture");
+		OperationCommonMark.WriteRequirement(markdown, requirement, "/api/fixture");
 		return markdown.ToString().ReplaceLineEndings("\n");
 	}
 

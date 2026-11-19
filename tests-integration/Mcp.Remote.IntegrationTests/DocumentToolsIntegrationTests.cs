@@ -23,7 +23,7 @@ public class DocumentToolsIntegrationTests : McpToolsIntegrationTestsBase
 		Skip.Unless(canConnect, "Elasticsearch is not connected");
 
 		var resultJson = await documentTools.GetDocumentByUrl(
-			"/docs/api/doc/logstash/operation/operation-nodestats",
+			"/docs/api/logstash/operation/operation-nodestats",
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 

@@ -4,16 +4,20 @@
 
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Diagnostics;
 
 public static partial class ApiLinkMatcher
 {
-	public const string ApiDocPrefix = "/docs/api/doc/";
+	/// <summary>Where the API Explorer serves its pages on elastic.co: <c>/docs/api/{key}/...</c>.</summary>
+	public const string ApiPrefix = "/docs/api/";
+
+	private const string ApiSegment = "api/";
 
 	/// <summary>
 	/// Returns the normalized page path (no query, fragment or trailing slash, lowercase) when
-	/// <paramref name="url"/> targets an API reference page on elastic.co.
+	/// <paramref name="url"/> targets an API reference page on elastic.co, in either the current or the legacy form.
 	/// </summary>
 	public static bool TryGetApiPath(string? url, out string path)
 	{
@@ -29,7 +33,8 @@ public static partial class ApiLinkMatcher
 			return false;
 
 		var normalized = Normalize(uri.AbsolutePath);
-		if (!normalized.StartsWith(ApiDocPrefix, StringComparison.Ordinal))
+		// The catalog and the bare legacy root are not pages of an API.
+		if (!normalized.StartsWith(ApiPrefix, StringComparison.Ordinal) || ApiLegacyRedirects.IsLegacyRoot(normalized))
 			return false;
 
 		path = normalized;
@@ -53,7 +58,10 @@ public static partial class ApiLinkMatcher
 		}
 
 		var prefix = urlPathPrefix?.TrimEnd('/') ?? string.Empty;
-		if (!url.StartsWith($"{prefix}/api/doc/", StringComparison.OrdinalIgnoreCase))
+		if (
+			!url.StartsWith($"{prefix}/{ApiSegment}", StringComparison.OrdinalIgnoreCase)
+			|| url.Length <= prefix.Length + ApiSegment.Length + 1
+		)
 			return false;
 
 		canonical = $"https://www.elastic.co/docs{url[prefix.Length..]}";
