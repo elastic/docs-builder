@@ -23,13 +23,23 @@ function open(dialog: HTMLDialogElement): void {
     )
 }
 
-// Closes every open image or diagram dialog; their close handlers release the scroll lock.
-export function closeOpenZoomDialogs(): void {
-    document
+// Closes the open image or diagram dialogs inside scope; their close handlers release the scroll lock.
+export function closeOpenZoomDialogs(scope: ParentNode = document): void {
+    scope
         .querySelectorAll<HTMLDialogElement>(
             'dialog.modal[open], dialog.mermaid-modal[open]'
         )
         .forEach((dialog) => dialog.close())
+}
+
+type BeforeSwapDetail = { shouldSwap?: boolean; target?: Element }
+
+// A swap removes the dialogs inside its target without firing their close event, which would leave the page scroll
+// locked. A response htmx will not swap, such as an error, leaves the page and its dialogs alone.
+function closeDialogsTheSwapRemoves(event: Event): void {
+    const { shouldSwap, target } =
+        (event as CustomEvent<BeforeSwapDetail>).detail ?? {}
+    if (shouldSwap && target) closeOpenZoomDialogs(target)
 }
 
 // Opens the dialog named by [data-modal-id] on an image link. One document listener serves every page htmx swaps in.
@@ -45,6 +55,5 @@ export function bindImageModals(): void {
         event.preventDefault()
         open(dialog)
     })
-    // A swap removes the dialog without firing its close event, which would leave the page scroll locked.
-    document.addEventListener('htmx:beforeSwap', closeOpenZoomDialogs)
+    document.addEventListener('htmx:beforeSwap', closeDialogsTheSwapRemoves)
 }

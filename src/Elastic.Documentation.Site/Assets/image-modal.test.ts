@@ -78,14 +78,41 @@ describe('legacy image modal', () => {
         expect(scroll()).toBe('')
     })
 
-    it('closes an open dialog and unlocks the page scroll before htmx swaps the page', () => {
+    const beforeSwap = (detail: object) =>
+        document.dispatchEvent(new CustomEvent('htmx:beforeSwap', { detail }))
+
+    it('closes an open dialog and unlocks the page scroll before htmx swaps its page', () => {
         click(document.querySelector('[data-modal-id]')!)
         expect(scroll()).toBe('hidden')
 
-        document.dispatchEvent(new Event('htmx:beforeSwap'))
+        beforeSwap({ shouldSwap: true, target: document.body })
 
         expect(dialog().open).toBe(false)
         expect(scroll()).toBe('')
+    })
+
+    it('keeps the dialog open for a response htmx does not swap', () => {
+        click(document.querySelector('[data-modal-id]')!)
+
+        beforeSwap({ shouldSwap: false, target: document.body })
+
+        expect(dialog().open).toBe(true)
+        expect(scroll()).toBe('hidden')
+    })
+
+    it('keeps the dialog open when the swap replaces another part of the page', () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<div id="elsewhere"></div>'
+        )
+        click(document.querySelector('[data-modal-id]')!)
+
+        beforeSwap({
+            shouldSwap: true,
+            target: document.getElementById('elsewhere'),
+        })
+
+        expect(dialog().open).toBe(true)
     })
 
     it('opens and closes again after a close', () => {
