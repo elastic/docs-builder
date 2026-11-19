@@ -18,7 +18,8 @@ internal readonly record struct Fatal
 	{
 		All,
 		CheckErrors,
-		None
+		None,
+		LegacyNone
 	}
 
 	private readonly Kind _kind;
@@ -56,10 +57,13 @@ internal readonly record struct Fatal
 	/// <param name="because">As for <see cref="CheckErrors(string)"/>: the behaviour preserved, the lock, and what strict would be.</param>
 	public static Fatal None(string because) => new(Kind.None, Justification(because));
 
-	// The legacy `errorsAreFatal: false` of Loader.For: a tolerant-none load that never had to justify itself.
-	internal static Fatal LegacyNone() => new(Kind.None, "legacy errorsAreFatal: false (no justification recorded)");
+	internal const string LegacyBecause = "legacy errorsAreFatal: false (no justification recorded)";
 
-	internal bool IsStrict => _kind == Kind.All;
+	// The legacy `errorsAreFatal: false` of Loader.For: a tolerant-none load that never had to justify itself. It is a distinct kind, only the bool overload
+	// creates it, and the overloads that take a Fatal reject it, so a new loader cannot get a tolerant mode without a because.
+	internal static Fatal FromLegacyBool(bool errorsAreFatal) => errorsAreFatal ? All : new(Kind.LegacyNone, LegacyBecause);
+
+	internal bool IsLegacy => _kind == Kind.LegacyNone;
 
 	internal bool IsFatalFor(bool mapError, bool checkError) => _kind switch
 	{
@@ -163,7 +167,7 @@ internal static class Loader
 		new(
 			(text, file, _) => parse(text, file),
 			(dto, context) => map(dto, context),
-			errorsAreFatal ? Fatal.All : Fatal.LegacyNone(),
+			Fatal.FromLegacyBool(errorsAreFatal),
 			describe ?? (static e => e.Message)
 		);
 
@@ -183,7 +187,7 @@ internal static class Loader
 		Fatal fatal,
 		Func<Exception, string>? describe = null
 	) where T : class, Nullean.Entities.IHaveConstraints<T> =>
-		new((text, file, _) => parse(text, file), map, fatal, describe ?? (static e => e.Message));
+		new((text, file, _) => parse(text, file), map, Justified(fatal), describe ?? (static e => e.Message));
 
 	/// <summary>
 	/// As the overload taking a plain <c>parse</c>, but <paramref name="parse"/> also receives the per-load <see cref="MapContext"/>, so a deserializer that
@@ -196,5 +200,13 @@ internal static class Loader
 		TryMap<TDto, T> map,
 		Fatal fatal,
 		Func<Exception, string>? describe = null
-	) where T : class, Nullean.Entities.IHaveConstraints<T> => new(parse, map, fatal, describe ?? (static e => e.Message));
+	) where T : class, Nullean.Entities.IHaveConstraints<T> => new(parse, map, Justified(fatal), describe ?? (static e => e.Message));
+
+	private static Fatal Justified(Fatal fatal) =>
+		fatal.IsLegacy
+			? throw new ArgumentException(
+				"The legacy errorsAreFatal: false mode is only reachable through the bool overload; use Fatal.None(because).",
+				nameof(fatal)
+			)
+			: fatal;
 }

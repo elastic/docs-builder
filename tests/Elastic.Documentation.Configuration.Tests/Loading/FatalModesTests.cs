@@ -322,13 +322,28 @@ internal sealed class FatalModesTests
 	}
 
 	[Test]
-	public void LegacyBoolOverload_IsNoneWithARecordedLegacyReason() =>
+	public void LegacyBoolOverload_IsNoneWithARecordedLegacyReason()
+	{
 		Loader
 			.For(Parse, (dto, _) => new Widget(dto.Name, dto.Size), errorsAreFatal: false)
 			.Load(CheckError, "w.yml")
 			.Value
 			.Should()
 			.BeOfType<Loaded<Widget>>();
+		Fatal.FromLegacyBool(false).Because.Should().Be("legacy errorsAreFatal: false (no justification recorded)");
+		Fatal.FromLegacyBool(true).Should().Be(Fatal.All);
+	}
+
+	[Test]
+	public void LegacyMode_IsRejectedByTheOverloadsThatTakeAFatal()
+	{
+		var legacy = Fatal.FromLegacyBool(false);
+		var withTryMap = () => Loader.For(Parse, Map, legacy);
+		var withTryParse = () => Loader.For<Dto, Widget>(ParseReporting, Map, legacy);
+
+		withTryMap.Should().Throw<ArgumentException>().WithParameterName("fatal");
+		withTryParse.Should().Throw<ArgumentException>().WithParameterName("fatal");
+	}
 
 	[Test]
 	public void Factories_AreValueEqualOnModeAndBecause()
