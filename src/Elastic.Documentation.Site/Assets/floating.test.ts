@@ -300,6 +300,22 @@ describe('floating popovers', () => {
             expect(open.has(menu())).toBe(false)
         })
 
+        it('does not close a menu reopened from the keyboard before the old close timer ends', () => {
+            point('pointerover', trigger(), away())
+            setOpen(menu(), true)
+            point('pointerout', trigger(), away())
+            vi.advanceTimersByTime(100)
+            // Escape closes it, then the focused button opens it again.
+            open.delete(menu())
+            setOpen(menu(), false)
+            open.add(menu())
+            setOpen(menu(), true)
+
+            vi.advanceTimersByTime(100)
+
+            expect(open.has(menu())).toBe(true)
+        })
+
         it('leaves touch to the click', () => {
             point('pointerover', trigger(), away(), 'touch')
 

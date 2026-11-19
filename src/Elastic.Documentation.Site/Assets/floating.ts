@@ -137,7 +137,11 @@ function onToggle(event: Event) {
     for (const invoker of invokers(popover))
         invoker.setAttribute('aria-expanded', String(open))
     release(popover)
-    if (!open) openedByHover.delete(popover)
+    if (!open) {
+        openedByHover.delete(popover)
+        // A close timer that outlives the menu would shut it again when it is reopened before the delay ends.
+        window.clearTimeout(hoverTimers.get(popover))
+    }
     const anchor = anchorOf(popover)
     if (!open || !anchor) return
     stopTracking.set(
