@@ -628,6 +628,29 @@ public class VersionIndexClientTests
 		handler.RequestedPaths.Should().ContainSingle("a missing spec is not a transient failure");
 	}
 
+	[Test]
+	public async Task ResolveVersionsAsync_NullVersionUnderANumericMoniker_ResolvesLikeTheReaderAlwaysDid()
+	{
+		var handler = new StubHandler(
+			_ => IndexResponse("""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"9":{"version":null}}}}""")
+		);
+		using var client = CreateClient(handler);
+		var collector = new CapturingDiagnosticsCollector();
+
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var resolved = versions.Should().ContainSingle().Which;
+		resolved.Moniker.Should().Be("9");
+		resolved.Version.Should().BeNull();
+		resolved.ObjectKey.Should().Be("elastic/elasticsearch//elasticsearch-openapi.json");
+	}
+
 	private static HttpResponseMessage IndexResponse(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
