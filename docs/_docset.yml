@@ -115,6 +115,12 @@ api:
       catalog:
         categories:
           - self
+  # docs-builder's own API, not a fixture: docs-api.json is the document the API serves at
+  # /docs/_api/v1/openapi.json, copied in by hand until a workflow publishes it.
+  docs-builder-docs-api:
+    - spec: docs-api.json
+      product: docs-builder
+      repository: elastic/docs-builder
 
 cta:
   docs-builder:
