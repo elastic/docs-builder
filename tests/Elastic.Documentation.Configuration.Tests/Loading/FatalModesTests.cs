@@ -16,6 +16,22 @@ namespace Elastic.Documentation.Configuration.Tests.Loading;
 /// </summary>
 internal sealed class FatalModesTests
 {
+	internal enum Mode
+	{
+		All,
+		CheckErrors,
+		None
+	}
+
+	private const string Because = "main keeps the file; locked by this test; strict would reject it";
+
+	private static Fatal Of(Mode mode) => mode switch
+	{
+		Mode.All => Fatal.All,
+		Mode.CheckErrors => Fatal.CheckErrors(Because),
+		_ => Fatal.None(Because)
+	};
+
 	private sealed record Dto(string Name, int Size);
 
 	private static Dto Parse(string text, string file)
@@ -69,18 +85,18 @@ internal sealed class FatalModesTests
 	private const string Clean = "ok:1";
 
 	[Test]
-	[Arguments(Fatal.All, MapError, false)]
-	[Arguments(Fatal.All, CheckError, false)]
-	[Arguments(Fatal.All, Clean, true)]
-	[Arguments(Fatal.CheckErrors, MapError, true)]
-	[Arguments(Fatal.CheckErrors, CheckError, false)]
-	[Arguments(Fatal.CheckErrors, Clean, true)]
-	[Arguments(Fatal.None, MapError, true)]
-	[Arguments(Fatal.None, CheckError, true)]
-	[Arguments(Fatal.None, Clean, true)]
-	public void Load_Mode_DecidesWhetherTheValueIsKept(Fatal fatal, string input, bool kept)
+	[Arguments(Mode.All, MapError, false)]
+	[Arguments(Mode.All, CheckError, false)]
+	[Arguments(Mode.All, Clean, true)]
+	[Arguments(Mode.CheckErrors, MapError, true)]
+	[Arguments(Mode.CheckErrors, CheckError, false)]
+	[Arguments(Mode.CheckErrors, Clean, true)]
+	[Arguments(Mode.None, MapError, true)]
+	[Arguments(Mode.None, CheckError, true)]
+	[Arguments(Mode.None, Clean, true)]
+	public void Load_Mode_DecidesWhetherTheValueIsKept(Mode mode, string input, bool kept)
 	{
-		var result = Declared(fatal).Load(input, "w.yml");
+		var result = Declared(Of(mode)).Load(input, "w.yml");
 
 		(result.Value is Loaded<Widget>).Should().Be(kept);
 		result.ValueOrNull().Should().Match<Widget?>(w => (w != null) == kept);
@@ -89,8 +105,8 @@ internal sealed class FatalModesTests
 	[Test]
 	public void Load_NoneKeepsTheValueAndItsConstraintError_CheckErrorsDiscardsTheValueButKeepsTheError()
 	{
-		var none = Declared(Fatal.None).Load(CheckError, "w.yml");
-		var checkErrors = Declared(Fatal.CheckErrors).Load(CheckError, "w.yml");
+		var none = Declared(Of(Mode.None)).Load(CheckError, "w.yml");
+		var checkErrors = Declared(Of(Mode.CheckErrors)).Load(CheckError, "w.yml");
 
 		none.Value.Should().BeOfType<Loaded<Widget>>();
 		none.Findings().Should().ContainSingle(d => d.Severity == Severity.Error);
@@ -99,12 +115,12 @@ internal sealed class FatalModesTests
 	}
 
 	[Test]
-	[Arguments(Fatal.All)]
-	[Arguments(Fatal.CheckErrors)]
-	[Arguments(Fatal.None)]
-	public void Load_KeptValueWithErrors_StillCarriesEveryError(Fatal fatal)
+	[Arguments(Mode.All)]
+	[Arguments(Mode.CheckErrors)]
+	[Arguments(Mode.None)]
+	public void Load_KeptValueWithErrors_StillCarriesEveryError(Mode mode)
 	{
-		var result = Declared(fatal).Load(MapError, "w.yml");
+		var result = Declared(Of(mode)).Load(MapError, "w.yml");
 
 		result.Findings().Count(d => d.Severity == Severity.Error).Should().Be(2);
 	}
@@ -112,7 +128,7 @@ internal sealed class FatalModesTests
 	[Test]
 	public void Load_FindingsOrder_IsMapWritesAndContextCallsInterleaved_ThenTheCheck()
 	{
-		var result = Declared(Fatal.None).Load("maperr:50", "w.yml");
+		var result = Declared(Of(Mode.None)).Load("maperr:50", "w.yml");
 
 		result
 			.Findings()
@@ -130,42 +146,42 @@ internal sealed class FatalModesTests
 	[Test]
 	public void Load_CollectorWrite_KeepsTheDiagnosticUntouched()
 	{
-		var result = Declared(Fatal.None).Load(MapError, "w.yml");
+		var result = Declared(Of(Mode.None)).Load(MapError, "w.yml");
 
 		var written = result.Findings().Single(d => d.Message == "written by a parser");
 		(written.File, written.Line, written.Severity).Should().Be(("parser.yml", 7, Severity.Error));
 	}
 
 	[Test]
-	[Arguments(Fatal.All)]
-	[Arguments(Fatal.CheckErrors)]
-	[Arguments(Fatal.None)]
-	public void Load_MapReturnsNull_IsUnreadableWithTheFindingsSoFar_AndNoCheck(Fatal fatal)
+	[Arguments(Mode.All)]
+	[Arguments(Mode.CheckErrors)]
+	[Arguments(Mode.None)]
+	public void Load_MapReturnsNull_IsUnreadableWithTheFindingsSoFar_AndNoCheck(Mode mode)
 	{
-		var result = Declared(fatal).Load("giveup:1", "w.yml");
+		var result = Declared(Of(mode)).Load("giveup:1", "w.yml");
 
 		result.Value.Should().BeOfType<Unreadable<Widget>>();
 		result.Findings().Select(d => d.Message).Should().Equal("first");
 	}
 
 	[Test]
-	[Arguments(Fatal.All)]
-	[Arguments(Fatal.CheckErrors)]
-	[Arguments(Fatal.None)]
-	public void Load_MapThrowsAfterFindings_IsUnreadableWithTheFindingsThenTheDescribedError(Fatal fatal)
+	[Arguments(Mode.All)]
+	[Arguments(Mode.CheckErrors)]
+	[Arguments(Mode.None)]
+	public void Load_MapThrowsAfterFindings_IsUnreadableWithTheFindingsThenTheDescribedError(Mode mode)
 	{
-		var result = Declared(fatal).Load("throws:1", "w.yml");
+		var result = Declared(Of(mode)).Load("throws:1", "w.yml");
 
 		result.Value.Should().BeOfType<Unreadable<Widget>>();
 		result.Findings().Select(d => (d.Severity, d.Message)).Should().Equal((Severity.Hint, "first"), (Severity.Error, "boom"));
 	}
 
 	[Test]
-	[Arguments(Fatal.All)]
-	[Arguments(Fatal.CheckErrors)]
-	[Arguments(Fatal.None)]
-	public void Load_ParseThrows_IsUnreadableInEveryMode(Fatal fatal) =>
-		Declared(fatal).Load("nonsense", "w.yml").Findings().Should().ContainSingle().Which.Message.Should().Be("w.yml: malformed");
+	[Arguments(Mode.All)]
+	[Arguments(Mode.CheckErrors)]
+	[Arguments(Mode.None)]
+	public void Load_ParseThrows_IsUnreadableInEveryMode(Mode mode) =>
+		Declared(Of(mode)).Load("nonsense", "w.yml").Findings().Should().ContainSingle().Which.Message.Should().Be("w.yml: malformed");
 
 	private static IEnumerable<string> Outcome(LoadResult<Widget> result) =>
 		[
@@ -190,7 +206,8 @@ internal sealed class FatalModesTests
 		}
 
 		var viaBool = (Loader.For(Parse, Strict), Loader.For(Parse, Strict, errorsAreFatal: false));
-		var viaMode = (Loader.For<Dto, Widget>(Parse, Strict, Fatal.All), Loader.For<Dto, Widget>(Parse, Strict, Fatal.None));
+		var viaMode =
+			(Loader.For<Dto, Widget>(Parse, Strict, Fatal.All), Loader.For<Dto, Widget>(Parse, Strict, Fatal.None("legacy twin")));
 
 		Outcome(viaBool.Item1.Load(input, "w.yml")).Should().Equal(Outcome(viaMode.Item1.Load(input, "w.yml")));
 		Outcome(viaBool.Item2.Load(input, "w.yml")).Should().Equal(Outcome(viaMode.Item2.Load(input, "w.yml")));
@@ -240,12 +257,12 @@ internal sealed class FatalModesTests
 	}
 
 	[Test]
-	[Arguments(Fatal.All, false)]
-	[Arguments(Fatal.CheckErrors, true)]
-	[Arguments(Fatal.None, true)]
-	public void Load_ParseWithContext_ReportsBeforeMapAndTheCheck_AndFollowsTheMode(Fatal fatal, bool kept)
+	[Arguments(Mode.All, false)]
+	[Arguments(Mode.CheckErrors, true)]
+	[Arguments(Mode.None, true)]
+	public void Load_ParseWithContext_ReportsBeforeMapAndTheCheck_AndFollowsTheMode(Mode mode, bool kept)
 	{
-		var result = Loader.For<Dto, Widget>(ParseReporting, Map, fatal).Load("bad:50", "w.yml");
+		var result = Loader.For<Dto, Widget>(ParseReporting, Map, Of(mode)).Load("bad:50", "w.yml");
 
 		(result.Value is Loaded<Widget>).Should().Be(kept);
 		result
@@ -269,7 +286,7 @@ internal sealed class FatalModesTests
 			throw new InvalidOperationException("boom");
 		}
 
-		var result = Loader.For<Dto, Widget>(Throwing, Map, Fatal.None, e => $"described: {e.Message}").Load("ok:1", "w.yml");
+		var result = Loader.For<Dto, Widget>(Throwing, Map, Fatal.None(Because), e => $"described: {e.Message}").Load("ok:1", "w.yml");
 
 		result.Value.Should().BeOfType<Unreadable<Widget>>();
 		result
@@ -277,5 +294,48 @@ internal sealed class FatalModesTests
 			.Select(d => (d.Severity, d.Message))
 			.Should()
 			.Equal((Severity.Warning, "before"), (Severity.Error, "described: boom"));
+	}
+
+	[Test]
+	[Arguments("")]
+	[Arguments("   ")]
+	[Arguments(null)]
+	public void TolerantFactories_BlankBecause_Throw(string? because)
+	{
+		var checkErrors = () => Fatal.CheckErrors(because!);
+		var none = () => Fatal.None(because!);
+
+		checkErrors.Should().Throw<ArgumentException>().WithParameterName("because");
+		none.Should().Throw<ArgumentException>().WithParameterName("because");
+	}
+
+	[Test]
+	public void Because_RoundTripsAndShowsInToString()
+	{
+		var checkErrors = Fatal.CheckErrors("why one");
+		var none = Fatal.None("why two");
+
+		(checkErrors.Because, none.Because, Fatal.All.Because).Should().Be(("why one", "why two", null));
+		checkErrors.ToString().Should().Be("Fatal.CheckErrors(because: \"why one\")");
+		none.ToString().Should().Be("Fatal.None(because: \"why two\")");
+		Fatal.All.ToString().Should().Be("Fatal.All");
+	}
+
+	[Test]
+	public void LegacyBoolOverload_IsNoneWithARecordedLegacyReason() =>
+		Loader
+			.For(Parse, (dto, _) => new Widget(dto.Name, dto.Size), errorsAreFatal: false)
+			.Load(CheckError, "w.yml")
+			.Value
+			.Should()
+			.BeOfType<Loaded<Widget>>();
+
+	[Test]
+	public void Factories_AreValueEqualOnModeAndBecause()
+	{
+		Fatal.None("a").Should().Be(Fatal.None("a"));
+		Fatal.None("a").Should().NotBe(Fatal.None("b"));
+		Fatal.None("a").Should().NotBe(Fatal.CheckErrors("a"));
+		Fatal.All.Should().Be(default(Fatal));
 	}
 }

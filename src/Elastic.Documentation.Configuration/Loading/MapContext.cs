@@ -35,7 +35,7 @@ internal sealed class MapContext(string file)
 
 	/// <summary>
 	/// An explicit error finding made while mapping. Under <see cref="Fatal.All"/> (the default) it makes the load <see cref="Unreadable{T}"/>;
-	/// under <see cref="Fatal.CheckErrors"/> and <see cref="Fatal.None"/> the value is kept and the error is only reported.
+	/// under <see cref="Fatal.CheckErrors(string)"/> and <see cref="Fatal.None(string)"/> the value is kept and the error is only reported.
 	/// </summary>
 	public void Error(string message, int? line = null, int? column = null) => Add(Severity.Error, message, line, column);
 

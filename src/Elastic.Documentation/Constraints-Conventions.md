@@ -59,7 +59,7 @@ internal static class SearchLoader
 ```
 
 - `parse` and `map` are the only steps. Findings made in `map` go to the `MapContext` the loader creates per load, so they cannot be lost or reordered, and are kept (first) when a later step throws.
-- The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default, `Fatal.All`) makes an error an `Unreadable<T>`; `false` (`Fatal.None`) returns the `Loaded<T>` with its errors, for a caller that reports and continues. A load that must keep a value despite mapping errors, or that may give up in `map`, uses the `Fatal` overload: see "Tolerant loads". `parse` may take the `MapContext` as a third argument (`TryParse`, only on the `Fatal` overload) when reading reports findings, such as unknown keys, before a DTO exists.
+- The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default, `Fatal.All`) makes an error an `Unreadable<T>`; `false` is legacy tech debt (see "Tolerant loads"): a tolerant-none load with no recorded justification, for a caller that reports and continues. A load that must keep a value despite mapping errors, or that may give up in `map`, uses the `Fatal` overload: see "Tolerant loads". `parse` may take the `MapContext` as a third argument (`TryParse`, only on the `Fatal` overload) when reading reports findings, such as unknown keys, before a DTO exists.
 - `context.Collector` is an `IDiagnosticsCollector` over the same findings, in order, so a parser written against a collector is reused unchanged; it counts only this load's severities. `context.Error(...)` records an explicit error.
 - A step that throws becomes an error finding. Its text is `describe(exception)`, declared with the loader (default: the message, so a loader keeps the text it always gave). Cancellation and out-of-memory propagate.
 - `value.Check(file)` checks a record built elsewhere against its `T.Constraints` and returns the `Loaded<T>` (see "Check" below).
@@ -82,11 +82,13 @@ A caller that owns a collector and has a `ConstraintReport` writes it with `coll
 
 The default of every loader is strict: any error makes the load `Unreadable<T>`. Some loaders on `main` are tolerant: an error made while reading does not discard the value, a rule's error does, or some loads give up explicitly. A refactor must not change that, so `Loader.For(parse, map, fatal: ...)` can name it. These modes hide errors from the outcome, so they are debt, not a feature: each use is a behaviour that is meant to become strict later.
 
+The rule is enforced by the shape of the API, not by a scan: `Fatal.All` is a value, but `Fatal.CheckErrors(because)` and `Fatal.None(because)` are factories, and `because` is required and must not be blank (`ArgumentException` otherwise). It is stored in `Fatal.Because` and shown by `ToString()`. A `because` names (1) the behaviour on `main` it preserves, (2) the snapshot or test that locks it, and (3) what the strict behaviour would be once the lock is lifted (the deferred behaviour change, to list in the PR). Nothing checks that it is true; review does.
+
 | `Fatal` mode | Meaning | When it is legitimate | What a reader must know |
 | --- | --- | --- | --- |
-| `All` (default; `errorsAreFatal: true`) | Any error, made while mapping or by the constraint check, is `Unreadable<T>`. | Always; new loaders use it. | `Loaded<T>` means no error finding. |
-| `CheckErrors` | Only an error from `T.Constraints` is `Unreadable<T>`. Errors made while mapping (`context.Error`, errors written to `context.Collector`) are reported and the value is kept. | The loader on `main` reported mapping errors and continued, but its rules were always fatal, and a snapshot or test locks that. | `Loaded<T>` can hold error findings. Do not branch on "loaded means clean": use `HasErrors`. |
-| `None` (`errorsAreFatal: false`) | An error is never fatal; the value is returned with every finding. Only a `null` from `map` or an exception is `Unreadable<T>`. | The caller on `main` reports and continues whatever the file holds (a docset). | As above, and a rule's Error severity changes nothing about the outcome. |
+| `Fatal.All` (default; `errorsAreFatal: true`) | Any error, made while mapping or by the constraint check, is `Unreadable<T>`. | Always; new loaders use it. | `Loaded<T>` means no error finding. |
+| `Fatal.CheckErrors(because)` | Only an error from `T.Constraints` is `Unreadable<T>`. Errors made while mapping (`context.Error`, errors written to `context.Collector`) are reported and the value is kept. | The loader on `main` reported mapping errors and continued, but its rules were always fatal, and a snapshot or test locks that. | `Loaded<T>` can hold error findings. Do not branch on "loaded means clean": use `HasErrors`. |
+| `Fatal.None(because)` | An error is never fatal; the value is returned with every finding. Only a `null` from `map` or an exception is `Unreadable<T>`. | The caller on `main` reports and continues whatever the file holds (a docset). | As above, and a rule's Error severity changes nothing about the outcome. |
 
 Other tolerant-load facts, true in every mode:
 
@@ -95,23 +97,29 @@ Other tolerant-load facts, true in every mode:
 - Keeping a record that holds errors differs by mode: `None` keeps it whatever the errors; `CheckErrors` keeps it only for mapping/parsing errors, an error from `T.Constraints` still discards it.
 - A step that throws keeps its behaviour in every mode: `Unreadable<T>` with the findings made so far, then the described error.
 
-**Every use of `Fatal.CheckErrors` or `Fatal.None` carries a `// TOLERANT LOAD:` comment** directly above it, naming (1) the behaviour on `main` it preserves, (2) the snapshot or test that locks it, and (3) what the strict behaviour would be once the lock is lifted (the deferred behaviour change, to list in the PR). `TolerantLoadCommentTests` fails when a declaration selects a non-default mode (`Fatal.CheckErrors`, `Fatal.None` or `errorsAreFatal: false`) without its own such comment directly above; it checks the comment is there, not that it is true. Find the debt with `grep -rn "TOLERANT LOAD:" src`.
-
 ```csharp
 // illustrative; the names are made up
-// TOLERANT LOAD: (1) main reports an unknown product and still uses the file;
-// (2) locked by ChangelogConfigurationSnapshotTests.Unknown_product; (3) strict would be Fatal.All: the file is rejected.
-public static readonly Loader<Dto, Config> Yaml = Loader.For(Parse, Map, Fatal.CheckErrors);
+public static readonly Loader<Dto, Config> Yaml = Loader.For(
+	Parse,
+	Map,
+	Fatal.CheckErrors(because: "main reports an unknown product and still uses the file; locked by ChangelogConfigurationSnapshotTests.Unknown_product; strict would be Fatal.All: the file is rejected")
+);
 ```
 
-Tolerant loaders on the open area branches. This is a snapshot of open PRs, read from the code with `git show origin/<branch>:<path>` (read, not run), and is superseded by the `// TOLERANT LOAD:` comments once the area PRs merge. Each entry names the mode it maps to.
+**Legacy bool overload.** `Loader.For(parse, map, errorsAreFatal: false)` stays so existing callers do not change. It is a `Fatal.None` load without a justification (its `Because` says so): legacy tech debt, not a pattern to copy. It has no test that fails on it. New tolerant loads use the `Fatal` overload.
+
+Tolerant loaders on the open area branches. This is a snapshot of open PRs, read from the code with `git show origin/<branch>:<path>` (read, not run), and is superseded by the `because` arguments once the area PRs merge. Each entry names the mode it maps to.
 
 | Loader (file) | Behaviour | Maps to | Verified against |
 | --- | --- | --- | --- |
-| `changelog.yml`: `ChangelogConfigurationLoader.Load` (Configuration/Changelog), hand-rolled | Errors written while reading go to a private buffer and keep the value. An error from the constraint check (`ChangelogConfigurationInCatalog`) is `Unreadable`. A parse step that returns null (the old `block:` key) or a `YamlException` is `Unreadable` with the findings so far. | `Fatal.CheckErrors`, with a `TryMap` that returns null to give up | `origin/split/10a-changelog-config@7cbba5d34` |
-| links: `LinkLoader.Manifest` and `LinkLoader.Registry` (Configuration/Loading) | Already `Loader.For(..., errorsAreFatal: false)`: text that parses always returns its record with every finding, errors included; unparsable text is `Unreadable`. Consumers go through `ReadManifest`/`ReadRegistry`, which return the value or throw the `JsonException` and never report the findings (`CrossLinkFetcher`, `LinkIndexLinkChecker`, `GitLinkIndexReader`, `LinkIndexReader`, `NavigationPrefixChecker`, `RepositorySourcesFetcher`, `CodexCloneService`). | `Fatal.None` (the bool `false`) | `origin/split/05-links@95a8f6170` |
-| version index: `VersionIndexLoader.Json` (ApiExplorer/Model) | `Loader.For(..., errorsAreFatal: false)`: the index belongs to the CDN, so a finding never stops the render. `VersionIndexClient` reads the `LoadResult`. | `Fatal.None` | `origin/split/09-codex@5a3fb0a7a` (the same file is on the later area branches) |
-| `docset.yml`: `DocumentationSetLoader.Load` (Configuration/Loading), hand-rolled, not `Loader.For` | Reports to the caller's collector while reading, always returns `Loaded` (the check's findings never make it `Unreadable`), and lets every exception propagate unchanged. | Would be `Fatal.None`, but it cannot use `Loader.For`: a `Loader` turns an exception into a finding, and callers and snapshots depend on the exceptions. The code says so. | `origin/split/06b-docset-definition@afa300a11`, `origin/split/06c1-resolved-set@16e8b6a63` |
+| `changelog.yml`: `ChangelogConfigurationLoader.Load` (Configuration/Changelog), hand-rolled | Errors written while reading go to a private buffer and keep the value. An error from the constraint check (`ChangelogConfigurationInCatalog`) is `Unreadable`. A parse step that returns null (the old `block:` key) or a `YamlException` is `Unreadable` with the findings so far. | `Fatal.CheckErrors(because)`, with a `TryMap` that returns null to give up | `origin/split/10a-changelog-config@7cbba5d34` |
+| links: `LinkLoader.Manifest` and `LinkLoader.Registry` (Configuration/Loading) | Already `Loader.For(..., errorsAreFatal: false)`: text that parses always returns its record with every finding, errors included; unparsable text is `Unreadable`. Consumers go through `ReadManifest`/`ReadRegistry`, which return the value or throw the `JsonException` and never report the findings (`CrossLinkFetcher`, `LinkIndexLinkChecker`, `GitLinkIndexReader`, `LinkIndexReader`, `NavigationPrefixChecker`, `RepositorySourcesFetcher`, `CodexCloneService`). | legacy `Fatal.None` (the bool `false`) | `origin/split/05-links@c802e919b` |
+| version index: `VersionIndexLoader.Json` (ApiExplorer/Model) | `Loader.For(..., errorsAreFatal: false)`: the index belongs to the CDN, so a finding never stops the render. `VersionIndexClient` reads the `LoadResult`. | legacy `Fatal.None` (the bool `false`) | `origin/split/09-codex@db5630699` (the same file is on the later area branches) |
+| `docset.yml`: `DocumentationSetLoader.Load` (Configuration/Loading), hand-rolled, not `Loader.For` | Reports to the caller's collector while reading, always returns `Loaded` (the check's findings never make it `Unreadable`), and lets every exception propagate unchanged. | Would be `Fatal.None(because)`, but it cannot use `Loader.For`: a `Loader` turns an exception into a finding, and callers and snapshots depend on the exceptions. The code says so. | `origin/split/06b-docset-definition@afa300a11`, `origin/split/06c1-resolved-set@16e8b6a63` |
+
+#### Legacy tolerant loads (no justification yet)
+
+Every use of `errorsAreFatal: false`, read with `git grep` on each branch: `LinkLoader.Manifest` and `LinkLoader.Registry` (`Configuration/Loading/LinkLoader.cs`, `origin/split/05-links@c802e919b`, also on `09-codex@db5630699`, `10a-changelog-config@7cbba5d34` and `06b-docset-definition@a446843ce`) and `VersionIndexLoader.Json` (`ApiExplorer/Model/VersionIndexLoader.cs`, `origin/split/09-codex@db5630699`, also on the same later branches). No other use was found on those branches; other open branches were not searched. Each should move to `Fatal.None(because: ...)` when its area is next touched.
 
 Verified strict, so not tolerant: codex (`CodexSiteLoader.Read`/`Publish` use the default mode, and `CodexConfigurationLoader.TryLoad` writes every error finding to the collector and returns false on any error; `origin/split/09-codex@5a3fb0a7a`), the catalog loaders (`origin/split/02-catalog@4684ce64d`, any error is `Unreadable`) and `AssemblyLoader` (`origin/split/07-assembly@889e21471`).
 

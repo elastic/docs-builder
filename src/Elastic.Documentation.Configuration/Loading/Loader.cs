@@ -9,29 +9,71 @@ namespace Elastic.Documentation.Configuration.Loading;
 /// <summary>
 /// How a load treats errors in its findings. <see cref="All"/> is the strict default and the behaviour of every loader that does not name a mode.
 /// <see cref="CheckErrors"/> and <see cref="None"/> exist only so a loader can keep a tolerant behaviour that already shipped (a file with a mapping error is
-/// still used) until that behaviour is deliberately tightened. They hide errors from the outcome, so every use carries a <c>// TOLERANT LOAD:</c> comment
-/// (see "Tolerant loads" in Constraints-Conventions.md).
+/// still used) until that behaviour is deliberately tightened. They hide errors from the outcome, so each is created through a factory that requires a
+/// non-blank <c>because</c>: the justification is part of the API, kept in <see cref="Because"/> and shown by <see cref="ToString"/>.
 /// </summary>
-internal enum Fatal
+internal readonly record struct Fatal
 {
-	/// <summary>
-	/// The strict default: any error in the findings, whether made while mapping (<c>context.Error</c>, an error written to <c>context.Collector</c>) or
-	/// reported by the constraint check, makes the load <see cref="Unreadable{T}"/>.
-	/// </summary>
-	All,
+	private enum Kind
+	{
+		All,
+		CheckErrors,
+		None
+	}
+
+	private readonly Kind _kind;
+
+	private Fatal(Kind kind, string? because)
+	{
+		_kind = kind;
+		Because = because;
+	}
 
 	/// <summary>
-	/// Only an error reported by <c>T.Constraints</c> makes the load <see cref="Unreadable{T}"/>. An error made while mapping is reported but the record is
-	/// kept. Legitimate for a loader whose mapping has always reported and continued while its rules were always fatal.
+	/// The strict default: any error in the findings, whether made while parsing or mapping (<c>context.Error</c>, an error written to <c>context.Collector</c>)
+	/// or reported by the constraint check, makes the load <see cref="Unreadable{T}"/>. Needs no justification.
+	/// </summary>
+	public static Fatal All => default;
+
+	/// <summary>Why a tolerant mode is used; <c>null</c> for <see cref="All"/>.</summary>
+	public string? Because { get; }
+
+	/// <summary>
+	/// Only an error reported by <c>T.Constraints</c> makes the load <see cref="Unreadable{T}"/>. An error made while parsing or mapping is reported but the
+	/// record is kept. Legitimate for a loader whose mapping has always reported and continued while its rules were always fatal.
 	/// A reader of the result must not assume <see cref="Loaded{T}"/> means the findings hold no error.
 	/// </summary>
-	CheckErrors,
+	/// <param name="because">
+	/// Required, not blank (<see cref="ArgumentException"/> otherwise). State (1) the behaviour on main this preserves, (2) the snapshot or test that locks it
+	/// and (3) what the strict behaviour would be once the lock is lifted.
+	/// </param>
+	public static Fatal CheckErrors(string because) => new(Kind.CheckErrors, Justification(because));
 
 	/// <summary>
-	/// An error never makes the load <see cref="Unreadable{T}"/>: the record is returned with every finding, errors included (a caller that reports and
-	/// continues). Only a map step that gives up (returns null) or throws produces <see cref="Unreadable{T}"/>.
+	/// An error never makes the load <see cref="Unreadable{T}"/>: the record is returned with every finding, errors included, constraint errors too (a caller that
+	/// reports and continues). Only a map step that gives up (returns null) or a step that throws produces <see cref="Unreadable{T}"/>.
 	/// </summary>
-	None
+	/// <param name="because">As for <see cref="CheckErrors(string)"/>: the behaviour preserved, the lock, and what strict would be.</param>
+	public static Fatal None(string because) => new(Kind.None, Justification(because));
+
+	// The legacy `errorsAreFatal: false` of Loader.For: a tolerant-none load that never had to justify itself.
+	internal static Fatal LegacyNone() => new(Kind.None, "legacy errorsAreFatal: false (no justification recorded)");
+
+	internal bool IsStrict => _kind == Kind.All;
+
+	internal bool IsFatalFor(bool mapError, bool checkError) => _kind switch
+	{
+		Kind.All => mapError || checkError,
+		Kind.CheckErrors => checkError,
+		_ => false
+	};
+
+	public override string ToString() => _kind == Kind.All ? "Fatal.All" : $"Fatal.{_kind}(because: \"{Because}\")";
+
+	private static string Justification(string because) =>
+		string.IsNullOrWhiteSpace(because)
+			? throw new ArgumentException("A tolerant Fatal mode needs a non-blank justification.", nameof(because))
+			: because;
 }
 
 /// <summary>
@@ -98,12 +140,8 @@ internal sealed class Loader<TDto, T> where T : class, Nullean.Entities.IHaveCon
 		return IsFatal(context.Findings, checkFindings) ? new Unreadable<T>(findings) : new Loaded<T>(value, findings);
 	}
 
-	private bool IsFatal(IReadOnlyList<Diagnostic> mapFindings, IReadOnlyList<Diagnostic> checkFindings) => _fatal switch
-	{
-		Fatal.All => HasError(mapFindings) || HasError(checkFindings),
-		Fatal.CheckErrors => HasError(checkFindings),
-		_ => false
-	};
+	private bool IsFatal(IReadOnlyList<Diagnostic> mapFindings, IReadOnlyList<Diagnostic> checkFindings) =>
+		_fatal.IsFatalFor(HasError(mapFindings), HasError(checkFindings));
 
 	private static bool HasError(IReadOnlyList<Diagnostic> findings) => findings.Any(d => d.Severity == Severity.Error);
 }
@@ -112,7 +150,8 @@ internal static class Loader
 {
 	/// <summary>
 	/// Declares a strict or fully tolerant loader. <paramref name="errorsAreFatal"/> <c>true</c> (the default) is <see cref="Fatal.All"/>; <c>false</c> is
-	/// <see cref="Fatal.None"/>. Unchanged from before <see cref="Fatal"/> existed. <paramref name="describe"/> defaults to the exception's message,
+	/// a <see cref="Fatal.None(string)"/> load without a recorded justification: legacy tech debt kept so existing callers do not change. New code that needs a
+	/// tolerant load uses the <see cref="Fatal"/> overload and states why. Unchanged from before <see cref="Fatal"/> existed. <paramref name="describe"/> defaults to the exception's message,
 	/// so a loader keeps the text its parser always gave.
 	/// </summary>
 	public static Loader<TDto, T> For<TDto, T>(
@@ -124,18 +163,18 @@ internal static class Loader
 		new(
 			(text, file, _) => parse(text, file),
 			(dto, context) => map(dto, context),
-			errorsAreFatal ? Fatal.All : Fatal.None,
+			errorsAreFatal ? Fatal.All : Fatal.LegacyNone(),
 			describe ?? (static e => e.Message)
 		);
 
 	/// <summary>
 	/// Declares a loader with an explicit <see cref="Fatal"/> mode and a map step that may give up by returning null (<see cref="TryMap{TDto, T}"/>).
-	/// What differs from the strict default depends on the mode. <see cref="Fatal.None"/>: a record built despite any error, mapping or constraint, is
-	/// returned as <see cref="Loaded{T}"/> whose findings contain the errors. <see cref="Fatal.CheckErrors"/>: only a record built despite a mapping error is
+	/// What differs from the strict default depends on the mode. <see cref="Fatal.None(string)"/>: a record built despite any error, mapping or constraint, is
+	/// returned as <see cref="Loaded{T}"/> whose findings contain the errors. <see cref="Fatal.CheckErrors(string)"/>: only a record built despite a mapping error is
 	/// kept that way; an error from <c>T.Constraints</c> still makes the load <see cref="Unreadable{T}"/> and the record is discarded, so a caller that must
-	/// retain a record that violates a rule needs <see cref="Fatal.None"/>. In both, a null from <paramref name="map"/> is <see cref="Unreadable{T}"/>
+	/// retain a record that violates a rule needs <see cref="Fatal.None(string)"/>. In both, a null from <paramref name="map"/> is <see cref="Unreadable{T}"/>
 	/// without running the check. It exists for loaders that have always tolerated mapping errors and that a behaviour-preserving refactor must not tighten.
-	/// The mode is required here on purpose: the strict default is the overload above. Every use of a non-default mode carries a <c>// TOLERANT LOAD:</c> comment.
+	/// The mode is required here on purpose: the strict default is the overload above. A tolerant mode carries its own justification (<see cref="Fatal.Because"/>).
 	/// <paramref name="parse"/> receives only text and file; use the overload taking a <see cref="TryParse{TDto}"/> when parsing reports findings.
 	/// </summary>
 	public static Loader<TDto, T> For<TDto, T>(
