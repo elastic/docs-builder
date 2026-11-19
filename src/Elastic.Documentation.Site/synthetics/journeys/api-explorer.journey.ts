@@ -71,9 +71,7 @@ if (isAssemblerApiExplorerEnabled()) {
                 target.click(),
             ])
 
-            await expect(page).toHaveURL(
-                /\/docs\/api\/doc\/elasticsearch\/v\d+\//
-            )
+            await expect(page).toHaveURL(/\/docs\/api\/elasticsearch\/v\d+\//)
             await expect(picker).toBeVisible()
         })
 
@@ -99,7 +97,7 @@ if (isAssemblerApiExplorerEnabled()) {
             await operationLink.click()
 
             await expect(page).toHaveURL(
-                /\/docs\/api\/doc\/elasticsearch\/v\d+\/operation\//
+                /\/docs\/api\/elasticsearch\/v\d+\/operation\//
             )
 
             // Operation pages render their own section, not the markdown one, and the
