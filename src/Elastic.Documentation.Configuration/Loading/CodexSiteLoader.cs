@@ -70,12 +70,13 @@ public static class CodexSiteLoader
 			SitePrefix = NormalizeSitePrefix(dto.SitePrefix),
 			Environment = NormalizeEnvironment(dto.Environment),
 			Title = dto.Title,
-			Groups =
-			[
-				.. dto.Groups.Select(g => new CodexGroupDefinition { Id = g.Id, Name = g.Name, Description = g.Description, Icon = g.Icon })
-			],
+			// an empty `groups:` or an empty list entry stays null and only fails where a group is looked up, as it always has
+			Groups = dto.Groups is null ? null! : [.. dto.Groups.Select(ToGroup)],
 			CanonicalBaseUrl = dto.CanonicalBaseUrl
 		};
+
+	private static CodexGroupDefinition ToGroup(CodexGroupDefinitionDto? g) =>
+		g is null ? null! : new CodexGroupDefinition { Id = g.Id, Name = g.Name, Description = g.Description, Icon = g.Icon };
 
 	// Empty or "/" means root (no prefix); otherwise it starts with '/' and does not end with one.
 	private static string NormalizeSitePrefix(string? raw)
@@ -109,7 +110,7 @@ public sealed class CodexConfigurationDto
 	public string Title { get; set; } = "Elastic Internal Docs";
 
 	[YamlPropertyName("groups")]
-	public List<CodexGroupDefinitionDto> Groups { get; set; } = [];
+	public List<CodexGroupDefinitionDto?>? Groups { get; set; } = [];
 
 	[YamlPropertyName("canonical_base_url")]
 	public string? CanonicalBaseUrl { get; set; }

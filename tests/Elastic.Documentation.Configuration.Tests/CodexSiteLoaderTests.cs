@@ -73,6 +73,14 @@ public class CodexSiteLoaderTests
 		CodexSiteLoader.LoadForPublish("environment: internal", "codex.yml").OrThrow().Configuration.Environment.Should().Be("internal");
 
 	[Test]
+	[Arguments("groups:\n")]
+	[Arguments("groups: null\n")]
+	public void Load_EmptyGroups_LoadsAsItAlwaysHas(string yaml) => Read(yaml).Groups.Should().BeNull();
+
+	[Test]
+	public void Load_EmptyGroupEntry_LoadsAsItAlwaysHas() => Read("groups:\n  -\n").Groups.Should().ContainSingle().Which.Should().BeNull();
+
+	[Test]
 	public void Load_MalformedYaml_IsAnErrorThatNamesTheFile()
 	{
 		var result = CodexSiteLoader.Load("groups: [", "codex.yml");
