@@ -303,7 +303,8 @@ function playFlashWhenSettled(el: HTMLElement): void {
  * heading keeps the browser's plain jump, and anything else pulses as a whole.
  */
 function flashTarget(target: HTMLElement): void {
-    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    // A heading needs no pointing out, and neither does the page intro: reaching it is going back to the top.
+    if (target.matches('h1, h2, h3, h4, h5, h6, .api-page-intro')) return
     const name = target.matches('dt')
         ? target.querySelector<HTMLElement>(':scope > code')
         : null
