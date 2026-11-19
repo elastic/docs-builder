@@ -145,7 +145,9 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 		await WithPageAsync(async page =>
 		{
 			// When the trail and Copy page do not fit on one line, Copy page wraps under the trail rather than the trail
-			// wrapping to keep it beside: the trail has as many lines with Copy page as without it.
+			// wrapping to keep it beside: the trail has as many lines with Copy page as without it. And it is beside the
+			// trail where the article column is wide enough (900px, 1680px) and under it where it is not (375px, 1280px,
+			// where the rail narrows the column), so it is not always one or the other.
 			foreach (var width in new[] { 375, 900, 1280, 1680 })
 			{
 				await page.SetViewportAsync(width, 900, 1).ConfigureAwait(false);
@@ -156,17 +158,20 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 						const trailLines = () => new Set([...document.querySelectorAll('#breadcrumbs li')].map(li => Math.round(li.getBoundingClientRect().top))).size;
 						const copy = document.querySelector('.api-page-toolbar .api-page-actions');
 						const withCopy = trailLines();
+						// Beside the trail when the button starts on the trail's last line, under it when it starts below.
+						const trail = [...document.querySelectorAll('#breadcrumbs li')].map(li => li.getBoundingClientRect());
+						const beside = copy.getBoundingClientRect().top < Math.max(...trail.map(r => r.bottom));
 						copy.style.display = 'none';
 						const without = trailLines();
 						copy.style.display = '';
-						return { same: withCopy === without };
+						return { same: withCopy === without, beside };
 					})()
 					"""
 				).ConfigureAwait(false);
 				lines.Add(
 					string.Create(
 						CultureInfo.InvariantCulture,
-						$"{width}px: trail wraps the same with and without Copy page {state.GetProperty("same").GetBoolean()}"
+						$"{width}px: Copy page beside the trail {state.GetProperty("beside").GetBoolean()}, trail wraps the same with and without it {state.GetProperty("same").GetBoolean()}"
 					)
 				);
 			}
@@ -177,10 +182,10 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			375px: trail wraps the same with and without Copy page True
-			900px: trail wraps the same with and without Copy page True
-			1280px: trail wraps the same with and without Copy page True
-			1680px: trail wraps the same with and without Copy page True
+			375px: Copy page beside the trail False, trail wraps the same with and without it True
+			900px: Copy page beside the trail True, trail wraps the same with and without it True
+			1280px: Copy page beside the trail False, trail wraps the same with and without it True
+			1680px: Copy page beside the trail True, trail wraps the same with and without it True
 			"""
 			);
 	}
