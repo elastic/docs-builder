@@ -28,9 +28,16 @@ public partial class TolerantLoadCommentTests
 		return t.Length == 0 || t.EndsWith(';') || t.EndsWith('{') || t.EndsWith('}') || IsComment(t);
 	}
 
-	// Brackets closed minus opened on a line. Strings and chars are not parsed: a bracket inside a literal skews this, which only matters for a
-	// declaration with such a literal ahead of its mode argument.
-	private static int Unmatched(string line) => line.Count(c => c is ')' or '}' or ']') - line.Count(c => c is '(' or '{' or '[');
+	[GeneratedRegex("\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])'|//.*", RegexOptions.None, 1000)]
+	private static partial Regex Literals();
+
+	// Brackets closed minus opened on a line, counting code only: string and char literals and trailing comments are removed first. Raw and
+	// multi-line verbatim strings are not parsed.
+	private static int Unmatched(string line)
+	{
+		var code = Literals().Replace(line, "");
+		return code.Count(c => c is ')' or '}' or ']') - code.Count(c => c is '(' or '{' or '[');
+	}
 
 	// Walks up from the line holding the mode to the first line of its statement. While the lines walked hold more closers than openers the statement
 	// opens above them (an argument list, a block lambda), so a semicolon or brace inside those lines does not end it.
@@ -109,6 +116,16 @@ public partial class TolerantLoadCommentTests
 	[Test]
 	public void Guard_FlagsTheBoolOverloadWrappedAfterTheColon() =>
 		Unannotated("var l = Loader.For(p, m, errorsAreFatal:\n\tfalse);").Should().Equal(1);
+
+	[Test]
+	public void Guard_IgnoresBracketsInsideStringLiterals() =>
+		Unannotated("// TOLERANT LOAD: keeps x\nvar a = Loader.For(p, m, Fatal.None, e => $\"Expected ']': {e.Message}\");")
+			.Should()
+			.BeEmpty();
+
+	[Test]
+	public void Guard_IgnoresBracketsInTrailingComments() =>
+		Unannotated("// TOLERANT LOAD: keeps x\nvar a = Loader.For(p, m, // note )))\n\tFatal.None);").Should().BeEmpty();
 
 	[Test]
 	public void Guard_IgnoresTheStrictModeAndComments() =>
