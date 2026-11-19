@@ -15,8 +15,8 @@ internal readonly record struct BuildPlan(int Diagnostics, TimeSpan Duration);
 
 /// <summary>
 /// The service under test, as a test drives it: the real <see cref="InMemoryBuildState"/> and its real build loop, with the isolated build replaced by a
-/// fake that reports diagnostics and spends virtual time. Every step waits until the service is at rest again, so a run is deterministic;
-/// a subscribed client records what the service broadcasts, stamped by the same clock.
+/// fake that reports diagnostics and spends virtual time. Every step awaits the events the service broadcasts until it is at rest again, so a run
+/// is deterministic and holds no thread; a subscribed client records what the service broadcasts, stamped by the same clock.
 /// </summary>
 internal sealed class BuildHarness : IDisposable
 {
@@ -31,10 +31,8 @@ internal sealed class BuildHarness : IDisposable
 	private int _ended;
 	private BuildPlan _plan;
 	private TaskCompletionSource? _hold;
-
-	// A script step is synchronous: it waits for the service's async build loop, which needs a pool thread to make progress. CsCheck runs
-	// iterations on several workers at once, so without spare threads the waiting workers can starve the loop they wait for.
-	static BuildHarness() => _ = ThreadPool.SetMinThreads(256, 256);
+	private TaskCompletionSource _changed = NewSignal();
+	private readonly CancellationTokenSource _lifetime = new();
 
 	public BuildHarness(TimeProvider time)
 	{
@@ -46,6 +44,7 @@ internal sealed class BuildHarness : IDisposable
 		{
 			await foreach (var e in reader.ReadAllAsync())
 			{
+				TaskCompletionSource changed;
 				lock (_gate)
 				{
 					_log.Add(new Timestamped<BuildEvent>(DateTimeOffset.FromUnixTimeMilliseconds(e.Timestamp), e));
@@ -53,7 +52,10 @@ internal sealed class BuildHarness : IDisposable
 						_started++;
 					else if (e.Type is "build_complete" or "build_cancelled")
 						_ended++;
+					changed = _changed;
+					_changed = NewSignal();
 				}
+				_ = changed.TrySetResult();
 			}
 		});
 		_loop = _state.RunAsync(_shutdown.Token);
@@ -75,81 +77,82 @@ internal sealed class BuildHarness : IDisposable
 	public BuildStatus Status => _state.Status;
 
 	/// <summary>A save that starts a build the test holds open. Does nothing while one is running (the service would queue the next).</summary>
-	public void Start()
+	public async Task StartAsync(Cancel ct = default)
 	{
 		if (_state.Status == BuildStatus.Building)
 			return;
+		var before = Started;
 		_plan = new BuildPlan(0, TimeSpan.Zero);
 		_hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 		_state.ScheduleBuild("docs");
-		WaitUntil(() => _state.Status == BuildStatus.Building);
+		await WaitUntilAsync(() => _started > before, ct);
 	}
 
 	/// <summary>Lets the held build end. Does nothing when none is running.</summary>
-	public void EndBuild() => EndHeldBuild(hold => hold.SetResult());
+	public Task EndBuildAsync(Cancel ct = default) => EndHeldBuildAsync(hold => hold.SetResult(), ct);
 
 	/// <summary>Makes the held build throw. Does nothing when none is running.</summary>
-	public void Fail() => EndHeldBuild(hold => hold.SetException(new InvalidOperationException("the build failed")));
+	public Task FailAsync(Cancel ct = default) =>
+		EndHeldBuildAsync(hold => hold.SetException(new InvalidOperationException("the build failed")), ct);
 
 	/// <summary>
 	/// The host stopping mid-build, then starting again: the build is cancelled and the service is at rest. Does nothing when none is running.
 	/// The service object is kept, and a new loop reads its queue, as a restarted host would.
 	/// </summary>
-	public void Interrupt()
+	public async Task InterruptAsync(Cancel ct = default)
 	{
 		if (_state.Status != BuildStatus.Building)
 			return;
-		_shutdown.Cancel();
-		WaitUntil(() => _state.Status != BuildStatus.Building);
-		try
-		{
-			_loop.Wait(TimeSpan.FromSeconds(5));
-		}
-		catch (AggregateException) { }
+		var before = Ended;
+		await _shutdown.CancelAsync();
+		await WaitUntilAsync(() => _ended > before, ct);
+		await _loop.WaitAsync(Deadline, ct);
 		_shutdown.Dispose();
 		_shutdown = new CancellationTokenSource();
 		_loop = _state.RunAsync(_shutdown.Token);
 	}
 
-	private void EndHeldBuild(Action<TaskCompletionSource> end)
+	private async Task EndHeldBuildAsync(Action<TaskCompletionSource> end, Cancel ct)
 	{
 		if (_state.Status != BuildStatus.Building || _hold is not { } hold)
 			return;
+		var before = Ended;
 		end(hold);
-		WaitUntil(() => _state.Status != BuildStatus.Building);
+		await WaitUntilAsync(() => _ended > before, ct);
 	}
 
 	/// <summary>The service's snapshot, as the status endpoint serves it.</summary>
 	public BuildEvent Snapshot() => _state.GetCurrentState();
 
 	/// <summary>An editor save: schedules a build and waits for it to end.</summary>
-	public void Build(BuildPlan plan)
+	public async Task BuildAsync(BuildPlan plan, Cancel ct = default)
 	{
 		var expected = Ended + 1;
 		_plan = plan;
 		_state.ScheduleBuild("docs");
-		WaitUntil(() => Ended >= expected);
+		await WaitUntilAsync(() => _ended >= expected, ct);
 	}
 
 	/// <summary>
 	/// Saves while a build is running: the first build is held, <paramref name="extraSaves"/> more are scheduled behind it, then it is released.
 	/// The service promises one more build, not one per save.
 	/// </summary>
-	public void Burst(int extraSaves, BuildPlan plan)
+	public async Task BurstAsync(int extraSaves, BuildPlan plan, Cancel ct = default)
 	{
 		var before = Started;
 		_plan = plan;
 		_hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 		_state.ScheduleBuild("docs");
-		WaitUntil(() => Started > before);
+		await WaitUntilAsync(() => _started > before, ct);
 
 		for (var i = 0; i < extraSaves; i++)
 			_state.ScheduleBuild("docs");
 
 		var expected = before + 1 + (extraSaves > 0 ? 1 : 0);
 		_hold.SetResult();
-		WaitUntil(() => Ended >= expected);
-		Thread.Sleep(5); // a build that should not run would start now
+		await WaitUntilAsync(() => _ended >= expected, ct);
+		// a build that should not run would start now; waiting can only miss one, never fail a correct service
+		await Task.Delay(TimeSpan.FromMilliseconds(5), ct);
 		if (Started != expected || Ended != expected)
 			throw new InvalidOperationException(
 				$"{extraSaves} saves behind a running build should run {expected - before} builds in all, but {Started - before} started and {Ended - before} ended."
@@ -165,16 +168,14 @@ internal sealed class BuildHarness : IDisposable
 		return log;
 	}
 
+	/// <summary>Stops the service without waiting for its loop: cancelling the shutdown token and completing the clients end both.</summary>
 	public void Dispose()
 	{
 		_shutdown.Cancel();
+		_lifetime.Cancel();
 		_state.Dispose();
-		try
-		{
-			Task.WaitAll([_loop, _client], TimeSpan.FromSeconds(5));
-		}
-		catch (AggregateException) { }
 		_shutdown.Dispose();
+		_lifetime.Dispose();
 	}
 
 	private int Started
@@ -222,14 +223,35 @@ internal sealed class BuildHarness : IDisposable
 		_time.Advance(plan.Duration);
 	}
 
-	private static void WaitUntil(Func<bool> condition)
+	/// <summary>
+	/// Waits, without holding a thread, until the counts the client keeps (read under the gate) satisfy <paramref name="condition"/>. A service that never
+	/// comes to rest fails the run after <see cref="Deadline"/> instead of hanging it.
+	/// </summary>
+	private async Task WaitUntilAsync(Func<bool> condition, Cancel ct)
 	{
-		var deadline = DateTime.UtcNow.AddSeconds(10);
-		while (!condition())
+		using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetime.Token);
+		linked.CancelAfter(Deadline);
+		while (true)
 		{
-			if (DateTime.UtcNow > deadline)
+			Task changed;
+			lock (_gate)
+			{
+				if (condition())
+					return;
+				changed = _changed.Task;
+			}
+			try
+			{
+				await changed.WaitAsync(linked.Token);
+			}
+			catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+			{
 				throw new TimeoutException("The service did not come to rest: a build never ended.");
-			Thread.Sleep(1);
+			}
 		}
 	}
+
+	private static TimeSpan Deadline => TimeSpan.FromSeconds(10);
+
+	private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

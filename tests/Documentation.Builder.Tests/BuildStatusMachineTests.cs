@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Documentation.Builder.Http;
 using Nullean.Entities;
 using Nullean.Entities.CsCheck;
+using Nullean.Snapshots;
 
 namespace Documentation.Builder.Tests;
 
@@ -19,18 +20,26 @@ public class BuildStatusMachineTests
 	public void TheMachineIsSound() => BuildStatusMachine.Machine.Spec().Exhaustive();
 
 	/// <summary>
-	/// Law: the diagram in the docs is the one the declaration draws.
-	/// Consequence if broken: the documented lifecycle and the declared one drift apart.
+	/// Law: the diagram the declaration draws is the one pinned here.
+	/// Consequence if broken: a state, a trigger or a target changed without anyone reading the new diagram.
 	/// </summary>
 	[Test]
-	public void TheDiagramIsGeneratedFromTheDeclaration()
-	{
-		var diagram = BuildStatusMachine.Machine.ToMermaid();
-
-		diagram.Should().StartWith("stateDiagram-v2");
-		diagram.Should().Contain("Idle").And.Contain("Building").And.Contain("Complete");
-		diagram.Should().Contain("Start").And.Contain("Finish").And.Contain("Fail").And.Contain("Interrupt");
-	}
+	public void TheDiagramGeneratedFromTheDeclaration_IsPinned() =>
+		BuildStatusMachine
+			.Machine
+			.ToMermaid()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		stateDiagram-v2
+		    [*] --> Idle
+		    Idle --> Building : Start
+		    Complete --> Building : Start
+		    Building --> Complete : Finish
+		    Building --> Complete : Fail
+		    Building --> Idle : Interrupt
+		"""
+			);
 
 	/// <summary>
 	/// Law: after every trigger the real service is where the machine says: the next state when the machine allows it, the same state when it refuses.
@@ -44,16 +53,12 @@ public class BuildStatusMachineTests
 			h => h.Status,
 			iter: 60,
 			bindings: [
-				("Start", h => Run(h.Start)),
-				("Finish", h => Run(h.EndBuild)),
-				("Fail", h => Run(h.Fail)),
-				("Interrupt", h => Run(h.Interrupt))
+				("Start", h => h.StartAsync(TestToken)),
+				("Finish", h => h.EndBuildAsync(TestToken)),
+				("Fail", h => h.FailAsync(TestToken)),
+				("Interrupt", h => h.InterruptAsync(TestToken))
 			]
 		);
 
-	private static Task Run(Action action)
-	{
-		action();
-		return Task.CompletedTask;
-	}
+	private static Cancel TestToken => TestContext.Current?.Execution.CancellationToken ?? Cancel.None;
 }

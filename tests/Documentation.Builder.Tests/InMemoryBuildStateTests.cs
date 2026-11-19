@@ -22,11 +22,17 @@ public class InMemoryBuildStateTests
 		(diagnostics, duration) => new BuildPlan(diagnostics, duration)
 	);
 
+	private static Cancel TestToken => TestContext.Current?.Execution.CancellationToken ?? Cancel.None;
+
 	private static Script<BuildHarness> Saves() =>
 		Script
 			.For<BuildHarness>()
-			.Step("Save", Plans, (h, plan) => h.Build(plan))
-			.Step("SaveBurst", Gen.Select(Gen.Int[1, 5], Plans, (extra, plan) => (extra, plan)), (h, b) => h.Burst(b.extra, b.plan))
+			.StepAsync("Save", Plans, (h, plan) => h.BuildAsync(plan, TestToken))
+			.StepAsync(
+				"SaveBurst",
+				Gen.Select(Gen.Int[1, 5], Plans, (extra, plan) => (extra, plan)),
+				(h, b) => h.BurstAsync(b.extra, b.plan, TestToken)
+			)
 			.Delays(Gen.Int[0, 600_000].Select(ms => TimeSpan.FromMilliseconds(ms)))
 			.Length(3, 12);
 
