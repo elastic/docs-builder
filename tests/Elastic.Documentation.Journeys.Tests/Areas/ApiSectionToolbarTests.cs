@@ -171,12 +171,15 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 					const rowBottom = row.bottom - parseFloat(getComputedStyle(bar).borderBottomWidth);
 					const t = track.getBoundingClientRect();
 					const l = last.getBoundingClientRect();
+					// The visible area above the scrollbar: clientHeight leaves out a real scrollbar, and the padding stands in
+					// for one where the browser draws none, so it comes off too.
+					const visibleBottom = t.top + track.clientHeight - parseFloat(getComputedStyle(track).paddingBottom);
 					return {
 						scrollLeft: track.scrollLeft,
 						lastLabel: last.textContent.trim(),
 						lastReachable: l.left >= t.left - 1 && l.right <= t.right + 1,
 						trackInsideRow: t.top >= row.top - 1 && t.bottom <= rowBottom + 1,
-						linksInsideTrack: links.every(a => a.getBoundingClientRect().bottom <= t.bottom + 1),
+						linksAboveScrollbar: links.every(a => a.getBoundingClientRect().bottom <= visibleBottom + 1),
 					};
 				})()
 				"""
@@ -185,12 +188,12 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 				CultureInfo.InvariantCulture,
 				$"links overflow {before.GetProperty("overflows").GetBoolean()}, wheel scrolled the track {after.GetProperty("scrollLeft").GetDouble() > before.GetProperty("scrollLeft").GetDouble()}, " +
 					$"last link {after.GetProperty("lastLabel").GetString()} reachable {after.GetProperty("lastReachable").GetBoolean()}, " +
-					$"track inside the row {after.GetProperty("trackInsideRow").GetBoolean()}, links inside the track {after.GetProperty("linksInsideTrack").GetBoolean()}"
+					$"track inside the row {after.GetProperty("trackInsideRow").GetBoolean()}, links above the scrollbar {after.GetProperty("linksAboveScrollbar").GetBoolean()}"
 			);
 		}).ConfigureAwait(false);
 
 		_ = report.Should().MatchInlineSnapshot(
-			"links overflow True, wheel scrolled the track True, last link Responses reachable True, track inside the row True, links inside the track True"
+			"links overflow True, wheel scrolled the track True, last link Responses reachable True, track inside the row True, links above the scrollbar True"
 		);
 	}
 
