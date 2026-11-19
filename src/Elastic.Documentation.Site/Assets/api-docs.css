@@ -1000,12 +1000,14 @@
 #pages-nav
 	li:has(
 		> a.sidebar-link > :is(.nav-v2-api-method, .nav-v2-api-method-group)
-	) {
+	),
+#pages-nav li:has(> a.sidebar-link[data-method]) {
 	padding-right: 8px;
 }
 
 #pages-nav
-	a.sidebar-link:has(> :is(.nav-v2-api-method, .nav-v2-api-method-group)) {
+	a.sidebar-link:has(> :is(.nav-v2-api-method, .nav-v2-api-method-group)),
+#pages-nav a.sidebar-link[data-method] {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
@@ -1019,7 +1021,13 @@
  * DELETE red, HEAD purple, OPTIONS gray). Current and hovered rows keep the chip fill and darken only the border
  * (hover a mid step, current the darkest), so the 9px label stays above WCAG AA (4.5:1).
  */
-#pages-nav .nav-v2-api-method {
+/* A single-method row draws the same chip as its link's ::after, from data-method (_TocTreeNavLegacy.cshtml). */
+#pages-nav a.sidebar-link[data-method]::after {
+	content: attr(data-method);
+}
+
+#pages-nav .nav-v2-api-method,
+#pages-nav a.sidebar-link[data-method]::after {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
@@ -1039,101 +1047,122 @@
 	transition: border-color 0.12s ease;
 }
 
-#pages-nav .nav-v2-api-method-get {
+#pages-nav .nav-v2-api-method-get,
+#pages-nav a.sidebar-link[data-method='GET']::after {
 	background-color: var(--color-blue-elastic-20);
 	border-color: var(--color-blue-elastic-30);
 	color: var(--color-blue-elastic-100);
 }
 
-#pages-nav .nav-v2-api-method-post {
+#pages-nav .nav-v2-api-method-post,
+#pages-nav a.sidebar-link[data-method='POST']::after {
 	background-color: var(--color-green-20);
 	border-color: var(--color-green-30);
 	color: var(--color-green-100);
 }
 
-#pages-nav .nav-v2-api-method-put {
+#pages-nav .nav-v2-api-method-put,
+#pages-nav a.sidebar-link[data-method='PUT']::after {
 	background-color: var(--color-yellow-20);
 	border-color: var(--color-yellow-30);
 	color: var(--color-yellow-100);
 }
 
-#pages-nav .nav-v2-api-method-patch {
+#pages-nav .nav-v2-api-method-patch,
+#pages-nav a.sidebar-link[data-method='PATCH']::after {
 	background-color: var(--color-teal-20);
 	border-color: var(--color-teal-30);
 	color: var(--color-teal-100);
 }
 
-#pages-nav .nav-v2-api-method-delete {
+#pages-nav .nav-v2-api-method-delete,
+#pages-nav a.sidebar-link[data-method='DELETE']::after {
 	background-color: var(--color-red-20);
 	border-color: var(--color-red-30);
 	color: var(--color-red-100);
 }
 
-#pages-nav .nav-v2-api-method-head {
+#pages-nav .nav-v2-api-method-head,
+#pages-nav a.sidebar-link[data-method='HEAD']::after {
 	background-color: var(--color-purple-20);
 	border-color: var(--color-purple-30);
 	color: var(--color-purple-100);
 }
 
-#pages-nav .nav-v2-api-method-options {
+#pages-nav .nav-v2-api-method-options,
+#pages-nav a.sidebar-link[data-method='OPTIONS']::after {
 	background-color: var(--color-grey-20);
 	border-color: var(--color-grey-30);
 	color: var(--color-grey-100);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-get {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-get,
+#pages-nav a.sidebar-link[data-method='GET']:hover::after {
 	border-color: var(--color-blue-elastic-60);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-get {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-get,
+#pages-nav a.sidebar-link[data-method='GET'].current::after {
 	border-color: var(--color-blue-elastic-100);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-post {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-post,
+#pages-nav a.sidebar-link[data-method='POST']:hover::after {
 	border-color: var(--color-green-60);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-post {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-post,
+#pages-nav a.sidebar-link[data-method='POST'].current::after {
 	border-color: var(--color-green-100);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-put {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-put,
+#pages-nav a.sidebar-link[data-method='PUT']:hover::after {
 	border-color: var(--color-yellow-60);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-put {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-put,
+#pages-nav a.sidebar-link[data-method='PUT'].current::after {
 	border-color: var(--color-yellow-100);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-patch {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-patch,
+#pages-nav a.sidebar-link[data-method='PATCH']:hover::after {
 	border-color: var(--color-teal-60);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-patch,
+#pages-nav a.sidebar-link[data-method='PATCH'].current::after {
 	border-color: var(--color-teal-100);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-delete {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-delete,
+#pages-nav a.sidebar-link[data-method='DELETE']:hover::after {
 	border-color: var(--color-red-60);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-delete,
+#pages-nav a.sidebar-link[data-method='DELETE'].current::after {
 	border-color: var(--color-red-100);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-head {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-head,
+#pages-nav a.sidebar-link[data-method='HEAD']:hover::after {
 	border-color: var(--color-purple-60);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-head {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-head,
+#pages-nav a.sidebar-link[data-method='HEAD'].current::after {
 	border-color: var(--color-purple-100);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-options {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-options,
+#pages-nav a.sidebar-link[data-method='OPTIONS']:hover::after {
 	border-color: var(--color-grey-60);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-options {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-options,
+#pages-nav a.sidebar-link[data-method='OPTIONS'].current::after {
 	border-color: var(--color-grey-100);
 }
 

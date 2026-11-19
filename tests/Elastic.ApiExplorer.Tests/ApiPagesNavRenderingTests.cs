@@ -256,20 +256,67 @@ public partial class ApiPagesNavRenderingTests
 		];
 		var ct = TestContext.Current!.Execution.CancellationToken;
 
-		foreach (var html in new[]
+		string[] chips =
+		[
+			OperationLink(await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct)),
+			OperationLink(await _NavTreeItems.Create(nodes).RenderAsync(cancellationToken: ct))
+		];
+		var legacy = OperationLink(await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct));
+
+		foreach (var link in chips.Append(legacy))
 		{
-			await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct),
-			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct),
-			await _NavTreeItems.Create(nodes).RenderAsync(cancellationToken: ct)
-		})
-		{
-			var link = OperationLink(html);
 			link[..link.IndexOf('>')].Should().NotContain("deprecated");
 			var hidden = link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
 			hidden.Should().BeGreaterThan(link.IndexOf("Get a document source", StringComparison.Ordinal));
-			hidden.Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
 			link.Should().NotContain("aria-label");
 		}
+
+		foreach (var link in chips)
+			link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal).Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
+		// The legacy chip is the link's ::after, which is read after every child, so after "Deprecated" too.
+		legacy.Should().Contain("data-method=\"GET\"");
+	}
+
+	[Test]
+	public async Task RenderLegacy_SingleMethodLeaf_CarriesTheMethodAsAnAttribute()
+	{
+		NavigationRenderNode[] nodes =
+		[
+			new()
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Reindex documents",
+				Url = "/api/doc/elasticsearch/operation/operation-reindex",
+				HttpMethods = ["post"]
+			},
+			new()
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Run a search",
+				Url = "/api/doc/elasticsearch/operation/operation-search",
+				HttpMethods = ["post", "get"]
+			}
+		];
+
+		var html = await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchInlineSnapshot(
+			"""
+					<li>
+						<a href="/api/doc/elasticsearch/operation/operation-reindex" class="sidebar-link" data-method="POST">
+							<span>Reindex documents</span>
+						</a>
+					</li>
+					<li>
+						<a href="/api/doc/elasticsearch/operation/operation-search" class="sidebar-link">
+							<span>Run a search</span>
+			<span class="nav-v2-api-method-group"><span class="nav-v2-api-method nav-v2-api-method-post">POST</span><span class="nav-v2-api-method nav-v2-api-method-get">GET</span></span>
+						</a>
+					</li>
+			"""
+		);
 	}
 
 	[Test]
