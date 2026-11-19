@@ -12,6 +12,7 @@ vi.mock('@floating-ui/dom', () => ({
 }))
 
 const stopTracking = vi.fn()
+const showPopover = vi.fn()
 const hidePopover = vi.fn()
 
 function dispatch(
@@ -37,7 +38,7 @@ describe('floating popovers', () => {
     beforeAll(() => {
         // jsdom has no popover API; initFloating only listens where it exists.
         Object.assign(HTMLElement.prototype, {
-            showPopover: vi.fn(),
+            showPopover,
             hidePopover,
         })
         initFloating()
@@ -154,6 +155,101 @@ describe('floating popovers', () => {
         expect(hidePopover).toHaveBeenCalledTimes(1)
         expect(stopTracking).toHaveBeenCalledTimes(1)
         matches.mockRestore()
+    })
+
+    describe('a menu marked data-hover', () => {
+        const open = new Set<Element>()
+
+        function point(
+            type: 'pointerover' | 'pointerout',
+            target: Element,
+            relatedTarget: Element | null = null,
+            pointerType = 'mouse'
+        ) {
+            const event = new MouseEvent(type, { bubbles: true, relatedTarget })
+            Object.assign(event, { pointerType })
+            target.dispatchEvent(event)
+        }
+
+        beforeEach(() => {
+            vi.useFakeTimers()
+            open.clear()
+            menu().setAttribute('data-hover', '')
+            menu().innerHTML = '<a id="row" href="#a">A</a>'
+            document.body.insertAdjacentHTML('beforeend', '<p id="away"></p>')
+            showPopover.mockImplementation(function (this: Element) {
+                open.add(this)
+            })
+            hidePopover.mockImplementation(function (this: Element) {
+                open.delete(this)
+            })
+            vi.spyOn(menu(), 'matches').mockImplementation(
+                (selector) => selector === ':popover-open' && open.has(menu())
+            )
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+            showPopover.mockReset()
+            hidePopover.mockReset()
+        })
+
+        const away = () => document.getElementById('away')!
+
+        it('opens while a mouse rests on its button', () => {
+            point('pointerover', trigger(), away())
+
+            expect(open.has(menu())).toBe(true)
+        })
+
+        it('stays open while the mouse crosses from the button to the menu', () => {
+            point('pointerover', trigger(), away())
+            point('pointerout', trigger(), away())
+            vi.advanceTimersByTime(100)
+            point('pointerover', document.getElementById('row')!, away())
+            vi.advanceTimersByTime(500)
+
+            expect(open.has(menu())).toBe(true)
+        })
+
+        it('closes shortly after the mouse leaves both the button and the menu', () => {
+            point('pointerover', trigger(), away())
+            point('pointerout', trigger(), away())
+
+            vi.advanceTimersByTime(149)
+            expect(open.has(menu())).toBe(true)
+            vi.advanceTimersByTime(1)
+            expect(open.has(menu())).toBe(false)
+        })
+
+        it('leaves touch to the click', () => {
+            point('pointerover', trigger(), away(), 'touch')
+
+            expect(showPopover).not.toHaveBeenCalled()
+        })
+
+        it('does not open a menu without data-hover', () => {
+            menu().removeAttribute('data-hover')
+
+            point('pointerover', trigger(), away())
+
+            expect(showPopover).not.toHaveBeenCalled()
+        })
+    })
+
+    it('closes the menu when a link in it is chosen', async () => {
+        menu().innerHTML = '<a id="download" href="/a.json" download>JSON</a>'
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+
+        document
+            .getElementById('download')!
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+        expect(hidePopover).toHaveBeenCalledTimes(1)
     })
 
     it('leaves alone a popover that has nothing to anchor to', () => {

@@ -15,8 +15,10 @@ import {
  * ancestor's overflow, stacking context or z-index can clip it, and gives click-outside dismissal and Escape.
  * Floating UI places it beside its anchor, flipping and shifting to stay on screen, and follows the anchor while
  * the menu is open. `data-placement` picks the side (default `bottom-start`); `data-anchor` names the id of an
- * anchor other than the button. The menu fires a bubbling `floating:placed` event the first time it is placed; it is
- * invisible, so unfocusable, until then. Listeners are delegated on the document, so they survive htmx swaps.
+ * anchor other than the button. `data-hover` also opens the menu while a mouse rests on its button or on the menu
+ * itself; touch and keyboard still use the click. Choosing a link closes the menu it is in. The menu fires a bubbling
+ * `floating:placed` event the first time it is placed; it is invisible, so unfocusable, until then. Listeners are
+ * delegated on the document, so they survive htmx swaps.
  */
 
 const PLACED = 'data-placed'
@@ -137,6 +139,51 @@ function closeAll() {
     }
 }
 
+const HOVER_CLOSE_MS = 150
+const hoverTimers = new Map<HTMLElement, number>()
+
+/** The `data-hover` menu that `target` is inside of, or opens. */
+function hoverMenuAt(target: EventTarget | null): HTMLElement | null {
+    if (!(target instanceof Element)) return null
+    const inside = target.closest<HTMLElement>('[popover][data-hover]')
+    if (inside) return inside
+    const id = target.closest('[popovertarget]')?.getAttribute('popovertarget')
+    const menu = id ? document.getElementById(id) : null
+    return menu?.hasAttribute('data-hover') ? menu : null
+}
+
+function onPointerOver(event: PointerEvent) {
+    if (event.pointerType !== 'mouse') return
+    const menu = hoverMenuAt(event.target)
+    if (!menu) return
+    window.clearTimeout(hoverTimers.get(menu))
+    if (!menu.matches(':popover-open')) menu.showPopover()
+}
+
+/** Leaving the button for the menu (or back) crosses a gap, so the close waits long enough for the pointer to arrive. */
+function onPointerOut(event: PointerEvent) {
+    if (event.pointerType !== 'mouse') return
+    const menu = hoverMenuAt(event.target)
+    if (!menu || hoverMenuAt(event.relatedTarget) === menu) return
+    window.clearTimeout(hoverTimers.get(menu))
+    hoverTimers.set(
+        menu,
+        window.setTimeout(() => {
+            if (menu.isConnected && menu.matches(':popover-open'))
+                menu.hidePopover()
+        }, HOVER_CLOSE_MS)
+    )
+}
+
+/** A link that does not swap the page, such as a download or a new tab, would otherwise leave its menu open. */
+function onClick(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return
+    const menu = event.target
+        .closest('a[href]')
+        ?.closest<HTMLElement>(`[popover][${FLOATING}]`)
+    if (menu?.matches(':popover-open')) menu.hidePopover()
+}
+
 let initialized = false
 
 export function initFloating() {
@@ -148,4 +195,7 @@ export function initFloating() {
     document.addEventListener('beforetoggle', onBeforeToggle, true)
     document.addEventListener('toggle', onToggle, true)
     document.addEventListener('htmx:beforeSwap', closeAll)
+    document.addEventListener('pointerover', onPointerOver)
+    document.addEventListener('pointerout', onPointerOut)
+    document.addEventListener('click', onClick)
 }
