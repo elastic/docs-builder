@@ -30,7 +30,7 @@ public static partial class ApplicableToConstraints
 		"M96: Per key, one version per lifecycle, at most one '+' (greater-than-or-equal), range min <= max, and no overlapping ranges."
 	);
 
-	/// <summary>Every key of the block that is set, with its collection; keys are named as in YAML.</summary>
+	/// <summary>Every key of the block that is set, with its collection; keys are named as the YAML reader names them in its findings (the underscore form of the product keys, e.g. <c>apm_agent_java</c>, not the hyphenated JSON name).</summary>
 	public static IEnumerable<(string Key, AppliesCollection Items, bool Versionless)> Collections(ApplicableTo a)
 	{
 		if (a.Stack is { } stack)
@@ -73,28 +73,29 @@ public static partial class ApplicableToConstraints
 			[
 				("ecctl", p.Ecctl),
 				("curator", p.Curator),
-				("apm-agent-android", p.ApmAgentAndroid),
-				("apm-agent-dotnet", p.ApmAgentDotnet),
-				("apm-agent-go", p.ApmAgentGo),
-				("apm-agent-ios", p.ApmAgentIos),
-				("apm-agent-java", p.ApmAgentJava),
-				("apm-agent-node", p.ApmAgentNode),
-				("apm-agent-php", p.ApmAgentPhp),
-				("apm-agent-python", p.ApmAgentPython),
-				("apm-agent-ruby", p.ApmAgentRuby),
-				("apm-agent-rum-js", p.ApmAgentRumJs),
-				("edot-ios", p.EdotIos),
-				("edot-android", p.EdotAndroid),
-				("edot-dotnet", p.EdotDotnet),
-				("edot-java", p.EdotJava),
-				("edot-node", p.EdotNode),
-				("edot-browser", p.EdotBrowser),
-				("edot-php", p.EdotPhp),
-				("edot-python", p.EdotPython),
-				("edot-cf-aws", p.EdotCfAws),
-				("edot-cf-azure", p.EdotCfAzure),
-				("edot-cf-gcp", p.EdotCfGcp),
-				("edot-collector", p.EdotCollector)
+				("apm_agent_android", p.ApmAgentAndroid),
+				("apm_agent_dotnet", p.ApmAgentDotnet),
+				("apm_agent_go", p.ApmAgentGo),
+				("apm_agent_ios", p.ApmAgentIos),
+				("apm_agent_java", p.ApmAgentJava),
+				("apm_agent_node", p.ApmAgentNode),
+				("apm_agent_php", p.ApmAgentPhp),
+				("apm_agent_python", p.ApmAgentPython),
+				("apm_agent_ruby", p.ApmAgentRuby),
+				("apm_agent_rum_js", p.ApmAgentRumJs),
+				("edot_ios", p.EdotIos),
+				("edot_android", p.EdotAndroid),
+				("edot_dotnet", p.EdotDotnet),
+				("edot_java", p.EdotJava),
+				("edot_node", p.EdotNode),
+				("edot_browser", p.EdotBrowser),
+				("edot_react_native", p.EdotReactNative),
+				("edot_php", p.EdotPhp),
+				("edot_python", p.EdotPython),
+				("edot_cf_aws", p.EdotCfAws),
+				("edot_cf_azure", p.EdotCfAzure),
+				("edot_cf_gcp", p.EdotCfGcp),
+				("edot_collector", p.EdotCollector)
 			];
 			foreach (var (key, items) in keys)
 			{

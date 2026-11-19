@@ -33,4 +33,28 @@ public class ApplicableToRulesMatchReaderTests
 		reported.Should().NotBeEmpty();
 		byRules.Should().BeEquivalentTo(reported);
 	}
+
+	public static IEnumerable<string> ProductKeys() =>
+		typeof(ProductApplicability).GetProperties().Where(p => p.PropertyType == typeof(AppliesCollection)).Select(p => p.Name);
+
+	// Every member of ProductApplicability, so a product added to the model but not to the rules cannot go unnoticed.
+	[Test]
+	[MethodDataSource(nameof(ProductKeys))]
+	public void Read_ARepeatedVersionUnderAProductKey_IsReportedByTheRulesAtTheSameSeverityAndWording(string member)
+	{
+		var jsonName = typeof(ProductApplicability).GetProperty(member)!
+			.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonPropertyNameAttribute), false)
+			.Cast<System.Text.Json.Serialization.JsonPropertyNameAttribute>()
+			.Single()
+			.Name;
+		var yamlKey = jsonName.Replace('-', '_');
+
+		var read = YamlSerialization.Deserialize<ApplicableTo>($"product:\n  {yamlKey}: beta =9.0, beta =9.1", Products);
+
+		var reported = read.Diagnostics!.Select(d => (d.Item1, d.Item2)).ToList();
+		var byRules = ApplicableTo.Constraints.Validate(read).Select(v => (v.Severity, v.Message)).ToList();
+
+		reported.Should().ContainSingle().Which.Item2.Should().Contain($"Key '{yamlKey}':");
+		byRules.Should().BeEquivalentTo(reported);
+	}
 }
