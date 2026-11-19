@@ -73,6 +73,19 @@ public class HtmlWhitespaceTests
 			.Be("<pre><textarea><!-- a</textarea> x</pre>\n<p>y</p>");
 
 	[Test]
+	public void Collapse_NestedPre_EndsAtTheOutermostClosingTag() =>
+		HtmlWhitespace.Collapse("<pre><pre>a\n  b</pre>\n  c</pre>\n\t<p>y</p>").Should().Be("<pre><pre>a\n  b</pre>\n  c</pre>\n<p>y</p>");
+
+	[Test]
+	public void Collapse_DeeplyNestedPre_DoesNotExhaustTheStack()
+	{
+		const int depth = 200_000;
+		var nested = string.Concat(Enumerable.Repeat("<pre>", depth)) + "x" + string.Concat(Enumerable.Repeat("</pre>", depth));
+
+		HtmlWhitespace.Collapse(nested + "\n\t<p>y</p>").Should().Be(nested + "\n<p>y</p>");
+	}
+
+	[Test]
 	public void Collapse_LargePage_DropsEveryRowIndentation()
 	{
 		// The largest API pages reach about 7 MB; this is the row partial repeated at that scale.

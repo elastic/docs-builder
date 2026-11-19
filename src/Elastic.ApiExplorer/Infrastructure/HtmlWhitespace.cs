@@ -70,6 +70,8 @@ public static class HtmlWhitespace
 	private static int EndOfElement(string html, int start, string name)
 	{
 		var holdsMarkup = name == "pre";
+		// A pre inside the pre is counted, not recursed into, so no nesting depth can exhaust the stack.
+		var depth = 1;
 		var position = EndOfTag(html, start);
 		while (position < html.Length)
 		{
@@ -77,7 +79,20 @@ public static class HtmlWhitespace
 			if (next < 0)
 				return html.Length;
 			if (IsClosingTag(html, next, name))
-				return EndOfTag(html, next);
+			{
+				position = EndOfTag(html, next);
+				if (--depth == 0)
+					return position;
+				continue;
+			}
+
+			if (holdsMarkup && RawTextElement(html, next) == "pre")
+			{
+				depth++;
+				position = EndOfTag(html, next);
+				continue;
+			}
+
 			position = holdsMarkup ? EndOfMarkupInPre(html, next) : next + 1;
 		}
 
@@ -91,8 +106,9 @@ public static class HtmlWhitespace
 	/// </summary>
 	private static int EndOfMarkupInPre(string html, int index)
 	{
-		// A textarea, script or style inside the pre holds raw text, where "<!--" is not a comment.
-		if (RawTextElement(html, index) is { } nested)
+		// A textarea, script or style inside the pre holds raw text, where "<!--" is not a comment. Raw text holds no
+		// elements, so this goes one level deep at most.
+		if (RawTextElement(html, index) is { } nested and not "pre")
 			return EndOfElement(html, index, nested);
 		if (string.CompareOrdinal(html, index, "<!--", 0, 4) == 0)
 			return EndAfter(html, html.IndexOf("-->", index + 4, StringComparison.Ordinal), 3);
