@@ -28,11 +28,21 @@ public partial class TolerantLoadCommentTests
 		return t.Length == 0 || t.EndsWith(';') || t.EndsWith('{') || t.EndsWith('}') || IsComment(t);
 	}
 
+	// Brackets closed minus opened on a line. Strings and chars are not parsed: a bracket inside a literal skews this, which only matters for a
+	// declaration with such a literal ahead of its mode argument.
+	private static int Unmatched(string line) => line.Count(c => c is ')' or '}' or ']') - line.Count(c => c is '(' or '{' or '[');
+
+	// Walks up from the line holding the mode to the first line of its statement. While the lines walked hold more closers than openers the statement
+	// opens above them (an argument list, a block lambda), so a semicolon or brace inside those lines does not end it.
 	private static int StatementStart(string[] lines, int i)
 	{
 		var start = i;
-		while (start > 0 && !EndsStatement(lines[start - 1]))
+		var open = Unmatched(lines[i]);
+		while (start > 0 && (open > 0 || !EndsStatement(lines[start - 1])))
+		{
 			start--;
+			open += Unmatched(lines[start]);
+		}
 		return start;
 	}
 
@@ -46,15 +56,14 @@ public partial class TolerantLoadCommentTests
 		return false;
 	}
 
+	// The regex runs over the whole source so that a mode written across lines (errorsAreFatal:<newline>false) is found; the line reported is the match's first.
 	private static IEnumerable<int> Unannotated(string source)
 	{
 		var lines = source.Split('\n');
-		for (var i = 0; i < lines.Length; i++)
+		foreach (var line in NonDefault().Matches(source).Select(m => source.AsSpan(0, m.Index).Count('\n')))
 		{
-			if (IsComment(lines[i]) || !NonDefault().IsMatch(lines[i]))
-				continue;
-			if (!HasOwnAnnotation(lines, StatementStart(lines, i)))
-				yield return i + 1;
+			if (!IsComment(lines[line]) && !HasOwnAnnotation(lines, StatementStart(lines, line)))
+				yield return line + 1;
 		}
 	}
 
@@ -86,6 +95,20 @@ public partial class TolerantLoadCommentTests
 	[Test]
 	public void Guard_AcceptsAnAnnotationAboveAMultiLineDeclaration() =>
 		Unannotated("// TOLERANT LOAD: keeps x\nvar a = Loader.For(\n\tp,\n\tm,\n\tFatal.None);").Should().BeEmpty();
+
+	[Test]
+	public void Guard_AcceptsAnAnnotationAboveABlockLambdaDeclaration() =>
+		Unannotated(
+			"// TOLERANT LOAD: keeps x\nvar a = Loader.For(\n\t(t, f) =>\n\t{\n\t\tvar x = t;\n\t\treturn x;\n\t},\n\tm,\n\tFatal.None);"
+		).Should().BeEmpty();
+
+	[Test]
+	public void Guard_FlagsABlockLambdaDeclarationWithoutTheComment() =>
+		Unannotated("var z = 1;\nvar a = Loader.For(\n\t(t, f) =>\n\t{\n\t\treturn t;\n\t},\n\tm,\n\tFatal.None);").Should().Equal(8);
+
+	[Test]
+	public void Guard_FlagsTheBoolOverloadWrappedAfterTheColon() =>
+		Unannotated("var l = Loader.For(p, m, errorsAreFatal:\n\tfalse);").Should().Equal(1);
 
 	[Test]
 	public void Guard_IgnoresTheStrictModeAndComments() =>

@@ -269,9 +269,13 @@ internal sealed class FatalModesTests
 			throw new InvalidOperationException("boom");
 		}
 
-		var result = Loader.For<Dto, Widget>(Throwing, Map, Fatal.None).Load("ok:1", "w.yml");
+		var result = Loader.For<Dto, Widget>(Throwing, Map, Fatal.None, e => $"described: {e.Message}").Load("ok:1", "w.yml");
 
 		result.Value.Should().BeOfType<Unreadable<Widget>>();
-		result.Findings().Select(d => (d.Severity, d.Message)).Should().Equal((Severity.Warning, "before"), (Severity.Error, "boom"));
+		result
+			.Findings()
+			.Select(d => (d.Severity, d.Message))
+			.Should()
+			.Equal((Severity.Warning, "before"), (Severity.Error, "described: boom"));
 	}
 }
