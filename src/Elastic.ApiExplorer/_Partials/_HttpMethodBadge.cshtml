@@ -9,7 +9,7 @@ else
 	var names = Model.Select(static m => m.ToUpperInvariant()).ToArray();
 	var others = names[1..];
 	var alike = others.Length == 1 ? others[0] : string.Join(", ", others[..^1]) + " and " + others[^1];
-	<span class="api-method-group" data-tippy-content="@names[0] is the main method. @alike @(others.Length == 1 ? "works" : "work") the same way: same parameters, body, and response.">
+	<span class="api-method-group" data-tooltip="@names[0] is the main method. @alike @(others.Length == 1 ? "works" : "work") the same way: same parameters, body, and response.">
 		@foreach (var method in Model)
 		{
 			@(await RenderPartialAsync<_HttpMethodChip, string>(method))

@@ -30,7 +30,7 @@ public class HttpMethodBadgeRenderingTests
 
 		html.Should().MatchInlineSnapshot(
 			"""
-				<span class="api-method-group" data-tippy-content="POST is the main method. GET works the same way: same parameters, body, and response.">
+				<span class="api-method-group" data-tooltip="POST is the main method. GET works the same way: same parameters, body, and response.">
 			<span class="api-method api-method-post">
 				<span class="api-method-icon" aria-hidden="true">
 						<svg width="12" height="12" viewBox="0 0 12 12"><use href="#icon-api-arrow"/></svg>

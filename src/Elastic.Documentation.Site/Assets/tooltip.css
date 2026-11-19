@@ -1,0 +1,78 @@
+/*
+ * The tooltip that tooltip.ts shows for every [data-tooltip]: the dark box with an arrow that tippy.js drew.
+ * Never give .tooltip a display: it would override the browser's hiding of a closed popover.
+ */
+.tooltip {
+	box-sizing: border-box;
+	max-width: 350px;
+	padding: 5px 9px;
+	border-radius: 4px;
+	background: #333;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1.4;
+	text-align: start;
+	white-space: pre-line;
+}
+
+/* floating.ts sets left and top; the browser's own [popover] placement (centred in the viewport) is reset here. */
+.tooltip[popover] {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	border: 0;
+	overflow: visible;
+	pointer-events: none;
+	/* A gap between the arrow's tip and the target. */
+	translate: 0 -3px;
+	transition: opacity 0.15s ease;
+}
+
+.tooltip[popover][data-side='bottom'] {
+	translate: 0 3px;
+}
+
+/* Hidden until placed, so it never flashes at the wrong spot. */
+.tooltip[popover]:not([data-placed]) {
+	visibility: hidden;
+}
+
+@starting-style {
+	.tooltip:popover-open {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tooltip[popover] {
+		transition: none;
+	}
+}
+
+/* The arrow points at the middle of the target, wherever shift moved the box, but stays on its straight edge. */
+.tooltip::before {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: clamp(9px, var(--tooltip-arrow-x, 50%), calc(100% - 9px));
+	translate: -50% 0;
+	border: 6px solid transparent;
+	border-top-color: #333;
+	border-bottom: 0;
+}
+
+.tooltip[data-side='bottom']::before {
+	top: auto;
+	bottom: 100%;
+	border-top: 0;
+	border-bottom: 6px solid #333;
+}
+
+/* JSON paths (data-tooltip-theme="mono") are long and break anywhere. */
+.tooltip[data-theme~='mono'] {
+	max-width: min(90vw, 48rem);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	white-space: normal;
+	overflow-wrap: anywhere;
+}

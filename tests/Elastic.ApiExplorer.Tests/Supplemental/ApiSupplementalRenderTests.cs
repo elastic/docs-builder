@@ -200,7 +200,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 			.Should()
 			.BeLessThan(bar.IndexOf("api-section-links-track", StringComparison.Ordinal), "the back to top button opens the bar");
 		bar.Should().Contain(
-			"data-tippy-delay=\"[500, 0]\" data-api-back-to-top",
+			"data-tooltip-delay=\"slow\" data-api-back-to-top",
 			"its tooltip waits, as the pointer crosses the arrow on its way to the links"
 		);
 		bar.TrimEnd().Should().EndWith("class=\"api-expand-toggle\" data-api-expand-all>Expand all</button>");

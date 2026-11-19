@@ -12,7 +12,7 @@ import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
 import { initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
-import { flashTooltip, initTooltips } from './tooltip'
+import { flashTooltip } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -809,7 +809,6 @@ export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
     initSectionLinksStuck()
-    initTooltips()
     initApiEndpointCopy()
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()
