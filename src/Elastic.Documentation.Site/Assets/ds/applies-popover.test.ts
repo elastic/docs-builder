@@ -1,4 +1,4 @@
-import { initAppliesPopovers } from './applies-popover'
+import { initAppliesPopovers, unbindAppliesPopovers } from './applies-popover'
 
 const badge = `
 <span class="applies-popover" data-applies-popover>
@@ -63,5 +63,25 @@ describe('applies-to popovers', () => {
                 .querySelector('[data-applies-popover]')!
                 .hasAttribute('data-applies-bound')
         ).toBe(false)
+    })
+
+    it('gives a cloned badge a panel of its own once it is unbound', () => {
+        document.body.innerHTML = badge
+        initAppliesPopovers()
+        const original = panels()[0]
+        const copy = document.createElement('div')
+        copy.innerHTML = document.body.innerHTML
+
+        unbindAppliesPopovers(copy)
+        document.body.append(copy)
+        initAppliesPopovers(copy)
+
+        const copied = copy.querySelector('[data-applies-panel]')!
+        expect(copied.id).not.toBe(original.id)
+        expect(
+            copy
+                .querySelector('[data-applies-trigger]')!
+                .getAttribute('popovertarget')
+        ).toBe(copied.id)
     })
 })

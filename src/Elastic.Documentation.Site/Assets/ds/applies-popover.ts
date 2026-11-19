@@ -21,3 +21,18 @@ export function initAppliesPopovers(scope: ParentNode = document) {
             root.dataset.appliesBound = ''
         })
 }
+
+/** A cloned badge carries the original's panel id and `popovertarget`, so it would open the original panel. Unbind it, then `initAppliesPopovers` binds the copy. */
+export function unbindAppliesPopovers(scope: ParentNode) {
+    scope
+        .querySelectorAll<HTMLElement>('[data-applies-bound]')
+        .forEach((root) => {
+            const trigger = root.querySelector('[data-applies-trigger]')
+            const panel = root.querySelector('[data-applies-panel]')
+            panel?.removeAttribute('id')
+            panel?.removeAttribute('popover')
+            trigger?.removeAttribute('popovertarget')
+            trigger?.removeAttribute('aria-haspopup')
+            delete root.dataset.appliesBound
+        })
+}
