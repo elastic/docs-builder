@@ -97,6 +97,7 @@
 @import '../Components/Markdown/Listing/listing.css' layer(ds.components);
 @import '../Components/Markdown/Image/image.css' layer(ds.components);
 @import '../Components/Pages/SearchPage/search-page.css' layer(ds.components);
+@import './floating.css' layer(ds.components);
 @import '../Components/Pages/ApiReference/api-reference.css'
 	layer(ds.components);
 @import '../Components/Pages/ApiReference/api-code.css' layer(ds.components);

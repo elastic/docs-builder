@@ -717,43 +717,14 @@ export function initApiPageActions(): void {
     if (apiPageActionsInitialized) return
     apiPageActionsInitialized = true
 
-    // The menu opens leftward from the button's right edge. Where Copy page has wrapped under the breadcrumbs, to the
-    // left edge of its row, that would cross the row's edge (over the sidebar, or off a phone's screen), so it opens
-    // from the button's left edge instead. Measured on each open, since the button's place depends on the width.
-    document.addEventListener(
-        'toggle',
-        (event) => {
-            const dropdown = event.target
-            if (
-                !(dropdown instanceof HTMLDetailsElement) ||
-                !dropdown.matches('.api-page-actions-dropdown') ||
-                !dropdown.open
-            )
-                return
-            const menu = dropdown.querySelector<HTMLElement>(
-                '.api-page-actions-menu'
-            )
-            if (!menu) return
-            menu.classList.remove('api-page-actions-menu--start')
-            const edge =
-                dropdown.closest('.api-page-toolbar')?.getBoundingClientRect()
-                    .left ?? 0
-            if (menu.getBoundingClientRect().left < edge)
-                menu.classList.add('api-page-actions-menu--start')
-        },
-        true
-    )
-
     document.addEventListener('click', (event) => {
         const trigger = closestCopyPageTrigger(event.target)
         if (!trigger || !trigger.dataset.copyPage) return
 
         event.preventDefault()
         const root = trigger.closest('.api-page-actions')
-        const dropdown = root?.querySelector<HTMLDetailsElement>(
-            '.api-page-actions-dropdown'
-        )
-        if (dropdown) dropdown.open = false
+        const menu = trigger.closest<HTMLElement>('[popover]')
+        if (menu?.matches(':popover-open')) menu.hidePopover()
         void copyPageMarkdown(trigger.dataset.copyPage, root).catch((error) => {
             console.error(error)
         })

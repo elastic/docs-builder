@@ -267,3 +267,111 @@ describe('modal dialogs and Escape', () => {
         expect(dialog.open).toBe(true)
     })
 })
+
+describe('popover menus and Escape', () => {
+    const POPOVERS = '[popover]:not([popover="manual"]):popover-open'
+    const query = document.querySelectorAll.bind(document)
+
+    /** jsdom has no popovers: `open` is what the browser's `:popover-open` would say. */
+    function popover(id: string, mode = 'auto', open = true): HTMLElement {
+        const menu = document.createElement('div')
+        menu.id = id
+        menu.setAttribute('popover', mode)
+        menu.innerHTML = `<button id="${id}-item">Item</button>`
+        menu.matches = ((selector: string) =>
+            selector === ':popover-open'
+                ? open
+                : Element.prototype.matches.call(menu, selector)) as never
+        menu.hidePopover = vi.fn(() => {
+            open = false
+        })
+        document.body.append(menu)
+        return menu
+    }
+
+    beforeAll(() => {
+        bindModalEscape()
+        document.querySelectorAll = ((selector: string) =>
+            selector === POPOVERS
+                ? Array.from(query('[popover]')).filter(
+                      (el) =>
+                          el.matches(':popover-open') &&
+                          el.getAttribute('popover') !== 'manual'
+                  )
+                : query(selector)) as never
+    })
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        document.removeEventListener('keydown', preventEscape)
+        document.body.innerHTML = ''
+        vi.useRealTimers()
+    })
+
+    it('hides the open menu when the page prevents the key', () => {
+        const menu = popover('menu')
+        document.addEventListener('keydown', preventEscape)
+
+        press(document.getElementById('menu-item')!)
+        vi.runAllTimers()
+
+        expect(menu.hidePopover).toHaveBeenCalledTimes(1)
+    })
+
+    it('hides the open menu when focus is outside it', () => {
+        const menu = popover('menu')
+        document.addEventListener('keydown', preventEscape)
+
+        press(document.body)
+        vi.runAllTimers()
+
+        expect(menu.hidePopover).toHaveBeenCalledTimes(1)
+    })
+
+    it('does nothing for a key the browser acts on, as the browser hides the menu itself', () => {
+        const menu = popover('menu')
+
+        press(document.getElementById('menu-item')!)
+        vi.runAllTimers()
+
+        expect(menu.hidePopover).not.toHaveBeenCalled()
+    })
+
+    it('hides the menu that holds the key, not another one', () => {
+        const first = popover('first')
+        const second = popover('second')
+        document.addEventListener('keydown', preventEscape)
+
+        press(document.getElementById('first-item')!)
+        vi.runAllTimers()
+
+        expect(first.hidePopover).toHaveBeenCalledTimes(1)
+        expect(second.hidePopover).not.toHaveBeenCalled()
+    })
+
+    it('hides only the innermost of nested menus that holds the key', () => {
+        const outer = popover('outer')
+        const inner = popover('inner')
+        outer.append(inner)
+        document.addEventListener('keydown', preventEscape)
+
+        press(document.getElementById('inner-item')!)
+        vi.runAllTimers()
+
+        expect(inner.hidePopover).toHaveBeenCalledTimes(1)
+        expect(outer.hidePopover).not.toHaveBeenCalled()
+    })
+
+    it('leaves a manual popover to its owner', () => {
+        const menu = popover('menu', 'manual')
+        document.addEventListener('keydown', preventEscape)
+
+        press(document.body)
+        vi.runAllTimers()
+
+        expect(menu.hidePopover).not.toHaveBeenCalled()
+    })
+})

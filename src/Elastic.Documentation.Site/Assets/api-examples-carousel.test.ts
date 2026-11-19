@@ -776,6 +776,22 @@ describe('API examples chip overflow', () => {
         expect(visibleItems()).not.toContain('d')
     })
 
+    it('moves the focus into the menu only once it is placed, since it is hidden before', () => {
+        initApiExamples()
+        const menu = document.querySelector<HTMLElement>('[data-example-menu]')!
+        const toggle = new Event('toggle') as ToggleEvent
+        Object.defineProperty(toggle, 'newState', { value: 'open' })
+
+        menu.dispatchEvent(toggle)
+        expect(document.activeElement).toBe(document.body)
+
+        menu.dispatchEvent(new Event('floating:placed', { bubbles: true }))
+        // The menu has a filter field, which takes the focus before any item does.
+        expect(document.activeElement).toBe(
+            document.querySelector('[data-example-filter]')
+        )
+    })
+
     it('filters the menu fuzzily, forgiving a typo and ranking the best match first', () => {
         initApiExamples()
         const input = document.querySelector<HTMLInputElement>(
@@ -795,37 +811,6 @@ describe('API examples chip overflow', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }))
 
         expect(visibleItems()).toEqual(['d', 'e'])
-    })
-
-    it('keeps the open menu under its button while the page scrolls', async () => {
-        initApiExamples()
-        const more = document.querySelector<HTMLElement>('[data-example-more]')!
-        const menu = document.querySelector<HTMLElement>('[data-example-menu]')!
-        let top = 100
-        more.getBoundingClientRect = () =>
-            ({ top, bottom: top + 24, left: 50, width: 80 }) as DOMRect
-        menu.getBoundingClientRect = () =>
-            ({ width: 200, height: 100 }) as DOMRect
-
-        const toggle = new Event('toggle') as ToggleEvent
-        Object.defineProperty(toggle, 'newState', { value: 'open' })
-        menu.dispatchEvent(toggle)
-        expect(menu.style.top).toBe('128px')
-
-        const frame = () =>
-            new Promise((resolve) => requestAnimationFrame(resolve))
-        top = 40
-        window.dispatchEvent(new Event('scroll'))
-        await frame()
-        expect(menu.style.top).toBe('68px')
-
-        const close = new Event('toggle') as ToggleEvent
-        Object.defineProperty(close, 'newState', { value: 'closed' })
-        menu.dispatchEvent(close)
-        top = 10
-        window.dispatchEvent(new Event('scroll'))
-        await frame()
-        expect(menu.style.top).toBe('68px')
     })
 })
 

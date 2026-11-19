@@ -269,10 +269,9 @@
 	padding: 0;
 	border-left: 1px solid #cad3e2;
 	border-radius: 0 7px 7px 0;
-	list-style: none;
 }
 
-/* No Copy page beside it, so the summary is the whole control. */
+/* No Copy page beside it, so the button is the whole control. */
 .api-page-actions-chevron--labeled {
 	width: auto;
 	gap: 8px;
@@ -280,10 +279,6 @@
 	border-left: 0;
 	border-radius: 7px;
 	white-space: nowrap;
-}
-
-.api-page-actions-chevron::-webkit-details-marker {
-	display: none;
 }
 
 .api-page-actions-button:hover,
@@ -314,29 +309,28 @@
 	height: 12px;
 }
 
-/* Static, so the menu takes the whole button as its anchor (.api-page-actions), not only the chevron. */
-.api-page-actions details.api-page-actions-dropdown,
-.api-page-actions details.nav-select-dropdown {
-	position: static;
-	display: flex;
-	width: auto;
-	overflow: visible;
-}
-
-.api-page-actions-dropdown[open] .api-page-actions-chevron-icon,
-.api-page-actions-dropdown.is-open .api-page-actions-chevron-icon {
+.api-page-actions-chevron[aria-expanded='true'] .api-page-actions-chevron-icon {
 	transform: rotate(180deg);
 }
 
+/* Without the Popover API (floating.css hides the menu) the download-only page has nothing else on it, so its links show inline in place of the button. */
+@supports not selector(:popover-open) {
+	.api-page-actions--download-only .api-page-actions-split {
+		display: none;
+	}
+	.api-page-actions--download-only .api-page-actions-menu {
+		display: block;
+	}
+}
+
+/* A popover placed beside the chevron by floating.ts (floating.css). */
 .api-page-actions-menu {
 	box-sizing: border-box;
-	position: absolute;
-	top: calc(100% + 6px);
-	right: 0;
-	z-index: 40;
 	width: max-content;
 	min-width: 196px;
-	margin: 0;
+	max-width: calc(100vw - 16px);
+	max-height: var(--floating-available-height, none);
+	overflow-y: auto;
 	padding: 8px;
 	background: #fff;
 	border: 0;
@@ -349,12 +343,6 @@
 	font-weight: 400;
 	line-height: 20px;
 	color: #1d2a3e;
-}
-
-/* Opens from the button's left edge where opening leftward would leave the window (api-docs.ts). */
-.api-page-actions-menu--start {
-	right: auto;
-	left: 0;
 }
 
 .api-page-actions-icon {
@@ -3750,12 +3738,12 @@ html:has(.api-page-shell) {
 	fill: currentColor;
 }
 
-/* Positioned from the "more" button in api-examples-carousel.ts; the popover UA styles centre it otherwise. */
+/* A popover placed under the "more" button, or the row's search box, by floating.ts (floating.css). */
 .api-example-menu {
 	box-sizing: border-box;
 	width: max-content;
 	max-width: min(320px, calc(100vw - 16px));
-	max-height: min(320px, 50vh);
+	max-height: min(320px, 50vh, var(--floating-available-height, 100vh));
 	margin: 0;
 	padding: 4px;
 	overflow: auto;
