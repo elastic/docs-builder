@@ -235,10 +235,6 @@
 				color 0.08s ease;
 		}
 
-		.secondary-nav-item__content--dropdown {
-			gap: 6px;
-		}
-
 		.secondary-nav-item--active {
 			position: relative;
 			z-index: 1;

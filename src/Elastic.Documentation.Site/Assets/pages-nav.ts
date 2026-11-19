@@ -1203,7 +1203,7 @@ function ensureFolderRowClick() {
 }
 
 const SECTION_RESET_LINK =
-    '#secondary-nav a.secondary-nav-item__hit, #secondary-nav a.secondary-nav-dropdown-link, #pages-dropdown a.pages-dropdown_active'
+    '#secondary-nav a.secondary-nav-item__hit, #pages-dropdown a.pages-dropdown_active'
 
 function isSectionResetElement(el: Element | null) {
     return Boolean(el?.closest(SECTION_RESET_LINK))
