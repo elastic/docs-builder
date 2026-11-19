@@ -28,3 +28,10 @@
 		transition: none;
 	}
 }
+
+/* Without the Popover API a [popover] would render as a plain block, always open. Hide it; the page's other controls stay. */
+@supports not selector(:popover-open) {
+	[popover] {
+		display: none;
+	}
+}
