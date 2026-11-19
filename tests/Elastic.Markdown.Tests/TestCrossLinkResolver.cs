@@ -49,7 +49,8 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           		  "pages": {
 		           			"": 3,
 		           			"operation/operation-exists": 3,
-		           			"operation/operation-only-in-8": 1
+		           			"operation/operation-only-in-8": 1,
+		           			"topic/topic-kibana-spaces": 3
 		           		  }
 		           		}
 		           	  }

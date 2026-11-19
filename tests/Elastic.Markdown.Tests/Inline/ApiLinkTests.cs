@@ -9,7 +9,7 @@ using Markdig;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-// The fake link index of TestCrossLinkResolver has one API section, kibana, with the page operation/operation-exists.
+// The fake link index of TestCrossLinkResolver has one API section, kibana, with the pages operation/operation-exists and topic/topic-kibana-spaces.
 public static class ApiLinkAssertions
 {
 	public static void HasOneApiHint(this TestDiagnosticsCollector collector, string url) =>
@@ -99,14 +99,24 @@ Text.
 
 public class ApiRedirectedPageTests() : InlineTest(
 	"""
-[Old root](https://www.elastic.co/docs/api/kibana/operation/operation-exists) and [Servers](https://www.elastic.co/docs/api/kibana/topic/topic-kibana-spaces).
+[Old root](https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists) and [Spaces](https://www.elastic.co/docs/api/doc/kibana/topic/topic-kibana-spaces).
 """
 )
 {
 	[Test]
 	public void ChecksTheTargetOfAnEdgeRedirect() =>
-		// topic-kibana-spaces redirects to kibana-api-overview, which the fake section does not hold, so that one warns.
-		Collector.HasOneApiHint("topic-kibana-spaces");
+		// The section holds topic-kibana-spaces but not kibana-api-overview, where the edge redirects it, so only the target can miss.
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Message.Contains("topic-kibana-spaces") && d.Message.Contains("does not resolve"));
+
+	[Test]
+	public void HintsTheNewUrlOfALegacyLinkThatResolves() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Message.Contains("operation-exists") && d.Message.Contains("uses the legacy /docs/api/doc/ prefix"));
 }
 
 public class ApiLinkCheckPipelineTests
