@@ -157,6 +157,8 @@ public class DocumentationSetLoaderTests
 		"Unknown 'release_notes' product 'a'. It must be a product id defined in products.yml."
 	})]
 	[Arguments("cta:\n  x:\n", new string[0])]
+	[Arguments("extensions:\n", new string[0])]
+	[Arguments("extensions:\napi:\n  p:\n    - spec: a\nbranding:\n  icon: x.exe\n", new string[0])]
 	[Arguments("products:\n  - \n", new string[0])]
 	[Arguments("products:\n  - id:\n", new string[0])]
 	public void Configure_NullInsideAList_FailsWhileTheConfigurationIsBuilt(string declaration, string[] before)
