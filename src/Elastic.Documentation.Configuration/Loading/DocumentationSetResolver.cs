@@ -85,6 +85,9 @@ internal static class DocumentationSetResolver
 		// Parse and validate CDN-backed release-notes product declarations
 		var releaseNotesProducts = ParseReleaseNotesProducts(docSetFile.ReleaseNotes, productsConfig, context);
 
+		// an extensions key with no value fails here, before the substitutions
+		var extensions = new EnabledExtensions(docSetFile.Extensions);
+
 		var substitutions = new Dictionary<string, string>(
 			(IDictionary<string, string>)docSetFile.Substitutions,
 			StringComparer.OrdinalIgnoreCase
@@ -204,7 +207,7 @@ internal static class DocumentationSetResolver
 			CrossLinkEntries = crossLinkEntries,
 			CrossLinkRepositories = [.. crossLinkEntries.Select(e => e.Repository)],
 			ReleaseNotesProducts = releaseNotesProducts,
-			Extensions = new EnabledExtensions(docSetFile.Extensions),
+			Extensions = extensions,
 			Products = products,
 			Substitutions = substitutions,
 			FeatureToggles = features,
