@@ -14,8 +14,8 @@ public class LlmsNavigationEnhancerTests
 
 	private static readonly ApiCatalogEntry[] Catalog =
 	[
-		new("kibana", "Kibana", "/docs/api/doc/kibana/"),
-		new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/")
+		new("kibana", "Kibana", "/docs/api/kibana/"),
+		new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch/")
 	];
 
 	[Test]
@@ -25,8 +25,8 @@ public class LlmsNavigationEnhancerTests
 
 		text.Should().StartWith("# APIs");
 		text.Should().Contain("## Products");
-		text.Should().Contain("* [Elasticsearch](https://www.elastic.co/docs/api/doc/elasticsearch.md)");
-		text.Should().Contain("* [Kibana](https://www.elastic.co/docs/api/doc/kibana.md)");
+		text.Should().Contain("* [Elasticsearch](https://www.elastic.co/docs/api/elasticsearch.md)");
+		text.Should().Contain("* [Kibana](https://www.elastic.co/docs/api/kibana.md)");
 		text.IndexOf("elasticsearch.md", StringComparison.Ordinal).Should().BeLessThan(text.IndexOf("kibana.md", StringComparison.Ordinal));
 	}
 

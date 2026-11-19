@@ -18,11 +18,11 @@ public partial class ApiPagesNavRenderingTests
 	public async Task DesignSystemNav_RendersSwitchersAsLinkMenusAboveTheTree()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/v9/",
-			"/api/doc/elasticsearch/v9.md",
+			"/api/elasticsearch/v9/",
+			"/api/elasticsearch/v9.md",
 			apiContext: CreateApiContext(versions: [
-				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
-				new("v8", "/api/doc/elasticsearch/v8/", Selected: false)
+				new("v9", "/api/elasticsearch/v9/", Selected: true),
+				new("v8", "/api/elasticsearch/v8/", Selected: false)
 			]),
 			features: NavigationPreview
 		);
@@ -40,8 +40,8 @@ public partial class ApiPagesNavRenderingTests
 	public async Task DesignSystemNav_JumpFieldStaysHiddenUntilScriptRevealsIt()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: NavigationPreview,
 			buildType: Elastic.Documentation.BuildType.Assembler
 		);
@@ -55,8 +55,8 @@ public partial class ApiPagesNavRenderingTests
 	public async Task DesignSystemNav_Assembler_OmitsTheHubSwitcher()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			apiContext: CreateApiContext(),
 			features: NavigationPreview,
 			buildType: Elastic.Documentation.BuildType.Assembler

@@ -127,15 +127,15 @@ public class RepositoryLinksRoundTripTests
 				"floating": {
 				  "api/example-api": {
 				    "versions": [
-				      { "name": "8", "root": "api/doc/example-api/v8", "hidden": true },
-				      { "name": "main", "root": "api/doc/example-api", "current": true },
-				      { "name": "plain", "root": "api/doc/example-api/plain", "hidden": false, "current": false }
+				      { "name": "8", "root": "api/example-api/v8", "hidden": true },
+				      { "name": "main", "root": "api/example-api", "current": true },
+				      { "name": "plain", "root": "api/example-api/plain", "hidden": false, "current": false }
 				    ],
 				    "pages": { "": 7, "operation/operation-search": 3, "operation/operation-new": 2, "tag/other": 4 },
 				    "aliases": { "8": { "operation/operation-search": [ "operation/operation-search-1", "operation/operation-search-2" ] }, "main": {} }
 				  },
 				  "api/no-aliases": {
-				    "versions": [ { "name": "main", "root": "api/doc/no-aliases", "current": true } ],
+				    "versions": [ { "name": "main", "root": "api/no-aliases", "current": true } ],
 				    "pages": { "": 1 }
 				  }
 				}
@@ -296,7 +296,7 @@ public class RepositoryLinksRoundTripTests
 				"cross_links": [ "other-repo://a.md" ],
 				"links": { "index.md": { "anchors": [ "a" ] } },
 				"redirects": { "a.md": { "to": "index.md", "anchors": { "x": null } } },
-				"floating": { "api/x": { "versions": [ { "name": "main", "root": "api/doc/x", "current": true } ], "pages": { "": 1 } } }
+				"floating": { "api/x": { "versions": [ { "name": "main", "root": "api/x", "current": true } ], "pages": { "": 1 } } }
 				"""
 			)
 		);

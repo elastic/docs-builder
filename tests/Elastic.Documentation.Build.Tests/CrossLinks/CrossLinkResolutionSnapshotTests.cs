@@ -225,7 +225,8 @@ public class CrossLinkResolutionSnapshotTests
 					CrossLinkFixtures.Environments[0],
 					CrossLinkFixtures.Environments[1],
 					CrossLinkFixtures.Environments[3],
-					CrossLinkFixtures.Environments[4]
+					CrossLinkFixtures.Environments[4],
+					CrossLinkFixtures.Environments[6]
 				]
 			)
 			.Should()
@@ -295,27 +296,27 @@ public class CrossLinkResolutionSnapshotTests
 		var sb = new StringBuilder();
 		foreach (var path in new[]
 		{
-			"/docs/api/doc/example-api",
-			"/docs/api/doc/example-api/",
-			"/docs/api/doc/example-api/operation/operation-search",
-			"/docs/api/doc/example-api/operation/operation-search-legacy",
-			"/docs/api/doc/example-api/v8",
-			"/docs/api/doc/example-api/v8/operation/operation-search",
-			"/docs/api/doc/example-api/v8/operation/operation-search-legacy",
-			"/docs/api/doc/example-api/v8/operation/operation-new",
-			"/docs/api/doc/example-api/v9/operation/operation-search",
-			"/docs/api/doc/example-api/operation/operation-missing",
-			"api/doc/example-api/operation/operation-new",
-			"/docs/api/doc/other-api/operation/x",
-			"/docs/api/doc/",
-			"/docs/api/doc",
+			"/docs/api/example-api",
+			"/docs/api/example-api/",
+			"/docs/api/example-api/operation/operation-search",
+			"/docs/api/example-api/operation/operation-search-legacy",
+			"/docs/api/example-api/v8",
+			"/docs/api/example-api/v8/operation/operation-search",
+			"/docs/api/example-api/v8/operation/operation-search-legacy",
+			"/docs/api/example-api/v8/operation/operation-new",
+			"/docs/api/example-api/v9/operation/operation-search",
+			"/docs/api/example-api/operation/operation-missing",
+			"api/example-api/operation/operation-new",
+			"/docs/api/other-api/operation/x",
+			"/docs/api/",
+			"/docs/api",
 			"/docs/reference/page",
-			"/api/doc/example-api",
+			"/api/example-api",
 			""
 		})
 			_ = sb.Line($"{(path.Length == 0 ? "(empty)" : path)} => {resolver.CheckApiPage(path)}");
 
-		_ = sb.Line($"noop: {((ICrossLinkResolver)NoopCrossLinkResolver.Instance).CheckApiPage("/docs/api/doc/example-api")}");
+		_ = sb.Line($"noop: {((ICrossLinkResolver)NoopCrossLinkResolver.Instance).CheckApiPage("/docs/api/example-api")}");
 		sb.ToString().Should().MatchSnapshot();
 	}
 
@@ -451,7 +452,7 @@ public class CrossLinkResolutionSnapshotTests
 				var resolver = environment.Create();
 				var path = CrossLinkResolver.ToTargetUrlPath((uri.Host + '/' + uri.AbsolutePath.TrimStart('/')).Trim('/'));
 				var resolved = resolver.Resolve(uri, path + uri.Fragment);
-				var site = resolver.ResolveSitePath(uri, "api/doc/example-api/operation/operation-search");
+				var site = resolver.ResolveSitePath(uri, "api/example-api/operation/operation-search");
 				_ = sb.Line($"  {environment.Name,-24} {(resolved.IsAbsoluteUri ? resolved.AbsoluteUri : resolved.OriginalString)}");
 				_ = sb.Line($"  {"",-24} site path: {site.AbsoluteUri}");
 			}

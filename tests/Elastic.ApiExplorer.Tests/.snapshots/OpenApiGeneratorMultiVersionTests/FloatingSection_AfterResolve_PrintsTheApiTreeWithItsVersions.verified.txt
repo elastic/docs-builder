@@ -1,13 +1,13 @@
-/api/doc/elasticsearch
-  /api/doc/elasticsearch
-    /api/doc/elasticsearch
-      /api/doc/elasticsearch/group/endpoint-core
-        /api/doc/elasticsearch/operation/operation-ping
-  /api/doc/elasticsearch/v9 [hidden]
-    /api/doc/elasticsearch/v9
-      /api/doc/elasticsearch/v9/group/endpoint-core
-        /api/doc/elasticsearch/v9/operation/operation-ping
-  /api/doc/elasticsearch/v8 [hidden]
-    /api/doc/elasticsearch/v8
-      /api/doc/elasticsearch/v8/group/endpoint-core
-        /api/doc/elasticsearch/v8/operation/operation-ping
+/api/elasticsearch
+  /api/elasticsearch
+    /api/elasticsearch
+      /api/elasticsearch/group/endpoint-core
+        /api/elasticsearch/operation/operation-ping
+  /api/elasticsearch/v9 [hidden]
+    /api/elasticsearch/v9
+      /api/elasticsearch/v9/group/endpoint-core
+        /api/elasticsearch/v9/operation/operation-ping
+  /api/elasticsearch/v8 [hidden]
+    /api/elasticsearch/v8
+      /api/elasticsearch/v8/group/endpoint-core
+        /api/elasticsearch/v8/operation/operation-ping

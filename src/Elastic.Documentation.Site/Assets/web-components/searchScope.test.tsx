@@ -22,8 +22,8 @@ const empty = {
     pageSize: 20,
 }
 
-const v8 = '/docs/api/doc/elasticsearch/v8/operation/x'
-const unversioned = '/docs/api/doc/elasticsearch/operation/x'
+const v8 = '/docs/api/elasticsearch/v8/operation/x'
+const unversioned = '/docs/api/elasticsearch/operation/x'
 
 describe('navigation search scope', () => {
     let fetchMock: ReturnType<typeof vi.fn>

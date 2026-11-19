@@ -10,14 +10,14 @@ const picker = (hrefs: string[]) =>
 
 describe('api version switcher sync', () => {
     beforeEach(() => {
-        document.body.innerHTML = picker(['/api/doc/es', '/api/doc/es/v8'])
+        document.body.innerHTML = picker(['/api/es', '/api/es/v8'])
     })
 
     it('takes the links of the page that was swapped in', () => {
         const changed = syncApiVersionSwitcher(
             `<html><body>${picker([
-                '/api/doc/es/operation/operation-ping',
-                '/api/doc/es/v8/operation/operation-ping',
+                '/api/es/operation/operation-ping',
+                '/api/es/v8/operation/operation-ping',
             ])}</body></html>`
         )
 
@@ -27,8 +27,8 @@ describe('api version switcher sync', () => {
                 a.getAttribute('href')
             )
         ).toEqual([
-            '/api/doc/es/operation/operation-ping',
-            '/api/doc/es/v8/operation/operation-ping',
+            '/api/es/operation/operation-ping',
+            '/api/es/v8/operation/operation-ping',
         ])
     })
 
@@ -37,18 +37,18 @@ describe('api version switcher sync', () => {
 
         expect(changed).toBe(false)
         expect(document.querySelectorAll('a')[1].getAttribute('href')).toBe(
-            '/api/doc/es/v8'
+            '/api/es/v8'
         )
     })
 
     it('leaves the links alone when the picker has a different number of versions', () => {
         const changed = syncApiVersionSwitcher(
-            `<html><body>${picker(['/api/doc/es'])}</body></html>`
+            `<html><body>${picker(['/api/es'])}</body></html>`
         )
 
         expect(changed).toBe(false)
         expect(document.querySelectorAll('a')[1].getAttribute('href')).toBe(
-            '/api/doc/es/v8'
+            '/api/es/v8'
         )
     })
 })

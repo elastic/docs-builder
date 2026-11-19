@@ -32,7 +32,7 @@ public class ApiOperationsEndpointTests
 	{
 		Api = "elasticsearch",
 		Title = "Get cluster health",
-		Url = "/docs/api/doc/elasticsearch/operation/operation-cluster-health",
+		Url = "/docs/api/elasticsearch/operation/operation-cluster-health",
 		Method = "GET",
 		Path = "/_cluster/health",
 		OperationId = "cluster-health",
@@ -240,7 +240,7 @@ public class ApiOperationsEndpointTests
 	{
 		Key = "elasticsearch",
 		Title = "Elasticsearch API",
-		Url = "/docs/api/doc/elasticsearch",
+		Url = "/docs/api/elasticsearch",
 		Versions = ["9"]
 	};
 

@@ -19,8 +19,8 @@ public class RedirectApiLinkTests
 		var collector = BuildDocSet(
 			"""
 			redirects:
-			  'old-api.md': 'https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-gone'
-			  'old-ok.md': 'https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists'
+			  'old-api.md': 'https://www.elastic.co/docs/api/kibana/v8/operation/operation-gone'
+			  'old-ok.md': 'https://www.elastic.co/docs/api/kibana/operation/operation-exists'
 			  'old-other.md': 'https://www.elastic.co/docs/solutions/search'
 			"""
 		);

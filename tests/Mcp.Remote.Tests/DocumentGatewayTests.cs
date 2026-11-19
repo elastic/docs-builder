@@ -26,9 +26,9 @@ public class DocumentGatewayTests
 		    "hits": [
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/logstash/operation/operation-nodestats",
+		        "_id": "/docs/api/logstash/operation/operation-nodestats",
 		        "_source": {
-		          "path": "/docs/api/doc/logstash/operation/operation-nodestats",
+		          "path": "/docs/api/logstash/operation/operation-nodestats",
 		          "title": "Get node statistics",
 		          "search_title": "Get node statistics",
 		          "content_type": "api",
@@ -59,9 +59,9 @@ public class DocumentGatewayTests
 		    "hits": [
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/logstash",
+		        "_id": "/docs/api/logstash",
 		        "_source": {
-		          "path": "/docs/api/doc/logstash",
+		          "path": "/docs/api/logstash",
 		          "title": "Logstash API",
 		          "search_title": "Logstash API",
 		          "content_type": "api",
@@ -107,7 +107,7 @@ public class DocumentGatewayTests
 		var gateway = new DocumentGateway(stub.Accessor, NullLogger<DocumentGateway>.Instance);
 
 		var result = await gateway.GetByUrlAsync(
-			"/docs/api/doc/logstash/operation/operation-nodestats",
+			"/docs/api/logstash/operation/operation-nodestats",
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -126,7 +126,7 @@ public class DocumentGatewayTests
 		using var stub = ElasticsearchStub.Start(ApiLandingHit);
 		var gateway = new DocumentGateway(stub.Accessor, NullLogger<DocumentGateway>.Instance);
 
-		var result = await gateway.GetByUrlAsync("/docs/api/doc/logstash", TestContext.Current!.Execution.CancellationToken);
+		var result = await gateway.GetByUrlAsync("/docs/api/logstash", TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.Type.Should().Be("api");
@@ -140,7 +140,7 @@ public class DocumentGatewayTests
 		var gateway = new DocumentGateway(stub.Accessor, NullLogger<DocumentGateway>.Instance);
 
 		_ = await gateway.GetByUrlAsync(
-			"/docs/api/doc/logstash/operation/operation-nodestats",
+			"/docs/api/logstash/operation/operation-nodestats",
 			TestContext.Current!.Execution.CancellationToken
 		);
 

@@ -32,7 +32,7 @@ public class NavigationSearchServiceTests
 		{
 			Title = "Search",
 			SearchTitle = "Search",
-			Path = "/docs/api/doc/elasticsearch/operation/operation-search",
+			Path = "/docs/api/elasticsearch/operation/operation-search",
 			Api = new ApiOperationMetadata
 			{
 				Endpoints = ["_search", "*/_search"],
@@ -54,8 +54,8 @@ public class NavigationSearchServiceTests
 		document.Parents =
 		[
 			new ParentDocument { Title = "API reference", Path = "/docs/api" },
-			new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/doc/elasticsearch" },
-			new ParentDocument { Title = "Search", Path = "/docs/api/doc/elasticsearch/group/endpoint-search" }
+			new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/elasticsearch" },
+			new ParentDocument { Title = "Search", Path = "/docs/api/elasticsearch/group/endpoint-search" }
 		];
 		return document with
 		{
@@ -64,8 +64,8 @@ public class NavigationSearchServiceTests
 				Key = "elasticsearch",
 				Trees =
 				[
-					new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/elasticsearch" },
-					new ApiTreeEntry { Tree = "8", Root = "/docs/api/doc/elasticsearch/v8" }
+					new ApiTreeEntry { Tree = "main", Root = "/docs/api/elasticsearch" },
+					new ApiTreeEntry { Tree = "8", Root = "/docs/api/elasticsearch/v8" }
 				]
 			}
 		};
@@ -76,8 +76,8 @@ public class NavigationSearchServiceTests
 		{
 			Title = "Get deployments",
 			SearchTitle = "Get deployments",
-			Path = "/docs/api/doc/cloud/operation/operation-list-deployments",
-			Parents = [new ParentDocument { Title = "Elastic Cloud API", Path = "/docs/api/doc/cloud" }],
+			Path = "/docs/api/cloud/operation/operation-list-deployments",
+			Parents = [new ParentDocument { Title = "Elastic Cloud API", Path = "/docs/api/cloud" }],
 			Api = new ApiOperationMetadata
 			{
 				Endpoints = ["deployments"],
@@ -85,7 +85,7 @@ public class NavigationSearchServiceTests
 				Path = "/deployments",
 				OperationId = "list-deployments",
 				Key = "cloud",
-				Trees = [new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/cloud" }]
+				Trees = [new ApiTreeEntry { Tree = "main", Root = "/docs/api/cloud" }]
 			}
 		};
 
@@ -139,9 +139,9 @@ public class NavigationSearchServiceTests
 		var response = await SearchWith(Property());
 
 		var result = response.Results.Single();
-		result.Url.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
+		result.Url.Should().Be("/docs/api/elasticsearch/operation/operation-search");
 		var linked = result.Properties.Single();
-		linked.Url.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search#req-knn");
+		linked.Url.Should().Be("/docs/api/elasticsearch/operation/operation-search#req-knn");
 		linked.Anchor.Should().Be("req-knn");
 		linked.Location.Should().Be("request");
 		result
@@ -205,13 +205,13 @@ public class NavigationSearchServiceTests
 		var response = await Search(request, A.Fake<ISearchService<DocumentationDocument>>(), (SharedSearchOperation(), Property()));
 
 		var result = response.Results.Single();
-		result.Url.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
-		result.Properties.Single().Url.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search#req-knn");
+		result.Url.Should().Be("/docs/api/elasticsearch/v8/operation/operation-search");
+		result.Properties.Single().Url.Should().Be("/docs/api/elasticsearch/v8/operation/operation-search#req-knn");
 		result
 			.Parents
 			.Select(p => p.Url)
 			.Should()
-			.Equal("/docs/api", "/docs/api/doc/elasticsearch/v8", "/docs/api/doc/elasticsearch/v8/group/endpoint-search");
+			.Equal("/docs/api", "/docs/api/elasticsearch/v8", "/docs/api/elasticsearch/v8/group/endpoint-search");
 	}
 
 	[Test]
@@ -231,8 +231,8 @@ public class NavigationSearchServiceTests
 		);
 
 		var result = response.Results.Single();
-		result.Url.Should().Be("/docs/api/doc/cloud/operation/operation-list-deployments");
-		result.Properties.Single().Url.Should().Be("/docs/api/doc/cloud/operation/operation-list-deployments#req-name");
-		result.Parents.Select(p => p.Url).Should().Equal("/docs/api/doc/cloud");
+		result.Url.Should().Be("/docs/api/cloud/operation/operation-list-deployments");
+		result.Properties.Single().Url.Should().Be("/docs/api/cloud/operation/operation-list-deployments#req-name");
+		result.Parents.Select(p => p.Url).Should().Equal("/docs/api/cloud");
 	}
 }

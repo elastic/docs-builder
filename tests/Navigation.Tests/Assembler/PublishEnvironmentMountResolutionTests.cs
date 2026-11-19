@@ -26,7 +26,17 @@ public class PublishEnvironmentMountResolutionTests
 	private static PublishEnvironmentUriResolver Resolver(
 		FrozenDictionary<Uri, NavigationTocMapping> mappings,
 		string? pathPrefix = "docs"
-	) => new(mappings, new PublishEnvironment { Uri = "https://www.elastic.co", PathPrefix = pathPrefix });
+	) =>
+		new(
+			mappings,
+			// An environment that renders the API Explorer, so site paths keep their form; PublishEnvironmentSitePathTests covers the other.
+			new PublishEnvironment
+			{
+				Uri = "https://www.elastic.co",
+				PathPrefix = pathPrefix,
+				FeatureFlags = new() { ["ASSEMBLER_API_EXPLORER"] = true }
+			}
+		);
 
 	private static string ResolveTable(PublishEnvironmentUriResolver resolver, params (string CrossLink, string Path)[] probes)
 	{
@@ -200,7 +210,7 @@ public class PublishEnvironmentMountResolutionTests
 				.Append(" unmapped=")
 				.Append(resolver.Resolve(new Uri("other://page.md"), "page.md"))
 				.Append(" site=")
-				.Append(resolver.ResolveSitePath(new Uri("kibana://reference/page.md"), "api/doc/x"))
+				.Append(resolver.ResolveSitePath(new Uri("kibana://reference/page.md"), "api/x"))
 				.Append('\n');
 		}
 		sb
@@ -208,12 +218,12 @@ public class PublishEnvironmentMountResolutionTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			[docs] mapped=https://www.elastic.co/docs/reference/kibana/page.md unmapped=https://www.elastic.co/docs/page.md site=https://www.elastic.co/docs/api/doc/x
-			[] mapped=https://www.elastic.co/reference/kibana/page.md unmapped=https://www.elastic.co/page.md site=https://www.elastic.co/api/doc/x
-			[null] mapped=https://www.elastic.co/reference/kibana/page.md unmapped=https://www.elastic.co/page.md site=https://www.elastic.co/api/doc/x
-			[/docs] mapped=https://www.elastic.co/docs/reference/kibana/page.md unmapped=https://www.elastic.co/docs/page.md site=https://www.elastic.co/docs/api/doc/x
-			[docs/] mapped=https://www.elastic.co/docs//reference/kibana/page.md unmapped=https://www.elastic.co/docs//page.md site=https://www.elastic.co/docs//api/doc/x
-			[a/b] mapped=https://www.elastic.co/a/b/reference/kibana/page.md unmapped=https://www.elastic.co/a/b/page.md site=https://www.elastic.co/a/b/api/doc/x
+			[docs] mapped=https://www.elastic.co/docs/reference/kibana/page.md unmapped=https://www.elastic.co/docs/page.md site=https://www.elastic.co/docs/api/x
+			[] mapped=https://www.elastic.co/reference/kibana/page.md unmapped=https://www.elastic.co/page.md site=https://www.elastic.co/api/x
+			[null] mapped=https://www.elastic.co/reference/kibana/page.md unmapped=https://www.elastic.co/page.md site=https://www.elastic.co/api/x
+			[/docs] mapped=https://www.elastic.co/docs/reference/kibana/page.md unmapped=https://www.elastic.co/docs/page.md site=https://www.elastic.co/docs/api/x
+			[docs/] mapped=https://www.elastic.co/docs//reference/kibana/page.md unmapped=https://www.elastic.co/docs//page.md site=https://www.elastic.co/docs//api/x
+			[a/b] mapped=https://www.elastic.co/a/b/reference/kibana/page.md unmapped=https://www.elastic.co/a/b/page.md site=https://www.elastic.co/a/b/api/x
 			"""
 			);
 	}
