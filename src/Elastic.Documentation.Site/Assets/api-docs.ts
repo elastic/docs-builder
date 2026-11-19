@@ -396,14 +396,16 @@ function initGlobalClickHandlers(): void {
             )
                 return
             e.preventDefault()
+            // The address follows, so a reload or a shared link opens at the top rather than the section left behind.
+            // Pushed before scrolling: the entry left behind keeps the reader's place, which an instant scroll (reduced
+            // motion) would otherwise have reset to the top, so Back returns to that section.
+            const hash = backToTop.getAttribute('href')
+            if (hash?.startsWith('#') && window.location.hash !== hash)
+                history.pushState(null, '', hash)
             window.scrollTo({
                 top: 0,
                 behavior: prefersReducedMotion() ? 'auto' : 'smooth',
             })
-            // The address follows, so a reload or a shared link opens at the top rather than the section left behind.
-            const hash = backToTop.getAttribute('href')
-            if (hash?.startsWith('#') && window.location.hash !== hash)
-                history.pushState(null, '', hash)
             return
         }
 

@@ -104,6 +104,26 @@ describe('section links', () => {
         expect(window.location.hash).toBe('#api-operation-overview')
     })
 
+    it('adds the history entry before scrolling, so Back returns to the section left behind', () => {
+        mountBar()
+        history.replaceState(null, '', '#responses')
+        const calls: string[] = []
+        window.scrollTo = (() =>
+            calls.push('scroll')) as unknown as typeof window.scrollTo
+        const pushState = vi
+            .spyOn(history, 'pushState')
+            .mockImplementation(() => calls.push('push'))
+        vi.stubGlobal('matchMedia', () => ({ matches: true }))
+
+        document
+            .querySelector<HTMLAnchorElement>('[data-api-back-to-top]')!
+            .click()
+
+        expect(calls).toEqual(['push', 'scroll'])
+        pushState.mockRestore()
+        vi.unstubAllGlobals()
+    })
+
     it('leaves a modified click on the Overview link to the browser', () => {
         mountBar()
         const scrollTo = vi.fn()
