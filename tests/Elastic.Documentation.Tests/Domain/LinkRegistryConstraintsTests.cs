@@ -131,6 +131,7 @@ public class LinkRegistryConstraintsTests
 	[Arguments("a/b/elastic/kibana/links.json")]
 	[Arguments("elastic/kibana/9.0/links.json")]
 	[Arguments("../elastic/kibana/links.json")]
+	[Arguments("C:internal/elastic/kibana/links.json")]
 	[Arguments("./elastic/kibana/links.json")]
 	[Arguments(" /elastic/kibana/links.json")]
 	[Arguments("a\\b/elastic/kibana/links.json")]

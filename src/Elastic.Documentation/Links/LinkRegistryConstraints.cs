@@ -90,9 +90,9 @@ public static partial class LinkRegistryConstraints
 		return parts is [var environment, "elastic", var repo, "links.json"] && IsEnvironmentDirectory(environment) && repo == repository;
 	}
 
-	// the codex reader joins the path onto its clone folder, so the environment must be one plain directory name
+	// the codex reader joins the path onto its clone folder, so the environment must be one plain directory name on every OS (no drive prefix, no separator)
 	private static bool IsEnvironmentDirectory(string name) =>
-		!string.IsNullOrWhiteSpace(name) && name != "." && !IsRootedOrParent(name) && !name.Contains('\\');
+		!string.IsNullOrWhiteSpace(name) && name is not ("." or "..") && name.IndexOfAny(['\\', ':']) < 0;
 
 	private static bool IsRootedOrParent(string name) =>
 		Path.IsPathRooted(name) || name.StartsWith('/') || name.StartsWith('\\') || name.Split('/', '\\').Contains("..");

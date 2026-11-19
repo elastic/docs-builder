@@ -192,6 +192,7 @@ public class LinkManifestConstraintsTests
 		// populate the lookup caches of one side; they are not part of the value
 		a.TryResolvePage("8", "op/a", out _).Should().BeTrue();
 		a.TryResolvePage(null, "", out _).Should().BeTrue();
+		a.TryResolvePage("8", "old-a", out _).Should().BeTrue("an alias warms the reverse-alias cache");
 
 		a.Should().Be(b, "the pages and the alias dictionaries are unordered");
 		a.GetHashCode().Should().Be(b.GetHashCode());
