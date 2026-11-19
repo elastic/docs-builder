@@ -1,0 +1,59 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using AwesomeAssertions;
+using Elastic.ApiExplorer.Infrastructure;
+
+namespace Elastic.ApiExplorer.Tests;
+
+public class HtmlWhitespaceTests
+{
+	[Test]
+	public void Collapse_IndentationBetweenTags_BecomesOneLineBreak() =>
+		HtmlWhitespace
+			.Collapse("<dl>\n\t\t<dt>\n\t\t\t<code>a</code> <span>or</span>\n\t\t</dt>\n</dl>\n")
+			.Should()
+			.Be("<dl>\n<dt>\n<code>a</code> <span>or</span>\n</dt>\n</dl>\n");
+
+	[Test]
+	public void Collapse_PreformattedAndRawText_StayAsTheyAre()
+	{
+		const string kept =
+			"<pre><code>{\n    \"a\": 1\n}</code></pre><textarea>x\n\n  y</textarea><script>\n\tlet a = `\n\t`\n</script><style>\n\ta {}\n</style><!--\n\tnote\n-->";
+		HtmlWhitespace.Collapse(kept).Should().Be(kept);
+	}
+
+	[Test]
+	public void Collapse_AttributeValues_StayAsTheyAre()
+	{
+		const string kept = "<span data-tippy-content=\"line one\n\n    line two > three\" title='a\n  b'>x</span>";
+		HtmlWhitespace.Collapse(kept).Should().Be(kept);
+	}
+
+	[Test]
+	public void Collapse_NonBreakingSpace_IsKeptBesideALineBreak() =>
+		HtmlWhitespace.Collapse("<span>a</span>\u00A0\n\t<span>b</span>").Should().Be("<span>a</span>\u00A0\n<span>b</span>");
+
+	[Test]
+	public void Collapse_StrayLessThanInText_IsText() => HtmlWhitespace.Collapse("<p>a < b\n\t\tc</p>").Should().Be("<p>a < b\nc</p>");
+
+	[Test]
+	public void Collapse_ApostropheInUnquotedValue_DoesNotOpenAQuote() =>
+		HtmlWhitespace.Collapse("<a title=it's>x</a>\n\t<b>y</b>").Should().Be("<a title=it's>x</a>\n<b>y</b>");
+
+	[Test]
+	public void Collapse_LargePage_RunsInLinearTime()
+	{
+		// The largest API pages reach about 7 MB; a backtracking regex timed out on them under build load.
+		var row =
+			"<div class=\"property-item depth-6\">\n\t\t<dt id=\"a\"><a aria-label=\"Link to a.&lt;string&gt;.b\"></a>\n\t\t\t<code>b</code></dt>\n\t</div>\n";
+		var page = string.Concat(Enumerable.Repeat(row, 70_000));
+		var watch = System.Diagnostics.Stopwatch.StartNew();
+
+		var collapsed = HtmlWhitespace.Collapse(page);
+
+		watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+		collapsed.Should().NotContain("\t");
+	}
+}
