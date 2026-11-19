@@ -142,9 +142,9 @@ function closeAll() {
 }
 
 const HOVER_CLOSE_MS = 150
-const hoverTimers = new Map<HTMLElement, number>()
-/** Menus open only because the mouse rests on them: leaving closes them, and a click on the button keeps them open. */
-const openedByHover = new Set<HTMLElement>()
+const hoverTimers = new WeakMap<HTMLElement, number>()
+/** Menus open only because the mouse rests on them: leaving closes them, and a click on the button keeps them open. Both collections are weak, so a menu an htmx swap detaches is not kept alive by its hover state. */
+const openedByHover = new WeakSet<HTMLElement>()
 
 /** The `data-hover` menu that `target` is inside of, or opens. */
 function hoverMenuAt(target: EventTarget | null): HTMLElement | null {
