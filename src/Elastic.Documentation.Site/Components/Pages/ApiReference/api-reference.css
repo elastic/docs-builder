@@ -1380,6 +1380,11 @@ button.response-status-toggle:focus {
 			outline-offset: 2px;
 		}
 
+		/* One focus ring, the icon's: the shared ring on the anchor would also frame the clickable gap beside it. */
+		> a.property-anchor:focus-visible {
+			outline: none;
+		}
+
 		> a.property-anchor > code,
 		> code {
 			color: var(--color-heading);
