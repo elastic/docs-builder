@@ -242,8 +242,6 @@ function openFullscreenModal(imgSrc: string): void {
         startX: 0,
         startY: 0,
     }
-    let isDragging = false
-
     // Store initial zoom for reset
     let initialZoom = 1
 
@@ -297,29 +295,12 @@ function openFullscreenModal(imgSrc: string): void {
     // Modal pan handlers
     viewport.addEventListener('mousedown', (e: MouseEvent) => {
         if (e.button !== 0) return
-        isDragging = true
         state.startX = e.clientX - state.panX * state.zoom
         state.startY = e.clientY - state.panY * state.zoom
         viewport.classList.add('is-dragging')
+        drag = { state, viewport, rendered }
         e.preventDefault()
     })
-
-    const onMouseMove = (e: MouseEvent) => {
-        if (!isDragging) return
-        state.panX = (e.clientX - state.startX) / state.zoom
-        state.panY = (e.clientY - state.startY) / state.zoom
-        applyTransform(rendered, state)
-    }
-
-    const onMouseUp = () => {
-        if (isDragging) {
-            isDragging = false
-            viewport.classList.remove('is-dragging')
-        }
-    }
-
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
 
     // Modal wheel zoom
     viewport.addEventListener('wheel', (e: WheelEvent) => {
@@ -340,8 +321,6 @@ function openFullscreenModal(imgSrc: string): void {
 
     // Close modal function
     const closeModal = () => {
-        document.removeEventListener('mousemove', onMouseMove)
-        document.removeEventListener('mouseup', onMouseUp)
         unlockScroll()
         modal.remove()
     }

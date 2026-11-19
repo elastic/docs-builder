@@ -110,3 +110,42 @@ describe('mermaid pan', () => {
         ).toEqual([])
     })
 })
+
+describe('mermaid fullscreen', () => {
+    const modalViewport = () =>
+        document.querySelector('.mermaid-modal-viewport') as HTMLElement
+    const modalRendered = () =>
+        modalViewport().querySelector('.mermaid-rendered') as HTMLElement
+
+    function openFullscreen(name: string) {
+        document
+            .querySelector<HTMLButtonElement>(`#${name} .mermaid-fullscreen`)!
+            .click()
+    }
+
+    afterEach(() => {
+        document.body.innerHTML = ''
+    })
+
+    it('pans the fullscreen diagram without adding document listeners', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        const added = vi.spyOn(document, 'addEventListener')
+
+        openFullscreen('a')
+        press(modalViewport(), 10, 10)
+        move(40, 25)
+        release()
+        move(90, 90)
+
+        expect(modalRendered().style.transform).toBe(
+            'scale(1) translate(30px, 15px)'
+        )
+        expect(rendered('a').style.transform).toBe('')
+        expect(
+            added.mock.calls
+                .map(([type]) => type)
+                .filter((type) => type === 'mousemove' || type === 'mouseup')
+        ).toEqual([])
+    })
+})
