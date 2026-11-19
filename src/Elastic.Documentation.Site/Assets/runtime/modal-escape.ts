@@ -79,7 +79,7 @@ function requestClose(dialog: CloseRequestable): void {
 }
 
 /**
- * The open popover the key is for: the one holding the target, else the last one open. A manual popover is left to its
+ * The open popover the key is for: the innermost one holding the target, else the last one open. A manual popover is left to its
  * owner, since the browser never closes it on Escape either.
  */
 function targetPopover(target: EventTarget | null): HTMLElement | null {
@@ -94,9 +94,10 @@ function targetPopover(target: EventTarget | null): HTMLElement | null {
         // A browser without `:popover-open` has no popovers to close.
         return null
     }
+    // Nested popovers come in document order, outer first, so the last one holding the target is the innermost.
     const holding =
         target instanceof Element
-            ? open.find((popover) => popover.contains(target))
+            ? open.filter((popover) => popover.contains(target)).pop()
             : undefined
     return holding ?? open[open.length - 1] ?? null
 }

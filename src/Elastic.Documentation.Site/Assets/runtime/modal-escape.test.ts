@@ -352,6 +352,19 @@ describe('popover menus and Escape', () => {
         expect(second.hidePopover).not.toHaveBeenCalled()
     })
 
+    it('hides only the innermost of nested menus that holds the key', () => {
+        const outer = popover('outer')
+        const inner = popover('inner')
+        outer.append(inner)
+        document.addEventListener('keydown', preventEscape)
+
+        press(document.getElementById('inner-item')!)
+        vi.runAllTimers()
+
+        expect(inner.hidePopover).toHaveBeenCalledTimes(1)
+        expect(outer.hidePopover).not.toHaveBeenCalled()
+    })
+
     it('leaves a manual popover to its owner', () => {
         const menu = popover('menu', 'manual')
         document.addEventListener('keydown', preventEscape)
