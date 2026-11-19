@@ -763,54 +763,12 @@ export function initExamplesRailSteadying(): void {
 }
 
 /**
- * Marks the section-links pin data-stuck while it is pinned under the header: position: sticky has no CSS hook.
- * The pinned offset is read on every check, since the header height is set by script after the page loads.
- */
-function initSectionLinksStuck(): void {
-    document
-        .querySelectorAll<HTMLElement>(
-            '[data-section-pin]:not([data-stuck-bound])'
-        )
-        .forEach((bar) => {
-            bar.dataset.stuckBound = ''
-            const listeners = new AbortController()
-            let queued = false
-            const update = () => {
-                queued = false
-                if (!bar.isConnected) {
-                    listeners.abort()
-                    return
-                }
-                const pinnedAt = parseFloat(getComputedStyle(bar).top) || 0
-                bar.toggleAttribute(
-                    'data-stuck',
-                    bar.getBoundingClientRect().top <= pinnedAt + 0.5
-                )
-            }
-            const schedule = () => {
-                if (queued) return
-                queued = true
-                window.requestAnimationFrame(update)
-            }
-            window.addEventListener('scroll', schedule, {
-                passive: true,
-                signal: listeners.signal,
-            })
-            window.addEventListener('resize', schedule, {
-                signal: listeners.signal,
-            })
-            update()
-        })
-}
-
-/**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
  */
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
-    initSectionLinksStuck()
     initTooltips()
     initApiEndpointCopy()
     initApiPropertyAnchorCopy()

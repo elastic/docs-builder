@@ -98,29 +98,8 @@ public class AuthorizationSectionRenderingTests
 		html.Should().MatchHtmlSnapshot();
 	}
 
-	[Test]
-	public async Task Render_StripWithPrivileges_ShowsThemAsItsFirstCellBesideTheSectionCells()
-	{
-		var authorization = new AuthorizationSectionModel(
-			[],
-			[new PrivilegeRow("Index privileges", ["read", "view_index_metadata"]), new PrivilegeRow("Cluster privileges", ["monitor"])],
-			static markdown => new HtmlString($"<p>{markdown}</p>")
-		);
-		var links = new[]
-		{
-			new SectionLink("Query", "query-params", new SectionStat("5", "parameters")),
-			new SectionLink("Responses", "responses", new SectionStat("200", "application/json"))
-		};
-
-		var html = await _SectionLinks.Create(new SectionStripModel(links, authorization)).RenderAsync(
-			cancellationToken: TestContext.Current!.Execution.CancellationToken
-		);
-
-		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-section-strip"));
-	}
-
 	private static async Task<string> RenderPrivileges(params PrivilegeRow[] rows) =>
-		await _PrivilegesCard.Create(
+		await _RequiredPrivileges.Create(
 			new AuthorizationSectionModel([], rows, static markdown => new HtmlString($"<p>{markdown}</p>"))
 		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
