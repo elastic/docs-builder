@@ -26,6 +26,7 @@
 	margin: 0;
 	border: 0;
 	overflow: visible;
+	pointer-events: none;
 	/* A gap between the arrow's tip and the target. */
 	translate: 0 -3px;
 	transition: opacity 0.15s ease;
