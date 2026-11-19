@@ -20,6 +20,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
@@ -94,30 +95,71 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		var documents = (await generator.ResolveDocumentsForProduct(
+		var resolved = await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
 			TestContext.Current!.Execution.CancellationToken
-		)).Documents;
+		);
 
-		documents.Should().HaveCount(3);
-		documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9", "8"]);
-		documents.Should().ContainSingle(
-			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch" && d.Document.Info.Title ==
-				"Elasticsearch main"
-		);
-		documents.Should().ContainSingle(
-			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v9" && d.Document.Info.Title ==
-				"Elasticsearch 9"
-		);
-		documents.Should().ContainSingle(
-			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v8" && d.Document.Info.Title ==
-				"Elasticsearch 8"
-		);
+		resolved
+			.Documents
+			.Select(d => $"{d.Document.Info.Title} at {string.Join(", ", resolved.Routes.Suffixes(d.Version.Moniker))}")
+			.Should()
+			.BeEquivalentTo(
+				"Elasticsearch main at elasticsearch/next",
+				"Elasticsearch 9 at elasticsearch, elasticsearch/v9",
+				"Elasticsearch 8 at elasticsearch/v8"
+			);
 	}
 
 	[Test]
-	public async Task CatalogEntry_MultiMajorIndex_OpensTheHighestNumericMajor()
+	public async Task ResolveDocumentsForProduct_VersionNamedNext_ReportsAnErrorAndLeavesItOut()
+	{
+		var collector = new RecordingDiagnosticsCollector();
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(/*lang=json,strict*/
+					"""
+					{
+						"elastic/elasticsearch": {
+							"elasticsearch-openapi.json": {
+								"main": { "version": "main" },
+								"next": { "version": "next" },
+								"9": { "version": "9.4" }
+							}
+						}
+					}
+					"""
+				)
+				: SpecResponse(request)
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(("main", SpecDocument("Elasticsearch main")), ("9.4", SpecDocument("Elasticsearch 9")));
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9"]);
+		// the scoped docset fixture adds its own product errors, which this test is not about
+		collector
+			.Diagnostics
+			.Where(d => d.Message.StartsWith("API 'elasticsearch'", StringComparison.Ordinal))
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  API 'elasticsearch': the version index declares a version named 'next', which is the URL segment of the unreleased 'main' spec. Rename the version; it is not rendered."
+			);
+	}
+
+	[Test]
+	public async Task CatalogEntry_MultiMajorIndex_OpensTheVersionlessUrlTitledByTheNewestMajor()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -141,8 +183,7 @@ public class OpenApiGeneratorMultiVersionTests
 
 		entry.Should().NotBeNull();
 		entry!.Url.Should().Be("/api/elasticsearch");
-		entry.LatestUrl.Should().Be("/api/elasticsearch/v9");
-		entry.OpenUrl.Should().Be("/api/elasticsearch/v9");
+		entry.Title.Should().Be("Elasticsearch 9");
 	}
 
 	[Test]
@@ -172,8 +213,8 @@ public class OpenApiGeneratorMultiVersionTests
 		var entry = generator.CatalogEntry("cloud-serverless", apiConfig, resolved);
 
 		entry.Should().NotBeNull();
-		entry!.LatestUrl.Should().BeNull();
-		entry.OpenUrl.Should().Be("/api/cloud-serverless");
+		entry!.Url.Should().Be("/api/cloud-serverless");
+		entry.Title.Should().Be("Serverless main");
 	}
 
 	[Test]
@@ -196,15 +237,14 @@ public class OpenApiGeneratorMultiVersionTests
 			repository: "elastic/serverless-api-specification"
 		);
 
-		var documents = (await generator.ResolveDocumentsForProduct(
+		var resolved = await generator.ResolveDocumentsForProduct(
 			"cloud-serverless",
 			apiConfig,
 			TestContext.Current!.Execution.CancellationToken
-		)).Documents;
+		);
 
-		documents.Should().ContainSingle();
-		documents[0].Version.Moniker.Should().Be("main");
-		ApiUrlBuilder.ProductSuffix("cloud-serverless", documents[0].Version.Moniker).Should().Be("cloud-serverless");
+		resolved.Documents.Should().ContainSingle().Which.Version.Moniker.Should().Be("main");
+		resolved.Routes.Suffixes("main").Should().Equal("cloud-serverless");
 	}
 
 	[Test]
@@ -324,8 +364,12 @@ public class OpenApiGeneratorMultiVersionTests
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var versions = root.NavigationItems.Should().AllBeOfType<LandingNavigationItem>().Subject.ToArray();
-		versions.Select(v => v.Url).Should().BeEquivalentTo(["/api/elasticsearch", "/api/elasticsearch/v9", "/api/elasticsearch/v8"]);
+		versions
+			.Select(v => v.Url)
+			.Should()
+			.BeEquivalentTo(["/api/elasticsearch/next", "/api/elasticsearch", "/api/elasticsearch/v9", "/api/elasticsearch/v8"]);
 		versions.Where(v => !v.Hidden).Select(v => v.Url).Should().Equal("/api/elasticsearch");
+		root.NavigationTitle.Should().Be("Elasticsearch 9", "the versionless tree titles the API");
 
 		// the generator renders from the trees the section mounted, so the build never builds a tree twice
 		var trees = await generator.TreesFor(
@@ -333,7 +377,7 @@ public class OpenApiGeneratorMultiVersionTests
 			context.Configuration.ApiConfigurations!["elasticsearch"],
 			TestContext.Current!.Execution.CancellationToken
 		);
-		trees.Navigations.Should().Equal(versions);
+		trees.Trees.Select(t => t.Navigation).Should().Equal(versions);
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "index.html")).Should().BeTrue();
 	}
@@ -393,14 +437,15 @@ public class OpenApiGeneratorMultiVersionTests
 			.BeEquivalentTo(
 				new Dictionary<string, string>
 				{
-					["main"] = "api/elasticsearch",
-					["9"] = "api/elasticsearch/v9",
+					["main"] = "api/elasticsearch/next",
+					["9"] = "api/elasticsearch",
 					["8"] = "api/elasticsearch/v8"
 				},
 				"the API Explorer states where each version lives"
 			);
-		links.Versions.Where(v => !v.Hidden).Select(v => v.Name).Should().Equal("main");
-		links.Versions.Where(v => v.Current).Select(v => v.Name).Should().Equal("main");
+		links.Versions.Where(v => !v.Hidden).Select(v => v.Name).Should().Equal("9");
+		links.Versions.Where(v => v.Current).Select(v => v.Name).Should().Equal("9");
+		links.Versions.Single(v => v.Name == "main").Hidden.Should().BeTrue();
 		var all = (1UL << links.Versions.Length) - 1;
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("", all), "every version has a landing page");
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("operation/operation-ping", all), "one entry, not one per version");
@@ -430,7 +475,7 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public async Task FloatingSection_WithoutAMainDocument_IsHidden()
+	public async Task FloatingSection_WithoutAMainDocument_ShowsTheNewestMajor()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -457,7 +502,38 @@ public class OpenApiGeneratorMultiVersionTests
 			TestContext.Current!.Execution.CancellationToken
 		);
 		trees.Resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
-		root.Hidden.Should().BeTrue("no main document renders no page at the unversioned URL");
+		root.Hidden.Should().BeFalse("the newest major owns the unversioned URL");
+	}
+
+	[Test]
+	public async Task FloatingSection_NewestMajorFailsToLoad_IsHiddenAndNoOlderMajorTakesItsUrl()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			missingVersionsAreUnreadable: true,
+			("main", SpecDocument("Elasticsearch main")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(generator);
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var root = section.CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var trees = await generator.TreesFor(
+			"elasticsearch",
+			context.Configuration.ApiConfigurations!["elasticsearch"],
+			TestContext.Current!.Execution.CancellationToken
+		);
+		trees.Trees.Select(t => t.Suffix).Should().BeEquivalentTo(["elasticsearch/next", "elasticsearch/v8"]);
+		root.Hidden.Should().BeTrue("the declared newest major did not load, so nothing renders at the unversioned URL");
 	}
 
 	[Test]
@@ -520,7 +596,14 @@ public class OpenApiGeneratorMultiVersionTests
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "index.html")).Should().BeTrue();
+		var files = context.WriteFileSystem.File;
+		// the catalog titles every page's API switcher with the newest major, so only the absence of main's title tells the trees apart
+		files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "index.html")).Should().NotContain("Elasticsearch main");
+		files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "v9", "index.html")).Should().NotContain("Elasticsearch main");
+		files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "next", "index.html")).Should().Contain("Elasticsearch main");
+		files.Exists(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-ping", "index.html")).Should().BeTrue();
+		files.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v9", "operation", "operation-ping", "index.html")).Should().BeTrue();
+		files.Exists(Path.Join(outputRoot, "api", "elasticsearch", "next", "operation", "operation-ping", "index.html")).Should().BeTrue();
 		context
 			.WriteFileSystem
 			.File
@@ -556,6 +639,7 @@ public class OpenApiGeneratorMultiVersionTests
 			.BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch.md")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v9.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "next.md")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8.md")).Should().BeTrue();
 		context
 			.WriteFileSystem
@@ -563,6 +647,37 @@ public class OpenApiGeneratorMultiVersionTests
 			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "operation", "operation-ping.md"))
 			.Should()
 			.BeTrue();
+	}
+
+	[Test]
+	public async Task Generate_SupplementalFileForTheNewestMajor_IsReportedOnceForBothCopies()
+	{
+		var collector = new RecordingDiagnosticsCollector();
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		var apiFolder = Path.Join(context.DocumentationSourceDirectory.FullName, "api", "elasticsearch");
+		_ = context.ReadFileSystem.Directory.CreateDirectory(apiFolder);
+		context.ReadFileSystem.File.WriteAllText(Path.Join(apiFolder, "op-missing.v9.md"), "# Missing\n");
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		collector
+			.Diagnostics
+			.Where(d => d.Message.Contains("op-missing", StringComparison.Ordinal))
+			.Select(d => d.Message)
+			.Should()
+			.ContainSingle("the /v9 copy reads the same file and does not report it again")
+			.Which
+			.Should()
+			.Be("API supplemental file 'op-missing.v9.md' does not match any operationId in version 9");
 	}
 
 	[Test]
@@ -596,23 +711,22 @@ public class OpenApiGeneratorMultiVersionTests
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
-		var shared = context
-			.WriteFileSystem
-			.File
-			.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-ping", "index.html"));
+		var files = context.WriteFileSystem.File;
+		var shared = files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-ping", "index.html"));
 		shared.Should().Contain("href=\"/api/elasticsearch/v8/operation/operation-ping\"");
-		shared.Should().Contain("href=\"/api/elasticsearch/v9/operation/operation-ping\"");
-		var mainOnly = context
-			.WriteFileSystem
-			.File
-			.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-newop", "index.html"));
+		shared.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-ping\"");
+		var mainOnly = files.ReadAllText(
+			Path.Join(outputRoot, "api", "elasticsearch", "next", "operation", "operation-newop", "index.html")
+		);
 		mainOnly.Should().Contain("href=\"/api/elasticsearch/v8\"");
+		mainOnly.Should().Contain("href=\"/api/elasticsearch\"");
 		mainOnly.Should().NotContain("/api/elasticsearch/v8/operation/operation-newop");
-		var older = context
-			.WriteFileSystem
-			.File
-			.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "v8", "operation", "operation-ping", "index.html"));
+		var older = files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "v8", "operation", "operation-ping", "index.html"));
 		older.Should().Contain("href=\"/api/elasticsearch/operation/operation-ping\"");
+		// the numbered copy of the newest major keeps its reader on its own URLs
+		var numbered = files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "v9", "operation", "operation-ping", "index.html"));
+		numbered.Should().Contain("href=\"/api/elasticsearch/v9/operation/operation-ping\"");
+		numbered.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-ping\"");
 	}
 
 	[Test]
@@ -645,7 +759,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var root = Path.Join(outputRoot, "api", "elasticsearch");
 		files.Exists(Path.Join(root, "v9", "topic", "topic-kibana-spaces", "index.html")).Should().BeFalse();
 		var topic = files.ReadAllText(Path.Join(root, "v8", "topic", "topic-kibana-spaces", "index.html"));
-		topic.Should().Contain("href=\"/api/elasticsearch/v9/spaces\"");
+		topic.Should().Contain("href=\"/api/elasticsearch/spaces\"");
 		var child = files.ReadAllText(Path.Join(root, "v9", "spaces", "index.html"));
 		child.Should().Contain("href=\"/api/elasticsearch/v8/topic/topic-kibana-spaces\"");
 	}
@@ -680,7 +794,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var root = Path.Join(outputRoot, "api", "elasticsearch");
 		files.Exists(Path.Join(root, "v9", "authentication", "index.html")).Should().BeFalse();
 		var authentication = files.ReadAllText(Path.Join(root, "v8", "authentication", "index.html"));
-		authentication.Should().Contain("href=\"/api/elasticsearch/v9/auth\"");
+		authentication.Should().Contain("href=\"/api/elasticsearch/auth\"");
 		var child = files.ReadAllText(Path.Join(root, "v9", "auth", "index.html"));
 		child.Should().Contain("href=\"/api/elasticsearch/v8/authentication\"");
 	}

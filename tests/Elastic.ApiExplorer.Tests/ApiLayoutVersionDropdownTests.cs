@@ -57,7 +57,7 @@ public class ApiLayoutVersionDropdownTests
 	[Arguments("8", "Elasticsearch API v8")]
 	public void CreateGlobalLayoutModel_NamesTheSelectedVersionInTheBreadcrumb(string selectedMoniker, string expected)
 	{
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], selectedMoniker);
+		var items = ApiVersionSwitcher.Build("", TestHelpers.EsRoutes, ["main", "9", "8"], TestHelpers.EsRoutes.Suffix(selectedMoniker));
 
 		var layout = CreateLayout(items: items);
 
@@ -73,7 +73,7 @@ public class ApiLayoutVersionDropdownTests
 		A.CallTo(() => operation.NavigationTitle).Returns("Run a search");
 		A.CallTo(() => operation.Parent).Returns(landing);
 		A.CallTo(() => operation.NavigationRoot).Returns(landing);
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "9");
+		var items = ApiVersionSwitcher.Build("", TestHelpers.EsRoutes, ["main", "9", "8"], TestHelpers.EsRoutes.Suffix("9"));
 
 		var layout = CreateLayout(items: items, current: operation);
 
@@ -134,7 +134,8 @@ public class ApiLayoutVersionDropdownTests
 		);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var switcherItems = items ?? ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
+		var switcherItems = items
+			?? ApiVersionSwitcher.Build("", TestHelpers.EsRoutes, ["main", "9", "8"], TestHelpers.EsRoutes.Suffix("main"));
 		var renderContext = new ApiRenderContext(
 			context,
 			new OpenApiDocument { Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.0.0" } },

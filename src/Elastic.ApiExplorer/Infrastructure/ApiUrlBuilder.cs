@@ -19,13 +19,6 @@ public static partial class ApiUrlBuilder
 	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/{apiUrlSuffix}";
 
 	/// <summary>
-	/// URL path suffix for one API product version: <c>{key}</c> for <c>main</c>,
-	/// <c>{key}/v{N}</c> for released numeric majors from the version index.
-	/// </summary>
-	public static string ProductSuffix(string apiKey, string versionMoniker) =>
-		versionMoniker == "main" ? apiKey : $"{apiKey}/v{versionMoniker}";
-
-	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
 	/// <c>operation-{id}</c> when an operation id is present, otherwise derived from the route.
 	/// Dots become hyphens so a trailing <c>.json</c> stays a path segment.

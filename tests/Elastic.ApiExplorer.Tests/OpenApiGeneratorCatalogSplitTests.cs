@@ -99,8 +99,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var trees = await generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		trees.Select(t => t.Moniker).Should().Equal("main", "8");
-		ApiVersions.DefaultTree(trees.Select(t => t.Moniker)).Should().Be("main");
+		trees.Select(t => $"{t.Moniker} at {t.Suffix}").Should().Equal("main at elasticsearch/next", "8 at elasticsearch");
 	}
 
 	[Test]
@@ -273,8 +272,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var trees = await generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		trees.Select(t => t.Moniker).Should().Equal("9");
-		ApiVersions.DefaultTree(trees.Select(t => t.Moniker)).Should().Be("9");
+		trees.Select(t => $"{t.Moniker} at {t.Suffix}").Should().Equal("9 at elasticsearch");
 	}
 
 	[Test]

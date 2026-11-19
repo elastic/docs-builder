@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Floating;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
@@ -25,7 +26,8 @@ public class ApiLinkSectionsTests
 			v => v.Moniker,
 			v => (IReadOnlyDictionary<string, IReadOnlyList<string>>)v.Names.ToDictionary(n => n, _ => (IReadOnlyList<string>)v.Names)
 		);
-		return new ApiProductTrees(new ResolvedProductDocuments(documents, null), [], null, pageNames);
+		var routes = ApiVersionRoutes.For("elasticsearch", versions.Select(v => v.Moniker));
+		return new ApiProductTrees(new ResolvedProductDocuments(routes, documents, null), [], null, pageNames);
 	}
 
 	[Test]
@@ -36,12 +38,12 @@ public class ApiLinkSectionsTests
 			("8", ["operation/operation-search-1", "operation/operation-search"])
 		);
 
-		var links = ApiLinkSections.Create("elasticsearch", trees);
+		var links = ApiLinkSections.Create(trees);
 
 		links.TryResolvePage("main", "operation/operation-search-1", out var main).Should().BeTrue();
-		main.Should().Be("api/elasticsearch/operation/operation-search");
+		main.Should().Be("api/elasticsearch/next/operation/operation-search");
 		links.TryResolvePage("8", "operation/operation-search", out var v8).Should().BeTrue();
-		v8.Should().Be("api/elasticsearch/v8/operation/operation-search-1");
+		v8.Should().Be("api/elasticsearch/operation/operation-search-1");
 	}
 
 	[Test]
@@ -49,7 +51,7 @@ public class ApiLinkSectionsTests
 	{
 		var trees = Trees(("main", ["operation/operation-search"]), ("8", ["operation/operation-search", "operation/operation-search-1"]));
 
-		var links = ApiLinkSections.Create("elasticsearch", trees);
+		var links = ApiLinkSections.Create(trees);
 
 		links.TryResolvePage("8", "operation/operation-search-1", out _).Should().BeTrue();
 		links.TryResolvePage("main", "operation/operation-search-1", out _).Should().BeFalse();

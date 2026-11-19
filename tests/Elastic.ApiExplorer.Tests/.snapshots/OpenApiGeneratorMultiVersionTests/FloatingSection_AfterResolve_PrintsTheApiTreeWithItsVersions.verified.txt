@@ -1,4 +1,8 @@
 /api/elasticsearch
+  /api/elasticsearch/next [hidden]
+    /api/elasticsearch/next
+      /api/elasticsearch/next/group/endpoint-core
+        /api/elasticsearch/next/operation/operation-ping
   /api/elasticsearch
     /api/elasticsearch
       /api/elasticsearch/group/endpoint-core

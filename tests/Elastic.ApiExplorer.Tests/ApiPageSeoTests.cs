@@ -143,9 +143,9 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 			Product = new Product { Id = "elasticsearch", DisplayName = displayName },
 			VersionSwitcherItems = ApiVersionSwitcher.Build(
 				"/api",
-				"elasticsearch",
+				TestHelpers.EsRoutes,
 				["main", "9", "8"],
-				version == "latest" ? "main" : version.TrimStart('v')
+				TestHelpers.EsRoutes.Suffix(version == "latest" ? "main" : version.TrimStart('v'))
 			)
 		};
 

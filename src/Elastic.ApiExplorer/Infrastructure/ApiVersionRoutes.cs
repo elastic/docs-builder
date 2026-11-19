@@ -11,12 +11,8 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public sealed record ApiVersionRoutes(string ApiKey, string? DefaultMoniker)
 {
-	/// <summary>Routes for the versions an API declares: the newest numeric major is the default, else <c>main</c>, else the first.</summary>
-	public static ApiVersionRoutes For(string apiKey, IEnumerable<string> monikers)
-	{
-		var all = monikers.ToList();
-		return new(apiKey, ApiVersions.LatestMajor(all) ?? (all.Contains("main") ? "main" : all.FirstOrDefault()));
-	}
+	/// <summary>Routes for the versions an API declares, with <see cref="ApiVersions.DefaultTree"/> as the default.</summary>
+	public static ApiVersionRoutes For(string apiKey, IEnumerable<string> monikers) => new(apiKey, ApiVersions.DefaultTree(monikers));
 
 	/// <summary>The URL suffix after <c>/api/</c> that links to <paramref name="moniker"/>.</summary>
 	public string Suffix(string moniker) =>

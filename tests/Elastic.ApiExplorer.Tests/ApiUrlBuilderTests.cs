@@ -10,14 +10,6 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiUrlBuilderTests
 {
 	[Test]
-	[Arguments("elasticsearch", "main", "elasticsearch")]
-	[Arguments("elasticsearch", "9", "elasticsearch/v9")]
-	[Arguments("elasticsearch", "8", "elasticsearch/v8")]
-	[Arguments("kibana", "10", "kibana/v10")]
-	public void ProductSuffix_MapsVersionMonikersToPathSuffixes(string apiKey, string versionMoniker, string expected) =>
-		ApiUrlBuilder.ProductSuffix(apiKey, versionMoniker).Should().Be(expected);
-
-	[Test]
 	[Arguments("", "elasticsearch", "/api/elasticsearch")]
 	[Arguments("", "elasticsearch/v9", "/api/elasticsearch/v9")]
 	public void ProductRoot_UsesVersionAwareSuffix(string urlPathPrefix, string apiUrlSuffix, string expected) =>

@@ -8,11 +8,16 @@ namespace Elastic.ApiExplorer.Infrastructure;
 
 public static class ApiVersionSwitcher
 {
+	/// <summary>
+	/// One entry per version, for the page tree served at <paramref name="currentSuffix"/>. Each entry links to the
+	/// version's URL from <paramref name="routes"/>, except the selected one, which links to the current tree's own root,
+	/// so the numbered copy of the default major stays on its own URLs.
+	/// </summary>
 	public static IReadOnlyList<ApiVersionSwitcherItem> Build(
 		string? urlPathPrefix,
-		string apiKey,
+		ApiVersionRoutes routes,
 		IReadOnlyList<string> monikers,
-		string currentMoniker,
+		string currentSuffix,
 		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>? pageNames = null
 	)
 	{
@@ -22,15 +27,16 @@ public static class ApiVersionSwitcher
 		var latest = ApiVersions.LatestMajor(monikers);
 		return monikers
 			.OrderByDescending(ApiVersions.Recency)
+			.Select(m => (Moniker: m, Selected: routes.Suffixes(m).Contains(currentSuffix)))
 			.Select(
-				m => new ApiVersionSwitcherItem(
-					Label: LabelFor(m, latest),
-					Url: ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m)),
-					Selected: m == currentMoniker,
-					ShortLabel: ShortLabelFor(m)
+				v => new ApiVersionSwitcherItem(
+					Label: LabelFor(v.Moniker, latest),
+					Url: ApiUrlBuilder.ProductRoot(urlPathPrefix, v.Selected ? currentSuffix : routes.Suffix(v.Moniker)),
+					Selected: v.Selected,
+					ShortLabel: ShortLabelFor(v.Moniker)
 				)
 				{
-					PageNames = pageNames is not null && pageNames.TryGetValue(m, out var names)
+					PageNames = pageNames is not null && pageNames.TryGetValue(v.Moniker, out var names)
 						? names
 						: FrozenDictionary<string, IReadOnlyList<string>>.Empty
 				}
@@ -40,7 +46,7 @@ public static class ApiVersionSwitcher
 
 	private static string ShortLabelFor(string moniker) => moniker == "main" ? moniker : $"v{moniker}";
 
-	/// <summary>The highest numeric major reads as the latest. <c>main</c> keeps its name and its unversioned link.</summary>
+	/// <summary>The highest numeric major reads as the latest. <c>main</c> keeps its name.</summary>
 	private static string LabelFor(string moniker, string? latest) =>
 		moniker == "main" ? moniker : moniker == latest ? $"v{moniker} (latest)" : $"v{moniker}";
 
