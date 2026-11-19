@@ -96,4 +96,58 @@ describe('menu placement on a phone', () => {
             chevron.top
         )
     })
+
+    describe('in a container the menu must stay inside', () => {
+        // Copy page wrapped to the left of its row, as at a 1280px laptop: end-aligned, the menu still fits on the
+        // screen (so nothing flips it) but reaches left of the row, over the sidebar.
+        const toolbar = rect(200, 90, 160, 40)
+        const chevron = rect(220, 96, 32, 30)
+        const menuSize = { width: 120, height: 100 }
+
+        function inToolbar(boundary: string | null) {
+            document.body.innerHTML = `
+                <div id="toolbar">
+                    <button id="chevron" popovertarget="menu"></button>
+                    <div id="menu" popover data-placement="bottom-end"></div>
+                </div>`
+            const menu = document.getElementById('menu')!
+            if (boundary) menu.dataset.boundary = boundary
+            document.getElementById('toolbar')!.getBoundingClientRect = () =>
+                toolbar
+            document.getElementById('chevron')!.getBoundingClientRect = () =>
+                chevron
+            menu.getBoundingClientRect = () =>
+                rect(0, 0, menuSize.width, menuSize.height)
+            for (const [name, value] of [
+                ['offsetWidth', menuSize.width],
+                ['offsetHeight', menuSize.height],
+            ] as const)
+                Object.defineProperty(menu, name, { configurable: true, value })
+            return menu
+        }
+
+        it('without a boundary only the screen limits it, so it reaches left of the row', async () => {
+            const menu = inToolbar(null)
+
+            open(menu)
+            await settle()
+
+            expect(parseFloat(menu.style.left)).toBe(
+                chevron.right - menuSize.width
+            )
+            expect(parseFloat(menu.style.left)).toBeLessThan(toolbar.left)
+        })
+
+        it('slides in from the left edge of the container the boundary names', async () => {
+            const menu = inToolbar('#toolbar')
+
+            open(menu)
+            await settle()
+
+            expect(parseFloat(menu.style.left)).toBe(toolbar.left + 8)
+            expect(
+                parseFloat(menu.style.left) + menuSize.width
+            ).toBeLessThanOrEqual(toolbar.right)
+        })
+    })
 })

@@ -15,11 +15,12 @@ import {
  * ancestor's overflow, stacking context or z-index can clip it, and gives click-outside dismissal and Escape.
  * Floating UI places it beside its anchor, flipping and shifting to stay on screen, and follows the anchor while
  * the menu is open. `data-placement` picks the side (default `bottom-start`); `data-anchor` names the id of an
- * anchor other than the button. `data-hover` also opens the menu while a mouse rests on its button or on the menu
- * itself, and a click on the button keeps it open after the mouse leaves; touch and keyboard still use the click.
- * Choosing a link closes the menu it is in. The menu fires a bubbling
- * `floating:placed` event the first time it is placed; it is invisible, so unfocusable, until then. Listeners are
- * delegated on the document, so they survive htmx swaps.
+ * anchor other than the button; `data-boundary` is a selector for an ancestor the menu must also stay inside
+ * sideways, for a menu whose button can sit at either end of its container. `data-hover` also opens the menu while
+ * a mouse rests on its button or on the menu itself, and a click on the button keeps it open after the mouse
+ * leaves; touch and keyboard still use the click. Choosing a link closes the menu it is in. The menu fires a
+ * bubbling `floating:placed` event the first time it is placed; it is invisible, so unfocusable, until then.
+ * Listeners are delegated on the document, so they survive htmx swaps.
  */
 
 const PLACED = 'data-placed'
@@ -43,6 +44,12 @@ function anchorOf(popover: HTMLElement): HTMLElement | null {
     return invokers(popover)[0] ?? null
 }
 
+/** The ancestor `data-boundary` names, or none: the menu also slides sideways to stay inside it. */
+function boundaryOf(popover: HTMLElement): Element | undefined {
+    const selector = popover.dataset.boundary
+    return (selector && popover.closest(selector)) || undefined
+}
+
 /**
  * Puts `floating` beside `anchor`. Sets `--floating-anchor-width` and `--floating-available-height` on it, so its
  * own CSS decides how wide and tall it may grow.
@@ -50,7 +57,8 @@ function anchorOf(popover: HTMLElement): HTMLElement | null {
 function place(
     anchor: Element,
     floating: HTMLElement,
-    placement: Placement
+    placement: Placement,
+    boundary?: Element
 ): Promise<void> {
     return computePosition(anchor, floating, {
         strategy: 'fixed',
@@ -58,7 +66,9 @@ function place(
         middleware: [
             offset(6),
             flip({ padding: VIEWPORT_PADDING }),
-            shift({ padding: VIEWPORT_PADDING }),
+            // Only the sideways slide knows the boundary: a menu opens below its button, outside a container only as
+            // tall as that button, so flipping and sizing keep to the screen.
+            shift({ padding: VIEWPORT_PADDING, boundary }),
             size({
                 padding: VIEWPORT_PADDING,
                 apply({ availableHeight, rects, elements }) {
@@ -90,10 +100,11 @@ function place(
 function track(
     anchor: Element,
     floating: HTMLElement,
-    placement: Placement
+    placement: Placement,
+    boundary?: Element
 ): () => void {
     return autoUpdate(anchor, floating, () => {
-        void place(anchor, floating, placement)
+        void place(anchor, floating, placement, boundary)
     })
 }
 
@@ -129,7 +140,10 @@ function onToggle(event: Event) {
     if (!open) openedByHover.delete(popover)
     const anchor = anchorOf(popover)
     if (!open || !anchor) return
-    stopTracking.set(popover, track(anchor, popover, placementOf(popover)))
+    stopTracking.set(
+        popover,
+        track(anchor, popover, placementOf(popover), boundaryOf(popover))
+    )
 }
 
 /** Closes the open popovers inside `root` and stops tracking them. Removing an open popover fires no `toggle`, so whoever removes a subtree calls this first. */
