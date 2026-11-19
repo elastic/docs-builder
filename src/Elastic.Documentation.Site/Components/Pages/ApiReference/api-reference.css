@@ -1098,8 +1098,7 @@ button.response-status-toggle:focus {
 	overflow: visible;
 }
 
-.responses-list .property-list dt > .property-anchor::before,
-.responses-list .property-list dt > .property-anchor::after {
+.responses-list .property-list dt > .property-anchor {
 	z-index: 4;
 }
 
@@ -1234,38 +1233,29 @@ button.response-status-toggle:focus {
 		margin: 0;
 		line-height: 1.5rem;
 
+		/* Icon-only link: the anchor is the icon's box, so the "Copy link" tooltip centres on it. It is out of flow, and
+		   the name below keeps its place through the margin that replaces the gap the anchor used to take. */
 		> a.property-anchor {
-			display: inline-flex;
-			flex: 0 0 auto;
-			align-items: center;
-			width: fit-content;
-			max-width: 100%;
-			overflow: visible;
-			text-decoration: none;
-		}
-
-		/* The anchor stays an in-flow flex item, so its row gap is unchanged. ::before is the icon's hit area,
-		   gap included, and ::after the icon, both placed against the dt like the icon element they replace. */
-		> a.property-anchor::before {
-			content: '';
 			position: absolute;
 			right: 100%;
 			top: 1rem;
 			z-index: 2;
+			display: block;
 			box-sizing: content-box;
 			width: 1.5rem;
 			height: 1.5rem;
 			padding-right: var(--space-2);
+			opacity: 0;
+			transition: opacity 0.15s ease;
+			text-decoration: none;
+		}
+
+		> a.property-anchor + code {
+			margin-left: var(--space-2);
 		}
 
 		> a.property-anchor::after {
 			content: '';
-			position: absolute;
-			right: calc(100% + var(--space-2));
-			top: 1rem;
-			z-index: 2;
-			opacity: 0;
-			transition: opacity 0.15s ease;
 			display: block;
 			box-sizing: border-box;
 			width: 1.5rem;
@@ -1279,9 +1269,9 @@ button.response-status-toggle:focus {
 			background-size: 12px 12px;
 		}
 
-		&:hover > .property-anchor::after,
-		> .property-anchor:hover::after,
-		> .property-anchor:focus-visible::after {
+		&:hover > .property-anchor,
+		> .property-anchor:hover,
+		> .property-anchor:focus-visible {
 			opacity: 1;
 		}
 
@@ -1310,9 +1300,9 @@ button.response-status-toggle:focus {
 		}
 	}
 
-	.property-item:hover > dt > .property-anchor::after,
-	.query-param:hover > dt > .property-anchor::after,
-	.path-param:hover > dt > .property-anchor::after {
+	.property-item:hover > dt > .property-anchor,
+	.query-param:hover > dt > .property-anchor,
+	.path-param:hover > dt > .property-anchor {
 		opacity: 1;
 	}
 
