@@ -186,7 +186,7 @@ public partial class ConfigurationFileProvider : IDisposable
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
 		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
-		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
+		(SearchFile, SearchFileSourceName) = CreateTemporaryConfigurationFileFrom("search.yml", "synonyms.yml");
 		RelatedLearningFile = CreateTemporaryConfigurationFile("related-learning.yml");
 	}
 
@@ -205,6 +205,9 @@ public partial class ConfigurationFileProvider : IDisposable
 	public IFileInfo LegacyUrlMappingsFile { get; }
 
 	public IFileInfo SearchFile { get; }
+
+	/// <summary>The name of the file <see cref="SearchFile"/> was copied from: <c>search.yml</c>, or the legacy <c>synonyms.yml</c> it falls back to.</summary>
+	public string SearchFileSourceName { get; }
 
 	public IFileInfo RelatedLearningFile { get; }
 
@@ -375,16 +378,20 @@ public partial class ConfigurationFileProvider : IDisposable
 		}
 	}
 
-	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
+	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null) =>
+		CreateTemporaryConfigurationFileFrom(fileName, fallback).File;
+
+	private (IFileInfo File, string SourceName) CreateTemporaryConfigurationFileFrom(string fileName, string? fallback = null)
 	{
-		using var stream = GetLocalOrEmbedded(fileName, fallback);
+		var (reader, sourceName) = GetLocalOrEmbedded(fileName, fallback);
+		using var stream = reader;
 		var context = stream.ReadToEnd();
 		var fi = _fileSystem.FileInfo.New(Path.Join(TemporaryDirectory.FullName, fileName));
 		_fileSystem.File.WriteAllText(fi.FullName, context);
-		return fi;
+		return (fi, sourceName);
 	}
 
-	private StreamReader GetLocalOrEmbedded(string fileName, string? fallback = null)
+	private (StreamReader Reader, string SourceName) GetLocalOrEmbedded(string fileName, string? fallback = null)
 	{
 		var localPath = GetLocalPath(fileName);
 		if (ConfigurationSource == ConfigurationSource.Local)
@@ -392,13 +399,13 @@ public partial class ConfigurationFileProvider : IDisposable
 			if (_fileSystem.File.Exists(localPath))
 			{
 				var reader = _fileSystem.File.OpenText(localPath);
-				return reader;
+				return (reader, fileName);
 			}
 			var fallbackPath = fallback is not null ? GetLocalPath(fallback) : null;
 			if (fallbackPath is not null && _fileSystem.File.Exists(fallbackPath))
 			{
 				var reader = _fileSystem.File.OpenText(fallbackPath);
-				return reader;
+				return (reader, fallback!);
 			}
 			throw new Exception($"Can not read {fileName} in directory {LocalConfigurationDirectory}");
 		}
@@ -409,26 +416,33 @@ public partial class ConfigurationFileProvider : IDisposable
 			if (_fileSystem.File.Exists(appDataPath))
 			{
 				var reader = _fileSystem.File.OpenText(appDataPath);
-				return reader;
+				return (reader, fileName);
 			}
 			var fallbackPath = fallback is not null ? GetAppDataPath(fallback) : null;
 			if (fallbackPath is not null && _fileSystem.File.Exists(fallbackPath))
 			{
 				var reader = _fileSystem.File.OpenText(fallbackPath);
-				return reader;
+				return (reader, fallback!);
 			}
 			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
 		}
 		return GetEmbeddedStream(fileName, fallback);
 	}
 
-	private StreamReader GetEmbeddedStream(string fileName, string? fallback = null)
+	private (StreamReader Reader, string SourceName) GetEmbeddedStream(string fileName, string? fallback = null)
 	{
 		var assembly = typeof(ConfigurationFileProvider).Assembly;
-		var resourceStream = assembly.GetManifestResourceStream($"{_assemblyName}.{fileName}")
-			?? (fallback is not null ? assembly.GetManifestResourceStream($"{_assemblyName}.{fallback}") : null)
-			?? throw new Exception($"Can not read embedded resource {fileName}");
-		return new StreamReader(resourceStream, leaveOpen: false);
+		var sourceName = fileName;
+		var resourceStream = assembly.GetManifestResourceStream($"{_assemblyName}.{fileName}");
+		if (resourceStream is null && fallback is not null)
+		{
+			sourceName = fallback;
+			resourceStream = assembly.GetManifestResourceStream($"{_assemblyName}.{fallback}");
+		}
+		return (new StreamReader(
+			resourceStream ?? throw new Exception($"Can not read embedded resource {fileName}"),
+			leaveOpen: false
+		), sourceName);
 	}
 
 	public static string AppDataConfigurationDirectory { get; } = Path.Join(Paths.ApplicationData.FullName, "config-clone", "config");

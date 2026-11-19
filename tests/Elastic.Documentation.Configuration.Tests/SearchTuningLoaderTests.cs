@@ -35,6 +35,43 @@ public class SearchTuningLoaderTests
 	public void Load_SearchFile_RecordsItsName() => Load("synonyms: []\n").SourceFileName.Should().Be("search.yml");
 
 	[Test]
+	public void Load_LegacySynonymsFile_RecordsTheLegacyNameNotTheCopy()
+	{
+		using var provider = GoldenConfig.CreateProvider(GoldenConfig.Search, "synonyms: []\n", replaceStoredAs: "synonyms.yml");
+
+		var tuning = SearchTuningLoader.Load(provider);
+
+		tuning.SourceFileName.Should().Be("synonyms.yml");
+		tuning.Check("search.yml").Findings.Should().ContainSingle().Which.Message.Should().Contain("synonyms.yml");
+	}
+
+	[Test]
+	public void Load_FileThatParsesButFailsToMap_ThrowsTheMapExceptionAsMainDoes()
+	{
+		using var provider = GoldenConfig.CreateProvider(GoldenConfig.Search, "rules:\n  - rule_id: r1\n    actions:\n");
+
+		var act = () => SearchTuningLoader.Load(provider);
+
+		act.Should().Throw<NullReferenceException>();
+	}
+
+	[Test]
+	public void Load_FileThatDoesNotParse_ThrowsTheParsersException()
+	{
+		using var provider = GoldenConfig.CreateProvider(GoldenConfig.Search, "synonyms: [a, b\n");
+
+		var act = () => SearchTuningLoader.Load(provider);
+
+		act.Should().Throw<Exception>().Which.Should().NotBeOfType<InvalidOperationException>();
+	}
+
+	[Test]
+	[Arguments("rules:\n  - rule_id: r1\n    type: pinned\n    actions:\n      ids: [x]\n")]
+	[Arguments("rules:\n  - rule_id: r1\n    type: pinned\n    criteria: []\n    actions:\n      ids: [x]\n")]
+	public void Check_RuleWithoutCriteria_IsAWarning(string yaml) =>
+		Load(yaml).Check("search.yml").Findings.Should().ContainSingle().Which.Message.Should().Be("Query rule 'r1' has no criteria.");
+
+	[Test]
 	public void Check_UnknownRuleType_IsAWarningThatReadsTheFileAsPinned()
 	{
 		var tuning = Load(
