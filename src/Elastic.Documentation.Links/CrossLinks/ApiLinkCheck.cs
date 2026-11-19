@@ -36,8 +36,9 @@ public static class ApiLinkCheck
 		if (!legacy || suppressions.ShouldSuppress(HintType.ApiLinkLegacyPrefix))
 			return null;
 
-		var fragment = canonical.IndexOf('#') is var hash and >= 0 ? canonical[hash..] : string.Empty;
+		// The page path drops the query and fragment, so the suggestion takes them back from the link.
+		var suffix = canonical.IndexOfAny(['?', '#']) is var at and >= 0 ? canonical[at..] : string.Empty;
 		return $"API link '{canonical}' uses the legacy {ApiLegacyRedirects.LegacyPrefix} prefix. After the API Explorer cutover this page lives at "
-			+ $"'https://www.elastic.co{page}{fragment}'.";
+			+ $"'https://www.elastic.co{page}{suffix}'.";
 	}
 }
