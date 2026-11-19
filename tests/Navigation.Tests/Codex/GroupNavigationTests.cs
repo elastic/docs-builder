@@ -124,7 +124,7 @@ public class GroupNavigationTests
 	private static CodexNavigation CreateMinimalCodexNavigation()
 	{
 		// Create a minimal codex navigation for testing GroupLinkLeaf
-		var config = new Documentation.Configuration.Codex.CodexConfiguration { Title = "Test Codex", SitePrefix = "/docs" };
+		var config = new Documentation.Codex.CodexConfiguration { Title = "Test Codex", SitePrefix = "/docs" };
 
 		return new CodexNavigation(
 			config,

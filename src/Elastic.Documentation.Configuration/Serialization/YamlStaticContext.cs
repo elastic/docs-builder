@@ -5,8 +5,8 @@
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
-using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -20,7 +20,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 // Root types only — the SharpYaml source generator transitively discovers every member,
 // collection, and dictionary type reachable from these roots, unlike YamlDotNet's Vecc
 // analyzer, which required every type to be listed explicitly.
-[YamlSerializable(typeof(CodexConfiguration))]
+[YamlSerializable(typeof(CodexConfigurationDto))]
 [YamlSerializable(typeof(AssemblyConfigurationDto))]
 [YamlSerializable(typeof(VersionsConfigDto))]
 [YamlSerializable(typeof(ProductConfigDto))]

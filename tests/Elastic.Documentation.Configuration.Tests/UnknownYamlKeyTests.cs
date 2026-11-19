@@ -4,7 +4,8 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
-using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
@@ -192,7 +193,7 @@ public class UnknownYamlKeyTests
 	{
 		var path = System.IO.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "codex.example.yml");
 
-		var config = CodexConfiguration.Deserialize(File.ReadAllText(path), path);
+		var config = CodexSiteLoader.Deserialize(File.ReadAllText(path), path);
 
 		config.Groups.Should().ContainSingle().Which.Id.Should().Be("docs");
 	}

@@ -4,7 +4,8 @@
 
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
-using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using RazorSlices;

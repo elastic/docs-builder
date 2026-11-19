@@ -5,7 +5,8 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
-using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
@@ -158,13 +159,13 @@ public class CodexNavigationTests() : CodexNavigationTestBase()
 	[Test]
 	public void SlashSitePrefix_TreatedAsRoot()
 	{
-		// When loading from YAML, "/" gets normalized to empty by CodexConfiguration.Deserialize
+		// When loading from YAML, "/" gets normalized to empty by CodexSiteLoader.Deserialize
 		// language=yaml
 		var yaml = """
 		           title: "Test Codex"
 		           site_prefix: /
 		           """;
-		var config = CodexConfiguration.Deserialize(yaml);
+		var config = CodexSiteLoader.Deserialize(yaml);
 		CodexDocumentationSetReference[] docSets = [new CodexDocumentationSetReference { Name = "repo-a", Branch = "main" }];
 		var docSetNavigations = CreateMockDocSetNavigations(["repo-a"]);
 		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
