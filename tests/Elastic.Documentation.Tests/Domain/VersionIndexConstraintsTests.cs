@@ -28,10 +28,12 @@ public class VersionIndexConstraintsTests
 		Violations(Index(("main", "main"), ("9", "9.5"), ("8", "8.19"))).Should().BeEmpty();
 
 	[Test]
-	public void ANullVersion_IsNotJudged_AsTheReaderAcceptsIt() =>
+	[Arguments("main")]
+	[Arguments("9")]
+	public void ANullVersionOfARecognizedMoniker_IsAnErrorNotAThrow(string key) =>
 		Violations(new VersionIndex([
-			new VersionIndexRepository("elastic/api", [new VersionIndexSpec("openapi.json", [new VersionMoniker("9", null!)])])
-		])).Should().BeEmpty();
+			new VersionIndexRepository("elastic/api", [new VersionIndexSpec("openapi.json", [new VersionMoniker(key, null!)])])
+		])).Should().ContainSingle().Which.Severity.Should().Be(Severity.Error);
 
 	[Test]
 	public void MasterIsAVersionOfMain() => Violations(Index(("main", "master"))).Should().BeEmpty();

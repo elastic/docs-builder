@@ -39,13 +39,13 @@ public static partial class VersionIndexConstraints
 	/// <summary>Monikers that are neither 'main' nor an integer have their own rule and are not judged here.</summary>
 	private static bool KeyMatchesVersion(string key, string? version)
 	{
-		// A JSON `"version": null` is accepted by the reader on main (the entry resolves with a null version), so it is not judged here.
-		if (version is null)
-			return true;
 		if (key == "main")
 			return version is "main" or "master";
 		if (!IsMainOrMajor(key))
 			return true;
+		// A JSON `"version": null` still resolves on main (an empty version segment in the object key), so it is a finding here and never a throw.
+		if (version is null)
+			return false;
 		var dot = version.IndexOf('.', StringComparison.Ordinal);
 		return dot > 0
 			&& version[..dot] == key
