@@ -173,7 +173,8 @@ function onKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape') return
     const target = current()
     // With the pointer elsewhere nothing would clear `dismissed`, and the first hover would show no tooltip.
-    dismissed = target && target === hovered ? target : null
+    // A pointer on a nested target (a chip's count inside the chip) is still inside the dismissed one.
+    dismissed = target && hovered && target.contains(hovered) ? target : null
     hide()
 }
 

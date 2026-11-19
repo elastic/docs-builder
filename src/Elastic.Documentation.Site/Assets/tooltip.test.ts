@@ -205,6 +205,27 @@ describe('tooltips', () => {
         expect(shown()).toBe('Back to top')
     })
 
+    it('stays away after Escape while the pointer moves between a target and a target nested in it', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<div id="chip" tabindex="0" data-tooltip="Long title"><span id="count" data-tooltip="3 languages">3</span></div>`
+        )
+        pointer('pointerover', byId('count'))
+        await vi.advanceTimersByTimeAsync(80)
+        byId('chip').focus()
+        await vi.advanceTimersByTimeAsync(0)
+        expect(shown()).toBe('Long title')
+        document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        )
+
+        pointer('pointerout', byId('count'), { relatedTarget: byId('chip') })
+        pointer('pointerover', byId('chip'), { relatedTarget: byId('count') })
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBeNull()
+    })
+
     it('hides before an htmx swap, so it keeps nothing of the old page', async () => {
         pointer('pointerover', byId('path'))
         await vi.advanceTimersByTimeAsync(80)
