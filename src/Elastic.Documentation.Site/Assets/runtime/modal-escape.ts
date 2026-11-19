@@ -5,6 +5,9 @@
  * key was prevented, and a modal dialog is still open, the dialog gets the request the browser would have made. That is
  * a `cancel` event, then `close()`, so a dialog keeps the platform's way to stay open: cancel its `cancel` event.
  *
+ * An open popover menu (floating.ts) loses its Escape the same way, so it gets `hidePopover()` where the key was prevented.
+ * It takes the key before a dialog does, as the browser's own close requests go to the most recently opened first.
+ *
  * Nothing is stopped or changed while the event runs. Handlers see the key as before; only its lost default is restored.
  */
 type CloseRequestable = HTMLDialogElement & { requestClose?: () => void }
@@ -75,9 +78,40 @@ function requestClose(dialog: CloseRequestable): void {
     }
 }
 
+/**
+ * The open popover the key is for: the one holding the target, else the last one open. A manual popover is left to its
+ * owner, since the browser never closes it on Escape either.
+ */
+function targetPopover(target: EventTarget | null): HTMLElement | null {
+    let open: HTMLElement[]
+    try {
+        open = Array.from(
+            document.querySelectorAll<HTMLElement>(
+                '[popover]:not([popover="manual"]):popover-open'
+            )
+        )
+    } catch {
+        // A browser without `:popover-open` has no popovers to close.
+        return null
+    }
+    const holding =
+        target instanceof Element
+            ? open.find((popover) => popover.contains(target))
+            : undefined
+    return holding ?? open[open.length - 1] ?? null
+}
+
 function onKeydown(event: KeyboardEvent): void {
     // Escape also cancels an IME composition, and a held key repeats: it closes one dialog, not a stack of them.
     if (event.key !== 'Escape' || event.isComposing || event.repeat) return
+    const popover = targetPopover(event.target)
+    if (popover) {
+        setTimeout(() => {
+            if (event.defaultPrevented && popover.matches(':popover-open'))
+                popover.hidePopover()
+        })
+        return
+    }
     const dialog = targetDialog(event.target)
     if (!dialog) return
     // After the event, so that every handler has had its say. A key the browser acted on has already closed the dialog.
