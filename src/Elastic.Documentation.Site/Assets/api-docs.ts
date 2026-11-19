@@ -383,12 +383,26 @@ function initGlobalClickHandlers(): void {
         const apiSection = target.closest<HTMLElement>(API_ROOTS)
         if (!apiSection) return
 
-        if (target.closest('[data-api-back-to-top]')) {
+        const backToTop = target.closest<HTMLElement>('[data-api-back-to-top]')
+        if (backToTop) {
+            // A modified click on the Overview link opens it elsewhere, as any link does.
+            if (
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey
+            )
+                return
             e.preventDefault()
             window.scrollTo({
                 top: 0,
                 behavior: prefersReducedMotion() ? 'auto' : 'smooth',
             })
+            // The address follows, so a reload or a shared link opens at the top rather than the section left behind.
+            const hash = backToTop.getAttribute('href')
+            if (hash?.startsWith('#') && window.location.hash !== hash)
+                history.pushState(null, '', hash)
             return
         }
 

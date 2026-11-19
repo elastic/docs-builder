@@ -91,4 +91,35 @@ describe('section links', () => {
         expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' })
         vi.unstubAllGlobals()
     })
+
+    it('puts the Overview link in the address, so a reload does not reopen the section left behind', () => {
+        mountBar()
+        window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
+        history.replaceState(null, '', '#responses')
+
+        document
+            .querySelector<HTMLAnchorElement>('[data-api-back-to-top]')!
+            .click()
+
+        expect(window.location.hash).toBe('#api-operation-overview')
+    })
+
+    it('leaves a modified click on the Overview link to the browser', () => {
+        mountBar()
+        const scrollTo = vi.fn()
+        window.scrollTo = scrollTo as unknown as typeof window.scrollTo
+        const link = document.querySelector<HTMLAnchorElement>(
+            '[data-api-back-to-top]'
+        )!
+        const click = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            metaKey: true,
+        })
+        link.addEventListener('click', (e) => e.preventDefault())
+
+        link.dispatchEvent(click)
+
+        expect(scrollTo).not.toHaveBeenCalled()
+    })
 })
