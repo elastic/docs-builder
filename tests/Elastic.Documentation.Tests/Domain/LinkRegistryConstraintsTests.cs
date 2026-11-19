@@ -130,6 +130,10 @@ public class LinkRegistryConstraintsTests
 	[Arguments("/elastic/kibana/links.json")]
 	[Arguments("a/b/elastic/kibana/links.json")]
 	[Arguments("elastic/kibana/9.0/links.json")]
+	[Arguments("../elastic/kibana/links.json")]
+	[Arguments("./elastic/kibana/links.json")]
+	[Arguments(" /elastic/kibana/links.json")]
+	[Arguments("a\\b/elastic/kibana/links.json")]
 	public void AnEntryPathThatNamesNeitherLayout_IsReported(string path)
 	{
 		var entry = Entry("kibana", "main", Published, "abc123") with { Path = path };

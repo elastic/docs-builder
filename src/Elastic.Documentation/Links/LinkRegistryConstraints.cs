@@ -87,8 +87,12 @@ public static partial class LinkRegistryConstraints
 		if (path == $"elastic/{repository}/{branch}/links.json")
 			return true;
 		var parts = path?.Split('/');
-		return parts is [var environment, "elastic", var repo, "links.json"] && environment.Length > 0 && repo == repository;
+		return parts is [var environment, "elastic", var repo, "links.json"] && IsEnvironmentDirectory(environment) && repo == repository;
 	}
+
+	// the codex reader joins the path onto its clone folder, so the environment must be one plain directory name
+	private static bool IsEnvironmentDirectory(string name) =>
+		!string.IsNullOrWhiteSpace(name) && name != "." && !IsRootedOrParent(name) && !name.Contains('\\');
 
 	private static bool IsRootedOrParent(string name) =>
 		Path.IsPathRooted(name) || name.StartsWith('/') || name.StartsWith('\\') || name.Split('/', '\\').Contains("..");
