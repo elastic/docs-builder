@@ -159,7 +159,8 @@ function onFocusIn(event: FocusEvent) {
     const target = targetOf(event.target)
     // A click focuses too; only keyboard focus shows the tooltip, and at once, since the delay is for a passing mouse.
     // A tooltip the pointer only queued is promoted: show() clears its timer.
-    if (!target || !target.matches(':focus-visible')) return
+    // :focus-visible belongs to the element that took focus, which may be a link inside the target.
+    if (!target || !(event.target as Element).matches(':focus-visible')) return
     if (state.kind === 'shown' && state.target === target) return
     show(target)
 }

@@ -191,6 +191,21 @@ describe('tooltips', () => {
         expect(shown()).toBe('Copy')
     })
 
+    it('shows when keyboard focus lands on a focusable element inside the target', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<span id="optional" data-tooltip="Optional. Leave it out."><a id="param" href="#x">id</a></span>`
+        )
+
+        byId('param').focus()
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(shown()).toBe('Optional. Leave it out.')
+
+        byId('param').blur()
+        expect(shown()).toBeNull()
+    })
+
     it('shows on the first hover after Escape closed a tooltip that keyboard focus opened', async () => {
         byId('plain').focus()
         await vi.advanceTimersByTimeAsync(0)
