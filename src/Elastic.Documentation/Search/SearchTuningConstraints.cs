@@ -29,7 +29,7 @@ public static partial class SearchTuningConstraints
 		s => s.Rules,
 		(_, rule) => IncompleteParts(rule)
 	).Describe(
-		"G99: A query rule has a rule_id, criteria with metadata and values, and action ids; none of them is required by the loader."
+		"G99: A query rule has a rule_id, at least one criteria with metadata and values, and action ids; none of them is required by the loader."
 	);
 
 	public static readonly Constraint<SearchTuning> SearchFileNotLegacy = Constraints<SearchTuning>
@@ -68,6 +68,8 @@ public static partial class SearchTuningConstraints
 			yield return Violation.Warning("A query rule has no rule_id.");
 		if (rule.Actions.Ids.Count == 0)
 			yield return Violation.Warning($"Query rule '{rule.RuleId}' has no actions.ids.");
+		if (rule.Criteria.Count == 0)
+			yield return Violation.Warning($"Query rule '{rule.RuleId}' has no criteria.");
 		foreach (var criteria in rule.Criteria)
 		{
 			if (string.IsNullOrWhiteSpace(criteria.Metadata))

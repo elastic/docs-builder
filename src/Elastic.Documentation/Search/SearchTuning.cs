@@ -21,11 +21,20 @@ public sealed partial record SearchTuning : IHaveConstraints<SearchTuning>
 	public static ConstraintSet<SearchTuning> Constraints => SearchTuningConstraints.All;
 
 	[OrderedEquality]
-	public required IReadOnlyList<SynonymGroup> Synonyms { get; init; }
+	public required IReadOnlyList<SynonymGroup> Synonyms
+	{
+		get;
+		init
+		{
+			field = value;
+			// a null is for the model's `required` rule to report, not for the derived map to throw on
+			SynonymBiDirectional = value is null ? [] : BuildBiDirectional(value);
+		}
+	}
 
-	/// <summary>Each single-word synonym mapped to the rest of its group; derived from <see cref="Synonyms"/>.</summary>
+	/// <summary>Each single-word synonym mapped to the rest of its group; derived from <see cref="Synonyms"/>, so a copy that replaces them rebuilds it.</summary>
 	[IgnoreEquality]
-	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional => field ??= BuildBiDirectional(Synonyms);
+	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; private set; } = new Dictionary<string, string[]>();
 
 	private static Dictionary<string, string[]> BuildBiDirectional(IReadOnlyList<SynonymGroup> synonyms) =>
 		synonyms
