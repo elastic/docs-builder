@@ -4,17 +4,9 @@
 }
 <div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "") @(Model.ShowDeprecatedBadge ? "deprecated" : "")">
 	<dt id="@Model.AnchorId">
-		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel">
-			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
-		</a>
-		@if (Model.TooltipPath is { } path)
-		{
-			<code data-tippy-content="@path" data-tippy-theme="mono">@Model.Name</code>
-		}
-		else
-		{
-			<code>@Model.Name</code>
-		}
+		@* The icon is drawn by CSS, and the name's path tooltip reads the path from this label, so a row prints it once. *@
+		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel" data-tippy-content="Copy link"></a>
+		<code>@Model.Name</code>
 		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
 		@if (Model.IsRequired)
 		{
@@ -175,7 +167,7 @@
 						<dt id="@dict.KeyAnchorId">
 							@if (dict.JsonPath is { } keyPath)
 							{
-								<code data-tippy-content="@keyPath" data-tippy-theme="mono">&lt;string&gt;</code>
+								<code data-tippy-content="@keyPath">&lt;string&gt;</code>
 							}
 							else
 							{

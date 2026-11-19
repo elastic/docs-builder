@@ -22,21 +22,38 @@ export function initTooltips(): void {
     if (delegateInstance) return
     delegateInstance = delegate(document.body, {
         // Templates may emit the attribute empty; an empty title shows nothing natively, so neither does this.
-        target: '[data-tippy-content]:not([data-tippy-content=""])',
+        target: `[data-tippy-content]:not([data-tippy-content=""]), ${PROPERTY_NAME}`,
+        // Only property names reach this: everything else carries data-tippy-content, which tippy reads first.
+        content: (reference) => propertyPath(reference),
         delay: [80, 0],
         placement: 'top',
         touch: ['hold', 300],
-        // A click on a copy button swaps the text in place (flashTooltip); hiding the tooltip would make it flicker.
         onCreate: (instance) => {
+            // A click on a copy button swaps the text in place (flashTooltip); hiding the tooltip would make it flicker.
             if (
                 instance.reference.matches(
-                    '.copybtn, .api-code-preview-btn, .property-anchor-icon'
+                    '.copybtn, .api-code-preview-btn, .property-anchor'
                 )
             )
                 instance.setProps({ hideOnClick: false })
+            if (instance.reference.matches('.property-list dt > code'))
+                instance.setProps({ theme: 'mono' })
         },
+        // A top-level field's path is its name, which the row already shows.
+        onShow: (instance) => (instance.props.content ? undefined : false),
         appendTo: (reference) => reference.closest('dialog') ?? document.body,
     })
+}
+
+const PROPERTY_NAME = '.property-list dt > a.property-anchor + code'
+const PERMALINK_LABEL_PREFIX = 'Link to '
+
+/** A property name's JSON path. The row prints it once, in its permalink's label, to keep large API pages small. */
+function propertyPath(name: Element): string {
+    const label = name.previousElementSibling?.getAttribute('aria-label') ?? ''
+    if (!label.startsWith(PERMALINK_LABEL_PREFIX)) return ''
+    const path = label.slice(PERMALINK_LABEL_PREFIX.length)
+    return path === name.textContent ? '' : path
 }
 
 const flashes = new WeakMap<HTMLElement, { original: string; timer: number }>()

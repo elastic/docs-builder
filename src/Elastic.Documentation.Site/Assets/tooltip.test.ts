@@ -113,3 +113,32 @@ describe('flashTooltip', () => {
         expect(el.dataset.tippyContent).toBe('Copy')
     })
 })
+
+describe('property name tooltips', () => {
+    beforeEach(() => {
+        vi.useFakeTimers()
+        document.body.innerHTML = `
+            <dl class="property-list"><div class="property-item">
+                <dt><a class="property-anchor" href="#req-query" aria-label="Link to query" data-tippy-content="Copy link"></a><code id="top">query</code></dt>
+                <dt><a class="property-anchor" href="#req-query-bool" aria-label="Link to query.bool" data-tippy-content="Copy link"></a><code id="nested">bool</code></dt>
+            </div></dl>`
+        initTooltips()
+    })
+
+    afterEach(() => {
+        swap()
+        vi.useRealTimers()
+    })
+
+    it('shows a nested name its path from the permalink label, in the mono theme', () => {
+        hover('nested')
+        const box = roots()[0].querySelector('.tippy-box')!
+        expect(box.textContent).toBe('query.bool')
+        expect(box.getAttribute('data-theme')).toBe('mono')
+    })
+
+    it('shows nothing on a top-level name, whose path is its name', () => {
+        hover('top')
+        expect(roots().length).toBe(0)
+    })
+})
