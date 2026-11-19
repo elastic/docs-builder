@@ -4,7 +4,6 @@
  * selectors of its own markup, and picks what a chip does on click itself.
  */
 import Fuse from 'fuse.js'
-import type { Instance } from 'tippy.js'
 
 /** Selectors for the parts of one kind of chip row; `idAttribute` names the attribute a chip and its menu item share. */
 export interface ChipRowParts {
@@ -74,12 +73,6 @@ function chipMenuSupported(
     return !!menu && typeof menu.hidePopover === 'function'
 }
 
-/** Removes the tooltip text and the tippy instance already made from it, which keeps the old text. */
-function clearChipTooltip(chip: HTMLElement) {
-    delete chip.dataset.tippyContent
-    ;(chip as HTMLElement & { _tippy?: Instance })._tippy?.destroy()
-}
-
 function setMoreLabel(more: HTMLElement, parts: ChipRowParts, count: number) {
     more.querySelector(parts.moreLabel)!.textContent = `+${count} more`
 }
@@ -136,8 +129,8 @@ export function fitChipRow(row: HTMLElement, parts: ChipRowParts): void {
         if (chip.hidden) overflow.add(chipId(chip, parts))
         // A title cut off by the chip's width gets a tooltip with the whole of it; one that fits again loses it.
         else if (truncated[i])
-            chip.dataset.tippyContent = titles[i]?.textContent?.trim() ?? ''
-        else clearChipTooltip(chip)
+            chip.dataset.tooltip = titles[i]?.textContent?.trim() ?? ''
+        else delete chip.dataset.tooltip
     })
     menu.querySelectorAll<HTMLElement>(parts.item).forEach((item) => {
         item.hidden = !overflow.has(chipId(item, parts))

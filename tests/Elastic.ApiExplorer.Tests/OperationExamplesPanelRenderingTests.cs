@@ -172,7 +172,7 @@ public partial class OperationExamplesPanelRenderingTests
 		{
 			card.Should().Contain("<p class=\"api-code-carousel-card-note\">");
 			card.Should().Contain(">Generated from the API spec</span>");
-			card.Should().Contain("data-tippy-content=\"This sample was generated from the API spec, not written by hand.");
+			card.Should().Contain("data-tooltip=\"This sample was generated from the API spec, not written by hand.");
 			// Inside the code area, so the strip height measured from the body includes it.
 			card
 				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
@@ -374,9 +374,9 @@ public partial class OperationExamplesPanelRenderingTests
 		.MatchTimeoutMilliseconds)]
 	private static partial Regex CarouselCardRegex();
 
-	[GeneratedRegex("data-tippy-content=\"Unauthorized\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	[GeneratedRegex("data-tooltip=\"Unauthorized\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex UnauthorizedTooltipRegex();
 
-	[GeneratedRegex("data-status=\"404\"[^>]*data-tippy-content=\"\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	[GeneratedRegex("data-status=\"404\"[^>]*data-tooltip=\"\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex EmptyTooltipOn404Regex();
 }

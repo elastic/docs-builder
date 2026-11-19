@@ -11,7 +11,7 @@
 	{
 		var anchor = Model.AnchorFor(segment);
 		if (segment.Optional)
-		{<span class="api-url-optional" data-tippy-content="Optional. Leave it out to call @Model.ShortestRoute">/@if (anchor is not null){<a class="api-url-param" href="#@anchor">@segment.Text</a>}else{@segment.Text}</span>}
+		{<span class="api-url-optional" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">/@if (anchor is not null){<a class="api-url-param" href="#@anchor">@segment.Text</a>}else{@segment.Text}</span>}
 		else if (anchor is not null)
 		{@("/")<a class="api-url-param" href="#@anchor">@segment.Text</a>}
 		else

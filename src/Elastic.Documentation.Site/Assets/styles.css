@@ -29,6 +29,7 @@
 @import './secondary-nav.css';
 @import './secondary-nav-dropdown.css';
 @import './floating.css';
+@import './tooltip.css';
 @import './api-identity.css';
 @import './archive.css';
 @import './markdown/stepper.css';
@@ -42,7 +43,6 @@
 @import './api-language-icons.css';
 @import './web-components/VectorSizingCalculator/vector-sizing-calculator.css';
 @import './pages-nav-figma.css';
-@import 'tippy.js/dist/tippy.css';
 
 html {
 	/* We need to use 14px because EUI works best with a 14px base */
@@ -466,10 +466,6 @@ body {
 
 #pages-nav details > summary::-webkit-details-marker {
 	display: none;
-}
-
-.tippy-content {
-	white-space: pre-line;
 }
 
 .icon,

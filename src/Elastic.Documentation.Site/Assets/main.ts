@@ -27,6 +27,7 @@ import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
+import { initTooltips } from './tooltip'
 import { loadWebComponents } from './web-components/loadWebComponents'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -89,6 +90,7 @@ bindCtaClicks()
 initPrivacyConsent()
 initSecondaryNav()
 initFloating()
+initTooltips()
 initApiChromeSync()
 bindApiBetaBanner()
 bindModalEscape()
