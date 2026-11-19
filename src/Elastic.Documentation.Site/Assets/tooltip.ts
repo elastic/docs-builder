@@ -35,6 +35,8 @@ let tooltip: HTMLElement | null = null
 // A target whose tooltip Escape or a click put away. It stays away while the pointer is on the target, even when the
 // target's content changes under the pointer (a copy button swaps its icon), and shows again once the pointer leaves.
 let dismissed: HTMLElement | null = null
+// The target the pointer is on, so Escape on a tooltip that keyboard focus opened does not block a later hover.
+let hovered: HTMLElement | null = null
 
 function tooltipElement(): HTMLElement {
     // A swap of the whole body takes the tooltip with it, so it is made again.
@@ -129,6 +131,7 @@ function leaves(el: HTMLElement, event: PointerEvent | FocusEvent): boolean {
 
 function onPointerOver(event: PointerEvent) {
     const target = targetOf(event.target)
+    hovered = target ?? hovered
     if (!target || target === current() || target === dismissed) return
     // A touch starts with pointerover and ends with pointerout, so holding for the delay is what shows it.
     schedule(
@@ -139,6 +142,7 @@ function onPointerOver(event: PointerEvent) {
 
 function onPointerOut(event: PointerEvent) {
     if (dismissed && leaves(dismissed, event)) dismissed = null
+    if (hovered && leaves(hovered, event)) hovered = null
     const target = current()
     if (target && leaves(target, event)) hide()
 }
@@ -167,12 +171,15 @@ function onFocusOut(event: FocusEvent) {
 
 function onKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape') return
-    dismissed = current()
+    const target = current()
+    // With the pointer elsewhere nothing would clear `dismissed`, and the first hover would show no tooltip.
+    dismissed = target && target === hovered ? target : null
     hide()
 }
 
 function onSwap() {
     dismissed = null
+    hovered = null
     hide()
 }
 

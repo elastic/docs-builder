@@ -191,6 +191,20 @@ describe('tooltips', () => {
         expect(shown()).toBe('Copy')
     })
 
+    it('shows on the first hover after Escape closed a tooltip that keyboard focus opened', async () => {
+        byId('plain').focus()
+        await vi.advanceTimersByTimeAsync(0)
+        document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        )
+        expect(shown()).toBeNull()
+
+        pointer('pointerover', byId('plain'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('Back to top')
+    })
+
     it('hides before an htmx swap, so it keeps nothing of the old page', async () => {
         pointer('pointerover', byId('path'))
         await vi.advanceTimersByTimeAsync(80)
