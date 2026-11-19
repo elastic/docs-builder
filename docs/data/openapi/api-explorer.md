@@ -44,8 +44,6 @@ api:
 
 Each product key produces its own section of API documentation. For example, `elasticsearch` generates pages under `/api/elasticsearch/` and `kibana` generates pages under `/api/kibana/`.
 
-Older links use the bump.sh form `/api/doc/<key>/...`. `docs-builder serve` redirects them to the same page under `/api/<key>/`, following the same redirect table as the edge, so a pasted old URL still lands on its page.
-
 The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files.
 
 ### `spec:` (required)

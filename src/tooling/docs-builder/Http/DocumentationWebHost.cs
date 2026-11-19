@@ -13,7 +13,6 @@ using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Http;
-using Elastic.Documentation.Links;
 #if DEBUG
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.PageFeedback;
@@ -214,9 +213,6 @@ public class DocumentationWebHost
 			(string slug, ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, slug, http, ctx)
 		);
 
-		// Links from before the API Explorer dropped /doc reach the same page the edge redirects them to.
-		_ = _webApplication.MapGet("/api/doc/{**slug}", (string? slug, HttpContext http) => RedirectLegacyApiPath(http, slug));
-
 		// Assembler / staging paste `/docs/api/...` into Isolated (`:3000` has no `/docs` prefix).
 		_ = _webApplication.MapGet("/docs/api/", (HttpContext http) => RedirectAssemblerApiPath(http, ""));
 		_ = _webApplication.MapGet("/docs/api/{**slug}", (string slug, HttpContext http) => RedirectAssemblerApiPath(http, slug));
@@ -364,16 +360,6 @@ public class DocumentationWebHost
 			return null;
 		}
 	}
-
-	private static IResult RedirectLegacyApiPath(HttpContext http, string? slug) =>
-		RedirectAssemblerApiPath(
-			http,
-			string.IsNullOrWhiteSpace(slug)
-				? ""
-				: ApiLegacyRedirects.Resolve(
-					ApiLinkMatcher.Normalize(ApiLegacyRedirects.LegacyPrefix + slug)
-				)[ApiLinkMatcher.ApiPrefix.Length..]
-		);
 
 	private static IResult RedirectAssemblerApiPath(HttpContext http, string slug)
 	{
