@@ -1,0 +1,30 @@
+# @requires build-type:isolated
+# The image and diagram zoom views are native dialogs: Escape and the close button dismiss them, focus returns to
+# the control that opened them, and the page scrolls again.
+set viewport 1280 800
+open /syntax/images
+wait --load networkidle
+expect --not attr "dialog.modal" open
+expect --not visible "a.image-reference[data-modal-id]:focus"
+click "a.image-reference[data-modal-id]"
+expect attr "dialog.modal" open
+expect attr "html" style "overflow: hidden;" --contains
+press Escape
+expect --not attr "dialog.modal" open
+expect --not attr "html" style "overflow: hidden;" --contains
+expect visible "a.image-reference[data-modal-id]:focus"
+
+# The × button dismisses it too.
+click "a.image-reference[data-modal-id]"
+expect attr "dialog.modal" open
+click "dialog.modal[open] .close-button"
+expect --not attr "dialog.modal" open
+
+# The diagram's fullscreen view.
+open /syntax/diagrams
+wait --load networkidle
+click ".mermaid-container .mermaid-fullscreen"
+expect visible "dialog.mermaid-modal[open]"
+press Escape
+expect --not attached "dialog.mermaid-modal"
+expect visible ".mermaid-container .mermaid-fullscreen:focus"
