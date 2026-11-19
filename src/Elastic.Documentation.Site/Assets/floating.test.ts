@@ -222,6 +222,21 @@ describe('floating popovers', () => {
             expect(open.has(menu())).toBe(false)
         })
 
+        it('keeps a hovered menu open when its button is then clicked, after the mouse leaves', () => {
+            point('pointerover', trigger(), away())
+            const click = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+            })
+            trigger().dispatchEvent(click)
+            point('pointerout', trigger(), away())
+            vi.advanceTimersByTime(500)
+
+            // A cancelled click does not toggle the popover the button opens.
+            expect(click.defaultPrevented).toBe(true)
+            expect(open.has(menu())).toBe(true)
+        })
+
         it('leaves touch to the click', () => {
             point('pointerover', trigger(), away(), 'touch')
 
