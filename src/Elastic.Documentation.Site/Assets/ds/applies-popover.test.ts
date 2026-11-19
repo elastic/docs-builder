@@ -69,6 +69,7 @@ describe('applies-to popovers', () => {
         document.body.innerHTML = badge
         initAppliesPopovers()
         const original = panels()[0]
+        triggers()[0].setAttribute('aria-expanded', 'true')
         const copy = document.createElement('div')
         copy.innerHTML = document.body.innerHTML
 
@@ -83,5 +84,10 @@ describe('applies-to popovers', () => {
                 .querySelector('[data-applies-trigger]')!
                 .getAttribute('popovertarget')
         ).toBe(copied.id)
+        expect(
+            copy
+                .querySelector('[data-applies-trigger]')!
+                .getAttribute('aria-expanded')
+        ).toBe('false')
     })
 })
