@@ -3039,8 +3039,8 @@ button.example-response-tab:focus-visible {
 		grid-row: 2;
 	}
 
-	/* The rail's first line of text (the EXAMPLES label) sits on the breadcrumb's line: the breadcrumb text runs 24px
-	   down from the column's top, and the label is as tall as it. */
+	/* The rail's first line of text sits on the breadcrumb's line: the Base URL label where the page has one, otherwise
+	   the Examples label. The breadcrumb text runs 24px down from the column's top. */
 	.api-page-rail {
 		grid-column: 2;
 		grid-row: 1;
