@@ -6,7 +6,8 @@ import { autoUpdate } from '@floating-ui/dom'
  * focus and on a touch hold, where the native title waits about a second. Listeners are delegated on the document, so
  * they cover elements added later and survive htmx swaps. The tooltip is a manual popover: it sits in the top layer, so
  * it shows above an open modal dialog, and it never closes an open menu the way an auto popover would. floating.ts places
- * it above its target, below when there is no room, and keeps it on screen.
+ * it above its target, below when there is no room, and keeps it on screen. It stays open while the pointer is on it,
+ * so it can be read with a magnifier (WCAG 1.4.13): a mouse leaving the target has 150ms to reach it.
  *
  * `data-tooltip-delay="slow"` waits 500ms instead of 80ms, for lists the mouse crosses. `data-tooltip-theme="mono"` sets
  * the text in a monospace font, for JSON paths.
@@ -18,6 +19,8 @@ const KEEP_ON_CLICK = '.copybtn, .api-code-preview-btn, .property-anchor-icon'
 const DELAY_MS = 80
 const SLOW_DELAY_MS = 500
 const TOUCH_HOLD_MS = 300
+// A mouse leaving the target has this long to reach the tooltip, across the gap between them.
+const CLOSE_GRACE_MS = 150
 const TOOLTIP_ID = 'site-tooltip'
 
 type State =
@@ -35,6 +38,7 @@ let tooltip: HTMLElement | null = null
 // A target whose tooltip Escape or a click put away. It stays away while the pointer is on the target, even when the
 // target's content changes under the pointer (a copy button swaps its icon), and shows again once the pointer leaves.
 let dismissed: HTMLElement | null = null
+let closeTimer = 0
 // The target the pointer is on, so Escape on a tooltip that keyboard focus opened does not block a later hover.
 let hovered: HTMLElement | null = null
 
@@ -58,7 +62,12 @@ function current(): HTMLElement | null {
     return state.kind === 'idle' ? null : state.target
 }
 
+function cancelClose() {
+    window.clearTimeout(closeTimer)
+}
+
 function hide() {
+    cancelClose()
     if (state.kind === 'pending') window.clearTimeout(state.timer)
     if (state.kind === 'shown') {
         state.stopTracking()
@@ -129,8 +138,24 @@ function leaves(el: HTMLElement, event: PointerEvent | FocusEvent): boolean {
     )
 }
 
+/** A mouse leaving gets a moment to reach the tooltip (WCAG 1.4.13, hoverable); a touch, and a tooltip not yet shown, close at once. */
+function release(event: PointerEvent) {
+    if (state.kind !== 'shown' || event.pointerType === 'touch') {
+        hide()
+        return
+    }
+    cancelClose()
+    closeTimer = window.setTimeout(hide, CLOSE_GRACE_MS)
+}
+
 function onPointerOver(event: PointerEvent) {
     const target = targetOf(event.target)
+    // The pointer reached the tooltip, or came back to the target it left: the tooltip stays.
+    if (
+        (tooltip?.contains(event.target as Node) ?? false) ||
+        (target !== null && target === current())
+    )
+        cancelClose()
     hovered = target ?? hovered
     if (!target || target === current() || target === dismissed) return
     // A touch starts with pointerover and ends with pointerout, so holding for the delay is what shows it.
@@ -144,11 +169,15 @@ function onPointerOut(event: PointerEvent) {
     if (dismissed && leaves(dismissed, event)) dismissed = null
     if (hovered && leaves(hovered, event)) hovered = null
     const target = current()
-    if (target && leaves(target, event)) hide()
+    if (!target) return
+    if (leaves(target, event) || (tooltip && leaves(tooltip, event)))
+        release(event)
 }
 
 function onPointerDown(event: PointerEvent) {
     if (event.pointerType === 'touch') return
+    // A click or text selection inside the tooltip is reading it, not dismissing it.
+    if (tooltip?.contains(event.target as Node)) return
     const target = targetOf(event.target)
     if (target && target === current() && target.matches(KEEP_ON_CLICK)) return
     dismissed = target

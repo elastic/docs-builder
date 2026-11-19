@@ -142,9 +142,53 @@ describe('tooltips', () => {
         pointer('pointerout', byId('path'), {
             relatedTarget: byId('elsewhere'),
         })
+        // A mouse has a moment to reach the tooltip before it goes.
+        await vi.advanceTimersByTimeAsync(149)
+        expect(shown()).toBe('hits.total')
+        await vi.advanceTimersByTimeAsync(1)
 
         expect(shown()).toBeNull()
         expect(byId('path').getAttribute('aria-describedby')).toBe('hint')
+    })
+
+    it('stays open while the pointer crosses to the tooltip and rests on it, and closes when it leaves', async () => {
+        pointer('pointerover', byId('path'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        pointer('pointerout', byId('path'), { relatedTarget: tooltip() })
+        await vi.advanceTimersByTimeAsync(100)
+        pointer('pointerover', tooltip()!, { relatedTarget: byId('path') })
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(shown()).toBe('hits.total')
+
+        // A click or a text selection in the tooltip is reading it.
+        pointer('pointerdown', tooltip()!)
+        expect(shown()).toBe('hits.total')
+
+        // Back on the target it stays too; leaving the tooltip for elsewhere closes it.
+        pointer('pointerout', tooltip()!, { relatedTarget: byId('path') })
+        pointer('pointerover', byId('path'), { relatedTarget: tooltip() })
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(shown()).toBe('hits.total')
+
+        pointer('pointerout', byId('path'), { relatedTarget: tooltip() })
+        pointer('pointerover', tooltip()!, { relatedTarget: byId('path') })
+        pointer('pointerout', tooltip()!, {
+            relatedTarget: byId('elsewhere'),
+        })
+        await vi.advanceTimersByTimeAsync(150)
+        expect(shown()).toBeNull()
+    })
+
+    it('hides at once when a touch lifts, since a touch cannot reach the tooltip', async () => {
+        const touch = { pointerType: 'touch' }
+        pointer('pointerover', byId('path'), touch)
+        await vi.advanceTimersByTimeAsync(300)
+        expect(shown()).toBe('hits.total')
+
+        pointer('pointerout', byId('path'), touch)
+
+        expect(shown()).toBeNull()
     })
 
     it('never shows when the pointer leaves before the delay', async () => {
