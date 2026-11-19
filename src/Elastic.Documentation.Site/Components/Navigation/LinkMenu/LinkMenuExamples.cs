@@ -8,7 +8,7 @@ public static class LinkMenuExamples
 {
 	public static ComponentSection Menus { get; } = new(
 		"Link menu",
-		"A native details menu of links, used for versions and sections. It opens without JavaScript; a small enhancement closes it on outside click and Escape.",
+		"A button that opens a popover menu of links, used for versions and sections. The browser closes it on outside click and Escape; floating.ts keeps it beside the button.",
 		"link-menu",
 		[
 			ComponentExample.Of(
@@ -16,6 +16,7 @@ public static class LinkMenuExamples
 				_LinkMenu.Create,
 				new LinkMenuModel
 				{
+					Id = "example-version-menu",
 					Label = "Version",
 					Items = [new("9.0+ (Current)", "#", true), new("8.19", "#"), new("7.17", "#")],
 					Footer = new("All versions", "#")

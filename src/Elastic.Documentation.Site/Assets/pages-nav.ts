@@ -575,23 +575,6 @@ export const scrollCurrentNaviItemIntoView = throttle(
     { leading: false, trailing: true }
 )
 
-/**
- * Prevents focus-based dropdowns from closing before link navigation completes.
- * Without this, clicking a link inside the dropdown would transfer focus away,
- * causing the dropdown to close via CSS :focus-within before navigation happens.
- */
-function preventFocusLossOnLinkClick(anchor: HTMLAnchorElement) {
-    anchor.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-    })
-    // Close dropdown after click completes
-    anchor.addEventListener('mouseup', () => {
-        if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur()
-        }
-    })
-}
-
 function normalizeNavPathname(pathname: string) {
     let p: string
     try {
@@ -1203,7 +1186,7 @@ function ensureFolderRowClick() {
 }
 
 const SECTION_RESET_LINK =
-    '#secondary-nav a.secondary-nav-item__hit, #secondary-nav a.secondary-nav-dropdown-link, #pages-dropdown a.pages-dropdown_active'
+    '#secondary-nav a.secondary-nav-item__hit, #pages-dropdown a.pages-dropdown_active'
 
 function isSectionResetElement(el: Element | null) {
     return Boolean(el?.closest(SECTION_RESET_LINK))
@@ -1306,13 +1289,6 @@ export function initNav() {
     const pagesNav = $optional('#pages-nav')
     if (!pagesNav) {
         return
-    }
-
-    const dropdownActiveAnchor = $optional(
-        '#pages-dropdown a.pages-dropdown_active'
-    )
-    if (dropdownActiveAnchor) {
-        preventFocusLossOnLinkClick(dropdownActiveAnchor)
     }
 
     ensureFolderRowClick()

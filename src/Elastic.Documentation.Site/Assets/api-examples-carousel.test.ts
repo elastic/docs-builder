@@ -25,7 +25,7 @@ function carousel(langs: string[]): string {
     const dots = langs
         .map(
             (lang) =>
-                `<button class="api-code-carousel-dot" data-carousel-dot="${lang}" data-tippy-content="${lang}"></button>`
+                `<button class="api-code-carousel-dot" data-carousel-dot="${lang}" data-tooltip="${lang}"></button>`
         )
         .join('')
     return `
@@ -62,17 +62,6 @@ function markup(): string {
             </div>
             <div class="api-examples-scenario-panel" data-scenario="slicing" hidden="until-found">${carousel(['Console', 'curl'])}</div>
         </div>`
-}
-
-type Tipped = HTMLElement & {
-    _tippy?: {
-        props: {
-            content: unknown
-            delay: unknown
-            appendTo: unknown
-            hideOnClick: unknown
-        }
-    }
 }
 
 function activeLang(scenario: string): string | undefined {
@@ -320,47 +309,16 @@ describe('API examples carousel', () => {
         vi.useRealTimers()
     })
 
-    it('gives the dots a fast tooltip instead of a native title', () => {
-        initApiExamples()
-        const dot = document.querySelector<Tipped>(
-            '[data-scenario="term"] [data-carousel-dot="Java"]'
-        )!
-
-        // One delegated listener creates the tooltip on first hover.
-        dot.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-
-        expect(dot.hasAttribute('title')).toBe(false)
-        expect(dot._tippy?.props.content).toBe('Java')
-        expect(dot._tippy?.props.delay).toEqual([80, 0])
-    })
-
-    it('keeps a copy button tooltip open on click so its text changes in place', () => {
-        initApiExamples()
-        const copy = document.createElement('button')
-        copy.className = 'copybtn'
-        copy.dataset.tippyContent = 'Copy'
-        document.body.appendChild(copy)
-
-        copy.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-
-        expect((copy as Tipped)._tippy?.props.hideOnClick).toBe(false)
-        copy.remove()
-    })
-
-    it('mounts a tooltip inside the preview dialog, above its top layer', () => {
+    it('gives the preview dialog buttons a fast tooltip instead of a native title', () => {
         initApiExamples()
         click('[data-scenario="term"] .is-active [data-code-preview]')
         const dialog = document.querySelector<HTMLDialogElement>(
             'dialog.api-code-preview'
         )!
-        const close = dialog.querySelector<Tipped>('[aria-label="Close"]')!
-
-        close.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+        const close = dialog.querySelector<HTMLElement>('[aria-label="Close"]')!
 
         expect(close.hasAttribute('title')).toBe(false)
-        expect(close.dataset.tippyContent).toBe('Close')
-        const appendTo = close._tippy?.props.appendTo
-        expect(typeof appendTo === 'function' && appendTo(close)).toBe(dialog)
+        expect(close.dataset.tooltip).toBe('Close')
         dialog.dispatchEvent(new Event('close'))
     })
 
@@ -759,12 +717,12 @@ describe('API examples chip overflow', () => {
         const chip = document.querySelector<HTMLElement>(
             '.api-example-chip[data-scenario="a"]'
         )!
-        expect(chip.dataset.tippyContent).toBe('Term search')
+        expect(chip.dataset.tooltip).toBe('Term search')
 
         clipped = false
         click('.api-example-chip[data-scenario="b"]')
 
-        expect(chip.dataset.tippyContent).toBeUndefined()
+        expect(chip.dataset.tooltip).toBeUndefined()
         delete proto.scrollWidth
     })
 

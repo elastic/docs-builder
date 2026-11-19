@@ -377,6 +377,26 @@ public class TocTreeRenderingTests
 		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("li.nav-group"));
 	}
 
+	[Test]
+	public async Task LegacySectionDropdown_OpensAMenuOfTheTopLevelSections()
+	{
+		var model = GroupModel(navigationPreviewEnabled: false) with
+		{
+			IsUsingNavigationDropdown = true,
+			CurrentTopLevelNavigationTitle = "Elasticsearch",
+			CurrentTopLevelUrl = "/docs/elasticsearch/",
+			DropdownItems =
+			[
+				new NavigationDropdownItem("Elasticsearch", "/docs/elasticsearch/", IsActive: true),
+				new NavigationDropdownItem("Kibana", "/docs/kibana/", IsActive: false)
+			]
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("#nav-dropdown"));
+	}
+
 	private static NavigationRenderModel GroupModel(bool navigationPreviewEnabled) =>
 		new()
 		{

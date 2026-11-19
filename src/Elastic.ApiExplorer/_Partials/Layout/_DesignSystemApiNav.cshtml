@@ -10,6 +10,7 @@
 		<div id="api-version-switcher">
 			@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
 			{
+				Id = "api-version-menu",
 				Label = "API version",
 				Items = [.. apiContext.Versions.Select(item => new LinkMenuItem(item.Label, item.Value, item.Selected))]
 			}))
@@ -19,6 +20,7 @@
 	{
 		@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
 		{
+			Id = "api-product-menu",
 			Label = "API product",
 			Items = [.. apiContext.ProductGroups.SelectMany(group => group.Products).Select(item => new LinkMenuItem(item.Label, item.Url, item.Selected))]
 		}))

@@ -23,6 +23,7 @@ public static partial class DesignSystemFiles
 			.EnumerateFiles(Path.Join(SiteDirectory, "Assets", "ds"), "*.css", SearchOption.AllDirectories)
 			.Append(Path.Join(SiteDirectory, "Assets", "ds.css"))
 			.Append(Path.Join(SiteDirectory, "Assets", "ds-guide.css"))
+			.Append(Path.Join(SiteDirectory, "Assets", "tooltip.css"))
 			.Concat(
 				Directory.Exists(Path.Join(SiteDirectory, "Components"))
 					? Directory.EnumerateFiles(Path.Join(SiteDirectory, "Components"), "*.css", SearchOption.AllDirectories)

@@ -330,42 +330,6 @@ describe('deprecated operations', () => {
     })
 })
 
-describe('row tooltips', () => {
-    const fakeTippy = (row: Element) => {
-        const destroy = vi.fn()
-        ;(row as Element & { _tippy?: { destroy(): void } })._tippy = {
-            destroy,
-        }
-        return destroy
-    }
-
-    beforeEach(() => {
-        navigationSearchStore.getState().actions.setSearchTerm('track_total')
-    })
-
-    it('destroys the tooltips of its rows when it unmounts', () => {
-        const { container, unmount } = renderList()
-        const destroy = fakeTippy(
-            container.querySelector('.property-path[data-tippy-content]')!
-        )
-
-        unmount()
-
-        expect(destroy).toHaveBeenCalledTimes(1)
-    })
-
-    it('destroys the tooltips of rows the next results drop', () => {
-        const { container, showResults } = renderList()
-        const destroy = fakeTippy(
-            container.querySelector('.property-path[data-tippy-content]')!
-        )
-
-        showResults(groupSearchResults([page]))
-
-        expect(destroy).toHaveBeenCalledTimes(1)
-    })
-})
-
 describe('API landing rows', () => {
     const landing: SearchResultItem = {
         type: 'api',

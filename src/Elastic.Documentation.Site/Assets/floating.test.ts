@@ -1,4 +1,4 @@
-import { initFloating } from './floating'
+import { closePopoversWithin, initFloating } from './floating'
 import { autoUpdate, computePosition } from '@floating-ui/dom'
 import type { Mock } from 'vitest'
 
@@ -12,6 +12,7 @@ vi.mock('@floating-ui/dom', () => ({
 }))
 
 const stopTracking = vi.fn()
+const showPopover = vi.fn()
 const hidePopover = vi.fn()
 
 function dispatch(
@@ -37,7 +38,7 @@ describe('floating popovers', () => {
     beforeAll(() => {
         // jsdom has no popover API; initFloating only listens where it exists.
         Object.assign(HTMLElement.prototype, {
-            showPopover: vi.fn(),
+            showPopover,
             hidePopover,
         })
         initFloating()
@@ -154,6 +155,215 @@ describe('floating popovers', () => {
         expect(hidePopover).toHaveBeenCalledTimes(1)
         expect(stopTracking).toHaveBeenCalledTimes(1)
         matches.mockRestore()
+    })
+
+    it('stops tracking an open menu when the subtree holding it is removed', async () => {
+        document.body.innerHTML = `
+            <section id="copy">
+                <button id="trigger" popovertarget="menu"></button>
+                <div id="menu" popover></div>
+            </section>`
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+
+        closePopoversWithin(document.getElementById('copy')!)
+
+        expect(hidePopover).toHaveBeenCalledTimes(1)
+        expect(stopTracking).toHaveBeenCalledTimes(1)
+    })
+
+    it('releases a menu that left the page while open when a swap closes the rest', async () => {
+        setOpen(menu(), true)
+        await settle()
+        menu().remove()
+
+        document.dispatchEvent(new Event('htmx:beforeSwap'))
+
+        expect(stopTracking).toHaveBeenCalledTimes(1)
+        expect(hidePopover).not.toHaveBeenCalled()
+    })
+
+    it('leaves the menus outside the subtree tracking', async () => {
+        document.body.insertAdjacentHTML('beforeend', '<div id="other"></div>')
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+
+        closePopoversWithin(document.getElementById('other')!)
+
+        expect(hidePopover).not.toHaveBeenCalled()
+        expect(stopTracking).not.toHaveBeenCalled()
+    })
+
+    describe('a menu marked data-hover', () => {
+        const open = new Set<Element>()
+
+        function point(
+            type: 'pointerover' | 'pointerout',
+            target: Element,
+            relatedTarget: Element | null = null,
+            pointerType = 'mouse'
+        ) {
+            const event = new MouseEvent(type, { bubbles: true, relatedTarget })
+            Object.assign(event, { pointerType })
+            target.dispatchEvent(event)
+        }
+
+        beforeEach(() => {
+            vi.useFakeTimers()
+            open.clear()
+            menu().setAttribute('data-hover', '')
+            menu().innerHTML = '<a id="row" href="#a">A</a>'
+            document.body.insertAdjacentHTML('beforeend', '<p id="away"></p>')
+            showPopover.mockImplementation(function (this: Element) {
+                open.add(this)
+            })
+            hidePopover.mockImplementation(function (this: Element) {
+                open.delete(this)
+            })
+            vi.spyOn(menu(), 'matches').mockImplementation(
+                (selector) => selector === ':popover-open' && open.has(menu())
+            )
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+            showPopover.mockReset()
+            hidePopover.mockReset()
+        })
+
+        const away = () => document.getElementById('away')!
+
+        it('opens while a mouse rests on its button', () => {
+            point('pointerover', trigger(), away())
+
+            expect(open.has(menu())).toBe(true)
+        })
+
+        it('stays open while the mouse crosses from the button to the menu', () => {
+            point('pointerover', trigger(), away())
+            point('pointerout', trigger(), away())
+            vi.advanceTimersByTime(100)
+            point('pointerover', document.getElementById('row')!, away())
+            vi.advanceTimersByTime(500)
+
+            expect(open.has(menu())).toBe(true)
+        })
+
+        it('closes shortly after the mouse leaves both the button and the menu', () => {
+            point('pointerover', trigger(), away())
+            point('pointerout', trigger(), away())
+
+            vi.advanceTimersByTime(149)
+            expect(open.has(menu())).toBe(true)
+            vi.advanceTimersByTime(1)
+            expect(open.has(menu())).toBe(false)
+        })
+
+        it('keeps a hovered menu open when its button is then clicked, after the mouse leaves', () => {
+            point('pointerover', trigger(), away())
+            const click = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+            })
+            trigger().dispatchEvent(click)
+            point('pointerout', trigger(), away())
+            vi.advanceTimersByTime(500)
+
+            // A cancelled click does not toggle the popover the button opens.
+            expect(click.defaultPrevented).toBe(true)
+            expect(open.has(menu())).toBe(true)
+        })
+
+        it('stays closed when the mouse moves between the parts of the button after a click closed it', () => {
+            trigger().innerHTML =
+                '<svg id="icon"></svg><span id="label"></span>'
+            const icon = document.getElementById('icon')!
+            const label = document.getElementById('label')!
+            point('pointerover', trigger(), away())
+            trigger().dispatchEvent(
+                new MouseEvent('click', { bubbles: true, cancelable: true })
+            )
+            // The second click toggles the popover shut.
+            open.delete(menu())
+            showPopover.mockClear()
+
+            point('pointerover', icon, trigger())
+            point('pointerover', label, icon)
+
+            expect(showPopover).not.toHaveBeenCalled()
+            expect(open.has(menu())).toBe(false)
+        })
+
+        it('does not close a menu reopened from the keyboard before the old close timer ends', () => {
+            point('pointerover', trigger(), away())
+            setOpen(menu(), true)
+            point('pointerout', trigger(), away())
+            vi.advanceTimersByTime(100)
+            // Escape closes it, then the focused button opens it again.
+            open.delete(menu())
+            setOpen(menu(), false)
+            open.add(menu())
+            setOpen(menu(), true)
+
+            vi.advanceTimersByTime(100)
+
+            expect(open.has(menu())).toBe(true)
+        })
+
+        it('leaves touch to the click', () => {
+            point('pointerover', trigger(), away(), 'touch')
+
+            expect(showPopover).not.toHaveBeenCalled()
+        })
+
+        it('does not open a menu without data-hover', () => {
+            menu().removeAttribute('data-hover')
+
+            point('pointerover', trigger(), away())
+
+            expect(showPopover).not.toHaveBeenCalled()
+        })
+    })
+
+    it('closes the menu when a link in it is chosen', async () => {
+        menu().innerHTML = '<a id="download" href="/a.json" download>JSON</a>'
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+
+        document
+            .getElementById('download')!
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+        expect(hidePopover).toHaveBeenCalledTimes(1)
+    })
+
+    it('closes the menu when a link in it is middle-clicked', async () => {
+        menu().innerHTML = '<a id="tab" href="/a" target="_blank">A</a>'
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+        const link = document.getElementById('tab')!
+
+        link.dispatchEvent(
+            new MouseEvent('auxclick', { bubbles: true, button: 2 })
+        )
+        expect(hidePopover).not.toHaveBeenCalled()
+        link.dispatchEvent(
+            new MouseEvent('auxclick', { bubbles: true, button: 1 })
+        )
+
+        expect(hidePopover).toHaveBeenCalledTimes(1)
     })
 
     it('leaves alone a popover that has nothing to anchor to', () => {

@@ -18,6 +18,7 @@ import { bindModalEscape } from '../runtime/modal-escape'
 import { initTelemetry } from '../runtime/telemetry'
 import { initSmoothScroll } from '../smooth-scroll'
 import { initTable } from '../table'
+import { initTooltips } from '../tooltip'
 import { initCodeLines } from './code-lines'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -64,4 +65,5 @@ bindCtaClicks()
 initPrivacyConsent()
 bindModalEscape()
 initFloating()
+initTooltips()
 bindHtmxHooks()
