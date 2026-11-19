@@ -1,0 +1,19 @@
+# The API Copy page menu opens from its chevron on a phone, where the button sits at the right edge, and closes
+# again. The menu is a popover placed by floating.ts. The journey DSL cannot assert a box is inside the viewport, so
+# the placement itself is checked by hand and by the unit tests of floating.ts.
+# @tags api-explorer
+# @requires build-type:assembler assembler-api-explorer
+# @requires !navigation-preview
+# @monitor schedule=60
+set viewport 375 800
+open api/doc/cloud-connect
+wait --load networkidle
+expect visible ".api-page-actions-chevron"
+expect attr ".api-page-actions-chevron" aria-expanded false
+click ".api-page-actions-chevron"
+expect visible "#api-page-actions-menu"
+expect attr ".api-page-actions-chevron" aria-expanded true
+expect visible find role menuitem --name "View as Markdown"
+press Escape
+expect --not visible "#api-page-actions-menu"
+expect attr ".api-page-actions-chevron" aria-expanded false

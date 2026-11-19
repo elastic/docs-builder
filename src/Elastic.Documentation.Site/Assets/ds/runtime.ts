@@ -4,6 +4,7 @@
 import { initApiDocs } from '../api-docs'
 import { initAppliesSwitch } from '../applies-switch'
 import { initCopyButton } from '../copybutton'
+import { initFloating } from '../floating'
 import { initHighlight, preloadHighlight } from '../hljs'
 import { initMath } from '../math'
 import { initMermaid } from '../mermaid'
@@ -62,4 +63,5 @@ document.addEventListener('htmx:load', function () {
 bindCtaClicks()
 initPrivacyConsent()
 bindModalEscape()
+initFloating()
 bindHtmxHooks()

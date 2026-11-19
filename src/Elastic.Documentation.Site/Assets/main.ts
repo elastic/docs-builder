@@ -2,11 +2,11 @@ import { initAgentSkillCopy } from './agent-skill'
 import { bindApiBetaBanner } from './api-beta-banner'
 import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
-import { initApiMenus } from './api-menu'
 import { changesPageChrome } from './api-navigation'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
+import { initFloating } from './floating'
 import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initListing } from './listing'
@@ -87,7 +87,7 @@ document.addEventListener('htmx:load', function () {
 bindCtaClicks()
 initPrivacyConsent()
 initSecondaryNav()
-initApiMenus()
+initFloating()
 initApiChromeSync()
 bindApiBetaBanner()
 bindModalEscape()

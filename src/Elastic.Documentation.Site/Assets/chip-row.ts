@@ -163,42 +163,15 @@ export function observeChipRow(row: HTMLElement, parts: ChipRowParts): void {
 
 const registered: ChipRowParts[] = []
 let openMenu: { menu: HTMLElement; anchor: HTMLElement } | null = null
-let followQueued = false
 
 function partsOf(element: Element): ChipRowParts | undefined {
     return registered.find((parts) => element.matches(parts.menu))
 }
 
-/** Keeps the open menu with its button as the page scrolls or resizes, at most once a frame. */
-function followOpenMenu() {
-    if (!openMenu || followQueued) return
-    followQueued = true
-    requestAnimationFrame(() => {
-        followQueued = false
-        if (openMenu) positionMenu(openMenu.menu, openMenu.anchor)
-    })
-}
-
-/** Under its anchor (the "more" button, or the row's search box), or above it when there is no room below. Run again on scroll, so the menu stays with its anchor. */
-function positionMenu(menu: HTMLElement, anchorElement: HTMLElement) {
-    const anchor = anchorElement.getBoundingClientRect()
-    const size = menu.getBoundingClientRect()
-    const margin = 8
-    const left = Math.max(
-        margin,
-        Math.min(anchor.left, window.innerWidth - size.width - margin)
-    )
-    const below = anchor.bottom + 4
-    const top =
-        below + size.height > window.innerHeight - margin &&
-        anchor.top - 4 - size.height > margin
-            ? anchor.top - 4 - size.height
-            : below
-    menu.style.left = `${left}px`
-    menu.style.top = `${top}px`
-}
-
-/** Opens under the "more" button, or above it when there is no room below, and keeps the button's state in step. */
+/**
+ * Clears the filter when the menu closes, and moves the focus in when it opens. floating.ts places it under its
+ * anchor: the "more" button, or the row's search box (`data-anchor`).
+ */
 function onMenuToggle(event: Event) {
     const menu = event.target as HTMLElement | null
     const parts = menu && partsOf(menu)
@@ -207,7 +180,6 @@ function onMenuToggle(event: Event) {
         .closest<HTMLElement>(parts.row)
         ?.querySelector<HTMLElement>(parts.more)
     const open = (event as ToggleEvent).newState === 'open'
-    more?.setAttribute('aria-expanded', open ? 'true' : 'false')
     const rowSearch = menu
         .closest<HTMLElement>(parts.row)
         ?.querySelector<HTMLInputElement>(`:scope > ${parts.filter}`)
@@ -226,7 +198,6 @@ function onMenuToggle(event: Event) {
     }
     if (!open || !anchor) return
 
-    positionMenu(menu, anchor)
     // Typing in the row's search box keeps the focus there while the menu fills; opened from the button, the focus moves in.
     if (rowSearch && document.activeElement === rowSearch) return
     if (filter) filter.focus()
@@ -422,12 +393,10 @@ function onInput(event: Event) {
     if (!parts) return
     filterMenu(input as HTMLInputElement, parts)
     openForSearch(input as HTMLInputElement, parts)
-    // A menu that opened above its button shrinks as it filters; place it again so it stays against the button.
-    if (openMenu) positionMenu(openMenu.menu, openMenu.anchor)
 }
 
 /**
- * Wires the "more" menus of one kind of chip row: placement, keyboard moves and the filter. Listeners are delegated
+ * Wires the "more" menus of one kind of chip row: keyboard moves and the filter. Listeners are delegated
  * from the document and added once, so it is safe to call again after an HTMX swap.
  */
 export function registerChipRows(parts: ChipRowParts): void {
@@ -438,11 +407,6 @@ export function registerChipRows(parts: ChipRowParts): void {
         document.addEventListener('keydown', onKeydown)
         document.addEventListener('input', onInput)
         document.addEventListener('pointerdown', onPointerDown)
-        window.addEventListener('scroll', followOpenMenu, {
-            capture: true,
-            passive: true,
-        })
-        window.addEventListener('resize', followOpenMenu)
     }
     registered.push(parts)
 }
