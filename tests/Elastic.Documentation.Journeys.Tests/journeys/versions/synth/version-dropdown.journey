@@ -14,7 +14,6 @@ expect visible find role heading --name "Elastic fundamentals"
 # Desktop: the picker is visible and opens.
 feature navigation-preview
   expect visible "#pages-nav .layout__version .link-menu__trigger"
-  expect attr "#pages-nav .layout__version .link-menu__trigger" aria-expanded false
   click "#pages-nav .layout__version .link-menu__trigger"
   expect attr "#pages-nav .layout__version .link-menu__trigger" aria-expanded true
   expect visible "#pages-nav .layout__version .link-menu__item"

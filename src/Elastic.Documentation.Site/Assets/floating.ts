@@ -134,6 +134,7 @@ function onToggle(event: Event) {
     if (!(popover instanceof HTMLElement) || !popover.hasAttribute(FLOATING))
         return
     const open = (event as ToggleEvent).newState === 'open'
+    // The markup carries no `aria-expanded`, so without script the browser reports the button's own state.
     for (const invoker of invokers(popover))
         invoker.setAttribute('aria-expanded', String(open))
     release(popover)

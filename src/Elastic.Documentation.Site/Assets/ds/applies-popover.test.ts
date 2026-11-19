@@ -2,7 +2,7 @@ import { initAppliesPopovers, unbindAppliesPopovers } from './applies-popover'
 
 const badge = `
 <span class="applies-popover" data-applies-popover>
-  <button type="button" aria-expanded="false" data-applies-trigger>Stack 9.1+</button>
+  <button type="button" data-applies-trigger>Stack 9.1+</button>
   <span data-applies-panel>Details</span>
 </span>`
 
@@ -87,7 +87,7 @@ describe('applies-to popovers', () => {
         expect(
             copy
                 .querySelector('[data-applies-trigger]')!
-                .getAttribute('aria-expanded')
-        ).toBe('false')
+                .hasAttribute('aria-expanded')
+        ).toBe(false)
     })
 })

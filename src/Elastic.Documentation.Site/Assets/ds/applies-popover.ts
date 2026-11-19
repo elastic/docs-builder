@@ -34,7 +34,7 @@ export function unbindAppliesPopovers(scope: ParentNode) {
             trigger?.removeAttribute('popovertarget')
             trigger?.removeAttribute('aria-haspopup')
             // The copy's panel starts closed, whatever state the original was in.
-            trigger?.setAttribute('aria-expanded', 'false')
+            trigger?.removeAttribute('aria-expanded')
             delete root.dataset.appliesBound
         })
 }

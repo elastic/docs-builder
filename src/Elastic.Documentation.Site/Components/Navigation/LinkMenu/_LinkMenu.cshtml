@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Navigation.LinkMenu.LinkMenuModel>
 @* The list is a popover (top layer), placed under the trigger by floating.ts. Without popover support it shows inline (link-menu.css). *@
 <div class="link-menu">
-	<button type="button" class="link-menu__trigger" popovertarget="@Model.Id" aria-expanded="false" aria-label="@Model.Label: @Model.TriggerText">
+	<button type="button" class="link-menu__trigger" popovertarget="@Model.Id" aria-label="@Model.Label: @Model.TriggerText">
 		<span class="link-menu__current">@Model.TriggerText</span>
 		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 	</button>
