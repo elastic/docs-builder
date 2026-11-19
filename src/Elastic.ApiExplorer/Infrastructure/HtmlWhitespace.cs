@@ -78,12 +78,22 @@ public static class HtmlWhitespace
 				return html.Length;
 			if (IsClosingTag(html, next, name))
 				return EndOfTag(html, next);
-			position = holdsMarkup && next + 1 < html.Length && (char.IsAsciiLetter(html[next + 1]) || html[next + 1] is '/' or '!')
-				? EndOfTag(html, next)
-				: next + 1;
+			position = holdsMarkup ? EndOfMarkupInPre(html, next) : next + 1;
 		}
 
 		return html.Length;
+	}
+
+	/// <summary>
+	/// Where the markup at <paramref name="index"/> inside a <c>pre</c> ends: a comment through its <c>--&gt;</c>, so text
+	/// such as <c>="</c> in it is not read as an attribute, a tag whole, and anything else one character on.
+	/// </summary>
+	private static int EndOfMarkupInPre(string html, int index)
+	{
+		if (string.CompareOrdinal(html, index, "<!--", 0, 4) == 0)
+			return EndAfter(html, html.IndexOf("-->", index + 4, StringComparison.Ordinal), 3);
+		var opensTag = index + 1 < html.Length && (char.IsAsciiLetter(html[index + 1]) || html[index + 1] is '/' or '!');
+		return opensTag ? EndOfTag(html, index) : index + 1;
 	}
 
 	private static bool IsClosingTag(string html, int index, string name)

@@ -57,6 +57,14 @@ public class HtmlWhitespaceTests
 	}
 
 	[Test]
+	public void Collapse_CommentInsideAPre_DoesNotHideItsClosingTag() =>
+		// Read as a tag, the comment's quote would pair with the title's and hide </pre>, leaving the rest uncollapsed.
+		HtmlWhitespace
+			.Collapse("<pre><!-- a=\" --> x</pre>\n\t<p title=\"t\">y</p>\n\t<p>z</p>")
+			.Should()
+			.Be("<pre><!-- a=\" --> x</pre>\n<p title=\"t\">y</p>\n<p>z</p>");
+
+	[Test]
 	public void Collapse_LargePage_DropsEveryRowIndentation()
 	{
 		// The largest API pages reach about 7 MB; this is the row partial repeated at that scale.
