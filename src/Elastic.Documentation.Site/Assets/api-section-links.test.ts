@@ -136,10 +136,19 @@ describe('section links', () => {
             cancelable: true,
             metaKey: true,
         })
-        link.addEventListener('click', (e) => e.preventDefault())
+        // The page's handler listens on the document; the window hears the click after it. Read whether the handler
+        // cancelled it there, then cancel it so jsdom does not try to navigate.
+        let canceledByHandler: boolean | undefined
+        const afterHandler = (e: Event) => {
+            canceledByHandler = e.defaultPrevented
+            e.preventDefault()
+        }
+        window.addEventListener('click', afterHandler)
 
         link.dispatchEvent(click)
+        window.removeEventListener('click', afterHandler)
 
+        expect(canceledByHandler).toBe(false)
         expect(scrollTo).not.toHaveBeenCalled()
     })
 })
