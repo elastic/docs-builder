@@ -50,6 +50,15 @@ internal sealed class FatalModesTests
 
 	private static Loader<Dto, Widget> Declared(Fatal fatal) => Loader.For(Parse, Map, fatal);
 
+	// parse reports unknown keys to the context before a DTO exists: "name:size:extra" reports a warning and, for "bad", an error
+	private static Dto ParseReporting(string text, string file, MapContext context)
+	{
+		context.Warn("parse warning");
+		if (text.StartsWith("bad", StringComparison.Ordinal))
+			context.Collector.Write(new Diagnostic { Severity = Severity.Error, File = "parser.yml", Message = "unknown key" });
+		return Parse(text.Replace("bad", "ok", StringComparison.Ordinal), file);
+	}
+
 	private static IEnumerable<(string Input, string Reads)> Messages(LoadResult<Widget> result) =>
 		result.Findings().Select(d => (d.Message, d.File));
 
@@ -75,6 +84,18 @@ internal sealed class FatalModesTests
 
 		(result.Value is Loaded<Widget>).Should().Be(kept);
 		result.ValueOrNull().Should().Match<Widget?>(w => (w != null) == kept);
+	}
+
+	[Test]
+	public void Load_NoneKeepsTheValueAndItsConstraintError_CheckErrorsDiscardsTheValueButKeepsTheError()
+	{
+		var none = Declared(Fatal.None).Load(CheckError, "w.yml");
+		var checkErrors = Declared(Fatal.CheckErrors).Load(CheckError, "w.yml");
+
+		none.Value.Should().BeOfType<Loaded<Widget>>();
+		none.Findings().Should().ContainSingle(d => d.Severity == Severity.Error);
+		checkErrors.Value.Should().BeOfType<Unreadable<Widget>>();
+		checkErrors.Findings().Should().ContainSingle(d => d.Severity == Severity.Error);
 	}
 
 	[Test]
@@ -216,5 +237,41 @@ internal sealed class FatalModesTests
 			.Which
 			.Should()
 			.Match<Diagnostic>(d => d.Severity == Severity.Error && d.File == "a.yml" && d.Line == 2 && d.Column == 5);
+	}
+
+	[Test]
+	[Arguments(Fatal.All, false)]
+	[Arguments(Fatal.CheckErrors, true)]
+	[Arguments(Fatal.None, true)]
+	public void Load_ParseWithContext_ReportsBeforeMapAndTheCheck_AndFollowsTheMode(Fatal fatal, bool kept)
+	{
+		var result = Loader.For<Dto, Widget>(ParseReporting, Map, fatal).Load("bad:50", "w.yml");
+
+		(result.Value is Loaded<Widget>).Should().Be(kept);
+		result
+			.Findings()
+			.Select(d => (d.Severity, d.Message))
+			.Should()
+			.Equal(
+				(Severity.Warning, "parse warning"),
+				(Severity.Error, "unknown key"),
+				(Severity.Hint, "first"),
+				(Severity.Warning, "Widget is large.")
+			);
+	}
+
+	[Test]
+	public void Load_ParseWithContextThrows_KeepsItsFindingsThenTheDescribedError()
+	{
+		static Dto Throwing(string text, string file, MapContext context)
+		{
+			context.Warn("before");
+			throw new InvalidOperationException("boom");
+		}
+
+		var result = Loader.For<Dto, Widget>(Throwing, Map, Fatal.None).Load("ok:1", "w.yml");
+
+		result.Value.Should().BeOfType<Unreadable<Widget>>();
+		result.Findings().Select(d => (d.Severity, d.Message)).Should().Equal((Severity.Warning, "before"), (Severity.Error, "boom"));
 	}
 }

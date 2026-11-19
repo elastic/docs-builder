@@ -41,18 +41,25 @@ internal enum Fatal
 internal delegate T? TryMap<in TDto, T>(TDto dto, MapContext context) where T : class;
 
 /// <summary>
+/// A parse step that reports to the load's <see cref="MapContext"/> while it reads, before a DTO exists (a deserializer that reports unknown keys to a
+/// collector, for example). Its findings come first, ahead of the map step's and the check's. Used with
+/// <see cref="Loader.For{TDto, T}(TryParse{TDto}, TryMap{TDto, T}, Fatal, Func{Exception, string}?)"/>.
+/// </summary>
+internal delegate TDto TryParse<out TDto>(string text, string file, MapContext context);
+
+/// <summary>
 /// A loader, declared once: how a file's text becomes a DTO (<c>parse</c>, the only code that touches the DTO), how the DTO becomes the record
 /// (<c>map</c>, which reports its own findings to a <see cref="MapContext"/>), and what a failure means. The record is then checked once against
 /// its own <c>T.Constraints</c>; there is no other set to name, so a loader cannot pick its rules.
 /// </summary>
 internal sealed class Loader<TDto, T> where T : class, Nullean.Entities.IHaveConstraints<T>
 {
-	private readonly Func<string, string, TDto> _parse;
+	private readonly TryParse<TDto> _parse;
 	private readonly TryMap<TDto, T> _map;
 	private readonly Fatal _fatal;
 	private readonly Func<Exception, string> _describe;
 
-	internal Loader(Func<string, string, TDto> parse, TryMap<TDto, T> map, Fatal fatal, Func<Exception, string> describe)
+	internal Loader(TryParse<TDto> parse, TryMap<TDto, T> map, Fatal fatal, Func<Exception, string> describe)
 	{
 		_parse = parse;
 		_map = map;
@@ -73,7 +80,7 @@ internal sealed class Loader<TDto, T> where T : class, Nullean.Entities.IHaveCon
 		T? value;
 		try
 		{
-			value = _map(_parse(text, file), context);
+			value = _map(_parse(text, file, context), context);
 		}
 		catch (Exception e) when (e is not (OutOfMemoryException or OperationCanceledException))
 		{
@@ -114,17 +121,39 @@ internal static class Loader
 		bool errorsAreFatal = true,
 		Func<Exception, string>? describe = null
 	) where T : class, Nullean.Entities.IHaveConstraints<T> =>
-		new(parse, (dto, context) => map(dto, context), errorsAreFatal ? Fatal.All : Fatal.None, describe ?? (static e => e.Message));
+		new(
+			(text, file, _) => parse(text, file),
+			(dto, context) => map(dto, context),
+			errorsAreFatal ? Fatal.All : Fatal.None,
+			describe ?? (static e => e.Message)
+		);
 
 	/// <summary>
 	/// Declares a loader with an explicit <see cref="Fatal"/> mode and a map step that may give up by returning null (<see cref="TryMap{TDto, T}"/>).
-	/// What differs from the strict default: with <see cref="Fatal.CheckErrors"/> or <see cref="Fatal.None"/> a record built despite errors is returned
-	/// as <see cref="Loaded{T}"/> whose findings contain errors, and a null from <paramref name="map"/> is <see cref="Unreadable{T}"/> without running
-	/// the check. It exists for loaders that have always tolerated mapping errors and that a behaviour-preserving refactor must not tighten. The mode is
-	/// required here on purpose: the strict default is the overload above. Every use of a non-default mode carries a <c>// TOLERANT LOAD:</c> comment.
+	/// What differs from the strict default depends on the mode. <see cref="Fatal.None"/>: a record built despite any error, mapping or constraint, is
+	/// returned as <see cref="Loaded{T}"/> whose findings contain the errors. <see cref="Fatal.CheckErrors"/>: only a record built despite a mapping error is
+	/// kept that way; an error from <c>T.Constraints</c> still makes the load <see cref="Unreadable{T}"/> and the record is discarded, so a caller that must
+	/// retain a record that violates a rule needs <see cref="Fatal.None"/>. In both, a null from <paramref name="map"/> is <see cref="Unreadable{T}"/>
+	/// without running the check. It exists for loaders that have always tolerated mapping errors and that a behaviour-preserving refactor must not tighten.
+	/// The mode is required here on purpose: the strict default is the overload above. Every use of a non-default mode carries a <c>// TOLERANT LOAD:</c> comment.
+	/// <paramref name="parse"/> receives only text and file; use the overload taking a <see cref="TryParse{TDto}"/> when parsing reports findings.
 	/// </summary>
 	public static Loader<TDto, T> For<TDto, T>(
 		Func<string, string, TDto> parse,
+		TryMap<TDto, T> map,
+		Fatal fatal,
+		Func<Exception, string>? describe = null
+	) where T : class, Nullean.Entities.IHaveConstraints<T> =>
+		new((text, file, _) => parse(text, file), map, fatal, describe ?? (static e => e.Message));
+
+	/// <summary>
+	/// As the overload taking a plain <c>parse</c>, but <paramref name="parse"/> also receives the per-load <see cref="MapContext"/>, so a deserializer that
+	/// reports while it reads (an unknown YAML key, before any DTO exists) writes to <see cref="MapContext.Collector"/> instead of throwing. Findings are
+	/// ordered: those made by <paramref name="parse"/>, then by <paramref name="map"/>, then the check's. They are kept when a later step throws, and an error
+	/// written by <paramref name="parse"/> follows the <see cref="Fatal"/> mode exactly like one written by <paramref name="map"/>.
+	/// </summary>
+	public static Loader<TDto, T> For<TDto, T>(
+		TryParse<TDto> parse,
 		TryMap<TDto, T> map,
 		Fatal fatal,
 		Func<Exception, string>? describe = null

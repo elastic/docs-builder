@@ -59,7 +59,7 @@ internal static class SearchLoader
 ```
 
 - `parse` and `map` are the only steps. Findings made in `map` go to the `MapContext` the loader creates per load, so they cannot be lost or reordered, and are kept (first) when a later step throws.
-- The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default, `Fatal.All`) makes an error an `Unreadable<T>`; `false` (`Fatal.None`) returns the `Loaded<T>` with its errors, for a caller that reports and continues. A load that must keep a value despite mapping errors, or that may give up in `map`, uses the `Fatal` overload: see "Tolerant loads".
+- The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default, `Fatal.All`) makes an error an `Unreadable<T>`; `false` (`Fatal.None`) returns the `Loaded<T>` with its errors, for a caller that reports and continues. A load that must keep a value despite mapping errors, or that may give up in `map`, uses the `Fatal` overload: see "Tolerant loads". `parse` may take the `MapContext` as a third argument (`TryParse`, only on the `Fatal` overload) when reading reports findings, such as unknown keys, before a DTO exists.
 - `context.Collector` is an `IDiagnosticsCollector` over the same findings, in order, so a parser written against a collector is reused unchanged; it counts only this load's severities. `context.Error(...)` records an explicit error.
 - A step that throws becomes an error finding. Its text is `describe(exception)`, declared with the loader (default: the message, so a loader keeps the text it always gave). Cancellation and out-of-memory propagate.
 - `value.Check(file)` checks a record built elsewhere against its `T.Constraints` and returns the `Loaded<T>` (see "Check" below).
@@ -91,10 +91,11 @@ The default of every loader is strict: any error makes the load `Unreadable<T>`.
 Other tolerant-load facts, true in every mode:
 
 - `map` may return `null` through the `TryMap` overload: the load is `Unreadable<T>` with the findings made so far and the check does not run. Use it only where the hand-rolled loader gave up the same way.
-- Findings are ordered: findings made while mapping (`Warn`, `Hint`, `Error`, collector writes), then the check's.
+- Findings are ordered: findings made while parsing (only with the `TryParse` form), then while mapping (`Warn`, `Hint`, `Error`, collector writes), then the check's.
+- Keeping a record that holds errors differs by mode: `None` keeps it whatever the errors; `CheckErrors` keeps it only for mapping/parsing errors, an error from `T.Constraints` still discards it.
 - A step that throws keeps its behaviour in every mode: `Unreadable<T>` with the findings made so far, then the described error.
 
-**Every use of `Fatal.CheckErrors` or `Fatal.None` carries a `// TOLERANT LOAD:` comment** directly above it, naming (1) the behaviour on `main` it preserves, (2) the snapshot or test that locks it, and (3) what the strict behaviour would be once the lock is lifted (the deferred behaviour change, to list in the PR). `TolerantLoadCommentTests` fails when a source file uses a non-default mode without that comment; it checks the comment is there, not that it is true. Find the debt with `grep -rn "TOLERANT LOAD:" src`.
+**Every use of `Fatal.CheckErrors` or `Fatal.None` carries a `// TOLERANT LOAD:` comment** directly above it, naming (1) the behaviour on `main` it preserves, (2) the snapshot or test that locks it, and (3) what the strict behaviour would be once the lock is lifted (the deferred behaviour change, to list in the PR). `TolerantLoadCommentTests` fails when a declaration selects a non-default mode (`Fatal.CheckErrors`, `Fatal.None` or `errorsAreFatal: false`) without its own such comment directly above; it checks the comment is there, not that it is true. Find the debt with `grep -rn "TOLERANT LOAD:" src`.
 
 ```csharp
 // illustrative; the names are made up

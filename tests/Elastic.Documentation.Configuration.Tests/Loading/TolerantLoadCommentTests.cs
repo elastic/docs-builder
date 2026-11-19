@@ -9,26 +9,51 @@ namespace Elastic.Documentation.Configuration.Tests.Loading;
 
 /// <summary>
 /// A tolerant <c>Fatal</c> mode hides errors from a load's outcome, so each use must say what it preserves, what locks it and what the strict
-/// behaviour would be (Constraints-Conventions.md, "Tolerant loads"). This guard is deliberately plain text: a use of <c>Fatal.CheckErrors</c> or
-/// <c>Fatal.None</c> in a source file needs a <c>// TOLERANT LOAD:</c> comment on one of the <see cref="Window"/> lines above it. It does not judge the
-/// comment's content; review does.
+/// behaviour would be (Constraints-Conventions.md, "Tolerant loads"). This guard is deliberately plain text: every declaration that selects a tolerant
+/// mode, by <c>Fatal.CheckErrors</c>, <c>Fatal.None</c> or <c>errorsAreFatal: false</c>, needs a <c>// TOLERANT LOAD:</c> comment in the comment block directly
+/// above its own statement, so one annotation covers one declaration. It does not judge the comment's content; review does.
 /// </summary>
 public partial class TolerantLoadCommentTests
 {
-	private const int Window = 12;
+	private const string Marker = "// TOLERANT LOAD:";
 
-	[GeneratedRegex(@"\bFatal\.(CheckErrors|None)\b", RegexOptions.None, 1000)]
+	[GeneratedRegex(@"\bFatal\.(CheckErrors|None)\b|\berrorsAreFatal\s*:\s*false\b", RegexOptions.None, 1000)]
 	private static partial Regex NonDefault();
+
+	private static bool IsComment(string line) => line.TrimStart().StartsWith("//", StringComparison.Ordinal);
+
+	private static bool EndsStatement(string line)
+	{
+		var t = line.TrimEnd();
+		return t.Length == 0 || t.EndsWith(';') || t.EndsWith('{') || t.EndsWith('}') || IsComment(t);
+	}
+
+	private static int StatementStart(string[] lines, int i)
+	{
+		var start = i;
+		while (start > 0 && !EndsStatement(lines[start - 1]))
+			start--;
+		return start;
+	}
+
+	private static bool HasOwnAnnotation(string[] lines, int statementStart)
+	{
+		for (var j = statementStart - 1; j >= 0 && IsComment(lines[j]); j--)
+		{
+			if (lines[j].Contains(Marker, StringComparison.Ordinal))
+				return true;
+		}
+		return false;
+	}
 
 	private static IEnumerable<int> Unannotated(string source)
 	{
 		var lines = source.Split('\n');
 		for (var i = 0; i < lines.Length; i++)
 		{
-			if (lines[i].TrimStart().StartsWith("//", StringComparison.Ordinal) || !NonDefault().IsMatch(lines[i]))
+			if (IsComment(lines[i]) || !NonDefault().IsMatch(lines[i]))
 				continue;
-			var from = Math.Max(0, i - Window);
-			if (!lines[from..(i + 1)].Any(l => l.Contains("// TOLERANT LOAD:", StringComparison.Ordinal)))
+			if (!HasOwnAnnotation(lines, StatementStart(lines, i)))
 				yield return i + 1;
 		}
 	}
@@ -39,6 +64,28 @@ public partial class TolerantLoadCommentTests
 	[Test]
 	public void Guard_AcceptsAUseWithTheCommentAbove() =>
 		Unannotated("// TOLERANT LOAD: keeps x\nvar l = Loader.For(p, m, fatal: Fatal.None);").Should().BeEmpty();
+
+	[Test]
+	public void Guard_FlagsTheBoolOverloadSelectingTheTolerantMode() =>
+		Unannotated("var l = Loader.For(p, m, errorsAreFatal: false);").Should().Equal(1);
+
+	[Test]
+	public void Guard_AcceptsTheBoolOverloadWithTheCommentAbove() =>
+		Unannotated("// TOLERANT LOAD: keeps x\nvar l = Loader.For(p, m, errorsAreFatal: false);").Should().BeEmpty();
+
+	[Test]
+	public void Guard_IgnoresTheBoolOverloadStrictValue() =>
+		Unannotated("var l = Loader.For(p, m, errorsAreFatal: true);").Should().BeEmpty();
+
+	[Test]
+	public void Guard_OneAnnotationDoesNotCoverTheNextDeclaration() =>
+		Unannotated("// TOLERANT LOAD: keeps x\nvar a = Loader.For(p, m, Fatal.None);\nvar b = Loader.For(p, m, Fatal.None);")
+			.Should()
+			.Equal(3);
+
+	[Test]
+	public void Guard_AcceptsAnAnnotationAboveAMultiLineDeclaration() =>
+		Unannotated("// TOLERANT LOAD: keeps x\nvar a = Loader.For(\n\tp,\n\tm,\n\tFatal.None);").Should().BeEmpty();
 
 	[Test]
 	public void Guard_IgnoresTheStrictModeAndComments() =>
