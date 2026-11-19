@@ -20,12 +20,12 @@ export function changesPageChrome(
     return isApiPath(targetPath, root) !== isApiPath(currentPath, root)
 }
 
-/** The product and version of an API path, such as `es`, `es/v9` or `es/main`. `null` outside an API product. */
+/** The product and URL root of an API path, such as `es/`, `es/v9` or `es/next`. `null` outside an API product. */
 function apiTree(path: string): string | null {
     const parsed = parseApiTree(path)
     if (!parsed) return null
     const { product, tree } = parsed
-    const segment = tree === null || tree === 'main' ? (tree ?? '') : `v${tree}`
+    const segment = tree === null ? '' : tree === 'main' ? 'next' : `v${tree}`
     return `${product}/${segment}`
 }
 

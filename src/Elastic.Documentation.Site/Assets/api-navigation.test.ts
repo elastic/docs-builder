@@ -97,34 +97,29 @@ describe('changesPageChrome', () => {
 })
 
 describe('changesApiTree', () => {
-    const main = '/api/elasticsearch/operation/operation-ping'
+    const latest = '/api/elasticsearch/operation/operation-ping'
     const v9 = '/api/elasticsearch/v9/operation/operation-ping'
     const v8 = '/api/elasticsearch/v8'
+    const next = '/api/elasticsearch/next/operation/operation-ping'
 
-    it('is true between main and a released version, in both directions', () => {
-        expect(changesApiTree(v9, main)).toBe(true)
-        expect(changesApiTree(main, v9)).toBe(true)
+    it('is true between the unversioned path and a released version, in both directions', () => {
+        expect(changesApiTree(v8, latest)).toBe(true)
+        expect(changesApiTree(latest, v8)).toBe(true)
+    })
+
+    it('is true between the unversioned path and the numbered copy of the same major', () => {
+        expect(changesApiTree(v9, latest)).toBe(true)
     })
 
     it('is true between two API products', () => {
-        expect(changesApiTree('/api/kibana/operation/get-actions', main)).toBe(
-            true
-        )
+        expect(
+            changesApiTree('/api/kibana/operation/get-actions', latest)
+        ).toBe(true)
     })
 
-    it('is true between main and the unversioned path', () => {
-        expect(
-            changesApiTree(
-                '/api/elasticsearch/main/group/endpoint-search',
-                main
-            )
-        ).toBe(true)
-        expect(
-            changesApiTree(
-                '/api/elasticsearch/main/group/a',
-                '/api/elasticsearch/main/operation/b'
-            )
-        ).toBe(false)
+    it('is true between next and the unversioned path', () => {
+        expect(changesApiTree(next, latest)).toBe(true)
+        expect(changesApiTree(latest, next)).toBe(true)
     })
 
     it('is true between two released versions', () => {
@@ -136,12 +131,18 @@ describe('changesApiTree', () => {
             changesApiTree('/api/elasticsearch/v9/group/endpoint-search', v9)
         ).toBe(false)
         expect(
-            changesApiTree('/api/elasticsearch/group/endpoint-search', main)
+            changesApiTree('/api/elasticsearch/group/endpoint-search', latest)
+        ).toBe(false)
+        expect(
+            changesApiTree(
+                '/api/elasticsearch/next/group/a',
+                '/api/elasticsearch/next/operation/b'
+            )
         ).toBe(false)
     })
 
     it('is false when either path is not an API product page', () => {
-        expect(changesApiTree('/docs/get-started', main)).toBe(false)
-        expect(changesApiTree(main, '/docs/api')).toBe(false)
+        expect(changesApiTree('/docs/get-started', latest)).toBe(false)
+        expect(changesApiTree(latest, '/docs/api')).toBe(false)
     })
 })
