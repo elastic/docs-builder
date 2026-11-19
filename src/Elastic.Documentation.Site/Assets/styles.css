@@ -204,7 +204,9 @@ body {
 		@apply w-full;
 	}
 
-	.nav-toggle-btn {
+	/* The toggle button. On folder and heading rows the label is the button; island rows keep the inner div. */
+	.nav-toggle-btn,
+	.nav-folder > .peer > label {
 		@apply hover:bg-grey-20 cursor-pointer rounded-sm p-1;
 	}
 
@@ -214,6 +216,11 @@ body {
 		/* The symbols are filled hairline paths; a stroke on top of the fill makes them heavy. */
 		fill: currentColor;
 		stroke: none;
+	}
+
+	/* An open folder points its chevron down; the label no longer carries the group/label class this used. */
+	.nav-folder > .peer > label:has(:checked) .nav-chevron {
+		@apply rotate-0;
 	}
 
 	.nav-subtree {
@@ -594,5 +601,14 @@ h1:has(.cli-badge-ns, .cli-badge-cmd) {
 
 	:where([id^='nav-tree-']) li.nav-top {
 		@apply mt-6 flex pr-8 font-semibold;
+	}
+
+	/* A folder or heading row's title and toggle, and the toggle's place in it: the classes the row used to carry. */
+	:where(.nav-folder > .peer) {
+		@apply grid w-full grid-cols-[1fr_auto];
+	}
+
+	:where(.nav-folder > .peer > label) {
+		@apply mr-2 self-start;
 	}
 }
