@@ -58,13 +58,20 @@ public class SearchTuningLoaderTests
 	[Test]
 	public void Load_FileThatDoesNotParse_ThrowsTheParsersException()
 	{
-		using var provider = GoldenConfig.CreateProvider(GoldenConfig.Search, "synonyms: [a, b\n");
+		const string yaml = "synonyms: [[a, b]\n";
+		using var provider = GoldenConfig.CreateProvider(GoldenConfig.Search, yaml);
+		var direct =
+			() => ConfigurationFileProvider.Deserialize<Elastic.Documentation.Configuration.Search.SearchConfigDto>(
+				yaml,
+				provider.SearchFile.FullName
+			);
+		var expected = direct.Should().Throw<Exception>().Which;
 
 		var act = () => SearchTuningLoader.Load(provider);
 
 		var thrown = act.Should().Throw<Exception>().Which;
-		thrown.GetType().FullName.Should().Be("SharpYaml.YamlException");
-		thrown.Message.Should().Contain("search.yml");
+		thrown.GetType().Should().Be(expected.GetType());
+		thrown.Message.Should().Be(expected.Message);
 	}
 
 	[Test]
