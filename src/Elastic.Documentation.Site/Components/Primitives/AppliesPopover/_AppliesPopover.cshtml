@@ -2,9 +2,10 @@
 @if (Model.Interactive && Model.Popover is { } inlineContent && !Model.Block)
 {
 	@* Inside a paragraph, so only phrasing content: a details, div, p or ul start tag would close the paragraph and split the sentence.
-	   Both forms are a button and a panel; ds/applies-popover.ts makes the panel a popover the button opens (applies-popover.css). *@
+	   Both forms are a button and a panel; ds/applies-popover.ts makes the panel a popover the button opens (applies-popover.css).
+	   Unbound, the panel shows while the button has focus. Safari does not focus a button on click unless it has a tabindex, so the buttons carry one. *@
 	<span class="applies-popover applies-popover--inline" data-applies-popover>
-		<button type="button" class="@Model.CssClass applies-popover__trigger" aria-expanded="false" data-applies-trigger>
+		<button type="button" class="@Model.CssClass applies-popover__trigger" tabindex="0" aria-expanded="false" data-applies-trigger>
 			@await RenderPartialAsync(_AppliesPopoverBadge.Create(Model))
 		</button>
 		<span class="applies-popover__panel" data-applies-panel>
@@ -42,7 +43,7 @@
 else if (Model.Interactive && Model.Popover is { } content)
 {
 	<div class="applies-popover" data-applies-popover>
-		<button type="button" class="@Model.CssClass applies-popover__trigger" aria-expanded="false" data-applies-trigger>
+		<button type="button" class="@Model.CssClass applies-popover__trigger" tabindex="0" aria-expanded="false" data-applies-trigger>
 			@await RenderPartialAsync(_AppliesPopoverBadge.Create(Model))
 		</button>
 		<div class="applies-popover__panel" data-applies-panel>
