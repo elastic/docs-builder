@@ -20,7 +20,7 @@ public sealed class AssemblyConfigurationDto
 	public Dictionary<string, PublishEnvironmentDto> Environments { get; set; } = [];
 
 	[YamlPropertyName("shared_configuration")]
-	public Dictionary<string, RepositoryDto> SharedConfigurations { get; set; } = [];
+	public Dictionary<string, RepositoryDto>? SharedConfigurations { get; set; } = [];
 }
 
 public class RepositoryDto
@@ -79,10 +79,10 @@ public sealed class PublishEnvironmentDto
 	public Publishing.ContentSource ContentSource { get; set; }
 
 	[YamlPropertyName("google_tag_manager")]
-	public GoogleTagManagerDto GoogleTagManager { get; set; } = new();
+	public GoogleTagManagerDto? GoogleTagManager { get; set; } = new();
 
 	[YamlPropertyName("optimizely")]
-	public OptimizelyDto Optimizely { get; set; } = new();
+	public OptimizelyDto? Optimizely { get; set; } = new();
 
 	[YamlPropertyName("feature_flags")]
 	public Dictionary<string, bool> FeatureFlags { get; set; } = [];

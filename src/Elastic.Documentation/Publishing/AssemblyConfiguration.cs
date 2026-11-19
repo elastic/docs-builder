@@ -13,11 +13,11 @@ namespace Elastic.Documentation.Publishing;
 
 /// <summary>
 /// The assembled site's sources and targets from <c>assembler.yml</c>: the narrative repository, the referenced
-/// repositories with their branch per content source, and the publish environments. Loaded once per process by
-/// <c>AssemblyLoader</c>, with repository defaults applied and private repositories filtered when requested.
+/// repositories with their branch per content source, and the publish environments. Loaded by <c>AssemblyLoader.Create</c>
+/// or <c>AssemblyLoader.Deserialize</c>, with repository defaults applied and private repositories filtered when requested.
 /// </summary>
 /// <remarks>
-/// Constructed with <c>AssemblyLoader.Load</c>. <c>AvailableRepositories</c> is computed from the references and the narrative.
+/// Constructed with <c>AssemblyLoader.Create</c> or <c>AssemblyLoader.Deserialize</c>. <c>AvailableRepositories</c> is computed from the references and the narrative.
 /// </remarks>
 [Equatable]
 public partial record AssemblyConfiguration : IHaveConstraints<AssemblyConfiguration>
@@ -92,7 +92,7 @@ public partial record AssemblyConfiguration : IHaveConstraints<AssemblyConfigura
 
 /// <summary>A repository the assembler clones, with the branch it publishes per content source.</summary>
 /// <remarks>
-/// Constructed with <c>AssemblyLoader.Load</c> or <see cref="Repository.AsConfigurationCheckout"/>.
+/// Constructed with <c>AssemblyLoader.Create</c>, <c>AssemblyLoader.Deserialize</c> or <see cref="Repository.AsConfigurationCheckout"/>.
 /// Members are <c>init</c>: the loader and tests build records by hand.
 /// </remarks>
 [Equatable]

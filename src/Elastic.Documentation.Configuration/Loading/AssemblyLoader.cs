@@ -105,7 +105,8 @@ public static class AssemblyLoader
 			PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
 			AllPrivateRepositoryNames = new HashSet<string>(privateRepositories.Select(r => r.Key), StringComparer.OrdinalIgnoreCase),
 			Environments = environments,
-			SharedConfigurations = dto.SharedConfigurations.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty))
+			// an empty `shared_configuration:` is null here and still loads, as it always has
+			SharedConfigurations = dto.SharedConfigurations?.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty)) ?? []
 		};
 		// derives the available repositories now: a referenced repository named like the narrative fails the load
 		_ = configuration.AvailableRepositories;
@@ -141,15 +142,18 @@ public static class AssemblyLoader
 			PathPrefix = dto.PathPrefix,
 			AllowIndexing = dto.AllowIndexing,
 			ContentSource = dto.ContentSource,
-			GoogleTagManager = new GoogleTagManager
-			{
-				Enabled = dto.GoogleTagManager.Enabled,
-				Id = dto.GoogleTagManager.Id,
-				Auth = dto.GoogleTagManager.Auth,
-				Preview = dto.GoogleTagManager.Preview,
-				CookiesWin = dto.GoogleTagManager.CookiesWin
-			},
-			Optimizely = new Optimizely { Enabled = dto.Optimizely.Enabled, Id = dto.Optimizely.Id },
+			// an empty `google_tag_manager:` or `optimizely:` stays null and fails where the environment is read, as it always has
+			GoogleTagManager = dto.GoogleTagManager is { } gtm
+				? new GoogleTagManager
+				{
+					Enabled = gtm.Enabled,
+					Id = gtm.Id,
+					Auth = gtm.Auth,
+					Preview = gtm.Preview,
+					CookiesWin = gtm.CookiesWin
+				}
+				: null!,
+			Optimizely = dto.Optimizely is { } optimizely ? new Optimizely { Enabled = optimizely.Enabled, Id = optimizely.Id } : null!,
 			FeatureFlags = dto.FeatureFlags,
 			WebsiteSearchScriptUrl = dto.WebsiteSearchScriptUrl,
 			WafIntegrationUrl = dto.WafIntegrationUrl

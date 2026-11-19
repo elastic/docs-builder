@@ -97,6 +97,25 @@ public class AssemblyLoaderTests
 			.BeTrue();
 
 	[Test]
+	public void Deserialize_EmptySharedConfiguration_LoadsAsItAlwaysHas() =>
+		Deserialize("shared_configuration:\n").SharedConfigurations.Should().BeEmpty();
+
+	[Test]
+	[Arguments("google_tag_manager")]
+	[Arguments("optimizely")]
+	public void Deserialize_EmptyOptionalEnvironmentSection_LoadsAndOnlyFailsWhereTheEnvironmentIsRead(string section)
+	{
+		var config = Deserialize($"environments:\n  prod:\n    {section}:\n");
+
+		config.Environments.Keys.Should().Equal("prod");
+		var read =
+			() => section == "optimizely"
+				? config.Environments["prod"].Optimizely.Enabled
+				: config.Environments["prod"].GoogleTagManager.Enabled;
+		_ = read.Should().Throw<NullReferenceException>();
+	}
+
+	[Test]
 	public void Load_MalformedYaml_IsAnErrorFindingWithTheParsersMessage()
 	{
 		var result = AssemblyLoader.Yaml(false, new FakeEnvironment()).Load("references: [not, a, map]", "assembler.yml");
