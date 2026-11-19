@@ -314,9 +314,10 @@
 	height: 12px;
 }
 
+/* Static, so the menu takes the whole button as its anchor (.api-page-actions), not only the chevron. */
 .api-page-actions details.api-page-actions-dropdown,
 .api-page-actions details.nav-select-dropdown {
-	position: relative;
+	position: static;
 	display: flex;
 	width: auto;
 	overflow: visible;
@@ -348,6 +349,12 @@
 	font-weight: 400;
 	line-height: 20px;
 	color: #1d2a3e;
+}
+
+/* Opens from the button's left edge where opening leftward would leave the window (api-docs.ts). */
+.api-page-actions-menu--start {
+	right: auto;
+	left: 0;
 }
 
 .api-page-actions-icon {

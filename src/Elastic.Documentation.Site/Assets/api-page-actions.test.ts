@@ -88,4 +88,28 @@ describe('initApiPageActions', () => {
         expect(dropdown.open).toBe(false)
         expect(writeText).toHaveBeenCalledWith(markdown)
     })
+
+    it("opens the menu from the button's left edge when opening leftward would leave the window", () => {
+        initApiPageActions()
+        document.body.innerHTML = pageActionsMarkup('/search.md')
+        const dropdown = document.querySelector<HTMLDetailsElement>(
+            '.api-page-actions-dropdown'
+        )!
+        const menu = dropdown.querySelector<HTMLElement>(
+            '.api-page-actions-menu'
+        )!
+        let left = -104
+        menu.getBoundingClientRect = () => ({ left }) as DOMRect
+
+        dropdown.dispatchEvent(new Event('toggle'))
+        expect(menu.classList.contains('api-page-actions-menu--start')).toBe(
+            true
+        )
+
+        left = 600
+        dropdown.dispatchEvent(new Event('toggle'))
+        expect(menu.classList.contains('api-page-actions-menu--start')).toBe(
+            false
+        )
+    })
 })
