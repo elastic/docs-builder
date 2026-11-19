@@ -119,6 +119,54 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 		);
 	}
 
+	[Test]
+	public async Task LinksThatDoNotFit_ScrollInsideTheRowAndTheLastOneIsReachable()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			// Too narrow for the links, so the track has to scroll sideways.
+			await page.SetViewportAsync(260, 700, 1).ConfigureAwait(false);
+			await Task.Delay(500).ConfigureAwait(false);
+
+			var state = await page.EvaluateAsync(
+				"""
+				(() => {
+					const bar = document.querySelector('.api-section-links');
+					const track = bar.querySelector('.api-section-links-track');
+					const links = [...track.querySelectorAll('a')];
+					const last = links[links.length - 1];
+					const overflows = track.scrollWidth > track.clientWidth + 1;
+					// A scrollbar that takes layout room, as on a system without overlay scrollbars. Headless Chrome may draw
+					// none, so where it does not, reserve the same room with padding: the track must stay inside the row either way.
+					if (track.offsetHeight - track.clientHeight === 0) track.style.paddingBottom = '12px';
+					track.scrollLeft = track.scrollWidth;
+					const row = bar.getBoundingClientRect();
+					const rowBottom = row.bottom - parseFloat(getComputedStyle(bar).borderBottomWidth);
+					const t = track.getBoundingClientRect();
+					const l = last.getBoundingClientRect();
+					return {
+						overflows,
+						lastLabel: last.textContent.trim(),
+						lastReachable: l.left >= t.left - 1 && l.right <= t.right + 1,
+						trackInsideRow: t.top >= row.top - 1 && t.bottom <= rowBottom + 1,
+						linksInsideTrack: links.every(a => a.getBoundingClientRect().bottom <= t.bottom + 1),
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"links overflow {state.GetProperty("overflows").GetBoolean()}, last link {state.GetProperty("lastLabel").GetString()} reachable {state.GetProperty("lastReachable").GetBoolean()}, " +
+					$"track inside the row {state.GetProperty("trackInsideRow").GetBoolean()}, links inside the track {state.GetProperty("linksInsideTrack").GetBoolean()}"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"links overflow True, last link Responses reachable True, track inside the row True, links inside the track True"
+		);
+	}
+
 	// The row's state after a scroll settles: the scroll-spy runs on a frame.
 	private static async Task<string> DescribeAsync(Page page)
 	{
