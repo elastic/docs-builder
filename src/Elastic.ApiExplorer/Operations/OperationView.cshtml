@@ -4,7 +4,11 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 
-	// The Base URL and examples sit in the right rail, under Copy page.
+	// The design-system stylesheet has no styles for the section links yet, so the flagged page leaves them out.
+	private bool ShowSectionLinks =>
+		!Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && Model.SectionLinks is { Count: > 1 };
+
+	// The Base URL and examples sit in the right rail.
 	// Below 1024px the rail drops under the whole article, so the Base URL also sits in the header (hidden on wide screens).
 	protected override async Task ExecuteSectionAsync(string name)
 	{
@@ -28,7 +32,8 @@
 	var endpoint = pageModel.Endpoint;
 }
 
-<header class="api-page-intro">
+@* A reserved id: a supplemental section titled Overview gets "overview", which this must not take. *@
+<header class="api-page-intro" id="api-operation-overview">
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
 	</div>
@@ -55,19 +60,10 @@
 	</ul>
 	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
 </header>
-@* The design-system stylesheet has no styles for the strip yet, so the flagged page leaves it out. The strip opens the page, above the description, so what the operation needs and holds is the first thing a reader sees. The section carries a class while the page has the toolbar, so what the toolbar covers can be scrolled clear of it. *@
-@{
-	var sectionLinks = Model.SectionLinks;
-	var showStrip = !Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && sectionLinks is { Count: > 1 };
-}
-<section id="elastic-api-v3" class="@(showStrip ? "api-has-toolbar" : null)">
-	@if (showStrip)
+<section id="elastic-api-v3" class="@(ShowSectionLinks ? "api-has-toolbar" : null)">
+	@if (ShowSectionLinks)
 	{
-		@(await RenderPartialAsync<_SectionLinks, SectionStripModel>(new SectionStripModel(sectionLinks, Model.Authorization)))
-	}
-	else if (Model.Authorization.Privileges.Count > 0)
-	{
-		@(await RenderPartialAsync<_PrivilegesCard, AuthorizationSectionModel>(Model.Authorization))
+		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(Model.SectionLinks))
 	}
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
 	{
@@ -89,6 +85,10 @@
 		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" target="@(pageModel.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(pageModel.ExternalDocs.IsElasticDocs ? null : "noopener")">
 			@pageModel.ExternalDocs.LinkText
 		</a>
+	}
+	@if (Model.Authorization.Privileges.Count > 0)
+	{
+		@(await RenderPartialAsync<_RequiredPrivileges, AuthorizationSectionModel>(Model.Authorization))
 	}
 	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
 	@(await RenderPartialAsync(_ExpandAllControl.Create(true)))
