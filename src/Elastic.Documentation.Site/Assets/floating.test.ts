@@ -287,6 +287,26 @@ describe('floating popovers', () => {
         expect(hidePopover).toHaveBeenCalledTimes(1)
     })
 
+    it('closes the menu when a link in it is middle-clicked', async () => {
+        menu().innerHTML = '<a id="tab" href="/a" target="_blank">A</a>'
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+        const link = document.getElementById('tab')!
+
+        link.dispatchEvent(
+            new MouseEvent('auxclick', { bubbles: true, button: 2 })
+        )
+        expect(hidePopover).not.toHaveBeenCalled()
+        link.dispatchEvent(
+            new MouseEvent('auxclick', { bubbles: true, button: 1 })
+        )
+
+        expect(hidePopover).toHaveBeenCalledTimes(1)
+    })
+
     it('leaves alone a popover that has nothing to anchor to', () => {
         document.body.innerHTML = '<div id="other" popover></div>'
         const other = document.getElementById('other')!

@@ -221,4 +221,8 @@ export function initFloating() {
     document.addEventListener('pointerout', onPointerOut)
     document.addEventListener('click', keepHoverMenuOpen, true)
     document.addEventListener('click', onClick)
+    // A middle click opens the link in a new tab through `auxclick`, not `click`.
+    document.addEventListener('auxclick', (event) => {
+        if (event.button === 1) onClick(event)
+    })
 }
