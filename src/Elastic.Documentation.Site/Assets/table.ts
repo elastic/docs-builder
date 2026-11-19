@@ -2,6 +2,7 @@ import {
     initAppliesPopovers,
     unbindAppliesPopovers,
 } from './ds/applies-popover'
+import { closePopoversWithin } from './floating'
 import { fullscreenIcon } from './icons'
 
 const closeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 6.586 13.293 1.293l1.414 1.414L9.414 8l5.293 5.293-1.414 1.414L8 9.414l-5.293 5.293-1.414-1.414L6.586 8 1.293 2.707l1.414-1.414L8 6.586Z"/></svg>`
@@ -108,7 +109,11 @@ function openTableModal(wrapper: HTMLElement): void {
     dialog.addEventListener('click', (e) => {
         if (e.target === dialog) dialog.close()
     })
-    dialog.addEventListener('close', () => dialog.remove())
+    dialog.addEventListener('close', () => {
+        // A badge left open in the copy would otherwise keep Floating UI tracking a removed element.
+        closePopoversWithin(dialog)
+        dialog.remove()
+    })
 
     document.body.appendChild(dialog)
     dialog.showModal()

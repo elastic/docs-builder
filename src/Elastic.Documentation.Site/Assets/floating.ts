@@ -132,13 +132,19 @@ function onToggle(event: Event) {
     stopTracking.set(popover, track(anchor, popover, placementOf(popover)))
 }
 
-/** A swap removes the page's popovers; close them first so their tracking is released. */
-function closeAll() {
+/** Closes the open popovers inside `root` and stops tracking them. Removing an open popover fires no `toggle`, so whoever removes a subtree calls this first. */
+export function closePopoversWithin(root: Node) {
     for (const popover of [...stopTracking.keys()]) {
+        if (!root.contains(popover)) continue
         if (popover.isConnected && popover.matches(':popover-open'))
             popover.hidePopover()
         release(popover)
     }
+}
+
+/** A swap removes the page's popovers; close them first so their tracking is released. */
+function closeAll() {
+    closePopoversWithin(document)
 }
 
 const HOVER_CLOSE_MS = 150

@@ -1,4 +1,4 @@
-import { initFloating } from './floating'
+import { closePopoversWithin, initFloating } from './floating'
 import { autoUpdate, computePosition } from '@floating-ui/dom'
 import type { Mock } from 'vitest'
 
@@ -155,6 +155,38 @@ describe('floating popovers', () => {
         expect(hidePopover).toHaveBeenCalledTimes(1)
         expect(stopTracking).toHaveBeenCalledTimes(1)
         matches.mockRestore()
+    })
+
+    it('stops tracking an open menu when the subtree holding it is removed', async () => {
+        document.body.innerHTML = `
+            <section id="copy">
+                <button id="trigger" popovertarget="menu"></button>
+                <div id="menu" popover></div>
+            </section>`
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+
+        closePopoversWithin(document.getElementById('copy')!)
+
+        expect(hidePopover).toHaveBeenCalledTimes(1)
+        expect(stopTracking).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves the menus outside the subtree tracking', async () => {
+        document.body.insertAdjacentHTML('beforeend', '<div id="other"></div>')
+        vi.spyOn(menu(), 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
+        setOpen(menu(), true)
+        await settle()
+
+        closePopoversWithin(document.getElementById('other')!)
+
+        expect(hidePopover).not.toHaveBeenCalled()
+        expect(stopTracking).not.toHaveBeenCalled()
     })
 
     describe('a menu marked data-hover', () => {
