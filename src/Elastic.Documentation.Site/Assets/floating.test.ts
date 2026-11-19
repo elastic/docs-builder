@@ -175,6 +175,17 @@ describe('floating popovers', () => {
         expect(stopTracking).toHaveBeenCalledTimes(1)
     })
 
+    it('releases a menu that left the page while open when a swap closes the rest', async () => {
+        setOpen(menu(), true)
+        await settle()
+        menu().remove()
+
+        document.dispatchEvent(new Event('htmx:beforeSwap'))
+
+        expect(stopTracking).toHaveBeenCalledTimes(1)
+        expect(hidePopover).not.toHaveBeenCalled()
+    })
+
     it('leaves the menus outside the subtree tracking', async () => {
         document.body.insertAdjacentHTML('beforeend', '<div id="other"></div>')
         vi.spyOn(menu(), 'matches').mockImplementation(

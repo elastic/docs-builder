@@ -149,7 +149,8 @@ function onToggle(event: Event) {
 /** Closes the open popovers inside `root` and stops tracking them. Removing an open popover fires no `toggle`, so whoever removes a subtree calls this first. */
 export function closePopoversWithin(root: Node) {
     for (const popover of [...stopTracking.keys()]) {
-        if (!root.contains(popover)) continue
+        // A removed popover is in no root, so it is always released.
+        if (popover.isConnected && !root.contains(popover)) continue
         if (popover.isConnected && popover.matches(':popover-open'))
             popover.hidePopover()
         release(popover)
