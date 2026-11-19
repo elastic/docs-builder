@@ -53,11 +53,14 @@ public static partial class LinkRegistryConstraints
 	public static readonly Constraint<LinkRegistry> RegistryEntryPathMatchesKey = Constraints<LinkRegistry>
 		.Each(
 			Entries,
-			e => e.Entry.Path == $"elastic/{e.Repository}/{e.Branch}/links.json",
-			e => $"Entry {e.Repository}/{e.Branch} has path '{e.Entry.Path}', expected 'elastic/{e.Repository}/{e.Branch}/links.json'."
+			e => PathMatchesKey(e.Repository, e.Branch, e.Entry.Path),
+			e =>
+				$"Entry {e.Repository}/{e.Branch} has path '{e.Entry.Path}', expected 'elastic/{e.Repository}/{e.Branch}/links.json' or, in a codex registry, '{{environment}}/elastic/{e.Repository}/links.json'."
 		)
 		.WithSeverity(Severity.Warning)
-		.Describe("An entry's path is 'elastic/{repository}/{branch}/links.json' for the repository and branch it is filed under.");
+		.Describe(
+			"An entry's path is 'elastic/{repository}/{branch}/links.json' (public registry) or '{environment}/elastic/{repository}/links.json' (codex registry, one entry per repository) for the repository and branch it is filed under."
+		);
 
 	public static readonly Constraint<LinkRegistry> RegistryRepositoryNameSingleSegment = Constraints<LinkRegistry>.Each(
 		r => (IEnumerable<string>?)r.Repositories?.Keys ?? [],
@@ -76,6 +79,15 @@ public static partial class LinkRegistryConstraints
 	{
 		if (e.Entry.UpdatedAt == DateTime.MinValue)
 			yield return Violation.Warning($"Entry {e.Repository}/{e.Branch} is a legacy entry: its updated_at is unset.");
+	}
+
+	// the public registry files a links.json per branch; the codex registry (read through GitLinkIndexReader with the same rules) has one per repository under its environment
+	private static bool PathMatchesKey(string repository, string branch, string? path)
+	{
+		if (path == $"elastic/{repository}/{branch}/links.json")
+			return true;
+		var parts = path?.Split('/');
+		return parts is [var environment, "elastic", var repo, "links.json"] && environment.Length > 0 && repo == repository;
 	}
 
 	private static bool IsRootedOrParent(string name) =>

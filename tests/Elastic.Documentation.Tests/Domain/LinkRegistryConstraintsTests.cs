@@ -117,6 +117,32 @@ public class LinkRegistryConstraintsTests
 			.Be("Repository 'tools' has neither a 'main' nor a 'master' entry in the link registry (it has: dev, 9.0).");
 
 	[Test]
+	public void ACodexRegistryEntry_FiledUnderItsEnvironment_BreaksNoRule()
+	{
+		var codex = Entry("kibana", "main", Published, "abc123") with { Path = "internal/elastic/kibana/links.json" };
+
+		LinkRegistry.Constraints.Report(Registry(("kibana", "main", codex))).Violations.Should().BeEmpty();
+	}
+
+	[Test]
+	[Arguments("internal/elastic/other/links.json")]
+	[Arguments("elastic/kibana/links.json")]
+	[Arguments("/elastic/kibana/links.json")]
+	[Arguments("a/b/elastic/kibana/links.json")]
+	[Arguments("elastic/kibana/9.0/links.json")]
+	public void AnEntryPathThatNamesNeitherLayout_IsReported(string path)
+	{
+		var entry = Entry("kibana", "main", Published, "abc123") with { Path = path };
+
+		LinkRegistry
+			.Constraints
+			.Report(Registry(("kibana", "main", entry)))
+			.Violations
+			.Should()
+			.ContainSingle(v => v.Message.StartsWith("Entry kibana/main has path", StringComparison.Ordinal));
+	}
+
+	[Test]
 	[Arguments("../evil")]
 	[Arguments("a/../b")]
 	[Arguments("/rooted")]

@@ -162,6 +162,78 @@ public class LinkManifestConstraintsTests
 		});
 	}
 
+	// each call allocates its own section, dictionaries and arrays, so equality cannot pass by reference
+	private static FloatingLinkSection Section(bool reverseKeys = false)
+	{
+		var versions = new[]
+		{
+			new FloatingLinkVersion { Name = "8", Root = "api/example/8", Current = true },
+			new FloatingLinkVersion { Name = "7", Root = "api/example/7", Hidden = true }
+		};
+		KeyValuePair<string, ulong>[] pages = [new("", 3UL), new("op/a", 1UL), new("op/b", 2UL)];
+		KeyValuePair<string, string[]>[] eight = [new("op/a", ["old-a", "older-a"]), new("op/b", ["old-b"])];
+		return new FloatingLinkSection
+		{
+			Versions = versions,
+			Pages = new Dictionary<string, ulong>(reverseKeys ? pages.Reverse() : pages),
+			Aliases = new Dictionary<string, Dictionary<string, string[]>>
+			{
+				["8"] = new(reverseKeys ? eight.Reverse() : eight),
+				["7"] = new() { ["op/a"] = ["old-a"] }
+			}
+		};
+	}
+
+	[Test]
+	public void FloatingValueEquality_IndependentlyAllocatedSections_AreEqualWithEqualHashes()
+	{
+		var a = Section();
+		var b = Section(reverseKeys: true);
+
+		a.Should().Be(b, "the pages and the alias dictionaries are unordered");
+		a.GetHashCode().Should().Be(b.GetHashCode());
+		WithFloating(Valid(), a).Should().Be(WithFloating(Valid(), b));
+		WithFloating(Valid(), a).GetHashCode().Should().Be(WithFloating(Valid(), b).GetHashCode());
+	}
+
+	[Test]
+	public void FloatingValueEquality_AnyDifference_IsNotEqual()
+	{
+		var section = Section();
+		var differing = new Dictionary<string, FloatingLinkSection>
+		{
+			["a version moved"] = section with { Versions = [.. section.Versions.Reverse()] },
+			["a version renamed"] = section with { Versions = [section.Versions[0] with { Name = "9" }, section.Versions[1]] },
+			["a page mask"] = section with { Pages = new Dictionary<string, ulong>(section.Pages) { ["op/a"] = 2UL } },
+			["a page added"] = section with { Pages = new Dictionary<string, ulong>(section.Pages) { ["op/c"] = 1UL } },
+			["no aliases"] = section with { Aliases = null },
+			["an alias version dropped"] = section with
+			{
+				Aliases = new Dictionary<string, Dictionary<string, string[]>> { ["8"] = section.Aliases!["8"] }
+			},
+			["an alias list reordered"] = section with
+			{
+				Aliases = new Dictionary<string, Dictionary<string, string[]>>(section.Aliases!)
+				{
+					["8"] = new() { ["op/a"] = ["older-a", "old-a"], ["op/b"] = ["old-b"] }
+				}
+			},
+			["an alias changed"] = section with
+			{
+				Aliases = new Dictionary<string, Dictionary<string, string[]>>(section.Aliases!)
+				{
+					["8"] = new() { ["op/a"] = ["old-a", "older-a"], ["op/b"] = ["other"] }
+				}
+			}
+		};
+
+		foreach (var (what, other) in differing)
+		{
+			section.Should().NotBe(other, what);
+			WithFloating(Valid(), section).Should().NotBe(WithFloating(Valid(), other), what);
+		}
+	}
+
 	private static LinkManifest Valid() =>
 		new()
 		{
