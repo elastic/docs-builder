@@ -4509,15 +4509,17 @@ html:has(.api-page-shell) {
 	min-width: 0;
 	/* The first label starts at the text edge. */
 	margin-left: -10px;
-	/* A thin scrollbar, not none: where the links do not fit, it shows there are more. */
-	overflow-x: auto;
+	/* A thin scrollbar, not none: where the links do not fit, it shows there are more. The track fills the row's
+	   height, so a scrollbar that takes space (not an overlay one) comes out of the row, not below its rule. */
+	align-self: stretch;
+	overflow: auto hidden;
 	scrollbar-width: thin;
 }
 
+/* As tall as the track, less any scrollbar in it. */
 .api-section-links a {
 	display: flex;
 	align-items: center;
-	height: 43px;
 	padding: 0 10px;
 	color: #69778f;
 	font-size: 13px;
