@@ -31,7 +31,7 @@ public static class ApiLinkCheck
 			return suppressions.ShouldSuppress(HintType.ApiLinkMissingPage)
 				? null
 				: $"API link '{canonical}' does not resolve to a page of that API. Link to a page that exists, such as one in a versioned tree like "
-					+ "/docs/api/<product>/v8/..., or confirm the endpoint was removed intentionally. Links in API descriptions are fixed in the OpenAPI spec.";
+					+ "/docs/api/doc/<product>/v8/..., or confirm the endpoint was removed intentionally. Links in API descriptions are fixed in the OpenAPI spec.";
 
 		if (!legacy || suppressions.ShouldSuppress(HintType.ApiLinkLegacyPrefix))
 			return null;
