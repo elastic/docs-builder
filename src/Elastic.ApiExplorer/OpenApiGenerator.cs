@@ -5,7 +5,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
-using System.Text;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -971,7 +970,7 @@ public class OpenApiGenerator(
 			await page.RenderAsync(stream, renderContext, ctx);
 		}
 
-		var html = HtmlWhitespace.Collapse(Encoding.UTF8.GetString(stream.ToArray()));
+		var html = HtmlWhitespace.Collapse(stream.ReadAsUtf8());
 		await _writeFileSystem.File.WriteAllTextAsync(outputFile.FullName, html, ctx).ConfigureAwait(false);
 		return outputFile;
 
