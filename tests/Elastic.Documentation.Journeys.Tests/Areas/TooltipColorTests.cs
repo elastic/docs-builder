@@ -56,6 +56,7 @@ public class TooltipColorTests(JourneyTarget target)
 
 		var report = string.Join(
 			'\n',
+			$"tooltip is fully visible once the fade-in has settled: {colours.GetProperty("settledOpacity").GetDouble() == 1}",
 			$"background is opaque: {colours.GetProperty("opaque").GetBoolean()}",
 			FormattableString.Invariant(
 				$"text contrast is at least {MinimumContrast}:1: {colours.GetProperty("contrast").GetDouble() >= MinimumContrast}"
@@ -64,6 +65,7 @@ public class TooltipColorTests(JourneyTarget target)
 		);
 		_ = report.Should().MatchInlineSnapshot(
 			"""
+			tooltip is fully visible once the fade-in has settled: True
 			background is opaque: True
 			text contrast is at least 4.5:1: True
 			arrow matches background: True
@@ -80,7 +82,8 @@ public class TooltipColorTests(JourneyTarget target)
 				"""
 				(() => {
 					const tip = document.querySelector('#site-tooltip');
-					if (!tip || !tip.matches(':popover-open') || !tip.hasAttribute('data-placed')) return null;
+					// The fade-in is a CSS transition, so the colours are read once it has finished and the opacity has settled.
+					if (!tip || !tip.matches(':popover-open') || !tip.hasAttribute('data-placed') || tip.getAnimations().length > 0) return null;
 					const style = getComputedStyle(tip);
 					const arrow = getComputedStyle(tip, '::before');
 					// Chrome serialises a computed colour as rgb(), rgba(), oklab(), color(srgb ...) and more; a canvas pixel
@@ -105,6 +108,7 @@ public class TooltipColorTests(JourneyTarget target)
 					const blended = text.slice(0, 3).map((channel, i) => channel * (text[3] / 255) + background[i] * (1 - text[3] / 255));
 					const [lighter, darker] = [luminance(blended), luminance(background)].sort((a, b) => b - a);
 					return {
+						settledOpacity: parseFloat(style.opacity),
 						opaque: background[3] === 255,
 						contrast: (lighter + 0.05) / (darker + 0.05),
 						background: background.join(','),
@@ -116,7 +120,9 @@ public class TooltipColorTests(JourneyTarget target)
 			if (result.ValueKind == JsonValueKind.Object)
 				return result;
 			if (DateTime.UtcNow > deadline)
-				throw new TimeoutException("No tooltip was placed within 5 seconds of the pointer moving over the copy button.");
+				throw new TimeoutException(
+					"No tooltip was placed and finished fading in within 5 seconds of the pointer moving over the copy button."
+				);
 			await Task.Delay(50).ConfigureAwait(false);
 		}
 	}
