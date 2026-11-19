@@ -4866,11 +4866,13 @@ html:has(.api-page-shell) {
 		outline: none;
 	}
 
-	/* Forced colors override the blue divider, so keep an inset ring there; it covers part of the dots but stays off the scrollbar. */
+	/* Forced colors override the blue divider, so keep an inset ring there; it covers part of the dots. The grip stays inside the
+	   resize target so the ring stays off the scrollbar. */
 	@media (forced-colors: active) {
 		.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
 			outline: 2px solid Highlight;
 			outline-offset: -2px;
+			transform: none;
 		}
 	}
 
