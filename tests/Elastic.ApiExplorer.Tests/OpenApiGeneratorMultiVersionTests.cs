@@ -446,6 +446,9 @@ public class OpenApiGeneratorMultiVersionTests
 		links.Versions.Where(v => !v.Hidden).Select(v => v.Name).Should().Equal("9");
 		links.Versions.Where(v => v.Current).Select(v => v.Name).Should().Equal("9");
 		links.Versions.Single(v => v.Name == "main").Hidden.Should().BeTrue();
+		links.Versions.Select(v => $"{v.Name} {v.MirrorRoot}").Should().Equal("main ", "9 api/elasticsearch/v9", "8 ");
+		links.ContainsSitePath("api/elasticsearch/v9/operation/operation-ping").Should().BeTrue("the numbered copy of 9 is a page too");
+		links.ContainsSitePath("api/elasticsearch/next/operation/operation-ping").Should().BeTrue();
 		var all = (1UL << links.Versions.Length) - 1;
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("", all), "every version has a landing page");
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("operation/operation-ping", all), "one entry, not one per version");

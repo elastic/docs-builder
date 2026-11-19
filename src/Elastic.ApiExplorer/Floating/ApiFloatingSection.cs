@@ -125,12 +125,16 @@ internal sealed class ApiFloatingSection(
 
 internal static class ApiLinkSections
 {
-	/// <summary>The API Explorer owns its routing, so it states where each version lives. Only the default version is visible and current.</summary>
+	/// <summary>
+	/// The API Explorer owns its routing, so it states where each version lives, including the numbered copy of the
+	/// default major. Only the default version is visible and current.
+	/// </summary>
 	private static FloatingLinkVersion Version(ApiVersionRoutes routes, string moniker) =>
 		new()
 		{
 			Name = moniker,
 			Root = ApiUrlBuilder.ProductRoot(null, routes.Suffix(moniker)).Trim('/'),
+			MirrorRoot = routes.Suffixes(moniker) is [_, var mirror] ? ApiUrlBuilder.ProductRoot(null, mirror).Trim('/') : null,
 			Hidden = moniker != routes.DefaultMoniker,
 			Current = moniker == routes.DefaultMoniker
 		};

@@ -25,6 +25,7 @@
         {
           "name": "main",
           "root": "api/example-api",
+          "mirror_root": "api/example-api/v9",
           "current": true
         },
         {

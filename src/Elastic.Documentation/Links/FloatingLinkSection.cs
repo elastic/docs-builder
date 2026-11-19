@@ -25,6 +25,14 @@ public record FloatingLinkVersion
 	[JsonPropertyName("root")]
 	public required string Root { get; init => field = ApiLegacyRedirects.ToCanonical(value); }
 
+	/// <summary>
+	/// A second URL root that serves the same pages as <see cref="Root"/>, such as <c>api/{key}/v9</c> for the version
+	/// that also owns <c>api/{key}</c>. Links resolve to <see cref="Root"/>; a page under this root still exists.
+	/// </summary>
+	[JsonPropertyName("mirror_root")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? MirrorRoot { get; init; }
+
 	/// <summary>The version exists for links but not in the sitemap or first-level walks.</summary>
 	[JsonPropertyName("hidden")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -136,22 +144,25 @@ public record FloatingLinkSection
 
 	/// <summary>
 	/// Whether <paramref name="sitePath"/>, a path from the site root without slashes at either end, is a page of any
-	/// version of this section, directly or through an alias. It matches the longest version root first, so the
-	/// page of a versioned tree is never read as a page of the current version.
+	/// version of this section, directly or through an alias, under its root or its mirror root. It matches the longest
+	/// root first, so the page of a versioned tree is never read as a page of the current version.
 	/// </summary>
 	public bool ContainsSitePath(string sitePath)
 	{
-		foreach (var version in Versions.OrderByDescending(v => v.Root.Length))
+		var roots = Versions.SelectMany(
+			v => new[] { v.Root, v.MirrorRoot }.OfType<string>().Select(root => (v.Name, Root: root))
+		).OrderByDescending(r => r.Root.Length);
+		foreach (var (name, root) in roots)
 		{
 			string page;
-			if (sitePath.Equals(version.Root, StringComparison.Ordinal))
+			if (sitePath.Equals(root, StringComparison.Ordinal))
 				page = string.Empty;
-			else if (sitePath.StartsWith(version.Root + "/", StringComparison.Ordinal))
-				page = sitePath[(version.Root.Length + 1)..];
+			else if (sitePath.StartsWith(root + "/", StringComparison.Ordinal))
+				page = sitePath[(root.Length + 1)..];
 			else
 				continue;
 
-			if (TryResolvePage(version.Name, page, out _))
+			if (TryResolvePage(name, page, out _))
 				return true;
 		}
 

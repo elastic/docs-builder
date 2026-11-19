@@ -43,6 +43,18 @@ public class ApiPageStatusTests
 		Pages = new Dictionary<string, ulong> { [""] = 1, ["operation/operation-live"] = 1 }
 	};
 
+	/// <summary>The newest major owns the versionless root and keeps its numbered root as a mirror; main lives at next.</summary>
+	private static readonly FloatingLinkSection Logstash = new()
+	{
+		Versions =
+		[
+			new() { Name = "main", Root = "api/logstash/next", Hidden = true },
+			new() { Name = "9", Root = "api/logstash", MirrorRoot = "api/logstash/v9", Current = true },
+			new() { Name = "8", Root = "api/logstash/v8", Hidden = true }
+		],
+		Pages = new Dictionary<string, ulong> { [""] = 0b111, ["operation/operation-search"] = 0b111, ["operation/operation-new"] = 0b001 }
+	};
+
 	private static CrossLinkResolver Resolver()
 	{
 		var links = new RepositoryLinks
@@ -54,7 +66,8 @@ public class ApiPageStatusTests
 			Floating = new Dictionary<string, FloatingLinkSection>
 			{
 				["api/elasticsearch"] = Elasticsearch,
-				["api/kibana-serverless"] = KibanaServerless
+				["api/kibana-serverless"] = KibanaServerless,
+				["api/logstash"] = Logstash
 			}
 		};
 		return new CrossLinkResolver(new FetchedCrossLinks
@@ -74,6 +87,12 @@ public class ApiPageStatusTests
 	[Arguments("/docs/api/elasticsearch/operation/operation-gone", ApiPageStatus.Missing)]
 	[Arguments("/docs/api/elasticsearch/legacy-8/operation/operation-new", ApiPageStatus.Missing)]
 	[Arguments("/docs/api/elasticsearch/v9/types/legacy", ApiPageStatus.Missing)]
+	[Arguments("/docs/api/logstash/v9/operation/operation-search", ApiPageStatus.Exists)]
+	[Arguments("/docs/api/logstash/v9", ApiPageStatus.Exists)]
+	[Arguments("/docs/api/logstash/operation/operation-search", ApiPageStatus.Exists)]
+	[Arguments("/docs/api/logstash/next/operation/operation-new", ApiPageStatus.Exists)]
+	[Arguments("/docs/api/logstash/v9/operation/operation-new", ApiPageStatus.Missing)]
+	[Arguments("/docs/api/logstash/v7/operation/operation-search", ApiPageStatus.Missing)]
 	[Arguments("/docs/api/kibana/operation/operation-x", ApiPageStatus.Unknown)]
 	[Arguments("/docs/solutions/search", ApiPageStatus.Unknown)]
 	public void CheckApiPage_PathInTheSections_ReportsWhetherThePageExists(string sitePath, ApiPageStatus expected) =>

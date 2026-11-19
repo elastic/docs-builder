@@ -128,7 +128,7 @@ public class RepositoryLinksRoundTripTests
 				  "api/example-api": {
 				    "versions": [
 				      { "name": "8", "root": "api/example-api/v8", "hidden": true },
-				      { "name": "main", "root": "api/example-api", "current": true },
+				      { "name": "main", "root": "api/example-api", "mirror_root": "api/example-api/v9", "current": true },
 				      { "name": "plain", "root": "api/example-api/plain", "hidden": false, "current": false }
 				    ],
 				    "pages": { "": 7, "operation/operation-search": 3, "operation/operation-new": 2, "tag/other": 4 },
