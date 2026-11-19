@@ -120,6 +120,56 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task OpeningASupplementalHeadingFragment_StopsItBelowTheRow()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			// The Cloud Connect spec has no supplemental sections, so add one as the page renders it: a plain
+			// h2.section-header after the operation's own sections, with room below it to scroll to its margin.
+			_ = await page.EvaluateAsync(
+				"""
+				(() => {
+					const section = document.getElementById('elastic-api-v3');
+					const heading = document.createElement('h2');
+					heading.className = 'section-header';
+					heading.id = 'supplemental-guide';
+					heading.innerHTML = '<a class="headerlink" href="#supplemental-guide">Guide</a>';
+					const room = document.createElement('div');
+					room.style.minHeight = '1500px';
+					section.append(heading, room);
+					return true;
+				})()
+				"""
+			).ConfigureAwait(false);
+			_ = await page.EvaluateAsync("location.hash = 'supplemental-guide'; true").ConfigureAwait(false);
+			await Task.Delay(800).ConfigureAwait(false);
+
+			var state = await page.EvaluateAsync(
+				"""
+				(() => {
+					const heading = document.getElementById('supplemental-guide');
+					const bar = document.querySelector('.api-section-links').getBoundingClientRect();
+					const top = heading.getBoundingClientRect().top;
+					return {
+						rowOnScreen: bar.bottom > 0 && bar.top < innerHeight,
+						clearOfRow: top >= bar.bottom,
+						atItsScrollMargin: Math.abs(top - parseFloat(getComputedStyle(heading).scrollMarginTop)) < 2,
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"row on screen {state.GetProperty("rowOnScreen").GetBoolean()}, heading clear of the row {state.GetProperty("clearOfRow").GetBoolean()}, " +
+					$"heading at its scroll margin {state.GetProperty("atItsScrollMargin").GetBoolean()}"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot("row on screen True, heading clear of the row True, heading at its scroll margin True");
+	}
+
+	[Test]
 	public async Task LinksThatDoNotFit_ScrollInsideTheRowAndTheLastOneIsReachable()
 	{
 		var report = string.Empty;
