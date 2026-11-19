@@ -78,6 +78,16 @@ describe('legacy image modal', () => {
         expect(scroll()).toBe('')
     })
 
+    it('closes an open dialog and unlocks the page scroll before htmx swaps the page', () => {
+        click(document.querySelector('[data-modal-id]')!)
+        expect(scroll()).toBe('hidden')
+
+        document.dispatchEvent(new Event('htmx:beforeSwap'))
+
+        expect(dialog().open).toBe(false)
+        expect(scroll()).toBe('')
+    })
+
     it('opens and closes again after a close', () => {
         const opener = document.querySelector('[data-modal-id]')!
         click(opener)

@@ -23,6 +23,15 @@ function open(dialog: HTMLDialogElement): void {
     )
 }
 
+// Closes every open image or diagram dialog; their close handlers release the scroll lock.
+export function closeOpenZoomDialogs(): void {
+    document
+        .querySelectorAll<HTMLDialogElement>(
+            'dialog.modal[open], dialog.mermaid-modal[open]'
+        )
+        .forEach((dialog) => dialog.close())
+}
+
 // Opens the dialog named by [data-modal-id] on an image link. One document listener serves every page htmx swaps in.
 export function bindImageModals(): void {
     document.addEventListener('click', (event) => {
@@ -36,4 +45,6 @@ export function bindImageModals(): void {
         event.preventDefault()
         open(dialog)
     })
+    // A swap removes the dialog without firing its close event, which would leave the page scroll locked.
+    document.addEventListener('htmx:beforeSwap', closeOpenZoomDialogs)
 }
