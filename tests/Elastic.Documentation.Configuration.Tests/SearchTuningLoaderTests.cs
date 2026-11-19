@@ -62,7 +62,9 @@ public class SearchTuningLoaderTests
 
 		var act = () => SearchTuningLoader.Load(provider);
 
-		act.Should().Throw<Exception>().Which.Should().NotBeOfType<InvalidOperationException>();
+		var thrown = act.Should().Throw<Exception>().Which;
+		thrown.GetType().FullName.Should().Be("SharpYaml.YamlException");
+		thrown.Message.Should().Contain("search.yml");
 	}
 
 	[Test]
