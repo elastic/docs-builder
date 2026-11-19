@@ -52,6 +52,31 @@ public class ConfigurationFileCtaTests
 		warning.Should().BeNull();
 	}
 
+	// no docset.yml: the built-in template is still found whatever the casing, as main's case-insensitive map did
+	[Test]
+	[Arguments("trial")]
+	[Arguments("Trial")]
+	[Arguments("TRIAL")]
+	public void ResolveCta_NoDocsetFile_FindsTheBuiltInTemplateIgnoringCase(string id)
+	{
+		var collector = new DiagnosticsCollector([]);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>(), "/docs");
+		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var docsDir = fileSystem.DirectoryInfo.New("/docs");
+		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
+		var config = new ConfigurationFile(
+			DocumentationSetLoader.ToDefinition(new DocumentationSetFile(), configPath, docsDir),
+			context,
+			new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
+			new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary() }
+		);
+
+		var cta = config.ResolveCta(id, "index.md", out var warning);
+
+		cta.Name.Should().Be("trial");
+		warning.Should().BeNull();
+	}
+
 	[Test]
 	public void ResolveCta_NoFrontmatter_UsesTocDefault()
 	{

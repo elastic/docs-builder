@@ -175,4 +175,43 @@ public class DocumentationSetLoaderTests
 			.Should()
 			.Equal([.. before, "Could not load docset.yml: Object reference not set to an instance of an object."]);
 	}
+
+	// what main's metadata reader returned: a declaration the metadata does not need never stops it
+	[Test]
+	[Arguments("release_notes: [null]\n")]
+	[Arguments("release_notes:\n  - \n")]
+	[Arguments("release_notes:\n")]
+	[Arguments("products:\n  - \n")]
+	[Arguments("cta:\n  x:\n")]
+	[Arguments("exclude:\n")]
+	[Arguments("cross_links:\n")]
+	public void LoadMetadata_AnUnrelatedDeclarationWithNoValue_StillReturnsRegistryGroupAndIcon(string declaration)
+	{
+		var yaml = $"project: p\nregistry: internal\nicon: gear\ncodex:\n  group: g\n{declaration}toc:\n  - file: index.md\n";
+		var fileSystem = DocsetGolden.CreateFileSystem(yaml, new DocFile("index.md"));
+
+		var metadata = DocumentationSetLoader.LoadMetadata(fileSystem.FileInfo.New($"{DocsetGolden.Root}/docset.yml"));
+
+		metadata.Registry.Should().Be("internal");
+		metadata.CodexGroup.Should().Be("g");
+		metadata.Icon.Should().Be("gear");
+	}
+
+	// the folder-level exclude is matched ignoring case (the set CollectFolderExcludedFiles returns), as it always was
+	[Test]
+	[Arguments("DRAFT.md")]
+	[Arguments("draft.md")]
+	public void Configure_FolderExclude_IsMatchedIgnoringCase(string excluded)
+	{
+		var yaml = $"project: p\ntoc:\n  - file: index.md\n  - folder: sub\n    exclude: [{excluded}]\n";
+		var files = new[] { new DocFile("index.md"), new DocFile("sub/index.md"), new DocFile("sub/draft.md") };
+		var collector = new CapturingDiagnosticsCollector();
+		var dto = DocsetGolden.LoadAndResolve(collector, yaml, files);
+
+		var config = DocsetGolden.CreateConfiguration(dto, collector, DocsetGolden.CreateFileSystem(yaml, files), withGlobalConfig: false);
+
+		config.IsExcluded("sub/draft.md").Should().BeTrue();
+		config.IsExcluded("sub/DRAFT.md").Should().BeTrue();
+		config.IsExcluded("sub/index.md").Should().BeFalse();
+	}
 }
