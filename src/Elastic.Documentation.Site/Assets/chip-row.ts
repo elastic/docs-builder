@@ -169,8 +169,8 @@ function partsOf(element: Element): ChipRowParts | undefined {
 }
 
 /**
- * Clears the filter when the menu closes, and moves the focus in when it opens. floating.ts places it under its
- * anchor: the "more" button, or the row's search box (`data-anchor`).
+ * Tracks the open menu and clears its filter when it closes. floating.ts places it under its anchor: the "more"
+ * button, or the row's search box (`data-anchor`).
  */
 function onMenuToggle(event: Event) {
     const menu = event.target as HTMLElement | null
@@ -196,10 +196,22 @@ function onMenuToggle(event: Event) {
         filter.value = ''
         filterMenu(filter, parts)
     }
-    if (!open || !anchor) return
+}
 
-    // Typing in the row's search box keeps the focus there while the menu fills; opened from the button, the focus moves in.
+/**
+ * Moves the focus into a menu once floating.ts has placed it, since a menu hidden until then cannot take focus. Typing in
+ * the row's search box keeps the focus there while the menu fills; opened from the button, the focus moves in.
+ */
+function onMenuPlaced(event: Event) {
+    const menu = event.target as HTMLElement | null
+    const parts = menu && partsOf(menu)
+    if (!menu || !parts) return
+    const rowSearch = menu
+        .closest<HTMLElement>(parts.row)
+        ?.querySelector<HTMLInputElement>(`:scope > ${parts.filter}`)
     if (rowSearch && document.activeElement === rowSearch) return
+    const filter =
+        rowSearch ?? menu.querySelector<HTMLInputElement>(parts.filter)
     if (filter) filter.focus()
     else menuItems(menu)[0]?.focus()
 }
@@ -404,6 +416,7 @@ export function registerChipRows(parts: ChipRowParts): void {
     if (registered.length === 0) {
         // toggle does not bubble, so it is caught on the way down.
         document.addEventListener('toggle', onMenuToggle, true)
+        document.addEventListener('floating:placed', onMenuPlaced)
         document.addEventListener('keydown', onKeydown)
         document.addEventListener('input', onInput)
         document.addEventListener('pointerdown', onPointerDown)

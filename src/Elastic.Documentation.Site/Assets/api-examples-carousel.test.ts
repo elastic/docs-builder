@@ -776,6 +776,22 @@ describe('API examples chip overflow', () => {
         expect(visibleItems()).not.toContain('d')
     })
 
+    it('moves the focus into the menu only once it is placed, since it is hidden before', () => {
+        initApiExamples()
+        const menu = document.querySelector<HTMLElement>('[data-example-menu]')!
+        const toggle = new Event('toggle') as ToggleEvent
+        Object.defineProperty(toggle, 'newState', { value: 'open' })
+
+        menu.dispatchEvent(toggle)
+        expect(document.activeElement).toBe(document.body)
+
+        menu.dispatchEvent(new Event('floating:placed', { bubbles: true }))
+        // The menu has a filter field, which takes the focus before any item does.
+        expect(document.activeElement).toBe(
+            document.querySelector('[data-example-filter]')
+        )
+    })
+
     it('filters the menu fuzzily, forgiving a typo and ranking the best match first', () => {
         initApiExamples()
         const input = document.querySelector<HTMLInputElement>(

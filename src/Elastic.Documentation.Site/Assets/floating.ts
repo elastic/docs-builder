@@ -15,7 +15,8 @@ import {
  * ancestor's overflow, stacking context or z-index can clip it, and gives click-outside dismissal and Escape.
  * Floating UI places it beside its anchor, flipping and shifting to stay on screen, and follows the anchor while
  * the menu is open. `data-placement` picks the side (default `bottom-start`); `data-anchor` names the id of an
- * anchor other than the button. Listeners are delegated on the document, so they survive htmx swaps.
+ * anchor other than the button. The menu fires a bubbling `floating:placed` event the first time it is placed; it is
+ * invisible, so unfocusable, until then. Listeners are delegated on the document, so they survive htmx swaps.
  */
 
 const PLACED = 'data-placed'
@@ -70,9 +71,15 @@ function place(
             }),
         ],
     }).then(({ x, y }) => {
+        const first = !floating.hasAttribute(PLACED)
         Object.assign(floating.style, { left: `${x}px`, top: `${y}px` })
         // Hidden until placed (floating.css), so it never flashes at the wrong spot.
         floating.setAttribute(PLACED, '')
+        // A hidden element cannot take focus, so what wants to focus the menu waits for this.
+        if (first)
+            floating.dispatchEvent(
+                new Event('floating:placed', { bubbles: true })
+            )
     })
 }
 

@@ -116,6 +116,21 @@ describe('floating popovers', () => {
         )
     })
 
+    it('announces the first placement once, since the menu cannot take focus before', async () => {
+        const placed = vi.fn()
+        menu().addEventListener('floating:placed', placed)
+
+        setOpen(menu(), true)
+        await settle()
+        // The anchor moves and the menu is placed again; that is not a first placement.
+        const update = (autoUpdate as Mock).mock.calls[0][2] as () => void
+        update()
+        await settle()
+
+        expect(placed).toHaveBeenCalledTimes(1)
+        expect(menu().hasAttribute('data-placed')).toBe(true)
+    })
+
     it('stops following and hides the menu again when it closes', async () => {
         setOpen(menu(), true)
         await settle()
