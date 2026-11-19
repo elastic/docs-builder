@@ -10,7 +10,12 @@ namespace Elastic.Documentation.DocumentationSets;
 [Equatable]
 public sealed partial record EnabledExtensions
 {
-	public EnabledExtensions(IEnumerable<string> extensions) => Enabled = new HashSet<string>(extensions);
+	// An extensions key written with no value is null here and fails with a NullReferenceException, as the spread did when the configuration was built.
+	public EnabledExtensions(IEnumerable<string> extensions)
+	{
+		HashSet<string> enabled = [.. extensions];
+		Enabled = enabled;
+	}
 
 	public bool IsDetectionRulesEnabled => Enabled.Contains("detection-rules");
 

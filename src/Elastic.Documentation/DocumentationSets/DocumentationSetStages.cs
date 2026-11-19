@@ -91,7 +91,8 @@ public static partial class DocumentationSetApisConstraints
 	);
 
 	public static readonly Constraint<DocumentationSetApis> StorybookVariablesAllowed = Constraints<DocumentationSetApis>.Check(
-		m => !m.Docset.HasStorybook
+		// with an api key written with no value the step that reads api fails before storybook is reached
+		m => !m.Docset.HasStorybook || m.Docset.Api is null
 			? []
 			: EnvironmentInterpolation.DisallowedVariables(m.Docset.StorybookRegistry?.Trim()).Select(
 				name => Violation.Warning(
@@ -156,7 +157,8 @@ public static partial class DocumentationSetFeaturesConstraints
 	}).Describe("Every default_cta in the table of contents names a valid cta template or the built-in default.");
 
 	public static readonly Constraint<DocumentationSetFeatures> PrimaryNavWithoutBranding = Constraints<DocumentationSetFeatures>.Check(
-		m => m.Docset.Branding is not null && m.Docset.Features.PrimaryNav is true
+		// a features key written with no value is null: the step that reads it fails after the findings before it
+		m => m.Docset.Branding is not null && m.Docset.Features is { PrimaryNav: true }
 			? [
 				Violation.Error(
 					"'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation."

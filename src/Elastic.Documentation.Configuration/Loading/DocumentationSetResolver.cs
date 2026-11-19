@@ -84,6 +84,9 @@ internal static class DocumentationSetResolver
 				releaseNotesProducts.Add(accepted.ProductId);
 		}
 
+		// an extensions key with no value fails here, before the substitutions
+		var extensions = new EnabledExtensions(docSetFile.Extensions);
+
 		var substitutions = new Dictionary<string, string>(
 			(IDictionary<string, string>)docSetFile.Substitutions,
 			StringComparer.OrdinalIgnoreCase
@@ -197,7 +200,7 @@ internal static class DocumentationSetResolver
 			CrossLinkEntries = crossLinkEntries,
 			CrossLinkRepositories = [.. crossLinkEntries.Select(e => e.Repository)],
 			ReleaseNotesProducts = [.. releaseNotesProducts.Distinct(StringComparer.Ordinal)],
-			Extensions = new EnabledExtensions(docSetFile.Extensions),
+			Extensions = extensions,
 			Products = products,
 			Substitutions = substitutions,
 			FeatureToggles = features,

@@ -160,6 +160,45 @@ public class DocumentationSetStagesTests
 			);
 
 	[Test]
+	public void Configure_ApiWithNoValueAndStorybook_FailsAtApiBeforeStorybookIsReported() =>
+		Configure("storybook:\n  registry: ${A}\napi:\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
+	public void Configure_ExtensionsWithNoValue_FailsBeforeApiAndLaterRules() =>
+		Configure("extensions:\ncross_links: [foo://x]\napi:\n  p:\n    - spec: a\nbranding:\n  icon: x.exe\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				diagnostics:
+				error /docs/docset.yml Cross-link 'foo://x' uses unknown registry 'foo'. Use 'public' or 'internal'.
+				error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+				throws NullReferenceException: Object reference not set to an instance of an object.
+				"""
+			);
+
+	[Test]
+	public void Configure_FeaturesWithNoValueAndUnknownDefaultCta_ReportsTheDefaultCtaThenFails() =>
+		Configure("default_cta: q\nbranding:\n  icon: x.svg\nfeatures:\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml 'branding.icon' file 'x.svg' does not exist.
+			error /docs/docset.yml 'default_cta: q' on page 'index.md' does not match any 'cta' template in docset.yml.
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
 	public void ResolveCrossLink_PublicSetLinkingToInternal_IsRejected()
 	{
 		var resolution = DocumentationSetRules.ResolveCrossLink("internal://x", DocSetRegistry.Public);
