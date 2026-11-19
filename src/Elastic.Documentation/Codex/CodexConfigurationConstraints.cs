@@ -7,8 +7,11 @@ using Nullean.Entities;
 namespace Elastic.Documentation.Codex;
 
 /// <summary>
-/// Every rule a <see cref="CodexConfiguration"/> must satisfy when it is read. The loader accepts every value today, so there is none yet:
-/// the group id and name, duplicate group id and canonical_base_url rules of the model are deferred behaviour changes.
+/// Every rule a <see cref="CodexConfiguration"/> must satisfy when it is read. The set is intentionally empty: it exists so that every loaded type
+/// has a static <c>T.Constraints</c> (<c>Loader.For</c> requires it), and the loader accepts every value today.
+/// The group id, group name, duplicate group id and canonical_base_url rules are deferred behaviour changes that will land here.
+/// Adding a rule here changes what the codex commands report: it needs its own PR with a snapshot diff, not a refactor PR
+/// (<c>CodexConfigurationConstraintsTests.ReadStage_IsIntentionallyEmpty</c> fails until that PR updates it).
 /// </summary>
 [Constraints<CodexConfiguration>]
 public static partial class CodexConfigurationConstraints;
