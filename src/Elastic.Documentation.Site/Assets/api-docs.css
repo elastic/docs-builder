@@ -4509,8 +4509,9 @@ html:has(.api-page-shell) {
 	min-width: 0;
 	/* The first label starts at the text edge. */
 	margin-left: -10px;
+	/* A thin scrollbar, not none: where the links do not fit, it shows there are more. */
 	overflow-x: auto;
-	scrollbar-width: none;
+	scrollbar-width: thin;
 }
 
 .api-section-links a {
@@ -4580,8 +4581,13 @@ html:has(.api-page-shell) {
 		--api-column-bleed-left: 16px;
 		--api-column-bleed-right: 16px;
 	}
+}
 
-	/* A phone has no room to keep a slot for it; the links take the whole row, and the page's own Expand all stays. */
+/*
+ * Below 1280px the article column is too narrow for the links and Expand all on one row (at 1024px the links need 342px
+ * and the row has about 280px beside the button), so the row leaves Expand all to the page's own one above the sections.
+ */
+@media (max-width: 1279px) {
 	.api-section-links .api-expand-toggle {
 		display: none;
 	}
