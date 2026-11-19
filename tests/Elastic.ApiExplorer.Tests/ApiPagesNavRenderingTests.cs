@@ -245,7 +245,7 @@ public partial class ApiPagesNavRenderingTests
 		})
 		{
 			var link = OperationLink(html);
-			link.Should().MatchRegex("class=\"sidebar-link nav-link( nav-v2-link)? nav-link--deprecated\"");
+			link.Should().MatchRegex("class=\"sidebar-link( nav-link nav-v2-link)? nav-link--deprecated\"");
 			var hidden = link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
 			hidden.Should().BeGreaterThan(link.IndexOf("Get a document source", StringComparison.Ordinal));
 			hidden.Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
