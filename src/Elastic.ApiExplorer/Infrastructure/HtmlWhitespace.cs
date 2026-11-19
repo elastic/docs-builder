@@ -85,11 +85,15 @@ public static class HtmlWhitespace
 	}
 
 	/// <summary>
-	/// Where the markup at <paramref name="index"/> inside a <c>pre</c> ends: a comment through its <c>--&gt;</c>, so text
-	/// such as <c>="</c> in it is not read as an attribute, a tag whole, and anything else one character on.
+	/// Where the markup at <paramref name="index"/> inside a <c>pre</c> ends: a nested raw-text element through its own
+	/// closing tag, a comment through its <c>--&gt;</c> (so text such as <c>="</c> in it is not read as an attribute), a tag
+	/// whole, and anything else one character on.
 	/// </summary>
 	private static int EndOfMarkupInPre(string html, int index)
 	{
+		// A textarea, script or style inside the pre holds raw text, where "<!--" is not a comment.
+		if (RawTextElement(html, index) is { } nested)
+			return EndOfElement(html, index, nested);
 		if (string.CompareOrdinal(html, index, "<!--", 0, 4) == 0)
 			return EndAfter(html, html.IndexOf("-->", index + 4, StringComparison.Ordinal), 3);
 		var opensTag = index + 1 < html.Length && (char.IsAsciiLetter(html[index + 1]) || html[index + 1] is '/' or '!');

@@ -65,6 +65,14 @@ public class HtmlWhitespaceTests
 			.Be("<pre><!-- a=\" --> x</pre>\n<p title=\"t\">y</p>\n<p>z</p>");
 
 	[Test]
+	public void Collapse_CommentOpenerInATextareaInsideAPre_IsText() =>
+		// In a textarea "<!--" is text; read as a comment with no "-->", it would leave the rest of the page uncollapsed.
+		HtmlWhitespace
+			.Collapse("<pre><textarea><!-- a</textarea> x</pre>\n\t<p>y</p>")
+			.Should()
+			.Be("<pre><textarea><!-- a</textarea> x</pre>\n<p>y</p>");
+
+	[Test]
 	public void Collapse_LargePage_DropsEveryRowIndentation()
 	{
 		// The largest API pages reach about 7 MB; this is the row partial repeated at that scale.
