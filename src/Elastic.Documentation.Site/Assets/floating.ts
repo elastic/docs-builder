@@ -161,6 +161,8 @@ function onPointerOver(event: PointerEvent) {
     const menu = hoverMenuAt(event.target)
     if (!menu) return
     window.clearTimeout(hoverTimers.get(menu))
+    // `pointerover` also fires between the children of the button, so a menu the reader just closed with a click must not reopen.
+    if (hoverMenuAt(event.relatedTarget) === menu) return
     if (menu.matches(':popover-open')) return
     menu.showPopover()
     openedByHover.add(menu)

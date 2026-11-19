@@ -237,6 +237,26 @@ describe('floating popovers', () => {
             expect(open.has(menu())).toBe(true)
         })
 
+        it('stays closed when the mouse moves between the parts of the button after a click closed it', () => {
+            trigger().innerHTML =
+                '<svg id="icon"></svg><span id="label"></span>'
+            const icon = document.getElementById('icon')!
+            const label = document.getElementById('label')!
+            point('pointerover', trigger(), away())
+            trigger().dispatchEvent(
+                new MouseEvent('click', { bubbles: true, cancelable: true })
+            )
+            // The second click toggles the popover shut.
+            open.delete(menu())
+            showPopover.mockClear()
+
+            point('pointerover', icon, trigger())
+            point('pointerover', label, icon)
+
+            expect(showPopover).not.toHaveBeenCalled()
+            expect(open.has(menu())).toBe(false)
+        })
+
         it('leaves touch to the click', () => {
             point('pointerover', trigger(), away(), 'touch')
 
