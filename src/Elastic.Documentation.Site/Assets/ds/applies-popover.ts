@@ -17,7 +17,6 @@ export function initAppliesPopovers(scope: ParentNode = document) {
             panel.id = `applies-popover-${++count}`
             panel.setAttribute('popover', '')
             trigger.setAttribute('popovertarget', panel.id)
-            trigger.setAttribute('aria-haspopup', 'dialog')
             root.dataset.appliesBound = ''
         })
 }
@@ -32,7 +31,6 @@ export function unbindAppliesPopovers(scope: ParentNode) {
             panel?.removeAttribute('id')
             panel?.removeAttribute('popover')
             trigger?.removeAttribute('popovertarget')
-            trigger?.removeAttribute('aria-haspopup')
             // The copy's panel starts closed, whatever state the original was in.
             trigger?.removeAttribute('aria-expanded')
             delete root.dataset.appliesBound
