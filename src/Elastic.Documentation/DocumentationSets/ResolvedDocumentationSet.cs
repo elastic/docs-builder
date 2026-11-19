@@ -70,7 +70,9 @@ public sealed partial record ResolvedDocumentationSet
 
 	/// <summary>Authored <c>subs</c> merged with the generated <c>{{version.*}}</c> and <c>{{product.*}}</c> substitutions.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string> Substitutions { get; internal init; } = new Dictionary<string, string>();
+	public IReadOnlyDictionary<string, string> Substitutions { get; internal init; } = new Dictionary<string, string>(
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	/// <summary>The <c>features</c> toggles set in <c>docset.yml</c>, keyed by flag name.</summary>
 	[UnorderedEquality]
@@ -102,7 +104,10 @@ public sealed partial record ResolvedDocumentationSet
 	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, Cta> Ctas { get; internal init; } = new Dictionary<string, Cta> { [Cta.DefaultName] = Cta.Default };
+	public IReadOnlyDictionary<string, Cta> Ctas { get; internal init; } = new Dictionary<string, Cta>(StringComparer.OrdinalIgnoreCase)
+	{
+		[Cta.DefaultName] = Cta.Default
+	};
 
 	/// <summary>Pages registered with a default CTA via <c>default_cta</c>, keyed by docset-relative path.</summary>
 	[UnorderedEquality]
