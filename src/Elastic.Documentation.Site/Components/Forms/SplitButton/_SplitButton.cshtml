@@ -2,7 +2,7 @@
 @* The menu is a popover placed under the toggle's end by floating.ts. *@
 <div class="split-button">
 	<a class="split-button__main" href="@Model.Href">@Model.Label</a>
-	<button type="button" class="split-button__toggle" popovertarget="@Model.Id" aria-haspopup="menu" aria-expanded="false" aria-label="@Model.MenuLabel">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))</button>
+	<button type="button" class="split-button__toggle" popovertarget="@Model.Id" aria-expanded="false" aria-label="@Model.MenuLabel">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))</button>
 	<ul id="@Model.Id" class="split-button__list" popover data-placement="bottom-end" aria-label="@Model.MenuLabel">
 		@foreach (var item in Model.Items)
 		{

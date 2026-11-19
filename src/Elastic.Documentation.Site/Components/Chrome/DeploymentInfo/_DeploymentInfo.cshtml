@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Chrome.DeploymentInfo.DeploymentInfoModel>
 @* The panel is a popover placed under the button by floating.ts. It opens on click and keyboard, and data-hover opens it while a mouse rests on it. *@
 <div class="deployment">
-	<button type="button" class="deployment__trigger" popovertarget="@Model.Id" aria-haspopup="menu" aria-expanded="false" aria-label="Deployment info for branch @Model.Branch@(Model.Commit is { } c ? $", commit {c}" : "")">
+	<button type="button" class="deployment__trigger" popovertarget="@Model.Id" aria-expanded="false" aria-label="Deployment info for branch @Model.Branch@(Model.Commit is { } c ? $", commit {c}" : "")">
 		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "branch", Size = IconSize.Small }))
 		<span class="deployment__branch">@Model.Branch</span>
 		@if (Model.Commit is { } commit)
