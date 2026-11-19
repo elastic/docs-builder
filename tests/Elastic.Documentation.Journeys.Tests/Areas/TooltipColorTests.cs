@@ -78,12 +78,21 @@ public class TooltipColorTests(JourneyTarget target)
 					if (!tip || !tip.matches(':popover-open') || !tip.hasAttribute('data-placed')) return null;
 					const style = getComputedStyle(tip);
 					const arrow = getComputedStyle(tip, '::before');
-					const alpha = colour => (colour.startsWith('rgba') ? parseFloat(colour.split(',')[3]) : 1);
+					// Chrome serialises a computed colour as rgb(), rgba(), oklab(), color(srgb ...) and more; a canvas pixel
+					// turns any of them into sRGB bytes with an exact alpha.
+					const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+					const pixel = colour => {
+						ctx.clearRect(0, 0, 1, 1);
+						ctx.fillStyle = colour;
+						ctx.fillRect(0, 0, 1, 1);
+						return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+					};
+					const background = pixel(style.backgroundColor);
 					return {
-						opaque: alpha(style.backgroundColor) === 1,
-						background: style.backgroundColor,
-						text: style.color,
-						arrow: tip.dataset.side === 'bottom' ? arrow.borderBottomColor : arrow.borderTopColor,
+						opaque: background[3] === 255,
+						background: background.join(','),
+						text: pixel(style.color).join(','),
+						arrow: pixel(tip.dataset.side === 'bottom' ? arrow.borderBottomColor : arrow.borderTopColor).join(','),
 					};
 				})()
 				"""
