@@ -206,12 +206,9 @@ function calculateFitScale(
  * Open fullscreen modal with the diagram
  */
 function openFullscreenModal(imgSrc: string): void {
-    // Create modal elements
-    const modal = document.createElement('div')
+    const modal = document.createElement('dialog')
     modal.className = 'mermaid-modal'
-
-    const modalContent = document.createElement('div')
-    modalContent.className = 'mermaid-modal-content'
+    modal.setAttribute('aria-label', 'Mermaid diagram')
 
     const closeBtn = document.createElement('button')
     closeBtn.type = 'button'
@@ -230,9 +227,8 @@ function openFullscreenModal(imgSrc: string): void {
     rendered.appendChild(modalImg)
 
     viewport.appendChild(rendered)
-    modalContent.appendChild(closeBtn)
-    modalContent.appendChild(viewport)
-    modal.appendChild(modalContent)
+    modal.appendChild(closeBtn)
+    modal.appendChild(viewport)
 
     // State for modal zoom/pan - initial zoom will be calculated after mount
     const state: DiagramState = {
@@ -268,7 +264,7 @@ function openFullscreenModal(imgSrc: string): void {
     controls.appendChild(zoomInBtn)
     controls.appendChild(zoomOutBtn)
     controls.appendChild(resetBtn)
-    modalContent.appendChild(controls)
+    modal.appendChild(controls)
 
     // Modal zoom handlers
     zoomInBtn.addEventListener('click', () => {
@@ -319,35 +315,21 @@ function openFullscreenModal(imgSrc: string): void {
         }
     })
 
-    // Close modal function
-    const closeModal = () => {
-        unlockScroll()
-        modal.remove()
-    }
-
-    // Close on button click
-    closeBtn.addEventListener('click', closeModal)
-
-    // Close on backdrop click
+    closeBtn.addEventListener('click', () => modal.close())
+    // A click on the backdrop lands on the dialog itself; the viewport fills the rest of it.
     modal.addEventListener('click', (e: MouseEvent) => {
-        if (e.target === modal) {
-            closeModal()
-        }
+        if (e.target === modal) modal.close()
     })
 
-    // Close on Escape key
-    const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            closeModal()
-            document.removeEventListener('keydown', onKeyDown)
-        }
-    }
-    document.addEventListener('keydown', onKeyDown)
-
+    // The dialog handles Escape and returns focus to the opener; the page behind it would still scroll.
     const unlockScroll = lockPageScroll()
+    modal.addEventListener('close', () => {
+        unlockScroll()
+        modal.remove()
+    })
 
-    // Add modal to document
     document.body.appendChild(modal)
+    modal.showModal()
 
     // Calculate and apply initial zoom to fit diagram in viewport
     requestAnimationFrame(() => {
