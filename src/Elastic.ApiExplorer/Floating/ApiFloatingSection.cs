@@ -134,7 +134,7 @@ internal static class ApiLinkSections
 		{
 			Name = moniker,
 			Root = ApiUrlBuilder.ProductRoot(null, routes.Suffix(moniker)).Trim('/'),
-			MirrorRoot = routes.Suffixes(moniker) is [_, var mirror] ? ApiUrlBuilder.ProductRoot(null, mirror).Trim('/') : null,
+			MirrorRoot = routes.MirrorSuffix(moniker) is { } mirror ? ApiUrlBuilder.ProductRoot(null, mirror).Trim('/') : null,
 			Hidden = moniker != routes.DefaultMoniker,
 			Current = moniker == routes.DefaultMoniker
 		};

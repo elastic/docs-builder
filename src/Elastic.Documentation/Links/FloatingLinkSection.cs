@@ -91,6 +91,16 @@ public record FloatingLinkSection
 	private FrozenDictionary<string, int> VersionBits =>
 		field ??= Versions.Take(MaxVersions).Select((version, bit) => (version.Name, bit)).ToFrozenDictionary(v => v.Name, v => v.bit);
 
+	/// <summary>Every root and mirror root with the name of its version, longest first.</summary>
+	[JsonIgnore]
+	private (string Name, string Root)[] RootsLongestFirst =>
+		field ??=
+		[
+			.. Versions.SelectMany(
+				v => new[] { v.Root, v.MirrorRoot }.OfType<string>().Select(root => (v.Name, Root: root))
+			).OrderByDescending(r => r.Root.Length)
+		];
+
 	[JsonIgnore]
 	private int CurrentBit => CurrentBitCache ??= Array.FindIndex(Versions, v => v.Current);
 
@@ -149,10 +159,7 @@ public record FloatingLinkSection
 	/// </summary>
 	public bool ContainsSitePath(string sitePath)
 	{
-		var roots = Versions.SelectMany(
-			v => new[] { v.Root, v.MirrorRoot }.OfType<string>().Select(root => (v.Name, Root: root))
-		).OrderByDescending(r => r.Root.Length);
-		foreach (var (name, root) in roots)
+		foreach (var (name, root) in RootsLongestFirst)
 		{
 			string page;
 			if (sitePath.Equals(root, StringComparison.Ordinal))

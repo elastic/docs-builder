@@ -15,10 +15,15 @@ public sealed record ApiVersionRoutes(string ApiKey, string? DefaultMoniker)
 	public static ApiVersionRoutes For(string apiKey, IEnumerable<string> monikers) => new(apiKey, ApiVersions.DefaultTree(monikers));
 
 	/// <summary>The URL suffix after <c>/api/</c> that links to <paramref name="moniker"/>.</summary>
-	public string Suffix(string moniker) =>
-		moniker == DefaultMoniker ? ApiKey : moniker == "main" ? $"{ApiKey}/{ApiUrlBuilder.NextSegment}" : $"{ApiKey}/v{moniker}";
+	public string Suffix(string moniker) => moniker == DefaultMoniker ? ApiKey : Numbered(moniker);
 
-	/// <summary>Every URL suffix that renders <paramref name="moniker"/>, the one <see cref="Suffix"/> returns first.</summary>
+	/// <summary>The second URL suffix that renders <paramref name="moniker"/>: the numbered copy of a default numeric major.</summary>
+	public string? MirrorSuffix(string moniker) =>
+		moniker == DefaultMoniker && ApiVersions.TryParseMajor(moniker) is not null ? Numbered(moniker) : null;
+
+	/// <summary>Every URL suffix that renders <paramref name="moniker"/>: <see cref="Suffix"/>, then <see cref="MirrorSuffix"/> when there is one.</summary>
 	public IReadOnlyList<string> Suffixes(string moniker) =>
-		moniker == DefaultMoniker && ApiVersions.TryParseMajor(moniker) is not null ? [ApiKey, $"{ApiKey}/v{moniker}"] : [Suffix(moniker)];
+		MirrorSuffix(moniker) is { } mirror ? [Suffix(moniker), mirror] : [Suffix(moniker)];
+
+	private string Numbered(string moniker) => moniker == "main" ? $"{ApiKey}/{ApiUrlBuilder.NextSegment}" : $"{ApiKey}/v{moniker}";
 }

@@ -69,8 +69,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// </summary>
 	public IEnumerable<DocumentationDocument> ConvertToDocuments(IndexedTree tree)
 	{
-		var (_, productId, moniker, openApiDocument) = tree;
-		var product = tree.ApiKey;
+		var (product, productId, moniker, openApiDocument) = (tree.ApiKey, tree.ProductId, tree.Moniker, tree.Document);
 		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;

@@ -42,8 +42,14 @@ internal sealed record ResolvedProductDocuments(
 	public IReadOnlyList<string> UnresolvedMonikers { get; init; } = [];
 }
 
-/// <summary>One rendered page tree: a version's spec at one of its URL roots, <c>/api/{Suffix}</c>.</summary>
-internal sealed record ApiVersionTree(VersionedOpenApiDocument Version, string Suffix, LandingNavigationItem Navigation);
+/// <summary>
+/// One rendered page tree: a version's spec at one of its URL roots, <c>/api/{Suffix}</c>. <paramref name="IsMirror"/>
+/// marks the numbered copy of the default major, which repeats the tree at the versionless root.
+/// </summary>
+internal sealed record ApiVersionTree(VersionedOpenApiDocument Version, string Suffix, bool IsMirror, LandingNavigationItem Navigation)
+{
+	public string Moniker => Version.Version.Moniker;
+}
 
 /// <summary>
 /// The page trees of one API, built once from the resolved specs, one per URL root: the default numeric major has two.
@@ -254,7 +260,7 @@ public class OpenApiGenerator(
 		// so concurrency is bounded by the number of product×tree units, not ProcessorCount².
 		await Parallel.ForEachAsync(trees.Trees, ctx, async (tree, token) =>
 		{
-			var moniker = tree.Version.Version.Moniker;
+			var moniker = tree.Moniker;
 			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, resolved.Routes, monikers, tree.Suffix, trees.PageNames);
 			await GenerateApiProduct(
 				new(
@@ -264,7 +270,7 @@ public class OpenApiGenerator(
 					switcherItems,
 					moniker,
 					// Both copies of the default major read the same files, so only the first copy reports on them.
-					ValidateSupplemental: tree.Suffix == resolved.Routes.Suffix(moniker),
+					ValidateSupplemental: !tree.IsMirror,
 					EmitUnmatchedBaseFiles: moniker == resolved.UnmatchedBaseFilesMoniker,
 					SupplementalMajor: SupplementalMajor(moniker, trees.HighestMajor),
 					CatalogEntries: hubEntries,
@@ -291,27 +297,28 @@ public class OpenApiGenerator(
 			return new(resolved, [], null, new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>());
 
 		var highestMajor = resolved.Documents.Select(v => v.Version.Moniker).Max(ApiVersions.TryParseMajor);
+		var roots = resolved.Documents.SelectMany(
+			v => resolved.Routes.Suffixes(v.Version.Moniker).Select((suffix, i) => (Version: v, Suffix: suffix, IsMirror: i > 0))
+		);
 		var trees = await Task.WhenAll(
-			resolved.Documents.SelectMany(
-				v => resolved
-					.Routes
-					.Suffixes(v.Version.Moniker)
-					.Select(
-						suffix => Task.Run(
-							() => new ApiVersionTree(
-								v,
-								suffix,
-								CreateNavigation(suffix, v.Document, apiConfig, SupplementalMajor(v.Version.Moniker, highestMajor))
-							),
-							ctx
+			roots.Select(
+				r => Task.Run(
+					() => new ApiVersionTree(
+						r.Version,
+						r.Suffix,
+						r.IsMirror,
+						CreateNavigation(
+							r.Suffix,
+							r.Version.Document,
+							apiConfig,
+							SupplementalMajor(r.Version.Version.Moniker, highestMajor)
 						)
-					)
+					),
+					ctx
+				)
 			)
 		).ConfigureAwait(false);
-		var pageNames = trees.DistinctBy(t => t.Version.Version.Moniker).ToDictionary(
-			t => t.Version.Version.Moniker,
-			t => PageNames(t.Navigation)
-		);
+		var pageNames = trees.Where(static t => !t.IsMirror).ToDictionary(static t => t.Moniker, static t => PageNames(t.Navigation));
 		return new(resolved, trees, highestMajor, pageNames);
 	}
 
@@ -432,16 +439,17 @@ public class OpenApiGenerator(
 	/// </summary>
 	private ResolvedApiVersion[] WithoutReservedMonikers(string apiKey, IReadOnlyList<ResolvedApiVersion> versions)
 	{
-		foreach (var reserved in versions.Where(
+		var reserved = versions.Where(
 			static v => v.Moniker.Equals(ApiUrlBuilder.NextSegment, StringComparison.OrdinalIgnoreCase)
-		))
+		).ToArray();
+		foreach (var version in reserved)
 		{
 			context.Collector.EmitGlobalError(
-				$"API '{apiKey}': the version index declares a version named '{reserved.Moniker}', which is the URL segment of the unreleased 'main' spec. Rename the version; it is not rendered."
+				$"API '{apiKey}': the version index declares a version named '{version.Moniker}', which is the URL segment of the unreleased 'main' spec. Rename the version; it is not rendered."
 			);
 		}
 
-		return [.. versions.Where(static v => !v.Moniker.Equals(ApiUrlBuilder.NextSegment, StringComparison.OrdinalIgnoreCase))];
+		return [.. versions.Except(reserved)];
 	}
 
 	private async Task<ResolvedProductDocuments> ResolveLocalMainOnly(string apiKey, IFileInfo localFile)

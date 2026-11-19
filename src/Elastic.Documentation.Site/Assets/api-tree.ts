@@ -8,16 +8,31 @@ export interface ApiTree {
 
 const apiTreePath = /^\/api\/([^/]+)(?:\/(?:v(\d+)|(next)))?(?:\/|$)/
 
+function matchApiTree(path: string, root: string): RegExpExecArray | null {
+    if (!path.startsWith(`${root}/`)) return null
+    return apiTreePath.exec(path.slice(root.length))
+}
+
 /** Reads an API page path under the site `root`, so a docs page with an `api` folder of its own never matches. */
 export function parseApiTree(
     path: string,
     root = config.rootPath.replace(/\/$/, '')
 ): ApiTree | null {
-    if (!path.startsWith(`${root}/`)) return null
-    const match = apiTreePath.exec(path.slice(root.length))
+    const match = matchApiTree(path, root)
     if (!match) return null
     // The search index names the unreleased tree `main`; only its URL segment is `next`.
     return { product: match[1], tree: match[2] ?? (match[3] ? 'main' : null) }
+}
+
+/** The product and URL root of an API path, such as `es/`, `es/v9` or `es/next`. `null` outside an API product. */
+export function apiTreeRoot(
+    path: string,
+    root = config.rootPath.replace(/\/$/, '')
+): string | null {
+    const match = matchApiTree(path, root)
+    if (!match) return null
+    const segment = match[2] ? `v${match[2]}` : (match[3] ?? '')
+    return `${match[1]}/${segment}`
 }
 
 /**
