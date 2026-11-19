@@ -65,7 +65,7 @@ public class ConfigurationFileCtaTests
 		var docsDir = fileSystem.DirectoryInfo.New("/docs");
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
 		var config = new ConfigurationFile(
-			DocumentationSetLoader.ToDefinition(new DocumentationSetFile(), configPath, docsDir),
+			DocumentationSetLoader.ToDefinition(new DocumentationSetDto(), configPath, docsDir),
 			context,
 			new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
 			new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary() }
