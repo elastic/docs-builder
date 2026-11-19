@@ -8,7 +8,7 @@
 			<span class="api-page-actions-label">Download spec</span>
 		</button>
 	</div>
-	<div id="api-page-actions-menu" class="api-page-actions-menu" role="menu" popover data-placement="bottom-end">
+	<div id="api-page-actions-menu" class="api-page-actions-menu" role="menu" popover data-placement="bottom-end" data-boundary=".api-page-toolbar">
 		@await RenderPartialAsync(_SpecDownloadLinks.Create(Model))
 	</div>
 </div>
