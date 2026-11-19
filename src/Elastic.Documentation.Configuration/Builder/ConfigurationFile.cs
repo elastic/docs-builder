@@ -173,7 +173,7 @@ public record ConfigurationFile
 			// Convert exclude patterns to Glob
 			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
 			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
-			FolderExcludedFiles = [.. docSetFile.FolderExcludedFiles];
+			FolderExcludedFiles = new HashSet<string>(docSetFile.FolderExcludedFiles, StringComparer.OrdinalIgnoreCase);
 
 			// Parse registry (null/empty/"public" -> Public)
 			var registry = DocSetRegistry.Public;
