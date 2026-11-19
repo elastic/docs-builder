@@ -73,6 +73,25 @@ describe('ModalSearch', () => {
         expect(closeButton()).not.toBeInTheDocument()
     })
 
+    it('closes an open zoom dialog when Ctrl+K opens the search', () => {
+        renderModalSearch()
+        const zoom = document.createElement('dialog')
+        zoom.className = 'modal'
+        zoom.setAttribute('open', '')
+        zoom.close = vi.fn(() => zoom.removeAttribute('open'))
+        document.body.appendChild(zoom)
+
+        act(() => {
+            window.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })
+            )
+        })
+        zoom.remove()
+
+        expect(zoom.close).toHaveBeenCalledTimes(1)
+        expect(modalSearchStore.getState().isOpen).toBe(true)
+    })
+
     it('cancels a pending result navigation when the modal is dismissed', () => {
         renderModalSearch()
 

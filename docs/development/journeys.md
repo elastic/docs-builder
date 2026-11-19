@@ -47,7 +47,7 @@ Each folder under `journeys/` is an area, and each area has one test class under
 |---|---|
 | `landing` | The home page, the 404 page, a hub page and a group of page cards |
 | `navigation` | The sidebar and the table of contents |
-| `content` | Tabs, dropdowns, admonitions and the code copy button |
+| `content` | Tabs, dropdowns, admonitions, the code copy button and the image and diagram zoom dialogs |
 | `chrome` | The isolated header (logo, search button, GitHub link, deployment info) and the footer |
 | `page-actions` | The "View as Markdown" and "Edit this page" links |
 | `feedback` | The "Was this page helpful?" buttons render with their accessible names (needs the `page-feedback` flag, which the isolated site only turns on in Debug builds) |
