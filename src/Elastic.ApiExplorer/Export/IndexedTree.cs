@@ -8,7 +8,7 @@ namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
 /// One version tree of one API that the explorer renders and the search index exports.
-/// <paramref name="ApiKey"/> is the key in <c>/api/doc/{key}/</c>, <paramref name="ProductId"/> the <c>products.yml</c> id it binds to,
+/// <paramref name="ApiKey"/> is the key in <c>/api/{key}/</c>, <paramref name="ProductId"/> the <c>products.yml</c> id it binds to,
 /// and <paramref name="Moniker"/> the tree: <c>main</c> or a major such as <c>8</c>.
 /// </summary>
 public sealed record IndexedTree(string ApiKey, string ProductId, string Moniker, OpenApiDocument Document);

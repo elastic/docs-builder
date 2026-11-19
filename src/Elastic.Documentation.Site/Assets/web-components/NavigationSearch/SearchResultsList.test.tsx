@@ -52,11 +52,11 @@ describe('navigationSearchBreadcrumbs', () => {
                 [
                     { url: '/docs/api', title: 'API' },
                     {
-                        url: '/docs/api/doc/elasticsearch',
+                        url: '/docs/api/elasticsearch',
                         title: 'elasticsearch',
                     },
                     {
-                        url: '/docs/api/doc/elasticsearch/group/endpoint-ml-anomaly',
+                        url: '/docs/api/elasticsearch/group/endpoint-ml-anomaly',
                         title: 'Machine learning anomaly detection',
                     },
                 ],
@@ -116,12 +116,12 @@ const property = (path: string, location: 'query' | 'request') => ({
     location,
     description: 'Count hits',
     anchor: `${location}-${path}`,
-    url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
+    url: `/docs/api/elasticsearch/operation/operation-search#${location}-${path}`,
 })
 
 const operation: SearchResultItem = {
     type: 'api',
-    url: '/docs/api/doc/elasticsearch/operation/operation-search',
+    url: '/docs/api/elasticsearch/operation/operation-search',
     title: 'Search',
     description: 'Run a search',
     score: 5,
@@ -369,7 +369,7 @@ describe('row tooltips', () => {
 describe('API landing rows', () => {
     const landing: SearchResultItem = {
         type: 'api',
-        url: '/docs/api/doc/kibana',
+        url: '/docs/api/kibana',
         title: 'Kibana API',
         description: 'Manage Kibana saved objects, alerts and more',
         score: 60,
@@ -434,15 +434,15 @@ describe('API landing rows', () => {
 describe('API operation rows', () => {
     const create: SearchResultItem = {
         type: 'api',
-        url: '/docs/api/doc/elasticsearch/operation/operation-indices-create',
+        url: '/docs/api/elasticsearch/operation/operation-indices-create',
         title: 'Create an index',
         description: 'Creates a new index',
         score: 10,
         parents: [
             { url: '/docs/api', title: 'API' },
-            { url: '/docs/api/doc/elasticsearch', title: 'elasticsearch' },
+            { url: '/docs/api/elasticsearch', title: 'elasticsearch' },
             {
-                url: '/docs/api/doc/elasticsearch/group/endpoint-indices',
+                url: '/docs/api/elasticsearch/group/endpoint-indices',
                 title: 'Index',
             },
         ],

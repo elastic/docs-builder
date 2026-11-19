@@ -2,8 +2,8 @@
 type: api
 title: Run a search
 description: Returns hits that match the query defined in the request.
-url: /api/doc/elasticsearch/operation/operation-search
-resource: /api/doc/elasticsearch/operation/operation-search
+url: /api/elasticsearch/operation/operation-search
+resource: /api/elasticsearch/operation/operation-search
 products:
   - elasticsearch
 ---
@@ -67,12 +67,12 @@ The search definition using the fixture Query DSL.
 
 - `query` ({} Query) — required
   A container for a single query variant. Query containers can nest other query containers, which exercises recursion detection.
-  See [Query](/api/doc/elasticsearch/types/_types-query_dsl-querycontainer)
+  See [Query](/api/elasticsearch/types/_types-query_dsl-querycontainer)
 - `fields` (union string | string[]) — optional
   A field or list of fields to return, exercising the X | X[] simple-union path.
 - `aggs` (map string to {} Aggregation) — optional
   Aggregations to run, keyed by name.
-  See [Aggregation](/api/doc/elasticsearch/types/_types-aggregations-aggregationcontainer)
+  See [Aggregation](/api/elasticsearch/types/_types-aggregations-aggregationcontainer)
 - `settings` (map string to string) — optional
   Free-form string settings, exercising the plain dictionary path.
 - `sort` (union oneOf) — optional
@@ -115,7 +115,7 @@ Search results
   - `_source` (object)
 - `aggregations` (map string to {} Aggregation result)
   Aggregation results keyed by name.
-  See [Aggregation result](/api/doc/elasticsearch/types/_types-aggregations-aggregate)
+  See [Aggregation result](/api/elasticsearch/types/_types-aggregations-aggregate)
 ##### Response headers
 
 - `X-Found` (boolean) — required

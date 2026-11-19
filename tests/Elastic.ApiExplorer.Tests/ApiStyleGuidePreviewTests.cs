@@ -77,7 +77,7 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync("api-operation");
 
-		html.Should().Contain("/api/doc/lorem/v8/");
+		html.Should().Contain("/api/lorem/v8/");
 	}
 
 	[Test]

@@ -12,9 +12,9 @@ public class HeroApiLinkTests() : DirectiveTest<HeroBlock>(
 	"""
 	:::{hero}
 	:title: Kibana
-	:description: Start with the [saved objects API](https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing-description).
-	:primary-action: [Create](https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing-action)
-	:secondary-action: [Existing](https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists)
+	:description: Start with the [saved objects API](https://www.elastic.co/docs/api/kibana/operation/operation-missing-description).
+	:primary-action: [Create](https://www.elastic.co/docs/api/kibana/operation/operation-missing-action)
+	:secondary-action: [Existing](https://www.elastic.co/docs/api/kibana/operation/operation-exists)
 	:tertiary-action: [Install](https://www.elastic.co/downloads/kibana)
 	:::
 	"""
@@ -40,10 +40,10 @@ public class LinkCardApiLinkTests() : DirectiveTest<LinkCardBlock>(
 	"""
 	:::{link-card}
 	title: Search
-	link: https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing-card
+	link: https://www.elastic.co/docs/api/kibana/operation/operation-missing-card
 	links:
 	  - label: Existing
-	    url: https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists
+	    url: https://www.elastic.co/docs/api/kibana/operation/operation-exists
 	:::
 	"""
 )

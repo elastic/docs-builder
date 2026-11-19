@@ -26,11 +26,11 @@ namespace Search.IntegrationTests;
 public class ApiTreeScopeVisibilityTests
 {
 	private const string Markdown = "/docs/explore-analyze/search-guide";
-	private const string LegacyApi = "/docs/api/doc/legacy/operation/operation-search-legacy";
-	private const string EsDefault = "/docs/api/doc/elasticsearch/operation/operation-search";
-	private const string EsDefaultInV9 = "/docs/api/doc/elasticsearch/v9/operation/operation-search";
-	private const string EsV8Variant = "/docs/api/doc/elasticsearch/v8/operation/operation-search";
-	private const string CloudDefault = "/docs/api/doc/cloud/operation/operation-search-deployments";
+	private const string LegacyApi = "/docs/api/legacy/operation/operation-search-legacy";
+	private const string EsDefault = "/docs/api/elasticsearch/operation/operation-search";
+	private const string EsDefaultInV9 = "/docs/api/elasticsearch/v9/operation/operation-search";
+	private const string EsV8Variant = "/docs/api/elasticsearch/v8/operation/operation-search";
+	private const string CloudDefault = "/docs/api/cloud/operation/operation-search-deployments";
 
 	private static readonly string? EndpointUrl = Environment.GetEnvironmentVariable("API_TREE_SCOPE_ES_URL");
 
@@ -69,11 +69,11 @@ public class ApiTreeScopeVisibilityTests
 			"Search",
 			"elasticsearch",
 			hidden: false,
-			("main", "/docs/api/doc/elasticsearch"),
-			("9", "/docs/api/doc/elasticsearch/v9")
+			("main", "/docs/api/elasticsearch"),
+			("9", "/docs/api/elasticsearch/v9")
 		);
-		yield return Api(EsV8Variant, "Search", "elasticsearch", hidden: true, ("8", "/docs/api/doc/elasticsearch/v8"));
-		yield return Api(CloudDefault, "Search deployments", "cloud", hidden: false, ("main", "/docs/api/doc/cloud"));
+		yield return Api(EsV8Variant, "Search", "elasticsearch", hidden: true, ("8", "/docs/api/elasticsearch/v8"));
+		yield return Api(CloudDefault, "Search deployments", "cloud", hidden: false, ("main", "/docs/api/cloud"));
 	}
 
 	/// <summary>Each scope with the hit URLs a reader gets, which name the document that matched.</summary>
@@ -104,10 +104,10 @@ public class ApiTreeScopeVisibilityTests
 		apiOnly.Results.Select(r => r.Url).Order().Should().Equal(hitUrls.Where(u => u != Markdown).Order());
 	}
 
-	private const string EsSearch = "/docs/api/doc/elasticsearch/operation/operation-search";
-	private const string ServerlessSearch = "/docs/api/doc/elasticsearch-serverless/operation/operation-search";
-	private const string EsCatCount = "/docs/api/doc/elasticsearch/operation/operation-cat-count";
-	private const string ServerlessCount = "/docs/api/doc/elasticsearch-serverless/operation/operation-count";
+	private const string EsSearch = "/docs/api/elasticsearch/operation/operation-search";
+	private const string ServerlessSearch = "/docs/api/elasticsearch-serverless/operation/operation-search";
+	private const string EsCatCount = "/docs/api/elasticsearch/operation/operation-cat-count";
+	private const string ServerlessCount = "/docs/api/elasticsearch-serverless/operation/operation-count";
 
 	private static DocumentationDocument Operation(string url, string title, string endpoint) =>
 		new()

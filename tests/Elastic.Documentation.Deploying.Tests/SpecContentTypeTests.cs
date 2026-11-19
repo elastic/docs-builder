@@ -10,9 +10,9 @@ namespace Elastic.Documentation.Deploying.Tests;
 public class SpecContentTypeTests
 {
 	[Test]
-	[Arguments("docs/api/doc/elasticsearch.json", "application/json")]
-	[Arguments("docs/api/doc/elasticsearch/v8.yaml", "text/plain; charset=utf-8")]
-	[Arguments("docs/api/doc/elasticsearch.YML", "text/plain; charset=utf-8")]
+	[Arguments("docs/api/elasticsearch.json", "application/json")]
+	[Arguments("docs/api/elasticsearch/v8.yaml", "text/plain; charset=utf-8")]
+	[Arguments("docs/api/elasticsearch.YML", "text/plain; charset=utf-8")]
 	public void SpecContentType_SpecFile_ReturnsExplicitType(string key, string expected) =>
 		AwsS3SyncApplyStrategy.SpecContentType(key).Should().Be(expected);
 

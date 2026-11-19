@@ -41,10 +41,8 @@ public class ApiTreeExportUrlTests
 		docs.Should().Contain(d => d.Api!.Trees.Length == 3, "the fixture shares most operations across every tree");
 		docs.Should().Contain(d => d.Api!.Trees.Length == 1 && d.Api.Trees[0].Tree == "8", "search differs in 8");
 		docs.Should().Contain(d => d.Api!.OperationId == "bulk" && d.Api.Trees.Length == 2, "8 has no bulk");
-		pages["8"]
-			.Should()
-			.Contain("/docs/api/doc/elasticsearch/v8/operation/operation-search-1", "GET search redirects to the shared page");
-		docs.Should().Contain(d => d.Path == "/docs/api/doc/elasticsearch/operation/operation-search-1");
+		pages["8"].Should().Contain("/docs/api/elasticsearch/v8/operation/operation-search-1", "GET search redirects to the shared page");
+		docs.Should().Contain(d => d.Path == "/docs/api/elasticsearch/operation/operation-search-1");
 		var missing = docs
 			.SelectMany(
 				d => d.Api!.Trees.SelectMany(tree => TreeUrls(d).Select(url => (tree.Tree, Url: Rebase(url, d.Api.Trees[0], tree))))

@@ -52,7 +52,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		entries[0].ProductId.Should().Be("elasticsearch");
 		entries[0].Description.Should().Be("A **distributed** [search](https://example.com) engine.\n\nMore detail.");
 		entries[0].CatalogCategories.Should().Equal("ece", "ess", "self");
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
 	}
 
@@ -213,10 +213,10 @@ public class OpenApiGeneratorCatalogSplitTests
 			paths.Add(doc.Path);
 
 		paths.Should().BeEquivalentTo(
-			"/docs/api/doc/cloud-billing",
-			"/docs/api/doc/cloud-billing/operation/operation-ping",
-			"/docs/api/doc/cloud-connect",
-			"/docs/api/doc/cloud-connect/operation/operation-ping"
+			"/docs/api/cloud-billing",
+			"/docs/api/cloud-billing/operation/operation-ping",
+			"/docs/api/cloud-connect",
+			"/docs/api/cloud-connect/operation/operation-ping"
 		);
 	}
 
@@ -303,9 +303,9 @@ public class OpenApiGeneratorCatalogSplitTests
 		var entries = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
 
 		entries.Should().ContainSingle();
-		entries[0].Url.Should().Be("/docs/api/doc/elasticsearch");
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
-		context.WriteFileSystem.Directory.Exists(Path.Join(outputRoot, "api", "doc", "docs-builder-elasticsearch")).Should().BeFalse();
+		entries[0].Url.Should().Be("/docs/api/elasticsearch");
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "index.html")).Should().BeTrue();
+		context.WriteFileSystem.Directory.Exists(Path.Join(outputRoot, "api", "docs-builder-elasticsearch")).Should().BeFalse();
 	}
 
 	[Test]
@@ -334,10 +334,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		_ = await first.GenerateProducts(ctx: ctx);
 		_ = await second.GenerateProducts(ctx: ctx);
 
-		var html = await context
-			.WriteFileSystem
-			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ctx);
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch", "index.html"), ctx);
 		html.Should().NotContain(longTitle);
 		html.TrimEnd().Should().EndWith("</html>");
 	}
@@ -351,8 +348,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 		var entries = new List<ApiCatalogEntry>
 		{
-			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch", "A distributed search engine."),
-			new("kibana", "Kibana", "/docs/api/doc/kibana", "kibana")
+			new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch", "A distributed search engine."),
+			new("kibana", "Kibana", "/docs/api/kibana", "kibana")
 		};
 
 		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);
@@ -391,10 +388,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(
-				Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"),
-				TestContext.Current!.Execution.CancellationToken
-			);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch", "index.html"), TestContext.Current!.Execution.CancellationToken);
 		html.Should().Contain("api-landing-heading");
 		html.Should().Contain("<h1>Elasticsearch main</h1>");
 		html.Should().Contain("<span class=\"api-landing-icon\">");
@@ -418,23 +412,23 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
-		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "index.html"));
 		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
 		productHtml.Should().Contain("<h1>Elasticsearch main</h1>");
 		productHtml.Should().Contain("href=\"/docs/api\"").And.Contain(">All APIs<");
 		productHtml.Should().Contain(">Elasticsearch main</span>");
 		productHtml.Should().Contain(">APIs<");
-		productHtml.Should().Contain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping\"");
-		productHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping/\"");
+		productHtml.Should().Contain("href=\"/docs/api/elasticsearch/operation/operation-ping\"");
+		productHtml.Should().NotContain("href=\"/docs/api/elasticsearch/operation/operation-ping/\"");
 		productHtml.Should().NotContain("href=\"/docs/api/\"");
-		catalogHtml.Should().Contain("<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby");
-		catalogHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/\"");
+		catalogHtml.Should().Contain("<a href=\"/docs/api/elasticsearch\" aria-labelledby");
+		catalogHtml.Should().NotContain("href=\"/docs/api/elasticsearch/\"");
 		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
 		catalogHtml.Should().Contain("<h1>Elastic APIs</h1>");
 		catalogHtml.Should().Contain("api-card api-catalog-card");
 		catalogHtml.Should().NotContain("listing-group-chips");
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch.md")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
 	}
 
@@ -454,18 +448,18 @@ public class OpenApiGeneratorCatalogSplitTests
 		);
 		var hubEntries = new List<ApiCatalogEntry>
 		{
-			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch"),
-			new("kibana", "Kibana", "/docs/api/doc/kibana")
+			new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch"),
+			new("kibana", "Kibana", "/docs/api/kibana")
 		};
 
 		_ = await generator.GenerateProducts(hubEntries, TestContext.Current!.Execution.CancellationToken);
 
-		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
 		productHtml.Should().Contain("href=\"/docs/api\"").And.Contain(">All APIs<");
 		productHtml.Should().Contain("secondary-nav-dropdown-link--selected");
-		productHtml.Should().Contain("href=\"/docs/api/doc/elasticsearch\"");
-		productHtml.Should().Contain("href=\"/docs/api/doc/kibana\"").And.Contain(">Kibana</span>");
+		productHtml.Should().Contain("href=\"/docs/api/elasticsearch\"");
+		productHtml.Should().Contain("href=\"/docs/api/kibana\"").And.Contain(">Kibana</span>");
 	}
 
 	[Test]
@@ -503,10 +497,10 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
-		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "cloud-connect", "index.html"));
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "cloud-connect", "index.html"));
 		productHtml.Should().Contain("<h1>Elastic Cloud Connected API</h1>");
-		productHtml.Should().Contain("href=\"/docs/api/doc/cloud-billing\"").And.Contain(">Cloud Billing API</span>");
-		productHtml.Should().Contain("href=\"/docs/api/doc/cloud-connect\"").And.Contain(">Elastic Cloud Connected API</span>");
+		productHtml.Should().Contain("href=\"/docs/api/cloud-billing\"").And.Contain(">Cloud Billing API</span>");
+		productHtml.Should().Contain("href=\"/docs/api/cloud-connect\"").And.Contain(">Elastic Cloud Connected API</span>");
 	}
 
 	[Test]
@@ -518,14 +512,14 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 		var entries = new List<ApiCatalogEntry>
 		{
-			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch") { CatalogCategories = ["self"] },
-			new("kibana", "Kibana", "/docs/api/doc/kibana", "kibana") { CatalogCategories = ["self"] },
-			new("elasticsearch-serverless", "Elasticsearch Serverless", "/docs/api/doc/elasticsearch-serverless", "elasticsearch")
+			new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch") { CatalogCategories = ["self"] },
+			new("kibana", "Kibana", "/docs/api/kibana", "kibana") { CatalogCategories = ["self"] },
+			new("elasticsearch-serverless", "Elasticsearch Serverless", "/docs/api/elasticsearch-serverless", "elasticsearch")
 			{
 				CatalogCategories = ["serverless"]
 			},
-			new("cloud", "Elastic Cloud", "/docs/api/doc/cloud", "cloud-hosted") { CatalogCategories = ["ess"] },
-			new("extra", "Extra API", "/docs/api/doc/extra", "extra") { CatalogCategories = ["ece"] }
+			new("cloud", "Elastic Cloud", "/docs/api/cloud", "cloud-hosted") { CatalogCategories = ["ess"] },
+			new("extra", "Extra API", "/docs/api/extra", "extra") { CatalogCategories = ["ece"] }
 		};
 
 		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);
@@ -548,12 +542,9 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 		var entries = new List<ApiCatalogEntry>
 		{
-			new("search", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch") { CatalogCategories = ["self", "ess"] },
-			new("serverless", "Elasticsearch Serverless", "/docs/api/doc/serverless", "elasticsearch")
-			{
-				CatalogCategories = ["serverless"]
-			},
-			new("connect", "Cloud Connect", "/docs/api/doc/connect", "ess")
+			new("search", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch") { CatalogCategories = ["self", "ess"] },
+			new("serverless", "Elasticsearch Serverless", "/docs/api/serverless", "elasticsearch") { CatalogCategories = ["serverless"] },
+			new("connect", "Cloud Connect", "/docs/api/connect", "ess")
 		};
 
 		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);
@@ -576,7 +567,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 
 		await generator.GenerateCatalog(
-			[new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch")],
+			[new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch")],
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -605,10 +596,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		_ = await generator.GenerateProducts(ctx: ctx);
 
-		var html = await context
-			.WriteFileSystem
-			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ctx);
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch", "index.html"), ctx);
 		// No boosted swap carries the banner; api-beta-banner.ts matches it to each new page.
 		html
 			.IndexOf("id=\"api-beta-banner\"", StringComparison.Ordinal)
@@ -625,7 +613,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 
 		await generator.GenerateCatalog(
-			[new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch")],
+			[new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch")],
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -650,7 +638,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 
 		await generator.GenerateCatalog(
-			[new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch")],
+			[new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch")],
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -678,8 +666,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 		var entries = new List<ApiCatalogEntry>
 		{
-			new("cloud", "Elastic Cloud API", "/docs/api/doc/cloud", "cloud-hosted"),
-			new("cloud-enterprise", "Elastic Cloud Enterprise API", "/docs/api/doc/cloud-enterprise", "cloud-enterprise")
+			new("cloud", "Elastic Cloud API", "/docs/api/cloud", "cloud-hosted"),
+			new("cloud-enterprise", "Elastic Cloud Enterprise API", "/docs/api/cloud-enterprise", "cloud-enterprise")
 		};
 
 		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);

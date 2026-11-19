@@ -191,7 +191,7 @@ public class OpenApiDocumentExporterTests
 			.ConvertToDocuments(new IndexedTree("cloud", "cloud-hosted", "main", spec))
 			.Single();
 
-		doc.Path.Should().StartWith("/docs/api/doc/cloud/operation/");
+		doc.Path.Should().StartWith("/docs/api/cloud/operation/");
 		A.CallTo(() => inferrer.InferForOpenApi("cloud-hosted")).MustHaveHappenedOnceExactly();
 		A.CallTo(() => inferrer.InferForOpenApi("cloud")).MustNotHaveHappened();
 	}
@@ -470,11 +470,7 @@ public class OpenApiDocumentExporterTests
 		follow
 			.Parents[^1]
 			.Should()
-			.BeEquivalentTo(new ParentDocument
-			{
-				Title = "Cross-cluster replication",
-				Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr"
-			});
+			.BeEquivalentTo(new ParentDocument { Title = "Cross-cluster replication", Path = "/docs/api/elasticsearch/group/endpoint-ccr" });
 	}
 
 	[Test]
@@ -492,10 +488,7 @@ public class OpenApiDocumentExporterTests
 			.Single();
 
 		doc.Headings.Should().Equal("ccr");
-		doc
-			.Parents[^1]
-			.Should()
-			.BeEquivalentTo(new ParentDocument { Title = "Ccr", Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr" });
+		doc.Parents[^1].Should().BeEquivalentTo(new ParentDocument { Title = "Ccr", Path = "/docs/api/elasticsearch/group/endpoint-ccr" });
 	}
 
 	private static async Task<List<DocumentationDocument>> ElasticsearchFixtureDocuments()
@@ -571,18 +564,18 @@ public class OpenApiDocumentExporterTests
 	{
 		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(TestHelpers.EsTree("8", TreeSpec())));
 
-		doc.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
+		doc.Path.Should().Be("/docs/api/elasticsearch/v8/operation/operation-search");
 		doc
 			.Parents
 			.Select(p => $"{p.Title} {p.Path}")
 			.Should()
 			.Equal(
 				"API /docs/api",
-				"Elasticsearch API /docs/api/doc/elasticsearch/v8",
-				"Search /docs/api/doc/elasticsearch/v8/group/endpoint-search"
+				"Elasticsearch API /docs/api/elasticsearch/v8",
+				"Search /docs/api/elasticsearch/v8/group/endpoint-search"
 			);
 		doc.Api!.Key.Should().Be("elasticsearch");
-		doc.Api.Trees.Should().Equal(new ApiTreeEntry { Tree = "8", Root = "/docs/api/doc/elasticsearch/v8" });
+		doc.Api.Trees.Should().Equal(new ApiTreeEntry { Tree = "8", Root = "/docs/api/elasticsearch/v8" });
 	}
 
 	[Test]
@@ -590,8 +583,8 @@ public class OpenApiDocumentExporterTests
 	{
 		var doc = SearchOperation(new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(TestHelpers.EsTree("main", TreeSpec())));
 
-		doc.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
-		doc.Api!.Trees.Should().Equal(new ApiTreeEntry { Tree = "main", Root = "/docs/api/doc/elasticsearch" });
+		doc.Path.Should().Be("/docs/api/elasticsearch/operation/operation-search");
+		doc.Api!.Trees.Should().Equal(new ApiTreeEntry { Tree = "main", Root = "/docs/api/elasticsearch" });
 	}
 
 	[Test]
@@ -601,13 +594,9 @@ public class OpenApiDocumentExporterTests
 
 		docs.Select(d => d.Api!.OperationId).Should().Equal("search", "count");
 		var search = SearchOperation(docs);
-		search.Api!
-			.Trees
-			.Select(t => $"{t.Tree} {t.Root}")
-			.Should()
-			.Equal("main /docs/api/doc/elasticsearch", "9 /docs/api/doc/elasticsearch/v9");
+		search.Api!.Trees.Select(t => $"{t.Tree} {t.Root}").Should().Equal("main /docs/api/elasticsearch", "9 /docs/api/elasticsearch/v9");
 		search.Hidden.Should().BeFalse();
-		search.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
+		search.Path.Should().Be("/docs/api/elasticsearch/operation/operation-search");
 	}
 
 	[Test]
@@ -620,8 +609,8 @@ public class OpenApiDocumentExporterTests
 			.Should()
 			.Equal("search main,9 False", "count main,9,8 False", "search 8 True");
 		var eight = docs.Single(d => d.Api!.Trees is [{ Tree: "8" }]);
-		eight.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-search");
-		eight.Parents[1].Path.Should().Be("/docs/api/doc/elasticsearch/v8");
+		eight.Path.Should().Be("/docs/api/elasticsearch/v8/operation/operation-search");
+		eight.Parents[1].Path.Should().Be("/docs/api/elasticsearch/v8");
 		eight.Parents[1].Title.Should().Be("Elasticsearch API");
 	}
 
@@ -633,7 +622,7 @@ public class OpenApiDocumentExporterTests
 		var knn = docs.Single(d => d.Api!.OperationId == "knn-search");
 		knn.Api!.Trees.Select(t => t.Tree).Should().Equal("8");
 		knn.Hidden.Should().BeTrue();
-		knn.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-knn-search");
+		knn.Path.Should().Be("/docs/api/elasticsearch/v8/operation/operation-knn-search");
 	}
 
 	[Test]
@@ -666,7 +655,7 @@ public class OpenApiDocumentExporterTests
 
 		var shared = docs.Single(d => d.Api!.OperationId == "search" && !d.Hidden);
 		shared.Api!.Trees.Select(t => t.Tree).Should().Equal("9", "main");
-		shared.Path.Should().Be("/docs/api/doc/elasticsearch/v9/operation/operation-search");
+		shared.Path.Should().Be("/docs/api/elasticsearch/v9/operation/operation-search");
 		docs.Single(d => d.Api!.OperationId == "search" && d.Hidden).Api!.Trees.Select(t => t.Tree).Should().Equal("8");
 	}
 
@@ -689,7 +678,7 @@ public class OpenApiDocumentExporterTests
 			    "trees": [
 			      {
 			        "tree": "9",
-			        "root": "/docs/api/doc/elasticsearch/v9"
+			        "root": "/docs/api/elasticsearch/v9"
 			      }
 			    ],
 			    "properties": [],
@@ -710,8 +699,8 @@ public class OpenApiDocumentExporterTests
 			  "title": "Elastic Cloud API",
 			  "search_title": "Elastic Cloud API",
 			  "content_type": "api",
-			  "path": "/docs/api/doc/elasticsearch/v9",
-			  "url": "/docs/api/doc/elasticsearch/v9",
+			  "path": "/docs/api/elasticsearch/v9",
+			  "url": "/docs/api/elasticsearch/v9",
 			  "hash": "",
 			  "batch_index_date": "0001-01-01T00:00:00+00:00",
 			  "last_updated": "0001-01-01T00:00:00+00:00",
@@ -780,8 +769,8 @@ public class OpenApiDocumentExporterTests
 			.Trees
 			.Select(t => $"{t.Tree} {t.Root}")
 			.Should()
-			.Equal("9 /docs/api/doc/elasticsearch/v9", "main /docs/api/doc/elasticsearch", "8 /docs/api/doc/elasticsearch/v8");
-		landing.Path.Should().Be("/docs/api/doc/elasticsearch/v9");
+			.Equal("9 /docs/api/elasticsearch/v9", "main /docs/api/elasticsearch", "8 /docs/api/elasticsearch/v8");
+		landing.Path.Should().Be("/docs/api/elasticsearch/v9");
 		landing.Hidden.Should().BeFalse();
 	}
 

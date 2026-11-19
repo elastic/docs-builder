@@ -218,15 +218,15 @@ For versioned products, {{dbuild}} renders every resolved version from the index
 
 | Index moniker | URL path | Role |
 |---|---|---|
-| `main` | `/api/doc/<key>/` | Canonical current-major tree |
-| `9`, `8`, … | `/api/doc/<key>/v9/`, `/api/doc/<key>/v8/`, … | Released major snapshots |
+| `main` | `/api/<key>/` | Canonical current-major tree |
+| `9`, `8`, … | `/api/<key>/v9/`, `/api/<key>/v8/`, … | Released major snapshots |
 
 The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.
 When a local spec file exists, it overrides only the `main` moniker. Older majors still resolve
 remotely through the index.
 
 Versionless products (`versioning: serverless` and similar) render only the unversioned
-`/api/doc/<key>/` path even when the index lists historical monikers. When more than one
+`/api/<key>/` path even when the index lists historical monikers. When more than one
 version is rendered, the bar shows a version picker beside the API name. The current tree is
 labeled `main`, and each frozen major is `v9`, `v8`. The highest frozen major carries `(latest)`, as in `v9 (latest)`. This is a label only: the unversioned URL still serves `main`. Isolated builds put the same picker
 under the API name in the left navigation.

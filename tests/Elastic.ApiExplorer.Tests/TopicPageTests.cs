@@ -84,7 +84,7 @@ public partial class TopicPageTests
 			.Cast<TopicNavigationItem>()
 			.Select(t => (t.NavigationTitle, t.Url))
 			.Should()
-			.Equal(("Rate limiting", "/api/doc/cloud/topic/topic-rate-limiting"), ("Principles", "/api/doc/cloud/topic/topic-principles"));
+			.Equal(("Rate limiting", "/api/cloud/topic/topic-rate-limiting"), ("Principles", "/api/cloud/topic/topic-principles"));
 		items.FindIndex(item => item is OperationsNavigationItem).Should().BeGreaterThan(0, "Operations follows the topics");
 	}
 
@@ -178,7 +178,7 @@ public partial class TopicPageTests
 		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
 		var authentication = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Subject;
 		authentication.Hidden.Should().BeFalse();
-		navigation.AuthenticationUrl.Should().Be("/api/doc/cloud/authentication");
+		navigation.AuthenticationUrl.Should().Be("/api/cloud/authentication");
 	}
 
 	[Test]
@@ -208,7 +208,7 @@ public partial class TopicPageTests
 
 		var all = ApiExplorerFixture.Walk(navigation).ToList();
 		all.OfType<StructuralNavigationItem>().Should().BeEmpty("the child page replaces the Authentication topic");
-		all.OfType<SimpleMarkdownNavigationItem>().Single().Url.Should().Be("/api/doc/cloud/auth-intro/");
+		all.OfType<SimpleMarkdownNavigationItem>().Single().Url.Should().Be("/api/cloud/auth-intro/");
 	}
 
 	[Test]
@@ -242,7 +242,7 @@ public partial class TopicPageTests
 		await generator.Generate(ct);
 
 		var files = context.WriteFileSystem.File;
-		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		var root = Path.Join(outputRoot, "api", "elasticsearch");
 		var topic = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-rate-limiting", "index.html"), ct);
 		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
 		// The title sits in the same header as on an operation page, which sets its size and the space above it.
@@ -296,8 +296,8 @@ public partial class TopicPageTests
 
 		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
 		var child = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
-		child.Url.Should().Be("/api/doc/cloud/kibana-api-overview/");
-		child.ReplacedTopicUrls.Should().Equal("/api/doc/cloud/topic/topic-kibana-spaces");
+		child.Url.Should().Be("/api/cloud/kibana-api-overview/");
+		child.ReplacedTopicUrls.Should().Equal("/api/cloud/topic/topic-kibana-spaces");
 		ApiExplorerFixture.Walk(navigation).OfType<TopicNavigationItem>().Should().BeEmpty();
 	}
 
@@ -316,9 +316,9 @@ public partial class TopicPageTests
 			.Select(item => (item.GetType().Name, item.Url))
 			.Should()
 			.Equal(
-				(nameof(StructuralNavigationItem), "/api/doc/cloud/authentication"),
-				(nameof(SimpleMarkdownNavigationItem), "/api/doc/cloud/kibana-api-overview/"),
-				(nameof(TopicNavigationItem), "/api/doc/cloud/topic/topic-principles")
+				(nameof(StructuralNavigationItem), "/api/cloud/authentication"),
+				(nameof(SimpleMarkdownNavigationItem), "/api/cloud/kibana-api-overview/"),
+				(nameof(TopicNavigationItem), "/api/cloud/topic/topic-principles")
 			);
 	}
 
@@ -344,7 +344,7 @@ public partial class TopicPageTests
 		var all = ApiExplorerFixture.Walk(navigation).ToList();
 		all.OfType<TopicNavigationItem>().Should().BeEmpty();
 		var authentication = all.OfType<StructuralNavigationItem>().Should().ContainSingle().Subject;
-		authentication.Url.Should().Be("/api/doc/cloud/authentication");
+		authentication.Url.Should().Be("/api/cloud/authentication");
 		authentication.Hidden.Should().BeFalse();
 		authentication.Parent.Should().BeOfType<TopicsNavigationItem>();
 		authentication.Model.Intro.Should().Be("Use an API key.");
@@ -376,7 +376,7 @@ public partial class TopicPageTests
 			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.VersionsConfiguration))
 		);
 
-		index.Topics.Select(row => row.Url).Should().Equal("/api/doc/cloud/authentication", "/api/doc/cloud/topic/topic-principles");
+		index.Topics.Select(row => row.Url).Should().Equal("/api/cloud/authentication", "/api/cloud/topic/topic-principles");
 		index.Groups.SelectMany(group => group.Items).Select(row => row.Url).Should().NotContain(url => url.Contains("/topic/"));
 	}
 

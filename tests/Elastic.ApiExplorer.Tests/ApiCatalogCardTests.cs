@@ -15,7 +15,7 @@ public class ApiCatalogCardTests
 		new(
 			key,
 			"Elasticsearch API",
-			"/docs/api/doc/elasticsearch",
+			"/docs/api/elasticsearch",
 			"<svg></svg>",
 			"Elasticsearch provides REST APIs.",
 			[.. pills.Select(p => new ApiCatalogDeployment(p, p))]
@@ -50,7 +50,7 @@ public class ApiCatalogCardTests
 			.IndexOf("</a>", StringComparison.Ordinal)
 			.Should()
 			.BeGreaterThan(html.IndexOf("Elasticsearch provides REST APIs.", StringComparison.Ordinal), "so is the description");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch\"");
+		html.Should().Contain("href=\"/docs/api/elasticsearch\"");
 	}
 
 	[Test]

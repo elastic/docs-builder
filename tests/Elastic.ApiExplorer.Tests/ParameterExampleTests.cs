@@ -99,7 +99,7 @@ public class ParameterExampleTests
 	{
 		var markdown = new StringBuilder();
 
-		ApiPropertyMarkdown.WriteList(markdown, await ListAsync(Spec31), "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, await ListAsync(Spec31), "/api/fixture");
 
 		markdown.ToString().Should().Contain("Example: ``a`b``");
 	}
@@ -153,7 +153,7 @@ public class ParameterExampleTests
 	{
 		var markdown = new StringBuilder();
 
-		ApiPropertyMarkdown.WriteList(markdown, await ListAsync(), "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, await ListAsync(), "/api/fixture");
 
 		// AppendLine writes \r\n on Windows.
 		markdown.ToString().ReplaceLineEndings("\n").Should().Contain("- `case_id` (string) — optional\n  Example: `9c235210-6834-11ea`");

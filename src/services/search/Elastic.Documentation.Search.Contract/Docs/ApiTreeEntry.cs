@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// One version tree of an API that renders an operation page with this document's content, e.g. <c>main</c> at
-/// <c>/docs/api/doc/elasticsearch</c> or <c>8</c> at <c>/docs/api/doc/elasticsearch/v8</c>. Search scopes by
+/// <c>/docs/api/elasticsearch</c> or <c>8</c> at <c>/docs/api/elasticsearch/v8</c>. Search scopes by
 /// <see cref="Tree"/> and swaps <see cref="Root"/> into hit URLs, so the URL rule stays with the explorer.
 /// </summary>
 public record ApiTreeEntry

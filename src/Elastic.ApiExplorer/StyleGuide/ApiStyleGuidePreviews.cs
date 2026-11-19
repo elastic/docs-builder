@@ -92,7 +92,7 @@ public static class ApiStyleGuidePreviews
 			new(
 				key,
 				title,
-				$"/api/doc/{key}/",
+				$"/api/{key}/",
 				product,
 				"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 			)
@@ -147,7 +147,7 @@ public static class ApiStyleGuidePreviews
 			return null;
 
 		// A real API has several versions, so its tree opens with a version switcher; the generator builds it the same way.
-		ApiVersionSwitcherItem[] versions = [new("latest", "/api/doc/lorem/", true), new("v8", "/api/doc/lorem/v8/", false)];
+		ApiVersionSwitcherItem[] versions = [new("latest", "/api/lorem/", true), new("v8", "/api/lorem/v8/", false)];
 		var renderer = new IsolatedBuildNavigationHtmlWriter(
 			context,
 			navigation,

@@ -744,7 +744,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	public void RequestBodyOverride_MatchesPropertyNameOnRequestTreeOnly()
 	{
 		var schema = fixture.Document.Components!.Schemas!["fixture.SearchRequestBody"];
-		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
+		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/fixture" };
 		var builder = new ApiPropertyTreeBuilder(fixture.Document, options);
 		var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["query"] = "SUPP_QUERY_FIELD" };
 

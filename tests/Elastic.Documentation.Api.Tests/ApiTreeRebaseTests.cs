@@ -22,8 +22,8 @@ public class ApiTreeRebaseTests
 		};
 
 	private static readonly ApiOperationMetadata MainAndEight = Elasticsearch(
-		("main", "/docs/api/doc/elasticsearch"),
-		("8", "/docs/api/doc/elasticsearch/v8")
+		("main", "/docs/api/elasticsearch"),
+		("8", "/docs/api/elasticsearch/v8")
 	);
 
 	[Test]
@@ -31,7 +31,7 @@ public class ApiTreeRebaseTests
 		ApiTreeRebase
 			.For(MainAndEight, new ApiPageContext("elasticsearch", "8"))
 			.Should()
-			.Be(new ApiTreeRebase("/docs/api/doc/elasticsearch", "/docs/api/doc/elasticsearch/v8"));
+			.Be(new ApiTreeRebase("/docs/api/elasticsearch", "/docs/api/elasticsearch/v8"));
 
 	[Test]
 	public void For_ScopeInTheFirstTree_NeedsNoSwap() =>
@@ -53,21 +53,18 @@ public class ApiTreeRebaseTests
 	}
 
 	[Test]
-	[Arguments("/docs/api/doc/elasticsearch/operation/operation-search#req-knn", "/docs/api/doc/elasticsearch/v8/operation/operation-search#req-knn")]
-	[Arguments("/docs/api/doc/elasticsearch/operation/operation-search", "/docs/api/doc/elasticsearch/v8/operation/operation-search")]
-	[Arguments("/docs/api/doc/elasticsearch", "/docs/api/doc/elasticsearch/v8")]
+	[Arguments("/docs/api/elasticsearch/operation/operation-search#req-knn", "/docs/api/elasticsearch/v8/operation/operation-search#req-knn")]
+	[Arguments("/docs/api/elasticsearch/operation/operation-search", "/docs/api/elasticsearch/v8/operation/operation-search")]
+	[Arguments("/docs/api/elasticsearch", "/docs/api/elasticsearch/v8")]
 	[Arguments("/docs/api", "/docs/api")]
-	[Arguments("/docs/api/doc/elasticsearch-serverless/operation/operation-search", "/docs/api/doc/elasticsearch-serverless/operation/operation-search")]
+	[Arguments("/docs/api/elasticsearch-serverless/operation/operation-search", "/docs/api/elasticsearch-serverless/operation/operation-search")]
 	public void Apply_Url_SwapsTheRootOnlyForUrlsUnderIt(string url, string expected) =>
-		new ApiTreeRebase("/docs/api/doc/elasticsearch", "/docs/api/doc/elasticsearch/v8").Apply(url).Should().Be(expected);
+		new ApiTreeRebase("/docs/api/elasticsearch", "/docs/api/elasticsearch/v8").Apply(url).Should().Be(expected);
 
 	[Test]
 	public void Apply_VariantDocumentForTheDefaultTree_SwapsBackToTheShorterRoot() =>
 		ApiTreeRebase.For(
-			Elasticsearch(("9", "/docs/api/doc/elasticsearch/v9"), ("main", "/docs/api/doc/elasticsearch")),
+			Elasticsearch(("9", "/docs/api/elasticsearch/v9"), ("main", "/docs/api/elasticsearch")),
 			new ApiPageContext("elasticsearch", "main")
-		)!
-			.Apply("/docs/api/doc/elasticsearch/v9/operation/operation-search")
-			.Should()
-			.Be("/docs/api/doc/elasticsearch/operation/operation-search");
+		)!.Apply("/docs/api/elasticsearch/v9/operation/operation-search").Should().Be("/docs/api/elasticsearch/operation/operation-search");
 }

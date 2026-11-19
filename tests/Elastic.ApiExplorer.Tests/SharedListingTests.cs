@@ -254,7 +254,7 @@ public class SharedListingTests
 		// Both spellings render alike; the index builds the same tree with a renderer of its own, so identity must not depend on one.
 		var builder = new ApiPropertyTreeBuilder(
 			document,
-			new PropertyDisplayOptions { RenderMarkdown = _ => new HtmlString("<p><em>Code it</em></p>"), ApiRootUrl = "/api/doc/fixture" }
+			new PropertyDisplayOptions { RenderMarkdown = _ => new HtmlString("<p><em>Code it</em></p>"), ApiRootUrl = "/api/fixture" }
 		);
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
 
