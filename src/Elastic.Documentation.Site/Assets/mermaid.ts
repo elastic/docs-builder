@@ -324,6 +324,8 @@ function openFullscreenModal(imgSrc: string): void {
     // The dialog handles Escape and returns focus to the opener; the page behind it would still scroll.
     const unlockScroll = lockPageScroll()
     modal.addEventListener('close', () => {
+        // Escape mid-pan removes the dialog before any mouseup; the shared drag must not outlive it.
+        if (drag?.viewport === viewport) drag = null
         unlockScroll()
         modal.remove()
     })

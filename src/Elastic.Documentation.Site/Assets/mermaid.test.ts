@@ -206,6 +206,20 @@ describe('mermaid fullscreen', () => {
         expect(dialog()).toBeNull()
     })
 
+    it('stops panning when the browser closes it mid-drag', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        openFullscreen('a')
+        const closing = modalRendered()
+
+        press(modalViewport(), 10, 10)
+        move(40, 25)
+        dialog()!.close()
+        move(90, 90)
+
+        expect(closing.style.transform).toBe('scale(1) translate(30px, 15px)')
+    })
+
     it('cleans up when the browser closes it, as it does on Escape', () => {
         document.body.innerHTML = diagram('a')
         initMermaid()
