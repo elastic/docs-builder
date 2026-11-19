@@ -291,6 +291,16 @@
 	transform: rotate(180deg);
 }
 
+/* Without the Popover API (floating.css hides the menu) the download-only page has nothing else on it, so its links show inline in place of the button. */
+@supports not selector(:popover-open) {
+	.api-page-actions--download-only .api-page-actions-split {
+		display: none;
+	}
+	.api-page-actions--download-only .api-page-actions-menu {
+		display: block;
+	}
+}
+
 /* A popover placed beside the chevron by floating.ts (floating.css). */
 .api-page-actions-menu {
 	box-sizing: border-box;

@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Documentation.Site.ApiSpecDownload>
 @* For a page with no Markdown export, so no Copy page: the spec download is the whole menu. Like Copy page's, the menu
-   is a popover placed beside its button by floating.ts. *@
-<div class="api-page-actions" role="group" aria-label="Page actions">
+   is a popover placed beside its button by floating.ts. Without popover support the links show inline (api-docs.css). *@
+<div class="api-page-actions api-page-actions--download-only" role="group" aria-label="Page actions">
 	<div class="api-page-actions-split">
 		<button type="button" class="api-page-actions-chevron api-page-actions-chevron--labeled" popovertarget="api-page-actions-menu" aria-haspopup="menu" aria-expanded="false">
 			@await RenderPartialAsync(_DownloadIcon.Create())
