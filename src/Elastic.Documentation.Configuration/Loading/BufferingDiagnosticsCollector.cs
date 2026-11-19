@@ -10,9 +10,14 @@ namespace Elastic.Documentation.Configuration.Loading;
 /// Holds diagnostics in emission order without filtering them (it counts severities, so a parser asking the collector it was handed whether anything errored sees only its own load), so a loader can return them in a
 /// <see cref="Result{T}"/> and the caller's collector sees exactly what a direct write would have produced.
 /// </summary>
-internal sealed class BufferingDiagnosticsCollector() : DiagnosticsCollector([])
+internal sealed class BufferingDiagnosticsCollector : DiagnosticsCollector
 {
-	private readonly List<Diagnostic> _diagnostics = [];
+	private readonly List<Diagnostic> _diagnostics;
+
+	public BufferingDiagnosticsCollector() : this([]) { }
+
+	/// <summary>Buffers into <paramref name="sink"/>, so an owner (<see cref="MapContext"/>) and the collector share one ordered list.</summary>
+	internal BufferingDiagnosticsCollector(List<Diagnostic> sink) : base([]) => _diagnostics = sink;
 
 	public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 

@@ -59,7 +59,8 @@ internal static class SearchLoader
 ```
 
 - `parse` and `map` are the only steps. Findings made in `map` go to the `MapContext` the loader creates per load, so they cannot be lost or reordered, and are kept (first) when a later step throws.
-- The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default) makes an error an `Unreadable<T>`; `false` returns the `Loaded<T>` with its errors, for a caller that reports and continues.
+- The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default, `Fatal.All`) makes an error an `Unreadable<T>`; `false` (`Fatal.None`) returns the `Loaded<T>` with its errors, for a caller that reports and continues. A load that must keep a value despite mapping errors, or that may give up in `map`, uses the `Fatal` overload: see "Tolerant loads".
+- `context.Collector` is an `IDiagnosticsCollector` over the same findings, in order, so a parser written against a collector is reused unchanged; it counts only this load's severities. `context.Error(...)` records an explicit error.
 - A step that throws becomes an error finding. Its text is `describe(exception)`, declared with the loader (default: the message, so a loader keeps the text it always gave). Cancellation and out-of-memory propagate.
 - `value.Check(file)` checks a record built elsewhere against its `T.Constraints` and returns the `Loaded<T>` (see "Check" below).
 
@@ -76,6 +77,33 @@ A caller that owns a collector and has a `ConstraintReport` writes it with `coll
 - **Why it is public.** It lives in the only assembly where running a set is allowed, and the ban covers every other project, so it must be public for a service to reach it. One generic entry replaces a public wrapper per type; the type constraint `IHaveConstraints<T>` keeps it to records that own their rules.
 - **What it does not do.** It takes no rule set (a call site cannot choose, add or skip a rule). It does not decide fatality: a violated Error rule still returns `Loaded<T>`, the caller reads `HasErrors` or the findings, and a loader (`Loader.For`) is what turns errors into `Unreadable<T>`. It does not write to a collector, throw, or log. It does not map or parse.
 - The ban stays in force for everything else: calling `ConstraintSet<T>.Report`/`Validate`/`Validated`/`Ensure`/`Check`, or `Constraints<T>.Always`, outside `Elastic.Documentation` fails the build (RS0030).
+
+## Tolerant loads
+
+The default of every loader is strict: any error makes the load `Unreadable<T>`. Some loaders on `main` are tolerant: an error made while reading does not discard the value, a rule's error does, or some loads give up explicitly. A refactor must not change that, so `Loader.For(parse, map, fatal: ...)` can name it. These modes hide errors from the outcome, so they are debt, not a feature: each use is a behaviour that is meant to become strict later.
+
+| `Fatal` mode | Meaning | When it is legitimate | What a reader must know |
+| --- | --- | --- | --- |
+| `All` (default; `errorsAreFatal: true`) | Any error, made while mapping or by the constraint check, is `Unreadable<T>`. | Always; new loaders use it. | `Loaded<T>` means no error finding. |
+| `CheckErrors` | Only an error from `T.Constraints` is `Unreadable<T>`. Errors made while mapping (`context.Error`, errors written to `context.Collector`) are reported and the value is kept. | The loader on `main` reported mapping errors and continued, but its rules were always fatal, and a snapshot or test locks that. | `Loaded<T>` can hold error findings. Do not branch on "loaded means clean": use `HasErrors`. |
+| `None` (`errorsAreFatal: false`) | An error is never fatal; the value is returned with every finding. Only a `null` from `map` or an exception is `Unreadable<T>`. | The caller on `main` reports and continues whatever the file holds (a docset). | As above, and a rule's Error severity changes nothing about the outcome. |
+
+Other tolerant-load facts, true in every mode:
+
+- `map` may return `null` through the `TryMap` overload: the load is `Unreadable<T>` with the findings made so far and the check does not run. Use it only where the hand-rolled loader gave up the same way.
+- Findings are ordered: findings made while mapping (`Warn`, `Hint`, `Error`, collector writes), then the check's.
+- A step that throws keeps its behaviour in every mode: `Unreadable<T>` with the findings made so far, then the described error.
+
+**Every use of `Fatal.CheckErrors` or `Fatal.None` carries a `// TOLERANT LOAD:` comment** directly above it, naming (1) the behaviour on `main` it preserves, (2) the snapshot or test that locks it, and (3) what the strict behaviour would be once the lock is lifted (the deferred behaviour change, to list in the PR). `TolerantLoadCommentTests` fails when a source file uses a non-default mode without that comment; it checks the comment is there, not that it is true. Find the debt with `grep -rn "TOLERANT LOAD:" src`.
+
+```csharp
+// illustrative; the names are made up
+// TOLERANT LOAD: (1) main reports an unknown product and still uses the file;
+// (2) locked by ChangelogConfigurationSnapshotTests.Unknown_product; (3) strict would be Fatal.All: the file is rejected.
+public static readonly Loader<Dto, Config> Yaml = Loader.For(Parse, Map, Fatal.CheckErrors);
+```
+
+Loaders known to be tolerant today on `main` (they need these modes when moved onto `Loader.For`): `changelog.yml` (mapping errors keep the value, the check is fatal, `block:` gives up), the codex configuration, and the links file. Each is confirmed against its own snapshots when it moves. Add a loader here when it joins.
 
 ## Operations: methods on the record, checked by the set
 
