@@ -192,11 +192,11 @@
 	); /* docs h1 mt-6; API headings set margin: 0 */
 }
 
-/* As wide as the trail needs (not the list's own full width), so Copy page wraps before the trail does. */
+/* The trail is as wide as it needs (not the list's own full width). Flex line-breaking goes by that size, so Copy page
+   wraps onto the next line before the trail shrinks; the trail wraps only when it is too wide on a line of its own. */
 .api-page-toolbar #breadcrumbs {
 	flex: 1 1 auto;
 	width: auto;
-	min-width: min(100%, max-content);
 }
 
 .api-page-toolbar .api-page-actions {

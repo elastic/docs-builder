@@ -138,6 +138,53 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 			);
 	}
 
+	[Test]
+	public async Task CopyPage_NeverMakesTheBreadcrumbTrailWrap()
+	{
+		var lines = new List<string>();
+		await WithPageAsync(async page =>
+		{
+			// When the trail and Copy page do not fit on one line, Copy page wraps under the trail rather than the trail
+			// wrapping to keep it beside: the trail has as many lines with Copy page as without it.
+			foreach (var width in new[] { 375, 900, 1280, 1680 })
+			{
+				await page.SetViewportAsync(width, 900, 1).ConfigureAwait(false);
+				await Task.Delay(500).ConfigureAwait(false);
+				var state = await page.EvaluateAsync(
+					"""
+					(() => {
+						const trailLines = () => new Set([...document.querySelectorAll('#breadcrumbs li')].map(li => Math.round(li.getBoundingClientRect().top))).size;
+						const copy = document.querySelector('.api-page-toolbar .api-page-actions');
+						const withCopy = trailLines();
+						copy.style.display = 'none';
+						const without = trailLines();
+						copy.style.display = '';
+						return { same: withCopy === without };
+					})()
+					"""
+				).ConfigureAwait(false);
+				lines.Add(
+					string.Create(
+						CultureInfo.InvariantCulture,
+						$"{width}px: trail wraps the same with and without Copy page {state.GetProperty("same").GetBoolean()}"
+					)
+				);
+			}
+		}).ConfigureAwait(false);
+
+		_ = string
+			.Join('\n', lines)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			375px: trail wraps the same with and without Copy page True
+			900px: trail wraps the same with and without Copy page True
+			1280px: trail wraps the same with and without Copy page True
+			1680px: trail wraps the same with and without Copy page True
+			"""
+			);
+	}
+
 	private async Task WithPageAsync(Func<Page, Task> body)
 	{
 		if (target.Name != "isolated")
