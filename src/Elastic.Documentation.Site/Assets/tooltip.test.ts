@@ -211,6 +211,17 @@ describe('tooltips', () => {
         expect(shown()).toBeNull()
     })
 
+    it('hides when its target loses its text', async () => {
+        pointer('pointerover', byId('path'))
+        await vi.advanceTimersByTimeAsync(80)
+        const update = (autoUpdate as Mock).mock.lastCall![2] as () => void
+
+        byId('path').removeAttribute('data-tooltip')
+        update()
+
+        expect(shown()).toBeNull()
+    })
+
     it('shows on a touch held for 300ms, not on a tap', async () => {
         const touch = { pointerType: 'touch' }
         pointer('pointerover', byId('path'), touch)

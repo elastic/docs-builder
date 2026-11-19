@@ -97,8 +97,9 @@ function show(target: HTMLElement) {
         describedBy ? `${describedBy} ${TOOLTIP_ID}` : TOOLTIP_ID
     )
     const stopTracking = autoUpdate(target, el, () => {
-        // React can remove a hovered row; its tooltip goes with it.
-        if (target.isConnected) void position(target, el)
+        // React can remove a hovered row, and a resize can drop a chip's text once it fits; the tooltip goes with either.
+        if (target.isConnected && target.matches(TARGET))
+            void position(target, el)
         else hide()
     })
     state = { kind: 'shown', target, describedBy, stopTracking }
