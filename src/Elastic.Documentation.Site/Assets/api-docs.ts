@@ -303,7 +303,8 @@ function playFlashWhenSettled(el: HTMLElement): void {
  * heading keeps the browser's plain jump, and anything else pulses as a whole.
  */
 function flashTarget(target: HTMLElement): void {
-    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    // A heading needs no pointing out, and neither does the page intro: reaching it is going back to the top.
+    if (target.matches('h1, h2, h3, h4, h5, h6, .api-page-intro')) return
     const name = target.matches('dt')
         ? target.querySelector<HTMLElement>(':scope > code')
         : null
@@ -383,8 +384,24 @@ function initGlobalClickHandlers(): void {
         const apiSection = target.closest<HTMLElement>(API_ROOTS)
         if (!apiSection) return
 
-        if (target.closest('[data-api-back-to-top]')) {
+        const backToTop = target.closest<HTMLElement>('[data-api-back-to-top]')
+        if (backToTop) {
+            // A modified click on the Overview link opens it elsewhere, as any link does.
+            if (
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey
+            )
+                return
             e.preventDefault()
+            // The address follows, so a reload or a shared link opens at the top rather than the section left behind.
+            // Pushed before scrolling: the entry left behind keeps the reader's place, which an instant scroll (reduced
+            // motion) would otherwise have reset to the top, so Back returns to that section.
+            const hash = backToTop.getAttribute('href')
+            if (hash?.startsWith('#') && window.location.hash !== hash)
+                history.pushState(null, '', hash)
             window.scrollTo({
                 top: 0,
                 behavior: prefersReducedMotion() ? 'auto' : 'smooth',
@@ -761,54 +778,12 @@ export function initExamplesRailSteadying(): void {
 }
 
 /**
- * Marks the section-links pin data-stuck while it is pinned under the header: position: sticky has no CSS hook.
- * The pinned offset is read on every check, since the header height is set by script after the page loads.
- */
-function initSectionLinksStuck(): void {
-    document
-        .querySelectorAll<HTMLElement>(
-            '[data-section-pin]:not([data-stuck-bound])'
-        )
-        .forEach((bar) => {
-            bar.dataset.stuckBound = ''
-            const listeners = new AbortController()
-            let queued = false
-            const update = () => {
-                queued = false
-                if (!bar.isConnected) {
-                    listeners.abort()
-                    return
-                }
-                const pinnedAt = parseFloat(getComputedStyle(bar).top) || 0
-                bar.toggleAttribute(
-                    'data-stuck',
-                    bar.getBoundingClientRect().top <= pinnedAt + 0.5
-                )
-            }
-            const schedule = () => {
-                if (queued) return
-                queued = true
-                window.requestAnimationFrame(update)
-            }
-            window.addEventListener('scroll', schedule, {
-                passive: true,
-                signal: listeners.signal,
-            })
-            window.addEventListener('resize', schedule, {
-                signal: listeners.signal,
-            })
-            update()
-        })
-}
-
-/**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
  */
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
-    initSectionLinksStuck()
     initApiEndpointCopy()
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()

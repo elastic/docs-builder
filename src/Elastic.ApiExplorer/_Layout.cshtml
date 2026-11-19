@@ -75,8 +75,8 @@ else
 	<div class="min-h-screen w-full mx-auto api-page-shell">
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
 			@* #api-content-grid is the htmx swap target for API pages (pages-nav.ts). Every API page has the same
-			   two columns inside it: the article and the right rail (.api-page-grid in api-docs.css). The rail holds
-			   Copy page, then whatever the page puts in ApiPageSections.Rail. *@
+			   two columns inside it: the article and the right rail (.api-page-grid in api-docs.css). Copy page sits at the
+			   right end of the breadcrumb row; the rail holds whatever the page puts in ApiPageSections.Rail. *@
 			@* Placed explicitly: the nav follows in the document, so while a large page is still
 			   streaming the content must not fall into the nav's column. *@
 			<div id="api-content-grid" class="min-w-0 md:col-start-2 md:row-start-1 mx-4 md:mx-0">
@@ -87,16 +87,16 @@ else
 						<div class="api-page-toolbar">
 							@* Isolated docs hide a one-item trail. The spec landing's only crumb is the catalog. *@
 							@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
+							@if (Model.PageActions is not null)
+							{
+								@(await RenderPartialAsync(_PageActions.Create(Model.PageActions)))
+							}
 						</div>
 						<article id="markdown-content" class="content-container markdown-content">
 							@await RenderBodyAsync()
 						</article>
 					</main>
 					<div class="api-page-rail">
-						@if (Model.PageActions is not null)
-						{
-							@(await RenderPartialAsync(_PageActions.Create(Model.PageActions)))
-						}
 						@await RenderSectionAsync(ApiPageSections.Rail)
 					</div>
 					@await RenderPartialAsync(_PageFeedback.Create(Model))
