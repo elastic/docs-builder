@@ -9,6 +9,7 @@ import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { bindImageModals } from './image-modal'
 import { initListing } from './listing'
 import { initMath } from './math'
 import { initMermaid } from './mermaid'
@@ -91,6 +92,7 @@ initApiMenus()
 initApiChromeSync()
 bindApiBetaBanner()
 bindModalEscape()
+bindImageModals()
 bindHtmxHooks({
     forcesFullPageLoad: (targetPath) =>
         // A move between a docs page and an API page, or to another API product: the swap would
