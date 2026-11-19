@@ -49,18 +49,17 @@
 	}
 	else if (item.Kind == NavigationRenderNodeKind.Heading)
 	{
+		@* Folder and heading rows carry no layout classes on the peer and the toggle: styles.css sets them. *@
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
+			<div class="peer">
 				<span class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
 					<span>@item.NavigationTitle</span>
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 				</span>
 				@if (item.ShowToggle)
 				{
-					<label for="@item.Id" class="group/label flex mr-2 items-start">
-						<div class="nav-toggle-btn">
-							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
-						</div>
+					<label for="@item.Id">
+						<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
 						<input
 							id="@item.Id"
 							type="checkbox"
@@ -79,7 +78,7 @@
 	else
 	{
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
+			<div class="peer">
 				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
 					<span>@item.NavigationTitle</span>
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
@@ -87,10 +86,8 @@
 				</a>
 				@if (item.ShowToggle)
 				{
-					<label for="@item.Id" class="group/label flex mr-2 items-start">
-						<div class="nav-toggle-btn">
-							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
-						</div>
+					<label for="@item.Id">
+						<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
 						<input
 							id="@item.Id"
 							type="checkbox"
