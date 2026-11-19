@@ -17,9 +17,7 @@ describe('property anchor copy', () => {
         document.body.innerHTML = `
             <section id="elastic-api-v3">
                 <dt id="query-pretty">
-                    <a class="property-anchor" href="#query-pretty" aria-label="Link to pretty">
-                        <span class="property-anchor-icon" data-tooltip="Copy link" aria-hidden="true"></span>
-                    </a>
+                    <a class="property-anchor" href="#query-pretty" aria-label="Link to pretty" data-tooltip="Copy link"></a>
                     <code>pretty</code>
                 </dt>
             </section>
@@ -28,7 +26,7 @@ describe('property anchor copy', () => {
     })
 
     it('copies the full URL of the property when the icon is clicked', () => {
-        document.querySelector<HTMLElement>('.property-anchor-icon')!.click()
+        document.querySelector<HTMLElement>('a.property-anchor')!.click()
 
         expect(writeText).toHaveBeenCalledWith(
             `${window.location.href.split('#')[0]}#query-pretty`
@@ -36,9 +34,7 @@ describe('property anchor copy', () => {
     })
 
     it('shows "Copied!" in the icon tooltip after the copy', async () => {
-        const icon = document.querySelector<HTMLElement>(
-            '.property-anchor-icon'
-        )!
+        const icon = document.querySelector<HTMLElement>('a.property-anchor')!
         icon.click()
         await Promise.resolve()
 
