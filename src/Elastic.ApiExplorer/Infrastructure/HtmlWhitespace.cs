@@ -54,14 +54,45 @@ public static class HtmlWhitespace
 			return EndAfter(html, html.IndexOf("-->", start + 4, StringComparison.Ordinal), 3);
 
 		if (RawTextElement(html, start) is { } name)
-		{
-			var close = html.IndexOf("</" + name, start + name.Length + 1, StringComparison.OrdinalIgnoreCase);
-			return close < 0 ? html.Length : EndOfTag(html, close);
-		}
+			return EndOfElement(html, start, name);
 
 		// A '<' that opens no tag is text; encoded pages never hold one, but it must not swallow the page.
 		var opensTag = start + 1 < html.Length && (char.IsAsciiLetter(html[start + 1]) || html[start + 1] is '/' or '!' or '?');
 		return opensTag ? EndOfTag(html, start) : start + 1;
+	}
+
+	/// <summary>
+	/// The end of the element whose start tag begins at <paramref name="start"/>: after its own closing tag, which is the
+	/// name followed by whitespace, '/' or '>', so <c>&lt;/script-example&gt;</c> does not close a script. A
+	/// <c>pre</c> holds markup, so its tags are skipped whole, and a closing tag inside an attribute value does not count;
+	/// <c>script</c>, <c>style</c> and <c>textarea</c> hold raw text.
+	/// </summary>
+	private static int EndOfElement(string html, int start, string name)
+	{
+		var holdsMarkup = name == "pre";
+		var position = EndOfTag(html, start);
+		while (position < html.Length)
+		{
+			var next = html.IndexOf('<', position);
+			if (next < 0)
+				return html.Length;
+			if (IsClosingTag(html, next, name))
+				return EndOfTag(html, next);
+			position = holdsMarkup && next + 1 < html.Length && (char.IsAsciiLetter(html[next + 1]) || html[next + 1] is '/' or '!')
+				? EndOfTag(html, next)
+				: next + 1;
+		}
+
+		return html.Length;
+	}
+
+	private static bool IsClosingTag(string html, int index, string name)
+	{
+		var after = index + 2 + name.Length;
+		return after < html.Length
+			&& html[index + 1] == '/'
+			&& string.Compare(html, index + 2, name, 0, name.Length, StringComparison.OrdinalIgnoreCase) == 0
+			&& (IsHtmlWhitespace(html[after]) || html[after] is '>' or '/');
 	}
 
 	/// <summary>The end of the tag at <paramref name="start"/>, skipping a quoted attribute value that holds a '>'.</summary>

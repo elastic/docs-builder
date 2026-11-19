@@ -96,6 +96,34 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Generate_WritesPagesWithoutTemplateIndentation()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-ws-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search", "index.html"),
+				TestContext.Current!.Execution.CancellationToken
+			);
+
+		// The property row partial indents its dt with a tab in the view; the written rows start it on its own line, and
+		// folded rows still open on find.
+		html.Should().Contain("\n<dt id=").And.NotContain("\n\t<dt id=").And.Contain("hidden=\"until-found\"");
+	}
+
+	[Test]
 	public async Task Generate_WritesAlternateLinkOnApiHtml()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-alt-{Guid.NewGuid():N}");

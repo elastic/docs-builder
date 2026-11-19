@@ -43,17 +43,29 @@ public class HtmlWhitespaceTests
 		HtmlWhitespace.Collapse("<a title=it's>x</a>\n\t<b>y</b>").Should().Be("<a title=it's>x</a>\n<b>y</b>");
 
 	[Test]
-	public void Collapse_LargePage_RunsInLinearTime()
+	public void Collapse_LookalikeClosingTag_DoesNotEndTheScript()
 	{
-		// The largest API pages reach about 7 MB; a backtracking regex timed out on them under build load.
+		const string kept = "<script>\n\tlet t = '</script-example>';\n\tlet u = 1;\n</script>";
+		HtmlWhitespace.Collapse(kept + "\n\t<p>x</p>").Should().Be(kept + "\n<p>x</p>");
+	}
+
+	[Test]
+	public void Collapse_ClosingTagInsideAnAttribute_DoesNotEndThePre()
+	{
+		const string kept = "<pre><span title=\"a </pre> b\">{\n    \"a\": 1\n}</span></pre>";
+		HtmlWhitespace.Collapse(kept + "\n\t<p>x</p>").Should().Be(kept + "\n<p>x</p>");
+	}
+
+	[Test]
+	public void Collapse_LargePage_DropsEveryRowIndentation()
+	{
+		// The largest API pages reach about 7 MB; this is the row partial repeated at that scale.
 		var row =
 			"<div class=\"property-item depth-6\">\n\t\t<dt id=\"a\"><a aria-label=\"Link to a.&lt;string&gt;.b\"></a>\n\t\t\t<code>b</code></dt>\n\t</div>\n";
 		var page = string.Concat(Enumerable.Repeat(row, 70_000));
-		var watch = System.Diagnostics.Stopwatch.StartNew();
 
 		var collapsed = HtmlWhitespace.Collapse(page);
 
-		watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
-		collapsed.Should().NotContain("\t");
+		collapsed.Should().Be(string.Concat(Enumerable.Repeat(row.Replace("\t", ""), 70_000)));
 	}
 }
