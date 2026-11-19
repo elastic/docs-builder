@@ -57,7 +57,7 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		section.IsIsland.Should().BeTrue();
 		section.RendersAsIsland().Should().BeTrue();
 		section.Parent.Should().BeSameAs(navigation);
-		section.Url.Should().Be("/api/doc/demo");
+		section.Url.Should().Be("/api/demo");
 		section.NavigationIndex.Should().BeGreaterThan(0, "the section takes part in the navigation order");
 		section.Index.NavigationIndex.Should().Be(section.NavigationIndex);
 		navigation.NavigationItems.Last().Should().BeSameAs(section, "implicit sections follow the toc entries");

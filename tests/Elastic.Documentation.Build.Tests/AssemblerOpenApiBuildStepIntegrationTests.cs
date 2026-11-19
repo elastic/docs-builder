@@ -170,7 +170,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		var apiRoot = fileSystem.Path.Join(outputDirectory, "docs", "api");
 		fileSystem.Directory.Exists(apiRoot).Should().BeTrue();
 
-		var elasticsearchLanding = fileSystem.Path.Join(apiRoot, "doc", "elasticsearch", "index.html");
+		var elasticsearchLanding = fileSystem.Path.Join(apiRoot, "elasticsearch", "index.html");
 		fileSystem
 			.File
 			.Exists(elasticsearchLanding)
@@ -184,9 +184,9 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		var versionedLanding = fileSystem
 			.Directory
-			.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "doc", "elasticsearch"))
+			.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "elasticsearch"))
 			.FirstOrDefault(path => fileSystem.Path.GetFileName(path).StartsWith('v'));
-		versionedLanding.Should().NotBeNull("versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");
+		versionedLanding.Should().NotBeNull("versioned products should emit at least one /vN/ tree under /docs/api/elasticsearch/");
 	}
 
 	[Test]
@@ -307,14 +307,14 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).Distinct().ToArray();
 		urls.Should().Contain(
-			u => u.Contains("/api/doc/elasticsearch/operation/", StringComparison.Ordinal),
+			u => u.Contains("/api/elasticsearch/operation/", StringComparison.Ordinal),
 			"the sitemap walk reaches the pages of the API"
 		);
 		urls.Should().NotContain(u => u.Contains('#'), "a heading inside a page is not a page");
-		urls.Should().NotContain(u => u.Contains("/api/doc/elasticsearch/v", StringComparison.Ordinal), "older versions are hidden");
+		urls.Should().NotContain(u => u.Contains("/api/elasticsearch/v", StringComparison.Ordinal), "older versions are hidden");
 
 		var listing = new LlmsNavigationEnhancer().GenerateNavigationSections(navigation, new Uri(workspace.Context.Environment.Uri));
-		listing.Should().Contain("## APIs").And.Contain("api/doc/elasticsearch.md)", "the llms.txt listing comes from the navigation walk");
+		listing.Should().Contain("## APIs").And.Contain("api/elasticsearch.md)", "the llms.txt listing comes from the navigation walk");
 	}
 
 	private sealed class InMemorySpecHandler : HttpMessageHandler

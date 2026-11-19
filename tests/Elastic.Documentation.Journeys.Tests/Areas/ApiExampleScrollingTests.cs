@@ -21,7 +21,7 @@ namespace Elastic.Documentation.Journeys.Tests.Areas;
 [NotInParallel]
 public class ApiExampleScrollingTests(JourneyTarget target)
 {
-	private const string Operation = "api/doc/cloud-connect/operation/operation-patchcluster";
+	private const string Operation = "api/cloud-connect/operation/operation-patchcluster";
 	private const string Scenario = ".api-examples-scenario-panel:not([hidden])";
 
 	[Test]

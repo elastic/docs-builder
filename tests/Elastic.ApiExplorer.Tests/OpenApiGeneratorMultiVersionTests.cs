@@ -140,9 +140,9 @@ public class OpenApiGeneratorMultiVersionTests
 		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
 
 		entry.Should().NotBeNull();
-		entry!.Url.Should().Be("/api/doc/elasticsearch");
-		entry.LatestUrl.Should().Be("/api/doc/elasticsearch/v9");
-		entry.OpenUrl.Should().Be("/api/doc/elasticsearch/v9");
+		entry!.Url.Should().Be("/api/elasticsearch");
+		entry.LatestUrl.Should().Be("/api/elasticsearch/v9");
+		entry.OpenUrl.Should().Be("/api/elasticsearch/v9");
 	}
 
 	[Test]
@@ -173,7 +173,7 @@ public class OpenApiGeneratorMultiVersionTests
 
 		entry.Should().NotBeNull();
 		entry!.LatestUrl.Should().BeNull();
-		entry.OpenUrl.Should().Be("/api/doc/cloud-serverless");
+		entry.OpenUrl.Should().Be("/api/cloud-serverless");
 	}
 
 	[Test]
@@ -293,9 +293,9 @@ public class OpenApiGeneratorMultiVersionTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("elasticsearch/v8", SpecDocument("Elasticsearch 8"));
 
-		navigation.Url.Should().Be("/api/doc/elasticsearch/v8");
+		navigation.Url.Should().Be("/api/elasticsearch/v8");
 		var operation = navigation.Tags().Single().NavigationItems.OfType<OperationNavigationItem>().Single();
-		operation.Url.Should().Be("/api/doc/elasticsearch/v8/operation/operation-ping");
+		operation.Url.Should().Be("/api/elasticsearch/v8/operation/operation-ping");
 	}
 
 	[Test]
@@ -318,17 +318,14 @@ public class OpenApiGeneratorMultiVersionTests
 		var section = provider.GetSections().Should().ContainSingle().Subject;
 
 		var root = section.CreateRoot(null);
-		root.Url.Should().Be("/api/doc/elasticsearch");
+		root.Url.Should().Be("/api/elasticsearch");
 		root.NavigationItems.Should().BeEmpty("the root exists before the specs are fetched");
 
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var versions = root.NavigationItems.Should().AllBeOfType<LandingNavigationItem>().Subject.ToArray();
-		versions
-			.Select(v => v.Url)
-			.Should()
-			.BeEquivalentTo(["/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8"]);
-		versions.Where(v => !v.Hidden).Select(v => v.Url).Should().Equal("/api/doc/elasticsearch");
+		versions.Select(v => v.Url).Should().BeEquivalentTo(["/api/elasticsearch", "/api/elasticsearch/v9", "/api/elasticsearch/v8"]);
+		versions.Where(v => !v.Hidden).Select(v => v.Url).Should().Equal("/api/elasticsearch");
 
 		// the generator renders from the trees the section mounted, so the build never builds a tree twice
 		var trees = await generator.TreesFor(
@@ -338,7 +335,7 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		trees.Navigations.Should().Equal(versions);
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "index.html")).Should().BeTrue();
 	}
 
 	[Test]
@@ -396,9 +393,9 @@ public class OpenApiGeneratorMultiVersionTests
 			.BeEquivalentTo(
 				new Dictionary<string, string>
 				{
-					["main"] = "api/doc/elasticsearch",
-					["9"] = "api/doc/elasticsearch/v9",
-					["8"] = "api/doc/elasticsearch/v8"
+					["main"] = "api/elasticsearch",
+					["9"] = "api/elasticsearch/v9",
+					["8"] = "api/elasticsearch/v8"
 				},
 				"the API Explorer states where each version lives"
 			);
@@ -408,9 +405,9 @@ public class OpenApiGeneratorMultiVersionTests
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("", all), "every version has a landing page");
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("operation/operation-ping", all), "one entry, not one per version");
 		links.TryResolvePage("8", "operation/operation-ping", out var path).Should().BeTrue();
-		path.Should().Be("api/doc/elasticsearch/v8/operation/operation-ping");
+		path.Should().Be("api/elasticsearch/v8/operation/operation-ping");
 		links.TryResolvePage(null, "operation/operation-ping", out var currentPath).Should().BeTrue();
-		currentPath.Should().Be("api/doc/elasticsearch/operation/operation-ping");
+		currentPath.Should().Be("api/elasticsearch/operation/operation-ping");
 		links.TryResolvePage("main", "operation/operation-missing", out _).Should().BeFalse();
 	}
 
@@ -523,52 +520,47 @@ public class OpenApiGeneratorMultiVersionTests
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "index.html")).Should().BeTrue();
 		context
 			.WriteFileSystem
 			.File
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "authentication", "index.html"))
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "authentication", "index.html"))
+			.Should()
+			.BeFalse();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "servers", "index.html")).Should().BeFalse();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v9", "index.html")).Should().BeTrue();
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v9", "authentication", "index.html"))
+			.Should()
+			.BeFalse();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "index.html")).Should().BeTrue();
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "authentication", "index.html"))
 			.Should()
 			.BeFalse();
 		context
 			.WriteFileSystem
 			.File
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "servers", "index.html"))
-			.Should()
-			.BeFalse();
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9", "index.html")).Should().BeTrue();
-		context
-			.WriteFileSystem
-			.File
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9", "authentication", "index.html"))
-			.Should()
-			.BeFalse();
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
-		context
-			.WriteFileSystem
-			.File
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "authentication", "index.html"))
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "servers", "index.html"))
 			.Should()
 			.BeFalse();
 		context
 			.WriteFileSystem
 			.File
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "servers", "index.html"))
-			.Should()
-			.BeFalse();
-		context
-			.WriteFileSystem
-			.File
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html"))
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "operation", "operation-ping", "index.html"))
 			.Should()
 			.BeTrue();
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9.md")).Should().BeTrue();
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v9.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8.md")).Should().BeTrue();
 		context
 			.WriteFileSystem
 			.File
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping.md"))
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8", "operation", "operation-ping.md"))
 			.Should()
 			.BeTrue();
 	}
@@ -607,20 +599,20 @@ public class OpenApiGeneratorMultiVersionTests
 		var shared = context
 			.WriteFileSystem
 			.File
-			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-ping", "index.html"));
-		shared.Should().Contain("href=\"/api/doc/elasticsearch/v8/operation/operation-ping\"");
-		shared.Should().Contain("href=\"/api/doc/elasticsearch/v9/operation/operation-ping\"");
+			.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-ping", "index.html"));
+		shared.Should().Contain("href=\"/api/elasticsearch/v8/operation/operation-ping\"");
+		shared.Should().Contain("href=\"/api/elasticsearch/v9/operation/operation-ping\"");
 		var mainOnly = context
 			.WriteFileSystem
 			.File
-			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-newop", "index.html"));
-		mainOnly.Should().Contain("href=\"/api/doc/elasticsearch/v8\"");
-		mainOnly.Should().NotContain("/api/doc/elasticsearch/v8/operation/operation-newop");
+			.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-newop", "index.html"));
+		mainOnly.Should().Contain("href=\"/api/elasticsearch/v8\"");
+		mainOnly.Should().NotContain("/api/elasticsearch/v8/operation/operation-newop");
 		var older = context
 			.WriteFileSystem
 			.File
-			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html"));
-		older.Should().Contain("href=\"/api/doc/elasticsearch/operation/operation-ping\"");
+			.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "v8", "operation", "operation-ping", "index.html"));
+		older.Should().Contain("href=\"/api/elasticsearch/operation/operation-ping\"");
 	}
 
 	[Test]
@@ -650,12 +642,12 @@ public class OpenApiGeneratorMultiVersionTests
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var files = context.WriteFileSystem.File;
-		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		var root = Path.Join(outputRoot, "api", "elasticsearch");
 		files.Exists(Path.Join(root, "v9", "topic", "topic-kibana-spaces", "index.html")).Should().BeFalse();
 		var topic = files.ReadAllText(Path.Join(root, "v8", "topic", "topic-kibana-spaces", "index.html"));
-		topic.Should().Contain("href=\"/api/doc/elasticsearch/v9/spaces\"");
+		topic.Should().Contain("href=\"/api/elasticsearch/v9/spaces\"");
 		var child = files.ReadAllText(Path.Join(root, "v9", "spaces", "index.html"));
-		child.Should().Contain("href=\"/api/doc/elasticsearch/v8/topic/topic-kibana-spaces\"");
+		child.Should().Contain("href=\"/api/elasticsearch/v8/topic/topic-kibana-spaces\"");
 	}
 
 	[Test]
@@ -685,12 +677,12 @@ public class OpenApiGeneratorMultiVersionTests
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var files = context.WriteFileSystem.File;
-		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		var root = Path.Join(outputRoot, "api", "elasticsearch");
 		files.Exists(Path.Join(root, "v9", "authentication", "index.html")).Should().BeFalse();
 		var authentication = files.ReadAllText(Path.Join(root, "v8", "authentication", "index.html"));
-		authentication.Should().Contain("href=\"/api/doc/elasticsearch/v9/auth\"");
+		authentication.Should().Contain("href=\"/api/elasticsearch/v9/auth\"");
 		var child = files.ReadAllText(Path.Join(root, "v9", "auth", "index.html"));
-		child.Should().Contain("href=\"/api/doc/elasticsearch/v8/authentication\"");
+		child.Should().Contain("href=\"/api/elasticsearch/v8/authentication\"");
 	}
 
 	private static OpenApiDocument WithTopic(OpenApiDocument document, string title)

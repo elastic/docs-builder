@@ -21,7 +21,7 @@ namespace Elastic.Documentation.Journeys.Tests.Areas;
 [NotInParallel]
 public class ApiSectionToolbarTests(JourneyTarget target)
 {
-	private const string Operation = "api/doc/cloud-connect/operation/operation-patchcluster";
+	private const string Operation = "api/cloud-connect/operation/operation-patchcluster";
 	private static readonly int[] int32Array = new[] { 200, 60, 40 };
 
 	[Test]

@@ -56,11 +56,11 @@ public class NavigationCurrentMarkerTests
 	{
 		const string html =
 			"""
-		                    <a href="/api/doc/kibana/group/endpoint-dashboards" class="sidebar-link nav-folder-link">Dashboards</a>
-		                    <a href="/api/doc/kibana/group/endpoint-dashboards#get-started" class="sidebar-link nav-link">Get started</a>
+		                    <a href="/api/kibana/group/endpoint-dashboards" class="sidebar-link nav-folder-link">Dashboards</a>
+		                    <a href="/api/kibana/group/endpoint-dashboards#get-started" class="sidebar-link nav-link">Get started</a>
 		                    """;
 
-		var marked = NavigationCurrentMarker.Apply(html, "/api/doc/kibana/group/endpoint-dashboards");
+		var marked = NavigationCurrentMarker.Apply(html, "/api/kibana/group/endpoint-dashboards");
 
 		marked.Should().Contain("class=\"sidebar-link nav-folder-link current\"");
 		marked.Should().Contain("#get-started\" class=\"sidebar-link nav-link\">");

@@ -126,18 +126,18 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 				new ApiIdentityProductGroup(
 					"Elastic Stack",
 					[
-						new ApiIdentityProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
-						new ApiIdentityProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
+						new ApiIdentityProduct("Elasticsearch API", "/docs/api/elasticsearch/", true, "<svg></svg>"),
+						new ApiIdentityProduct("Kibana APIs", "/docs/api/kibana/", false, null)
 					]
 				),
-				new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
+				new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/docs/api/alpha/", false, null)])
 			],
 			"/docs/api/",
 			[
-				new NavigationSelectOption("main", "/docs/api/doc/elasticsearch/", true),
-				new NavigationSelectOption("v8", "/docs/api/doc/elasticsearch/v8/", false)
+				new NavigationSelectOption("main", "/docs/api/elasticsearch/", true),
+				new NavigationSelectOption("v8", "/docs/api/elasticsearch/v8/", false)
 			],
-			new ApiSpecDownload("/docs/api/doc/elasticsearch.json", "/docs/api/doc/elasticsearch.yaml")
+			new ApiSpecDownload("/docs/api/elasticsearch.json", "/docs/api/elasticsearch.yaml")
 		);
 
 		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);

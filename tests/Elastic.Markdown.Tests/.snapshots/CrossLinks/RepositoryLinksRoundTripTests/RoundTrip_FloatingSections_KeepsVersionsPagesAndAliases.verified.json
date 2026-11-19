@@ -19,17 +19,17 @@
       "versions": [
         {
           "name": "8",
-          "root": "api/doc/example-api/v8",
+          "root": "api/example-api/v8",
           "hidden": true
         },
         {
           "name": "main",
-          "root": "api/doc/example-api",
+          "root": "api/example-api",
           "current": true
         },
         {
           "name": "plain",
-          "root": "api/doc/example-api/plain"
+          "root": "api/example-api/plain"
         }
       ],
       "pages": {
@@ -52,7 +52,7 @@
       "versions": [
         {
           "name": "main",
-          "root": "api/doc/no-aliases",
+          "root": "api/no-aliases",
           "current": true
         }
       ],

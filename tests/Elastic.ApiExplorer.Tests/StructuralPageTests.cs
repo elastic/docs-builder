@@ -32,11 +32,11 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			.ContainSingle(item => item.Model.Kind == ApiStructuralKind.Servers)
 			.Subject;
 
-		authentication.Url.Should().Be("/api/doc/fixture/authentication");
+		authentication.Url.Should().Be("/api/fixture/authentication");
 		authentication.Hidden.Should().BeFalse("the Topics heading lists it");
 		servers.Hidden.Should().BeTrue("the page stays for old links but is not listed in the nav");
 		authentication.NavigationTitle.Should().Be("Authentication");
-		servers.Url.Should().Be("/api/doc/fixture/servers");
+		servers.Url.Should().Be("/api/fixture/servers");
 		servers.NavigationTitle.Should().Be("Servers");
 	}
 
@@ -45,8 +45,8 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	{
 		var rows = ApiOverviewBuilder.Build(fixture.Navigation, fixture.Context.VersionsConfiguration);
 
-		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/servers");
-		rows.Select(row => row.Url).Should().Contain("/api/doc/fixture/authentication");
+		rows.Select(row => row.Url).Should().NotContain("/api/fixture/servers");
+		rows.Select(row => row.Url).Should().Contain("/api/fixture/authentication");
 	}
 
 	[Test]
@@ -98,7 +98,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 
 	private static IReadOnlyList<StructuralNavigationItem> CreateItems(OpenApiDocument document)
 	{
-		var root = new LandingNavigationItem("/api/doc/fixture");
+		var root = new LandingNavigationItem("/api/fixture");
 		return StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
 	}
 

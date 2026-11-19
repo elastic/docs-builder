@@ -416,7 +416,7 @@ describe('PageFeedback', () => {
         const user = userEvent.setup()
         render(
             <PageFeedback
-                pageUrl="/api/doc/elasticsearch/search"
+                pageUrl="/api/elasticsearch/search"
                 pageTitle="Search"
                 surface="api"
             />

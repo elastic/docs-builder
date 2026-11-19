@@ -19,10 +19,11 @@ public record FloatingLinkVersion
 
 	/// <summary>
 	/// The URL root of this version, relative to the site root and without slashes at either end. A page is at
-	/// this root plus <c>/</c> plus its path, and the landing page is the root itself.
+	/// this root plus <c>/</c> plus its path, and the landing page is the root itself. An index published before the
+	/// API Explorer dropped <c>/doc</c> holds <c>api/doc/{key}</c>, which reads as <c>api/{key}</c>.
 	/// </summary>
 	[JsonPropertyName("root")]
-	public required string Root { get; init; }
+	public required string Root { get; init => field = ApiLegacyRedirects.ToCanonical(value); }
 
 	/// <summary>The version exists for links but not in the sitemap or first-level walks.</summary>
 	[JsonPropertyName("hidden")]

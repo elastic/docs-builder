@@ -3,7 +3,7 @@
     {
       "key": "cloud",
       "title": "Elastic Cloud API",
-      "url": "/docs/api/doc/cloud",
+      "url": "/docs/api/cloud",
       "description": "This RESTful API enables you to perform most of the operations available in the UI console through API calls.",
       "versions": [
         "main"
@@ -12,7 +12,7 @@
     {
       "key": "cloud-billing",
       "title": "Cloud Billing API",
-      "url": "/docs/api/doc/cloud-billing",
+      "url": "/docs/api/cloud-billing",
       "description": "The Cloud Billing API enables you to retrieve cost and usage information.",
       "versions": [
         "main"
@@ -21,7 +21,7 @@
     {
       "key": "cloud-connect",
       "title": "Elastic Cloud Connected API",
-      "url": "/docs/api/doc/cloud-connect",
+      "url": "/docs/api/cloud-connect",
       "description": "This API enables you to use Elastic Cloud services in your ECE, ECK, or self-managed cluster without having to install and maintain their infrastructure...",
       "versions": [
         "main"

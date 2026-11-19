@@ -76,7 +76,7 @@ public class NavSideRenderingTests
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = false,
 			NavigationTitle = "Get document source",
-			Url = "/api/doc/elasticsearch/operation/operation-get-source",
+			Url = "/api/elasticsearch/operation/operation-get-source",
 			HttpMethods = ["get"],
 			Deprecated = deprecated
 		};

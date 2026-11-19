@@ -25,7 +25,7 @@ public class ApiToolsTests
 		{
 			Api = "elasticsearch",
 			Title = operationId,
-			Url = $"/docs/api/doc/elasticsearch/operation/operation-{operationId}",
+			Url = $"/docs/api/elasticsearch/operation/operation-{operationId}",
 			Method = "GET",
 			Path = path,
 			OperationId = operationId,
@@ -141,7 +141,7 @@ public class ApiToolsTests
 			      "operations": [
 			        {
 			          "title": "cluster-health",
-			          "url": "/docs/api/doc/elasticsearch/operation/operation-cluster-health",
+			          "url": "/docs/api/elasticsearch/operation/operation-cluster-health",
 			          "method": "GET",
 			          "path": "/_cluster/health",
 			          "operationId": "cluster-health",
@@ -155,7 +155,7 @@ public class ApiToolsTests
 			      "operations": [
 			        {
 			          "title": "ping",
-			          "url": "/docs/api/doc/elasticsearch/operation/operation-ping",
+			          "url": "/docs/api/elasticsearch/operation/operation-ping",
 			          "method": "GET",
 			          "path": "/",
 			          "operationId": "ping",
@@ -169,7 +169,7 @@ public class ApiToolsTests
 			      "operations": [
 			        {
 			          "title": "search",
-			          "url": "/docs/api/doc/elasticsearch/operation/operation-search",
+			          "url": "/docs/api/elasticsearch/operation/operation-search",
 			          "method": "GET",
 			          "path": "/_search",
 			          "operationId": "search",

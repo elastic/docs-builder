@@ -994,7 +994,7 @@ public class ExampleScenarioTests
 			)
 			{
 				NavigationHtml = string.Empty,
-				CurrentNavigation = new LandingNavigationItem("/api/doc/cloud-billing").Index,
+				CurrentNavigation = new LandingNavigationItem("/api/cloud-billing").Index,
 				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 			};
 			return OperationPageModel.Create(apiOperation, context);

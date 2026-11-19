@@ -44,7 +44,7 @@ public class ApiMarkdownIntraApiLinkTests
 		)
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = new LandingNavigationItem("/api/doc/kibana").Index,
+			CurrentNavigation = new LandingNavigationItem("/api/kibana").Index,
 			MarkdownRenderer = renderer,
 			ApiExplorerLog = null
 		};
@@ -56,8 +56,8 @@ public class ApiMarkdownIntraApiLinkTests
 
 		_ = ApiMarkdown.Render(renderContext, markdown);
 
-		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/group/endpoint-data-views)");
-		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/operation/operation-post-saved-objects-export)");
+		renderer.LastMarkdown.Should().Contain("(/api/kibana/group/endpoint-data-views)");
+		renderer.LastMarkdown.Should().Contain("(/api/kibana/operation/operation-post-saved-objects-export)");
 	}
 
 	[Test]
@@ -65,15 +65,15 @@ public class ApiMarkdownIntraApiLinkTests
 	{
 		var markdown =
 			"""
-			[Regions](/docs/api/doc/cloud-serverless/group/endpoint-regions)
-			[Relative](docs/api/doc/cloud-serverless/operation/operation-listregions)
+			[Regions](/docs/api/cloud-serverless/group/endpoint-regions)
+			[Relative](docs/api/cloud-serverless/operation/operation-listregions)
 			[External](https://example.com/reference)
 			""";
 
 		var rewritten = ApiMarkdown.CanonicalizeLinks(markdown, new Uri("https://www.elastic.co"));
 
-		rewritten.Should().Contain("[Regions](https://www.elastic.co/docs/api/doc/cloud-serverless/group/endpoint-regions)");
-		rewritten.Should().Contain("[Relative](https://www.elastic.co/docs/api/doc/cloud-serverless/operation/operation-listregions)");
+		rewritten.Should().Contain("[Regions](https://www.elastic.co/docs/api/cloud-serverless/group/endpoint-regions)");
+		rewritten.Should().Contain("[Relative](https://www.elastic.co/docs/api/cloud-serverless/operation/operation-listregions)");
 		rewritten.Should().Contain("[External](https://example.com/reference)");
 		rewritten.Should().NotContain("endpoint-regions.md");
 	}

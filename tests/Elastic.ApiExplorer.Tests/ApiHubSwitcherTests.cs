@@ -94,12 +94,12 @@ public class ApiHubSwitcherTests
 	[Test]
 	public void Build_EntryWithLatestVersion_LinksToItAndOthersKeepTheirRoot()
 	{
-		var versioned = Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" };
+		var versioned = Entry("kibana", "Kibana") with { LatestUrl = "/api/kibana/v9" };
 
 		var items = ApiHubSwitcher.Build([versioned, Entry("logstash", "Logstash")], currentApiKey: "kibana");
 
-		items.SelectMany(g => g.Products).Select(i => i.Url).Should().Equal("/api/doc/kibana/v9", "/api/doc/logstash/");
+		items.SelectMany(g => g.Products).Select(i => i.Url).Should().Equal("/api/kibana/v9", "/api/logstash/");
 	}
 
-	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");
+	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/{key}/");
 }

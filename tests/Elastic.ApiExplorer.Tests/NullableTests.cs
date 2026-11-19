@@ -58,7 +58,7 @@ public class NullableTests
 		Row("kind").Union!.DiscriminatorProperty.Should().Be("type", "a row with more to say than its type keeps its options row");
 
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("name")]), "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("name")]), "/api/fixture");
 		markdown.ToString().Should().Contain("— nullable");
 	}
 

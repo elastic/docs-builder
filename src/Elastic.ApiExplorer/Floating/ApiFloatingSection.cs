@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Floating;
 
 /// <summary>
 /// Offers one section for each API that a docset declares in its <c>api:</c> block. The key of a section is the one the
-/// API's URL uses: <c>/api/doc/{key}/</c>.
+/// API's URL uses: <c>/api/{key}/</c>.
 /// </summary>
 /// <remarks>
 /// The provider is created before the <see cref="OpenApiGenerator"/> exists, because the docset needs the provider
@@ -62,7 +62,7 @@ internal sealed class ApiFloatingSection(
 
 	public string Key => urlKey;
 
-	public string UrlRoot => $"api/doc/{urlKey}";
+	public string UrlRoot => $"api/{urlKey}";
 
 	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
 		_root = new ApiFloatingRoot(

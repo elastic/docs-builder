@@ -39,8 +39,8 @@ public class LinksJsonForwardCompatibilityTests
 		"floating": {
 		  "api/elasticsearch": {
 		    "versions": [
-		      { "name": "8", "root": "api/doc/elasticsearch/v8", "hidden": true },
-		      { "name": "main", "root": "api/doc/elasticsearch", "current": true }
+		      { "name": "8", "root": "api/elasticsearch/v8", "hidden": true },
+		      { "name": "main", "root": "api/elasticsearch", "current": true }
 		    ],
 		    "pages": { "": 3, "operation/operation-search": 3, "operation/operation-new": 2 },
 		    "aliases": { "8": { "operation/operation-search": [ "operation/operation-search-1" ] } }
@@ -91,6 +91,14 @@ public class LinksJsonForwardCompatibilityTests
 		with.Redirects.Should().BeEquivalentTo(without.Redirects);
 		with.CrossLinks.Should().Equal(without.CrossLinks);
 		with.Origin.Should().Be(without.Origin);
+	}
+
+	[Test]
+	public void Deserialize_AnIndexPublishedWithTheDocSegment_ReadsTheCurrentRoots()
+	{
+		var legacy = RepositoryLinks.Deserialize(WithProperty(FloatingSection.Replace("\"root\": \"api/", "\"root\": \"api/doc/")));
+
+		legacy.Floating!["api/elasticsearch"].Versions.Select(v => v.Root).Should().Equal("api/elasticsearch/v8", "api/elasticsearch");
 	}
 
 	[Test]

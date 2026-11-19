@@ -179,36 +179,32 @@ public class ApiCatalogViewModelTests
 	[Test]
 	public void ToItem_LinksToTheLatestVersionWhenThereIsOne()
 	{
-		ApiCatalogViewModel
-			.ToItem(Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" })
-			.Url
-			.Should()
-			.Be("/api/doc/kibana/v9");
-		ApiCatalogViewModel.ToItem(Entry("cloud", "Elastic Cloud API")).Url.Should().Be("/api/doc/cloud/");
+		ApiCatalogViewModel.ToItem(Entry("kibana", "Kibana") with { LatestUrl = "/api/kibana/v9" }).Url.Should().Be("/api/kibana/v9");
+		ApiCatalogViewModel.ToItem(Entry("cloud", "Elastic Cloud API")).Url.Should().Be("/api/cloud/");
 	}
 
 	[Test]
 	public void CatalogMarkdown_LinksToTheLatestVersionAndItsSiblingFiles()
 	{
 		var markdown = LandingCommonMark.Catalog([
-			Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" },
+			Entry("kibana", "Kibana") with { LatestUrl = "/api/kibana/v9" },
 			Entry("cloud", "Elastic Cloud API")
 		]);
 
-		markdown.Should().Contain("[Kibana](/api/doc/kibana/v9)");
+		markdown.Should().Contain("[Kibana](/api/kibana/v9)");
 		markdown
 			.Should()
-			.Contain("[Markdown](/api/doc/kibana/v9.md)")
+			.Contain("[Markdown](/api/kibana/v9.md)")
 			.And
-			.Contain("[JSON](/api/doc/kibana/v9.json)")
+			.Contain("[JSON](/api/kibana/v9.json)")
 			.And
-			.Contain("[YAML](/api/doc/kibana/v9.yaml)");
-		markdown.Should().Contain("[Elastic Cloud API](/api/doc/cloud/)").And.Contain("[Markdown](/api/doc/cloud.md)");
+			.Contain("[YAML](/api/kibana/v9.yaml)");
+		markdown.Should().Contain("[Elastic Cloud API](/api/cloud/)").And.Contain("[Markdown](/api/cloud.md)");
 	}
 
 	private static ApiCatalogItem Item(string key, string? parentKey = null) =>
-		new(key, key, $"/api/doc/{key}/", "<svg></svg>", null, [], parentKey);
+		new(key, key, $"/api/{key}/", "<svg></svg>", null, [], parentKey);
 
 	private static ApiCatalogEntry Entry(string key, string title, params string[] categories) =>
-		new(key, title, $"/api/doc/{key}/") { CatalogCategories = categories };
+		new(key, title, $"/api/{key}/") { CatalogCategories = categories };
 }
