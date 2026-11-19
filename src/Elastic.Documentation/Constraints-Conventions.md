@@ -103,7 +103,18 @@ Other tolerant-load facts, true in every mode:
 public static readonly Loader<Dto, Config> Yaml = Loader.For(Parse, Map, Fatal.CheckErrors);
 ```
 
-Loaders known to be tolerant today on `main` (they need these modes when moved onto `Loader.For`): `changelog.yml` (mapping errors keep the value, the check is fatal, `block:` gives up), the codex configuration, and the links file. Each is confirmed against its own snapshots when it moves. Add a loader here when it joins.
+Tolerant loaders on the open area branches. This is a snapshot of open PRs, read from the code with `git show origin/<branch>:<path>` (read, not run), and is superseded by the `// TOLERANT LOAD:` comments once the area PRs merge. Each entry names the mode it maps to.
+
+| Loader (file) | Behaviour | Maps to | Verified against |
+| --- | --- | --- | --- |
+| `changelog.yml`: `ChangelogConfigurationLoader.Load` (Configuration/Changelog), hand-rolled | Errors written while reading go to a private buffer and keep the value. An error from the constraint check (`ChangelogConfigurationInCatalog`) is `Unreadable`. A parse step that returns null (the old `block:` key) or a `YamlException` is `Unreadable` with the findings so far. | `Fatal.CheckErrors`, with a `TryMap` that returns null to give up | `origin/split/10a-changelog-config@7cbba5d34` |
+| links: `LinkLoader.Manifest` and `LinkLoader.Registry` (Configuration/Loading) | Already `Loader.For(..., errorsAreFatal: false)`: text that parses always returns its record with every finding, errors included; unparsable text is `Unreadable`. Consumers go through `ReadManifest`/`ReadRegistry`, which return the value or throw the `JsonException` and never report the findings (`CrossLinkFetcher`, `LinkIndexLinkChecker`, `GitLinkIndexReader`, `LinkIndexReader`, `NavigationPrefixChecker`, `RepositorySourcesFetcher`, `CodexCloneService`). | `Fatal.None` (the bool `false`) | `origin/split/05-links@95a8f6170` |
+| version index: `VersionIndexLoader.Json` (ApiExplorer/Model) | `Loader.For(..., errorsAreFatal: false)`: the index belongs to the CDN, so a finding never stops the render. `VersionIndexClient` reads the `LoadResult`. | `Fatal.None` | `origin/split/09-codex@5a3fb0a7a` (the same file is on the later area branches) |
+| `docset.yml`: `DocumentationSetLoader.Load` (Configuration/Loading), hand-rolled, not `Loader.For` | Reports to the caller's collector while reading, always returns `Loaded` (the check's findings never make it `Unreadable`), and lets every exception propagate unchanged. | Would be `Fatal.None`, but it cannot use `Loader.For`: a `Loader` turns an exception into a finding, and callers and snapshots depend on the exceptions. The code says so. | `origin/split/06b-docset-definition@afa300a11`, `origin/split/06c1-resolved-set@16e8b6a63` |
+
+Verified strict, so not tolerant: codex (`CodexSiteLoader.Read`/`Publish` use the default mode, and `CodexConfigurationLoader.TryLoad` writes every error finding to the collector and returns false on any error; `origin/split/09-codex@5a3fb0a7a`), the catalog loaders (`origin/split/02-catalog@4684ce64d`, any error is `Unreadable`) and `AssemblyLoader` (`origin/split/07-assembly@889e21471`).
+
+Candidates, unverified (not read to the end, or not a loader in this sense; do not rely on them): `SiteNavigationLoader.GetTocMappings(string, ...)` (`origin/split/08-site-navigation@bee65f6f9`) parses leniently into a throwaway `BufferingDiagnosticsCollector` and discards its findings; `BundleLoader.LoadBundles` (`origin/split/10a-changelog-config@7cbba5d34`) is hand-rolled and takes an `emitWarning` callback; `Preloader` (`origin/split/07-assembly@889e21471`) was only searched for loader usage and has none. Add a loader to the table when it joins, with the branch and sha it was checked against.
 
 ## Operations: methods on the record, checked by the set
 
