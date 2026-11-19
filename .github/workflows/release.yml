@@ -494,6 +494,9 @@ jobs:
     needs:
       - release-drafter
       - containers
+      - build-link-index-lambda
+      - build-changelog-scrubber-lambda
+      - build-openapi-index-lambda
       - package-openapi-index-updater-lambda
       - deploy-link-index-updater-lambda-prod
       - deploy-changelog-scrubber-lambda-prod
@@ -514,19 +517,27 @@ jobs:
         # language=bash
         run: |
           set -euo pipefail
-          is_draft=$(gh release view "$TAG_NAME" --repo "$REPO" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
-          if [ "$is_draft" != "true" ]; then
-            echo "Release ${TAG_NAME} is not a draft (${is_draft}); leaving it and its tag alone."
+          # Only an absent release or tag counts as nothing to clean; any other failure fails the job.
+          # The list includes drafts. `releases/tags/<tag>` does not.
+          state=$(gh api --paginate "repos/${REPO}/releases" --jq '.[] | select(.tag_name == env.TAG_NAME) | .draft')
+          if [ -z "$state" ]; then
+            echo "Release ${TAG_NAME} does not exist; nothing to clean."
+            exit 0
+          fi
+          if [ "$state" != "true" ]; then
+            echo "Release ${TAG_NAME} is published; leaving it and its tag alone."
             exit 0
           fi
           gh release view "$TAG_NAME" --repo "$REPO" --json assets --jq '.assets[].name' | while read -r name; do
             echo "Deleting asset ${name}"
             gh release delete-asset "$TAG_NAME" "$name" --repo "$REPO" --yes
           done
-          if gh api -X DELETE "repos/${REPO}/git/refs/tags/${TAG_NAME}" 2>/dev/null; then
+          tag_ref=$(gh api "repos/${REPO}/git/matching-refs/tags/${TAG_NAME}" --jq '.[] | select(.ref == "refs/tags/" + env.TAG_NAME) | .ref')
+          if [ -n "$tag_ref" ]; then
+            gh api -X DELETE "repos/${REPO}/git/refs/tags/${TAG_NAME}"
             echo "Deleted tag ${TAG_NAME}"
           else
-            echo "Tag ${TAG_NAME} was not there"
+            echo "Tag ${TAG_NAME} does not exist."
           fi
 
   notify-failure:
