@@ -11,6 +11,7 @@
 		SectionMenu = Model.IsUsingNavigationDropdown
 			? new LinkMenuModel
 			{
+				Id = "section-menu",
 				Label = "Section",
 				Current = Model.CurrentTopLevelNavigationTitle,
 				Items = [.. Model.DropdownItems.Select(i => new LinkMenuItem(i.NavigationTitle, i.Url, i.IsActive))]

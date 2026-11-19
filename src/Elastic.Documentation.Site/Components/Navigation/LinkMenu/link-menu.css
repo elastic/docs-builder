@@ -1,5 +1,4 @@
 .link-menu {
-	position: relative;
 	display: block;
 }
 
@@ -8,6 +7,7 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: var(--space-3);
+	width: 100%;
 	min-height: 2.25rem;
 	padding: 0 var(--space-3);
 	border: var(--border-width) solid var(--color-border-control);
@@ -16,7 +16,6 @@
 	color: var(--color-heading);
 	font-size: var(--text-sm);
 	font-weight: var(--weight-semibold);
-	list-style: none;
 	cursor: pointer;
 	transition: border-color var(--duration-fast) var(--ease-standard);
 }
@@ -27,12 +26,8 @@
 	white-space: nowrap;
 }
 
-.link-menu__trigger::-webkit-details-marker {
-	display: none;
-}
-
 .link-menu__trigger:hover,
-.link-menu[open] > .link-menu__trigger {
+.link-menu__trigger[aria-expanded='true'] {
 	border-color: var(--color-accent);
 }
 
@@ -46,15 +41,15 @@
 	transition: rotate var(--duration-fast) var(--ease-standard);
 }
 
-.link-menu[open] > .link-menu__trigger > .icon {
+.link-menu__trigger[aria-expanded='true'] > .icon {
 	rotate: 180deg;
 }
 
+/* A popover placed under the trigger by floating.ts, at least as wide as the trigger. */
 .link-menu__list {
-	position: absolute;
-	z-index: var(--z-overlay);
-	inset: calc(100% + var(--space-1)) 0 auto;
-	min-width: 12rem;
+	min-width: max(12rem, var(--floating-anchor-width, 0px));
+	max-height: var(--floating-available-height, none);
+	overflow-y: auto;
 	margin: 0;
 	padding: var(--space-2) 0;
 	border: var(--border-width) solid var(--color-border-strong);
@@ -85,4 +80,16 @@
 	margin-top: var(--space-1);
 	padding-top: var(--space-1);
 	border-top: var(--border-width) solid var(--color-border);
+}
+
+/* Without the Popover API the menu cannot open, and it is the only way to its links, so they show under the trigger. */
+@supports not selector(:popover-open) {
+	.link-menu__trigger {
+		display: none;
+	}
+
+	.link-menu__list[popover] {
+		display: block;
+		box-shadow: none;
+	}
 }

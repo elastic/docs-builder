@@ -23,21 +23,19 @@
 				</a>
 			</li>
 			<li class="docs-bar__item">
-				<details class="docs-bar__dropdown" data-menu="" data-popover="">
-					<summary class="docs-bar__link">
-						<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-							<path fill-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z" clip-rule="evenodd"></path>
-						</svg>
-						<span>Products</span>
-						<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-							<path fill-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z" clip-rule="evenodd"></path>
-						</svg>
-					</summary>
-					<div class="docs-bar__menu" aria-label="Products" data-popover-panel="">
-						<p class="docs-bar__group">Search</p>
-						<a class="docs-bar__menu-link" href="/docs/es">Elasticsearch</a>
-					</div>
-				</details>
+				<button type="button" class="docs-bar__link" popovertarget="docs-bar-menu-2" aria-haspopup="menu" aria-expanded="false">
+					<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path fill-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z" clip-rule="evenodd"></path>
+					</svg>
+					<span>Products</span>
+					<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path fill-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z" clip-rule="evenodd"></path>
+					</svg>
+				</button>
+				<div id="docs-bar-menu-2" class="docs-bar__menu" aria-label="Products" popover="">
+					<p class="docs-bar__group">Search</p>
+					<a class="docs-bar__menu-link" href="/docs/es">Elasticsearch</a>
+				</div>
 			</li>
 			<li class="docs-bar__item">
 				<a class="docs-bar__link" href="https://www.elastic.co" target="_blank" rel="noopener noreferrer">
@@ -52,7 +50,6 @@
 		</ul>
 		<div class="docs-bar__actions">
 			<div class="theme-switch">
-				<input class="theme-switch__open" type="checkbox" id="bar-theme-open" aria-label="Display options">
 				<div class="theme-group">
 					<label class="theme-group__opt" data-v="light" for="bar-theme-theme-light" title="Light">
 						<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -66,14 +63,14 @@
 						</svg>
 					</label>
 					<span class="theme-group__sep"></span>
-					<label class="theme-group__opt theme-group__opt--cog" for="bar-theme-open" title="Display options">
+					<button type="button" class="theme-group__opt theme-group__opt--cog" popovertarget="bar-theme-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Display options" title="Display options">
 						<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<circle cx="12" cy="12" r="3"></circle>
 							<path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"></path>
 						</svg>
-					</label>
+					</button>
 				</div>
-				<div class="theme-menu">
+				<div id="bar-theme-menu" class="theme-menu" popover="" data-placement="bottom-end" aria-label="Display options">
 					<div class="theme-menu__group" role="radiogroup" aria-label="Theme">
 						<div class="theme-menu__label">Theme</div>
 						<label class="theme-menu__option" data-v="light">
@@ -180,7 +177,10 @@
 	<template data-search-result=""><li class="search-result" role="option">
 			<a class="search-result__link" href="#">
 				<span class="search-result__path" data-search-path=""></span>
-				<span class="search-result__title" data-search-title=""></span>
+				<span class="search-result__heading">
+					<span class="search-result__title" data-search-title=""></span>
+					<span class="badge badge--danger search-result__deprecated" data-search-deprecated="" hidden="">Deprecated</span>
+				</span>
 				<span class="search-result__excerpt" data-search-excerpt=""></span>
 			</a>
 		</li></template>

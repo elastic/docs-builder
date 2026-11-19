@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Chrome.DeploymentInfo.DeploymentInfoModel>
-@* A native disclosure, so it opens on click and keyboard without script; script adds opening on hover for a mouse. *@
-<details class="deployment" data-menu data-hover-menu>
-	<summary class="deployment__trigger" aria-label="Deployment info for branch @Model.Branch@(Model.Commit is { } c ? $", commit {c}" : "")">
+@* The panel is a popover placed under the button by floating.ts. It opens on click and keyboard, and data-hover opens it while a mouse rests on it. *@
+<div class="deployment">
+	<button type="button" class="deployment__trigger" popovertarget="@Model.Id" aria-haspopup="menu" aria-expanded="false" aria-label="Deployment info for branch @Model.Branch@(Model.Commit is { } c ? $", commit {c}" : "")">
 		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "branch", Size = IconSize.Small }))
 		<span class="deployment__branch">@Model.Branch</span>
 		@if (Model.Commit is { } commit)
@@ -9,8 +9,8 @@
 			@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "commit", Size = IconSize.Small }))
 			<span class="deployment__commit">@commit</span>
 		}
-	</summary>
-	<div class="deployment__panel">
+	</button>
+	<div id="@Model.Id" class="deployment__panel" popover data-placement="bottom-end" data-hover>
 		<p class="deployment__title">Deployment info</p>
 		<p class="deployment__subtitle">@Model.Subtitle</p>
 		<ul class="deployment__rows">
@@ -37,4 +37,4 @@
 			}
 		</ul>
 	</div>
-</details>
+</div>

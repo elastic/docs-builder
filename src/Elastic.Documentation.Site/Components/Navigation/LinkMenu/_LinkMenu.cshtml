@@ -1,10 +1,11 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Navigation.LinkMenu.LinkMenuModel>
-<details class="link-menu" data-menu>
-	<summary class="link-menu__trigger" aria-label="@Model.Label: @Model.TriggerText">
+@* The list is a popover (top layer), placed under the trigger by floating.ts. Without popover support it shows inline (link-menu.css). *@
+<div class="link-menu">
+	<button type="button" class="link-menu__trigger" popovertarget="@Model.Id" aria-haspopup="menu" aria-expanded="false" aria-label="@Model.Label: @Model.TriggerText">
 		<span class="link-menu__current">@Model.TriggerText</span>
 		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
-	</summary>
-	<ul class="link-menu__list">
+	</button>
+	<ul id="@Model.Id" class="link-menu__list" popover aria-label="@Model.Label">
 		@foreach (var item in Model.Items)
 		{
 			<li>
@@ -16,4 +17,4 @@
 			<li class="link-menu__footer"><a class="link-menu__item" href="@footer.Url">@footer.Title</a></li>
 		}
 	</ul>
-</details>
+</div>

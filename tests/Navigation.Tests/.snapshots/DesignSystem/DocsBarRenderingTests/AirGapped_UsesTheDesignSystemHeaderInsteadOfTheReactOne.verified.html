@@ -18,7 +18,6 @@
 		</div>
 		<nav class="site-header__nav" aria-label="Site">
 			<div class="theme-switch">
-				<input class="theme-switch__open" type="checkbox" id="header-theme-open" aria-label="Display options">
 				<div class="theme-group">
 					<label class="theme-group__opt" data-v="light" for="header-theme-theme-light" title="Light">
 						<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -32,14 +31,14 @@
 						</svg>
 					</label>
 					<span class="theme-group__sep"></span>
-					<label class="theme-group__opt theme-group__opt--cog" for="header-theme-open" title="Display options">
+					<button type="button" class="theme-group__opt theme-group__opt--cog" popovertarget="header-theme-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Display options" title="Display options">
 						<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<circle cx="12" cy="12" r="3"></circle>
 							<path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"></path>
 						</svg>
-					</label>
+					</button>
 				</div>
-				<div class="theme-menu">
+				<div id="header-theme-menu" class="theme-menu" popover="" data-placement="bottom-end" aria-label="Display options">
 					<div class="theme-menu__group" role="radiogroup" aria-label="Theme">
 						<div class="theme-menu__label">Theme</div>
 						<label class="theme-menu__option" data-v="light">
@@ -145,7 +144,10 @@
 		<template data-search-result=""><li class="search-result" role="option">
 				<a class="search-result__link" href="#">
 					<span class="search-result__path" data-search-path=""></span>
-					<span class="search-result__title" data-search-title=""></span>
+					<span class="search-result__heading">
+						<span class="search-result__title" data-search-title=""></span>
+						<span class="badge badge--danger search-result__deprecated" data-search-deprecated="" hidden="">Deprecated</span>
+					</span>
 					<span class="search-result__excerpt" data-search-excerpt=""></span>
 				</a>
 			</li></template>
