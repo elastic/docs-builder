@@ -450,6 +450,16 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void ResolveAnchor_ExplicitIntroId_GetsSuffix()
+	{
+		var used = ApiPostSection.OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		ApiPostSection
+			.ResolveAnchor("Details", "api-operation-overview", used)
+			.Should()
+			.Be("api-operation-overview-2", "the operation intro owns that id, so a supplemental heading cannot take it");
+	}
+
+	[Test]
 	public async Task Operation_ParameterOverrides_ReplaceListedPathAndQueryOnly()
 	{
 		var nav = SearchOperation();
