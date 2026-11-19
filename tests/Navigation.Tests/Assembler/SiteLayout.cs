@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
@@ -98,7 +99,7 @@ internal static class SiteLayout
 			var docsetPath = fileSystem.File.Exists($"/checkouts/current/{name}/docs/docset.yml")
 				? $"/checkouts/current/{name}/docs/docset.yml"
 				: $"/checkouts/current/{name}/docs/_docset.yml";
-			var docset = DocumentationSetFile.LoadAndResolve(
+			var docset = DocumentationSetLoader.LoadAndResolve(
 				context.Collector,
 				fileSystem.FileInfo.New(docsetPath),
 				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)

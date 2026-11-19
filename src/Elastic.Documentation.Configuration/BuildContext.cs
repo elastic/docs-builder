@@ -8,8 +8,9 @@ using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Search;
 using Nullean.ScopedFileSystem;
@@ -45,7 +46,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public GitCheckoutInformation Git => FileSystem.Paths.Git;
 
 	public ConfigurationFile Configuration { get; private set; }
-	public DocumentationSetFile ConfigurationYaml { get; set; }
+	public DocumentationSetDefinition Definition { get; set; }
 
 	public GlobalCatalog Catalog { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
@@ -111,21 +112,17 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
-		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)
-			: new DocumentationSetFile();
+		Definition = DocumentationSetLoader.LoadOrEmpty(collector, ConfigurationPath, fileSystem.Read);
 
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
+		Configuration = new ConfigurationFile(Definition, this, Catalog.VersioningSystems, Catalog.Products);
 	}
 
 	/// <summary>Re-reads docset.yml from disk and rebuilds the configuration. Used by the serve command on file changes.</summary>
 	public void ReloadConfiguration()
 	{
 		var previousFeatures = Configuration.Features;
-		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
-			: new DocumentationSetFile();
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
+		Definition = DocumentationSetLoader.LoadOrEmpty(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem);
+		Configuration = new ConfigurationFile(Definition, this, Catalog.VersioningSystems, Catalog.Products);
 		var diagnosticsPanel = previousFeatures.DiagnosticsPanelEnabled;
 		var pageFeedback = previousFeatures.PageFeedbackEnabled;
 		OverrideFeatures(f => f.With("diagnostics-panel", diagnosticsPanel).With("page-feedback", pageFeedback));

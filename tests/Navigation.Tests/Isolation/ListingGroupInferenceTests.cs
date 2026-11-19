@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
@@ -28,7 +29,7 @@ public class ListingGroupInferenceTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/rules/index.md", new MockFileData("# Rules"));
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, Yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, Yaml, fileSystem.NewDirInfo("docs"));
 		return docSet.TableOfContents.OfType<ListingRef>().Should().ContainSingle().Subject;
 	}
 

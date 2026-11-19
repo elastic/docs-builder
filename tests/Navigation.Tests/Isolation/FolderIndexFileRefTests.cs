@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
@@ -34,7 +35,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -76,7 +77,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -111,7 +112,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -145,7 +146,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -174,7 +175,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -208,7 +209,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -237,7 +238,7 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);

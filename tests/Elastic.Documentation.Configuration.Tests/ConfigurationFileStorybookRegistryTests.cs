@@ -8,6 +8,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -84,7 +85,12 @@ public class ConfigurationFileStorybookRegistryTests
 			Storybook = new DocumentationSetStorybook { Registry = registry }
 		};
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return new ConfigurationFile(
+			DocumentationSetLoader.ToDefinition(docSet, configPath, docsDir),
+			context,
+			versionsConfig,
+			productsConfig
+		);
 	}
 
 	private sealed class MockEnvironment : IEnvironmentVariables

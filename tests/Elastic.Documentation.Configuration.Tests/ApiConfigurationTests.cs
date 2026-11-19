@@ -9,6 +9,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -943,7 +944,12 @@ public class ConfigurationFileApiTests
 		var products = productIds.ToDictionary(id => id, id => new Product { Id = id, DisplayName = id }, StringComparer.OrdinalIgnoreCase);
 		var productsConfig = new ProductCatalog { Products = products.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase) };
 
-		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		var config = new ConfigurationFile(
+			DocumentationSetLoader.ToDefinition(docSet, configPath, docsDir),
+			context,
+			versionsConfig,
+			productsConfig
+		);
 		return (config, collector);
 	}
 

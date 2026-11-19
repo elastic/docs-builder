@@ -11,6 +11,7 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 using static Elastic.Documentation.SymlinkValidator;
@@ -142,7 +143,7 @@ public record ConfigurationFile
 	}
 
 	public ConfigurationFile(
-		DocumentationSetFile docSetFile,
+		DocumentationSetDefinition docSetFile,
 		IDocumentationSetContext context,
 		VersioningSystemCatalog versionsConfig,
 		ProductCatalog productsConfig
@@ -164,7 +165,7 @@ public record ConfigurationFile
 
 		try
 		{
-			// Read values from DocumentationSetFile
+			// Read values from the DocumentationSetDefinition
 			Project = docSetFile.Project;
 			MaxTocDepth = docSetFile.MaxTocDepth;
 			DevelopmentDocs = docSetFile.DevDocs;
@@ -172,7 +173,7 @@ public record ConfigurationFile
 			// Convert exclude patterns to Glob
 			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
 			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
-			FolderExcludedFiles = docSetFile.FolderExcludedFiles;
+			FolderExcludedFiles = new HashSet<string>(docSetFile.FolderExcludedFiles, StringComparer.OrdinalIgnoreCase);
 
 			// Parse registry (null/empty/"public" -> Public)
 			var registry = DocSetRegistry.Public;
@@ -198,33 +199,33 @@ public record ConfigurationFile
 			// Parse and validate CDN-backed release-notes product declarations
 			ReleaseNotesProducts = ParseReleaseNotesProducts(docSetFile.ReleaseNotes, productsConfig, context);
 
-			// Extensions - assuming they're not in DocumentationSetFile yet
+			// Extensions
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
 
 			// Copy suppression settings
-			SuppressDiagnostics = docSetFile.SuppressDiagnostics;
+			SuppressDiagnostics = [.. docSetFile.SuppressDiagnostics];
 
 			// Read substitutions
-			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
+			_substitutions = new((IDictionary<string, string>)docSetFile.Substitutions, StringComparer.OrdinalIgnoreCase);
 
 			// Process API configurations
 			if (docSetFile.Api.Count > 0)
 			{
 				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
 
-				foreach (var (productKey, apiSequence) in docSetFile.Api)
+				foreach (var api in docSetFile.Api)
 				{
-					if (ResolveApiEntry(productKey, apiSequence, productsConfig, context) is { } resolvedConfig)
-						apiConfigs[productKey] = resolvedConfig;
+					if (ResolveApiEntry(api, productsConfig, context) is { } resolvedConfig)
+						apiConfigs[api.ProductKey] = resolvedConfig;
 				}
 
 				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
 
-			if (docSetFile.Storybook is not null)
+			if (docSetFile.HasStorybook)
 			{
 				var interpolated = EnvironmentInterpolation.Interpolate(
-					docSetFile.Storybook.Registry?.Trim(),
+					docSetFile.StorybookRegistry?.Trim(),
 					context.Environment,
 					name => context.EmitWarning(
 						context.ConfigurationPath,
@@ -241,7 +242,7 @@ public record ConfigurationFile
 				Products =
 					docSetFile
 						.Products
-						.Select(link => productsConfig.Products.GetValueOrDefault(link.Id.Replace('_', '-')))
+						.Select(id => productsConfig.Products.GetValueOrDefault(id.Replace('_', '-')))
 						.Where(product => product is not null)
 						.ToHashSet()!;
 			}
@@ -251,11 +252,12 @@ public record ConfigurationFile
 				Branding = ValidateBranding(docSetFile.Branding, context);
 
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
-			foreach (var (name, definition) in docSetFile.Cta)
+			foreach (var declared in docSetFile.Ctas)
 			{
-				if (ValidateCta(name, definition, context) is not { } cta)
+				// a template written with no value is null and throws inside ValidateCta, as it always has
+				if (ValidateCta(declared!, context) is not { } cta)
 					continue;
-				_ctas[name] = cta;
+				_ctas[declared!.Name] = cta;
 			}
 
 			foreach (var (pagePath, ctaName) in docSetFile.TocDefaultCtas)
@@ -356,14 +358,15 @@ public record ConfigurationFile
 		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml and is ignored. {hint}";
 	}
 
-	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
+	private static Cta? ValidateCta(CtaDeclaration definition, IDocumentationSetContext context)
 	{
-		if (string.IsNullOrWhiteSpace(definition.Button?.Label) || string.IsNullOrWhiteSpace(definition.Button?.Url))
+		var name = definition.Name;
+		if (string.IsNullOrWhiteSpace(definition.Label) || string.IsNullOrWhiteSpace(definition.Url))
 		{
 			context.EmitError(context.ConfigurationPath, $"'cta.{name}' must define both 'button.label' and 'button.url'.");
 			return null;
 		}
-		var url = definition.Button.Url.Trim();
+		var url = definition.Url.Trim();
 		if (
 			Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri)
 			&& uri.IsAbsoluteUri
@@ -382,13 +385,22 @@ public record ConfigurationFile
 			);
 			return null;
 		}
-		return new Cta { Name = name, Label = definition.Button.Label, Url = url, Benefits = definition.Benefits };
+		return new Cta { Name = name, Label = definition.Label, Url = url, Benefits = definition.Benefits };
 	}
 
 	private static readonly HashSet<string> AllowedImageExtensions = [".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"];
 
-	private static BrandingConfiguration ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
+	private static BrandingConfiguration ValidateBranding(BrandingDeclaration declared, IDocumentationSetContext context)
 	{
+		var branding = new BrandingConfiguration
+		{
+			Icon = declared.Icon,
+			HeaderBg = declared.HeaderBg,
+			OgImage = declared.OgImage,
+			Favicon = declared.Favicon,
+			AppleTouchIcon = declared.AppleTouchIcon,
+			Copyright = declared.Copyright
+		};
 		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
 		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
 		branding.Favicon = string.IsNullOrEmpty(branding.Favicon)
@@ -454,7 +466,7 @@ public record ConfigurationFile
 	}
 
 	private static string[] ParseReleaseNotesProducts(
-		IReadOnlyList<ReleaseNotesProductReference> references,
+		IReadOnlyList<ReleaseNotesDeclaration?> references,
 		ProductCatalog productsConfig,
 		IDocumentationSetContext context
 	)
@@ -465,7 +477,8 @@ public record ConfigurationFile
 		var products = new List<string>(references.Count);
 		foreach (var reference in references)
 		{
-			var product = reference.Product?.Trim();
+			// an entry written with no value is null and throws here, as it always has
+			var product = reference!.Product?.Trim();
 			if (string.IsNullOrEmpty(product))
 			{
 				context.EmitError(context.ConfigurationPath, "A 'release_notes' entry is missing a 'product' value.");
@@ -512,12 +525,12 @@ public record ConfigurationFile
 		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
 	private static ResolvedApiConfiguration? ResolveApiEntry(
-		string productKey,
-		ApiProductSequence apiSequence,
+		ApiDeclaration apiSequence,
 		ProductCatalog productsConfig,
 		IDocumentationSetContext context
 	)
 	{
+		var productKey = apiSequence.ProductKey;
 		if (apiSequence.SingleEntry is not { } entry)
 		{
 			context.EmitError(
@@ -533,8 +546,8 @@ public record ConfigurationFile
 			{
 				Severity = Severity.Error,
 				File = context.ConfigurationPath.FullName,
-				Line = entry.Line,
-				Column = entry.Column,
+				Line = entry.Location?.Line,
+				Column = entry.Location?.Column,
 				Message = $"API '{productKey}' is missing required 'product:'. It must match a product id defined in products.yml."
 			});
 			return null;
@@ -548,8 +561,8 @@ public record ConfigurationFile
 			{
 				Severity = Severity.Error,
 				File = context.ConfigurationPath.FullName,
-				Line = entry.ProductLine,
-				Column = entry.ProductColumn,
+				Line = entry.ProductLocation?.Line,
+				Column = entry.ProductLocation?.Column,
 				Message =
 					$"Unknown 'product: {entry.Product}' for API '{productKey}'. It must be a product id defined in products.yml.{(string.IsNullOrEmpty(hint) ? "" : $" {hint}")}"
 			});
@@ -562,8 +575,8 @@ public record ConfigurationFile
 			{
 				Severity = Severity.Error,
 				File = context.ConfigurationPath.FullName,
-				Line = entry.Line,
-				Column = entry.Column,
+				Line = entry.Location?.Line,
+				Column = entry.Location?.Column,
 				Message = $"API '{productKey}' is missing required 'spec:'. Its basename is required to resolve " +
 					"the remote version index, even when the file is not present locally."
 			});
@@ -577,8 +590,8 @@ public record ConfigurationFile
 			{
 				Severity = Severity.Error,
 				File = context.ConfigurationPath.FullName,
-				Line = entry.SpecLine ?? entry.Line,
-				Column = entry.SpecColumn ?? entry.Column,
+				Line = entry.SpecLocation?.Line ?? entry.Location?.Line,
+				Column = entry.SpecLocation?.Column ?? entry.Location?.Column,
 				Message = $"'spec: {entry.Spec}' for API '{productKey}' does not resolve to a file name."
 			});
 			return null;
@@ -592,8 +605,8 @@ public record ConfigurationFile
 			{
 				Severity = Severity.Error,
 				File = context.ConfigurationPath.FullName,
-				Line = entry.SpecLine ?? entry.Line,
-				Column = entry.SpecColumn ?? entry.Column,
+				Line = entry.SpecLocation?.Line ?? entry.Location?.Line,
+				Column = entry.SpecLocation?.Column ?? entry.Location?.Column,
 				Message = $"'spec: {entry.Spec}' for API '{productKey}' escapes the documentation source directory."
 			});
 			return null;
@@ -611,8 +624,8 @@ public record ConfigurationFile
 				{
 					Severity = Severity.Error,
 					File = context.ConfigurationPath.FullName,
-					Line = entry.SpecLine ?? entry.Line,
-					Column = entry.SpecColumn ?? entry.Column,
+					Line = entry.SpecLocation?.Line ?? entry.Location?.Line,
+					Column = entry.SpecLocation?.Column ?? entry.Location?.Column,
 					Message = $"'spec: {entry.Spec}' for API '{productKey}' is unsafe: {symlinkError}"
 				});
 				return null;
@@ -632,8 +645,8 @@ public record ConfigurationFile
 				{
 					Severity = Severity.Error,
 					File = context.ConfigurationPath.FullName,
-					Line = entry.RepositoryLine ?? entry.Line,
-					Column = entry.RepositoryColumn ?? entry.Column,
+					Line = entry.RepositoryLocation?.Line ?? entry.Location?.Line,
+					Column = entry.RepositoryLocation?.Column ?? entry.Location?.Column,
 					Message =
 						$"'repository: {entry.Repository}' for API '{productKey}' must be in 'org/repo' form, e.g. 'elastic/elasticsearch-specification'."
 				});
@@ -663,11 +676,11 @@ public record ConfigurationFile
 
 	private static IReadOnlyList<string> ResolveCatalogCategories(
 		string productKey,
-		ApiProductEntry entry,
+		ApiDeclarationEntry entry,
 		IDocumentationSetContext context
 	)
 	{
-		var raw = entry.Catalog?.Categories ?? [];
+		var raw = entry.CatalogCategories;
 		if (raw.Count == 0)
 			return [];
 
@@ -684,8 +697,8 @@ public record ConfigurationFile
 			{
 				Severity = Severity.Error,
 				File = context.ConfigurationPath.FullName,
-				Line = entry.Catalog?.Line ?? entry.Line,
-				Column = entry.Catalog?.Column ?? entry.Column,
+				Line = entry.CatalogLocation?.Line ?? entry.Location?.Line,
+				Column = entry.CatalogLocation?.Column ?? entry.Location?.Column,
 				Message =
 					$"Unknown catalog category '{item}' for API '{productKey}'. Valid categories: {string.Join(", ", ApiCatalogCategory.DisplayOrder)} (or {ApplicabilityKeys.Ech} for {ApplicabilityKeys.Ess})."
 			});
@@ -698,7 +711,7 @@ public record ConfigurationFile
 	/// same way branding image paths are (see <see cref="ValidateBrandingImage"/>).
 	private static List<IFileInfo> ResolveApiChildren(
 		string productKey,
-		List<ApiEntryChild> children,
+		IReadOnlyList<string?> children,
 		IDocumentationSetContext context,
 		IDirectoryInfo childrenDirectory
 	)
@@ -709,28 +722,25 @@ public record ConfigurationFile
 		var resolved = new List<IFileInfo>();
 		foreach (var child in children)
 		{
-			if (string.IsNullOrWhiteSpace(child.File))
+			if (string.IsNullOrWhiteSpace(child))
 			{
 				context.EmitError(context.ConfigurationPath, $"A 'children' entry for API '{productKey}' is missing a 'file' value.");
 				continue;
 			}
 
-			var fullPath = Path.GetFullPath(Path.Join(childrenDirectory.FullName, child.File));
+			var fullPath = Path.GetFullPath(Path.Join(childrenDirectory.FullName, child));
 			var childFile = context.ReadFileSystem.FileInfo.New(fullPath);
 
 			if (!childFile.IsSubPathOf(childrenDirectory))
 			{
-				context.EmitError(
-					context.ConfigurationPath,
-					$"Child page '{child.File}' for API '{productKey}' escapes 'api/{productKey}/'."
-				);
+				context.EmitError(context.ConfigurationPath, $"Child page '{child}' for API '{productKey}' escapes 'api/{productKey}/'.");
 				continue;
 			}
 
 			var symlinkError = ValidateFileAccess(childFile, childrenDirectory);
 			if (symlinkError is not null)
 			{
-				context.EmitError(context.ConfigurationPath, $"Child page '{child.File}' for API '{productKey}' is unsafe: {symlinkError}");
+				context.EmitError(context.ConfigurationPath, $"Child page '{child}' for API '{productKey}' is unsafe: {symlinkError}");
 				continue;
 			}
 
@@ -738,7 +748,7 @@ public record ConfigurationFile
 			{
 				context.EmitError(
 					context.ConfigurationPath,
-					$"Child page '{child.File}' for API '{productKey}' does not exist under 'api/{productKey}/'."
+					$"Child page '{child}' for API '{productKey}' does not exist under 'api/{productKey}/'."
 				);
 				continue;
 			}
@@ -747,7 +757,7 @@ public record ConfigurationFile
 			{
 				context.EmitError(
 					context.ConfigurationPath,
-					$"Child page '{child.File}' for API '{productKey}' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:."
+					$"Child page '{child}' for API '{productKey}' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:."
 				);
 				continue;
 			}
