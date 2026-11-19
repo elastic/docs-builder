@@ -262,7 +262,12 @@ public class SiteLayoutNavigationTests
 		var collector = new TestDiagnosticsCollector();
 		var navigationFile = result.SiteContext.ConfigurationPath;
 
-		var valid = Elastic.Documentation.Configuration.Toc.SiteNavigationFile.ValidatePathPrefixes(collector, result.File, navigationFile);
+		var valid = Elastic
+			.Documentation
+			.Configuration
+			.Toc
+			.SiteNavigationLoader
+			.ValidatePathPrefixes(collector, result.File, navigationFile);
 
 		valid.Should().BeFalse();
 		// which of the two a message names first follows the hash order of a set of Uris, which changes with every process

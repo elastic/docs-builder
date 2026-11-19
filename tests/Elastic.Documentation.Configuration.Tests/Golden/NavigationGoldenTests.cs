@@ -18,6 +18,18 @@ public class NavigationGoldenTests
 {
 	private const string NavigationPath = "/config/navigation.yml";
 
+	// members the record gained after these snapshots were taken: where an entry sits in the file, and how the toc mapping reads its prefix
+	private static readonly string[] NewMembers =
+	[
+		"Position",
+		"ShorthandPath",
+		"DeclaredPathPrefix",
+		"RepoKey",
+		"ChildrenNotAnArray",
+		"UnparsableSource",
+		"NoToc"
+	];
+
 	/// <summary>The diagnostics the load wrote, then the model, or what it threw.</summary>
 	private static string Load(string yaml, bool dumpModel = true)
 	{
@@ -25,9 +37,9 @@ public class NavigationGoldenTests
 		var sb = new StringBuilder();
 		try
 		{
-			var file = SiteNavigationFile.Deserialize(yaml, collector, NavigationPath);
+			var file = SiteNavigationLoader.Deserialize(yaml, collector, NavigationPath);
 			_ = sb.AppendLine("diagnostics:").Append(collector.Captured.ToSnapshotText());
-			_ = sb.Append(dumpModel ? ModelDump.ToText(file) : SiteNavDump.ToText(file));
+			_ = sb.Append(dumpModel ? ModelDump.ToText(file, NewMembers) : SiteNavDump.ToText(file));
 		}
 		catch (Exception e)
 		{
@@ -43,10 +55,10 @@ public class NavigationGoldenTests
 	}
 
 	// the derived path properties repeat the path prefix; the small cases below show them in full
-	private static string ModelWithoutDerivedPaths(SiteNavigationFile file) =>
-		ModelDump.ToText(file, "PathRelativeToDocumentationSet", "PathRelativeToContainer", "Context");
+	private static string ModelWithoutDerivedPaths(SiteNavigationDefinition file) =>
+		ModelDump.ToText(file, [.. NewMembers, "PathRelativeToDocumentationSet", "PathRelativeToContainer", "Context"]);
 
-	private static SiteNavigationFile Parse(string yaml) => SiteNavigationFile.Deserialize(yaml);
+	private static SiteNavigationDefinition Parse(string yaml) => SiteNavigationLoader.Deserialize(yaml);
 
 	[Test]
 	public void Baseline_Navigation_MatchSnapshot()
@@ -77,7 +89,7 @@ public class NavigationGoldenTests
 	private static string DiagnosticsOf(string yaml)
 	{
 		var collector = new CapturingDiagnosticsCollector();
-		_ = SiteNavigationFile.Deserialize(yaml, collector, NavigationPath);
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, NavigationPath);
 		return collector.Captured.ToSnapshotText();
 	}
 
@@ -90,14 +102,20 @@ public class NavigationGoldenTests
 			var file = Parse(GoldenConfig.BaselineText(name));
 			_ = sb.Append("== ").AppendLine(name);
 			_ = sb.AppendLine("declared sources:");
-			foreach (var source in SiteNavigationFile.GetAllDeclaredSources(file).Select(u => u.ToString()).Order(StringComparer.Ordinal))
+			foreach (var source in SiteNavigationDefinition
+				.GetAllDeclaredSources(file)
+				.Select(u => u.ToString())
+				.Order(StringComparer.Ordinal))
 				_ = sb.Append("  ").AppendLine(source);
 			_ = sb.AppendLine("phantom prefixes:");
-			foreach (var prefix in SiteNavigationFile.GetPhantomPrefixes(file).Select(u => u.ToString()).Order(StringComparer.Ordinal))
+			foreach (var prefix in SiteNavigationDefinition
+				.GetPhantomPrefixes(file)
+				.Select(u => u.ToString())
+				.Order(StringComparer.Ordinal))
 				_ = sb.Append("  ").AppendLine(prefix);
 			var collector = new CapturingDiagnosticsCollector();
 			var fileSystem = new MockFileSystem();
-			var valid = SiteNavigationFile.ValidatePathPrefixes(collector, file, fileSystem.FileInfo.New(NavigationPath));
+			var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, file, fileSystem.FileInfo.New(NavigationPath));
 			_ = sb.Append("path prefixes valid: ").AppendLine(valid.ToString());
 			_ = sb.Append(collector.Captured.ToSnapshotText());
 		}
@@ -232,7 +250,7 @@ public class NavigationGoldenTests
 			.MatchInlineSnapshot(
 				"""
 		diagnostics:
-		throws InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Toc.SiteNavigationFile'.
+		throws InvalidOperationException: Failed to deserialize YAML into 'Elastic.Documentation.Configuration.Toc.SiteNavigationDto'.
 		"""
 			);
 
@@ -952,7 +970,7 @@ public class NavigationGoldenTests
 			"toc:\n  - toc: repo://a\n    path_prefix: same\n  - toc: repo://b\n    path_prefix: same/\n  - section: S\n    children:\n      - toc: repo://c\n        path_prefix: same\n"
 		);
 		var collector = new CapturingDiagnosticsCollector();
-		var valid = SiteNavigationFile.ValidatePathPrefixes(collector, file, new MockFileSystem().FileInfo.New(NavigationPath));
+		var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, file, new MockFileSystem().FileInfo.New(NavigationPath));
 		$"valid: {valid}\n{collector.Captured.ToSnapshotText()}".Should().MatchInlineSnapshot("valid: True");
 	}
 
@@ -965,7 +983,7 @@ public class NavigationGoldenTests
 			"toc:\n  - toc: repo://a\n    path_prefix: Same\n  - toc: other://b\n    path_prefix: same\n  - toc: repo://c\n    path_prefix: ''\n  - toc: repo://d\n"
 		);
 		var collector = new CapturingDiagnosticsCollector();
-		var valid = SiteNavigationFile.ValidatePathPrefixes(collector, file, new MockFileSystem().FileInfo.New(NavigationPath));
+		var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, file, new MockFileSystem().FileInfo.New(NavigationPath));
 		$"valid: {valid}\nerrors: {collector.Captured.Count}".Should().MatchInlineSnapshot(
 			"""
 			valid: False
@@ -982,9 +1000,9 @@ public class NavigationGoldenTests
 		);
 		var sources = string.Join(
 			'\n',
-			SiteNavigationFile.GetAllDeclaredSources(file).Select(u => u.ToString()).Order(StringComparer.Ordinal)
+			SiteNavigationDefinition.GetAllDeclaredSources(file).Select(u => u.ToString()).Order(StringComparer.Ordinal)
 		);
-		var phantoms = string.Join('\n', SiteNavigationFile.GetPhantomPrefixes(file).Select(u => u.ToString()));
+		var phantoms = string.Join('\n', SiteNavigationDefinition.GetPhantomPrefixes(file).Select(u => u.ToString()));
 		$"{sources}\n--\n{phantoms}".Should().MatchInlineSnapshot(
 			"""
 			repo://a/

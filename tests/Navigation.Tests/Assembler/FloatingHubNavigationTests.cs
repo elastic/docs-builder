@@ -44,7 +44,7 @@ public class FloatingHubNavigationTests
 		string navYaml = SiteNavYaml
 	)
 	{
-		var siteNavFile = SiteNavigationFile.Deserialize(navYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(navYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		const string docsetPath = "/checkouts/current/observability/docs/docset.yml";
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");

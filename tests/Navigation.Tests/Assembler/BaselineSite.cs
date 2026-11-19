@@ -50,7 +50,7 @@ internal sealed record BaselineOptions
 
 internal sealed record BaselineSiteResult(
 	SiteNavigation Navigation,
-	SiteNavigationFile NavigationFile,
+	SiteNavigationDefinition NavigationFile,
 	AssemblyConfiguration Configuration,
 	TestDocumentationSetContext SiteContext,
 	string NavigationText,
@@ -158,7 +158,7 @@ internal static class BaselineSite
 			fileSystem.FileInfo.New("/docs/navigation.yml")
 		)
 		{ BuildType = BuildType.Assembler };
-		var navigationFile = SiteNavigationFile.Deserialize(navigationText, siteContext.Collector, "/docs/navigation.yml");
+		var navigationFile = SiteNavigationLoader.Deserialize(navigationText, siteContext.Collector, "/docs/navigation.yml");
 
 		var stubRepositories = StubDocsets.Write(fileSystem, navigationFile, configuration, options);
 		var documentationSets = new List<IDocumentationSetNavigation>();
@@ -196,14 +196,14 @@ internal static class StubDocsets
 {
 	public static IReadOnlyCollection<string> Write(
 		MockFileSystem fileSystem,
-		SiteNavigationFile navigationFile,
+		SiteNavigationDefinition navigationFile,
 		AssemblyConfiguration configuration,
 		BaselineOptions options
 	)
 	{
 		var tocsByRepository = new SortedDictionary<string, SortedSet<string>>(StringComparer.Ordinal);
-		foreach (var source in SiteNavigationFile.GetAllDeclaredSources(navigationFile).Concat(
-			SiteNavigationFile.GetPhantomPrefixes(navigationFile)
+		foreach (var source in SiteNavigationDefinition.GetAllDeclaredSources(navigationFile).Concat(
+			SiteNavigationDefinition.GetPhantomPrefixes(navigationFile)
 		))
 			Add(tocsByRepository, source.Scheme, SourcePath(source));
 		foreach (var (name, repository) in configuration.AvailableRepositories)

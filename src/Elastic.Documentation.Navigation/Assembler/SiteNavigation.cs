@@ -36,7 +36,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	private readonly string? _sitePrefix;
 
 	public SiteNavigation(
-		SiteNavigationFile siteNavigationFile,
+		SiteNavigationDefinition siteNavigationFile,
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix,
@@ -55,7 +55,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		IsUsingNavigationDropdown = false;
 		Phantoms = siteNavigationFile.Phantoms;
 		DeclaredPhantoms = [.. siteNavigationFile.Phantoms.Select(p => new Uri(p.Source))];
-		DeclaredTableOfContents = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
+		DeclaredTableOfContents = SiteNavigationDefinition.GetAllDeclaredSources(siteNavigationFile);
 		NavigationTitle = "Docs";
 
 		_nodes = [];
@@ -95,13 +95,13 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		foreach (var entry in siteNavigationFile.TableOfContents)
 		{
 			if (
-				entry is SiteSectionRef { FloatingKind: { } floatingKind } floatingRef
+				entry.Value is SiteSectionRef { FloatingKind: { } floatingKind } floatingRef
 				&& CreateFloatingHub(floatingRef, floatingKind, ref index) is { } hub
 			)
 			{
 				items.Add(hub);
 			}
-			else if (entry is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
+			else if (entry.Value is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
 			{
 				// Section with children becomes a real tree node (island) that groups its
 				// toc roots. FindIslandRoot() and CreateBackLinks then emit the correct
@@ -125,7 +125,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				PromoteSectionListingIslands(sectionNav);
 				items.Add(sectionNav);
 			}
-			else if (entry is SiteTableOfContentsRef tocRef)
+			else if (entry.Value is SiteTableOfContentsRef tocRef)
 			{
 				var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
 				if (navItem is not null)

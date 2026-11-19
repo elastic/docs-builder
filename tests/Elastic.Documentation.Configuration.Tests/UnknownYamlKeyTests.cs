@@ -62,7 +62,7 @@ public class UnknownYamlKeyTests
 			""";
 		var collector = new CapturingDiagnosticsCollector();
 
-		_ = SiteNavigationFile.Deserialize(yaml, collector, "/config/navigation.yml");
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, "/config/navigation.yml");
 
 		collector
 			.Captured
@@ -82,7 +82,7 @@ public class UnknownYamlKeyTests
 			""";
 		var collector = new CapturingDiagnosticsCollector();
 
-		_ = SiteNavigationFile.Deserialize(yaml, collector, "/config/navigation.yml");
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, "/config/navigation.yml");
 
 		collector
 			.Captured

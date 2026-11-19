@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
@@ -23,7 +24,7 @@ namespace Elastic.Documentation.Navigation.Assembler;
 /// </summary>
 public static class SectionTopNavBuilder
 {
-	public static TopNavRenderModel? Build(SiteNavigation navigation, SiteNavigationFile navFile)
+	public static TopNavRenderModel? Build(SiteNavigation navigation, SiteNavigationDefinition navFile)
 	{
 		var topLevel = navigation.TopLevelItems;
 		if (navFile.TableOfContents.Count == 0)
@@ -37,7 +38,7 @@ public static class SectionTopNavBuilder
 
 		foreach (var entry in navFile.TableOfContents)
 		{
-			if (entry is SiteSectionRef section)
+			if (entry.Value is SiteSectionRef section)
 			{
 				if (section.IsExternal)
 				{
@@ -74,7 +75,7 @@ public static class SectionTopNavBuilder
 					}
 				}
 			}
-			else if (entry is SiteTableOfContentsRef)
+			else if (entry.Value is SiteTableOfContentsRef)
 			{
 				// Preview tabs come from section: entries only. A leftover top-level
 				// toc: (the local docs-builder inject) stays in the tree, not the top bar.

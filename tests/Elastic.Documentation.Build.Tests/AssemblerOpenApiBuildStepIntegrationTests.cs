@@ -201,7 +201,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
 		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
 		var navigation = new SiteNavigation(
-			SiteNavigationFile.Deserialize(
+			SiteNavigationLoader.Deserialize(
 				// language=yaml
 				"""
 				toc:
@@ -251,7 +251,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		using var versionIndexClient = CreateInMemoryVersionIndexClient();
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
 		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
-		var siteNavFile = SiteNavigationFile.Deserialize(
+		var siteNavFile = SiteNavigationLoader.Deserialize(
 			// language=yaml
 			"""
 			toc:

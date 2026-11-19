@@ -131,7 +131,7 @@ public class AssemblerBuildService(
 		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(
 			await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx),
 			assembleContext.Collector,
 			navigationFileInfo.FullName
@@ -151,7 +151,7 @@ public class AssemblerBuildService(
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (
-			!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
+			!SiteNavigationLoader.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
 			|| assembleContext.Collector.Errors > 0
 		)
 			return false;

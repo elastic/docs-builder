@@ -11,11 +11,12 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
-internal sealed record SiteLayoutResult(SiteNavigation Navigation, SiteNavigationFile File, TestDocumentationSetContext SiteContext)
+internal sealed record SiteLayoutResult(SiteNavigation Navigation, SiteNavigationDefinition File, TestDocumentationSetContext SiteContext)
 {
 	/// <summary>The tree, then the diagnostics of the site (and of the docsets it loaded), one per line, when there are any.</summary>
 	public string ToText()
@@ -77,7 +78,7 @@ internal static class SiteLayout
 			fileSystem.FileInfo.New("/docs/navigation.yml")
 		)
 		{ BuildType = BuildType.Assembler };
-		var file = SiteNavigationFile.Deserialize(navigationYaml, siteContext.Collector, "/docs/navigation.yml");
+		var file = SiteNavigationLoader.Deserialize(navigationYaml, siteContext.Collector, "/docs/navigation.yml");
 
 		var names = repositories.Length > 0
 			? repositories

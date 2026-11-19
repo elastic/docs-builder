@@ -185,7 +185,7 @@ public static class InMemoryAssemblerSite
 		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(
 			await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx),
 			collector,
 			navigationFileInfo.FullName
@@ -198,7 +198,7 @@ public static class InMemoryAssemblerSite
 			navigationPreviewEnabled: false,
 			FloatingSectionRegistry.Empty
 		);
-		_ = SiteNavigationFile.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo);
+		_ = SiteNavigationLoader.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, sources, context);
 		var htmlWriter = new GlobalNavigationHtmlWriter(NullLoggerFactory.Instance, navigation, collector);
