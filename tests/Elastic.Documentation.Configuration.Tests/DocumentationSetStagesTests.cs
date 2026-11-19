@@ -85,6 +85,81 @@ public class DocumentationSetStagesTests
 			);
 
 	[Test]
+	public void Configure_CrossLinkFindingThenReleaseNotesWithNoValue_ReportsTheCrossLinkFirst() =>
+		Configure("cross_links: [foo://x]\nrelease_notes:\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Cross-link 'foo://x' uses unknown registry 'foo'. Use 'public' or 'internal'.
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
+	public void Configure_ReleaseNotesWithNoValue_FailsWithANullReference() =>
+		Configure("release_notes:\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		diagnostics:
+		error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+		throws NullReferenceException: Object reference not set to an instance of an object.
+		"""
+			);
+
+	[Test]
+	public void Configure_NullReleaseNotesBeforeABadOne_FailsBeforeReportingLaterEntries() =>
+		Configure("release_notes:\n  - \n  - product: nope\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
+	public void Configure_BadReleaseNotesNullBadReleaseNotes_ReportsOnlyTheEntryBeforeTheNull() =>
+		Configure("release_notes:\n  - product: nope\n  - \n  - product: nada\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Unknown 'release_notes' product 'nope'. It must be a product id defined in products.yml.
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
+	public void Configure_NullCtaBeforeABadOne_FailsBeforeReportingLaterTemplates() =>
+		Configure("cta:\n  a:\n  b:\n    button:\n      label: L\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
+	public void Configure_ApiWithNoValue_FailsWithANullReferenceAfterEarlierFindings() =>
+		Configure("release_notes:\n  - product: nope\napi:\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Unknown 'release_notes' product 'nope'. It must be a product id defined in products.yml.
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
 	public void ResolveCrossLink_PublicSetLinkingToInternal_IsRejected()
 	{
 		var resolution = DocumentationSetRules.ResolveCrossLink("internal://x", DocSetRegistry.Public);

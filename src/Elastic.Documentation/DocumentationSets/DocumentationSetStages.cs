@@ -11,7 +11,8 @@ namespace Elastic.Documentation.DocumentationSets;
 // A documentation set is resolved in steps, and a finding is reported when its step is reached: an entry written with no value fails the step
 // that reads it, after the findings of the steps before it. Each stage below is the rules of one run of steps, checked where resolution reaches it,
 // so the findings keep the order and the exceptions keep the point they always had. A rule skips an entry with no value: the step that keeps
-// what the rules accept is the one that fails on it.
+// what the rules accept is the one that fails on it. A rule reports the entries before the first one with no value and stops there, as the step
+// that fails on it did.
 
 /// <summary>The <c>cross_links</c> and <c>release_notes</c> of a documentation set with the catalog they resolve against.</summary>
 public sealed record DocumentationSetInCatalog(
@@ -68,10 +69,8 @@ public static partial class DocumentationSetInCatalogConstraints
 	);
 
 	public static readonly Constraint<DocumentationSetInCatalog> ReleaseNotesProductKnown = Constraints<DocumentationSetInCatalog>.Check(
-		m => m
-			.Docset
-			.ReleaseNotes
-			.OfType<ReleaseNotesDeclaration>()
+		m => DocumentationSetRules
+			.UntilNoValue(m.Docset.ReleaseNotes)
 			.Select(reference => DocumentationSetRules.ResolveReleaseNotes(reference, m.Products).Value)
 			.OfType<ReleaseNotesRejected>()
 			.Select(rejected => Violation.Error(rejected.Problem))
@@ -83,12 +82,10 @@ public static partial class DocumentationSetInCatalogConstraints
 public static partial class DocumentationSetApisConstraints
 {
 	public static readonly Constraint<DocumentationSetApis> ApiEntryValid = Constraints<DocumentationSetApis>.Check(
-		m => m
-			.Docset
-			.Api
-			.SelectMany(
-				api => DocumentationSetRules.ProblemsOf(DocumentationSetRules.ResolveApi(api, m.Products, m.FileSystem, m.SourceDirectory))
-			)
+		// an api key written with no value leaves the list null: the step that reads it fails, after the findings before it
+		m => ((IEnumerable<ApiDeclaration>?)m.Docset.Api ?? []).SelectMany(
+			api => DocumentationSetRules.ProblemsOf(DocumentationSetRules.ResolveApi(api, m.Products, m.FileSystem, m.SourceDirectory))
+		)
 	).Describe(
 		"Each api key has one entry naming a products.yml product and a spec file inside the docset, an optional 'org/repo' repository, known catalog categories and child pages under api/<key>/."
 	);
@@ -130,7 +127,11 @@ public static partial class DocumentationSetPresentationConstraints
 			}.Where(i => !string.IsNullOrEmpty(i.Item2));
 
 	public static readonly Constraint<DocumentationSetPresentation> CtaTemplateValid = Constraints<DocumentationSetPresentation>.Check(
-		m => m.Docset.Ctas.OfType<CtaDeclaration>().Select(DocumentationSetRules.CtaProblem).OfType<string>().Select(Violation.Error)
+		m => DocumentationSetRules
+			.UntilNoValue(m.Docset.Ctas)
+			.Select(DocumentationSetRules.CtaProblem)
+			.OfType<string>()
+			.Select(Violation.Error)
 	).Describe("Each cta template has a button label and url, an absolute url uses http(s), and it lists at most three benefits.");
 }
 

@@ -77,13 +77,12 @@ internal static class DocumentationSetResolver
 			.ToArray();
 
 		// a release_notes entry with no value fails here
-		var releaseNotesProducts = docSetFile
-			.ReleaseNotes
-			.Select(reference => DocumentationSetRules.ResolveReleaseNotes(reference, productsConfig).Value)
-			.OfType<ReleaseNotesAccepted>()
-			.Select(accepted => accepted.ProductId)
-			.Distinct(StringComparer.Ordinal)
-			.ToArray();
+		var releaseNotesProducts = new List<string>();
+		foreach (var reference in docSetFile.ReleaseNotes)
+		{
+			if (DocumentationSetRules.ResolveReleaseNotes(reference, productsConfig).Value is ReleaseNotesAccepted accepted)
+				releaseNotesProducts.Add(accepted.ProductId);
+		}
 
 		var substitutions = new Dictionary<string, string>(
 			(IDictionary<string, string>)docSetFile.Substitutions,
@@ -197,7 +196,7 @@ internal static class DocumentationSetResolver
 			Registry = registry,
 			CrossLinkEntries = crossLinkEntries,
 			CrossLinkRepositories = [.. crossLinkEntries.Select(e => e.Repository)],
-			ReleaseNotesProducts = releaseNotesProducts,
+			ReleaseNotesProducts = [.. releaseNotesProducts.Distinct(StringComparer.Ordinal)],
 			Extensions = new EnabledExtensions(docSetFile.Extensions),
 			Products = products,
 			Substitutions = substitutions,

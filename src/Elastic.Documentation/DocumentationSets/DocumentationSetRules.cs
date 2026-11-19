@@ -82,6 +82,20 @@ public static class DocumentationSetRules
 			: new CrossLinkAccepted(new CrossLinkEntry(repository, entryRegistry));
 	}
 
+	/// <summary>
+	/// The entries up to the first one written with no value, which is null. The step that keeps what the rules accept fails on that entry,
+	/// so nothing after it was ever reported. A list written with no value at all has no entries to report.
+	/// </summary>
+	public static IEnumerable<T> UntilNoValue<T>(IEnumerable<T?>? entries) where T : class
+	{
+		foreach (var entry in entries ?? [])
+		{
+			if (entry is null)
+				yield break;
+			yield return entry;
+		}
+	}
+
 	/// <summary>Reads one <c>release_notes</c> entry. An entry written with no value is null and throws here, as it always has.</summary>
 	public static ReleaseNotesResolution ResolveReleaseNotes(ReleaseNotesDeclaration? reference, ProductCatalog products)
 	{
