@@ -4,6 +4,8 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing.Linked;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
@@ -25,7 +27,7 @@ public class PrivateRepositoryScrubbingTests
 	[Test]
 	public void PrivateNames_Dumped_AreWrittenAsPlaceholders()
 	{
-		var config = AssemblyConfiguration.Deserialize(Assembler);
+		var config = AssemblyLoader.Deserialize(Assembler);
 		SnapshotScrubbing.AddPrivateRepositories(config.AllPrivateRepositoryNames);
 
 		ModelDump
@@ -45,7 +47,7 @@ public class PrivateRepositoryScrubbingTests
 	[Test]
 	public void PrivateNames_InUrlsAndPaths_AreWrittenAsPlaceholders()
 	{
-		var config = AssemblyConfiguration.Deserialize(Assembler);
+		var config = AssemblyLoader.Deserialize(Assembler);
 		SnapshotScrubbing.AddPrivateRepositories(config.AllPrivateRepositoryNames);
 
 		"""

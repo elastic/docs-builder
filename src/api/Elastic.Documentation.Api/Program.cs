@@ -6,6 +6,8 @@ using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
@@ -21,7 +23,7 @@ try
 		.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults((s, p) =>
 		{
-			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+			_ = s.AddSingleton(AssemblyLoader.Create(p));
 		})
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();

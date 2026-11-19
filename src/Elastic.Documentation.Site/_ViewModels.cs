@@ -8,6 +8,7 @@ using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;

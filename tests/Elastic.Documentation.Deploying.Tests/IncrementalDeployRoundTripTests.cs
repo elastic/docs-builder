@@ -13,11 +13,13 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
+using Elastic.Documentation.Publishing;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 
@@ -47,7 +49,7 @@ public class IncrementalDeployRoundTripTests
 		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var (fs, s3, xfer, gh, svc) = Arrange(outputDir);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new DiagnosticsCollector([]);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fs);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, null, outputDir);

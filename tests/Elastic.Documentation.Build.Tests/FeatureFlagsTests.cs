@@ -6,7 +6,9 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -59,7 +61,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void EdgeEnvironment_DoesNotAllowIndexing()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["edge"].AllowIndexing.Should().BeFalse();
 	}
@@ -67,7 +69,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void EdgeEnvironment_DisablesNavigationPreview()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeFalse();
 	}
@@ -75,7 +77,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void DemoEnvironment_DoesNotAllowIndexing()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["demo"].AllowIndexing.Should().BeFalse();
 	}
@@ -83,7 +85,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void DemoEnvironment_EnablesNavigationPreview()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments["demo"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeTrue();
 	}
@@ -95,14 +97,14 @@ public class FeatureFlagsTests
 	[Arguments("local")]
 	public void OtherEnvironments_DoNotEnableNavigationPreview(string environmentName)
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		config.Environments[environmentName].FeatureFlags.GetValueOrDefault("NAVIGATION_PREVIEW").Should().BeFalse();
 	}
 
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var environment = config.Environments[environmentName];
 
 		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
@@ -156,7 +158,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorer()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var prod = config.Environments["prod"];
 
 		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");

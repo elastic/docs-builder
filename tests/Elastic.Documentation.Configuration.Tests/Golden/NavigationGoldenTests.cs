@@ -6,8 +6,10 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 
@@ -114,7 +116,7 @@ public class NavigationGoldenTests
 		using var provider = GoldenConfig.CreateProvider(skipPrivateRepositories: true);
 		if (previewFirst)
 			_ = provider.UseNavigationPreview();
-		var config = AssemblyConfiguration.Create(provider);
+		var config = AssemblyLoader.Create(provider);
 		var filtered = provider.CreateNavigationFile(config);
 		var text = filtered.OpenText().ReadToEnd();
 		var unfiltered = GoldenConfig.BaselineText(name);
@@ -130,7 +132,7 @@ public class NavigationGoldenTests
 	public void FilterWithoutPrivateRepositories_Filtered_ReturnsTheFileUntouched()
 	{
 		using var provider = GoldenConfig.CreateProvider(skipPrivateRepositories: true);
-		var config = AssemblyConfiguration.Deserialize("references:\n  open:\n", skipPrivateRepositories: true);
+		var config = AssemblyLoader.Deserialize("references:\n  open:\n", skipPrivateRepositories: true);
 		provider.CreateNavigationFile(config).FullName.Should().Be(provider.NavigationFile.FullName);
 	}
 
@@ -138,14 +140,14 @@ public class NavigationGoldenTests
 	public void FilterWhenNotSkippingPrivate_Filtered_ReturnsTheFileUntouched()
 	{
 		using var provider = GoldenConfig.CreateProvider();
-		var config = AssemblyConfiguration.Deserialize("references:\n  closed:\n    private: true\n");
+		var config = AssemblyLoader.Deserialize("references:\n  closed:\n    private: true\n");
 		provider.CreateNavigationFile(config).FullName.Should().Be(provider.NavigationFile.FullName);
 	}
 
 	private static string Filter(string navigationYaml, string assemblerYaml)
 	{
 		using var provider = GoldenConfig.CreateProvider(GoldenConfig.Navigation, navigationYaml, skipPrivateRepositories: true);
-		var config = AssemblyConfiguration.Deserialize(assemblerYaml, skipPrivateRepositories: true);
+		var config = AssemblyLoader.Deserialize(assemblerYaml, skipPrivateRepositories: true);
 		return provider.CreateNavigationFile(config).OpenText().ReadToEnd();
 	}
 

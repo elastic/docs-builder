@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Assembler.Links;
 

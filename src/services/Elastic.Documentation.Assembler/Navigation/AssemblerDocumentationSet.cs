@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Floating;
+using Elastic.Documentation.Publishing;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 

@@ -15,6 +15,7 @@ using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;

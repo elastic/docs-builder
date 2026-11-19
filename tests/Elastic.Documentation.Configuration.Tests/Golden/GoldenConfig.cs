@@ -7,9 +7,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing.Linked;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -74,7 +76,7 @@ internal static partial class GoldenConfig
 	public static AssemblyConfiguration LoadAssembler(bool skipPrivateRepositories = false)
 	{
 		using var provider = CreateProvider(skipPrivateRepositories: skipPrivateRepositories);
-		var config = AssemblyConfiguration.Create(provider);
+		var config = AssemblyLoader.Create(provider);
 		RegisterPrivateRepositories(config);
 		return config;
 	}

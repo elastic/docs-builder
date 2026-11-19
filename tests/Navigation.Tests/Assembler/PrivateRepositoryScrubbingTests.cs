@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Testing.Linked;
 using Nullean.Snapshots;
 
@@ -17,9 +19,7 @@ public class PrivateRepositoryScrubbingTests
 	internal static IReadOnlySet<string> ShippedPrivateRepositories()
 	{
 		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("solution root not found");
-		return AssemblyConfiguration.Deserialize(
-			File.ReadAllText(Path.Join(root.FullName, "config", "assembler.yml"))
-		).AllPrivateRepositoryNames;
+		return AssemblyLoader.Deserialize(File.ReadAllText(Path.Join(root.FullName, "config", "assembler.yml"))).AllPrivateRepositoryNames;
 	}
 
 	[Test]

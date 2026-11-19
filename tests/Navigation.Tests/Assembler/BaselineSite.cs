@@ -12,6 +12,7 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
@@ -20,6 +21,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -118,7 +120,7 @@ internal static class BaselineSite
 	{
 		var (configFileSystem, provider) = CreateProvider(skipPrivateRepositories, navigationPreview: false);
 		using var _ = provider;
-		var configuration = AssemblyConfiguration.Create(provider);
+		var configuration = AssemblyLoader.Create(provider);
 		var configurationContext = new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") } },
@@ -142,7 +144,7 @@ internal static class BaselineSite
 		options ??= new BaselineOptions();
 		var (configFileSystem, provider) = CreateProvider(options.SkipPrivateRepositories, options.NavigationPreview);
 		using var _ = provider;
-		var configuration = AssemblyConfiguration.Create(provider);
+		var configuration = AssemblyLoader.Create(provider);
 		var navigationFileInfo = provider.CreateNavigationFile(configuration);
 		var navigationText = configFileSystem.File.ReadAllText(navigationFileInfo.FullName).Replace("\r\n", "\n");
 		if (options.RewriteNavigation is { } rewrite)

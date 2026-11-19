@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Publishing;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 
