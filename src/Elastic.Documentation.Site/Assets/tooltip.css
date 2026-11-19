@@ -1,5 +1,5 @@
 /*
- * The tooltip that tooltip.ts shows for every [data-tooltip]: the dark box with an arrow that tippy.js drew.
+ * The tooltip that tooltip.ts shows for every [data-tooltip]: a dark box with an arrow, the look the API pages already had.
  * Never give .tooltip a display: it would override the browser's hiding of a closed popover.
  */
 .tooltip {
