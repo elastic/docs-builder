@@ -120,6 +120,38 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task PageShorterThanTheWindow_OpensWithOverviewCurrentAndExpandAllHidden()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			// A window far taller than the page. The layout still overflows it (the site header, the banner and the footer
+			// surround a min-height of the window), so the page is never "at its bottom" at the top and the scroll-spy does
+			// not jump to the last section.
+			await page.SetViewportAsync(1280, 6000, 1).ConfigureAwait(false);
+			await Task.Delay(800).ConfigureAwait(false);
+
+			var state = await page.EvaluateAsync(
+				"""
+				(() => {
+					const bar = document.querySelector('.api-section-links');
+					return {
+						current: [...bar.querySelectorAll('[aria-current]')].map(a => a.textContent.trim()).join(',') || 'none',
+						expandAll: getComputedStyle(bar.querySelector('.api-expand-toggle')).visibility,
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"current section {state.GetProperty("current").GetString()}, row Expand all {state.GetProperty("expandAll").GetString()}"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot("current section Overview, row Expand all hidden");
+	}
+
+	[Test]
 	public async Task OpeningASupplementalHeadingFragment_StopsItBelowTheRow()
 	{
 		var report = string.Empty;
