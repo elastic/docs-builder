@@ -4820,14 +4820,15 @@ html:has(.api-page-shell) {
 		--api-column-line-width: 2px;
 	}
 
+	/* The line and the strip that covers it under the dots start on the same whole pixel. A centred 1px line lands on a half pixel,
+	   which the line and the background snap differently, so a grey sliver shows beside the strip. */
 	.api-column-handle::after {
 		content: '';
 		position: absolute;
 		top: 0;
 		bottom: 0;
-		left: 50%;
+		left: 5px;
 		width: var(--api-column-line-width);
-		transform: translateX(-50%);
 		background: var(--color-grey-20);
 		transition: background-color 100ms;
 	}
@@ -4848,7 +4849,7 @@ html:has(.api-page-shell) {
 
 	/* Keep the sidebar's resize target mostly clear of its scrollbar, with the line centred on its existing border. */
 	.api-column-handle[data-api-column-handle='nav']::after {
-		transform: translateX(calc(-50% - 3.5px));
+		transform: translateX(-3px);
 	}
 
 	/* No room for a ring that clears the dots inside the target, so keyboard focus turns the divider blue and 2px wide instead. */
@@ -4873,11 +4874,10 @@ html:has(.api-page-shell) {
 		}
 	}
 
-	/* The box stays inside the resize target. Only the opaque strip moves onto the divider; both dot columns sit right of it. */
+	/* The grip moves with the line, so its dots and strip are centred on the border. It takes no pointer events, so the dots over the
+	   scrollbar leave it usable. */
 	.api-column-handle[data-api-column-handle='nav']::before {
-		background-position:
-			1.5px 0,
-			calc(2.5px - var(--api-column-line-width) / 2) 50%;
+		transform: translateX(-3px);
 	}
 
 	/* Only the strip over the divider is opaque; the rest of the grip leaves the scrollbar visible and interactive. */
@@ -4902,7 +4902,7 @@ html:has(.api-page-shell) {
 			var(--api-column-line-width) 100%;
 		background-position:
 			0 0,
-			50% 50%;
+			5px 50%;
 		background-repeat: repeat, no-repeat;
 		pointer-events: none;
 		transition: color 100ms;
