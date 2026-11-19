@@ -6,9 +6,6 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Documentation.Configuration.Loading;
 
-// The one place outside the domain assembly that runs a constraint set; every other project bans it (see BannedSymbols.txt).
-#pragma warning disable RS0030
-
 /// <summary>
 /// A loader, declared once: how a file's text becomes a DTO (<c>parse</c>, the only code that touches the DTO), how the DTO becomes the record
 /// (<c>map</c>, which reports its own findings to a <see cref="MapContext"/>), and what a failure means. The record is then checked once against
@@ -66,11 +63,4 @@ internal static class Loader
 		bool errorsAreFatal = true,
 		Func<Exception, string>? describe = null
 	) where T : class, Nullean.Entities.IHaveConstraints<T> => new(parse, map, errorsAreFatal, describe ?? (static e => e.Message));
-}
-
-internal static class LoaderExtensions
-{
-	/// <summary>Checks a record built elsewhere once against <c>T.Constraints</c> and returns it with every finding; the loader decides what an error means.</summary>
-	public static Loaded<T> Check<T>(this T value, string file) where T : class, Nullean.Entities.IHaveConstraints<T> =>
-		new(value, T.Constraints.Report(value).ToDiagnostics(file));
 }
