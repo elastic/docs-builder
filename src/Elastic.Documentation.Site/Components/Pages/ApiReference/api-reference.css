@@ -1098,7 +1098,8 @@ button.response-status-toggle:focus {
 	overflow: visible;
 }
 
-.responses-list .property-list dt .property-anchor-icon {
+.responses-list .property-list dt > .property-anchor::before,
+.responses-list .property-list dt > .property-anchor::after {
 	z-index: 4;
 }
 
@@ -1243,7 +1244,10 @@ button.response-status-toggle:focus {
 			text-decoration: none;
 		}
 
-		.property-anchor-icon {
+		/* The anchor stays an in-flow flex item, so its row gap is unchanged. ::before is the icon's hit area,
+		   gap included, and ::after the icon, both placed against the dt like the icon element they replace. */
+		> a.property-anchor::before {
+			content: '';
 			position: absolute;
 			right: 100%;
 			top: 1rem;
@@ -1252,12 +1256,16 @@ button.response-status-toggle:focus {
 			width: 1.5rem;
 			height: 1.5rem;
 			padding-right: var(--space-2);
-			opacity: 0;
-			transition: opacity 0.15s ease;
 		}
 
-		.property-anchor-icon::after {
+		> a.property-anchor::after {
 			content: '';
+			position: absolute;
+			right: calc(100% + var(--space-2));
+			top: 1rem;
+			z-index: 2;
+			opacity: 0;
+			transition: opacity 0.15s ease;
 			display: block;
 			box-sizing: border-box;
 			width: 1.5rem;
@@ -1271,13 +1279,13 @@ button.response-status-toggle:focus {
 			background-size: 12px 12px;
 		}
 
-		&:hover > .property-anchor .property-anchor-icon,
-		> .property-anchor:hover .property-anchor-icon,
-		> .property-anchor:focus-visible .property-anchor-icon {
+		&:hover > .property-anchor::after,
+		> .property-anchor:hover::after,
+		> .property-anchor:focus-visible::after {
 			opacity: 1;
 		}
 
-		> .property-anchor:focus-visible .property-anchor-icon::after {
+		> .property-anchor:focus-visible::after {
 			outline: 2px solid var(--color-accent);
 			outline-offset: 2px;
 		}
@@ -1302,9 +1310,9 @@ button.response-status-toggle:focus {
 		}
 	}
 
-	.property-item:hover > dt > .property-anchor .property-anchor-icon,
-	.query-param:hover > dt > .property-anchor .property-anchor-icon,
-	.path-param:hover > dt > .property-anchor .property-anchor-icon {
+	.property-item:hover > dt > .property-anchor::after,
+	.query-param:hover > dt > .property-anchor::after,
+	.path-param:hover > dt > .property-anchor::after {
 		opacity: 1;
 	}
 

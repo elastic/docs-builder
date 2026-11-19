@@ -689,10 +689,8 @@ function initApiPropertyAnchorCopy(): void {
         if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
             return
         if (!(e.target instanceof Element)) return
-        const icon = e.target.closest<HTMLElement>('.property-anchor-icon')
-        const href = icon
-            ?.closest<HTMLAnchorElement>('a.property-anchor')
-            ?.getAttribute('href')
+        const icon = e.target.closest<HTMLAnchorElement>('a.property-anchor')
+        const href = icon?.getAttribute('href')
         if (!icon || !href) return
 
         const url = new URL(href, window.location.href).href

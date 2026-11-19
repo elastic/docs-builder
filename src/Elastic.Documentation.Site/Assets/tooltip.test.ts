@@ -343,6 +343,29 @@ describe('tooltips', () => {
         expect(topLayer[topLayer.length - 1]).toBe(tooltip())
     })
 
+    it('shows a property name its path from the permalink label, in the mono theme', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-query-bool" aria-label="Link to query.bool" data-tooltip="Copy link"></a><code id="nested">bool</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('nested'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('query.bool')
+        expect(tooltip()!.dataset.theme).toBe('mono')
+    })
+
+    it('shows nothing on a top-level property name, whose path is its name', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-query" aria-label="Link to query" data-tooltip="Copy link"></a><code id="top">query</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('top'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBeNull()
+    })
+
     it('swaps the text of the tooltip on screen for a moment', async () => {
         pointer('pointerover', byId('copy'))
         await vi.advanceTimersByTimeAsync(80)
