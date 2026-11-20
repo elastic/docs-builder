@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using System.Text;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -261,6 +262,35 @@ public class OpenApiGenerator(
 	private const string TreeRootToken = "{api-root}";
 
 	/// <summary>
+	/// Replaces <paramref name="root"/> with <see cref="TreeRootToken"/> where it starts a link into that tree. A longer root of
+	/// another tree of the API, such as <c>/v8</c> below the versionless root, and a sibling API that shares the prefix, such as
+	/// <c>elasticsearch-serverless</c>, keep their URL.
+	/// </summary>
+	internal static string RelativeToTree(string markdown, string root, IReadOnlyCollection<string> otherRoots)
+	{
+		var result = new StringBuilder(markdown.Length);
+		var start = 0;
+		for (var i = markdown.IndexOf(root, StringComparison.Ordinal); i >= 0; i = markdown.IndexOf(
+			root,
+			i + root.Length,
+			StringComparison.Ordinal
+		))
+		{
+			if (
+				!EndsAt(markdown, i + root.Length)
+				|| otherRoots.Any(r => r.Length > root.Length && markdown.AsSpan(i).StartsWith(r) && EndsAt(markdown, i + r.Length))
+			)
+				continue;
+			_ = result.Append(markdown, start, i - start).Append(TreeRootToken);
+			start = i + root.Length;
+		}
+		return result.Append(markdown, start, markdown.Length - start).ToString();
+
+		static bool EndsAt(string text, int index) =>
+			index == text.Length || text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']' || char.IsWhiteSpace(text[index]);
+	}
+
+	/// <summary>
 	/// The content of every page in <paramref name="tree"/>, hashed from the page's Markdown export, so the search export can
 	/// date each page by what it says. Links into the tree are hashed relative to its root: the same page in two trees hashes the same.
 	/// </summary>
@@ -289,6 +319,7 @@ public class OpenApiGenerator(
 
 		var pages = UniquePages(versionTree.Navigation);
 		var root = versionTree.Navigation.Url.TrimEnd('/');
+		string[] otherRoots = [.. trees.Trees.Select(static t => t.Navigation.Url.TrimEnd('/')).Where(r => r != root)];
 		var contents = new ApiPageContent?[pages.Length];
 		await Parallel.ForAsync(0, pages.Length, new ParallelOptions
 		{
@@ -303,7 +334,7 @@ public class OpenApiGenerator(
 				contents[i] = new ApiPageContent(
 					item.Url,
 					item.NavigationTitle,
-					ContentHash.CreateNormalized(markdown.Replace(root, TreeRootToken, StringComparison.Ordinal))
+					ContentHash.CreateNormalized(RelativeToTree(markdown, root, otherRoots))
 				);
 		}).ConfigureAwait(false);
 
