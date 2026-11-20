@@ -17,12 +17,24 @@ public class StaticPathToImage : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("validate src is anchored")]
-	public async Task ValidateSrcIsAnchored() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
-		<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
-		"""
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-D9161EE2">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-D9161EE2" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png">
+					</a>
+				</div>
+			</dialog>
+			"""
 		);
 }
 
@@ -55,19 +67,43 @@ public class SupportsUrlPathPrefix : GeneratorTest
 			)
 		];
 
-	[Test, DisplayName("validate image src contains prefix")]
-	public async Task ValidateImageSrcContainsPrefix() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
-		<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
-		"""
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7F46B77E">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-7F46B77E" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
+					</a>
+				</div>
+			</dialog>
+			"""
 		);
 
-	[Test, DisplayName("validate image src contains prefix when referenced relatively")]
-	public async Task ValidateRelativeReference() =>
-		await Docs.Converts("folder/relative.md").ContainsHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtmlOfFolderRelative() =>
+		await Docs.Converts("folder/relative.md").ToHtml(
 			"""
-			<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7F46B77E">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-7F46B77E" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
+					</a>
+				</div>
+			</dialog>
 			"""
 		);
 
@@ -94,16 +130,34 @@ public class ImageRefOutOfScope : GeneratorTest
 			)
 		];
 
-	[Test, DisplayName("validate image src contains prefix and is anchored to documentation scope root")]
-	public async Task ValidateSrcAnchored() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
-		<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
-		"""
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7F46B77E">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-7F46B77E" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
+					</a>
+				</div>
+			</dialog>
+			"""
 		);
 
-	[Test, DisplayName("emits an error image reference is outside of documentation scope")]
-	public async Task EmitsError() => await Docs.HasError("./img/observability.png` does not exist. resolved to");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"""
+			error {repo}/docs/index.md:2 `../img/observability.png` does not exist. resolved to `{repo}/img/observability.png`
+			warning {repo}/docs/index.md:2 Image '../img/observability.png' is referenced out of table of contents scope '{repo}/docs'.
+			"""
+		);
 }
 
 public class ScreenshotClassInsideListInAppliesSwitch : MarkdownTest
@@ -125,11 +179,43 @@ public class ScreenshotClassInsideListInAppliesSwitch : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("keeps screenshot class when the image sits in a list")]
-	public async Task KeepsScreenshotClassInsideList() => await Docs.ConvertsToContainingRawHtml("class=\"screenshot\"");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+			<div class="applies-switch">
+				<input class="applies-switch-input" checked="checked" id="applies-switch-item-1-0" name="applies-switch-set-1" type="radio" tabindex="0">
+				<label class="applies-switch-label" data-sync-id="applies-54C48F79" data-sync-group="applies-switches" for="applies-switch-item-1-0">
+					<span class="applies applies-item">
+						<applies-to-popover badge-key="Serverless" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="" show-popover="false" is-inline="true"></applies-to-popover>
+					</span>
+				</label>
+				<div class="applies-switch-content" tabindex="0">
+					<ol>
+						<li>
+							<p>Customize the lifecycle.</p>
+							<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-D9161EE2">
+								<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
+							</a>
+							<dialog id="modal-D9161EE2" class="modal" aria-label="Elasticsearch">
+								<div class="modal-content">
+									<form method="dialog" class="modal-close">
+										<button type="submit" class="close-button" aria-label="Close">×</button>
+									</form>
+									<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
+										<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png">
+									</a>
+								</div>
+							</dialog>
+						</li>
+					</ol>
+				</div>
+			</div>
+			"""
+		);
 }
 
-public class EmptyAltAttribute : MarkdownTest
+public class EmptyAltText : MarkdownTest
 {
 	protected override string Markdown => """
 		:::{image} img/some-image.png
@@ -138,9 +224,23 @@ public class EmptyAltAttribute : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("validate empty alt attribute")]
-	public async Task ValidateEmptyAlt() =>
-		await Docs.ConvertsToContainingHtml("""
-		<img loading="lazy" alt src="/img/some-image.png" style="width: 250px;">
-		""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7A740365">
+				<img loading="lazy" alt="" src="/img/some-image.png" style="width: 250px;">
+			</a>
+			<dialog id="modal-7A740365" class="modal" aria-label="Image">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/img/some-image.png" target="_blank">
+						<img loading="lazy" alt="" src="/img/some-image.png">
+					</a>
+				</div>
+			</dialog>
+			"""
+		);
 }

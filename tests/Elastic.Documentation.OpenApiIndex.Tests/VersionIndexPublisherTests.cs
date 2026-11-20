@@ -16,7 +16,7 @@ public class VersionIndexPublisherTests
 	private const string BucketName = "test-bucket";
 
 	/// <summary>The exact serialized index for a bucket holding only <c>elastic/elasticsearch/8.16/openapi.json</c>.</summary>
-	private const string Index816Json = /*lang=json,strict*/  """{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""";
+	private const string Index816Json = /*lang=json,strict*/ """{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""";
 
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly List<PutObjectRequest> _puts = [];
@@ -46,7 +46,7 @@ public class VersionIndexPublisherTests
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
 		{
 			ETag = etag,
-			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(body))
+			ResponseStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(body))
 		});
 
 	[Test]

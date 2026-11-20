@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -59,24 +61,20 @@ public class GfmRenderTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// Should create only changelog.md file, not multiple files like regular markdown
-		var outputFile = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		FileSystem.File.Exists(outputFile).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/changelog.md ===
+			## 9.2.0
 
-		// Should NOT create separate files
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var breakingChangesFile = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
-		FileSystem.File.Exists(indexFile).Should().BeFalse();
-		FileSystem.File.Exists(breakingChangesFile).Should().BeFalse();
+			### Features and enhancements
+			* Test feature. [#100](https://github.com/elastic/elasticsearch/pull/100)
 
-		var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("## 9.2.0");
-		content.Should().Contain("### Features and enhancements");
-		content.Should().Contain("Test feature");
-		content.Should().Contain("[#100](https://github.com/elastic/elasticsearch/pull/100)");
-
-		// Should NOT contain anchor brackets in headings
-		content.Should().NotContain("## 9.2.0 [");
-		content.Should().NotContain("### Features and enhancements [");
+			  This is a test feature
+			"""
+			);
 	}
 
 	[Test]
@@ -171,34 +169,32 @@ public class GfmRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputChangelogPath = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(outputChangelogPath, TestContext.Current!.Execution.CancellationToken);
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/changelog.md ===
+			## 9.2.0
 
-		// Should include all section types in the proper order
-		content.Should().Contain("### Features and enhancements");
-		content.Should().Contain("### Breaking changes");
-		content.Should().Contain("### Deprecations");
-		content.Should().Contain("### Bug fixes");
-		content.Should().Contain("### Known issues");
+			### Features and enhancements
+			* New feature.
 
-		// Should contain the entry titles
-		content.Should().Contain("New feature");
-		content.Should().Contain("Breaking change");
-		content.Should().Contain("Deprecated API");
-		content.Should().Contain("Bug fix");
-		content.Should().Contain("Known issue");
+			### Breaking changes
+			* Breaking change.
 
-		// Check section ordering (features should come before breaking changes)
-		var featuresIndex = content.IndexOf("### Features and enhancements", StringComparison.Ordinal);
-		var breakingIndex = content.IndexOf("### Breaking changes", StringComparison.Ordinal);
-		var deprecationIndex = content.IndexOf("### Deprecations", StringComparison.Ordinal);
-		var bugFixIndex = content.IndexOf("### Bug fixes", StringComparison.Ordinal);
-		var knownIssueIndex = content.IndexOf("### Known issues", StringComparison.Ordinal);
+			### Deprecations
+			* Deprecated API.
 
-		featuresIndex.Should().BeLessThan(breakingIndex);
-		breakingIndex.Should().BeLessThan(deprecationIndex);
-		deprecationIndex.Should().BeLessThan(bugFixIndex);
-		bugFixIndex.Should().BeLessThan(knownIssueIndex);
+			### Bug fixes
+			* Bug fix.
+
+			### Known issues
+			* Known issue.
+			"""
+			);
+
+		// The snapshot shows the section order: features, breaking changes, deprecations, bug fixes, known issues
 	}
 
 	[Test]
@@ -261,21 +257,24 @@ public class GfmRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var highlightsOutputFile = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(highlightsOutputFile, TestContext.Current!.Execution.CancellationToken);
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/changelog.md ===
+			## 9.2.0
 
-		// Should include highlights section first
-		content.Should().Contain("### Highlights");
-		content.Should().Contain("### Features and enhancements");
+			### Highlights
+			* Important new feature.
 
-		// Highlights should come first
-		var highlightsIndex = content.IndexOf("### Highlights", StringComparison.Ordinal);
-		var featuresIndex = content.IndexOf("### Features and enhancements", StringComparison.Ordinal);
-		highlightsIndex.Should().BeLessThan(featuresIndex);
+			### Features and enhancements
+			* Important new feature.
+			* Regular feature.
+			"""
+			);
 
-		// Both features should be present
-		content.Should().Contain("Important new feature");
-		content.Should().Contain("Regular feature");
+		// The snapshot shows the highlights section ahead of the features
 	}
 
 	[Test]
@@ -328,12 +327,21 @@ public class GfmRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var outputChangelogFile = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(outputChangelogFile, TestContext.Current!.Execution.CancellationToken);
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/changelog.md ===
+			## 9.2.0
 
-		content.Should().Contain("Feature with description");
-		content.Should().Contain("This is a detailed description of the feature.");
-		content.Should().Contain("It spans multiple lines.");
+			### Features and enhancements
+			* Feature with description.
+
+			  This is a detailed description of the feature.
+			  It spans multiple lines.
+			"""
+			);
 
 		// Test with descriptions hidden
 		var outputDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -350,12 +358,8 @@ public class GfmRenderTests() : RenderChangelogTestBase()
 
 		result2.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		var changelogFile2 = FileSystem.Path.Join(outputDir2, "9.2.0", "changelog.md");
-		var content2 = await FileSystem.File.ReadAllTextAsync(changelogFile2, TestContext.Current!.Execution.CancellationToken);
 
-		content2.Should().Contain("Feature with description");
-		content2.Should().NotContain("This is a detailed description of the feature.");
-		content2.Should().NotContain("It spans multiple lines.");
+		MockFileSystemDump.ToText(FileSystem, outputDir2).Should().MatchSnapshot(name: "hidden-descriptions");
 	}
 
 	[Test]
@@ -406,12 +410,21 @@ public class GfmRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var finalChangelogFile = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(finalChangelogFile, TestContext.Current!.Execution.CancellationToken);
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/changelog.md ===
+			## 9.2.0
 
-		// Should include the bundle description and release date
-		content.Should().Contain("## 9.2.0");
-		content.Should().Contain("_Released: March 15, 2024_");
-		content.Should().Contain("This is a major release with many improvements.");
+			_Released: March 15, 2024_
+
+			This is a major release with many improvements.
+
+			### Features and enhancements
+			* Simple feature.
+			"""
+			);
 	}
 }

@@ -144,6 +144,16 @@ public record GlobalLayoutViewModel
 	/// </summary>
 	public string? NavigationActiveUrl { get; init; }
 
+	/// <summary>
+	/// The docs-builder version that rendered this page, without the <c>+sha</c> suffix, on the landing page of an assembler build;
+	/// otherwise <c>null</c>. A deploy monitor waits for it to show that the deploy is live and its cache cleared. Only the landing page
+	/// carries it: a value in every page would change every page's bytes on each version, and the S3 sync would upload them all.
+	/// </summary>
+	public string? DeployedBuild =>
+		BuildType == BuildType.Assembler && CurrentNavigationItem.Url.TrimEnd('/') == (UrlPathPrefix ?? string.Empty).TrimEnd('/')
+			? BuildContext.Version.Split('+')[0]
+			: null;
+
 	// Header properties for isolated mode
 	public string? HeaderTitle { get; init; }
 	public string? HeaderVersion { get; init; }
@@ -153,8 +163,16 @@ public record GlobalLayoutViewModel
 	public string? GitHubDocsUrl { get; init; }
 	/// <summary>Full ref from GitHub Actions (e.g. refs/pull/123/merge). Set when built in a pull request workflow.</summary>
 	public string? GitHubRef { get; init; }
-	public string? CanonicalUrl =>
-		CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
+	/// <summary>The canonical URL. A page whose canonical is not itself, such as an API page that repeats another, sets it.</summary>
+	public string? CanonicalUrl
+	{
+		get =>
+			field ?? (CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null);
+		init;
+	}
+
+	/// <summary>The robots meta value. A page that is indexable only in part, such as an unreleased API page, sets it.</summary>
+	public string Robots { get => field ?? (AllowIndexing ? "index, follow" : "noindex, nofollow"); init; }
 
 	public required FeatureFlags Features { get; init; }
 	// TODO move to @inject
@@ -165,7 +183,26 @@ public record GlobalLayoutViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	/// <summary>Assembler environment name; null for isolated builds and production.</summary>
+	public string? EnvironmentName { get; init; }
+
+	/// <summary>The default favicon: the Elastic glyph, with a coloured label for every environment except production.</summary>
+	public string FaviconStaticPath => Static(EnvironmentFavicon.FileName(BuildType, EnvironmentName));
+
 	public string PageFeedbackSurface { get; init; } = "docs";
+
+	/// <summary>Page feedback runs when its flag is on, the site is not air-gapped and the build type has the feedback API behind it.</summary>
+	public bool ShowPageFeedback
+	{
+		get
+		{
+			var supportedBuildType = BuildType is BuildType.Assembler or BuildType.Codex;
+#if DEBUG
+			supportedBuildType |= BuildType is BuildType.Isolated;
+#endif
+			return Features.PageFeedbackEnabled && !Features.AirGappedEnabled && supportedBuildType;
+		}
+	}
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 
@@ -183,6 +220,38 @@ public record GlobalLayoutViewModel
 
 	/// <summary>Static URL of the OG image, if configured.</summary>
 	public string? BrandingOgImageStaticPath => Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
+
+	/// <summary>The origin this build is served from; null when unknown (isolated builds).</summary>
+	public Uri? PublicBaseUrl { get; init; }
+
+	/// <summary>
+	/// The default social image. Self-hosted when the build knows its origin: the serving origin for assembler builds (the
+	/// canonical origin is always production and would miss a preview's path prefix), the canonical origin for Codex. Otherwise
+	/// the absolute elastic.co image, as social crawlers need an absolute URL.
+	/// </summary>
+	public string DefaultOgImageUrl
+	{
+		get
+		{
+			const string fallback = "https://www.elastic.co/static-res/images/social_media_default.png";
+			var origin = BuildType == BuildType.Codex ? CanonicalBaseUrl : PublicBaseUrl;
+			return EnvironmentFavicon.OgImageFileName(BuildType, EnvironmentName) is { } file && origin is not null
+				? new Uri(origin, OgImagePath(file)).ToString()
+				: fallback;
+		}
+	}
+
+	// Codex publishes _static under its site prefix. Repository pages sit below it (/prefix/r/repo), but landing and group pages
+	// have the site prefix itself as their path prefix, which Static() reads as no prefix at all.
+	private string OgImagePath(string file) =>
+		BuildType != BuildType.Codex ? Static(file) : StaticFileContentHashProvider.GetUrl(file, CodexSitePrefix());
+
+	private string CodexSitePrefix()
+	{
+		var prefix = UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
+		var repositorySegment = prefix.IndexOf("/r/", StringComparison.Ordinal);
+		return repositorySegment >= 0 ? prefix[..repositorySegment] : prefix;
+	}
 
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
 	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;

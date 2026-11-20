@@ -131,7 +131,6 @@ public class SymlinkValidationTests
 		{
 			"docset.yml",
 			"_docset.yml", // Alternative name with underscore prefix
-
 			"toc.yml",
 			"redirects.yml",
 			"_redirects.yml" // Alternative name with underscore prefix

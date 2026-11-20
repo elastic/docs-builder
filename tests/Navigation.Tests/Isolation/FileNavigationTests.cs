@@ -9,6 +9,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -32,9 +33,15 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(0);
-		var fileNav = navigation.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		fileNav.Url.Should().Be("/getting-started");
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /getting-started  "getting-started"
+			  index: FileNavigationLeaf  /getting-started  "getting-started"
+			"""
+			);
 	}
 
 	[Test]
@@ -58,18 +65,19 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		fileNav.Url.Should().Be("/guide");
-		fileNav.NavigationItems.Should().HaveCount(2);
-
-		var section1 = fileNav.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section1.Url.Should().Be("/section1");
-		section1.Parent.Should().BeSameAs(fileNav);
-
-		var section2 = fileNav.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section2.Url.Should().Be("/section2");
-		section2.Parent.Should().BeSameAs(fileNav);
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guide  "guide"
+			  index: FileNavigationLeaf  /guide  "guide"
+			  VirtualFileNavigation  /guide  "guide"
+			    index: FileNavigationLeaf  /guide  "guide"
+			    FileNavigationLeaf  /section1  "section1"
+			    FileNavigationLeaf  /section2  "section2"
+			"""
+			);
 	}
 
 	[Test]
@@ -93,18 +101,19 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		fileNav.Url.Should().Be("/nest/guide");
-		fileNav.NavigationItems.Should().HaveCount(2);
-
-		var section1 = fileNav.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section1.Url.Should().Be("/nest/section1");
-		section1.Parent.Should().BeSameAs(fileNav);
-
-		var section2 = fileNav.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		section2.Url.Should().Be("/nest/section2");
-		section2.Parent.Should().BeSameAs(fileNav);
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /nest/guide  "guide"
+			  index: FileNavigationLeaf  /nest/guide  "guide"
+			  VirtualFileNavigation  /nest/guide  "guide"
+			    index: FileNavigationLeaf  /nest/guide  "guide"
+			    FileNavigationLeaf  /nest/section1  "section1"
+			    FileNavigationLeaf  /nest/section2  "section2"
+			"""
+			);
 	}
 
 	[Test]
@@ -129,19 +138,20 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.Should().HaveCount(1);
-		var guideFile = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		guideFile.Url.Should().Be("/guide");
-		guideFile.NavigationItems.Should().HaveCount(1);
-
-		var chapter1 = guideFile.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		chapter1.Url.Should().Be("/chapter1");
-		chapter1.Parent.Should().BeSameAs(guideFile);
-		chapter1.NavigationItems.Should().HaveCount(1);
-
-		var subsection = chapter1.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		subsection.Url.Should().Be("/subsection");
-		subsection.Parent.Should().BeSameAs(chapter1);
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guide  "guide"
+			  index: FileNavigationLeaf  /guide  "guide"
+			  VirtualFileNavigation  /guide  "guide"
+			    index: FileNavigationLeaf  /guide  "guide"
+			    VirtualFileNavigation  /chapter1  "chapter1"
+			      index: FileNavigationLeaf  /chapter1  "chapter1"
+			      FileNavigationLeaf  /subsection  "subsection"
+			"""
+			);
 	}
 
 	[Test]
@@ -201,17 +211,19 @@ public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		var guideFile = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
-		guideFile.NavigationItems.Should().HaveCount(2);
-
-		var intro = guideFile.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		intro.Url.Should().Be("/intro");
-
-		var advancedFolder = guideFile.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-		advancedFolder.Url.Should().Be("/advanced/topics"); // No index, uses first child
-		advancedFolder.NavigationItems.Should().HaveCount(0);
-
-		var topics = advancedFolder.Index.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
-		topics.Url.Should().Be("/advanced/topics");
+		NavigationDump
+			.ToText(navigation)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			DocumentationSetNavigation  /guide  "guide"
+			  index: FileNavigationLeaf  /guide  "guide"
+			  VirtualFileNavigation  /guide  "guide"
+			    index: FileNavigationLeaf  /guide  "guide"
+			    FileNavigationLeaf  /intro  "intro"
+			    FolderNavigation  /advanced/topics  "topics"
+			      index: FileNavigationLeaf  /advanced/topics  "topics"
+			"""
+			);
 	}
 }

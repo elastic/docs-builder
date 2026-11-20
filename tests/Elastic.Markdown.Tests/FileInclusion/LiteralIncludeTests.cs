@@ -5,8 +5,10 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
@@ -60,14 +62,12 @@ public class LiteralIncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlo
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+	public void EmitsError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
-	}
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Include path must resolve within the documentation source directory.");
 }
 
 [InheritsTests]
@@ -79,14 +79,12 @@ public class LiteralIncludeAbsoluteTraversalBlocked() : DirectiveTest<IncludeBlo
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+	public void EmitsError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
-	}
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Include path must resolve within the documentation source directory.");
 }
 
 [InheritsTests]
@@ -98,12 +96,10 @@ public class LiteralIncludeHiddenDirectoryBlocked() : DirectiveTest<IncludeBlock
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/.config/data.txt", "some content");
 
 	[Test]
-	public void EmitsError()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+	public void EmitsError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must not traverse hidden directories"));
-	}
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Path must not traverse hidden directories.");
 }

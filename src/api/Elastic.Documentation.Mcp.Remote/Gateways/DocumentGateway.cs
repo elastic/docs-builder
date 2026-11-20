@@ -4,6 +4,7 @@
 
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.ApiReference;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
@@ -35,7 +36,7 @@ public class DocumentGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 								e => e.Path,
 								e => e.Title,
 								e => e.SearchTitle,
-								e => e.Type,
+								e => e.ContentType,
 								e => e.Description,
 								e => e.Section,
 								e => e.Body,
@@ -49,7 +50,8 @@ public class DocumentGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 								e => e.LastUpdated,
 								e => e.SourceUrl,
 								e => e.Product,
-								e => e.RelatedProducts
+								e => e.RelatedProducts,
+								e => e.Api
 							)
 						)
 					),
@@ -67,7 +69,7 @@ public class DocumentGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 			{
 				Url = doc.Path,
 				Title = doc.Title,
-				Type = doc.Type,
+				Type = doc.ContentType,
 				Description = doc.Description,
 				NavigationSection = doc.Section,
 				Body = doc.Body,
@@ -83,7 +85,18 @@ public class DocumentGateway(ElasticsearchClientAccessor clientAccessor, ILogger
 				Product = doc.Product is { } productId ? new DocumentProduct { Id = productId, Repository = null } : null,
 				RelatedProducts = doc.RelatedProducts?.Where(p => p.Id != null)
 					.Select(p => new DocumentProduct { Id = p.Id!, Repository = p.Repository })
-					.ToArray()
+					.ToArray(),
+				// An API's landing page has no operation to describe.
+				Api = doc.Api is { Landing: false } api
+					? new DocumentApi
+					{
+						Method = api.Method,
+						Path = api.Path,
+						Endpoints = ApiRouteMatch.Endpoints(api),
+						OperationId = api.OperationId,
+						Deprecated = api.Deprecated
+					}
+					: null
 			};
 		}
 		catch (Exception ex)

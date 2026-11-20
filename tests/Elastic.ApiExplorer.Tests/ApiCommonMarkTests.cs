@@ -41,7 +41,7 @@ public class ApiCommonMarkTests
 
 	[Test]
 	public void Prepare_MustacheWithBacktick_StaysInsideItsCodeSpan() =>
-		ApiMarkdown.Prepare("Set {{`name`}} first.", "/api/doc/fixture").Should().Be("Set ``{{`name`}}`` first.");
+		ApiMarkdown.Prepare("Set {{`name`}} first.", "/api/fixture").Should().Be("Set ``{{`name`}}`` first.");
 
 	[Test]
 	public async Task WriteList_NameAndValuesWithBackticks_KeepEachInItsOwnCodeSpan()
@@ -68,7 +68,7 @@ public class ApiCommonMarkTests
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
 		var markdown = new StringBuilder();
 
-		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, list, "/api/fixture");
 
 		markdown.ToString().Should().Contain("- ``a`b`` (enum)").And.Contain("Values: ``x`y``, `plain`");
 	}

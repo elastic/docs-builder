@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Site.Components.Navigation.NavSide;
 
 public static class NavSideExamples
 {
-	private static NavigationRenderNode Leaf(string title, string url, string? badge = null, string? method = null) =>
+	private static NavigationRenderNode Leaf(string title, string url, string? badge = null, params string[] methods) =>
 		new()
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
@@ -17,7 +17,7 @@ public static class NavSideExamples
 			NavigationTitle = title,
 			Url = url,
 			Badge = badge,
-			HttpMethod = method
+			HttpMethods = methods
 		};
 
 	private static NavigationRenderNode Group(string id, string title, string url, params NavigationRenderNode[] children) =>
@@ -50,9 +50,10 @@ public static class NavSideExamples
 				"sg-nav-2",
 				"REST API",
 				"#",
-				Leaf("Search documents", "#", method: "post"),
-				Leaf("Get document", "#", method: "get"),
-				Leaf("Delete document", "#", method: "delete")
+				Leaf("Search documents", "#", methods: ["post", "get"]),
+				Leaf("Get document", "#", methods: "get"),
+				Leaf("Get document source", "#", methods: "get") with { Deprecated = true },
+				Leaf("Delete document", "#", methods: "delete")
 			),
 			Leaf("Query DSL", "#", badge: "ns"),
 			new() { Kind = NavigationRenderNodeKind.Island, IsTopLevel = false, NavigationTitle = "Clients", Url = "#" }

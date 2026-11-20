@@ -18,7 +18,7 @@ public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_Operation_PutsBaseUrlInTheRailAboveTheExamples()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
 		rail.Should().BeGreaterThanOrEqualTo(0);
@@ -34,7 +34,7 @@ public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 		string? html = null;
 		foreach (var nav in fixture.Walk().OfType<OperationNavigationItem>())
 		{
-			var candidate = await RenderAsync(nav);
+			var candidate = await fixture.RenderAsync(nav);
 			if (!candidate.Contains("id=\"api-examples-panel\"", StringComparison.Ordinal))
 				continue;
 			html = candidate;
@@ -42,7 +42,7 @@ public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 		}
 
 		html.Should().NotBeNull("the fixture has an operation with examples");
-		var rail = html!.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
 		var baseUrl = html.IndexOf("api-rail-facts--rail", rail, StringComparison.Ordinal);
 		baseUrl.Should().BeGreaterThan(rail);
 		html.IndexOf("id=\"api-examples-panel\"", baseUrl, StringComparison.Ordinal).Should().BeGreaterThan(baseUrl);
@@ -52,25 +52,9 @@ public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_Operation_KeepsAnInlineBaseUrlForNarrowScreens()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		html.Should().Contain("api-rail-facts api-rail-facts--inline");
 		html.Should().NotContain("server-info");
-	}
-
-	private async Task<string> RenderAsync(OperationNavigationItem nav)
-	{
-		var renderContext = new ApiRenderContext(
-			fixture.Context,
-			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = nav, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
-
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
 	}
 }

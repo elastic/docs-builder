@@ -2,13 +2,25 @@
 @if (Model.Any)
 {
 	<span class="api-title-badges">
+		@if (Model.OlderMajor is { } older)
+		{
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel($"Version {older.Version}", Model.DesignSystem)))
+			@if (older.Latest is { } latest)
+			{
+				@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel($"Latest: {latest.Label}", Model.DesignSystem, latest.Url)))
+			}
+		}
+		@if (Model.AuthText is { } authText)
+		{
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel(authText, Model.DesignSystem, Model.AuthHref)))
+		}
 		@if (Model.Availability is { } availability)
 		{
 			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(availability))</span>
 		}
 		@if (Model.Deprecated)
 		{
-			<span class="deprecated-badge type-status">deprecated</span>
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel("Deprecated", Model.DesignSystem, Danger: true)))
 		}
 	</span>
 }

@@ -15,6 +15,9 @@ namespace Elastic.Documentation.Api.AskAi;
 /// </param>
 public record AskAiGatewayResponse(Stream Stream, Guid? GeneratedConversationId);
 
+/// <summary>A question for Ask AI.</summary>
+/// <param name="Message">The question, in plain language.</param>
+/// <param name="ConversationId">The conversation to continue, from an earlier <c>conversation_start</c> event; null starts a new one.</param>
 public record AskAiRequest(string Message, Guid? ConversationId);
 
 public interface IAskAiService

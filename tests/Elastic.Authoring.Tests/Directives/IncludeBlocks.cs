@@ -36,9 +36,10 @@ public class IncludeHoistsAnchorsAndTableOfContents : GeneratorTest
 	public async Task ValidateIndexHtml() =>
 		await Docs.Converts("index.md").ToHtml(
 			"""
-			<h1>A Document that lives at the root</h1>
 			<div class="heading-wrapper" id="aa">
-			    <h2><a class="headerlink" href="#aa">header from snippet</a></h2>
+				<h2>
+					<a class="headerlink" href="#aa">header from snippet</a>
+				</h2>
 			</div>
 			"""
 		);
@@ -47,11 +48,14 @@ public class IncludeHoistsAnchorsAndTableOfContents : GeneratorTest
 	public async Task ValidateTestLinksHtml() =>
 		await Docs.Converts("test-links.md").ToHtml(
 			"""
-			<h1>parent.md</h1>
 			<div class="heading-wrapper" id="some-header">
-			    <h2><a class="headerlink" href="#some-header">some header</a></h2>
+				<h2>
+					<a class="headerlink" href="#some-header">some header</a>
+				</h2>
 			</div>
-			<p><a href="/#aa">link to root with included anchor</a></p>
+			<p>
+				<a href="/#aa">link to root with included anchor</a>
+			</p>
 			"""
 		);
 

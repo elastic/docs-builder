@@ -22,12 +22,12 @@
 	}
 
 	h5 {
-		@apply text-ink-dark mt-8 text-base font-bold;
+		@apply text-ink-dark mt-8 text-lg font-bold;
 		line-height: 1.2em;
 	}
 
 	h6 {
-		@apply text-ink-dark mt-8 text-sm font-bold;
+		@apply text-ink-dark mt-8 text-base font-bold;
 		line-height: 1.2em;
 	}
 

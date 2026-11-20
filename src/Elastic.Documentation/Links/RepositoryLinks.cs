@@ -58,6 +58,14 @@ public record RepositoryLinks
 	[JsonPropertyName("redirects")]
 	public Dictionary<string, LinkRedirect>? Redirects { get; init; }
 
+	/// <summary>
+	/// The pages of floating sections, such as APIs, keyed by <c>{kind}/{key}</c> (<c>api/elasticsearch</c>).
+	/// They are not Markdown files, so they are not in <see cref="Links"/>.
+	/// </summary>
+	[JsonPropertyName("floating")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public Dictionary<string, FloatingLinkSection>? Floating { get; init; }
+
 	public static string SerializeRedirects(Dictionary<string, LinkRedirect>? redirects) =>
 		JsonSerializer.Serialize(redirects, SourceGenerationContext.Default.DictionaryStringLinkRedirect);
 

@@ -4,7 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -80,22 +83,7 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("Deprecation notice");
-		Html.Should().Contain("Known issue");
-	}
-
-	[Test]
-	public void RendersFeaturesSection() => Html.Should().Contain("Features and enhancements");
-
-	[Test]
-	public void RendersDeprecationsSection() => Html.Should().Contain("Deprecations");
-
-	[Test]
-	public void RendersKnownIssuesSection() => Html.Should().Contain("Known issues");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -161,12 +149,7 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("Internal docs");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -226,12 +209,7 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("Other change");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -268,10 +246,30 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 	public void PublishBlockerIsNullWhenNoConfig() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntriesWhenNoConfig() => Html.Should().Contain("Regular feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test]
-	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("changelog.yml"));
+	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -310,10 +308,34 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 
 	[Test]
 	public void EmitsWarningForMissingExplicitConfig() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("nonexistent/config.yml") && d.Message.Contains("not found"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 Specified changelog config path 'nonexistent/config.yml' not found.");
 
 	[Test]
-	public void RendersAllEntriesWhenConfigNotFound() => Html.Should().Contain("Regular feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -394,13 +416,7 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersAllEntries_NoPublishFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("Deprecation notice");
-		Html.Should().Contain("Other change");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -454,7 +470,27 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 	public void PublishBlockerIsNullWhenNoBlockSection() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntriesWhenNoBlockSection() => Html.Should().Contain("Regular feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -540,14 +576,7 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature in Search");
-		Html.Should().Contain("Deprecation in Search");
-		Html.Should().Contain("Feature in Internal");
-		Html.Should().Contain("Bug fix");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -625,13 +654,7 @@ public class ChangelogProductFallbackSingleProductTests() : DirectiveTest<Change
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular Kibana feature");
-		Html.Should().Contain("Internal feature");
-		Html.Should().Contain("Observability feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -700,12 +723,30 @@ public class ChangelogProductFallbackMultipleProductsTests() : DirectiveTest<Cha
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("Internal feature");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+			<li>Internal feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/222222">#222222</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -789,14 +830,14 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests() : DirectiveTes
 
 	[Test]
 	public void EmitsDeprecationWarningForProductOption() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(":product:") && d.Message.Contains("deprecated"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 The :product: option is deprecated and has no effect. The directive does not apply rules.publish. Move type/area filtering to rules.bundle so it applies at bundle time."
+			);
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("ES Internal feature");
-		Html.Should().Contain("Kibana Internal feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

@@ -56,6 +56,19 @@ internal static class McpFeatureModules
 		RegisterServices: services => _ = services.AddScoped<IDocumentGateway, DocumentGateway>()
 	);
 
+	public static readonly McpFeatureModule Api = new(
+		Name: "Api",
+		Capability: null,
+		WhenToUse: ["Asks which REST API call does something, or about an endpoint, its parameters, or its request and response fields."],
+		ToolGuidance: [
+			"Use {tool:search_api_operations} to find REST API operations by task, endpoint, or field name.",
+			"Use {tool:get_api_operation} to read one operation's parameters, request body and response fields by endpoint or operation id.",
+			"Use {tool:list_api_operations} to browse the available APIs and their operations."
+		],
+		ToolType: typeof(ApiTools),
+		RegisterServices: services => _ = services.AddApiReferenceServices()
+	);
+
 	public static readonly McpFeatureModule Coherence = new(Name: "Coherence", Capability: "analyze", WhenToUse: [
 		"Asks about {docs} structure, coherence, or inconsistencies across pages."
 	], ToolGuidance: [

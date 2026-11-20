@@ -1,10 +1,6 @@
 import { createWebComponentLoader } from './loadWebComponents'
 
 describe('web component loader', () => {
-    beforeEach(() => {
-        document.body.innerHTML = ''
-    })
-
     it('does not load a component when its host is absent', async () => {
         const load = vi.fn().mockResolvedValue(undefined)
         const loadWebComponents = createWebComponentLoader({

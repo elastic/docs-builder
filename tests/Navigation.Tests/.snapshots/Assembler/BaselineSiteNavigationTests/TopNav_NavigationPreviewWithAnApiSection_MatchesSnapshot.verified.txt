@@ -1,0 +1,11 @@
+link Guides -> /docs/get-started [section]
+link APIs -> /docs/api/
+dropdown Products
+  group (no label)
+    link Elasticsearch -> /docs/solutions/search/elasticsearch
+    link Observability -> /docs/solutions/observability
+    link Security -> /docs/solutions/security
+    link Elastic Cloud -> /docs/deploy-manage/deploy/elastic-cloud
+link Reference -> /docs/reference [section]
+link Troubleshoot -> /docs/troubleshoot [section]
+link Release notes -> /docs/release-notes [section]

@@ -38,7 +38,7 @@ public enum SearchQueryComponents : uint
 	/// <summary>Phrase multimatch on <c>stripped_body</c> (3+ token queries only).</summary>
 	Phrase = 1 << 5, // 32
 
-	/// <summary>BoolQuery MustNot filter: exclude bare <c>/docs</c> roots and <c>hidden</c> docs.</summary>
+	/// <summary>Filter around the whole query, lexical and semantic: exclude bare <c>/docs</c> roots and <c>hidden</c> docs.</summary>
 	DocumentFilter = 1 << 6, // 64
 
 	/// <summary>2× RankFeatureQuery (nav depth/toc) + 2× TermQuery section boosts in <c>should</c>.</summary>
@@ -93,7 +93,5 @@ public enum SearchQueryComponents : uint
 	Aggregations = AggType | AggSection | AggProduct, // 114688
 
 	/// <summary>Every clause on — equivalent to the production query (subject to per-clause gating).</summary>
-	All = (1u << 19)
-		- 1 // 524287
-
+	All = (1u << 19) - 1 // 524287
 }

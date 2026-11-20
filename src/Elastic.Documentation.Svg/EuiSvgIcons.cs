@@ -277,7 +277,7 @@ public static class EuiSvgIcons
 				return true;
 			})
 			.ToDictionary(r => r[fullPrefix.Length..^4], // Remove prefix and ".svg" suffix
-			 r =>
+			r =>
 			{
 				using var stream = assembly.GetManifestResourceStream(r);
 				if (stream is null)

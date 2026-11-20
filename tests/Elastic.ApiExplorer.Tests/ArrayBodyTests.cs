@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Operations._Partials;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -90,17 +91,8 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 
 		var html = await _MediaContents.Create(contents).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		var root = html.IndexOf("property-item depth-0 last-sibling has-children expanded", StringComparison.Ordinal);
-		var arrayRow = html.IndexOf("<code>&lt;array&gt;</code>", StringComparison.Ordinal);
-		var nested = html.IndexOf("class=\"nested-properties\"", StringComparison.Ordinal);
-		var field = html.IndexOf("id=\"res-200-alias\"", StringComparison.Ordinal);
-		root.Should().BeGreaterThanOrEqualTo(0);
-		arrayRow.Should().BeGreaterThan(root);
-		nested.Should().BeGreaterThan(arrayRow);
-		field.Should().BeGreaterThan(nested);
-		html.Should().Contain("property-item depth-1", "the item fields sit one level under the array row");
-		html.Should().Contain("array-icon\" data-tippy-content=\"\">[]</span>", "the row's type reads object[]");
-		html.Should().NotContain("Response Type:");
+		// The item fields sit one level under the array row, whose type reads object[].
+		html.Should().MatchHtmlSnapshot();
 		html.Should().NotContain(ApiBodyContent.ArrayItemsLabel);
 	}
 
@@ -132,7 +124,22 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 			new ParamSectionHeader("Request body", "request-body", ["alias"], SummaryStyle.ArrayOfFields)
 		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain(">[{ </span>").And.Contain("> }]</span>");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<span class="api-param-summary" data-param-summary="">
+				<span class="api-param-summary-brace">[{
+				</span>
+				<span class="api-param-summary-list">
+					<code class="api-param-summary-item" data-name="alias"></code>
+				</span>
+				<span class="api-param-more" data-param-more="" hidden="">
+					<span class="api-param-more-badge" data-param-more-count=""></span>
+				</span>
+				<span class="api-param-summary-brace">
+					}]</span>
+			</span>
+			"""
+		);
 	}
 
 	[Test]

@@ -10,6 +10,22 @@ namespace Elastic.Documentation.Tests;
 public class StringExtensionsTests
 {
 	[Test]
+	[Arguments(null, null)]
+	[Arguments("", null)]
+	[Arguments("a", "a")]
+	[Arguments(" ", " ")]
+	public void NullIfEmpty_EmptyOrNull_ReturnsNull(string? value, string? expected) => value.NullIfEmpty().Should().Be(expected);
+
+	[Test]
+	public void JoinOrNull_NoValues_ReturnsNull() => Array.Empty<string>().JoinOrNull(' ').Should().BeNull();
+
+	[Test]
+	public void JoinOrNull_OnlyEmptyValues_ReturnsNull() => new List<string> { "" }.JoinOrNull(' ').Should().BeNull();
+
+	[Test]
+	public void JoinOrNull_Values_JoinsWithTheSeparator() => new List<string> { "a", "b" }.JoinOrNull(' ').Should().Be("a b");
+
+	[Test]
 	[Arguments("get-actions-connector-oauth-callback-script", "Get Actions Connector Oauth Callback Script")]
 	[Arguments("async_search_delete", "Async Search Delete")]
 	[Arguments("GET-Script", "Get Script")]
@@ -35,4 +51,43 @@ public class StringExtensionsTests
 	[Arguments("", "")]
 	public void CapitalizeFirstLetter_CapitalizesPlainWordsAndKeepsCodeLikeNames(string input, string expected) =>
 		input.CapitalizeFirstLetter().Should().Be(expected);
+
+	[Test]
+	public void Slugify_NullInput_ReturnsEmptyString() => ((string?)null).Slugify().Should().BeEmpty();
+
+	[Test]
+	[Arguments("", "")]
+	[Arguments("   ", "")]
+	[Arguments("  Hello   World  ", "hello-world")]
+	[Arguments("a - b", "a-b")]
+	[Arguments("-a-", "-a-")]
+	[Arguments("Café Ünï", "cafe-uni")]
+	[Arguments("1.2.3 a_b", "1.2.3-a_b")]
+	[Arguments("C# (a/b?c)", "c-abc")]
+	[Arguments("日本語 text", "-text")]
+	[Arguments("a\tb", "a-b")]
+	[Arguments("a\u00a0b\nc", "a-b-c")]
+	public void Slugify_Rules_AreStable(string input, string expected) => input.Slugify().Should().Be(expected);
+
+	/// <summary>
+	/// <c>slugify-4.0.1.golden.tsv</c> holds what Slugify.Core 4.0.1 produced for the headings in <c>docs/</c> plus edge cases,
+	/// so a slug (and every link to it) stays the same now that the package is gone.
+	/// </summary>
+	[Test]
+	public void Slugify_MatchesSlugifyCore401Output()
+	{
+		var path = Path.Combine(AppContext.BaseDirectory, "slugify-4.0.1.golden.tsv");
+		var lines = File.ReadAllLines(path);
+		lines.Should().NotBeEmpty();
+		var mismatches = new List<string>();
+		foreach (var line in lines)
+		{
+			var tab = line.LastIndexOf('\t');
+			var input = line[..tab].Replace("\\t", "\t").Replace("\\\\", "\\");
+			var expected = line[(tab + 1)..];
+			if (input.Slugify() != expected)
+				mismatches.Add($"[{input}] expected [{expected}] got [{input.Slugify()}]");
+		}
+		mismatches.Should().BeEmpty();
+	}
 }

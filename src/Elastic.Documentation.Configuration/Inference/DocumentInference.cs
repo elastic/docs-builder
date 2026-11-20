@@ -167,7 +167,6 @@ public class DocumentInferrerService(
 			Product = product,
 			ProductVersion = versioningSystem.IsVersionless ? null : versioningSystem.Current.ToString(),
 			Repository = productId, // For OpenAPI, repository matches product slug
-
 			RelatedProducts = relatedProducts
 		};
 	}

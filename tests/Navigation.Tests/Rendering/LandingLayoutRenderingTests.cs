@@ -101,7 +101,7 @@ public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase(
 		var pattern = navigationPreviewEnabled
 			? "(<a [^>]*landing__reference[^>]*>)(?:(?!</a>).)*?Elastic APIs"
 			: "Elastic APIs.*?(<a [^>]*>)";
-		var match = Regex.Match(html, pattern, RegexOptions.Singleline);
+		var match = Regex.Match(html, pattern, RegexOptions.Singleline, RegexTimeouts.MatchTimeout);
 		match.Success.Should().BeTrue("the landing page has an Elastic APIs card");
 		return match.Groups[1].Value;
 	}

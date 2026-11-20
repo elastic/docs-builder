@@ -42,6 +42,20 @@ public record DocumentResult
 	public string[] Links { get; init; } = [];
 	public DocumentProduct? Product { get; init; }
 	public DocumentProduct[]? RelatedProducts { get; init; }
+	public DocumentApi? Api { get; init; }
+}
+
+/// <summary>
+/// HTTP operation details for API reference pages.
+/// </summary>
+public record DocumentApi
+{
+	public required string Method { get; init; }
+	public required string Path { get; init; }
+	/// <summary>Callable routes as <c>METHOD /spec/path</c>, taken verbatim from the spec.</summary>
+	public required string[] Endpoints { get; init; }
+	public required string OperationId { get; init; }
+	public bool Deprecated { get; init; }
 }
 
 /// <summary>

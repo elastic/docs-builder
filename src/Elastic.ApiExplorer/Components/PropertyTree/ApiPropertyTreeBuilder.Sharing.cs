@@ -51,12 +51,7 @@ public partial class ApiPropertyTreeBuilder
 		_ => null
 	};
 
-	private static int CountRows(ApiPropertyChildren children) =>
-		CountRows(children.Properties)
-			+ (children.Variants?.Variants.Sum(v => CountRows(v.Properties)) ?? 0)
-			+ CountRows(children.Dictionary?.Properties);
-
-	private static int CountRows(ApiPropertyList? properties) => properties?.Items.Sum(p => 1 + CountRows(p.Children)) ?? 0;
+	private static int CountRows(ApiPropertyChildren children) => children.NestedRows.Sum(row => 1 + CountRows(row.Children));
 
 	/// <summary>
 	/// What a union offers: each referenced option by its <c>$ref</c>, each inline option by a fingerprint of its fields.

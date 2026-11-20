@@ -1,0 +1,33 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "modified_date": "2024-01-15T08:30:00+00:00",
+  "og": {
+    "title": "Cloud Terms of Service | Elastic",
+    "description": "Review the terms of service for Elastic Cloud."
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Elastic Cloud Terms of Service",
+  "search_title": "Legal: Elastic Cloud Terms of Service",
+  "content_type": "site",
+  "path": "/agreements/cloud-terms-of-service",
+  "url": "/agreements/cloud-terms-of-service",
+  "hash": "38ecdbc3e2f4198c",
+  "last_updated": "2024-01-15T08:30:00+00:00",
+  "description": "Review the terms of service for Elastic Cloud.",
+  "headings": [
+    "1. Definitions",
+    "2. Account Registration"
+  ],
+  "body": "These Terms of Service govern your use of Elastic Cloud services. 1. Definitions \"Service\" means the Elastic Cloud hosted service provided by Elastic. 2. Account Registration You must register for an account to use the Service. You agree to provide accurate information.",
+  "summary": "Review the terms of service for Elastic Cloud.",
+  "parents": [],
+  "translated": true,
+  "section": "legal",
+  "content_tier": "peripheral",
+  "navigation": {
+    "depth": 3,
+    "table_of_contents": 100
+  }
+}

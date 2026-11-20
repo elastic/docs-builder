@@ -211,14 +211,12 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.Write("```");
-		if (!string.IsNullOrEmpty(obj.Language))
-			renderer.Write(obj.Language);
+		// The parser relabels console blocks as json for highlighting; request lines make them console again.
+		renderer.Write(obj.ApiSegments.Count > 0 ? "console" : obj.Language);
 		renderer.WriteLine();
-		var lastNonEmptyIndex = GetLastNonEmptyLineIndex(obj);
-		for (var i = 0; i <= lastNonEmptyIndex; i++)
+		foreach (var line in obj.TextLines())
 		{
-			var line = obj.Lines.Lines[i];
-			renderer.Write(line.ToString());
+			renderer.Write(line);
 			renderer.WriteLine();
 		}
 
@@ -286,14 +284,6 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		renderer.WriteLine("</contributors>");
 		renderer.EnsureLine();
 	}
-
-	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
-	{
-		var lastNonEmptyIndex = obj.Lines.Lines.Length - 1;
-		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
-			lastNonEmptyIndex--;
-		return lastNonEmptyIndex;
-	}
 }
 
 /// <summary>
@@ -305,8 +295,8 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 	{
 		var isNestedList = listBlock.Parent is ListItemBlock;
 
-		// Nested lists don't need base indent - parent's continuation indent positions them correctly
-		var baseIndent = isNestedList ? "" : CalculateNestedIndentation(listBlock);
+		// Every item of a nested list is indented to the content column of its parent item(s)
+		var baseIndent = CalculateNestedIndentation(listBlock);
 
 		// Top-level lists need block spacing before them
 		if (!isNestedList)
@@ -318,7 +308,9 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 		var items = listBlock.Cast<ListItemBlock>().ToArray();
 		foreach (var item in items)
 		{
-			renderer.Write(baseIndent);
+			// A list that opens its parent item ("- - a") continues the parent's marker line instead of indenting
+			if (!(isNestedList && !renderer.IsAtLineStart && item == items[0]))
+				renderer.Write(baseIndent);
 			renderer.Write(isOrdered ? $"{itemIndex}. " : "- ");
 			for (var blockIndex = 0; blockIndex < item.Count; blockIndex++)
 			{
@@ -326,7 +318,9 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 				if (blockIndex > 0)
 				{
 					renderer.EnsureLine();
-					renderer.Write(GetContinuationIndent(baseIndent, isOrdered));
+					// Nested lists write their own indentation on every item
+					if (block is not ListBlock)
+						renderer.Write(GetContinuationIndent(baseIndent, isOrdered));
 				}
 				RenderBlockWithIndentation(renderer, block, baseIndent, isOrdered);
 			}
@@ -809,20 +803,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		{
 			try
 			{
-				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser
-					.ParseSnippetAsync(
-						block.Build,
-						block.Context,
-						snippet,
-						parentPath,
-						block.Context.YamlFrontMatter,
-						Cancel.None,
-						block.Line
-					)
-					.GetAwaiter()
-					.GetResult();
-				_ = renderer.Render(document);
+				_ = renderer.Render(block.ParseSnippet());
 			}
 			catch (Exception ex)
 			{

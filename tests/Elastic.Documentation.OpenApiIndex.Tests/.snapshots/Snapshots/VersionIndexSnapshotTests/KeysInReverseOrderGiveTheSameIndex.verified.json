@@ -1,0 +1,25 @@
+{
+  "index": {
+    "elastic/elasticsearch": {
+      "openapi.json": {
+        "9": {
+          "version": "9.10"
+        }
+      }
+    },
+    "elastic/kibana": {
+      "openapi.json": {
+        "8": {
+          "version": "8.19"
+        },
+        "9": {
+          "version": "9.1"
+        },
+        "main": {
+          "version": "main"
+        }
+      }
+    }
+  },
+  "invalidKeys": []
+}

@@ -1,0 +1,8 @@
+# @tags smoke
+# @requires build-type:assembler
+# @monitor schedule=10
+set viewport 1280 800
+open /docs
+expect visible body
+expect visible #main-container
+expect visible h1

@@ -28,12 +28,20 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 	{
 		_navigationMappings = navigationMappings;
 		_pathPrefix = environment.PathPrefix;
+		// Until an environment renders the API Explorer, its /docs/api/doc/ paths are still proxied to bump.sh.
+		LegacyApiUrls = !environment.ToFeatureFlags().AssemblerApiExplorerEnabled;
 
 		if (!Uri.TryCreate(environment.Uri, UriKind.Absolute, out var uri))
 			throw new Exception($"Could not parse uri {environment.Uri} in environment {environment}");
 
 		_baseUri = uri;
 	}
+
+	/// <inheritdoc />
+	public bool LegacyApiUrls { get; }
+
+	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) =>
+		new(_baseUri, string.IsNullOrEmpty(_pathPrefix) ? sitePath : $"{_pathPrefix}/{sitePath}");
 
 	/// <summary>
 	/// Resolves a cross-link URI to an absolute HTTP URL using navigation mappings.

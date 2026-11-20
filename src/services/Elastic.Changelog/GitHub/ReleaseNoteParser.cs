@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.GitHub;
 
@@ -66,40 +67,30 @@ public static partial class ReleaseNoteParser
 	// Regex for PR line, with either bullet char: "* Title by @author in #123",
 	// "- Title by @author in #123", or "... in https://github.com/owner/repo/pull/123".
 	[GeneratedRegex(@"^[*-]\s+(.+?)\s+by\s+@([\w-]+)\s+in\s+(?:#(\d+)|https://github\.com/[^/]+/[^/]+/pull/(\d+))", RegexOptions.Multiline
-		| RegexOptions.IgnoreCase)]
+		| RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PrLineRegex();
 
 	// Regex for section headers at any level >= 2: "## 🐛 Bug Fixes" or "### ✨ Features".
-	[GeneratedRegex(@"^#{2,}\s+(.+)$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^#{2,}\s+(.+)$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SectionHeaderRegex();
 
 	// Regex for full changelog URL
-	[GeneratedRegex(@"\*\*Full Changelog\*\*:\s*(https://[^\s]+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\*\*Full Changelog\*\*:\s*(https://[^\s]+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FullChangelogRegex();
 
 	// Common emojis used in Release Drafter (Unicode escape sequences)
 	private static readonly string[] ReleaseDrafterEmojis =
 	[
 		"\uD83D\uDCA5", // Breaking Changes
-
 		"\u2728", // Features
-
 		"\uD83D\uDC1B", // Bug Fixes
-
 		"\uD83D\uDCDD", // Documentation
-
 		"\uD83E\uDDF0", // Maintenance
-
 		"\u2699\uFE0F", // Configuration
-
 		"\uD83C\uDFA8", // Redesign
-
 		"\uD83D\uDD12", // Security
-
 		"\u26A0\uFE0F", // Deprecation
-
 		"\uD83D\uDE80" // Release
-
 	];
 
 	// Mapping from section header keywords to changelog types
@@ -243,8 +234,7 @@ public static partial class ReleaseNoteParser
 				Title = title,
 				Author = author,
 				SectionTitle = null,
-				InferredType =
-					null // No type inference in GitHub default format
+				InferredType = null // No type inference in GitHub default format
 			});
 		}
 

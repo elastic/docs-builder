@@ -14,6 +14,8 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
@@ -77,14 +79,17 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
+	public async Task Operation_QueryParameters_RenderExpandedWithNameSummary()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("data-param-section");
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"query-params-list\"");
+		html.Should().Contain("id=\"query-params-list\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"query-params-list\" hidden");
+		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"query-params-list\"");
 		html.Should().Contain("api-param-summary");
 		html.Should().Contain("api-param-summary-item");
 	}
@@ -121,7 +126,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"path-params\"");
 		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"path-params-list\"");
 		html.Should().Contain("aria-controls=\"path-params-list\"");
 	}
@@ -132,7 +137,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"path-params-list\"");
 		html.Should().Contain("aria-controls=\"path-params-list\"");
 		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
@@ -172,14 +177,118 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
+	public async Task Operation_NestedProperties_ToggleNamesHowManyPropertiesItFolds()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("toggle-label\">show properties</span>");
-		html.Should().NotContain("toggle-label\">Show ");
-		html.Should().NotContain("toggle-label\">Hide ");
+		html.Should().MatchRegex("toggle-label\">(Hide|Show) \\d+ propert(y|ies)</span>");
+		html.Should().NotContain("toggle-label\">hide properties");
+		html.Should().NotContain("toggle-label\">show properties");
+	}
+
+	[Test]
+	public async Task Operation_ExpandAllControl_SitsAboveTheFirstSectionAndAtTheEndOfTheSectionLinks()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		var bar = SectionLinksBar(html);
+		bar.Should().Contain(
+			"<a href=\"#api-operation-overview\" data-toc-link data-api-back-to-top>Overview</a>",
+			"Overview opens the bar and goes back to the top"
+		);
+		bar.TrimEnd().Should().EndWith("class=\"api-expand-toggle\" data-api-expand-all>Expand all</button>");
+		var standalone = html.IndexOf("api-expand-standalone", StringComparison.Ordinal);
+		standalone.Should().BeGreaterThan(
+			html.IndexOf("id=\"description\"", StringComparison.Ordinal),
+			"the row comes after the description"
+		);
+		standalone.Should().BeLessThan(html.IndexOf("id=\"path-params\"", StringComparison.Ordinal), "and just above the first section");
+		html.Should().NotContain("Collapse all", "one button changes its own label");
+	}
+
+	[Test]
+	public async Task Operation_SectionLinks_SitAboveTheDescription()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html
+			.IndexOf("<nav class=\"api-section-links\"", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("id=\"description\"", StringComparison.Ordinal), "the bar comes before the description");
+	}
+
+	[Test]
+	public async Task Operation_SectionLinks_LinksToEachSection()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-section-links"));
+	}
+
+	[Test]
+	public async Task Operation_SectionLinks_ListEachSectionInPageOrder()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("<nav class=\"api-section-links\" aria-label=\"On this page\" data-toc data-toc-sticky>");
+		html.Should().Contain("href=\"#query-params\" data-toc-link>Query</a>", "a link is its label alone, with no count");
+		html.Should().Contain("href=\"#request-body\" data-toc-link>Body</a>", "a link is its label alone, with no count");
+		html.Should().Contain("href=\"#responses\" data-toc-link>Responses</a>", "a link is its label alone, with no count");
+		SectionLinksBar(html).Should().NotContain("required-privileges", "Required privileges is not one of the links");
+		var privileges = html.IndexOf("id=\"required-privileges\"", StringComparison.Ordinal);
+		privileges.Should().BeGreaterThan(
+			html.IndexOf("id=\"description\"", StringComparison.Ordinal),
+			"Required privileges follows the description"
+		);
+		privileges.Should().BeLessThan(html.IndexOf("id=\"path-params\"", StringComparison.Ordinal), "and comes before the parameters");
+	}
+
+	[Test]
+	public async Task Operation_ToolbarClass_MarksExactlyThePagesThatShowTheSectionLinks()
+	{
+		var lines = new List<string>();
+		foreach (var nav in fixture
+			.Walk()
+			.OfType<OperationNavigationItem>()
+			.OrderBy(static n => n.Model.Operation.OperationId, StringComparer.Ordinal))
+		{
+			var html = await RenderAsync(nav.Model, nav);
+			var bar = html.Contains("<nav class=\"api-section-links\"", StringComparison.Ordinal);
+			var marked = html.Contains("<section id=\"elastic-api-v3\" class=\"api-has-toolbar\">", StringComparison.Ordinal);
+			lines.Add($"{nav.Model.Operation.OperationId}: section links {bar}, section marked {marked}");
+		}
+
+		_ = string
+			.Join('\n', lines)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			: section links False, section marked False
+			: section links False, section marked False
+			docs-get: section links True, section marked True
+			docs-get-source: section links True, section marked True
+			search: section links True, section marked True
+			"""
+			);
+	}
+
+	// Copy page ends the breadcrumb row: after the breadcrumbs, before the article.
+	private static void AssertCopyPageInTheBreadcrumbRow(string html)
+	{
+		var actions = html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal);
+		actions.Should().BeGreaterThan(html.IndexOf("id=\"breadcrumbs\"", StringComparison.Ordinal), "Copy page follows the breadcrumbs");
+		actions.Should().BeLessThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal), "in the row above the article");
+	}
+
+	private static string SectionLinksBar(string html)
+	{
+		var bar = html[html.IndexOf("<nav class=\"api-section-links\"", StringComparison.Ordinal)..];
+		return bar[..bar.IndexOf("</nav>", StringComparison.Ordinal)];
 	}
 
 	[Test]
@@ -203,6 +312,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 		html.Should().Contain("id=\"request-body\"");
 		html.Should().Contain("id=\"request-body-list\"");
+		html.Should().Contain("id=\"request-body-list\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"request-body-list\" hidden");
+		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"request-body-list\"");
 		html.Should().Contain("aria-controls=\"request-body-list\"");
 		html.Should().Contain("href=\"#request-body\">Request body</a>");
 		html.Should().Contain("req-query");
@@ -322,6 +434,43 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_SupplementalOverviewSection_KeepsItsAnchorBesideTheIntro()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(
+			nav.Model,
+			nav,
+			operations: Doc("search", """
+			## Overview
+
+			SUPP_OP_OVERVIEW
+			""")
+		);
+
+		Occurrences(html, "id=\"api-operation-overview\"").Should().Be(1, "the intro has its own id");
+		html.Should().Contain("<header class=\"api-page-intro\" id=\"api-operation-overview\">", "and it sits on the intro");
+		Occurrences(html, "id=\"overview\"").Should().Be(1, "the supplemental section keeps #overview");
+		var section = html.IndexOf("id=\"overview\"", StringComparison.Ordinal);
+		section.Should().BeLessThan(html.IndexOf("SUPP_OP_OVERVIEW", StringComparison.Ordinal), "on the heading of its own section");
+		section.Should().BeGreaterThan(
+			html.IndexOf("id=\"responses\"", StringComparison.Ordinal),
+			"after the operation's sections, not on the intro"
+		);
+	}
+
+	private static int Occurrences(string html, string text)
+	{
+		var count = 0;
+		for (var i = html.IndexOf(text, StringComparison.Ordinal); i >= 0; i = html.IndexOf(
+			text,
+			i + text.Length,
+			StringComparison.Ordinal
+		))
+			count++;
+		return count;
+	}
+
+	[Test]
 	public void SplitHeading_ReadsExplicitId()
 	{
 		var (title, id) = ApiPostSection.SplitHeading("Errors {#errors-guide}");
@@ -335,6 +484,16 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var used = ApiPostSection.OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
 		ApiPostSection.ResolveAnchor("Responses", "responses", used).Should().Be("responses-2");
 		ApiPostSection.ResolveAnchor("Responses", null, used).Should().Be("responses-3");
+	}
+
+	[Test]
+	public void ResolveAnchor_ExplicitIntroId_GetsSuffix()
+	{
+		var used = ApiPostSection.OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		ApiPostSection
+			.ResolveAnchor("Details", "api-operation-overview", used)
+			.Should()
+			.Be("api-operation-overview-2", "the operation intro owns that id, so a supplemental heading cannot take it");
 	}
 
 	[Test]
@@ -486,40 +645,42 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Tag_Rail_HoldsCopyPageOutsideTheArticle()
+	public async Task Tag_CopyPage_SitsInTheBreadcrumbRowBeforeTheArticle()
 	{
 		var nav = SearchTag();
 		var html = await RenderAsync(nav.Index.Model, nav);
 
-		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
-		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
-		html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		AssertCopyPageInTheBreadcrumbRow(html);
+		html
+			.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
 		html.Should().NotContain("api-page-columns");
 	}
 
 	[Test]
-	public async Task Operation_Rail_HoldsCopyPageThenExamples()
+	public async Task Operation_Rail_HoldsTheExamplesAndCopyPageSitsInTheBreadcrumbRow()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
+		AssertCopyPageInTheBreadcrumbRow(html);
 		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
-		var actions = html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal);
-		var examples = html.IndexOf("id=\"api-examples-panel\"", StringComparison.Ordinal);
 		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
-		actions.Should().BeGreaterThan(rail);
-		examples.Should().BeGreaterThan(actions);
+		html.IndexOf("id=\"api-examples-panel\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
 		html.Should().NotContain("api-page-columns");
 	}
 
 	[Test]
-	public async Task Product_Rail_HoldsCopyPageOutsideTheArticle()
+	public async Task Product_CopyPage_SitsInTheBreadcrumbRowBeforeTheArticle()
 	{
 		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
 
-		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
-		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
-		html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		AssertCopyPageInTheBreadcrumbRow(html);
+		html
+			.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
 		html.Should().NotContain("api-landing-meta");
 		html.Should().NotContain("Reference topics");
 	}
@@ -583,7 +744,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	public void RequestBodyOverride_MatchesPropertyNameOnRequestTreeOnly()
 	{
 		var schema = fixture.Document.Components!.Schemas!["fixture.SearchRequestBody"];
-		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
+		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/fixture" };
 		var builder = new ApiPropertyTreeBuilder(fixture.Document, options);
 		var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["query"] = "SUPP_QUERY_FIELD" };
 

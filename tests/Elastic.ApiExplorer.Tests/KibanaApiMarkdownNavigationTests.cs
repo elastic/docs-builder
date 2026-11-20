@@ -10,12 +10,11 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -68,18 +67,12 @@ public class KibanaApiMarkdownNavigationTests
 			Children = [introFile]
 		};
 
-		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext();
 		var doc = OpenApiReader.Instance.ReadAsync(specFile).GetAwaiter().GetResult();
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("kibana", doc, apiConfig);
-		var introNav = navigation.NavigationItems.OfType<SimpleMarkdownNavigationItem>().First();
+		var introNav = ApiExplorerFixture.GuidePages(navigation).OfType<SimpleMarkdownNavigationItem>().First();
 
 		return (navigation, introNav, context, doc);
 	}
@@ -103,10 +96,49 @@ public class KibanaApiMarkdownNavigationTests
 		// The H1 ("Kibana spaces") and the navigation title ("Spaces") differ from the meta title.
 		html.Should().Contain("<title>Kibana spaces for browser tabs | ");
 		html.Should().Contain("<h1>Kibana spaces</h1>");
+		// The class lets the CSS give the page's own first heading the title style of the other API pages.
+		html.Should().Contain("<section id=\"elastic-docs-v3\" class=\"api-markdown-page\">");
 		// The structured breadcrumb uses the parsed H1, not the navigation title or the override.
 		html.Should().Contain("\"name\": \"Kibana spaces\"");
 		html.Should().NotContain("\"name\": \"Spaces\"");
 		html.Should().NotContain("\"name\": \"Kibana spaces for browser tabs\"");
+	}
+
+	[Test]
+	public async Task IntroNav_CopyPageCopiesItsMarkdownExport()
+	{
+		var html = await RenderIntroAsync(navigationPreview: false);
+
+		html.Should().Contain(
+			"""<button type="button" class="api-page-actions-button" data-copy-page="/api/kibana/kibana-api-overview.md">"""
+		);
+	}
+
+	[Test]
+	public async Task IntroNav_DesignSystemRailLinksItsMarkdownExport()
+	{
+		var html = await RenderIntroAsync(navigationPreview: true);
+
+		html.Should().Contain(
+			"""<a class="page-actions__link" href="/api/kibana/kibana-api-overview.md" target="_blank" rel="noopener">"""
+		);
+	}
+
+	private static async Task<string> RenderIntroAsync(bool navigationPreview)
+	{
+		var (_, introNav, context, document) = SetupKibanaRendering();
+		context.Configuration.Features.NavigationPreviewEnabled = navigationPreview;
+		var renderContext = new ApiRenderContext(
+			context,
+			document,
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		)
+		{ NavigationHtml = string.Empty, CurrentNavigation = introNav, MarkdownRenderer = new StubMarkdownRenderer() };
+
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await introNav.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+		return fs.File.ReadAllText("/out.html");
 	}
 
 	[Test]
@@ -120,13 +152,12 @@ public class KibanaApiMarkdownNavigationTests
 	}
 
 	[Test]
-	public void IntroNav_ShouldAppearFirstInNavigation()
+	public void IntroNav_ShouldAppearFirst()
 	{
 		var (navigation, introNav) = SetupKibanaNavigation();
 
-		var firstItem = navigation.NavigationItems.First();
-		firstItem.Should().Be(introNav);
-		firstItem.Should().BeOfType<SimpleMarkdownNavigationItem>();
+		navigation.NavigationItems.First().Should().Be(introNav);
+		introNav.Parent.Should().Be(navigation);
 	}
 
 	[Test]
@@ -134,7 +165,7 @@ public class KibanaApiMarkdownNavigationTests
 	{
 		var (_, introNav) = SetupKibanaNavigation();
 
-		introNav.Url.Should().Be("/api/doc/kibana/kibana-api-overview/");
+		introNav.Url.Should().Be("/api/kibana/kibana-api-overview");
 	}
 
 	[Test]

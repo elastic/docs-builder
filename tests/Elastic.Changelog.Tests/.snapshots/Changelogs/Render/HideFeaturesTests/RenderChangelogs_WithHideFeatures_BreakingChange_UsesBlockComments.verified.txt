@@ -1,0 +1,25 @@
+=== 9.2.0/breaking-changes.md ===
+## 9.2.0 [elastic-9.2.0-breaking-changes]
+
+<!--
+* Hidden breaking change.
+  This breaking change should be hidden
+
+  For more information, check [#100](https://github.com/elastic/elastic/pull/100).
+
+  **Impact:** Users will be affected
+
+  **Action:** Update your code
+
+-->
+
+_There are no breaking changes associated with this release._
+=== 9.2.0/deprecations.md ===
+## 9.2.0 [elastic-9.2.0-deprecations]
+_There are no deprecations associated with this release._
+=== 9.2.0/index.md ===
+## 9.2.0 [elastic-release-notes-9.2.0]
+_There are no new features, enhancements, or fixes associated with this release._
+=== 9.2.0/known-issues.md ===
+## 9.2.0 [elastic-9.2.0-known-issues]
+_There are no known issues associated with this release._

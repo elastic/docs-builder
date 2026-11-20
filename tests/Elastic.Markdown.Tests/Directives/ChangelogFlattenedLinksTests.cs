@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -59,11 +61,22 @@ public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void FlattenedDeprecationRendersClickableLinkHtml()
-	{
-		Html.Should().Contain("href=\"https://github.com/elastic/elasticsearch/pull/268942\"");
-		Html.Should().Contain("href=\"https://github.com/elastic/elasticsearch/pull/202446\"");
-		Html.Should().Contain("href=\"https://github.com/elastic/elasticsearch/issues/199001\"");
-		Html.Should().NotContain("[#268942, #202446]");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<ul>
+			<li>Update GET /api/status endpoint details.
+				<a href="https://github.com/elastic/elasticsearch/pull/268942">#268942</a>
+				<a href="https://github.com/elastic/elasticsearch/pull/202446">#202446</a>
+				<a href="https://github.com/elastic/elasticsearch/issues/199001">#199001</a>
+			</li>
+		</ul>
+		"""
+		);
 }

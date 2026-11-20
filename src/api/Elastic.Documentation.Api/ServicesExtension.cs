@@ -15,9 +15,12 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Transport;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
+using OpenApiInfo = Microsoft.OpenApi.OpenApiInfo;
+using OpenApiServer = Microsoft.OpenApi.OpenApiServer;
 
 namespace Elastic.Documentation.Api;
 
@@ -41,24 +44,14 @@ public class AppEnvironment
 
 public static class ServicesExtension
 {
-	private static ILogger? GetLogger(IServiceCollection services)
-	{
-		using var serviceProvider = services.BuildServiceProvider();
-		var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-		return loggerFactory?.CreateLogger(typeof(ServicesExtension));
-	}
-
 	public static void AddElasticDocsApiServices(this IServiceCollection services, string? appEnvironment)
 	{
 		if (AppEnvExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
 			AddElasticDocsApiServices(services, parsedEnvironment);
 		else
 		{
-			var logger = GetLogger(services);
-			logger?.LogWarning(
-				"Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev",
-				appEnvironment
-			);
+			// No logger exists before the host is built; Program.cs reports startup on the console too.
+			Console.WriteLine($"Unable to parse environment '{appEnvironment}' into AppEnvironment. Using default AppEnvironment.Dev");
 			AddElasticDocsApiServices(services, AppEnv.Dev);
 		}
 	}
@@ -69,14 +62,35 @@ public static class ServicesExtension
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
+		// Every error answers RFC 9457 problem details; binding failures throw, so they get a precise detail.
+		_ = services.AddProblemDetails(options => options.CustomizeProblemDetails = ApiProblems.Customize);
+		_ = services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
+		_ = services.AddOpenApi(options => options
+			.AddOperationTransformer((operation, _, _) =>
+			{
+				OpenApi.ApiDescriptions.ApplyToOperation(operation);
+				return Task.CompletedTask;
+			})
+			.AddOperationTransformer(OpenApi.ApiExamples.Apply)
+			.AddSchemaTransformer(OpenApi.ApiDescriptions.ApplyToSchema)
+			.AddDocumentTransformer((document, _, _) =>
+			{
+				OpenApi.ApiDescriptions.ApplyToDocument(document);
+				return Task.CompletedTask;
+			})
+			.AddDocumentTransformer((document, _, _) =>
+			{
+				document.Info = new OpenApiInfo
+				{
+					Title = "Elastic Docs API",
+					Version = "v1",
+					Description = "Search, Ask AI, change feeds, feedback and the API reference behind elastic.co/docs."
+				};
+				document.Servers = [new OpenApiServer { Url = OpenApi.ApiExamples.Server }];
+				OpenApi.ApiExamples.RelativizePaths(document);
+				return Task.CompletedTask;
+			}));
 
-		// Configure HttpClient for streaming optimization
-		_ = services.AddHttpClient("StreamingHttpClient", client =>
-		{
-			// Disable response buffering for streaming
-			client.DefaultRequestHeaders.Connection.Add("keep-alive");
-			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
-		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		_ = services.AddSingleton<ITransport>(
@@ -85,119 +99,72 @@ public static class ServicesExtension
 			)
 		);
 		AddDistributedCache(services, appEnv);
-		AddAskAiServices(services, appEnv);
+		AddAskAiServices(services);
 		AddPageFeedbackServices(services);
-		AddSearchServices(services, appEnv);
+		_ = services.AddSearchServices();
+		_ = services.AddApiReferenceServices();
 	}
-
-	// Note: IParameterProvider is no longer needed - all options now read from IConfiguration (env vars)
-	// The LambdaExtensionParameterProvider and LocalParameterProvider can be removed in a future cleanup
 
 	private static void AddDistributedCache(IServiceCollection services, AppEnv appEnv)
 	{
-		var logger = GetLogger(services);
-
 		switch (appEnv)
 		{
 			case AppEnv.Dev:
-				{
-					logger?.LogInformation("Configuring InMemoryDistributedCache for environment {AppEnvironment}", appEnv);
-					_ = services.AddSingleton<IDistributedCache, InMemoryDistributedCache>();
-					logger?.LogInformation("InMemoryDistributedCache registered for local development");
-					break;
-				}
+				_ = services.AddSingleton<IDistributedCache, InMemoryDistributedCache>();
+				break;
 			case AppEnv.Prod:
 			case AppEnv.Staging:
 			case AppEnv.Edge:
+				_ = services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
+				// L1: in-memory, L2: DynamoDB
+				_ = services.AddSingleton<IDistributedCache>(sp =>
 				{
-					logger?.LogInformation("Configuring DynamoDB distributed cache for environment {AppEnvironment}", appEnv);
-					try
-					{
-						// Register AWS DynamoDB client
-						_ = services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
-						logger?.LogInformation("AmazonDynamoDB client registered");
-
-						// Register multi-layer cache (L1: in-memory + L2: DynamoDB)
-						_ = services.AddSingleton<IDistributedCache>(sp =>
-						{
-							var dynamoDb = sp.GetRequiredService<IAmazonDynamoDB>();
-							var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
-							var dynamoLogger = sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>();
-							var multiLogger = sp.GetRequiredService<ILogger<MultiLayerCache>>();
-
-							var dynamoCache = new DynamoDbDistributedCache(dynamoDb, tableName, dynamoLogger);
-							var multiLayerCache = new MultiLayerCache(dynamoCache, multiLogger);
-							logger?.LogInformation("Multi-layer cache registered with DynamoDB table: {TableName}", tableName);
-							return multiLayerCache;
-						});
-					}
-					catch (Exception ex)
-					{
-						logger?.LogError(ex, "Failed to configure distributed cache for environment {AppEnvironment}", appEnv);
-						throw;
-					}
-					break;
-				}
+					var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
+					var dynamoCache = new DynamoDbDistributedCache(
+						sp.GetRequiredService<IAmazonDynamoDB>(),
+						tableName,
+						sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>()
+					);
+					return new MultiLayerCache(dynamoCache, sp.GetRequiredService<ILogger<MultiLayerCache>>());
+				});
+				break;
 			default:
-				{
-					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv, "Unsupported environment for distributed cache.");
-				}
+				throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv, "Unsupported environment for distributed cache.");
 		}
 	}
 
-	private static void AddAskAiServices(IServiceCollection services, AppEnv appEnv)
+	private static void AddAskAiServices(IServiceCollection services)
 	{
-		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring AskAi services for environment {AppEnvironment}", appEnv);
+		_ = services.AddSingleton<IGcpIdTokenProvider, GcpIdTokenProvider>();
+		_ = services.AddSingleton<LlmGatewayOptions>();
+		_ = services.AddSingleton<KibanaOptions>();
+		_ = services.AddSingleton<AskAiProviderOptions>();
 
-		try
-		{
-			// Register GcpIdTokenProvider with distributed cache dependency
-			// Clean: Let DI handle everything automatically
-			_ = services.AddSingleton<IGcpIdTokenProvider, GcpIdTokenProvider>();
-			logger?.LogInformation("GcpIdTokenProvider registered with distributed cache support");
+		_ = services.AddScoped<LlmGatewayAskAiGateway>();
+		_ = services.AddScoped<AgentBuilderAskAiGateway>();
+		_ = services.AddScoped<LlmGatewayStreamTransformer>();
+		_ = services.AddScoped<AgentBuilderStreamTransformer>();
 
-			// Register options - DI auto-resolves IConfiguration from primary constructor
-			_ = services.AddSingleton<LlmGatewayOptions>();
-			logger?.LogInformation("LlmGatewayOptions registered successfully");
+		// The provider comes from AskAiProviderOptions.ConfigurationKey and is fixed per deployment.
+		_ = services.AddScoped<IAskAiService>(
+			sp =>
+				sp.GetRequiredService<AskAiProviderOptions>().Provider switch
+				{
+					AskAiProvider.AgentBuilder => sp.GetRequiredService<AgentBuilderAskAiGateway>(),
+					_ => sp.GetRequiredService<LlmGatewayAskAiGateway>()
+				}
+		);
+		_ = services.AddScoped<IStreamTransformer>(
+			sp =>
+				sp.GetRequiredService<AskAiProviderOptions>().Provider switch
+				{
+					AskAiProvider.AgentBuilder => sp.GetRequiredService<AgentBuilderStreamTransformer>(),
+					_ => sp.GetRequiredService<LlmGatewayStreamTransformer>()
+				}
+		);
 
-			_ = services.AddSingleton<KibanaOptions>();
-			logger?.LogInformation("KibanaOptions registered successfully");
-
-			// Register HttpContextAccessor for provider resolution
-			_ = services.AddHttpContextAccessor();
-			logger?.LogInformation("HttpContextAccessor registered successfully");
-
-			// Register provider resolver
-			_ = services.AddScoped<AskAiProviderResolver>();
-			logger?.LogInformation("AskAiProviderResolver registered successfully");
-
-			// Register both service implementations as concrete types
-			_ = services.AddScoped<LlmGatewayAskAiGateway>();
-			_ = services.AddScoped<AgentBuilderAskAiGateway>();
-			logger?.LogInformation("Both AI service implementations registered as concrete types");
-
-			// Register both transformers as concrete types
-			_ = services.AddScoped<LlmGatewayStreamTransformer>();
-			_ = services.AddScoped<AgentBuilderStreamTransformer>();
-			logger?.LogInformation("Both stream transformers registered as concrete types");
-
-			// Register factory as interface implementation
-			_ = services.AddScoped<IAskAiService, AskAiGatewayFactory>();
-			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
-			logger?.LogInformation(
-				"Service and transformer factories registered successfully - provider switchable via X-AI-Provider header"
-			);
-
-			// Register message feedback service (singleton for connection reuse)
-			_ = services.AddSingleton<IAskAiMessageFeedbackService, ElasticsearchAskAiMessageFeedbackGateway>();
-			logger?.LogInformation("AskAiMessageFeedbackService (Elasticsearch) registered successfully");
-		}
-		catch (Exception ex)
-		{
-			logger?.LogError(ex, "Failed to configure AskAi services for environment {AppEnvironment}", appEnv);
-			throw;
-		}
+		// Singleton for connection reuse
+		_ = services.AddSingleton<IAskAiMessageFeedbackService, ElasticsearchAskAiMessageFeedbackGateway>();
 	}
 
 	private static void AddPageFeedbackServices(IServiceCollection services)
@@ -212,15 +179,5 @@ public static class ServicesExtension
 		});
 		_ = services.AddSingleton<IPageFeedbackService, ElasticsearchPageFeedbackGateway>();
 		_ = services.AddHostedService<PageFeedbackBootstrapService>();
-	}
-
-	private static void AddSearchServices(IServiceCollection services, AppEnv appEnv)
-	{
-		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring Search services for environment {AppEnvironment}", appEnv);
-
-		// Use the shared search service for DI registration
-		_ = services.AddSearchServices();
-		logger?.LogInformation("Full search service registered with hybrid RRF support");
 	}
 }

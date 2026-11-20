@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -21,10 +22,7 @@ public class ApiCodeBlockRenderingTests
 	{
 		var html = await _ApiCodeBlock.Create(new ApiCodeBlockModel("language-json", "{}")).RenderAsync(cancellationToken: Ct);
 
-		html.Should().Contain("class=\"highlight-json notranslate\"");
-		html.Should().Contain("<div class=\"highlight\">");
-		html.Should().Contain("<pre><code class=\"language-json\">");
-		html.Should().NotContain("data-line-numbers");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -34,7 +32,7 @@ public class ApiCodeBlockRenderingTests
 			cancellationToken: Ct
 		);
 
-		html.Should().Contain("data-line-numbers");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -44,9 +42,7 @@ public class ApiCodeBlockRenderingTests
 			cancellationToken: Ct
 		);
 
-		html.Should().Contain("data-code-card");
-		html.Should().Contain("data-code-actions");
-		html.Should().Contain("data-line-numbers");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -66,10 +62,7 @@ public class ApiCodeBlockRenderingTests
 
 		var html = await _ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
 
-		html.Should().Contain("<code class=\"language-console\">");
-		html.Should().Contain("<code class=\"language-python\">");
-		html.Should().Contain("<code class=\"language-curl\">");
-		html.Should().Contain("class=\"highlight-python notranslate\"");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -79,9 +72,9 @@ public class ApiCodeBlockRenderingTests
 			cancellationToken: Ct
 		);
 
-		html.Should().Contain(
-			"<div class=\"code-lines\"><div class=\"code-line-gutter\" aria-hidden=\"true\">1&#xA;2&#xA;3</div><pre><code class=\"language-json\">"
-		);
+		html.Should().MatchHtmlSnapshot();
+		// The snapshot collapses whitespace, so the newline-separated gutter numbers need their own assertion.
+		html.Should().Contain("<div class=\"code-line-gutter\" aria-hidden=\"true\">1&#xA;2&#xA;3</div>");
 	}
 
 	[Test]

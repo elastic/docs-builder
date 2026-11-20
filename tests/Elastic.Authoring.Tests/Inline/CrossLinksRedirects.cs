@@ -10,7 +10,7 @@ static file class Constants
 	public const string UrlPrefix = "https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main";
 }
 
-public class LinkToRedirectedPage : MarkdownTest
+public class LinkToRedirectedPage : RedirectMarkdownTest
 {
 	protected override string Markdown =>
 		"""
@@ -36,7 +36,7 @@ public class LinkToRedirectedPage : MarkdownTest
 	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
 }
 
-public class LinkToRedirectedPageWithRenamedAnchor : MarkdownTest
+public class LinkToRedirectedPageWithRenamedAnchor : RedirectMarkdownTest
 {
 	protected override string Markdown =>
 		"""
@@ -65,7 +65,7 @@ public class LinkToRedirectedPageWithRenamedAnchor : MarkdownTest
 /// <summary>Goal: A writer moves a file to a new location.
 /// Required functionality: A 1:1 redirect from the old file location to the new file location.
 /// All anchors in the old file are mapped to identical anchors in the new file.</summary>
-public class Scenario1MovingAFile : MarkdownTest
+public class Scenario1MovingAFile : RedirectMarkdownTest
 {
 	protected override string Markdown =>
 		"""
@@ -84,7 +84,7 @@ public class Scenario1MovingAFile : MarkdownTest
 		);
 }
 
-public class Scenario1BMovingAFile : MarkdownTest
+public class Scenario1BMovingAFile : RedirectMarkdownTest
 {
 	protected override string Markdown => """
 		[Scenario 1](docs-content://testing/redirects/4th-page.md#yy)
@@ -106,7 +106,7 @@ public class Scenario1BMovingAFile : MarkdownTest
 /// Required functionality: A 1:many redirect, where the original file maps to multiple new pages.
 /// In this case, the anchors in the old file may end up in multiple new files.
 /// The ability to specify anchor-by-anchor redirects is required.</summary>
-public class Scenario2SplittingAPageIntoMultipleSmallerPages : MarkdownTest
+public class Scenario2SplittingAPageIntoMultipleSmallerPages : RedirectMarkdownTest
 {
 	protected override string Markdown =>
 		"""
@@ -131,7 +131,7 @@ public class Scenario2SplittingAPageIntoMultipleSmallerPages : MarkdownTest
 /// <summary>Goal: A writer removes a section of a page that was previously linked to via a cross-repo anchor link.
 /// Required functionality: A 1:null mapping for anchors. Any inbound links with that anchor should update
 /// to point to the base page instead.</summary>
-public class Scenario3DeletingASectionOnAPage : MarkdownTest
+public class Scenario3DeletingASectionOnAPage : RedirectMarkdownTest
 {
 	protected override string Markdown =>
 		"""
@@ -153,7 +153,7 @@ public class Scenario3DeletingASectionOnAPage : MarkdownTest
 /// <summary>Goal: A writer removes a section of a page that was previously linked to via a cross-repo anchor link.
 /// Required functionality: A 1:null mapping for anchors. Any inbound links with that anchor should update
 /// to point to the base page instead.</summary>
-public class Scenario3BLinkingToARemovedAnchorOnARedirectedPage : MarkdownTest
+public class Scenario3BLinkingToARemovedAnchorOnARedirectedPage : RedirectMarkdownTest
 {
 	protected override string Markdown =>
 		"""
@@ -175,7 +175,7 @@ public class Scenario3BLinkingToARemovedAnchorOnARedirectedPage : MarkdownTest
 /// <summary>Goal: A writer removes a page completely.
 /// Required functionality: A catchall redirect that strips any anchor links to the old page and points
 /// to a designated fallback page instead.</summary>
-public class Scenario4DeletingAnEntirePage : MarkdownTest
+public class Scenario4DeletingAnEntirePage : RedirectMarkdownTest
 {
 	protected override string Markdown => """
 		[Scenario 4](docs-content://testing/redirects/7th-page.md#yy)
@@ -193,7 +193,7 @@ public class Scenario4DeletingAnEntirePage : MarkdownTest
 		);
 }
 
-public class Scenario4BDeletingAnEntirePageShortSyntax : MarkdownTest
+public class Scenario4BDeletingAnEntirePageShortSyntax : RedirectMarkdownTest
 {
 	protected override string Markdown => """
 		[Scenario 4](docs-content://testing/redirects/9th-page.md)
@@ -213,7 +213,7 @@ public class Scenario4BDeletingAnEntirePageShortSyntax : MarkdownTest
 
 /// <summary>Goal: A writer removes a page completely.
 /// Redirect to empty (index) because no alternative page is available.</summary>
-public class Scenario5DeletingAnEntirePage : MarkdownTest
+public class Scenario5DeletingAnEntirePage : RedirectMarkdownTest
 {
 	protected override string Markdown => """
 		[Scenario 5](docs-content://testing/redirects/6th-page.md#yy)

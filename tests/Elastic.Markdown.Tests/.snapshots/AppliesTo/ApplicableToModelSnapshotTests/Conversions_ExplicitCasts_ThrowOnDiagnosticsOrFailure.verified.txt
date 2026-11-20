@@ -1,0 +1,30 @@
+'ga'
+    Applicability:     ga
+    AppliesCollection: ga, 
+'ga 9.0'
+    Applicability:     ga 9.0+
+    AppliesCollection: ga 9.0+, 
+'ga 9.0+'
+    Applicability:     ga 9.0+
+    AppliesCollection: ga 9.0+, 
+'9.0'
+    Applicability:     throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Error, Unknown product lifecycle: '9.0'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.)
+    AppliesCollection: throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Error, Unknown product lifecycle: '9.0'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.)
+'9'
+    Applicability:     throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Error, Unknown product lifecycle: '9'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.)
+    AppliesCollection: throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Error, Unknown product lifecycle: '9'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.)
+'dev'
+    Applicability:     throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Hint, The 'dev' lifecycle is deprecated and will be removed in a future release.)
+    AppliesCollection: throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Hint, The 'dev' lifecycle is deprecated and will be removed in a future release.)
+'nonsense'
+    Applicability:     throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Error, Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.)
+    AppliesCollection: throws ArgumentException: Explicit conversion from string to AppliesCollection failed.(Error, Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.)
+''
+    Applicability:     all
+    AppliesCollection: all
+'ga 9.0, beta 8.0'
+    Applicability:     ga
+    AppliesCollection: ga 9.0+, beta 8.0-9.0, 
+'all'
+    Applicability:     all
+    AppliesCollection: all

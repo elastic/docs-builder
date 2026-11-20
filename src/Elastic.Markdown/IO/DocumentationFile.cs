@@ -10,7 +10,7 @@ using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.IO;
 
-public abstract record DocumentationFile
+public closed record class DocumentationFile
 {
 	protected DocumentationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, string repository)
 	{

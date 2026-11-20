@@ -14,16 +14,6 @@ vi.mock('../../../config', () => ({
     },
 }))
 
-// Mock htmx - it uses XPath which jsdom doesn't support properly
-vi.mock('htmx.org', () => ({
-    default: {
-        on: vi.fn(),
-        off: vi.fn(),
-        process: vi.fn(),
-        ajax: vi.fn(),
-    },
-}))
-
 const mockHtmx = htmx as Mocked<typeof htmx>
 
 // Test component that uses the hook and renders an anchor

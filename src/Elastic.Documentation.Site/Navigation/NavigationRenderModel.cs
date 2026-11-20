@@ -17,8 +17,10 @@ public enum NavigationRenderNodeKind
 	Island,
 	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
 	Heading,
-	/// <summary>Visual divider between intro pages and the rest of the tree.</summary>
-	Separator
+	/// <summary>Visual divider between intro pages and the rest of the tree. Only the design-system samples build one.</summary>
+	Separator,
+	/// <summary>Always-open label over its items: no toggle, no page URL. The API sidebar's Topics, Operations and Types.</summary>
+	Group
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -30,9 +32,10 @@ public sealed record NavigationRenderNode
 	public required string Url { get; init; }
 	/// <summary>Badge parsed from a <c>[ns]</c>/<c>[cmd]</c>/<c>[alias]</c> title prefix; doubles as its CSS class suffix.</summary>
 	public string? Badge { get; init; }
-	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
-	public string? HttpMethod { get; init; }
-	/// <summary>True when the row groups several HTTP operations under one endpoint.</summary>
+	/// <summary>Lowercase HTTP methods for API operation leaves, the dominant one first; drives the sidebar method chip.</summary>
+	public IReadOnlyList<string> HttpMethods { get; init; } = [];
+	/// <summary>True for an API operation the spec marks deprecated, or an API group whose every operation is.</summary>
+	public bool Deprecated { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
@@ -44,15 +47,9 @@ public sealed record NavigationDropdownItem(string NavigationTitle, string Url, 
 /// <summary>A single back-link in the island sidebar's breadcrumb trail.</summary>
 public sealed record IslandBackLink(string Title, string Url);
 
-/// <summary>One choice in a sidebar/rail <c>nav-select</c> (version switcher, examples, …).</summary>
+/// <summary>One choice in a version switcher.</summary>
 /// <summary><see cref="ShortLabel"/> is the label where the option stands alone, such as a trigger, when <see cref="Label"/> carries a hint for the list.</summary>
 public sealed record NavigationSelectOption(string Label, string Value, bool Selected, string? ShortLabel = null);
-
-/// <summary>Resolved data for <c>_NavSelect.cshtml</c>.</summary>
-public sealed record NavigationSelectModel(string Id, string AriaLabel, IReadOnlyList<NavigationSelectOption> Options, bool UseLinks = true)
-{
-	public NavigationSelectOption Current => Options.FirstOrDefault(static o => o.Selected) ?? Options[0];
-}
 
 /// <summary>
 /// Everything <c>_TocTree.cshtml</c> renders, resolved from the domain navigation up front.
@@ -88,7 +85,12 @@ public sealed record NavigationRenderModel
 	/// Non-clickable label above an island/section tree (e.g. "Elasticsearch", "Reference").
 	/// The clickable index sits in <see cref="Tree"/> as "Overview".
 	/// </summary>
+	/// <summary>The label of the row that leads to a section's or an API's own landing page.</summary>
+	public const string OverviewTitle = "Overview";
+
 	public string? TreeHeading { get; init; }
+	/// <summary>True when the tree opens with an in-line Overview row; see <see cref="ISidebarOverviewRowNavigationItem"/>.</summary>
+	public bool HasOverviewRow { get; init; }
 	/// <summary>Slug for the heading icon (<c>reference</c>, <c>elasticsearch</c>, …); null when none maps.</summary>
 	public string? TreeHeadingIcon { get; init; }
 	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
@@ -136,6 +138,14 @@ public sealed record NavigationRenderModel
 				nodes = FlattenIslandOverview(SectionOverviewLeaf(tree.Url), nodes);
 			rootIndex = null;
 		}
+		else if (tree is ISidebarOverviewRowNavigationItem)
+		{
+			// A heading tree, such as one x-tagGroups group, keeps its title under the Overview row, as in the full API sidebar.
+			var overview = SectionOverviewLeaf(tree.Url);
+			nodes = tree is ISidebarHeadingNavigationItem
+				? FlattenIslandOverview(overview, [CreateNode(tree, isTopLevel: true)])
+				: FlattenIslandOverview(overview, CreateNavigationItems(tree, isTopLevel: true).ToList());
+		}
 		else
 		{
 			nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
@@ -159,6 +169,7 @@ public sealed record NavigationRenderModel
 			BackLinks = backLinks,
 			RootIndex = rootIndex,
 			TreeHeading = treeHeading,
+			HasOverviewRow = tree is ISidebarOverviewRowNavigationItem,
 			TreeHeadingIcon = treeHeadingIcon,
 			Tree = nodes,
 			ContentHash = HashContent(rootIndex, treeHeading, treeHeadingIcon, nodes),
@@ -214,7 +225,7 @@ public sealed record NavigationRenderModel
 		bool isGlobalAssemblyBuild
 	)
 	{
-		if (tree.Index.Hidden)
+		if (tree.Index.Hidden || tree is ISidebarOverviewRowNavigationItem)
 			return null;
 
 		if (isGlobalAssemblyBuild)
@@ -311,14 +322,14 @@ public sealed record NavigationRenderModel
 	}
 
 	private static NavigationRenderNode SectionOverviewLeaf(string url) =>
-		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = true, NavigationTitle = "Overview", Url = url };
+		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = true, NavigationTitle = OverviewTitle, Url = url };
 
 	private static List<NavigationRenderNode> FlattenIslandOverview(NavigationRenderNode overview, List<NavigationRenderNode> children)
 	{
 		var overviewLeaf = overview with
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
-			NavigationTitle = "Overview",
+			NavigationTitle = OverviewTitle,
 			Id = null,
 			ShowToggle = false,
 			NavigationItems = []
@@ -340,18 +351,6 @@ public sealed record NavigationRenderModel
 				continue;
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
-
-			if (item is ISidebarSeparatorNavigationItem)
-			{
-				yield return new NavigationRenderNode
-				{
-					Kind = NavigationRenderNodeKind.Separator,
-					IsTopLevel = isTopLevel,
-					NavigationTitle = "",
-					Url = ""
-				};
-				continue;
-			}
 
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
 				yield return CreateNode(node, isTopLevel);
@@ -376,33 +375,35 @@ public sealed record NavigationRenderModel
 			};
 		}
 
-		var isHeading = node is ISidebarHeadingNavigationItem;
+		// A group is a heading with no toggle. Its rows are top-level rows of the sidebar; a heading's rows are nested.
+		var isGroup = node is ISidebarGroupNavigationItem;
+		var isHeading = isGroup || node is ISidebarHeadingNavigationItem;
 		return new NavigationRenderNode
 		{
-			Kind = isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
+			Kind = isGroup ? NavigationRenderNodeKind.Group : isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
-			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
-			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
+			ShowToggle = !isGroup && !node.NavigationItems.All(n => n.Hidden),
+			Deprecated = node is IDeprecatableNavigationItem { Deprecated: true },
+			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: isGroup)]
 		};
 	}
 
 	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
-		var httpMethod = item is ILeafNavigationItem<INavigationModel> { Model: IHttpMethodNavigationModel method }
-			? method.HttpMethod
-			: null;
+		var operation = item as IApiOperationNavigationItem;
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			HttpMethod = httpMethod,
+			HttpMethods = operation?.HttpMethods ?? [],
+			Deprecated = item is IDeprecatableNavigationItem { Deprecated: true },
 			Url = item.Url
 		};
 	}
@@ -462,10 +463,14 @@ public sealed record NavigationRenderModel
 		AppendInt(hash, node.IsTopLevel ? 1 : 0);
 		Append(hash, node.NavigationTitle);
 		Append(hash, node.Badge ?? string.Empty);
-		Append(hash, node.HttpMethod ?? string.Empty);
+		foreach (var method in node.HttpMethods)
+			Append(hash, method);
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);
+		// Flags are hashed only when set, each with its own marker, so trees without them keep the hash, and so the tree id, they had before.
+		if (node.Deprecated)
+			AppendInt(hash, 2);
 		AppendNodes(hash, node.NavigationItems);
 	}
 

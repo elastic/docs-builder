@@ -1,0 +1,36 @@
+{
+  "deletion_threshold_default": 0.25,
+  "exclude_patterns": [
+    "docs/_preview/*"
+  ],
+  "remote_listing_completed": true,
+  "total_source_files": 4,
+  "total_remote_files": 3,
+  "total_sync_requests": 5,
+  "delete": [
+    {
+      "destination_path": "docs/gone.html"
+    }
+  ],
+  "add": [
+    {
+      "local_path": "{output}/docs/new.html",
+      "destination_path": "docs/new.html"
+    }
+  ],
+  "update": [
+    {
+      "local_path": "{output}/docs/changed.html",
+      "destination_path": "docs/changed.html"
+    }
+  ],
+  "skip": [
+    {
+      "local_path": "{output}/docs/same.html",
+      "destination_path": "docs/same.html"
+    }
+  ],
+  "retain": [
+    "docs/_static/chunk-Search-00000001.js"
+  ]
+}

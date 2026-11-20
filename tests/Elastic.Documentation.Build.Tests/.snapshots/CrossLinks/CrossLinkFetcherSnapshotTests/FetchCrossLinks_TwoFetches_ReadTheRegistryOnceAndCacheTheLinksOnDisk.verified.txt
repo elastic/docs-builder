@@ -1,0 +1,7 @@
+reader calls: registry, links elastic/alpha/main/links.json, links elastic/beta/master/links.json
+declared: alpha, beta
+entries: alpha=elastic/alpha/main/links.json, beta=elastic/beta/master/links.json
+same references: True
+cache files:
+links/links-elastic-alpha-main-etag-a.json
+links/links-elastic-beta-master-etag-b.json

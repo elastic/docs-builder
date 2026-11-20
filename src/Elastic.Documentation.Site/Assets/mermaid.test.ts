@@ -1,3 +1,4 @@
+import { bindImageModals } from './image-modal'
 import { initMermaid } from './mermaid'
 
 function diagram(name: string): string {
@@ -38,8 +39,6 @@ function release() {
 }
 
 describe('mermaid pan', () => {
-    afterEach(() => vi.restoreAllMocks())
-
     it('pans the dragged diagram', () => {
         document.body.innerHTML = diagram('a')
         initMermaid()
@@ -110,5 +109,149 @@ describe('mermaid pan', () => {
                 .map(([type]) => type)
                 .filter((type) => type === 'mousemove' || type === 'mouseup')
         ).toEqual([])
+    })
+})
+
+describe('mermaid fullscreen', () => {
+    const modalViewport = () =>
+        document.querySelector('.mermaid-modal-viewport') as HTMLElement
+    const modalRendered = () =>
+        modalViewport().querySelector('.mermaid-rendered') as HTMLElement
+    const dialog = () =>
+        document.querySelector<HTMLDialogElement>('dialog.mermaid-modal')
+
+    beforeAll(() => {
+        bindImageModals()
+        // jsdom has no modal dialogs; these do what the browser does to the attribute and events.
+        HTMLDialogElement.prototype.showModal = function (
+            this: HTMLDialogElement
+        ) {
+            this.setAttribute('open', '')
+        }
+        HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+            this.removeAttribute('open')
+            this.dispatchEvent(new Event('close'))
+        }
+    })
+
+    function openFullscreen(name: string) {
+        document
+            .querySelector<HTMLButtonElement>(`#${name} .mermaid-fullscreen`)!
+            .click()
+    }
+
+    afterEach(() => {
+        // A test that leaves the dialog open leaves the page scroll locked.
+        document.documentElement.removeAttribute('style')
+    })
+
+    it('pans the fullscreen diagram without adding document listeners', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        const added = vi.spyOn(document, 'addEventListener')
+
+        openFullscreen('a')
+        press(modalViewport(), 10, 10)
+        move(40, 25)
+        release()
+        move(90, 90)
+
+        expect(modalRendered().style.transform).toBe(
+            'scale(1) translate(30px, 15px)'
+        )
+        expect(rendered('a').style.transform).toBe('')
+        expect(
+            added.mock.calls
+                .map(([type]) => type)
+                .filter((type) => type === 'mousemove' || type === 'mouseup')
+        ).toEqual([])
+    })
+
+    it('opens the diagram in a modal dialog that locks the page scroll', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        const showModal = vi.spyOn(HTMLDialogElement.prototype, 'showModal')
+
+        openFullscreen('a')
+
+        expect(showModal).toHaveBeenCalledTimes(1)
+        expect(dialog()?.open).toBe(true)
+        expect(modalRendered().querySelector('img')?.src).toContain('a.svg')
+        expect(document.documentElement.style.overflow).toBe('hidden')
+    })
+
+    it('closes on the close button', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        openFullscreen('a')
+        expect(dialog()?.open).toBe(true)
+
+        document
+            .querySelector<HTMLButtonElement>('.mermaid-modal-close')!
+            .click()
+
+        expect(dialog()).toBeNull()
+        expect(document.documentElement.style.overflow).toBe('')
+    })
+
+    it('closes on a click on the backdrop, and stays open for a click inside', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        openFullscreen('a')
+
+        modalViewport().dispatchEvent(
+            new MouseEvent('click', { bubbles: true })
+        )
+        expect(dialog()?.open).toBe(true)
+
+        dialog()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(dialog()).toBeNull()
+    })
+
+    it('stops panning when the browser closes it mid-drag', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        openFullscreen('a')
+        const closing = modalRendered()
+
+        press(modalViewport(), 10, 10)
+        move(40, 25)
+        dialog()!.close()
+        move(90, 90)
+
+        expect(closing.style.transform).toBe('scale(1) translate(30px, 15px)')
+    })
+
+    it('closes with the diagram it was opened from when htmx swaps that page, but not for another swap', () => {
+        document.body.innerHTML =
+            '<div id="main-container">' +
+            diagram('a') +
+            '</div><div id="elsewhere"></div>'
+        initMermaid()
+        openFullscreen('a')
+        const swap = (target: Element) =>
+            document.dispatchEvent(
+                new CustomEvent('htmx:beforeSwap', {
+                    detail: { shouldSwap: true, target },
+                })
+            )
+
+        swap(document.getElementById('elsewhere')!)
+        expect(dialog()?.open).toBe(true)
+
+        swap(document.getElementById('main-container')!)
+        expect(dialog()).toBeNull()
+        expect(document.documentElement.style.overflow).toBe('')
+    })
+
+    it('cleans up when the browser closes it, as it does on Escape', () => {
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        openFullscreen('a')
+
+        dialog()!.close()
+
+        expect(dialog()).toBeNull()
+        expect(document.documentElement.style.overflow).toBe('')
     })
 })

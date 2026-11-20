@@ -11,11 +11,11 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -26,137 +26,115 @@ public partial class ApiPagesNavRenderingTests
 	public async Task Render_Isolated_HostsProductAndVersionAheadOfTheTree()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/v9/",
-			"/api/doc/elasticsearch/v9.md",
+			"/api/elasticsearch/v9/",
+			"/api/elasticsearch/v9.md",
 			apiContext: CreateApiContext(versions: [
-				new("main", "/api/doc/elasticsearch/", Selected: false),
-				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
-				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
+				new("main", "/api/elasticsearch/", Selected: false),
+				new("v9", "/api/elasticsearch/v9/", Selected: true),
+				new("v8", "/api/elasticsearch/v8/", Selected: false),
 			])
 		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"api-hub-switcher\"");
-		html.Should().Contain("id=\"api-version-switcher\"");
-		// One popover, placed by api-menu.ts, opened by one button: API and version are a single choice.
-		html.Should().Contain("popovertarget=\"api-hub-menu\"").And.Contain("id=\"api-hub-menu\"");
-		html.Should().NotContain("api-version-menu");
-		// Only the selected product and the selected version are marked current.
-		CountOccurrences(html, "aria-current=\"true\"").Should().Be(2);
-		html.Should().NotContain("aria-current=\"false\"");
-		html.Should().NotContain("<details").And.NotContain("<summary");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
-		html
-			.IndexOf("id=\"api-version-switcher\"", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("<nav>tree</nav>", StringComparison.Ordinal));
+		// One popover, placed by api-menu.ts, opened by one button: API and version are a single choice,
+		// and only the selected product and the selected version are marked current.
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task Render_Isolated_MarksOnlyCurrentProductSelected()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", apiContext: CreateApiContext());
+		var model = CreateLayoutModel("/api/elasticsearch/", "/api/elasticsearch.md", apiContext: CreateApiContext());
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().NotContain("api-version-switcher");
-		html.Should().Contain("href=\"/api/doc/kibana/\"");
-		html.Should().Contain("href=\"/api/\"");
-		CountOccurrences(html, "secondary-nav-dropdown-link--selected").Should().Be(1);
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task Render_Assembler_ShowsTheApiIdentityAboveTheFilter()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			apiContext: CreateApiContext(versions: [
-				new("main", "/api/doc/elasticsearch/", Selected: true),
-				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
+				new("main", "/api/elasticsearch/", Selected: true),
+				new("v8", "/api/elasticsearch/v8/", Selected: false),
 			]),
 			buildType: BuildType.Assembler
 		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"api-hub-switcher\"").And.Contain("id=\"api-version-switcher\"").And.NotContain("<select");
-		html
-			.IndexOf("api-hub-switcher", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task Render_PreservesTheNavAcrossHtmxSwapsWhenPreviewEnabled()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
 		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"pages-nav\"");
-		html.Should().Contain("hx-preserve");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task Render_ShowsTheEndpointFilterOnAssemblerBuilds()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Assembler);
+		var model = CreateLayoutModel("/api/elasticsearch/", "/api/elasticsearch.md", buildType: BuildType.Assembler);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
-		CountOccurrences(html, "border-b").Should().Be(1);
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task Render_ShowsTheEndpointFilterWhenNavigationPreviewIsOn()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }),
 			buildType: BuildType.Assembler
 		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
-		html.Should().Contain("hx-preserve");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task Render_OmitsTheEndpointFilterOnIsolatedBuilds()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Isolated);
+		var model = CreateLayoutModel("/api/elasticsearch/", "/api/elasticsearch.md", buildType: BuildType.Isolated);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().NotContain("navigation-search");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public void DirectOperationUrl_ExpandsEveryAncestorAndMarksTheOperationCurrent()
 	{
-		const string operationUrl = "/api/doc/elasticsearch/operation/operation-synonyms-put-synonym";
+		const string operationUrl = "/api/elasticsearch/operation/operation-synonyms-put-synonym";
 		const string html =
 			"""
 			<ul id="nav-tree-es">
 				<li class="nav-folder">
 					<div class="peer nav-folder-peer">
 						<input id="other-group" type="checkbox" class="hidden">
-						<a href="/api/doc/elasticsearch/group/other" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Other</span></a>
+						<a href="/api/elasticsearch/group/other" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Other</span></a>
 					</div>
 					<div class="nav-subtree-clip">
 						<ul class="nav-subtree">
 							<li class="flex group/li">
-								<a href="/api/doc/elasticsearch/operation/operation-other" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Other op</span></a>
+								<a href="/api/elasticsearch/operation/operation-other" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Other op</span></a>
 							</li>
 						</ul>
 					</div>
@@ -171,12 +149,12 @@ public partial class ApiPagesNavRenderingTests
 							<li class="nav-folder">
 								<div class="peer nav-folder-peer">
 									<input id="synonyms" type="checkbox" class="hidden">
-									<a href="/api/doc/elasticsearch/group/synonyms" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Synonyms</span></a>
+									<a href="/api/elasticsearch/group/synonyms" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Synonyms</span></a>
 								</div>
 								<div class="nav-subtree-clip">
 									<ul class="nav-subtree">
 										<li class="flex group/li">
-											<a href="/api/doc/elasticsearch/operation/operation-synonyms-put-synonym" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Create or update a synonym set</span></a>
+											<a href="/api/elasticsearch/operation/operation-synonyms-put-synonym" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Create or update a synonym set</span></a>
 										</li>
 									</ul>
 								</div>
@@ -190,7 +168,7 @@ public partial class ApiPagesNavRenderingTests
 		var marked = NavigationCurrentMarker.Apply(html, operationUrl);
 
 		marked.Should().Contain(
-			"href=\"/api/doc/elasticsearch/operation/operation-synonyms-put-synonym\" class=\"sidebar-link nav-link nav-v2-link current\""
+			"href=\"/api/elasticsearch/operation/operation-synonyms-put-synonym\" class=\"sidebar-link nav-link nav-v2-link current\""
 		);
 		marked.Should().Contain("id=\"search-apis\" type=\"checkbox\" class=\"hidden\" checked");
 		marked.Should().Contain("id=\"synonyms\" type=\"checkbox\" class=\"hidden\" checked");
@@ -203,8 +181,8 @@ public partial class ApiPagesNavRenderingTests
 	public async Task Render_OmitsTheEndpointFilterWhenAirGapped()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }),
 			buildType: BuildType.Assembler
 		);
@@ -228,8 +206,8 @@ public partial class ApiPagesNavRenderingTests
 				Kind = NavigationRenderNodeKind.Leaf,
 				IsTopLevel = false,
 				NavigationTitle = title,
-				Url = "/api/doc/elasticsearch/operation/example",
-				HttpMethod = method
+				Url = "/api/elasticsearch/operation/example",
+				HttpMethods = [method]
 			}
 		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
@@ -240,11 +218,44 @@ public partial class ApiPagesNavRenderingTests
 		link.Should().NotContain("aria-label");
 		link.Should().NotContain("icon-api-arrow");
 		link.Should().NotContain("icon-api-x");
+		link.Should().NotContain("deprecated");
 	}
 
 	[Test]
-	[Arguments("/api/doc/kibana/group/endpoint-dashboards#get-started", true)]
-	[Arguments("/api/doc/kibana/group/endpoint-dashboards", false)]
+	public async Task Render_DeprecatedOperationRow_MarksTheLinkAndNamesItForScreenReaders()
+	{
+		NavigationRenderNode[] nodes =
+		[
+			new()
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Get a document source",
+				Url = "/api/elasticsearch/operation/operation-get-source",
+				HttpMethods = ["get"],
+				Deprecated = true
+			}
+		];
+		var ct = TestContext.Current!.Execution.CancellationToken;
+
+		foreach (var html in new[]
+		{
+			await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct),
+			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct)
+		})
+		{
+			var link = OperationLink(html);
+			link.Should().MatchRegex("class=\"sidebar-link nav-link( nav-v2-link)? nav-link--deprecated\"");
+			var hidden = link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
+			hidden.Should().BeGreaterThan(link.IndexOf("Get a document source", StringComparison.Ordinal));
+			hidden.Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
+			link.Should().NotContain("aria-label");
+		}
+	}
+
+	[Test]
+	[Arguments("/api/kibana/group/endpoint-dashboards#get-started", true)]
+	[Arguments("/api/kibana/group/endpoint-dashboards", false)]
 	public async Task Render_InPageLeaf_OptsOutOfHtmxBoost(string url, bool optsOut)
 	{
 		NavigationRenderNode[] nodes =
@@ -277,7 +288,7 @@ public partial class ApiPagesNavRenderingTests
 		return html[start..(end + 4)];
 	}
 
-	private static ApiLayoutViewModel CreateLayoutModel(
+	internal static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
 		ApiIdentity? apiContext = null,
@@ -286,11 +297,7 @@ public partial class ApiPagesNavRenderingTests
 	)
 	{
 		var fs = new FileSystem();
-		var context = new BuildContext(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs)
-		);
+		var context = TestHelpers.CreateBuildContext();
 		return new()
 		{
 			DocSetName = "Api Explorer",
@@ -299,6 +306,7 @@ public partial class ApiPagesNavRenderingTests
 			Previous = null,
 			Next = null,
 			NavigationHtml = "<nav>tree</nav>",
+			BetaBanner = ApiBetaBanner.For(null, navigationUrl),
 			UrlPathPrefix = string.Empty,
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,
@@ -322,14 +330,14 @@ public partial class ApiPagesNavRenderingTests
 				new(
 					Title: null,
 					[
-						new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true, IconSvg: null),
-						new("Kibana", "/api/doc/kibana/", Selected: false, IconSvg: null)
+						new("Elasticsearch", "/api/elasticsearch/", Selected: true, IconSvg: null),
+						new("Kibana", "/api/kibana/", Selected: false, IconSvg: null)
 					]
 				)
 			],
 			HubUrl: "/api/",
 			versions ?? [],
-			new ApiSpecDownload("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml")
+			new ApiSpecDownload("/api/elasticsearch.json", "/api/elasticsearch.yaml")
 		);
 
 	private static int CountOccurrences(string html, string value)
@@ -343,5 +351,32 @@ public partial class ApiPagesNavRenderingTests
 		}
 
 		return count;
+	}
+
+	[Test]
+	public async Task Render_MultiMethodOperationRow_JoinsEveryMethodIntoOneChipDominantFirst()
+	{
+		var html = await _TocTreeNav.Create([
+			new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Search",
+				Url = "/api/elasticsearch/operation/search",
+				HttpMethods = ["post", "get"]
+			}
+		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		OperationLink(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<a href="/api/elasticsearch/operation/search" class="sidebar-link nav-link nav-v2-link">
+							<span class="nav-v2-nav-text">Search</span>
+							<span class="nav-v2-api-method-group"><span class="nav-v2-api-method nav-v2-api-method-post">POST</span><span class="nav-v2-api-method nav-v2-api-method-get">GET</span></span>
+
+						</a>
+			"""
+			);
 	}
 }

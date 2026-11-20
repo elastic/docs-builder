@@ -1,0 +1,5 @@
+=== 9.2.0/changelog.md ===
+## 9.2.0
+
+### Features and enhancements
+* Feature with description.

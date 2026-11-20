@@ -497,7 +497,11 @@ function currentInNav(nav: HTMLElement) {
 }
 
 function getNavScrollContainer(nav: HTMLElement) {
-    return nav.querySelector<HTMLElement>('.pages-nav-v2__scroll') ?? nav
+    return (
+        nav.querySelector<HTMLElement>(
+            '.pages-nav-v2__scroll, .sidebar-nav-scroll'
+        ) ?? nav
+    )
 }
 
 // The smaller golden-ratio share (0.382) puts the active row a little above centre.
@@ -519,12 +523,13 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const navRect = scrollContainer.getBoundingClientRect()
     const currentNavItemRect = currentNavItem.getBoundingClientRect()
 
-    // Sticky chrome (dropdown / back) sits above the scrollport in the Figma shell.
-    const stickyElement = $optional('.pages-nav-v2__chrome, .sticky', nav)
-    const stickyHeight =
+    // Chrome (dropdown / back) outside a separate scroller never covers its rows.
+    // Only sticky chrome inside the scroller itself does.
+    const stickyElement =
         scrollContainer === nav
-            ? (stickyElement?.getBoundingClientRect().height ?? 0)
-            : 0
+            ? $optional('.pages-nav-v2__chrome, .sticky', nav)
+            : null
+    const stickyHeight = stickyElement?.getBoundingClientRect().height ?? 0
 
     const effectiveNavTop = navRect.top + stickyHeight
 
@@ -565,23 +570,6 @@ export const scrollCurrentNaviItemIntoView = throttle(
     100,
     { leading: false, trailing: true }
 )
-
-/**
- * Prevents focus-based dropdowns from closing before link navigation completes.
- * Without this, clicking a link inside the dropdown would transfer focus away,
- * causing the dropdown to close via CSS :focus-within before navigation happens.
- */
-function preventFocusLossOnLinkClick(anchor: HTMLAnchorElement) {
-    anchor.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-    })
-    // Close dropdown after click completes
-    anchor.addEventListener('mouseup', () => {
-        if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur()
-        }
-    })
-}
 
 function normalizeNavPathname(pathname: string) {
     let p: string
@@ -1194,7 +1182,7 @@ function ensureFolderRowClick() {
 }
 
 const SECTION_RESET_LINK =
-    '#secondary-nav a.secondary-nav-item__hit, #secondary-nav a.secondary-nav-dropdown-link, #pages-dropdown a.pages-dropdown_active'
+    '#secondary-nav a.secondary-nav-item__hit, #pages-dropdown a.pages-dropdown_active'
 
 function isSectionResetElement(el: Element | null) {
     return Boolean(el?.closest(SECTION_RESET_LINK))
@@ -1297,13 +1285,6 @@ export function initNav() {
     const pagesNav = $optional('#pages-nav')
     if (!pagesNav) {
         return
-    }
-
-    const dropdownActiveAnchor = $optional(
-        '#pages-dropdown a.pages-dropdown_active'
-    )
-    if (dropdownActiveAnchor) {
-        preventFocusLossOnLinkClick(dropdownActiveAnchor)
     }
 
     ensureFolderRowClick()

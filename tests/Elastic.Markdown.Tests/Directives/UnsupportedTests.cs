@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -27,15 +29,7 @@ A regular paragraph.
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be(directive);
 
 	[Test]
-	public void TracksASingleWarning() => Collector.Warnings.Should().Be(1);
-
-	[Test]
-	public void EmitsUnsupportedWarnings()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Warning);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.StartsWith($"Directive block '{directive}' is unsupported."));
-	}
+	public void EmitsUnsupportedWarnings() => Collector.Diagnostics.ToSnapshotText().Should().MatchSnapshot();
 }
 
 [InheritsTests]

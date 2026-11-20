@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Elastic.Documentation.Navigation.Tests</RootNamespace>
@@ -20,11 +19,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Assembler\Baseline\*.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Elastic.Documentation.Testing" />
+    <Using Include="Nullean.Snapshots" />
+    <Using Include="Nullean.Snapshots.Html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AngleSharp" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>
-
 
 </Project>

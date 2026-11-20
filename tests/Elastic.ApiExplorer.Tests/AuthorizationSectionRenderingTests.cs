@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
 using Microsoft.AspNetCore.Html;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -54,10 +55,8 @@ public class AuthorizationSectionRenderingTests
 			new AuthRequirement([Scheme("bearer", "Bearer", "Authorization: Bearer <token>")])
 		);
 
-		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-0\">Basic &#x2B; Api key</label>");
-		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-1\">Bearer</label>");
+		html.Should().MatchHtmlSnapshot();
 		html.Should().Contain("Send all of these together.");
-		html.Should().Contain("<h3>Basic</h3>").And.Contain("<h3>Api key</h3>");
 	}
 
 	[Test]
@@ -68,39 +67,39 @@ public class AuthorizationSectionRenderingTests
 			Scheme("key", "Api key", "X-Key: <value>")
 		]));
 
-		html.Should().NotContain("api-tabs");
-		html.Should().NotContain("tabs-label");
-		html.Should().Contain("Send all of these together.");
-		html.Should().Contain("<h3>Basic</h3>").And.Contain("<h3>Api key</h3>");
-		html.Should().Contain("Authorization: Basic &lt;credentials&gt;").And.Contain("X-Key: &lt;value&gt;");
+		html.Should().MatchHtmlSnapshot();
+		html.Should().NotContain("api-tabs", "a single requirement needs no tabs");
 	}
 
 	[Test]
-	public async Task Render_PrivilegesNeededTogether_AreSummarisedAsSeparateNamesJoinedWithPlus()
+	public async Task Render_ClusterAndIndexPrivileges_ShowAsLabelledRowsWithoutTheRepeatedWord()
 	{
-		var html = await RenderPrivileges(new PrivilegeRow("Privileges", ["integrations-all", "fleet-agent-policies-all"], "and"));
+		var html = await RenderPrivileges(
+			new PrivilegeRow("Cluster privileges", ["monitor"]),
+			new PrivilegeRow("Index privileges", ["read", "view_index_metadata"])
+		);
 
-		html.Should().Contain("data-param-section");
-		html.Should().Contain("id=\"required-authorization\"");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"integrations-all\"></code>");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"fleet-agent-policies-all\"></code>");
-		html.Should().Contain("api-param-summary is-all");
-		html.Should().Contain("id=\"required-authorization-list\" hidden=\"until-found\"");
-		html.Should().Contain("<span class=\"api-type-badge\">integrations-all</span>", "the rows are still listed in the body");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
-	public async Task Render_PrivilegeAlternatives_AreSummarisedAsVariants()
+	public async Task Render_PrivilegeAlternatives_AreJoinedWithOrAndNeedNoLabel()
 	{
 		var html = await RenderPrivileges(new PrivilegeRow("Privileges", ["read", "manage"], "or"));
 
-		html.Should().Contain("api-param-summary is-variants");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"read\"></code>");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"manage\"></code>");
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Render_RowWithoutPrivilegeNames_ShowsItsTextAsANote()
+	{
+		var html = await RenderPrivileges(new PrivilegeRow("Needs the `manage` role on the space", []));
+
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	private static async Task<string> RenderPrivileges(params PrivilegeRow[] rows) =>
-		await _AuthorizationSection.Create(
+		await _RequiredPrivileges.Create(
 			new AuthorizationSectionModel([], rows, static markdown => new HtmlString($"<p>{markdown}</p>"))
 		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 

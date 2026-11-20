@@ -6,8 +6,19 @@ using Elastic.Documentation.Site.ApplicabilityBadges;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-/// <summary>The availability and deprecated badges beside an operation's title or under its path.</summary>
-public sealed record TitleBadgesModel(ApplicableToViewModel? Availability, bool Deprecated)
+/// <summary>The version, auth, availability and deprecated badges beside an operation's title or under its path.</summary>
+/// <param name="DesignSystem">True when the design system look is on. The auth and deprecated badges then use the markup of its availability badge.</param>
+public sealed record TitleBadgesModel(
+	ApplicableToViewModel? Availability,
+	bool Deprecated,
+	bool DesignSystem,
+	string? AuthText = null,
+	string? AuthHref = null,
+	OlderMajorNotice? OlderMajor = null
+)
 {
-	public bool Any => Availability is not null || Deprecated;
+	public bool Any => Availability is not null || Deprecated || AuthText is not null || OlderMajor is not null;
 }
+
+/// <summary>One text badge of that row. <paramref name="Href"/> makes it a link.</summary>
+public sealed record TitleBadgeModel(string Text, bool DesignSystem, string? Href = null, bool Danger = false, bool Warning = false);

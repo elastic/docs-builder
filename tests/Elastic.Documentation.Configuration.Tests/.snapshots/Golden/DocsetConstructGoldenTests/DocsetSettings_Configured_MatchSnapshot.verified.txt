@@ -1,0 +1,68 @@
+diagnostics:
+model <ConfigurationFile>:
+  SourceFile: <path /docs/docset.yml>
+  Project: "settings"
+  CrossLinkRepositories:
+    - "docs-content"
+    - "elasticsearch"
+  Registry: Public
+  CrossLinkEntries:
+    - <CrossLinkEntry>:
+      Repository: "docs-content"
+      Registry: Public
+    - <CrossLinkEntry>:
+      Repository: "elasticsearch"
+      Registry: Public
+  ReleaseNotesProducts:
+    - "elasticsearch"
+  MaxTocDepth: 4
+  Extensions <EnabledExtensions>:
+    IsDetectionRulesEnabled: True
+    Enabled:
+      - "detection-rules"
+  Redirects: null
+  RedirectsSource: <path /docs/redirects.yml>
+  Products:
+    -: <Product cloud-hosted>
+    -: <Product elasticsearch>
+  Features <FeatureFlags>:
+    PrimaryNavEnabled: True
+    DisableGitHubEditLink: True
+    StagingElasticNavEnabled: False
+    WebsiteSearchEnabled: False
+    WebsiteSearchScriptUrl: null
+    WafIntegrationUrl: null
+    AirGappedEnabled: False
+    DiagnosticsPanelEnabled: False
+    AssemblerApiExplorerEnabled: False
+    GuideNavEnabled: False
+    NavigationPreviewEnabled: False
+    PageFeedbackEnabled: False
+  ScopeDirectory: <path /docs>
+  StorybookRegistry: "https://example.com/storybook"
+  StorybookRegistryFallback: null
+  ApiConfigurations: null
+  SuppressDiagnostics:
+    - AutolinkElasticCoDocs
+  Branding: null
+  Ctas:
+    trial <Cta>:
+      Name: "trial"
+      Label: "Get started free"
+      Url: "https://cloud.elastic.co/registration?page=docs&placement=docs-siderail"
+      Benefits:
+        - "14-day free trial"
+        - "All features included"
+        - "No setup required"
+    custom <Cta>:
+      Name: "custom"
+      Label: "Custom"
+      Url: "https://example.com/custom"
+      Benefits:
+        - "one"
+        - "two"
+  DevelopmentDocs: True
+substitutions:
+  Product: The Product
+  other: Other
+generated substitutions (version.* and product.* keys): 500

@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -31,21 +32,21 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			.ContainSingle(item => item.Model.Kind == ApiStructuralKind.Servers)
 			.Subject;
 
-		authentication.Url.Should().Be("/api/doc/fixture/authentication");
-		authentication.Hidden.Should().BeTrue("the page stays for old links but is not listed in the nav");
+		authentication.Url.Should().Be("/api/fixture/authentication");
+		authentication.Hidden.Should().BeFalse("the sidebar lists it with the guide pages");
 		servers.Hidden.Should().BeTrue("the page stays for old links but is not listed in the nav");
 		authentication.NavigationTitle.Should().Be("Authentication");
-		servers.Url.Should().Be("/api/doc/fixture/servers");
+		servers.Url.Should().Be("/api/fixture/servers");
 		servers.NavigationTitle.Should().Be("Servers");
 	}
 
 	[Test]
-	public void Overview_HidesAuthenticationAndServersPages()
+	public void Overview_ListsAuthenticationAsATopicAndHidesServers()
 	{
 		var rows = ApiOverviewBuilder.Build(fixture.Navigation, fixture.Context.VersionsConfiguration);
 
-		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/servers");
-		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/authentication");
+		rows.Select(row => row.Url).Should().NotContain("/api/fixture/servers");
+		rows.Select(row => row.Url).Should().Contain("/api/fixture/authentication");
 	}
 
 	[Test]
@@ -97,17 +98,18 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 
 	private static IReadOnlyList<StructuralNavigationItem> CreateItems(OpenApiDocument document)
 	{
-		var root = new LandingNavigationItem("/api/doc/fixture");
+		var root = new LandingNavigationItem("/api/fixture");
 		return StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
 	}
 
 	[Test]
-	public void ReadSchemes_MapsFixtureApiKey()
+	public void ReadRequirements_MapsFixtureApiKey()
 	{
-		var schemes = StructuralViewModel.ReadSchemes(RenderContext());
+		var requirements = StructuralViewModel.ReadRequirements(fixture.Document);
 
+		var schemes = requirements.SelectMany(requirement => requirement.Schemes).ToArray();
 		var apiKey = schemes.Should().ContainSingle(scheme => scheme.Id == "apiKey").Subject;
-		apiKey.Heading.Should().Be("Api key (apiKey)");
+		apiKey.Label.Should().Be("Api key");
 		apiKey.CredentialExample.Should().Be("Authorization: <value>");
 		schemes.Select(scheme => scheme.Id).Should().Contain(["apiKey", "basicAuth", "bearerAuth"]);
 	}
@@ -128,9 +130,16 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
 		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
-		markdown.Should().Contain("# Authentication");
-		markdown.Should().Contain("## Api key (apiKey)");
-		markdown.Should().Contain("Authorization: <value>");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Authentication
+
+			- Api key: `Authorization: <value>`
+			  Send the encoded key with the ApiKey prefix.
+			- Basic: `Authorization: Basic <credentials>`
+			- Bearer: `Authorization: Bearer <token>`
+			"""
+		);
 	}
 
 	[Test]
@@ -139,17 +148,21 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Servers);
 		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
-		markdown.Should().Contain("# Servers");
-		markdown.Should().Contain("`https://fixture.example.com` (Fixture server)");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Servers
+
+			- `https://fixture.example.com` (Fixture server)
+			"""
+		);
 	}
 
 	[Test]
-	public void ReadSchemes_EmptyDocument_ReturnsNoSchemes()
-	{
-		var context = RenderContext(document: new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } });
-
-		StructuralViewModel.ReadSchemes(context).Should().BeEmpty();
-	}
+	public void ReadRequirements_EmptyDocument_ReturnsNoRequirements() =>
+		StructuralViewModel
+			.ReadRequirements(new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } })
+			.Should()
+			.BeEmpty();
 
 	private ApiRenderContext RenderContext(INavigationItem? current = null, OpenApiDocument? document = null) =>
 		new(

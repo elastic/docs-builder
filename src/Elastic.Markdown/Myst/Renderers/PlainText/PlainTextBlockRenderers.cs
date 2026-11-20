@@ -101,20 +101,8 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 			renderer.WriteLine(obj.Caption);
 
 		// Output code content without fence markers
-		var lastNonEmptyIndex = GetLastNonEmptyLineIndex(obj);
-		for (var i = 0; i <= lastNonEmptyIndex; i++)
-		{
-			var line = obj.Lines.Lines[i];
-			renderer.WriteLine(line.ToString());
-		}
-	}
-
-	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
-	{
-		var lastNonEmptyIndex = obj.Lines.Lines.Length - 1;
-		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
-			lastNonEmptyIndex--;
-		return lastNonEmptyIndex;
+		foreach (var line in obj.TextLines())
+			renderer.WriteLine(line);
 	}
 
 	private static void WriteContributorsBlock(PlainTextRenderer renderer, ContributorsBlock block)
@@ -393,20 +381,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		{
 			try
 			{
-				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser
-					.ParseSnippetAsync(
-						block.Build,
-						block.Context,
-						snippet,
-						parentPath,
-						block.Context.YamlFrontMatter,
-						Cancel.None,
-						block.Line
-					)
-					.GetAwaiter()
-					.GetResult();
-				_ = renderer.Render(document);
+				_ = renderer.Render(block.ParseSnippet());
 			}
 			catch (Exception ex) when (ex is not OutOfMemoryException and not ThreadAbortException and not ThreadInterruptedException and not StackOverflowException)
 			{

@@ -4,7 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -87,39 +90,7 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 	public void DefaultBehaviorExcludesSeparatedTypes() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
 
 	[Test]
-	public void DefaultBehaviorShowsFeatures()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("New feature");
-	}
-
-	[Test]
-	public void DefaultBehaviorShowsBugFixes()
-	{
-		Html.Should().Contain(">Fixes<");
-		Html.Should().Contain("Bug fix");
-	}
-
-	[Test]
-	public void DefaultBehaviorExcludesBreakingChanges()
-	{
-		Html.Should().NotContain("Breaking changes");
-		Html.Should().NotContain("Breaking API change");
-	}
-
-	[Test]
-	public void DefaultBehaviorExcludesKnownIssues()
-	{
-		Html.Should().NotContain("Known issues");
-		Html.Should().NotContain("Known issue");
-	}
-
-	[Test]
-	public void DefaultBehaviorExcludesDeprecations()
-	{
-		Html.Should().NotContain("Deprecations");
-		Html.Should().NotContain("Deprecated feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -197,19 +168,7 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 	public void TypeFilterIsAll() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.All);
 
 	[Test]
-	public void ShowsAllEntryTypes()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("New feature");
-		Html.Should().Contain(">Fixes<");
-		Html.Should().Contain("Bug fix");
-		Html.Should().Contain("Breaking changes");
-		Html.Should().Contain("Breaking API change");
-		Html.Should().Contain("Known issues");
-		Html.Should().Contain("Known issue");
-		Html.Should().Contain("Deprecations");
-		Html.Should().Contain("Deprecated feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void TableOfContentsIncludesSeparatedTypeSections()
@@ -293,21 +252,30 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 	public void TypeFilterIsBreakingChange() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.BreakingChange);
 
 	[Test]
-	public void ShowsBreakingChanges()
-	{
-		Html.Should().NotContain("### Breaking changes");
-		Html.Should().NotContain(">Breaking changes<");
-		Html.Should().Contain("Breaking API change");
-	}
-
-	[Test]
-	public void ExcludesOtherTypes()
-	{
-		Html.Should().NotContain("Features and enhancements");
-		Html.Should().NotContain("New feature");
-		Html.Should().NotContain("Known issues");
-		Html.Should().NotContain("Known issue");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<ul>
+			<li>
+				<p>Breaking API change.
+					<a href="https://github.com/elastic/elasticsearch/pull/333333">#333333</a>
+				</p>
+				<p>
+					<strong>Impact:</strong>
+					Users must update.</p>
+				<p>
+					<strong>Action:</strong>
+					Follow guide.</p>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -368,20 +336,7 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 	public void TypeFilterIsDeprecation() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Deprecation);
 
 	[Test]
-	public void ShowsDeprecations()
-	{
-		Html.Should().NotContain("### Deprecations");
-		Html.Should().NotContain(">Deprecations<");
-		Html.Should().Contain("Deprecated feature");
-		Html.Should().Contain("Another deprecation");
-	}
-
-	[Test]
-	public void ExcludesOtherTypes()
-	{
-		Html.Should().NotContain("Features and enhancements");
-		Html.Should().NotContain("New feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -442,20 +397,7 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 	public void TypeFilterIsKnownIssue() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.KnownIssue);
 
 	[Test]
-	public void ShowsKnownIssues()
-	{
-		Html.Should().NotContain("### Known issues");
-		Html.Should().NotContain(">Known issues<");
-		Html.Should().Contain("Known issue 1");
-		Html.Should().Contain("Known issue 2");
-	}
-
-	[Test]
-	public void ExcludesOtherTypes()
-	{
-		Html.Should().NotContain("Features and enhancements");
-		Html.Should().NotContain("New feature");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -506,15 +448,37 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 	public void FallsBackToDefaultBehavior() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
 
 	[Test]
-	public void EmitsWarningForInvalidValue() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid :type: value"));
+	public void EmitsWarningForInvalidValue() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :type: value 'invalid-value'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior."
+			);
 
 	[Test]
-	public void DefaultBehaviorIsApplied()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("New feature");
-		Html.Should().NotContain("Breaking changes");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>New feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -565,11 +529,7 @@ public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBl
 	public void AcceptsUppercaseAll() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.All);
 
 	[Test]
-	public void ShowsAllTypes()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Breaking changes");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -636,13 +596,7 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 	}
 
 	[Test]
-	public void ShowsAllTypesWithSubsections()
-	{
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Search feature");
-		Html.Should().Contain("Indexing feature");
-		Html.Should().Contain("Breaking changes");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -791,8 +745,8 @@ public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBl
 	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().NotContain("There are no known issues associated with this release");
-		Html.Should().NotContain("9.3.0");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -833,8 +787,8 @@ public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<Changel
 	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().NotContain("There are no breaking changes associated with this release");
-		Html.Should().NotContain("9.3.0");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -875,8 +829,8 @@ public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogB
 	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().NotContain("There are no deprecations associated with this release");
-		Html.Should().NotContain("9.3.0");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -919,8 +873,8 @@ public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock
 	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().NotContain("No new features, enhancements, or fixes");
-		Html.Should().NotContain("9.3.0");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -954,8 +908,8 @@ public class ChangelogTypeFilterEmptyAllTests : DirectiveTest<ChangelogBlock>
 	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().NotContain("No new features, enhancements, or fixes");
-		Html.Should().NotContain("9.3.0");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -1018,12 +972,30 @@ public class ChangelogTypeFilterMixedBundlesEmptyOmissionTests : DirectiveTest<C
 	}
 
 	[Test]
-	public void RendersOnlyPopulatedVersions()
-	{
-		Html.Should().Contain("Known issue in 9.3");
-		Html.Should().Contain("9.3.0");
-		Html.Should().NotContain("9.2.0");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<ul>
+			<li>
+				<p>Known issue in 9.3.
+					<a href="https://github.com/elastic/elasticsearch/pull/444444">#444444</a>
+				</p>
+				<p>
+					<strong>Impact:</strong>
+					Some impact.</p>
+				<p>
+					<strong>Action:</strong>
+					Workaround available.</p>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -1056,12 +1028,18 @@ public class ChangelogEmptyBundleWithDescriptionTests : DirectiveTest<ChangelogB
 		);
 
 	[Test]
-	public void ShowsVersionAndDescriptionWithoutPlaceholder()
-	{
-		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("This release was pulled due to critical issues");
-		Html.Should().NotContain("No new features, enhancements, or fixes");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<p>This release was pulled due to critical issues.</p>
+		"""
+		);
 }
 
 /// <summary>
@@ -1095,8 +1073,8 @@ public class ChangelogEmptyBundleWithReleaseDateOnlyTests : DirectiveTest<Change
 	[Test]
 	public void OmitsVersionBlockWhenOnlyReleaseDate()
 	{
-		Html.Should().NotContain("9.3.0");
-		Html.Should().NotContain("Released:");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -1139,8 +1117,8 @@ public class ChangelogDedicatedPageIgnoresDescriptionTests : DirectiveTest<Chang
 	[Test]
 	public void OmitsVersionBlockWhenNoMatchingEntries()
 	{
-		Html.Should().NotContain("9.3.0");
-		Html.Should().NotContain("General release notes for this version");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -1197,14 +1175,5 @@ public class ChangelogDedicatedPageWithSubsectionsTests : DirectiveTest<Changelo
 		);
 
 	[Test]
-	public void GroupsEntriesByAreaWithoutSectionHeading()
-	{
-		Html.Should().NotContain("### Deprecations");
-		Html.Should().NotContain(">Deprecations<");
-		Html.Should().NotContain("{dropdown}");
-		Html.Should().Contain("Search");
-		Html.Should().Contain("Search deprecation");
-		Html.Should().Contain("Indexing");
-		Html.Should().Contain("Indexing deprecation");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

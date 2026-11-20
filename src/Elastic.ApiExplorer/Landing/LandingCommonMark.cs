@@ -33,21 +33,19 @@ internal static class LandingCommonMark
 
 	private static void WriteCatalogEntry(StringBuilder markdown, ApiCatalogEntry entry)
 	{
-		var url = entry.OpenUrl;
+		var url = entry.Url;
 		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
 		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
 			_ = markdown.AppendLine($"  {summary}");
-		if (ApiCatalogViewModel.DeploymentsOf(entry) is { Count: > 0 } deployments)
-			_ = markdown.AppendLine($"  Deployments: {string.Join(", ", deployments.Select(d => d.Name))}");
 		_ = markdown.AppendLine(
 			$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(url))}"
 		);
 	}
 
-	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl)
+	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl, string? versionLabel = null)
 	{
 		var markdown = new StringBuilder();
-		ApiCommonMark.Heading(markdown, 1, info?.Title ?? "API Documentation");
+		ApiCommonMark.Heading(markdown, 1, ApiPageTitle.Heading(info?.Title ?? "API Documentation", versionLabel));
 		ApiCommonMark.Prepared(markdown, info?.Description, apiBaseUrl);
 		WriteOverview(markdown, rows);
 		return markdown.ToString();

@@ -8,7 +8,11 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Operations._Partials;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots.Html;
+using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -30,7 +34,7 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_PathPlaceholders_LinkToDocumentedPathParameters()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		var listing = Slice(html, "id=\"paths\"", "</ul>");
 		var targets = PlaceholderLink().Matches(listing).Select(static m => m.Groups[1].Value).ToArray();
@@ -40,24 +44,33 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 			html.Should().Contain($"id=\"{target}\"");
 	}
 
-	[GeneratedRegex("""<a class="api-url-param" href="#([^"]+)">\{[^}]+\}</a>""")]
-	private static partial Regex PlaceholderLink();
-
-	private async Task<string> RenderAsync(OperationNavigationItem nav)
+	[Test]
+	public async Task Render_RootRoute_ShowsSlash()
 	{
-		var renderContext = new ApiRenderContext(
-			fixture.Context,
-			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = nav, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+		var row = new EndpointRow("/", "get", [], []);
+		var html = await _EndpointPath.Create(new EndpointPathModel(row, row.Route)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
 
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<span class="api-url">
+				<span class="api-method api-method-get">
+					<span class="api-method-icon" aria-hidden="true">
+						<svg width="12" height="12" viewBox="0 0 12 12">
+							<use href="#icon-api-arrow"></use>
+						</svg>
+					</span>
+					<span class="api-method-label">GET</span>
+				</span>
+				<span class="api-url-path">/</span>
+			</span>
+			"""
+		);
 	}
+
+	[GeneratedRegex("""<a class="api-url-param" href="#([^"]+)">\{[^}]+\}</a>""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex PlaceholderLink();
 
 	private static string Slice(string html, string startMarker, string endMarker)
 	{

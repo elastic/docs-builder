@@ -31,6 +31,11 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         globals: true,
+        // Spies and stubbed globals/env vars are restored after every test, so tests don't leak into each other.
+        clearMocks: true,
+        restoreMocks: true,
+        unstubGlobals: true,
+        unstubEnvs: true,
         environmentOptions: { jsdom: { url: 'http://localhost/' } },
         // Inlined so vi.resetModules() also resets it; externalized deps stay cached by Node.
         server: { deps: { inline: ['highlight.js'] } },

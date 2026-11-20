@@ -18,6 +18,8 @@ namespace Elastic.Documentation.Api.Tests;
 /// Integration tests for euid cookie enrichment in OpenTelemetry traces and logging.
 /// Uses WebApplicationFactory to test the real API configuration with mocked AskAi services.
 /// </summary>
+// Every factory listens to every Ask AI span in the process; tests that read those spans run one at a time.
+[NotInParallel("ask-ai-spans")]
 public class EuidEnrichmentTests : IAsyncInitializer, IAsyncDisposable
 {
 	private const string OtlpEndpoint = "http://localhost:4318";

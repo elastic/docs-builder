@@ -1,24 +1,14 @@
 import { logInfo } from '../../telemetry/logging'
+import { ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR } from '../../telemetry/semconv'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearchWrapper } from './NavigationSearchComponent'
 import { navigationSearchStore } from './navigationSearch.store'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-vi.mock('htmx.org', () => ({
-    default: {
-        on: vi.fn(),
-        off: vi.fn(),
-        process: vi.fn(),
-        ajax: vi.fn(),
-    },
-}))
-
-vi.mock('../../telemetry/logging', () => ({
-    logInfo: vi.fn(),
-    logWarn: vi.fn(),
-    logError: vi.fn(),
-}))
+vi.mock('../../telemetry/logging', async () =>
+    (await import('../../test-utils/mocks')).logging()
+)
 
 const emptySearch = {
     results: [],
@@ -67,6 +57,69 @@ describe('NavigationSearchWrapper type attribute', () => {
         })
     })
 
+    it('navigates into a matching property and records its anchor on Enter', async () => {
+        const url =
+            '/docs/api/elasticsearch/operation/operation-search#req-track_total_hits'
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: url.split('#')[0],
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                        properties: [
+                            {
+                                name: 'track_total_hits',
+                                path: 'track_total_hits',
+                                type: 'boolean',
+                                location: 'request',
+                                description: 'Count hits accurately',
+                                anchor: 'req-track_total_hits',
+                                url,
+                            },
+                        ],
+                    },
+                ],
+            }),
+        })
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText('Explore APIs')
+        await userEvent.type(input, 'track_total')
+        const child = await screen.findByRole('link', {
+            name: /track_total_hits boolean request Count hits accurately/,
+        })
+        expect(child).toHaveAttribute('href', url)
+        const clicked = vi.fn((event: Event) => event.preventDefault())
+        child.addEventListener('click', clicked)
+        await userEvent.click(input)
+        expect(input).toHaveFocus()
+        expect(navigationSearchStore.getState().selectedIndex).toBe(0)
+        expect(screen.getByText('Go to operation')).toBeInTheDocument()
+        expect(screen.getByText('Go to property')).toBeInTheDocument()
+        expect(screen.getByText('Go to page')).toBeInTheDocument()
+        await userEvent.keyboard('{ArrowDown}')
+        expect(navigationSearchStore.getState().selectedIndex).toBe(1)
+        await waitFor(() =>
+            expect(child).toHaveAttribute('data-selected', 'true')
+        )
+        expect(screen.getByText('Go to page')).toBeInTheDocument()
+        await userEvent.keyboard('{Enter}')
+        expect(clicked).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'navigation_search_result_clicked',
+            expect.objectContaining({
+                [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-track_total_hits',
+                'navigation_search.result.position': 0,
+            })
+        )
+    })
+
     it('renders the sidebar variant without the sticky wrapper or divider', async () => {
         const { container } = render(
             <NavigationSearchWrapper type="api" variant="sidebar" />
@@ -104,6 +157,259 @@ describe('NavigationSearchWrapper type attribute', () => {
     })
 })
 
+describe('NavigationSearchWrapper result navigation', () => {
+    const operationUrl = '/docs/api/elasticsearch/operation/operation-search'
+    const propertyUrl = `${operationUrl}#req-retriever`
+
+    beforeEach(() => {
+        sharedQueryClient.clear()
+        navigationSearchStore.getState().actions.clearSearchTerm()
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: operationUrl,
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                        properties: [
+                            {
+                                name: 'retriever',
+                                path: 'retriever',
+                                type: 'object',
+                                location: 'request',
+                                description: 'Retriever',
+                                anchor: 'req-retriever',
+                                url: propertyUrl,
+                            },
+                        ],
+                    },
+                ],
+            }),
+        })
+    })
+
+    afterEach(() => {
+        window.history.replaceState(null, '', '/')
+    })
+
+    const openResults = async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText('Explore APIs')
+        await userEvent.type(input, 'retriever')
+        const row = await screen.findByRole('link', {
+            name: /retriever object request Retriever/,
+        })
+        row.addEventListener('click', (event) => event.preventDefault())
+        await waitFor(() => expect(row).toBeVisible())
+        return { input, row }
+    }
+
+    it('closes and blurs when a result is clicked', async () => {
+        const { input, row } = await openResults()
+
+        await userEvent.click(row)
+
+        expect(input).not.toHaveFocus()
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it.each([['metaKey'], ['ctrlKey'], ['shiftKey']])(
+        'stays open and focused when a %s click opens the result elsewhere',
+        async (modifier) => {
+            const { input, row } = await openResults()
+            vi.mocked(logInfo).mockClear()
+
+            fireEvent.click(row, { [modifier]: true })
+            await new Promise((resolve) => setTimeout(resolve, 0))
+
+            expect(input).toHaveFocus()
+            expect(row).toBeVisible()
+            expect(logInfo).toHaveBeenCalledWith(
+                'navigation_search_result_clicked',
+                expect.objectContaining({
+                    [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-retriever',
+                })
+            )
+        }
+    )
+
+    it('closes and blurs when Enter opens the selected result', async () => {
+        const { input, row } = await openResults()
+        await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+        await waitFor(() =>
+            expect(row).toHaveAttribute('data-selected', 'true')
+        )
+
+        await userEvent.keyboard('{Enter}')
+
+        expect(input).not.toHaveFocus()
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it('reopens when the box is focused again after a result click', async () => {
+        const { input, row } = await openResults()
+        await userEvent.click(row)
+        await waitFor(() => expect(row).not.toBeVisible())
+
+        await userEvent.click(input)
+
+        expect(input).toHaveFocus()
+        await waitFor(() => expect(row).toBeVisible())
+    })
+
+    it('a same-page result click still closes and reopens', async () => {
+        window.history.replaceState(null, '', operationUrl)
+        const { input, row } = await openResults()
+        expect(row).toHaveAttribute(
+            'href',
+            `${window.location.pathname}#req-retriever`
+        )
+
+        await userEvent.click(row)
+        expect(input).not.toHaveFocus()
+        await waitFor(() => expect(row).not.toBeVisible())
+
+        await userEvent.click(input)
+        await waitFor(() => expect(row).toBeVisible())
+    })
+})
+
+describe('NavigationSearchWrapper while htmx loads the result', () => {
+    const operationUrl = '/docs/api/elasticsearch/operation/operation-search'
+
+    beforeEach(() => {
+        sharedQueryClient.clear()
+        navigationSearchStore.getState().actions.clearSearchTerm()
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: operationUrl,
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                    },
+                    {
+                        type: 'api',
+                        url: `${operationUrl}-other`,
+                        title: 'Delete a document',
+                        description: 'Removes a document',
+                        score: 4,
+                        parents: [],
+                    },
+                ],
+            }),
+        })
+    })
+
+    const htmxEvent = (elt: Element, name: string) =>
+        elt.dispatchEvent(
+            new CustomEvent(name, { bubbles: true, detail: { elt } })
+        )
+
+    // htmx listens on the boosted link itself, so its request is sent before React's delegated onClick runs.
+    const openBoostedResult = async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText('Explore APIs')
+        await userEvent.type(input, 'search')
+        const row = await screen.findByRole('link', { name: /Search/ })
+        row.addEventListener('click', (event) => {
+            event.preventDefault()
+            htmxEvent(row, 'htmx:beforeSend')
+        })
+        const aborted = vi.fn()
+        row.addEventListener('htmx:abort', aborted)
+        await waitFor(() => expect(row).toBeVisible())
+        const endRequest = () =>
+            act(() => {
+                htmxEvent(row, 'htmx:afterRequest')
+            })
+        return { input, row, aborted, endRequest }
+    }
+
+    const closeReasons = () =>
+        vi
+            .mocked(logInfo)
+            .mock.calls.filter(([name]) => name === 'navigation_search_closed')
+            .map(([, attrs]) => attrs?.['navigation_search.close_reason'])
+
+    it('stays open with a spinner until the request ends, then closes', async () => {
+        const { input, row, endRequest } = await openBoostedResult()
+        vi.mocked(logInfo).mockClear()
+
+        await userEvent.click(row)
+
+        expect(row).toBeVisible()
+        expect(input).toHaveFocus()
+        expect(screen.getByRole('progressbar')).toBeInTheDocument()
+        expect(closeReasons()).toEqual([])
+
+        endRequest()
+
+        await waitFor(() => expect(row).not.toBeVisible())
+        expect(input).not.toHaveFocus()
+        expect(closeReasons()).toEqual(['navigate'])
+    })
+
+    it('stays open until the request ends when Enter opens the result', async () => {
+        const { row, endRequest } = await openBoostedResult()
+
+        await userEvent.keyboard('{Enter}')
+        expect(row).toBeVisible()
+
+        endRequest()
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it('rejects another result while one is loading', async () => {
+        const { row } = await openBoostedResult()
+        await userEvent.click(row)
+        const other = screen.getByRole('link', { name: /Delete a document/ })
+
+        const second = new CustomEvent('htmx:beforeRequest', {
+            bubbles: true,
+            cancelable: true,
+            detail: { elt: other },
+        })
+        other.dispatchEvent(second)
+
+        expect(second.defaultPrevented).toBe(true)
+    })
+
+    it('aborts the request and closes on Escape', async () => {
+        const { row, aborted } = await openBoostedResult()
+        await userEvent.click(row)
+
+        await userEvent.keyboard('{Escape}')
+
+        expect(aborted).toHaveBeenCalledTimes(1)
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it('aborts the request and keeps the results open when typing', async () => {
+        const { input, row, aborted, endRequest } = await openBoostedResult()
+        await userEvent.click(row)
+
+        await userEvent.type(input, 'x')
+        endRequest()
+
+        expect(aborted).toHaveBeenCalledTimes(1)
+        expect(input).toHaveFocus()
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    })
+})
+
 describe('NavigationSearchWrapper slash shortcut', () => {
     const apiPlaceholder = 'Explore APIs'
 
@@ -116,26 +422,14 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         })
     })
 
-    afterEach(() => {
-        document.body.innerHTML = ''
-        vi.restoreAllMocks()
-    })
-
-    it('focuses the api input on "/" without typing the slash', async () => {
+    it.each([
+        ['/', 'slash'],
+        ['s', 'letter'],
+    ])('focuses the api input on "%s" without typing the %s', async (key) => {
         render(<NavigationSearchWrapper type="api" />)
         const input = await screen.findByPlaceholderText(apiPlaceholder)
 
-        await userEvent.keyboard('/')
-
-        expect(input).toHaveFocus()
-        expect(input).toHaveValue('')
-    })
-
-    it('focuses the api input on "s" without typing the letter', async () => {
-        render(<NavigationSearchWrapper type="api" />)
-        const input = await screen.findByPlaceholderText(apiPlaceholder)
-
-        await userEvent.keyboard('s')
+        await userEvent.keyboard(key)
 
         expect(input).toHaveFocus()
         expect(input).toHaveValue('')

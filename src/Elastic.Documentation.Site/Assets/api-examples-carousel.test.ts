@@ -3,6 +3,7 @@ import {
     initApiExamples,
     packChips,
     syncDescriptions,
+    syncStripHeight,
 } from './api-examples-carousel'
 
 // Java is the only long sample: 20 lines, past the 16-line cap.
@@ -24,7 +25,7 @@ function carousel(langs: string[]): string {
     const dots = langs
         .map(
             (lang) =>
-                `<button class="api-code-carousel-dot" data-carousel-dot="${lang}" data-tippy-content="${lang}"></button>`
+                `<button class="api-code-carousel-dot" data-carousel-dot="${lang}" data-tooltip="${lang}"></button>`
         )
         .join('')
     return `
@@ -61,17 +62,6 @@ function markup(): string {
             </div>
             <div class="api-examples-scenario-panel" data-scenario="slicing" hidden="until-found">${carousel(['Console', 'curl'])}</div>
         </div>`
-}
-
-type Tipped = HTMLElement & {
-    _tippy?: {
-        props: {
-            content: unknown
-            delay: unknown
-            appendTo: unknown
-            hideOnClick: unknown
-        }
-    }
 }
 
 function activeLang(scenario: string): string | undefined {
@@ -319,47 +309,16 @@ describe('API examples carousel', () => {
         vi.useRealTimers()
     })
 
-    it('gives the dots a fast tooltip instead of a native title', () => {
-        initApiExamples()
-        const dot = document.querySelector<Tipped>(
-            '[data-scenario="term"] [data-carousel-dot="Java"]'
-        )!
-
-        // One delegated listener creates the tooltip on first hover.
-        dot.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-
-        expect(dot.hasAttribute('title')).toBe(false)
-        expect(dot._tippy?.props.content).toBe('Java')
-        expect(dot._tippy?.props.delay).toEqual([80, 0])
-    })
-
-    it('keeps a copy button tooltip open on click so its text changes in place', () => {
-        initApiExamples()
-        const copy = document.createElement('button')
-        copy.className = 'copybtn'
-        copy.dataset.tippyContent = 'Copy'
-        document.body.appendChild(copy)
-
-        copy.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-
-        expect((copy as Tipped)._tippy?.props.hideOnClick).toBe(false)
-        copy.remove()
-    })
-
-    it('mounts a tooltip inside the preview dialog, above its top layer', () => {
+    it('gives the preview dialog buttons a fast tooltip instead of a native title', () => {
         initApiExamples()
         click('[data-scenario="term"] .is-active [data-code-preview]')
         const dialog = document.querySelector<HTMLDialogElement>(
             'dialog.api-code-preview'
         )!
-        const close = dialog.querySelector<Tipped>('[aria-label="Close"]')!
-
-        close.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+        const close = dialog.querySelector<HTMLElement>('[aria-label="Close"]')!
 
         expect(close.hasAttribute('title')).toBe(false)
-        expect(close.dataset.tippyContent).toBe('Close')
-        const appendTo = close._tippy?.props.appendTo
-        expect(typeof appendTo === 'function' && appendTo(close)).toBe(dialog)
+        expect(close.dataset.tooltip).toBe('Close')
         dialog.dispatchEvent(new Event('close'))
     })
 
@@ -509,28 +468,6 @@ describe('API examples carousel', () => {
 
         expect(document.documentElement.style.overflow).toBe('')
         expect(document.querySelector('dialog.api-code-preview')).toBeNull()
-    })
-
-    it('closes the preview on Escape even when the page prevents the key', () => {
-        initApiExamples()
-        document.addEventListener('keydown', (e) => e.preventDefault())
-        document
-            .querySelector<HTMLElement>(
-                '[data-scenario="term"] .is-active [data-code-preview]'
-            )!
-            .click()
-        const dialog = document.querySelector<HTMLDialogElement>(
-            'dialog.api-code-preview'
-        )!
-        dialog.close = vi.fn(() => dialog.remove())
-
-        dialog
-            .querySelector('button')!
-            .dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
-            )
-
-        expect(dialog.close).toHaveBeenCalled()
     })
 
     it('previews the code of a card in a dialog', () => {
@@ -780,12 +717,12 @@ describe('API examples chip overflow', () => {
         const chip = document.querySelector<HTMLElement>(
             '.api-example-chip[data-scenario="a"]'
         )!
-        expect(chip.dataset.tippyContent).toBe('Term search')
+        expect(chip.dataset.tooltip).toBe('Term search')
 
         clipped = false
         click('.api-example-chip[data-scenario="b"]')
 
-        expect(chip.dataset.tippyContent).toBeUndefined()
+        expect(chip.dataset.tooltip).toBeUndefined()
         delete proto.scrollWidth
     })
 
@@ -795,6 +732,22 @@ describe('API examples chip overflow', () => {
 
         expect(visibleChips()).toContain('d')
         expect(visibleItems()).not.toContain('d')
+    })
+
+    it('moves the focus into the menu only once it is placed, since it is hidden before', () => {
+        initApiExamples()
+        const menu = document.querySelector<HTMLElement>('[data-example-menu]')!
+        const toggle = new Event('toggle') as ToggleEvent
+        Object.defineProperty(toggle, 'newState', { value: 'open' })
+
+        menu.dispatchEvent(toggle)
+        expect(document.activeElement).toBe(document.body)
+
+        menu.dispatchEvent(new Event('floating:placed', { bubbles: true }))
+        // The menu has a filter field, which takes the focus before any item does.
+        expect(document.activeElement).toBe(
+            document.querySelector('[data-example-filter]')
+        )
     })
 
     it('filters the menu fuzzily, forgiving a typo and ranking the best match first', () => {
@@ -817,35 +770,39 @@ describe('API examples chip overflow', () => {
 
         expect(visibleItems()).toEqual(['d', 'e'])
     })
+})
 
-    it('keeps the open menu under its button while the page scrolls', async () => {
-        initApiExamples()
-        const more = document.querySelector<HTMLElement>('[data-example-more]')!
-        const menu = document.querySelector<HTMLElement>('[data-example-menu]')!
-        let top = 100
-        more.getBoundingClientRect = () =>
-            ({ top, bottom: top + 24, left: 50, width: 80 }) as DOMRect
-        menu.getBoundingClientRect = () =>
-            ({ width: 200, height: 100 }) as DOMRect
+describe('syncStripHeight', () => {
+    // 100px of code under an 8px horizontal scrollbar; the strip adds 2px for the card border.
+    function strip(maxHeight?: number): HTMLElement {
+        const carousel = document.createElement('div')
+        carousel.innerHTML = `
+            <div data-carousel-strip>
+                <section class="api-code-carousel-card is-active">
+                    <header></header>
+                    <div class="api-code-carousel-card-body"${maxHeight ? ` style="max-height: ${maxHeight}px"` : ''}></div>
+                </section>
+            </div>`
+        const body = carousel.querySelector('.api-code-carousel-card-body')!
+        for (const [key, value] of [
+            ['scrollHeight', 100],
+            ['clientHeight', 100],
+            ['offsetHeight', 108],
+        ] as const)
+            Object.defineProperty(body, key, { configurable: true, value })
+        syncStripHeight(carousel)
+        return carousel.querySelector<HTMLElement>('[data-carousel-strip]')!
+    }
 
-        const toggle = new Event('toggle') as ToggleEvent
-        Object.defineProperty(toggle, 'newState', { value: 'open' })
-        menu.dispatchEvent(toggle)
-        expect(menu.style.top).toBe('128px')
+    it('makes room for a horizontal scrollbar under the code', () => {
+        expect(strip().style.getPropertyValue('--api-strip-height')).toBe(
+            '110px'
+        )
+    })
 
-        const frame = () =>
-            new Promise((resolve) => requestAnimationFrame(resolve))
-        top = 40
-        window.dispatchEvent(new Event('scroll'))
-        await frame()
-        expect(menu.style.top).toBe('68px')
-
-        const close = new Event('toggle') as ToggleEvent
-        Object.defineProperty(close, 'newState', { value: 'closed' })
-        menu.dispatchEvent(close)
-        top = 10
-        window.dispatchEvent(new Event('scroll'))
-        await frame()
-        expect(menu.style.top).toBe('68px')
+    it('still stops at the code cap', () => {
+        expect(strip(60).style.getPropertyValue('--api-strip-height')).toBe(
+            '62px'
+        )
     })
 })

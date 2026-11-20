@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives.Include;
 
@@ -33,6 +34,20 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 	public string? Language { get; private set; }
 	public string? Caption { get; private set; }
 	public string? Label { get; private set; }
+
+	/// <summary>Parses the included snippet as Markdown in the context of the page that includes it.</summary>
+	public MarkdownDocument ParseSnippet()
+	{
+		var snippet = Build
+			.ReadFileSystem
+			.FileInfo
+			.New(IncludePath ?? throw new InvalidOperationException("The include has no resolved path."));
+		var parentPath = Context.MarkdownParentPath ?? Context.MarkdownSourcePath;
+		return MarkdownParser
+			.ParseSnippetAsync(Build, Context, snippet, parentPath, Context.YamlFrontMatter, default, Line)
+			.GetAwaiter()
+			.GetResult();
+	}
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include

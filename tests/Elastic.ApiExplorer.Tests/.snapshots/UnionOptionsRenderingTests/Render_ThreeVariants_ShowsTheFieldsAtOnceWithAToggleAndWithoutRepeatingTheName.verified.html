@@ -1,0 +1,74 @@
+<div class="union-variants-container union-variant-chips" id="opts">
+	<div class="api-example-chips-row union-chips-row" data-chip-row="">
+		<div class="api-example-chips" role="tablist" aria-label="Variants">
+			<button type="button" role="tab" class="api-example-chip is-active" data-chip="v-0" aria-controls="v-0" aria-selected="true">
+				<span class="api-example-chip-title" data-chip-title="">Variant0</span>
+			</button>
+			<button type="button" role="tab" class="api-example-chip" data-chip="v-1" aria-controls="v-1" aria-selected="false" tabindex="-1">
+				<span class="api-example-chip-title" data-chip-title="">Variant1</span>
+			</button>
+			<button type="button" role="tab" class="api-example-chip" data-chip="v-2" aria-controls="v-2" aria-selected="false" tabindex="-1">
+				<span class="api-example-chip-title" data-chip-title="">Variant2[]</span>
+			</button>
+		</div>
+		<button type="button" class="api-example-more" data-chip-more="" aria-haspopup="menu" aria-expanded="false" aria-controls="opts-menu" popovertarget="opts-menu" hidden="">
+			<span data-chip-more-label=""></span>
+			<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+				<use href="#icon-chevron-down"></use>
+			</svg>
+		</button>
+		<div id="opts-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu="">
+			<div role="menu" aria-label="More variants">
+				<button type="button" role="menuitem" class="api-example-menu-item" data-chip="v-0" hidden="">
+					<span class="api-example-menu-item-title" data-chip-item-title="">Variant0</span>
+				</button>
+				<button type="button" role="menuitem" class="api-example-menu-item" data-chip="v-1" hidden="">
+					<span class="api-example-menu-item-title" data-chip-item-title="">Variant1</span>
+				</button>
+				<button type="button" role="menuitem" class="api-example-menu-item" data-chip="v-2" hidden="">
+					<span class="api-example-menu-item-title" data-chip-item-title="">Variant2[] · kind: two</span>
+				</button>
+			</div>
+		</div>
+	</div>
+	<div class="union-variants">
+		<div class="union-variant-item has-children expanded" id="v-0">
+			<div class="expand-toggle-row union-expand-toggle">
+				<button class="expand-toggle" data-count="3">
+					<span class="toggle-icon">−</span>
+					<span class="toggle-label">Hide 3 properties</span>
+				</button>
+			</div>
+			<div class="nested-properties" id="v-0--children">
+			</div>
+		</div>
+		<div class="union-variant-item has-children expanded" id="v-1" hidden="until-found">
+			<div class="expand-toggle-row union-expand-toggle">
+				<button class="expand-toggle" data-count="3">
+					<span class="toggle-icon">−</span>
+					<span class="toggle-label">Hide 3 properties</span>
+				</button>
+			</div>
+			<div class="nested-properties" id="v-1--children">
+			</div>
+		</div>
+		<div class="union-variant-item has-children expanded" id="v-2" hidden="until-found">
+			<div class="union-variant-label">
+				<span class="type-wrapper object-icon">{}</span>
+				<code class="schema-type">
+					<span class="type-object">Variant2</span>
+					<span class="type-wrapper array-icon">[]</span>
+				</code>
+				<code class="discriminator-value">kind: two</code>
+			</div>
+			<div class="expand-toggle-row union-expand-toggle">
+				<button class="expand-toggle" data-count="3">
+					<span class="toggle-icon">−</span>
+					<span class="toggle-label">Hide 3 properties</span>
+				</button>
+			</div>
+			<div class="nested-properties" id="v-2--children">
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,7 +1,11 @@
+import htmx from 'htmx.org'
+
 // Boosted API navigation can leave chrome outside the swapped region stale. The response carries the chrome
 // for the new page, so the parts that change per page are copied over.
 
-// A swap of #api-content-grid leaves the version picker linking to the first page loaded.
+// A swap of #api-content-grid leaves the version picker linking to the first page loaded. htmx reads a boosted
+// link's href once, when it processes the link, so the picker is replaced and processed again. Rewriting the
+// href would show the new page and still request the old one.
 export function syncApiVersionSwitcher(html: string): boolean {
     const current = document.getElementById('api-version-switcher')
     if (!current) return false
@@ -10,13 +14,8 @@ export function syncApiVersionSwitcher(html: string): boolean {
         .getElementById('api-version-switcher')
     if (!next) return false
 
-    const currentLinks = current.querySelectorAll('a[href]')
-    const nextLinks = next.querySelectorAll('a[href]')
-    if (currentLinks.length !== nextLinks.length) return false
-
-    currentLinks.forEach((link, i) =>
-        link.setAttribute('href', nextLinks[i].getAttribute('href')!)
-    )
+    current.replaceWith(next)
+    htmx.process(next)
     return true
 }
 

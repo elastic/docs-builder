@@ -1,0 +1,81 @@
+## valid minimal
+(no findings)
+## valid full
+(no findings)
+## empty document
+error docs/changelog/42.yaml title is required
+error docs/changelog/42.yaml products is required
+error docs/changelog/42.yaml type is required
+## missing title
+error docs/changelog/42.yaml title is required
+## whitespace title
+error docs/changelog/42.yaml title is required
+## title of 80 characters
+(no findings)
+## title of 81 characters
+warning docs/changelog/42.yaml title exceeds 80 characters (current: 81)
+## description of 601 characters
+warning docs/changelog/42.yaml description exceeds 600 characters (current: 601)
+## missing products
+error docs/changelog/42.yaml products is required
+## empty products list
+error docs/changelog/42.yaml products is required
+## product without an id
+error docs/changelog/42.yaml products[0].product is required
+## unknown product
+(no findings)
+## product with underscore
+(no findings)
+## product in upper case
+(no findings)
+## two products, one unknown
+(no findings)
+## obsolete product target
+warning docs/changelog/42.yaml products[].target is obsolete; use products[].versions in a note file
+## product versions on an entry
+error docs/changelog/42.yaml products[].versions is only valid in changelog note files (note-*.yaml)
+## lifecycle in upper case
+(no findings)
+## invalid lifecycle
+error docs/changelog/42.yaml lifecycle 'stable' is not valid; expected one of: preview, beta, ga, experimental
+## missing type
+error docs/changelog/42.yaml type is required
+## unknown type
+error docs/changelog/42.yaml type 'chore' is not recognised; valid values: invalid, feature, enhancement, security, bug-fix, breaking-change, deprecation, known-issue, docs, regression, other
+## type in upper case
+(no findings)
+## subtype on a breaking change
+(no findings)
+## subtype on a feature
+warning docs/changelog/42.yaml subtype is only expected on breaking-change entries
+## subtype that does not exist
+error docs/changelog/42.yaml subtype 'cosmetic' is not valid; expected one of: api, behavioral, configuration, dependency, subscription, plugin, security, other
+## subtype without a type
+error docs/changelog/42.yaml type is required
+## pr that differs from the file name, no hash
+error docs/changelog/42.yaml pr: 7 does not match the PR number in the filename (42)
+## pr that is not a number
+error docs/changelog/42.yaml pr: 'seven' could not be parsed as a PR number
+## pr with a hash
+(no findings)
+## pr that differs from the file name
+error docs/changelog/42.yaml pr: 43 does not match the PR number in the filename (42)
+## area that does not exist
+(no findings)
+## marker alone
+(no findings)
+## marker with other fields
+error docs/changelog/42.yaml marker entries (link:) must not contain other fields such as title, type, products, prs, or issues
+## marker carrying source-redirect
+error docs/changelog/42.yaml source-redirect is written by the scrubber and must not appear in authored files
+## source-redirect on an entry
+error docs/changelog/42.yaml source-redirect is written by the scrubber and must not appear in authored files
+## everything wrong at once
+error docs/changelog/42.yaml source-redirect is written by the scrubber and must not appear in authored files
+error docs/changelog/42.yaml title is required
+error docs/changelog/42.yaml products[0].product is required
+error docs/changelog/42.yaml lifecycle 'stable' is not valid; expected one of: preview, beta, ga, experimental
+warning docs/changelog/42.yaml products[].target is obsolete; use products[].versions in a note file
+error docs/changelog/42.yaml type 'chore' is not recognised; valid values: invalid, feature, enhancement, security, bug-fix, breaking-change, deprecation, known-issue, docs, regression, other
+error docs/changelog/42.yaml subtype 'cosmetic' is not valid; expected one of: api, behavioral, configuration, dependency, subscription, plugin, security, other
+error docs/changelog/42.yaml pr: 'x' could not be parsed as a PR number

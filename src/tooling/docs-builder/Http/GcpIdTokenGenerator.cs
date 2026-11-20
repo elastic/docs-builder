@@ -66,7 +66,6 @@ public static class GcpIdTokenGenerator
 			"https://oauth2.googleapis.com/token",
 			now,
 			now + 3600, // 1 hour expiration
-
 			targetAudience
 		);
 

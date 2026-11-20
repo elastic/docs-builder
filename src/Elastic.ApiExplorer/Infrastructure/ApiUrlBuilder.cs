@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -15,14 +16,7 @@ public static partial class ApiUrlBuilder
 {
 	public static string ApiRoot(string? urlPathPrefix) => $"{urlPathPrefix?.TrimEnd('/')}/api";
 
-	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
-
-	/// <summary>
-	/// URL path suffix for one API product version: <c>{key}</c> for <c>main</c>,
-	/// <c>{key}/v{N}</c> for released numeric majors from the version index.
-	/// </summary>
-	public static string ProductSuffix(string apiKey, string versionMoniker) =>
-		versionMoniker == "main" ? apiKey : $"{apiKey}/v{versionMoniker}";
+	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/{apiUrlSuffix}";
 
 	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
@@ -66,7 +60,7 @@ public static partial class ApiUrlBuilder
 		return takenElsewhere ? OperationMoniker(id, primary.Route) : candidate;
 	}
 
-	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex NumericSuffix();
 
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
@@ -97,9 +91,32 @@ public static partial class ApiUrlBuilder
 
 	public const string AuthenticationSegment = "authentication";
 	public const string ServersSegment = "servers";
+	public const string TopicSegment = "topic";
+
+	/// <summary>The URL segment of the unreleased <c>main</c> spec when a released major owns the versionless URL.</summary>
+	public const string NextSegment = "next";
 
 	/// <summary>Child markdown slugs that collide with generated API Explorer paths.</summary>
-	public static readonly string[] ReservedChildSegments = ["types", "group", "operation", AuthenticationSegment, ServersSegment];
+	public static readonly string[] ReservedChildSegments =
+	[
+		"types",
+		"group",
+		"operation",
+		TopicSegment,
+		AuthenticationSegment,
+		ServersSegment,
+		NextSegment
+	];
+
+	/// <summary>URL leaf for an <c>x-topics</c> page under <c>.../topic/</c>, the same as Bump.sh: <c>Rate limiting</c> becomes <c>topic-rate-limiting</c>.</summary>
+	public static string TopicMoniker(string title) => $"topic-{TagSlug(title)}";
+
+	public static string TopicUrl(string? urlPathPrefix, string apiUrlSuffix, string title) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{TopicSegment}/{TopicMoniker(title)}";
+
+	/// <summary>URL of a <c>children:</c> page, from its file slug.</summary>
+	public static string ChildUrl(string? urlPathPrefix, string apiUrlSuffix, string slug) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{slug}";
 
 	public static string AuthenticationUrl(string? urlPathPrefix, string apiUrlSuffix) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{AuthenticationSegment}";
@@ -110,6 +127,6 @@ public static partial class ApiUrlBuilder
 	public static string OperationUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
 
-	[GeneratedRegex(@"\s*\(([^)]+)\)")]
+	[GeneratedRegex(@"\s*\(([^)]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ParentheticalSuffixPattern();
 }

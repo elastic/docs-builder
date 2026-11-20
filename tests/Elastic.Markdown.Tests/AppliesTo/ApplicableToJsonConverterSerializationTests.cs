@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Versions;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
@@ -23,7 +24,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -48,7 +49,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -76,7 +77,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -113,7 +114,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -150,7 +151,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -181,7 +182,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -208,7 +209,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -239,7 +240,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		// language=json
-		json.Should().Be(
+		json.Should().MatchInlineJsonSnapshot(
 			"""
 			[
 			  {
@@ -276,12 +277,48 @@ public class ApplicableToJsonConverterSerializationTests
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Contain("\"lifecycle\": \"preview\"");
-		json.Should().Contain("\"lifecycle\": \"experimental\"");
-		json.Should().Contain("\"lifecycle\": \"beta\"");
-		json.Should().Contain("\"lifecycle\": \"ga\"");
-		json.Should().Contain("\"lifecycle\": \"deprecated\"");
-		json.Should().Contain("\"lifecycle\": \"removed\"");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			[
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "preview",
+			    "version": "1.0+"
+			  },
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "experimental",
+			    "version": "1.0+"
+			  },
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "beta",
+			    "version": "1.0+"
+			  },
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "ga",
+			    "version": "1.0+"
+			  },
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "deprecated",
+			    "version": "1.0+"
+			  },
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "removed",
+			    "version": "1.0+"
+			  }
+			]
+			"""
+		);
 	}
 
 	[Test]
@@ -298,19 +335,30 @@ public class ApplicableToJsonConverterSerializationTests
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		// Verify it's an array with 3 items
-		var jsonDoc = JsonDocument.Parse(json);
-		jsonDoc.RootElement.GetArrayLength().Should().Be(3);
-
-		// Verify each type is present
-		json.Should().Contain("\"type\": \"stack\"");
-		json.Should().Contain("\"type\": \"deployment\"");
-		json.Should().Contain("\"type\": \"product\"");
-
-		// Verify sub_types
-		json.Should().Contain("\"sub_type\": \"stack\"");
-		json.Should().Contain("\"sub_type\": \"ece\"");
-		json.Should().Contain("\"sub_type\": \"product\"");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			[
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "ga",
+			    "version": "8.0+"
+			  },
+			  {
+			    "type": "deployment",
+			    "sub_type": "ece",
+			    "lifecycle": "ga",
+			    "version": "all"
+			  },
+			  {
+			    "type": "product",
+			    "sub_type": "product",
+			    "lifecycle": "ga",
+			    "version": "all"
+			  }
+			]
+			"""
+		);
 	}
 
 	[Test]
@@ -320,7 +368,7 @@ public class ApplicableToJsonConverterSerializationTests
 
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
-		json.Should().Be("[]");
+		json.Should().MatchInlineJsonSnapshot("[]");
 	}
 
 	[Test]
@@ -336,24 +384,23 @@ public class ApplicableToJsonConverterSerializationTests
 		};
 
 		var json = JsonSerializer.Serialize(original, _options);
-		var jsonDoc = JsonDocument.Parse(json);
-		var root = jsonDoc.RootElement;
-
-		root.ValueKind.Should().Be(JsonValueKind.Array);
-		var array = root.EnumerateArray().ToList();
-
-		array.Should().HaveCount(2); // Stack + Deployment.Ece
-
-		var stackEntry = array[0];
-		stackEntry.GetProperty("type").GetString().Should().Be("stack");
-		stackEntry.GetProperty("sub_type").GetString().Should().Be("stack");
-		stackEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
-		stackEntry.GetProperty("version").GetString().Should().Be("all");
-
-		var deploymentEntry = array[1];
-		deploymentEntry.GetProperty("type").GetString().Should().Be("deployment");
-		deploymentEntry.GetProperty("sub_type").GetString().Should().Be("ece");
-		deploymentEntry.GetProperty("lifecycle").GetString().Should().Be("beta");
-		deploymentEntry.GetProperty("version").GetString().Should().Be("3.0+");
+		json.Should().MatchInlineJsonSnapshot(
+			"""
+			[
+			  {
+			    "type": "stack",
+			    "sub_type": "stack",
+			    "lifecycle": "ga",
+			    "version": "all"
+			  },
+			  {
+			    "type": "deployment",
+			    "sub_type": "ece",
+			    "lifecycle": "beta",
+			    "version": "3.0+"
+			  }
+			]
+			"""
+		);
 	}
 }

@@ -1,0 +1,18 @@
+
+## Get started
+
+* [Install the stack](https://www.elastic.co/docs/get-started/install)
+* [Concepts](https://www.elastic.co/docs/get-started/concepts)
+
+## Elasticsearch reference
+
+* [Search APIs](https://www.elastic.co/docs/reference/elasticsearch/search-apis)
+* [Query DSL](https://www.elastic.co/docs/reference/elasticsearch/query-dsl)
+
+## Kibana
+
+* [Dashboards](https://www.elastic.co/docs/reference/kibana/dashboards)
+
+## Java agent
+
+* [Setup](https://www.elastic.co/docs/reference/apm/agents/java/setup)

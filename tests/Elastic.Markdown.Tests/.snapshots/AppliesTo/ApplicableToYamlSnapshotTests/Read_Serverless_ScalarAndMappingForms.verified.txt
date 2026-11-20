@@ -1,0 +1,172 @@
+yaml: serverless:
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"}]
+text: serverless: elasticsearch=all, observability=all, security=all, vectordb=all
+
+yaml: serverless: ~
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"}]
+text: serverless: elasticsearch=all, observability=all, security=all, vectordb=all
+
+yaml: serverless: ''
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"}]
+text: serverless: elasticsearch=all, observability=all, security=all, vectordb=all
+
+yaml: serverless: ga
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+
+yaml: serverless: all
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"}]
+text: serverless: elasticsearch=all, observability=all, security=all, vectordb=all
+
+yaml: serverless: beta
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"},{"type":"serverless","sub_type":"observability","lifecycle":"beta"},{"type":"serverless","sub_type":"security","lifecycle":"beta"},{"type":"serverless","sub_type":"vectordb","lifecycle":"beta"}]
+text: serverless: elasticsearch=beta, , observability=beta, , security=beta, , vectordb=beta, 
+
+yaml: serverless: preview
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"preview"},{"type":"serverless","sub_type":"observability","lifecycle":"preview"},{"type":"serverless","sub_type":"security","lifecycle":"preview"},{"type":"serverless","sub_type":"vectordb","lifecycle":"preview"}]
+text: serverless: elasticsearch=preview, , observability=preview, , security=preview, , vectordb=preview, 
+
+yaml: serverless: ga 9.0
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"9.0\u002B"}]
+text: serverless: elasticsearch=ga 9.0+, , observability=ga 9.0+, , security=ga 9.0+, , vectordb=ga 9.0+, 
+  error: Can't specify a version for 'serverless' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: serverless: ga, beta
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"beta"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"beta"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"beta"}]
+text: serverless: elasticsearch=ga, beta, , observability=ga, beta, , security=ga, beta, , vectordb=ga, beta, 
+
+yaml: serverless: nonsense
+json: []
+text: serverless: 
+  error: Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml: serverless: {}
+json: []
+text: 
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"}]
+text: serverless: elasticsearch=ga, 
+
+yaml:
+  | serverless:
+  |   observability: beta
+json: [{"type":"serverless","sub_type":"observability","lifecycle":"beta"}]
+text: serverless: observability=beta, 
+
+yaml:
+  | serverless:
+  |   security: preview
+json: [{"type":"serverless","sub_type":"security","lifecycle":"preview"}]
+text: serverless: security=preview, 
+
+yaml:
+  | serverless:
+  |   vectordb: deprecated
+json: [{"type":"serverless","sub_type":"vectordb","lifecycle":"deprecated"}]
+text: serverless: vectordb=deprecated, 
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga
+  |   observability: ga
+  |   security: ga
+  |   vectordb: ga
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga 9.0
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"9.0\u002B"}]
+text: serverless: elasticsearch=ga 9.0+, 
+  error: Can't specify a version for 'elasticsearch' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml:
+  | serverless:
+  |   security:
+  |   observability:
+json: [{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"}]
+text: serverless: observability=all, security=all
+
+yaml:
+  | serverless:
+  |   vector_db: ga
+json: []
+text: 
+
+yaml:
+  | serverless:
+  |   vectordatabase: ga
+json: []
+text: 
+
+yaml:
+  | serverless:
+  |   unknown: ga
+json: []
+text: 
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga
+  |   unknown: ga
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"}]
+text: serverless: elasticsearch=ga, 
+
+yaml:
+  | serverless:
+  |   - elasticsearch: ga
+json: []
+text: 
+
+yaml: elasticsearch: ga
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"}]
+text: serverless: elasticsearch=ga, 
+
+yaml: observability: beta
+json: [{"type":"serverless","sub_type":"observability","lifecycle":"beta"}]
+text: serverless: observability=beta, 
+
+yaml: security: preview
+json: [{"type":"serverless","sub_type":"security","lifecycle":"preview"}]
+text: serverless: security=preview, 
+
+yaml: vectordb: deprecated
+json: [{"type":"serverless","sub_type":"vectordb","lifecycle":"deprecated"}]
+text: serverless: vectordb=deprecated, 
+
+yaml:
+  | elasticsearch: ga
+  | observability: ga
+  | security: ga
+  | vectordb: ga
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+
+yaml:
+  | serverless: ga
+  | elasticsearch: beta
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: serverless: elasticsearch=beta, , observability=ga, , security=ga, , vectordb=ga, 
+
+yaml:
+  | serverless: ga
+  | elasticsearch: beta
+  | security: removed
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"removed"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: serverless: elasticsearch=beta, , observability=ga, , security=removed, , vectordb=ga, 
+
+yaml:
+  | serverless:
+  |   elasticsearch: ga
+  | observability: beta
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"beta"}]
+text: serverless: elasticsearch=ga, , observability=beta, 
+
+yaml: elasticsearch: ga 9.0
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"9.0\u002B"}]
+text: serverless: elasticsearch=ga 9.0+, 
+  error: Can't specify a version for 'elasticsearch' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.

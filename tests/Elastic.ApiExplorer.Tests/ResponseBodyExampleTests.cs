@@ -6,12 +6,16 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
+using Nullean.Snapshots.Json;
+using Nullean.Snapshots.Trees;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class ResponseBodyExampleTests
 {
+	/// <summary>The old assertions compared the JSON text, so key order and number spelling stay significant.</summary>
+	private static readonly TreeDiffOptions Exact = new() { MapOrder = MapOrder.Significant, StrictNumbers = true };
+
 	[Test]
 	[Arguments("""{"type":"object","properties":{"state":{"type":"string","enum":["trial","active"]}}}""", """{"state":"trial"}""")]
 	[Arguments("""{"type":"object","properties":{"id":{"type":"integer","readOnly":true},"secret":{"type":"string","writeOnly":true},"note":{"type":"null"}}}""", """{"id":0,"note":null}""")]
@@ -27,7 +31,7 @@ public class ResponseBodyExampleTests
 		var body = await BuildFrom(schema);
 
 		body.Should().NotBeNull();
-		JsonNode.Parse(body!)?.ToJsonString().Should().Be(expected == "null" ? null : expected);
+		JsonNode.Parse(body)?.ToJsonString().Should().Be(expected == "null" ? null : expected);
 	}
 
 	[Test]
@@ -40,7 +44,7 @@ public class ResponseBodyExampleTests
 			"""
 		);
 
-		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"state":"trial","count":0}""");
+		JsonNode.Parse(body!)!.ToJsonString().Should().MatchInlineJsonSnapshot("""{"state":"trial","count":0}""", Exact);
 	}
 
 	[Test]
@@ -62,7 +66,7 @@ public class ResponseBodyExampleTests
 			"""
 		);
 
-		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"kind":"cat","meows":true,"id":0}""");
+		JsonNode.Parse(body!)!.ToJsonString().Should().MatchInlineJsonSnapshot("""{"kind":"cat","meows":true,"id":0}""", Exact);
 	}
 
 	[Test]
@@ -78,7 +82,7 @@ public class ResponseBodyExampleTests
 		);
 
 		body.Should().NotBeNull();
-		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"id":0}""");
+		JsonNode.Parse(body!)!.ToJsonString().Should().MatchInlineJsonSnapshot("""{"id":0}""", Exact);
 	}
 
 	[Test]
@@ -105,7 +109,7 @@ public class ResponseBodyExampleTests
 		);
 
 		body.Should().NotBeNull();
-		body!.Length.Should().BeLessThan(1000);
+		body.Length.Should().BeLessThan(1000);
 		JsonNode.Parse(body).Should().NotBeNull();
 	}
 
@@ -156,25 +160,11 @@ public class ResponseBodyExampleTests
 		root["paths"]!["/subscription"]!["get"]!["responses"]!["200"]!["content"]!["application/json"]!["schema"] = JsonNode.Parse(schema);
 		root["components"] = JsonNode.Parse("{\"schemas\":{" + extraSchemas + "}}");
 		var json = root.ToJsonString();
-		var path = Path.Join(Path.GetTempPath(), $"response-body-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			return ResponseBodyExample.Build(
-				new SchemaAnalyzer(document),
-				"application/json",
-				document.Paths!["/subscription"].Operations![HttpMethod.Get].Responses!["200"].Content!["application/json"].Schema
-			);
-		}
-		finally
-		{
-			File.Delete(path);
-		}
+		var document = await TestSpecs.LoadSpecAsync(json);
+		return ResponseBodyExample.Build(
+			new SchemaAnalyzer(document),
+			"application/json",
+			document.Paths!["/subscription"].Operations![HttpMethod.Get].Responses!["200"].Content!["application/json"].Schema
+		);
 	}
 }

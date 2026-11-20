@@ -17,10 +17,6 @@ const card = `
 `
 
 describe('initCopyButton', () => {
-    afterEach(() => {
-        document.body.innerHTML = ''
-    })
-
     it('overlays the button next to the code when there is no card', () => {
         document.body.innerHTML = plain
 

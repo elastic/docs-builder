@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -145,8 +146,19 @@ public partial record OperationPageModel
 			for (var i = 0; i < scenarios.Count; i++)
 				scenarios[i] = scenarios[i] with { Responses = MergeSharedResponses(scenarios[i].Responses, sharedResponses) };
 		}
+		// Response-only examples are one example, unless samples name several of them: those samples are the requests
+		// that tell the examples apart, as on a GET with one sample per example. Unnamed ones (error statuses) are shared.
 		else if (!hasRequestScenarios && scenarios.Count > 1)
-			scenarios = CollapseIntoSingleScenario(scenarios);
+		{
+			var named = scenarios.Where(s => NamedBySample(s, codeSamples)).ToList();
+			if (named.Count > 1)
+			{
+				var shared = scenarios.Except(named).SelectMany(s => s.Responses).SelectMany(r => r.Examples).ToList();
+				scenarios = [.. named.Select(s => s with { Responses = MergeSharedResponses(s.Responses, shared) })];
+			}
+			else
+				scenarios = CollapseIntoSingleScenario(scenarios);
+		}
 
 		// Samples that name an example, by language suffix (cURL_tag_names) or by title, belong to that example.
 		var tied = codeSamples.Where(static c => c.IsTied).ToArray();
@@ -268,6 +280,9 @@ public partial record OperationPageModel
 		return merged;
 	}
 
+	private static bool NamedBySample(ExampleScenario scenario, IReadOnlyList<CodeSample> codeSamples) =>
+		codeSamples.Any(sample => string.Equals(sample.ExampleTitle, scenario.Title, StringComparison.OrdinalIgnoreCase));
+
 	/// <summary>
 	/// Response-only operations often name each status differently; fold them into one
 	/// scenario so the rail exposes status tabs instead of a scenario <c>select</c>.
@@ -372,7 +387,8 @@ public partial record OperationPageModel
 		return list.OrderBy(r => StatusSortKey(r.StatusCode)).ThenBy(r => r.StatusCode, StringComparer.Ordinal).ToArray();
 	}
 
-	private static int StatusSortKey(string statusCode) =>
+	/// <summary>The order the examples rail lists statuses in: successes first. The first open response follows it, so the two start on the same status.</summary>
+	internal static int StatusSortKey(string statusCode) =>
 		statusCode.Length > 0 && statusCode[0] == '2'
 			? 0
 			: statusCode.Length > 0 && statusCode[0] == '3'
@@ -601,6 +617,6 @@ public partial record OperationPageModel
 		return text.Length == 0 ? key : text;
 	}
 
-	[GeneratedRegex(@"(?<=[a-z0-9])(?=[A-Z])|\s+", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"(?<=[a-z0-9])(?=[A-Z])|\s+", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CamelCaseBoundary();
 }

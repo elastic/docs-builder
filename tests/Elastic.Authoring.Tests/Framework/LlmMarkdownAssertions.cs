@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Site.ApplicabilityBadges;
@@ -37,7 +38,7 @@ internal static class LlmMarkdownAssertions
 
 		var metadata = new StringBuilder();
 		metadata.AppendLine("---");
-		metadata.AppendLine($"title: {sourceFile.Title}");
+		metadata.AppendLine(CultureInfo.InvariantCulture, $"title: {sourceFile.Title}");
 
 		var frontMatter = sourceFile.YamlFrontMatter;
 		if (frontMatter?.AppliesTo is { } appliesTo && appliesTo != ApplicableTo.All && appliesTo != ApplicableTo.Default)
@@ -61,71 +62,30 @@ internal static class LlmMarkdownAssertions
 					var availabilityText = popoverData?.AvailabilityItems.Length > 0
 						? string.Join(", ", popoverData.AvailabilityItems.Select(a => a.Text))
 						: "Available";
-					metadata.AppendLine($"  - {displayName}: {availabilityText}");
+					metadata.AppendLine(CultureInfo.InvariantCulture, $"  - {displayName}: {availabilityText}");
 				}
 			}
 		}
 
 		metadata.AppendLine("---");
 		metadata.AppendLine();
-		metadata.AppendLine($"# {sourceFile.Title}");
+		metadata.AppendLine(CultureInfo.InvariantCulture, $"# {sourceFile.Title}");
 		metadata.Append(llmBody);
 		return metadata.ToString().Trim();
 	}
 
 	[DebuggerStepThrough]
-	internal static void ConvertsToNewLlm([LanguageInjection("markdown")] string expected, GeneratorResults results)
-	{
-		var defaultFile = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
-			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
-
-		var actual = ToLlmMarkdown(defaultFile);
-		var expectedTrimmed = expected.Trim();
-		var difference = HtmlAssertions.Diff(expectedTrimmed, actual);
-
-		if (string.IsNullOrEmpty(difference))
-			return;
-
-		throw new AwesomeAssertions.Execution.AssertionFailedException(
-			$"""
-LLM text was not equal
--- DIFF --
-{difference}
-
--- EXPECTED --
-{expectedTrimmed}
-
--- ACTUAL --
-{actual}
-"""
-		);
-	}
+	internal static void ConvertsToNewLlm([LanguageInjection("markdown")] string? expected, GeneratorResults results, CallSite site) =>
+		InlineSnapshots.Text(ToLlmMarkdown(FindIndexMd(results)), expected, nameof(Scenario.ConvertsToNewLlm), site);
 
 	[DebuggerStepThrough]
-	internal static void ConvertsToLlmWithMetadata([LanguageInjection("markdown")] string expected, GeneratorResults results)
-	{
-		var defaultFile = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
+	internal static void ConvertsToLlmWithMetadata(
+		[LanguageInjection("markdown")] string? expected,
+		GeneratorResults results,
+		CallSite site
+	) => InlineSnapshots.Text(ToLlmMarkdownWithMetadata(FindIndexMd(results)), expected, nameof(Scenario.ConvertsToLlmWithMetadata), site);
+
+	private static MarkdownResult FindIndexMd(GeneratorResults results) =>
+		results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
 			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
-
-		var actual = ToLlmMarkdownWithMetadata(defaultFile);
-		var expectedTrimmed = expected.Trim();
-		var difference = HtmlAssertions.Diff(expectedTrimmed, actual);
-
-		if (string.IsNullOrEmpty(difference))
-			return;
-
-		throw new AwesomeAssertions.Execution.AssertionFailedException(
-			$"""
-LLM metadata output was not equal
--- DIFF --
-{difference}
-
--- EXPECTED --
-{expectedTrimmed}
-
--- ACTUAL --
-{actual}
-"""
-		);
-	}
 }

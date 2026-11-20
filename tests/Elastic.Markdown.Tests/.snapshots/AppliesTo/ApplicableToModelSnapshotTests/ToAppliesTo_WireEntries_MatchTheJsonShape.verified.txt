@@ -1,0 +1,11 @@
+stack/stack: ga 9.2+
+stack/stack: beta 9.0-9.1
+deployment/self: ga 9.0+
+deployment/ess: preview (no version)
+serverless/elasticsearch: ga all
+serverless/observability: ga all
+serverless/security: ga all
+serverless/vectordb: ga all
+product/product: unavailable (no version)
+product/ecctl: ga 1.0+
+product/apm-agent-go: unavailable (no version)

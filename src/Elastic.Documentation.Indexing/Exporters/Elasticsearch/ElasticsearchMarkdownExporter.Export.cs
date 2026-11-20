@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
@@ -35,30 +36,37 @@ public partial class ElasticsearchMarkdownExporter
 	// Keyed by reference: BuildContext is a record whose value hash recurses until the stack overflows.
 	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new(ReferenceEqualityComparer.Instance);
 
-	/// <summary>
-	/// Assigns hash, last updated, and batch index date to a documentation document.
-	/// </summary>
-	private void AssignDocumentMetadata(DocumentationDocument doc)
-	{
-		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
-		var lexicalHash = _lexicalTypeContext.Hash;
-		var hash = HashedBulkUpdate.CreateHash(
+	private void AssignDocumentMetadata(DocumentationDocument doc) =>
+		AssignDocumentMetadata(doc, _semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash);
+
+	internal static void AssignDocumentMetadata(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
+		doc.Hash = DocumentHash(doc, semanticHash, lexicalHash, synonymsHash);
+
+	/// <summary>The change-detection hash. Everything the index stores for a page takes part, so a metadata-only edit still syncs.</summary>
+	internal static string DocumentHash(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
+		HashedBulkUpdate.CreateHash(
 			semanticHash,
 			lexicalHash,
 			doc.Path,
 			doc.Type,
+			doc.Hidden ? "hidden" : "listed",
 			doc.Body ?? string.Empty,
+			// An API document's content hash covers the rendered page, which its other fields do not.
+			doc.ContentBodyHash,
 			string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,
 			doc.Section ?? string.Empty,
 			doc.Navigation.Depth.ToString("N0"),
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
-			_fixedSynonymsHash,
-			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? [])
+			synonymsHash,
+			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
+			string.Join(",", doc.Links ?? []),
+			DocumentMetadataFingerprint.Create(doc),
+			doc.Api is null
+				? string.Empty
+				: JsonSerializer.Serialize(doc.Api, Documentation.Search.Contract.SourceGenerationContext.Default.ApiOperationMetadata)
 		);
-		doc.Hash = hash;
-	}
 
 	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
 	private static void AssignContentHash(DocumentationDocument doc) =>
@@ -176,6 +184,7 @@ public partial class ElasticsearchMarkdownExporter
 		// Plain-text, markup-stripped content — the single source of truth for search, AI enrichment
 		// input, and content hashing. docs-builder no longer feeds raw LLM-flavored Markdown into `body`.
 		var body = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
+		var links = OutboundLinkExtractor.Extract(fileContext.Document);
 
 		var headings = fileContext
 			.Document
@@ -183,12 +192,9 @@ public partial class ElasticsearchMarkdownExporter
 			.Select(
 				h => h.GetData("header") as string ?? string.Empty
 			) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
-
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
-		var summary = !string.IsNullOrEmpty(body)
-			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
-			: string.Empty;
+		var summary = BuildSummary(body, headings);
 
 		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
 		// this PR will add a service for us to resolve to a versioning scheme.
@@ -199,7 +205,6 @@ public partial class ElasticsearchMarkdownExporter
 			Path = url,
 			Title = file.Title,
 			SearchTitle = file.Title, //updated in CommonEnrichments
-
 			Body = body,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Summary = summary,
@@ -210,6 +215,7 @@ public partial class ElasticsearchMarkdownExporter
 				.Reverse()
 				.ToArray(),
 			Headings = headings,
+			Links = links,
 			Hidden = fileContext.NavigationItem.ExcludeFromIndexing
 		};
 
@@ -271,23 +277,11 @@ public partial class ElasticsearchMarkdownExporter
 
 			// Plain-text, markup-stripped content — the single source of truth for search, AI
 			// enrichment input, and content hashing.
-			doc.Body = PlainTextExporter.ConvertToPlainText(document, _context);
-
-			var headings = document
-				.Descendants<HeadingBlock>()
-				.Select(
-					h => h.GetData("header") as string ?? string.Empty
-				) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
-
-				.Where(text => !string.IsNullOrEmpty(text))
-				.ToArray();
-			var summary = !string.IsNullOrEmpty(doc.Body)
-				? doc.Body[..Math.Min(doc.Body.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
-				: string.Empty;
-			doc.Summary = summary;
-			doc.Headings = headings;
+			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
 			CommonEnrichments(doc, null);
-			AssignContentHash(doc);
+			// The exporter hashes the page an API document stands for; only a document that is not a page hashes its body.
+			if (string.IsNullOrEmpty(doc.ContentBodyHash))
+				AssignContentHash(doc);
 			AssignDocumentMetadata(doc);
 
 			if (!await WriteDocumentAsync(doc, ctx))
@@ -300,6 +294,19 @@ public partial class ElasticsearchMarkdownExporter
 		_logger.LogInformation("Finished exporting OpenAPI documentation");
 		return true;
 	}
+
+	/// <summary>
+	/// Keeps the tag names <see cref="OpenApiDocumentExporter"/> put in <c>Headings</c>. The generated body's
+	/// own headings are only the title and "Parameters", so they would say nothing about the operation.
+	/// </summary>
+	internal static void ApplyApiPlainText(DocumentationDocument doc, string plainTextBody)
+	{
+		doc.Body = plainTextBody;
+		doc.Summary = BuildSummary(plainTextBody, doc.Headings);
+	}
+
+	private static string BuildSummary(string body, IEnumerable<string> headings) =>
+		string.IsNullOrEmpty(body) ? string.Empty : body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings);
 
 	private async IAsyncEnumerable<DocumentationDocument> ExportApiDocuments(
 		OpenApiDocumentExporter exporter,

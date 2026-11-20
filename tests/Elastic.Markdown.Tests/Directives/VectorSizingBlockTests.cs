@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.VectorSizing;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -20,5 +22,6 @@ public class VectorSizingBlockTests() : DirectiveTest<VectorSizingBlock>("""
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("vector-sizing-calculator");
 
 	[Test]
-	public void RendersCustomElement() => Html.Should().Contain("<vector-sizing-calculator>");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "<vector-sizing-calculator></vector-sizing-calculator>");
 }

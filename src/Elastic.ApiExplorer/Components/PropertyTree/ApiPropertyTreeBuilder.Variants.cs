@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -12,7 +13,7 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 public partial class ApiPropertyTreeBuilder
 {
-	private const string DictionaryKeyName = "<string>";
+	private const string DictionaryKeyName = ApiPropertyPath.MapKeyMarker;
 
 	/// <summary>Builds the variants of a union whose options are already classified, so each keeps its name and <c>$ref</c>.</summary>
 	public ApiUnionVariants? BuildUnionVariants(
@@ -58,18 +59,32 @@ public partial class ApiPropertyTreeBuilder
 			var variant = variantsToRender[index];
 			var optionId = optionIds[index];
 			var dictionaryValue = variant.PageUrl is null ? _analyzer.GetExpandableDictionaryValue(variant.Schema) : null;
-			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
-			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
-			var showProperties = hasProperties;
 
 			var newAncestors = scope.AncestorRefs is not null ? new HashSet<string>(scope.AncestorRefs) : [];
 			// An inline map takes its value's $ref, but the value type is listed below under the key row, not above it.
 			if (!string.IsNullOrEmpty(variant.Ref) && !_analyzer.GetTypeInfo(variant.Schema).IsDictionary)
 				_ = newAncestors.Add(variant.Ref);
 
-			var nestedCount = (variant.Props?.Count ?? 0) + (dictionaryValue is null ? 0 : 1);
+			var variantScope = scope with
+			{
+				Prefix = optionId,
+				JsonPath = (variant.IsArray ? scope.IntoItems() : scope).JsonPath,
+				Depth = scope.Depth + 1,
+				AncestorRefs = newAncestors,
+				RequiredProperties = null,
+				Owner = VariantDisplayName(variant)
+			};
+			var nested = variant.PageUrl is null ? NestedUnion(variant.Schema, newAncestors, scope.Depth) : null;
+			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null || nested is not null;
+			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
+			var showProperties = hasProperties;
+
+			var nestedCount = (variant.Props?.Values.Count(p => p is not null && IsListed(p, variantScope)) ?? 0)
+				+ (dictionaryValue is null ? 0 : 1)
+				+ (nested?.Options.Count(_analyzer.UnionOptionHasProperties) ?? 0);
 			var isCollapsible = showProperties && nestedCount > 0;
-			var defaultExpanded = ComputeDefaultExpanded();
+			// The variants of a union are what the reader picks from, so they open on load whatever the row's own state.
+			const bool defaultExpanded = true;
 
 			var description = FirstParagraph(variant.Schema?.Description);
 
@@ -90,18 +105,18 @@ public partial class ApiPropertyTreeBuilder
 						dictionaryValue is null
 							? variant.Schema
 							: WithDictionaryKeyRow(_analyzer.Flatten(variant.Schema).Required, variant.Props, dictionaryValue),
-						scope with
-						{
-							Prefix = optionId,
-							JsonPath = (variant.IsArray ? scope.IntoItems() : scope).JsonPath,
-							Depth = scope.Depth + 1,
-							AncestorRefs = newAncestors,
-							RequiredProperties = null,
-							Owner = VariantDisplayName(variant)
-						},
+						variantScope,
 						selector
 					)
 						?? new ApiPropertyList([])
+					: null,
+				Variants = nested is { } union && variant.Schema is not null
+					? childBuilder.BuildLabelledVariants(
+						union.Keyword,
+						union.Options,
+						variantScope,
+						_analyzer.GetUnionDiscriminator(variant.Schema)
+					)
 					: null,
 				DescriptionHtml = description is null ? HtmlString.Empty : options.RenderMarkdown(description),
 				DescriptionMarkdown = description,
@@ -110,6 +125,36 @@ public partial class ApiPropertyTreeBuilder
 		}
 
 		return new ApiUnionVariants { Variants = variants, ContainerId = $"{scope.Prefix}-union-options" };
+	}
+
+	/// <summary>
+	/// The variants of a union listed below a row's, a variant's or a map value's own fields, labelled <c>One of:</c> or
+	/// <c>Any of:</c> so they read apart from those fields.
+	/// </summary>
+	private ApiUnionVariants? BuildLabelledVariants(
+		UnionKeyword? keyword,
+		List<UnionOption> unionOptions,
+		PropertyTreeScope scope,
+		OpenApiDiscriminator? discriminator
+	) =>
+		BuildUnionVariants(unionOptions, scope, discriminator) is { } built
+			? built with { Label = SchemaHelpers.UnionLabel(keyword) }
+			: null;
+
+	/// <summary>
+	/// The union a variant is on top of its own fields, so a chart type lists its DSL and ES|QL forms. An option that refers back
+	/// to a type above it stays out, as a row that does is not listed again.
+	/// </summary>
+	private (UnionKeyword Keyword, List<UnionOption> Options)? NestedUnion(
+		IOpenApiSchema? schema,
+		IReadOnlySet<string> ancestors,
+		int depth
+	)
+	{
+		if (depth >= options.MaxDepth || _analyzer.GetListedUnion(schema) is not { } union)
+			return null;
+		var kept = union.Options.Where(o => string.IsNullOrEmpty(o.Ref) || !ancestors.Contains(o.Ref)).ToList();
+		return kept.Any(_analyzer.UnionOptionHasProperties) ? (union.Keyword, kept) : null;
 	}
 
 	/// <summary>

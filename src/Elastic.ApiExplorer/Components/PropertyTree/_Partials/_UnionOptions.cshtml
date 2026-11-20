@@ -6,13 +6,14 @@
 		return;
 	}
 	var menuId = $"{Model.ContainerId}-menu";
+	var searchId = $"{Model.ContainerId}-search";
 	// Chips and menu entries drop the words every variant name shares (bedrock_secrets → bedrock); the full name stays as their tooltip.
 	var chipLabels = Model.UseChips ? ChipLabels.Shorten([.. Model.Variants.Select(static v => v.DisplayName)]) : [];
 	string ChipLabel(int i) => Model.Variants[i].IsArrayVariant ? $"{chipLabels[i]}[]" : chipLabels[i];
 }
 @if (Model.Label is { Length: > 0 } unionLabel)
 {
-	<span class="values-label">@unionLabel</span>
+	<span class="values-label union-variants-label">@unionLabel</span>
 }
 @* Two or more variants show one at a time: chips pick the variant, as on the examples rail (chip-row.ts), and the
    others use hidden="until-found", so find-in-page and links to their fields still reach them (api-union-chips.ts). *@
@@ -42,12 +43,13 @@
 				<span data-chip-more-label></span>
 				<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
 			</button>
-			@* A long list searches from the row itself: typing opens the menu with every match, so nobody has to open it first. *@
+			@* A long list searches from the row itself: typing opens the menu with every match, so nobody has to open it first.
+			   The menu then sits under the search box (data-anchor, floating.ts). *@
 			@if (Model.HasFilter)
 			{
-				<input type="search" class="union-variant-search" data-chip-filter placeholder="Search variants" aria-label="Search variants" aria-controls="@menuId" autocomplete="off" />
+				<input type="search" id="@searchId" class="union-variant-search" data-chip-filter placeholder="Search variants" aria-label="Search variants" aria-controls="@menuId" autocomplete="off" />
 			}
-			<div id="@menuId" class="api-example-menu simple-scrollbar" popover="@(Model.HasFilter ? "manual" : "auto")" data-chip-menu>
+			<div id="@menuId" class="api-example-menu simple-scrollbar" popover="@(Model.HasFilter ? "manual" : "auto")"@(Model.HasFilter ? new HtmlString($" data-anchor=\"{System.Net.WebUtility.HtmlEncode(searchId)}\"") : HtmlString.Empty) data-chip-menu>
 				<div role="menu" aria-label="More variants">
 					@for (var i = 0; i < Model.Variants.Count; i++)
 					{
@@ -110,9 +112,9 @@
 				if (collapsible)
 				{
 					<div class="expand-toggle-row union-expand-toggle">
-						<button class="expand-toggle">
+						<button class="expand-toggle" data-count="@variant.NestedCount">
 							<span class="toggle-icon">@(expanded ? "−" : "+")</span>
-							<span class="toggle-label">@(expanded ? "hide" : "show") properties</span>
+							<span class="toggle-label">@PropertyToggle.Label(expanded, variant.NestedCount)</span>
 						</button>
 					</div>
 				}
@@ -120,12 +122,14 @@
 				{
 					<div class="nested-properties" id="@variant.ChildrenId" hidden="until-found">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
+						@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(variant.Variants ?? ApiUnionVariants.Empty))
 					</div>
 				}
 				else
 				{
 					<div class="nested-properties" id="@variant.ChildrenId">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
+						@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(variant.Variants ?? ApiUnionVariants.Empty))
 					</div>
 				}
 			}

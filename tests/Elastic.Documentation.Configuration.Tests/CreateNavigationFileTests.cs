@@ -55,10 +55,18 @@ public class CreateNavigationFileTests
 		var result = provider.CreateNavigationFile(config);
 		var output = fileSystem.File.ReadAllText(result.FullName);
 
-		output.Should().NotContain("private-a://");
-		output.Should().NotContain("private-b://");
-		output.Should().Contain("public-repo://section-a");
-		output.Should().Contain("public-repo-two://section-d");
+		output.Should().MatchInlineSnapshot(
+			"""
+			toc:
+			  - toc: docs-content://getting-started
+			    path_prefix: getting-started
+			    children:
+			      - toc: public-repo://section-a
+			        path_prefix: section-a
+			      - toc: public-repo-two://section-d
+			        path_prefix: section-d
+			"""
+		);
 	}
 
 	[Test]
@@ -92,10 +100,21 @@ public class CreateNavigationFileTests
 		var result = provider.CreateNavigationFile(config);
 		var output = fileSystem.File.ReadAllText(result.FullName);
 
-		output.Should().NotContain("private-a://");
-		output.Should().NotContain("private-b://");
-		output.Should().Contain("public-repo://leaf-a");
-		output.Should().Contain("public-repo-two://leaf-d");
+		output.Should().MatchInlineSnapshot(
+			"""
+			toc:
+			  - toc: docs-content://top
+			    path_prefix: top
+			    children:
+			      - toc: docs-content://mid
+			        path_prefix: mid
+			        children:
+			          - toc: public-repo://leaf-a
+			            path_prefix: leaf-a
+			          - toc: public-repo-two://leaf-d
+			            path_prefix: leaf-d
+			"""
+		);
 	}
 
 	[Test]
@@ -125,9 +144,18 @@ public class CreateNavigationFileTests
 		var result = provider.CreateNavigationFile(config);
 		var output = fileSystem.File.ReadAllText(result.FullName);
 
-		output.Should().NotContain("private-a://");
-		output.Should().Contain("public-child://nested");
-		output.Should().Contain("public-repo://after");
+		output.Should().MatchInlineSnapshot(
+			"""
+			toc:
+			  - toc: docs-content://top
+			    path_prefix: top
+			    children:
+			      - toc: public-child://nested
+			        path_prefix: nested
+			      - toc: public-repo://after
+			        path_prefix: after
+			"""
+		);
 	}
 
 	[Test]
@@ -156,9 +184,16 @@ public class CreateNavigationFileTests
 		var result = provider.CreateNavigationFile(config);
 		var output = fileSystem.File.ReadAllText(result.FullName);
 
-		output.Should().NotContain("private-a://");
-		output.Should().NotContain("private-b://");
-		output.Should().Contain("public-repo://middle");
+		output.Should().MatchInlineSnapshot(
+			"""
+			toc:
+			  - toc: docs-content://top
+			    path_prefix: top
+			    children:
+			      - toc: public-repo://middle
+			        path_prefix: middle
+			"""
+		);
 	}
 
 	[Test]
@@ -187,11 +222,17 @@ public class CreateNavigationFileTests
 		var output = fileSystem.File.ReadAllText(result.FullName);
 
 		// The public entry and its island: true property are preserved
-		output.Should().Contain("public-repo://reference");
-		output.Should().Contain("island: true", "island: true on a public entry must survive private-repo stripping");
-		output.Should().Contain("public-child://nested");
-		// The private entry is removed
-		output.Should().NotContain("private-a://");
+		output.Should().MatchInlineSnapshot(
+			"""
+			toc:
+			  - toc: public-repo://reference
+			    path_prefix: reference
+			    island: true
+			    children:
+			      - toc: public-child://nested
+			        path_prefix: reference/nested
+			"""
+		);
 	}
 
 	[Test]
@@ -219,11 +260,15 @@ public class CreateNavigationFileTests
 		var output = fileSystem.File.ReadAllText(result.FullName);
 
 		// The private entry and its island: true property are removed
-		output.Should().NotContain("private-a://");
-		output.Should().NotContain("island: true", "island: true on a private entry is removed with the entry");
-		// Public entries are preserved
-		output.Should().Contain("public-repo://reference");
-		output.Should().Contain("public-after://other");
+		output.Should().MatchInlineSnapshot(
+			"""
+			toc:
+			  - toc: public-repo://reference
+			    path_prefix: reference
+			  - toc: public-after://other
+			    path_prefix: other
+			"""
+		);
 	}
 
 	[Test]

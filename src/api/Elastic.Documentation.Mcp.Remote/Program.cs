@@ -32,7 +32,7 @@ try
 			Metrics = (_, m) => m.WithElasticDefaults().AddMeter(McpToolTelemetry.McpMeterName)
 		});
 
-	// Only hardcode port 8080 when not running under Aspire/orchestration.
+	// Only hardcode port 8080 when not running under orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
 	if (
 		string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
@@ -76,8 +76,9 @@ try
 		{
 			options.ServerInstructions = profile.ComposeServerInstructions();
 			options.ServerInfo = new Implementation { Name = profile.ServiceName, Version = serverVersion };
-			// Null echoes the client's requested version; pin to the latest we actually support.
-			options.ProtocolVersion = "2025-11-25";
+			// ProtocolVersion stays null on purpose: the server then offers every version the SDK supports. An initialize
+			// client gets the version it asks for. A 2026-07-28 client is served through server/discover. Pinning to
+			// 2025-11-25 refuses the 2026-07-28 clients, and pinning to 2026-07-28 refuses every initialize client.
 		})
 		.WithHttpTransport(o => o.Stateless = true);
 

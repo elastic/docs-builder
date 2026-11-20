@@ -1,0 +1,13 @@
+{
+  "origin": {
+    "branch": "main",
+    "remote": "https://github.com/example-org/example-repo",
+    "ref": "0123456789abcdef0123456789abcdef01234567",
+    "name": "unavailable",
+    "github_ref": null
+  },
+  "url_path_prefix": "/elastic/example-repo/tree/main",
+  "links": {},
+  "cross_links": [],
+  "redirects": {}
+}

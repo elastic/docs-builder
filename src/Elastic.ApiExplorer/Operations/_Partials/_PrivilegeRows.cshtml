@@ -1,0 +1,38 @@
+@using Elastic.ApiExplorer.Infrastructure
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthorizationSectionModel>
+<div class="api-privileges">
+	@foreach (var row in Model.Privileges)
+	{
+		if (row.Values.Count == 0)
+		{
+			<div class="api-privileges-note">@Model.RenderMarkdown(row.Label)</div>
+			continue;
+		}
+		var label = ShortLabel(row.Label);
+		<div class="api-privileges-row">
+			@if (label.Length > 0)
+			{
+				<span class="api-privileges-label">@label</span>
+			}
+			<div class="api-privileges-values">
+				@for (var i = 0; i < row.Values.Count; i++)
+				{
+					if (i > 0 && row.Join is not null)
+					{
+						<span class="privilege-join">@row.Join</span>
+					}
+					<code class="api-privilege">@HtmlBreaks.After(row.Values[i], '_')</code>
+				}
+			</div>
+		</div>
+	}
+</div>
+@functions {
+	private const string Suffix = " privileges";
+
+	// The title or caption beside the rows already says "privileges", so "Cluster privileges" reads "Cluster" and a bare "Privileges" reads nothing.
+	private static string ShortLabel(string label) =>
+		label.Equals("Privileges", StringComparison.OrdinalIgnoreCase) ? ""
+		: label.EndsWith(Suffix, StringComparison.OrdinalIgnoreCase) ? label[..^Suffix.Length]
+		: label;
+}

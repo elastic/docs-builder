@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>docs-builder</AssemblyName>
     <RootNamespace>Documentation.Builder</RootNamespace>
@@ -19,6 +18,11 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <!-- SYSLIB1100 and 1101 can not be disabled in source see: https://github.com/dotnet/runtime/issues/92509 -->
     <NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101</NoWarn>
+  </PropertyGroup>
+
+  <!-- API generation allocates from every core at once. Workstation GC collects on one heap and made it 4x slower. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

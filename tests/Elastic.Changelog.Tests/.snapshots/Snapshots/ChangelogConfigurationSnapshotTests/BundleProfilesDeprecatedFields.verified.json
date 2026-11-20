@@ -1,0 +1,85 @@
+{
+  "configuration": {
+    "Pivot": null,
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": {
+      "Directory": null,
+      "OutputDirectory": null,
+      "UseLocalChangelogs": false,
+      "Description": null,
+      "Repo": null,
+      "Owner": null,
+      "Branch": null,
+      "LinkAllowRepos": null,
+      "ReleaseDates": null,
+      "Backports": null,
+      "Profiles": {
+        "old": {
+          "Product": null,
+          "Products": null,
+          "Output": "{repo}-{version}.yaml",
+          "OutputDirectory": "docs/releases/old",
+          "OutputProducts": "kibana {version}, security {version}",
+          "Description": null,
+          "Repo": "example-repo",
+          "Owner": "example-owner",
+          "Branch": null,
+          "HideFeatures": null,
+          "ReleaseDates": null,
+          "Source": "github_release"
+        }
+      },
+      "Releases": null
+    },
+    "HighlightLabels": null
+  },
+  "diagnostics": [
+    "warning {root}/docs/changelog.yml bundle.profiles.old.source is deprecated. Use bundle.releases.github to map release tags to profiles instead.",
+    "warning {root}/docs/changelog.yml bundle.profiles.old.output is deprecated. Bundle output names are derived by convention as {repo}-{product}-{version}.yaml. Remove this field.",
+    "warning {root}/docs/changelog.yml bundle.profiles.old.output_products is deprecated. Use 'product: <id>' instead.",
+    "warning {root}/docs/changelog.yml bundle.profiles.old.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
+  ]
+}

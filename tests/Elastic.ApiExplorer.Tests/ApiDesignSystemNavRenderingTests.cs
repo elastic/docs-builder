@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.Documentation.Configuration.Builder;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -17,23 +18,18 @@ public partial class ApiPagesNavRenderingTests
 	public async Task DesignSystemNav_RendersSwitchersAsLinkMenusAboveTheTree()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/v9/",
-			"/api/doc/elasticsearch/v9.md",
+			"/api/elasticsearch/v9/",
+			"/api/elasticsearch/v9.md",
 			apiContext: CreateApiContext(versions: [
-				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
-				new("v8", "/api/doc/elasticsearch/v8/", Selected: false)
+				new("v9", "/api/elasticsearch/v9/", Selected: true),
+				new("v8", "/api/elasticsearch/v8/", Selected: false)
 			]),
 			features: NavigationPreview
 		);
 
 		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("class=\"link-menu\"");
-		html.Should().Contain("aria-label=\"API version: v9\"");
-		html.Should().Contain("aria-label=\"API product: Elasticsearch\"");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/v8/\"");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("onchange");
+		html.Should().MatchHtmlSnapshot();
 		html
 			.IndexOf("class=\"link-menu\"", StringComparison.Ordinal)
 			.Should()
@@ -41,27 +37,65 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
+	public async Task DesignSystemNav_VersionTriggerNamesTheVersionWhileTheMenuKeepsTheHint()
+	{
+		var model = CreateLayoutModel(
+			"/api/elasticsearch/next/",
+			"/api/elasticsearch/next.md",
+			apiContext: CreateApiContext(versions: [
+				new("Next (unreleased)", "/api/elasticsearch/next/", Selected: true, ShortLabel: "Next"),
+				new("v9 (latest)", "/api/elasticsearch/", Selected: false, ShortLabel: "v9")
+			]),
+			features: NavigationPreview
+		);
+
+		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<span class=\"link-menu__current\">Next</span>");
+		html.Should().Contain(">Next (unreleased)</a>");
+		html.Should().Contain(">v9 (latest)</a>");
+	}
+
+	[Test]
+	public async Task DesignSystemNav_VersionTriggerFollowsTheSelectedVersionNotTheFirstRow()
+	{
+		var model = CreateLayoutModel(
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
+			apiContext: CreateApiContext(versions: [
+				new("Next (unreleased)", "/api/elasticsearch/next/", Selected: false, ShortLabel: "Next"),
+				new("v9 (latest)", "/api/elasticsearch/", Selected: true, ShortLabel: "v9")
+			]),
+			features: NavigationPreview
+		);
+
+		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<span class=\"link-menu__current\">v9</span>");
+		html.Should().NotContain("<span class=\"link-menu__current\">Next</span>");
+	}
+
+	[Test]
 	public async Task DesignSystemNav_JumpFieldStaysHiddenUntilScriptRevealsIt()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: NavigationPreview,
 			buildType: Elastic.Documentation.BuildType.Assembler
 		);
 
 		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("data-nav-filter hidden");
-		html.Should().NotContain("<navigation-search");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task DesignSystemNav_Assembler_OmitsTheHubSwitcher()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			apiContext: CreateApiContext(),
 			features: NavigationPreview,
 			buildType: Elastic.Documentation.BuildType.Assembler

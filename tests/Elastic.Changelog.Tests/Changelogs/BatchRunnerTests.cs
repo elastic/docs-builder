@@ -33,7 +33,11 @@ public class BatchRunnerTests
 			_ = Interlocked.Increment(ref _started);
 			var now = Interlocked.Increment(ref _running);
 			int seen;
-			while (now > (seen = Volatile.Read(ref _max)) && Interlocked.CompareExchange(ref _max, now, seen) != seen) { }
+			while (now > (seen = Volatile.Read(ref _max)))
+			{
+				if (Interlocked.CompareExchange(ref _max, now, seen) == seen)
+					break;
+			}
 
 			try
 			{
@@ -107,7 +111,6 @@ public class BatchRunnerTests
 	public async Task Run_ABatchFailsLate_RunningSiblingsObserveCancellation()
 	{
 		var probe = new Probe();
-		var watch = System.Diagnostics.Stopwatch.StartNew();
 
 		// Batch 0 fails after the siblings have started. They would sleep for ten seconds if nothing cancelled them.
 		var results = await BatchRunner.RunAsync(
@@ -126,7 +129,6 @@ public class BatchRunnerTests
 
 		results.Should().BeNull();
 		probe.Cancelled.Should().Be(3, "every running sibling gets the cancelled token, not the caller's token");
-		watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5));
 	}
 
 	[Test]

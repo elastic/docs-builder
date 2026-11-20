@@ -27,12 +27,7 @@ public class TableOfContentsRenderingTests() : DocumentationSetNavigationTestBas
 	{
 		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: false);
 
-		html.Should().Contain("<version-dropdown");
-		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("flex-row-reverse");
-		html.Should().Contain("justify-between");
-		html.Should().Contain("<div class=\"lg:mb-4\">");
-		html.Should().NotContain("hidden md:block");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -40,8 +35,7 @@ public class TableOfContentsRenderingTests() : DocumentationSetNavigationTestBas
 	{
 		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: true);
 
-		html.Should().NotContain("<version-dropdown");
-		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -49,8 +43,7 @@ public class TableOfContentsRenderingTests() : DocumentationSetNavigationTestBas
 	{
 		var html = await Render(BuildType.Isolated, showVersionDropdown: false, navigationPreviewEnabled: false);
 
-		html.Should().NotContain("<version-dropdown");
-		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	private async Task<string> Render(BuildType buildType, bool showVersionDropdown, bool navigationPreviewEnabled)

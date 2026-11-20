@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using SharpYaml;
 
 namespace Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
@@ -60,13 +61,14 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		AppliesSwitchIndex = appliesSwitch?.FindIndex() ?? -1;
 		AppliesSwitchGroupKey = appliesSwitch?.GetGroupKey();
 
-		// Auto-generate sync key from applies_to definition if not provided
-		SyncKey = Prop("sync") ?? GenerateSyncKey(AppliesToDefinition, Build.ProductsConfiguration);
 		Selected = PropBool("selected");
 
 		// Parse the ApplicableTo object for IBlockAppliesTo
 		if (!string.IsNullOrEmpty(AppliesToDefinition))
 			AppliesTo = ParseApplicableTo(AppliesToDefinition);
+
+		// Auto-generate sync key from applies_to definition if not provided
+		SyncKey = Prop("sync") ?? (AppliesTo is null ? CreateSyncKey(AppliesToDefinition) : CreateSyncKey(AppliesTo.ToString()));
 	}
 
 	private ApplicableTo? ParseApplicableTo(string yaml)
@@ -76,12 +78,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.ProductsConfiguration);
 			return applicableTo;
 		}
-		catch (FormatException e)
-		{
-			this.EmitError($"Unable to parse applies_to definition: {yaml}", e);
-			return null;
-		}
-		catch (InvalidOperationException e)
+		catch (Exception e) when (e is FormatException or InvalidOperationException or YamlException)
 		{
 			this.EmitError($"Unable to parse applies_to definition: {yaml}", e);
 			return null;
@@ -94,6 +91,8 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		// Use ShortId.Create for a stable, deterministic hash based on the normalized ToString()
 		// ToString() normalizes different YAML representations into a canonical form,
 		// ensuring semantically equivalent definitions get the same sync key
-		return $"applies-{ShortId.Create(applicableTo.ToString())}";
+		return CreateSyncKey(applicableTo.ToString());
 	}
+
+	private static string CreateSyncKey(string normalized) => $"applies-{ShortId.Create(normalized)}";
 }

@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -60,17 +61,9 @@ public class UnionOptionsRenderingTests
 	{
 		var html = await Render(3);
 
-		html.Should().Contain("data-chip-row").And.NotContain("union-separator");
-		html.Should().Contain(
-			"""<button type="button" role="tab" class="api-example-chip is-active" data-chip="v-0" aria-controls="v-0" aria-selected="true">"""
-		);
-		html.Should().Contain("""id="v-1" hidden="until-found">""", "other variants stay findable");
-		html.Should().Contain(
-			"""data-chip="v-1" aria-controls="v-1" aria-selected="false" tabindex="-1">""",
-			"only the picked chip is in the tab order"
-		);
-		html.Should().NotContain("data-chip-filter", "three variants need no search box");
-		html.Should().Contain("Variant2[] &#xB7; kind: two", "a menu entry names the array form and the discriminator value");
+		// Other variants stay findable (hidden=until-found), only the picked chip is in the tab order,
+		// three variants need no search box, and a menu entry names the array form and the discriminator value.
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -78,22 +71,17 @@ public class UnionOptionsRenderingTests
 	{
 		var html = await Render(3, foldable: true);
 
-		html.Should().Contain("hide properties", "the fields show at once, and a toggle offers a shorter view");
-		html.Should().NotContain("show properties", "nothing starts folded");
-		html.Should().Contain("""<div class="nested-properties" id="v-0--children">""", "the fields are not folded");
-		html.Should().NotContain(">Variant0</span></code>", "the chip already names the variant");
-		html.Should().Contain(
-			"""<div class="union-variant-label"> <code class="discriminator-value">kind: two</code> </div>""".Replace(
-				" <code class=\"discriminator",
-				" <span class=\"type-wrapper object-icon\">{}</span> <code class=\"schema-type\"><span class=\"type-object\">Variant2</span><span class=\"type-wrapper array-icon\">[]</span></code> <code class=\"discriminator"
-			),
-			"an array variant keeps its X[] heading, so its fields read as each item's"
-		);
-		html.Should().NotContain(">Variant1</span></code>", "a plain variant's name is on its chip");
+		// The fields show at once with a "hide properties" toggle and nothing starts folded; the chips name the
+		// variants, except that an array variant keeps its X[] heading so its fields read as each item's.
+		html.Should().MatchHtmlSnapshot();
+	}
 
-		var alone = await Render(1, foldable: true);
-		alone.Should().Contain("show properties", "a lone variant, with no chip to pick it, still folds its fields");
-		alone.Should().Contain(">Variant0</span></code>");
+	[Test]
+	public async Task Render_LoneFoldableVariant_StillFoldsItsFieldsAndKeepsItsName()
+	{
+		var html = await Render(1, foldable: true);
+
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -101,26 +89,17 @@ public class UnionOptionsRenderingTests
 	{
 		var html = await Render(11);
 
-		html.Should().Contain("""<input type="search" class="union-variant-search" data-chip-filter placeholder="Search variants" """);
-		html
-			.IndexOf("data-chip-filter", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(
-				html.IndexOf("data-chip-menu", StringComparison.Ordinal),
-				"the search box sits in the row, outside the popover menu"
-			);
-		html.Should().Contain(
-			"""id="opts-menu" class="api-example-menu simple-scrollbar" popover="manual" data-chip-menu>""",
-			"the search box sits outside the popover, so the menu is closed by script and not by light dismiss"
-		);
+		// The search box sits in the row, outside the popover menu, so the menu is closed by script and not by light dismiss.
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
 	public async Task Render_SharedNameSuffix_IsTrimmedFromChipsAndMenuEntries()
 	{
+		string[] names = ["bedrock_config", "email_config", "jira_config"];
 		var variants = new ApiUnionVariants
 		{
-			Variants = new[] { "bedrock_config", "email_config", "jira_config" }.Select(
+			Variants = names.Select(
 				(name, i) => Variant(i, foldable: false) with { DisplayName = name, IsArrayVariant = false, DiscriminatorLabel = null }
 			).ToArray(),
 			ContainerId = "opts"
@@ -128,12 +107,42 @@ public class UnionOptionsRenderingTests
 		var html = await _UnionOptions.Create(variants).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		html = string.Join(' ', html.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
-		html.Should().Contain("""title="bedrock_config"> <span class="api-example-chip-title" data-chip-title>bedrock</span>""");
-		html.Should().Contain(
-			"""title="bedrock_config" hidden> <span class="api-example-menu-item-title" data-chip-item-title>bedrock</span>""",
-			"the menu reads like the chips"
-		);
-		html.Should().NotContain(">bedrock_config<", "the full name stays only as the tooltip");
+		// The menu reads like the chips, and the full name stays only as the tooltip.
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Render_VariantThatIsAUnion_ListsItsVariantsInsideItsOwnPanel()
+	{
+		var inner = new ApiUnionVariants
+		{
+			Variants =
+			[
+				Variant(0, foldable: false) with { DisplayName = "Chart (DSL)", AnchorId = "v-0-dsl", IsArrayVariant = false },
+				Variant(1, foldable: false) with { DisplayName = "Chart (ES|QL)", AnchorId = "v-0-esql" }
+			],
+			ContainerId = "v-0-union-options",
+			Label = "Any of"
+		};
+		var outer = new ApiUnionVariants
+		{
+			Variants =
+			[
+				Variant(0, foldable: true) with { DefaultExpanded = true, UseHidden = false, Variants = inner },
+				Variant(1, foldable: false)
+			],
+			ContainerId = "opts"
+		};
+
+		var html = await _UnionOptions.Create(outer).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		html = string.Join(' ', html.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+		var panel = html.IndexOf("id=\"v-0--children\">", StringComparison.Ordinal);
+		var nested = html.IndexOf("id=\"v-0-union-options\"", StringComparison.Ordinal);
+		panel.Should().BeGreaterThan(-1);
+		nested.Should().BeGreaterThan(panel, "the inner chips sit in the variant's nested panel");
+		html.Should().Contain("data-chip=\"v-0-dsl\"").And.Contain("data-chip=\"v-0-esql\"").And.Contain(">Any of</span>");
+		html.Split("id=\"v-0-union-options\"").Length.Should().Be(2, "the inner list renders once");
 	}
 
 	/// <summary>Renders <paramref name="count"/> variants; the first <paramref name="objects"/> are objects, the rest primitives.</summary>

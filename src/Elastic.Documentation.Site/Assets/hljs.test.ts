@@ -19,10 +19,6 @@ function setCodeBlocks(...languages: (string | null)[]) {
     document.body.innerHTML = `<div id="markdown-content">${blocks}</div>`
 }
 
-afterEach(() => {
-    document.body.innerHTML = ''
-})
-
 describe('initHighlight', () => {
     it('loads all curated languages when any code block is present', async () => {
         const { initHighlight, hljs } = await loadModule()

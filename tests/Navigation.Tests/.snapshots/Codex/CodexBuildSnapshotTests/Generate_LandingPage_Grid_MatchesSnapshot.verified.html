@@ -1,0 +1,268 @@
+<div class="fixed inset-0 z-0" style="background-image: linear-gradient(to right, #e7e5e4 1px, transparent 1px), linear-gradient(to bottom, #e7e5e4 1px, transparent 1px); background-size: 20px 20px; background-position: 0 0, 0 0; mask-image: repeating-linear-gradient(to right, black 0px, black 3px, transparent 3px, transparent 8px), repeating-linear-gradient(to bottom, black 0px, black 3px, transparent 3px, transparent 8px), radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%); -webkit-mask-image: repeating-linear-gradient(to right, black 0px, black 3px, transparent 3px, transparent 8px), repeating-linear-gradient(to bottom, black 0px, black 3px, transparent 3px, transparent 8px), radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%); mask-composite: intersect; -webkit-mask-composite: source-in;">
+</div>
+<div class="codex-hero flex flex-col px-4 pt-10 pb-20 items-center text-center max-w-4xl mx-auto" style="position: relative; z-index: 1;">
+	<div class="flex items-center justify-between gap-2 mb-10 w-full">
+		<img src="/docs/_static/logo-elastic-horizontal-color.svg?v={hash}" alt="Elastic" class="h-10">
+		<div class="flex items-center gap-4">
+			<a href="https://github.com/elastic/docs-builder" target="_blank" rel="noopener" class="text-subdued hover:text-ink-dark transition-colors" title="elastic/docs-builder">
+				<svg class="size-5 icon-mono" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+					<path d="M16,0 C7.1640625,0 0,7.34334334 0,16.4004004 C0,23.6476476 4.584,29.7937938 10.942375,31.9619459 C11.7421875,32.1121121 12.0341875,31.6055896 12.0341875,31.1731572 C12.0341875,30.7827508 12.0195312,29.4894895 12.0117188,28.1201201 C7.5625,29.1110951 6.6220625,26.1861862 6.6220625,26.1861862 C5.8935625,24.2922923 4.8456875,23.7877878 4.8456875,23.7877878 C3.39159375,22.7707708 4.956,22.7907908 4.956,22.7907908 C6.5624375,22.9048889 7.4081875,24.4804805 7.4081875,24.4804805 C8.8359375,26.986987 11.1542813,26.2622623 12.0644375,25.8418418 C12.209875,24.7847848 12.6239375,24.0600601 13.0800625,23.6516517 C9.5283125,23.2372533 5.792,21.8298298 5.792,15.5455295 C5.792,13.7537217 6.41603125,12.2922923 7.4375,11.1441361 C7.27440625,10.7277197 6.723625,9.05904304 7.5956875,6.80180981 C7.5956875,6.80180981 8.9375,6.36136937 11.9960625,8.48349149 C13.2714375,8.11813413 14.639625,7.93795395 15.9999688,7.93193193 C17.3593438,7.93795395 18.7284688,8.12012012 20.0058438,8.48547748 C23.0585938,6.36136937 24.4023438,6.8037958 24.4023438,6.8037958 C25.2773438,9.06304705 24.7265625,10.7297057 24.5625,11.1441361 C25.587875,12.2922923 26.2070312,13.7537538 26.2070312,15.5455295 C26.2070312,21.8458458 22.4648438,23.2332172 18.9004062,23.6396396 C19.4765937,24.1481481 19.9863437,25.1451451 19.9863437,26.6746747 C19.9863437,28.8668829 19.9648438,30.6346346 19.9648438,31.1751752 C19.9648438,31.6116116 20.2558438,32.1221061 21.0664062,31.9619459 C27.4199375,29.7897898 32,23.6436436 32,16.4004004 C32,7.34334334 24.8359375,0 16,0 Z"></path>
+				</svg>
+			</a>
+			<a href="https://elastic.slack.com/archives/C0JF80CJZ" target="_blank" rel="noopener" class="text-subdued hover:text-ink-dark transition-colors" title="#docs">
+				<svg class="size-5 icon-mono" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+					<g fill="none">
+						<path fill="#E01E5A" d="M6.81290323 3.40645161C6.81290323 5.23870968 5.31612903 6.73548387 3.48387097 6.73548387 1.6516129 6.73548387.15483871 5.23870968.15483871 3.40645161.15483871 1.57419355 1.6516129.0774193548 3.48387097.0774193548L6.81290323.0774193548 6.81290323 3.40645161zM8.49032258 3.40645161C8.49032258 1.57419355 9.98709677.0774193548 11.8193548.0774193548 13.6516129.0774193548 15.1483871 1.57419355 15.1483871 3.40645161L15.1483871 11.7419355C15.1483871 13.5741935 13.6516129 15.0709677 11.8193548 15.0709677 9.98709677 15.0709677 8.49032258 13.5741935 8.49032258 11.7419355L8.49032258 3.40645161z" transform="translate(0 16.774)"></path>
+						<path fill="#36C5F0" d="M11.8193548 6.81290323C9.98709677 6.81290323 8.49032258 5.31612903 8.49032258 3.48387097 8.49032258 1.6516129 9.98709677.15483871 11.8193548.15483871 13.6516129.15483871 15.1483871 1.6516129 15.1483871 3.48387097L15.1483871 6.81290323 11.8193548 6.81290323zM11.8193548 8.49032258C13.6516129 8.49032258 15.1483871 9.98709677 15.1483871 11.8193548 15.1483871 13.6516129 13.6516129 15.1483871 11.8193548 15.1483871L3.48387097 15.1483871C1.6516129 15.1483871.15483871 13.6516129.15483871 11.8193548.15483871 9.98709677 1.6516129 8.49032258 3.48387097 8.49032258L11.8193548 8.49032258z"></path>
+						<path fill="#2EB67D" d="M8.41290323 11.8193548C8.41290323 9.98709677 9.90967742 8.49032258 11.7419355 8.49032258 13.5741935 8.49032258 15.0709677 9.98709677 15.0709677 11.8193548 15.0709677 13.6516129 13.5741935 15.1483871 11.7419355 15.1483871L8.41290323 15.1483871 8.41290323 11.8193548zM6.73548387 11.8193548C6.73548387 13.6516129 5.23870968 15.1483871 3.40645161 15.1483871 1.57419355 15.1483871.0774193548 13.6516129.0774193548 11.8193548L.0774193548 3.48387097C.0774193548 1.6516129 1.57419355.15483871 3.40645161.15483871 5.23870968.15483871 6.73548387 1.6516129 6.73548387 3.48387097L6.73548387 11.8193548z" transform="translate(16.774)"></path>
+						<path fill="#ECB22E" d="M3.40645161 8.41290323C5.23870968 8.41290323 6.73548387 9.90967742 6.73548387 11.7419355 6.73548387 13.5741935 5.23870968 15.0709677 3.40645161 15.0709677 1.57419355 15.0709677.0774193548 13.5741935.0774193548 11.7419355L.0774193548 8.41290323 3.40645161 8.41290323zM3.40645161 6.73548387C1.57419355 6.73548387.0774193548 5.23870968.0774193548 3.40645161.0774193548 1.57419355 1.57419355.0774193548 3.40645161.0774193548L11.7419355.0774193548C13.5741935.0774193548 15.0709677 1.57419355 15.0709677 3.40645161 15.0709677 5.23870968 13.5741935 6.73548387 11.7419355 6.73548387L3.40645161 6.73548387z" transform="translate(16.774 16.774)"></path>
+					</g>
+				</svg>
+			</a>
+		</div>
+	</div>
+	<div class="codex-hero-content max-w-4xl">
+		<h1 class="text-6xl md:text-7xl font-sans font-bold text-slate-900 tracking-tight mb-6">
+			Test Codex
+		</h1>
+		<p class="mt-6 text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+			Elastic's internal documentation platform. Discover docs, best practices, and resources across all teams and organizations.
+		</p>
+	</div>
+	<div class="w-full max-w-xl mt-10 mb-10 border border-grey-20 rounded-lg p-4 bg-white shadow-2xl">
+		<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+			<button type="button" aria-label="Search" onclick="document.dispatchEvent(new CustomEvent('modal-search:open'))" class="flex-1 select-none cursor-pointer relative flex items-center w-full px-3 py-2 h-10 border border-grey-20 rounded-md bg-grey-10 text-sm text-subdued hover:border-grey-40 transition-colors">
+				<svg class="w-4 h-4 mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+					<path d="M6.5 1a5.5 5.5 0 0 1 4.729 8.308l3.421 2.933a1 1 0 0 1 .057 1.466l-1 1a1 1 0 0 1-1.466-.057l-2.933-3.42A5.5 5.5 0 1 1 6.5 1Zm4.139 9.12a5.516 5.516 0 0 1-.52.519L13 14l1-1-3.361-2.88ZM6.5 2a4.5 4.5 0 1 0 .314 8.987c.024-.001.047-.004.07-.006.207-.017.41-.048.607-.092l.066-.016a4.41 4.41 0 0 0 .588-.185c.012-.006.026-.01.039-.015.194-.079.382-.171.562-.275l.03-.017a4.52 4.52 0 0 0 1.605-1.605c.006-.01.01-.02.017-.03.104-.18.196-.368.275-.562l.018-.048c.074-.188.134-.38.182-.58l.016-.065a4.49 4.49 0 0 0 .093-.61l.005-.067a4.544 4.544 0 0 0 .007-.545A4.5 4.5 0 0 0 6.5 2Z"></path>
+				</svg>
+				<span class="flex-1 text-left">Search</span>
+				<span class="text-xs text-subdued">⌘K</span>
+			</button>
+			<div class="text-subdued text-xs flex items-center justify-center">
+				OR
+			</div>
+			<button type="button" aria-label="Ask AI" onclick="document.dispatchEvent(new CustomEvent('ask-ai:open'))" class="select-none cursor-pointer text-white text-nowrap font-sans rounded-full px-6 py-2 h-10 flex items-center gap-2 justify-center shrink-0 hover:opacity-90 transition-opacity" style="background: linear-gradient(131deg, #1750ba 2.98%, #731dcf 66.24%);">
+				<svg class="w-4 h-4 icon-mono" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M9 7H15V16H9V7Z" fill="url(#paint0_linear_382_1202)"></path>
+					<path d="M1 11.5C1 9.01472 3.01472 7 5.5 7H7V16H5.5C3.01472 16 1 13.9853 1 11.5Z" fill="url(#paint1_linear_382_1202)"></path>
+					<path d="M15 3C15 4.65685 13.6569 6 12 6C10.3431 6 9 4.65685 9 3C9 1.34315 10.3431 0 12 0C13.6569 0 15 1.34315 15 3Z" fill="url(#paint2_linear_382_1202)"></path>
+					<path d="M1.5 5.75C1.5 2.71243 3.96243 0.25 7 0.25V5.75H1.5Z" fill="url(#paint3_linear_382_1202)"></path>
+					<defs>
+						<linearGradient id="paint0_linear_382_1202" x1="-0.53125" y1="-2.5" x2="15.3422" y2="9.5049" gradientUnits="userSpaceOnUse">
+							<stop offset="0.168292" stop-color="#0B64DD"></stop>
+							<stop offset="0.83" stop-color="#731DCF"></stop>
+						</linearGradient>
+						<linearGradient id="paint1_linear_382_1202" x1="-0.53125" y1="-2.5" x2="15.3422" y2="9.5049" gradientUnits="userSpaceOnUse">
+							<stop offset="0.168292" stop-color="#0B64DD"></stop>
+							<stop offset="0.83" stop-color="#731DCF"></stop>
+						</linearGradient>
+						<linearGradient id="paint2_linear_382_1202" x1="-0.53125" y1="-2.5" x2="15.3422" y2="9.5049" gradientUnits="userSpaceOnUse">
+							<stop offset="0.168292" stop-color="#0B64DD"></stop>
+							<stop offset="0.83" stop-color="#731DCF"></stop>
+						</linearGradient>
+						<linearGradient id="paint3_linear_382_1202" x1="-0.53125" y1="-2.5" x2="15.3422" y2="9.5049" gradientUnits="userSpaceOnUse">
+							<stop offset="0.168292" stop-color="#0B64DD"></stop>
+							<stop offset="0.83" stop-color="#731DCF"></stop>
+						</linearGradient>
+					</defs>
+				</svg>
+				Ask AI
+			</button>
+		</div>
+	</div>
+	<div class="flex gap-6 mt-6 text-slate-600">
+		<a href="/r/codex-environments/get-started" class="flex items-center gap-1.5 text-blue-elastic hover:underline">
+			<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+				<path fill-rule="evenodd" d="M7.5 7.5V2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5Z" clip-rule="evenodd"></path>
+			</svg>
+			Add your docs
+		</a>
+		<a href="https://elastic.github.io/docs-builder/syntax" target="_blank" rel="noopener" class="flex items-center gap-1.5 text-blue-elastic hover:underline">
+			<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+				<path d="m7.492 13.59 2-11-.984-.18-2 11 .984.18ZM4.854 5.354 2.207 8l2.647 2.646-.707.708L.793 8l3.354-3.354.707.708ZM15.207 8l-3.353-3.354-.707.708L13.793 8l-2.646 2.646.707.708L15.207 8Z"></path>
+			</svg>
+			Explore the syntax
+		</a>
+	</div>
+	<a href="/r/codex-environments/how-to/internal-docs-mcp-server" class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-blue-developer text-subdued font-mono text-sm leading-none mt-14 shadow-lg border border-grey-20 hover:border-grey-40 transition-colors" title="Connect AI assistants to search internal docs">
+		<span class="relative flex size-2">
+			<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-40 opacity-75"></span>
+			<span class="relative inline-flex size-2 rounded-full bg-green-50"></span>
+		</span>
+		<span class="text-green-50">NEW:</span>
+		<span class="text-grey-20">https://codex.elastic.dev/mcp</span>
+	</a>
+</div>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 py-6 text-sm text-slate-500" style="position: relative; z-index: 1;">
+	<div class="flex items-center gap-2">
+		<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+			<path fill-rule="evenodd" d="M4.5 1a3.5 3.5 0 0 1 3.465 3h3.12a1.5 1.5 0 1 1 0 1h-3.12a3.482 3.482 0 0 1-.662 1.596l2.1 2.1A3.5 3.5 0 1 1 8.036 12h-3.12a1.5 1.5 0 1 1 0-.999h3.12a3.482 3.482 0 0 1 .662-1.596l-2.1-2.1A3.5 3.5 0 1 1 4.5 1Zm0 6a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 4.5a.5.5 0 1 0 1 0 .5.5 0 0 0-1 0Zm-.5 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5ZM4 11.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z" clip-rule="evenodd"></path>
+		</svg>
+		<span>
+			<strong class="text-slate-700">2</strong>
+			groups</span>
+	</div>
+	<div class="hidden sm:block w-px h-4 bg-slate-300"></div>
+	<div class="flex items-center gap-2">
+		<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+			<g transform="translate(3)">
+				<path d="M22,2 L17,2 L17,0 L15,0 L15,2 L12,2 L12,0 L10,0 L10,2 L7,2 L7,0 L5,0 L5,2 L0,2 L0,28 L22,28 L22,2 Z M20,26 L2,26 L2,4 L5,4 L5,6 L7,6 L7,4 L10,4 L10,6 L12,6 L12,4 L15,4 L15,6 L17,6 L17,4 L20,4 L20,26 Z"></path>
+				<polygon points="24 7 24 30 5 30 5 32 26 32 26 7"></polygon>
+				<rect width="12" height="2" x="5" y="12" class="euiIcon__fillSecondary"></rect>
+				<rect width="12" height="2" x="5" y="17" class="euiIcon__fillSecondary"></rect>
+			</g>
+		</svg>
+		<span>
+			<strong class="text-slate-700">5</strong>
+			documentation sets</span>
+	</div>
+	<div class="hidden sm:block w-px h-4 bg-slate-300"></div>
+	<div class="flex items-center gap-2">
+		<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+			<path fill-rule="evenodd" d="M4 1a1 1 0 0 1 1-1h4.707L14 4.293V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V1Zm5 0H5v12h8V5h-3a1 1 0 0 1-1-1V1Zm1 .707L12.293 4H10V1.707Z" clip-rule="evenodd"></path>
+			<path d="M3 15V2H2v13a1 1 0 0 0 1 1h9v-1H3Z"></path>
+		</svg>
+		<span>
+			<strong class="text-slate-700">20</strong>
+			pages</span>
+	</div>
+</div>
+<div id="codex-grid" class="pt-8 pb-8 max-w-7xl p-4 mx-auto grid grid-cols-1 md:grid-cols-2 gap-4" style="position: relative; z-index: 1;">
+	<div class="col-span-full border border-dashed border-grey-40 rounded-xl p-3">
+		<a href="/docs/g/observability" class="flex items-center gap-3 group bg-white docset-card rounded-lg border border-grey-20 p-4 mb-3 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+			<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-lg p-3 shrink-0">
+				<svg class="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+					<path d="M8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0-6a2 2 0 0 1 1.237 3.571 3.59 3.59 0 0 0-.548.505c-.137.169-.189.305-.189.424V9h-1v-.5c0-.433.195-.787.413-1.055.216-.265.487-.487.705-.659a1 1 0 1 0-1.562-.453l-.942.334A2 2 0 0 1 8 4Z"></path>
+					<path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z" clip-rule="evenodd"></path>
+				</svg>
+			</div>
+			<div>
+				<div class="text-sm font-semibold group-hover:text-blue-elastic-90 transition-colors">Observability</div>
+				<div class="text-xs text-subdued font-mono mt-0.5">/g/observability</div>
+			</div>
+		</a>
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+			<a href="/docs/r/apm-agent" class="flex flex-col group bg-white docset-card rounded-lg border p-4 border-grey-20 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+				<div class="flex items-start gap-3">
+					<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-md p-1.5 shrink-0">
+						<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path d="M8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0-6a2 2 0 0 1 1.237 3.571 3.59 3.59 0 0 0-.548.505c-.137.169-.189.305-.189.424V9h-1v-.5c0-.433.195-.787.413-1.055.216-.265.487-.487.705-.659a1 1 0 1 0-1.562-.453l-.942.334A2 2 0 0 1 8 4Z"></path>
+							<path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z" clip-rule="evenodd"></path>
+						</svg>
+					</div>
+					<div class="min-w-0">
+						<div class="text-sm font-medium group-hover:text-blue-elastic-90 leading-tight">apm-agent</div>
+						<div class="text-xs text-subdued font-mono mt-0.5">/r/apm-agent</div>
+					</div>
+				</div>
+				<div class="mt-auto pt-3 text-xs text-subdued flex items-center gap-1">
+					<svg class="fill-current size-3" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path fill-rule="evenodd" d="M4 1a1 1 0 0 1 1-1h4.707L14 4.293V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V1Zm5 0H5v12h8V5h-3a1 1 0 0 1-1-1V1Zm1 .707L12.293 4H10V1.707Z" clip-rule="evenodd"></path>
+						<path d="M3 15V2H2v13a1 1 0 0 0 1 1h9v-1H3Z"></path>
+					</svg>
+					<span>4 pages</span>
+				</div>
+			</a>
+			<a href="/docs/r/uptime" class="flex flex-col group bg-white docset-card rounded-lg border p-4 border-grey-20 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+				<div class="flex items-start gap-3">
+					<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-md p-1.5 shrink-0">
+						<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path d="M8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0-6a2 2 0 0 1 1.237 3.571 3.59 3.59 0 0 0-.548.505c-.137.169-.189.305-.189.424V9h-1v-.5c0-.433.195-.787.413-1.055.216-.265.487-.487.705-.659a1 1 0 1 0-1.562-.453l-.942.334A2 2 0 0 1 8 4Z"></path>
+							<path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z" clip-rule="evenodd"></path>
+						</svg>
+					</div>
+					<div class="min-w-0">
+						<div class="text-sm font-medium group-hover:text-blue-elastic-90 leading-tight">uptime</div>
+						<div class="text-xs text-subdued font-mono mt-0.5">/r/uptime</div>
+					</div>
+				</div>
+				<div class="mt-auto pt-3 text-xs text-subdued flex items-center gap-1">
+					<svg class="fill-current size-3" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path fill-rule="evenodd" d="M4 1a1 1 0 0 1 1-1h4.707L14 4.293V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V1Zm5 0H5v12h8V5h-3a1 1 0 0 1-1-1V1Zm1 .707L12.293 4H10V1.707Z" clip-rule="evenodd"></path>
+						<path d="M3 15V2H2v13a1 1 0 0 0 1 1h9v-1H3Z"></path>
+					</svg>
+					<span>4 pages</span>
+				</div>
+			</a>
+		</div>
+	</div>
+	<div class="col-span-full border border-dashed border-grey-40 rounded-xl p-3">
+		<a href="/docs/g/security" class="flex items-center gap-3 group bg-white docset-card rounded-lg border border-grey-20 p-4 mb-3 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+			<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-lg p-3 shrink-0">
+				<svg class="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+					<path d="M8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0-6a2 2 0 0 1 1.237 3.571 3.59 3.59 0 0 0-.548.505c-.137.169-.189.305-.189.424V9h-1v-.5c0-.433.195-.787.413-1.055.216-.265.487-.487.705-.659a1 1 0 1 0-1.562-.453l-.942.334A2 2 0 0 1 8 4Z"></path>
+					<path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z" clip-rule="evenodd"></path>
+				</svg>
+			</div>
+			<div>
+				<div class="text-sm font-semibold group-hover:text-blue-elastic-90 transition-colors">Security</div>
+				<div class="text-xs text-subdued font-mono mt-0.5">/g/security</div>
+			</div>
+		</a>
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+			<a href="/docs/r/endpoint" class="flex flex-col group bg-white docset-card rounded-lg border p-4 border-grey-20 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+				<div class="flex items-start gap-3">
+					<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-md p-1.5 shrink-0">
+						<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path d="M8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0-6a2 2 0 0 1 1.237 3.571 3.59 3.59 0 0 0-.548.505c-.137.169-.189.305-.189.424V9h-1v-.5c0-.433.195-.787.413-1.055.216-.265.487-.487.705-.659a1 1 0 1 0-1.562-.453l-.942.334A2 2 0 0 1 8 4Z"></path>
+							<path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z" clip-rule="evenodd"></path>
+						</svg>
+					</div>
+					<div class="min-w-0">
+						<div class="text-sm font-medium group-hover:text-blue-elastic-90 leading-tight">endpoint</div>
+						<div class="text-xs text-subdued font-mono mt-0.5">/r/endpoint</div>
+					</div>
+				</div>
+				<div class="mt-auto pt-3 text-xs text-subdued flex items-center gap-1">
+					<svg class="fill-current size-3" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path fill-rule="evenodd" d="M4 1a1 1 0 0 1 1-1h4.707L14 4.293V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V1Zm5 0H5v12h8V5h-3a1 1 0 0 1-1-1V1Zm1 .707L12.293 4H10V1.707Z" clip-rule="evenodd"></path>
+						<path d="M3 15V2H2v13a1 1 0 0 0 1 1h9v-1H3Z"></path>
+					</svg>
+					<span>4 pages</span>
+				</div>
+			</a>
+			<a href="/docs/r/tools" class="flex flex-col group bg-white docset-card rounded-lg border p-4 border-grey-20 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+				<div class="flex items-start gap-3">
+					<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-md p-1.5 shrink-0">
+						<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path d="M8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0-6a2 2 0 0 1 1.237 3.571 3.59 3.59 0 0 0-.548.505c-.137.169-.189.305-.189.424V9h-1v-.5c0-.433.195-.787.413-1.055.216-.265.487-.487.705-.659a1 1 0 1 0-1.562-.453l-.942.334A2 2 0 0 1 8 4Z"></path>
+							<path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z" clip-rule="evenodd"></path>
+						</svg>
+					</div>
+					<div class="min-w-0">
+						<div class="text-sm font-medium group-hover:text-blue-elastic-90 leading-tight">tools</div>
+						<div class="text-xs text-subdued font-mono mt-0.5">/r/tools</div>
+					</div>
+				</div>
+				<div class="mt-auto pt-3 text-xs text-subdued flex items-center gap-1">
+					<svg class="fill-current size-3" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path fill-rule="evenodd" d="M4 1a1 1 0 0 1 1-1h4.707L14 4.293V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V1Zm5 0H5v12h8V5h-3a1 1 0 0 1-1-1V1Zm1 .707L12.293 4H10V1.707Z" clip-rule="evenodd"></path>
+						<path d="M3 15V2H2v13a1 1 0 0 0 1 1h9v-1H3Z"></path>
+					</svg>
+					<span>4 pages</span>
+				</div>
+			</a>
+		</div>
+	</div>
+	<a href="/docs/r/standalone" class="flex flex-col group bg-white docset-card rounded-lg border p-4 border-grey-20 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+		<div class="flex items-start gap-3">
+			<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-md p-1.5 shrink-0">
+				<svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+					<path d="M8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0-6a2 2 0 0 1 1.237 3.571 3.59 3.59 0 0 0-.548.505c-.137.169-.189.305-.189.424V9h-1v-.5c0-.433.195-.787.413-1.055.216-.265.487-.487.705-.659a1 1 0 1 0-1.562-.453l-.942.334A2 2 0 0 1 8 4Z"></path>
+					<path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z" clip-rule="evenodd"></path>
+				</svg>
+			</div>
+			<div class="min-w-0">
+				<div class="text-sm font-medium group-hover:text-blue-elastic-90 leading-tight">standalone</div>
+				<div class="text-xs text-subdued font-mono mt-0.5">/r/standalone</div>
+			</div>
+		</div>
+		<div class="mt-auto pt-3 text-xs text-subdued flex items-center gap-1">
+			<svg class="fill-current size-3" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+				<path fill-rule="evenodd" d="M4 1a1 1 0 0 1 1-1h4.707L14 4.293V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V1Zm5 0H5v12h8V5h-3a1 1 0 0 1-1-1V1Zm1 .707L12.293 4H10V1.707Z" clip-rule="evenodd"></path>
+				<path d="M3 15V2H2v13a1 1 0 0 0 1 1h9v-1H3Z"></path>
+			</svg>
+			<span>4 pages</span>
+		</div>
+	</a>
+</div>

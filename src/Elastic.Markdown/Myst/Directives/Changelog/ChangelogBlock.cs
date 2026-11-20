@@ -816,10 +816,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ChangelogTypeFilter.BreakingChange => type => type == ChangelogEntryType.BreakingChange,
 		ChangelogTypeFilter.Deprecation => type => type == ChangelogEntryType.Deprecation,
 		ChangelogTypeFilter.KnownIssue => type => type == ChangelogEntryType.KnownIssue,
-		_ =>
-			type =>
-				!SeparatedTypes.Contains(type) // Default: exclude separated types
-
+		_ => type => !SeparatedTypes.Contains(type) // Default: exclude separated types
 	};
 
 	/// <summary>

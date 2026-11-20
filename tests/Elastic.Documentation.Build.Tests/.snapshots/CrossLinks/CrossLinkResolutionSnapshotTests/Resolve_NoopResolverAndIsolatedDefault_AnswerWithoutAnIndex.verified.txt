@@ -1,0 +1,13 @@
+example-repo://index.md
+  noop             LinkResolutionUnavailable: No cross-link resolver is available for 'example-repo://index.md'.
+  noop-declared    False
+  empty-index      LinkSchemeNotDeclared: 'example-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+unknown://x
+  noop             LinkResolutionUnavailable: No cross-link resolver is available for 'unknown://x'.
+  noop-declared    False
+  empty-index      LinkSchemeNotDeclared: 'unknown' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+https://example.test/x
+  noop             LinkResolutionUnavailable: No cross-link resolver is available for 'https://example.test/x'.
+  noop-declared    False
+  empty-index      LinkSchemeNotDeclared: 'https' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+noop uri resolver: IsolatedBuildEnvironmentUriResolver

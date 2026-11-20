@@ -1,0 +1,28 @@
+a-global-variable: This was defined in docset.yml
+agent: Elastic Agent
+agents: Elastic Agents
+bedrock: Amazon Bedrock
+dbuild: docs-builder
+ech: Elastic Cloud Hosted
+ecloud: Elastic Cloud
+es: Elasticsearch
+fleet: Fleet
+fleet-server: Fleet Server
+gemini: Google Gemini
+hosted-ems: hosted Elastic Maps Service
+ibm-r: IBM Resilient
+kib: Kibana
+ls: Logstash
+opsgenie: Opsgenie
+package-manager: Elastic Package Manager
+security-features: Elastic Stack security features
+serverless-full: Elastic Cloud Serverless
+serverless-short: Serverless
+sn-itom: ServiceNow ITOM
+sn-itsm: ServiceNow ITSM
+sn-sir: ServiceNow SIR
+stack: Elastic Stack
+stack-monitor-app: Stack Monitoring
+stack-security-features: Elastic Stack security features
+swimlane: Swimlane
+webhook-cm: Case Management webhook

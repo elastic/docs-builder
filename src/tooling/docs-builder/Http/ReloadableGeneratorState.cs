@@ -55,6 +55,7 @@ public class ReloadableGeneratorState : IDisposable
 		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
 		_generator = new DocumentationGenerator(new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance), logFactory);
+		_apiGeneration = new SharedGeneration(RegenerateApiReferencesAsync, () => _apiReferencesStale);
 	}
 
 	public DocumentationGenerator Generator => _generator;
@@ -68,10 +69,11 @@ public class ReloadableGeneratorState : IDisposable
 	private volatile bool _apiReferencesStale = true;
 	// 1 when the next /api/ request must regenerate; consumed atomically so a concurrent invalidation is never lost.
 	private int _forceApiRegeneration;
-	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
+	// The generation belongs to the server, not to the request that started it, so a client that gives up
+	// stops waiting without cancelling the work the next request would otherwise redo from scratch.
+	private readonly SharedGeneration _apiGeneration;
 	// Outlives each regeneration so specs are not downloaded again; the version index is re-fetched each time.
 	private readonly SpecBodyCache _specBodies = new();
-	private CancellationTokenSource? _apiGenerationCts;
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
@@ -136,47 +138,27 @@ public class ReloadableGeneratorState : IDisposable
 	}
 
 	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
-	public async Task EnsureApiReferencesAsync(Cancel ctx)
+	public Task EnsureApiReferencesAsync(Cancel ctx) => _apiGeneration.EnsureAsync(ctx);
+
+	private async Task RegenerateApiReferencesAsync(Cancel ctx)
 	{
-		if (!_apiReferencesStale)
-			return;
-
-		// Create isolated cancellation for API generation (or reuse existing)
-		_apiGenerationCts ??= new CancellationTokenSource();
-
-		// Use combined token that respects both HTTP cancellation AND generation-specific timeout
-		using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(ctx, _apiGenerationCts.Token);
-		combinedCts.CancelAfter(TimeSpan.FromMinutes(5)); // Reasonable timeout for API generation
-
-		await _apiSemaphore.WaitAsync(ctx); // Still respect immediate HTTP cancellation for semaphore
+		// Clear flags and snapshot timestamps before generating, so a code or file change that
+		// lands mid-generation marks the pages stale again instead of being lost.
+		var config = _generator.DocumentationSet.Configuration;
+		_apiReferencesStale = false;
+		var force = Interlocked.Exchange(ref _forceApiRegeneration, 0) == 1;
 		try
 		{
-			if (!_apiReferencesStale)
-				return;
-
-			// Clear flags and snapshot timestamps before generating, so a code or file change that
-			// lands mid-generation marks the pages stale again instead of being lost.
-			var config = _generator.DocumentationSet.Configuration;
-			_apiReferencesStale = false;
-			var force = Interlocked.Exchange(ref _forceApiRegeneration, 0) == 1;
 			if (!force && !HaveOpenApiSpecsChanged(config))
 				return;
 
 			UpdateOpenApiSpecTimestamps(config);
-			try
-			{
-				// Use the isolated token for actual generation
-				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
-			}
-			catch
-			{
-				InvalidateApiReferences();
-				throw;
-			}
+			await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
 		}
-		finally
+		catch
 		{
-			_ = _apiSemaphore.Release();
+			InvalidateApiReferences();
+			throw;
 		}
 	}
 
@@ -277,9 +259,7 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
-		_apiGenerationCts?.Cancel();
-		_apiGenerationCts?.Dispose();
-		_apiSemaphore.Dispose();
+		_apiGeneration.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}

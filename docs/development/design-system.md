@@ -35,6 +35,15 @@ When the flag is on, the page head loads `ds-layers.css`, `ds.css` and `ds.js` a
 `ds.js` carries its own runtime in `Assets/ds/runtime.ts`, the framework-free parts of `main.ts`: htmx navigation, telemetry, code highlighting, math, diagrams and tables.
 `Assets/ds/bundle.test.ts` fails when anything in the `ds.ts` import graph pulls in React, EUI or Emotion.
 
+Every page, with the flag on or off, says how it was built in two meta tags in its head:
+
+```html
+<meta name="docs:features" content="assembler-api-explorer navigation-preview page-feedback">
+<meta name="docs:build-type" content="assembler">
+```
+
+`docs:features` lists the enabled feature flags in kebab-case, sorted, with environment overrides applied. The attribute is left out when no flag is on. `docs:build-type` is `isolated`, `assembler` or `codex`. Browser journey tests and monitors read them to decide which steps apply to the site they are running against.
+
 ## Tokens
 
 All design-system CSS lives in `src/Elastic.Documentation.Site/Assets/ds/` and is bundled from `Assets/ds.css`.
@@ -152,16 +161,18 @@ These replace React components built on EUI. Each renders complete markup on the
 
 | Piece | Replaces | How it works |
 |---|---|---|
-| Applies-to badge | `applies-to-popover` | A native `details` element holds the panel. Script moves the open panel into the browser's top layer, next to its trigger, so no ancestor can clip it |
+| Applies-to badge | `applies-to-popover` | A button and a panel. `Assets/ds/applies-popover.ts` gives the panel an id and makes it a popover the button opens, in the browser's top layer, so no ancestor can clip it. Unbound, the panel shows while the button has focus |
 | Search | The modal search in the header | A native `dialog`, opened by the header field or `Ctrl+K`. Isolated builds query the Pagefind index and assembled builds query the search API. Results are drawn from a template, and highlights are built from text nodes |
 | Page feedback | `page-feedback` | The server renders the whole widget, hidden. Script reveals it, keeps a draft in `sessionStorage` and sends the same payload as before |
-| Version and section pickers | `version-dropdown` | A native `details` menu of plain links |
+| Version and section pickers | `version-dropdown` | A link menu: a button that opens a popover of plain links |
 | Vector sizing calculator | `vector-sizing-calculator` | The server renders the whole form, hidden, with native inputs, `datalist` presets and a `details` for advanced settings. `Assets/ds/vector-sizing.ts` reveals it and reuses the existing calculation modules for the arithmetic |
 | Ask AI | The React assistant | A button and a native `dialog` side panel. `Assets/ds/ask-ai.ts` streams the answer from the same endpoint as before and renders it as sanitized Markdown. Shown on assembler and Codex pages. Suggestions come from the existing assistant configuration, the conversation is kept in session storage, rate limits are explained, answers list their references, and thumbs feedback is sent to the existing endpoint |
-| Overlays | EUI tooltips, toasts and flyouts | `Tooltip` needs no script. `Toast` and `Flyout` reveal their dismiss and open buttons from script. `Banner`, `Skeleton` and `EmptyState` are plain markup |
+| Overlays | EUI tooltips, toasts and flyouts | `Tooltip` marks a word with `data-tooltip`, which the site's one tooltip script shows. `Toast` and `Flyout` reveal their dismiss and open buttons from script. `Banner`, `Skeleton` and `EmptyState` are plain markup |
 | Section bar | The secondary navigation | A server-rendered docs bar. The elastic.co header on assembled sites is still loaded by script from elastic.co |
 
 The server renders each of these without the legacy custom elements, so a flag-on page loads no EUI components.
+
+Every menu, in both layouts, is a `button[popovertarget]` that opens a `[popover]`. The browser draws it in the top layer and closes it on Escape and a click outside. `Assets/floating.ts` places it beside its button with Floating UI, flips and shifts it to stay on screen, and closes it on a page swap or after a link in it is chosen. `data-placement` picks the side, `data-anchor` names another anchor, and `data-hover` also opens the menu while a mouse rests on it. A menu rendered more than once on a page takes its id from its model.
 
 ## Layers
 
@@ -201,7 +212,8 @@ To write your own theme, load a stylesheet after `ds.css` that overrides roles. 
 The design-system stylesheets target Chrome and Edge 111, Firefox 113 and Safari 16.2 or later.
 The bundle sets this floor in the `ds-css` and `ds-guide-css` targets in `package.json`.
 The floor is set by `color-mix()`, which has no fallback.
-`:has()`, container queries and popovers enhance the page where the browser has them and fall back to a simpler layout where it doesn't.
+`:has()` and container queries enhance the page where the browser has them and fall back to a simpler layout where it doesn't.
+Menus need the Popover API, which Safari has from version 17. Without it a menu stays closed, the link menu shows its links inline, and the applies-to panel shows while its badge has focus.
 
 ## Heroes, backgrounds and the call to action
 

@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -33,36 +36,7 @@ A regular paragraph.
 	public void SetsDirective() => Block!.Directive.Should().Be("agent-skill");
 
 	[Test]
-	public void RendersAgentSkillDiv()
-	{
-		Html.Should().Contain("class=\"agent-skill\"");
-		Html.Should().Contain("class=\"agent-skill-header\"");
-		Html.Should().Contain("class=\"agent-skill-content\"");
-	}
-
-	[Test]
-	public void RendersTitle() => Html.Should().Contain("Agent skill available");
-
-	[Test]
-	public void RendersDefaultText() => Html.Should().Contain("A skill is available to help AI agents with this topic.");
-
-	[Test]
-	public void RendersLearnMoreLink()
-	{
-		Html.Should().Contain("Learn more about agent skills for Elastic");
-		Html.Should().Contain("href=\"https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills#available-skills\"");
-	}
-
-	[Test]
-	public void RendersCopyButton()
-	{
-		Html.Should().Contain("class=\"agent-skill-button\"");
-		Html.Should().Contain("Copy install command");
-		Html.Should().Contain("data-copy-text=\"npx skills add elastic/agent-skills@elasticsearch-esql\"");
-	}
-
-	[Test]
-	public void DoesNotRenderLinkButton() => Html.Should().NotContain("Get the skill");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -78,16 +52,7 @@ A regular paragraph.
 )
 {
 	[Test]
-	public void RendersCustomBody() => Html.Should().Contain("This skill helps agents write and optimize ES|QL queries.");
-
-	[Test]
-	public void StillRendersDefaultText() => Html.Should().Contain("A skill is available to help AI agents with this topic.");
-
-	[Test]
-	public void StillRendersLearnMoreLink() => Html.Should().Contain("Learn more about agent skills for Elastic");
-
-	[Test]
-	public void StillRendersCopyButton() => Html.Should().Contain("Copy install command");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -98,7 +63,12 @@ A regular paragraph.
 """)
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires a :url: property"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 agent-skill directive requires a :url: property");
 }
 
 [InheritsTests]
@@ -112,7 +82,12 @@ A regular paragraph.
 )
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("must be an absolute URL"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 agent-skill :url: must be an absolute URL, got '/relative/path'");
 }
 
 [InheritsTests]
@@ -132,10 +107,5 @@ A regular paragraph.
 	public void InstallCommandIsNull() => Block!.InstallCommand.Should().BeNull();
 
 	[Test]
-	public void FallsBackToLinkButton()
-	{
-		Html.Should().Contain("Get the skill");
-		Html.Should().Contain("href=\"https://github.com/elastic/agent-skills\"");
-		Html.Should().NotContain("data-copy-text");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

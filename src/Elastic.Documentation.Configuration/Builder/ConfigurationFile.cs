@@ -6,7 +6,6 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
@@ -55,6 +54,8 @@ public record ConfigurationFile
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 
+	public IFileInfo? RedirectsSource { get; }
+
 	public HashSet<Product> Products { get; private set; } = [];
 
 	private readonly Dictionary<string, string> _substitutions = [with(StringComparer.OrdinalIgnoreCase)];
@@ -80,6 +81,25 @@ public record ConfigurationFile
 	/// Resolved API configurations with template and specification file information.
 	/// </summary>
 	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
+
+	/// <summary>
+	/// Markdown paths (relative to <paramref name="documentationSourceDirectoryFullName"/>, <c>/</c> separated) that the
+	/// API pipeline owns: <c>children:</c> pages and <c>op-*.md</c> / <c>tag-*.md</c> supplemental files.
+	/// </summary>
+	public HashSet<string> GetApiMarkdownExcludePaths(string documentationSourceDirectoryFullName)
+	{
+		var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (ApiConfigurations is null)
+			return set;
+
+		foreach (var apiConfig in ApiConfigurations.Values)
+		{
+			foreach (var path in apiConfig.GetMarkdownPathsToExclude(documentationSourceDirectoryFullName))
+				_ = set.Add(path);
+		}
+
+		return set;
+	}
 
 	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
@@ -138,6 +158,7 @@ public record ConfigurationFile
 
 		var redirectFile = new RedirectFile(_context);
 		Redirects = redirectFile.Redirects;
+		RedirectsSource = redirectFile.Source;
 
 		try
 		{
@@ -633,42 +654,8 @@ public record ConfigurationFile
 			LocalSpecFile = localSpecFile,
 			Repository = repository,
 			Children = children,
-			ApiContentDirectory = apiContentDirectory,
-			CatalogCategories = ResolveCatalogCategories(productKey, entry, context)
+			ApiContentDirectory = apiContentDirectory
 		};
-	}
-
-	private static IReadOnlyList<string> ResolveCatalogCategories(
-		string productKey,
-		ApiProductEntry entry,
-		IDocumentationSetContext context
-	)
-	{
-		var raw = entry.Catalog?.Categories ?? [];
-		if (raw.Count == 0)
-			return [];
-
-		var seen = new HashSet<string>(StringComparer.Ordinal);
-		foreach (var item in raw)
-		{
-			if (ApiCatalogCategory.Normalize(item) is { } canonical)
-			{
-				_ = seen.Add(canonical);
-				continue;
-			}
-
-			context.Collector.Write(new Diagnostic
-			{
-				Severity = Severity.Error,
-				File = context.ConfigurationPath.FullName,
-				Line = entry.Catalog?.Line ?? entry.Line,
-				Column = entry.Catalog?.Column ?? entry.Column,
-				Message =
-					$"Unknown catalog category '{item}' for API '{productKey}'. Valid categories: {string.Join(", ", ApiCatalogCategory.DisplayOrder)} (or {ApplicabilityKeys.Ech} for {ApplicabilityKeys.Ess})."
-			});
-		}
-
-		return ApiCatalogCategory.DisplayOrder.Where(seen.Contains).ToArray();
 	}
 
 	/// Children resolve only under 'api/&lt;key&gt;/'; escaping paths and symlinks are rejected the

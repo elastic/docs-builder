@@ -107,6 +107,8 @@ public enum VersioningSystemId
 	EdotNode,
 	[Display(Name = "edot-browser")]
 	EdotBrowser,
+	[Display(Name = "edot-react-native")]
+	EdotReactNative,
 	[Display(Name = "edot-php")]
 	EdotPhp,
 	[Display(Name = "edot-python")]

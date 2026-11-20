@@ -1,0 +1,18 @@
+/docs/api/example-api => Exists
+/docs/api/example-api/ => Exists
+/docs/api/example-api/operation/operation-search => Exists
+/docs/api/example-api/operation/operation-search-legacy => Missing
+/docs/api/example-api/v8 => Exists
+/docs/api/example-api/v8/operation/operation-search => Exists
+/docs/api/example-api/v8/operation/operation-search-legacy => Exists
+/docs/api/example-api/v8/operation/operation-new => Missing
+/docs/api/example-api/v9/operation/operation-search => Missing
+/docs/api/example-api/operation/operation-missing => Missing
+api/example-api/operation/operation-new => Exists
+/docs/api/other-api/operation/x => Unknown
+/docs/api/ => Unknown
+/docs/api => Unknown
+/docs/reference/page => Unknown
+/api/example-api => Exists
+(empty) => Unknown
+noop: Unknown

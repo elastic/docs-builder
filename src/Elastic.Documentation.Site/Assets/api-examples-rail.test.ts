@@ -42,7 +42,6 @@ describe('examples rail steadying', () => {
     })
 
     afterEach(() => {
-        vi.restoreAllMocks()
         window.matchMedia = originalMatchMedia
     })
 

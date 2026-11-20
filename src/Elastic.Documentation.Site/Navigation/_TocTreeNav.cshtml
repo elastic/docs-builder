@@ -9,8 +9,9 @@
 	else if (item.Kind == NavigationRenderNodeKind.Leaf)
 	{
 		<li class="flex group/li">
-			<a href="@item.Url" class="sidebar-link nav-link nav-v2-link"@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
+			<a href="@item.Url" class="sidebar-link nav-link nav-v2-link@(item.Deprecated ? " nav-link--deprecated" : "")"@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
 				<span class="nav-v2-nav-text">@item.NavigationTitle</span>
+				@if (item.Deprecated) { <span class="sr-only">Deprecated</span> }
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 			</a>
@@ -28,6 +29,15 @@
 					</span>
 				</a>
 			</div>
+		</li>
+	}
+	else if (item.Kind == NavigationRenderNodeKind.Group)
+	{
+		<li class="nav-group">
+			<span id="@item.Id-label" class="nav-group-label">@item.NavigationTitle</span>
+			<ul class="nav-group-items" aria-labelledby="@item.Id-label">
+				@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
+			</ul>
 		</li>
 	}
 	else if (item.Kind == NavigationRenderNodeKind.Heading)

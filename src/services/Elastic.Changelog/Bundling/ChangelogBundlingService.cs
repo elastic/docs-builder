@@ -44,6 +44,13 @@ public record BundleChangelogsArguments
 	public Action? OnEmptyRange { get; init; }
 
 	/// <summary>
+	/// When true, a commit range with nothing to publish still writes a bundle: the profile's products, the release date and
+	/// <c>git_ref</c>, and no entries. A release that shipped without notes then stays on record, and the renderer skips it.
+	/// A pull request whose metadata could not be read is still an error. Takes the place of <see cref="OnEmptyRange"/>.
+	/// </summary>
+	public bool WriteEmptyRange { get; init; }
+
+	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
 	public string? Directory { get; init; }
@@ -250,17 +257,17 @@ public partial class ChangelogBundlingService(
 	/// </summary>
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
-	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
+	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	internal static partial Regex VersionToTargetRegex();
 
-	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubPrUrlRegex();
 
-	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubIssueUrlRegex();
 
 	/// <summary>A profile argument that is a plain version string (safe for conventional file names), not a report URL/path.</summary>
-	[GeneratedRegex(@"^[A-Za-z0-9._+-]+$")]
+	[GeneratedRegex(@"^[A-Za-z0-9._+-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PlanVersionArgumentRegex();
 
 	public async Task<bool> BundleChangelogs(IDiagnosticsCollector collector, BundleChangelogsArguments input, Cancel ctx)
@@ -534,7 +541,8 @@ public partial class ChangelogBundlingService(
 		ChangelogConfiguration? config,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		string outputPath,
-		Cancel ctx
+		Cancel ctx,
+		bool rangeIsIncomplete = false
 	)
 	{
 		// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
@@ -557,9 +565,17 @@ public partial class ChangelogBundlingService(
 			};
 		}
 
-		if (filteredEntries.Count == 0)
+		// An empty result is a release with no notes only when the whole range was read. A pull request whose metadata
+		// could not be fetched may have held the notes, so that is an error, not an empty release.
+		var emptyIsAllowed = input.WriteEmptyRange && !rangeIsIncomplete;
+		if (filteredEntries.Count == 0 && !emptyIsAllowed)
 		{
-			collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle filter");
+			collector.EmitError(
+				string.Empty,
+				input.WriteEmptyRange
+					? "No changelog entries remained after applying rules.bundle filter, and the metadata of some pull requests in the range could not be read. A failed fetch is not recorded as a release with no notes."
+					: "No changelog entries remained after applying rules.bundle filter"
+			);
 			return false;
 		}
 
@@ -643,11 +659,11 @@ public partial class ChangelogBundlingService(
 			bundleData = bundleData with { GitRef = input.EndGitRef };
 
 		// Write bundle file
-		await WriteBundleFileAsync(bundleData, outputPath, ctx);
+		var writtenPath = await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
 		// Notify the caller of the resolved output path (used by ChangelogCommand.Bundle to emit
 		// bundle_path as a GitHub Actions step output so callers don't need to predict the path).
-		input.OnBundlePathResolved?.Invoke(outputPath);
+		input.OnBundlePathResolved?.Invoke(writtenPath);
 
 		return true;
 	}
@@ -1087,7 +1103,7 @@ public partial class ChangelogBundlingService(
 		if (input.DryRun)
 		{
 			// The report is the dry run's product: print it verbatim for release-PR bodies / job summaries.
-			await Console.Out.WriteLineAsync(report);
+			await Console.Out.WriteLineAsync(report, ctx);
 			return result.Success && collector.Errors == 0;
 		}
 
@@ -1101,37 +1117,44 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		if (allEntries.Count == 0)
-			return FinishEmptyRange(collector, input, result, $"{owner}/{sourcing.Repo}");
+			return await FinishEmptyRange(collector, input, config, result, ($"{owner}/{sourcing.Repo}", outputPath), ctx);
 
-		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
+		var rangeIsIncomplete = result.Report.Rows.Any(row => row.Source == GitRangePrSourceKind.Missing);
+		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx, rangeIsIncomplete);
 	}
 
 	/// <summary>
 	/// A range with nothing to publish. DRA bundling allows it: the product shipped with no user-facing changes.
+	/// A caller can ask for an empty bundle instead (<see cref="BundleChangelogsArguments.WriteEmptyRange"/>), which keeps the release on record.
 	/// A pull request whose metadata could not be read is still an error, so a failed fetch is not reported as an empty release.
 	/// </summary>
-	private bool FinishEmptyRange(
+	private async Task<bool> FinishEmptyRange(
 		IDiagnosticsCollector collector,
 		BundleChangelogsArguments input,
+		ChangelogConfiguration? config,
 		GitRangeEntryResolutionResult result,
-		string repository
+		(string Repository, string OutputPath) target,
+		Cancel ctx
 	)
 	{
-		if (input.OnEmptyRange is not null && RangeHasNoNotes(result))
+		if ((input.WriteEmptyRange || input.OnEmptyRange is not null) && RangeHasNoNotes(result))
 		{
 			_logger.LogInformation(
 				"No changelog entries in commit range {Start}..{End} of {Repository}. The release has no notes.",
 				input.StartGitRef,
 				input.EndGitRef,
-				repository
+				target.Repository
 			);
-			input.OnEmptyRange();
+			if (input.WriteEmptyRange)
+				return await BuildAndWriteBundle(collector, input, config, [], target.OutputPath, ctx);
+
+			input.OnEmptyRange!();
 			return true;
 		}
 
 		collector.EmitError(
 			string.Empty,
-			$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {repository}."
+			$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {target.Repository}."
 		);
 		return false;
 	}
@@ -1253,8 +1276,8 @@ public partial class ChangelogBundlingService(
 		BundleProfile? profileDef = null;
 		if (!string.IsNullOrWhiteSpace(input.Profile))
 		{
-			// Plan must fail the same way the run does when profiles still carry output: patterns
-			// or collide on the conventional target, so CI surfaces the error before the Docker run.
+			// Plan must fail the same way the run does when profiles collide on the conventional
+			// target, so CI surfaces the error before the Docker run.
 			if (!ValidateProfileOutputs(collector, config, input.Profile))
 				return null;
 
@@ -1492,9 +1515,10 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// B2 (elastic/docs-builder#3774): bundle output names are standardized as
-	/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves. Any profile still setting an
-	/// explicit <c>output</c> pattern is a hard error, and two profiles sharing the same primary
-	/// output product would collide on the same conventional target, so that is rejected as well.
+	/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves. Two profiles sharing the same
+	/// primary output product would collide on the same conventional target, so that is rejected.
+	/// A profile <c>output_directory</c> that is a file path is also a hard error. Deprecated
+	/// <c>output</c> patterns are ignored (warned at config load).
 	/// </summary>
 	private static bool ValidateProfileOutputs(
 		IDiagnosticsCollector collector,
@@ -1521,18 +1545,6 @@ public partial class ChangelogBundlingService(
 				valid = false;
 			}
 #pragma warning restore CS0618
-
-#pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
-			if (!string.IsNullOrWhiteSpace(profile.Output))
-#pragma warning restore CS0618
-			{
-				collector.EmitError(
-					string.Empty,
-					$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
-						$"as '{BundleOutputNaming.PrefixedConvention}' from the profile's output_products and authoring repo."
-				);
-				valid = false;
-			}
 
 #pragma warning disable CS0618
 			if (BundleOutputNaming.IsYamlFilePath(profile.OutputDirectory))
@@ -1750,7 +1762,7 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Fetches notes for <paramref name="target"/> from the CDN and converts them to matched entries.
+	/// Fetches notes for one output product/version from the CDN and converts them to matched entries.
 	/// An absent notes index is not an error (most targets have no notes). Returns <c>null</c> after
 	/// emitting an error when the index exists but a listed note cannot be fetched.
 	/// </summary>
@@ -1758,7 +1770,8 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		string? org,
 		string? repo,
-		string target,
+		string product,
+		string version,
 		Cancel ctx
 	)
 	{
@@ -1776,7 +1789,8 @@ public partial class ChangelogBundlingService(
 			baseUri,
 			resolvedOrg,
 			repo,
-			target,
+			product,
+			version,
 			msg =>
 			{
 				hadError = true;
@@ -1814,13 +1828,29 @@ public partial class ChangelogBundlingService(
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
-				_logger.LogWarning(ex, "Failed to parse note '{FileName}' for {Repo}@{Target}; skipping", entry.FileName, repo, target);
-				collector.EmitError(string.Empty, $"Note '{entry.FileName}' for {repo}@{target} could not be parsed: {ex.Message}");
+				_logger.LogWarning(
+					ex,
+					"Failed to parse note '{FileName}' for {Repo}/{Product}@{Version}; skipping",
+					entry.FileName,
+					repo,
+					product,
+					version
+				);
+				collector.EmitError(
+					string.Empty,
+					$"Note '{entry.FileName}' for {repo}/{product}@{version} could not be parsed: {ex.Message}"
+				);
 				return null;
 			}
 		}
 
-		_logger.LogInformation("Resolved {Count} note(s) for {Repo}@{Target} from CDN", matchedNotes.Count, repo, target);
+		_logger.LogInformation(
+			"Resolved {Count} note(s) for {Repo}/{Product}@{Version} from CDN",
+			matchedNotes.Count,
+			repo,
+			product,
+			version
+		);
 		return matchedNotes;
 	}
 
@@ -1847,17 +1877,19 @@ public partial class ChangelogBundlingService(
 			return entries;
 
 		// Dedup by checksum: a note body identical to a PR entry (edge case) should appear once.
+		// Two output products at the same version may both fall back to notes-{version}.json
+		// until product-scoped indexes exist; checksum skip keeps a single copy.
 		var seen = new HashSet<string>(entries.Select(e => e.Checksum), StringComparer.OrdinalIgnoreCase);
 		var combined = new List<MatchedChangelogFile>(entries);
 
-		foreach (var noteTarget in noteTargets)
+		foreach (var (product, version) in noteTargets)
 		{
-			var noteEntries = await FetchCdnNotesAsync(collector, org, repo, noteTarget, ctx);
+			var noteEntries = await FetchCdnNotesAsync(collector, org, repo, product, version, ctx);
 			if (noteEntries == null)
 				return null;
 
 			// Backport collision: same leaf from different branches at the same version → prefer main/master.
-			var deduped = DeduplicateNotesByLeaf(noteEntries, noteTarget);
+			var deduped = DeduplicateNotesByLeaf(noteEntries, version);
 
 			foreach (var note in deduped)
 			{
@@ -2194,20 +2226,29 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Returns all distinct, explicit, non-wildcard targets from <see cref="BundleChangelogsArguments.OutputProducts"/>.
-	/// Notes are fetched for every resolved target so multi-target bundles are fully covered.
-	/// Returns an empty list when no concrete targets are available.
+	/// Returns distinct <c>(product, version)</c> pairs from <see cref="BundleChangelogsArguments.OutputProducts"/>.
+	/// Notes are fetched per product so two products at the same version do not share an index once
+	/// product-scoped keys exist. Returns an empty list when no concrete product/version is available.
 	/// </summary>
-	private static IReadOnlyList<string> ResolveNoteTargets(BundleChangelogsArguments input)
+	private static IReadOnlyList<(string Product, string Version)> ResolveNoteTargets(BundleChangelogsArguments input)
 	{
 		if (input.OutputProducts is not { Count: > 0 })
 			return [];
-		return input
-			.OutputProducts
-			.Where(p => !string.IsNullOrWhiteSpace(p.Target) && p.Target != "*")
-			.Select(p => p.Target!)
-			.Distinct(StringComparer.Ordinal)
-			.ToList();
+
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		var targets = new List<(string Product, string Version)>();
+		foreach (var p in input.OutputProducts)
+		{
+			if (string.IsNullOrWhiteSpace(p.Product) || p.Product == "*")
+				continue;
+			if (string.IsNullOrWhiteSpace(p.Target) || p.Target == "*")
+				continue;
+			var key = $"{p.Product}/{p.Target}";
+			if (!seen.Add(key))
+				continue;
+			targets.Add((p.Product, p.Target));
+		}
+		return targets;
 	}
 
 	private static ChangelogFilterCriteria BuildFilterCriteria(
@@ -2241,7 +2282,8 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
+	/// <summary>Writes the bundle and returns the path it was written to, which is not <paramref name="outputPath"/> when that file already exists.</summary>
+	private async Task<string> WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
 		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
@@ -2268,6 +2310,7 @@ public partial class ChangelogBundlingService(
 		var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(bundledYaml);
 		await _fileSystem.File.WriteAllTextAsync(outputPath, normalizedYaml, Utf8NoBom, ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
+		return outputPath;
 	}
 
 	/// <summary>
@@ -2575,7 +2618,6 @@ public partial class ChangelogBundlingService(
 		{
 			var message = $"Applied rules - {string.Join(", ", ruleStats.Select(kvp => $"{kvp.Key}: {kvp.Value} entries"))}";
 			if (ruleStats.Count > 2) // More than one rule type being used
-
 			{
 				message += ". Review rules.bundle configuration and documentation if this distribution seems unexpected.";
 			}

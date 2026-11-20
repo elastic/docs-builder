@@ -52,7 +52,7 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		// Codex-level pages (landing, group) don't use prev/next navigation,
 		// so empty traversal lookups are sufficient.
 		NavigationDocumentationFileLookup = [];
-		NavigationIndexedByOrder = FrozenDictionary<int, INavigationItem>.Empty;
+		NavigationIndexedByOrder = [];
 	}
 
 	/// <summary>

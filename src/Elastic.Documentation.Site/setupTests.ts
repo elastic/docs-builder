@@ -33,3 +33,13 @@ global.ResizeObserver = class ResizeObserver {
     unobserve() {}
     disconnect() {}
 }
+
+// Many tests assign `global.fetch = vi.fn()`; unstubGlobals only covers vi.stubGlobal, so restore it here.
+const originalFetch = globalThis.fetch
+
+// Tests share one jsdom per file; start each from an empty body.
+// A few files opt into the node environment, where there is no document.
+afterEach(() => {
+    globalThis.fetch = originalFetch
+    if (typeof document !== 'undefined') document.body.innerHTML = ''
+})

@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
@@ -10,13 +9,9 @@ using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.Navigation;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -38,24 +33,33 @@ public class ApiNavParityTests
 			}
 			""";
 
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", document);
 		var ordered = navigation.NavigationItems.ToList();
 
 		ordered[0].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Servers);
-		ordered[1].Should().BeOfType<SidebarSeparatorNavigationItem>();
-		ordered[2].Should().BeOfType<TagNavigationItem>().Which.NavigationTitle.Should().Be("Search");
+		var operations = ordered[1].Should().BeOfType<OperationsNavigationItem>().Subject;
+		operations
+			.NavigationItems
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.BeOfType<TagNavigationItem>()
+			.Which
+			.NavigationTitle
+			.Should()
+			.Be("Search");
 	}
 
 	[Test]
 	public async Task CreateNavigation_SharedSummaryOperations_CollapsesIntoOnePage()
 	{
-		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(SharedSummarySpec);
 		var navigation = generator.CreateNavigation("test", document);
 
 		var page = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
+			.Tags()
 			.Single()
 			.NavigationItems
 			.Should()
@@ -66,43 +70,37 @@ public class ApiNavParityTests
 			.Subject;
 
 		page.Hidden.Should().BeFalse();
-		page.Url.Should().Be("/api/doc/test/operation/operation-op-a");
+		page.Url.Should().Be("/api/test/operation/operation-op-a");
 		page.Siblings.Select(o => o.Route).Should().Equal("/b");
-		page.AliasUrls.Should().Equal("/api/doc/test/operation/operation-op-b");
+		page.AliasUrls.Should().Equal("/api/test/operation/operation-op-b");
 	}
 
 	[Test]
 	public async Task CreateNavigation_QueryContainerSchema_AddsTypesNav()
 	{
-		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(QueryContainerSpec);
 		var navigation = generator.CreateNavigation("test", document);
 
-		var types = navigation
-			.NavigationItems
-			.OfType<SchemaCategoryNavigationItem>()
-			.Should()
-			.ContainSingle(item => item.NavigationTitle == "Types")
-			.Subject;
+		var types = navigation.NavigationItems.OfType<TypesNavigationItem>().Should().ContainSingle().Subject;
+		types.Should().BeAssignableTo<ISidebarGroupNavigationItem>("Types is a static group label with no page, like Operations");
+		types.Url.Should().Be(navigation.Url);
 		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
+		var items = navigation.NavigationItems.ToList();
+		items[^1].Should().Be(types);
+		items[^2].Should().BeOfType<OperationsNavigationItem>("the endpoint groups sit under their own Operations label before the types");
 	}
 
 	[Test]
 	public async Task CreateNavigation_GroupedOperationsWithDifferentContracts_KeepSeparatePages()
 	{
-		var (generator, document) = await CreateGeneratorWithSpec(DifferentContractsSpec);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(DifferentContractsSpec);
 		var navigation = generator.CreateNavigation("test", document);
 
-		var operations = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<OperationNavigationItem>()
-			.ToList();
+		var operations = navigation.Tags().Single().NavigationItems.OfType<OperationNavigationItem>().ToList();
 
 		operations.Should().HaveCount(2);
 		operations.Should().OnlyContain(op => op.Siblings.Count == 0 && op.AliasUrls.Count == 0);
-		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
+		operations.Select(op => op.Url).Should().Equal("/api/test/operation/operation-op-a", "/api/test/operation/operation-op-b");
 	}
 
 	/// <summary>Same API name, but the POST takes a required query parameter the GET does not: not the same call.</summary>
@@ -187,27 +185,6 @@ public class ApiNavParityTests
 		  }
 		}
 		""";
-
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(string openApiJson)
-	{
-		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
-
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
-		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
-		var result = await OpenApiDocument.LoadAsync(stream, settings: settings);
-		var parseErrors = result.Diagnostic?.Errors;
-		if (parseErrors is not null && parseErrors.Any())
-			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", parseErrors.Select(e => e.Message))}");
-
-		return (generator, result.Document!);
-	}
 
 	private static string NodeLabel(NavigationRenderNode node) =>
 		node.Kind == NavigationRenderNodeKind.Separator ? "---" : node.NavigationTitle;

@@ -1,0 +1,90 @@
+example-repo://index.md
+  isolated                 https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-absolute           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-relative           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  publish                  https://docs.example.test/
+                           site path: https://docs.example.test/api/example-api/operation/operation-search
+  publish-prefixed         https://docs.example.test/docs/9.0/
+                           site path: https://docs.example.test/docs/9.0/api/example-api/operation/operation-search
+  publish-prefixed-slash   https://docs.example.test/versioned/
+                           site path: https://docs.example.test/versioned/api/example-api/operation/operation-search
+  publish-api-explorer     https://docs.example.test/docs/
+                           site path: https://docs.example.test/docs/api/example-api/operation/operation-search
+example-repo://get-started/index.md
+  isolated                 https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-absolute           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-relative           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  publish                  https://docs.example.test/docs/start-here
+                           site path: https://docs.example.test/api/example-api/operation/operation-search
+  publish-prefixed         https://docs.example.test/docs/9.0/docs/start-here
+                           site path: https://docs.example.test/docs/9.0/api/example-api/operation/operation-search
+  publish-prefixed-slash   https://docs.example.test/versioned/docs/start-here
+                           site path: https://docs.example.test/versioned/api/example-api/operation/operation-search
+  publish-api-explorer     https://docs.example.test/docs/docs/start-here
+                           site path: https://docs.example.test/docs/api/example-api/operation/operation-search
+example-repo://guide/page.md#section-one
+  isolated                 https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-absolute           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-relative           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  publish                  https://docs.example.test/docs/guide/page#section-one
+                           site path: https://docs.example.test/api/example-api/operation/operation-search
+  publish-prefixed         https://docs.example.test/docs/9.0/docs/guide/page#section-one
+                           site path: https://docs.example.test/docs/9.0/api/example-api/operation/operation-search
+  publish-prefixed-slash   https://docs.example.test/versioned/docs/guide/page#section-one
+                           site path: https://docs.example.test/versioned/api/example-api/operation/operation-search
+  publish-api-explorer     https://docs.example.test/docs/docs/guide/page#section-one
+                           site path: https://docs.example.test/docs/api/example-api/operation/operation-search
+example-repo://guide/nested/deep.md#deep
+  isolated                 https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/nested/deep#deep
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-absolute           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/nested/deep#deep
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-relative           https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/nested/deep#deep
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  publish                  https://docs.example.test/docs/nested-section/deep#deep
+                           site path: https://docs.example.test/api/example-api/operation/operation-search
+  publish-prefixed         https://docs.example.test/docs/9.0/docs/nested-section/deep#deep
+                           site path: https://docs.example.test/docs/9.0/api/example-api/operation/operation-search
+  publish-prefixed-slash   https://docs.example.test/versioned/docs/nested-section/deep#deep
+                           site path: https://docs.example.test/versioned/api/example-api/operation/operation-search
+  publish-api-explorer     https://docs.example.test/docs/docs/nested-section/deep#deep
+                           site path: https://docs.example.test/docs/api/example-api/operation/operation-search
+other-repo://target/page.md
+  isolated                 https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-absolute           https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-relative           https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  publish                  https://docs.example.test/docs/other/target/page
+                           site path: https://docs.example.test/api/example-api/operation/operation-search
+  publish-prefixed         https://docs.example.test/docs/9.0/docs/other/target/page
+                           site path: https://docs.example.test/docs/9.0/api/example-api/operation/operation-search
+  publish-prefixed-slash   https://docs.example.test/versioned/docs/other/target/page
+                           site path: https://docs.example.test/versioned/api/example-api/operation/operation-search
+  publish-api-explorer     https://docs.example.test/docs/docs/other/target/page
+                           site path: https://docs.example.test/docs/api/example-api/operation/operation-search
+codex-repo://target/page.md
+  isolated                 https://docs-v3-preview.elastic.dev/elastic/codex-repo/tree/main/target/page
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-absolute           https://codex.elastic.dev/r/codex-repo/target/page
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  codex-relative           /r/codex-repo/target/page
+                           site path: https://www.elastic.co/docs/api/example-api/operation/operation-search
+  publish                  https://docs.example.test/target/page
+                           site path: https://docs.example.test/api/example-api/operation/operation-search
+  publish-prefixed         https://docs.example.test/docs/9.0/target/page
+                           site path: https://docs.example.test/docs/9.0/api/example-api/operation/operation-search
+  publish-prefixed-slash   https://docs.example.test/versioned/target/page
+                           site path: https://docs.example.test/versioned/api/example-api/operation/operation-search
+  publish-api-explorer     https://docs.example.test/docs/target/page
+                           site path: https://docs.example.test/docs/api/example-api/operation/operation-search

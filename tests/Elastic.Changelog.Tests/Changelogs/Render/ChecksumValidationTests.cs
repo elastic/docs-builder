@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -71,10 +73,26 @@ public class ChecksumValidationTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().Be(0, "rendering never reads changelog files, so provenance checksums are not verified");
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("My new feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* My new feature. [#100](https://github.com/elastic/elastic/pull/100)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]

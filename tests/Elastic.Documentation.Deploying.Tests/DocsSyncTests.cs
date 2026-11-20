@@ -66,7 +66,6 @@ public class DocsSyncTests
 					Key = "docs/skip.md",
 					ETag = "\"69048c0964c9577a399b138b706a467a\""
 				}, // This is the result of CalculateS3ETag
-
 				new S3Object { Key = "docs/update.md", ETag = "\"existing-etag\"" }
 			]
 		});
@@ -282,7 +281,6 @@ public class DocsSyncTests
 
 	[Test]
 	[NotInParallel(nameof(AwsS3SyncApplyStrategy))] // TestApply asserts on spans from a process-wide ActivitySource
-
 	public async Task TestApply()
 	{
 		// Arrange
@@ -396,8 +394,8 @@ public class DocsSyncTests
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
-				{ "docs/api/doc/es.yaml", new MockFileData("openapi: 3.1.0") },
-				{ "docs/api/doc/es.json", new MockFileData("{}") },
+				{ "docs/api/es.yaml", new MockFileData("openapi: 3.1.0") },
+				{ "docs/api/es.json", new MockFileData("{}") },
 				{ "docs/index.md", new MockFileData("# Index") },
 			},
 			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
@@ -421,8 +419,8 @@ public class DocsSyncTests
 			TotalSyncRequests = 3,
 			AddRequests =
 			[
-				new AddRequest { LocalPath = "docs/api/doc/es.yaml", DestinationPath = "docs/api/doc/es.yaml" },
-				new AddRequest { LocalPath = "docs/api/doc/es.json", DestinationPath = "docs/api/doc/es.json" },
+				new AddRequest { LocalPath = "docs/api/es.yaml", DestinationPath = "docs/api/es.yaml" },
+				new AddRequest { LocalPath = "docs/api/es.json", DestinationPath = "docs/api/es.json" },
 				new AddRequest { LocalPath = "docs/index.md", DestinationPath = "docs/index.md" }
 			],
 			UpdateRequests = [],

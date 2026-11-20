@@ -12,9 +12,15 @@ The assembler also writes a combined **Elastic APIs** page at `/docs/api/`, on i
 
 Under the line of text sits the same box as in the API sidebar, labelled **Type ❲/❳ to explore API**. It explores operations across every API, so you can jump to an endpoint without knowing which product it belongs to. Type <kbd>/</kbd> or <kbd>s</kbd> anywhere on the page, outside a text field, to jump to it. Like the sidebar box, it is omitted on isolated and air-gapped builds.
 
-The cards for APIs that are in neither group show the API's deployments as small pills taken from `catalog.categories`. They use the same look as `applies_to` badges and the same names (**Self-managed**, **ECE**, **ECH**, **Serverless**), but show the name only: the catalog knows the deployment, not a lifecycle or version. The grouped cards leave them out, and an API with no categories shows no pills. The description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export.
+Each card's description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export.
 
 The API title comes from `info.title` in the spec, so fix naming and description copy in the spec.
+
+API search matches parameter and field names, including prefixes and qualified paths. A qualified path matches by its segments from any depth and ignores `[]` and `<string>`. So `rrf.min_score` finds `retriever.rrf.min_score`, and `retriever[].standard` reads as `retriever.standard`. The docs-wide search matches a field only by its exact name, and only for a word that contains `_` or `.`, so a plain word keeps ranking pages first. Direct operation and endpoint matches rank above field matches. Each word of the query names something about an operation. It can be the endpoint path or its `_name`, which also covers the routes under it, a word of the operation id or path, the operation's group, a word of its title, a parameter or field name, or a word in its description. Operation id and path words split on dots, hyphens, underscores and case changes. The best match for each word counts, and word order does not matter. With one or two words, every word must match. From three words on, most of them must. Words that make up the whole title of an operation lift it, whatever their order and without the title's stopwords or plurals, so `create index` finds **Create an index** and `delete index` finds **Delete indices** ahead of operations that only mention those words. An endpoint path or `_name` always outranks a name word, and a name word outranks a group word or a field. So `ml flush`, `flush ML job` and `_ml _flush` all find `POST /_ml/anomaly_detectors/{job_id}/_flush`. Combine an endpoint and a field, such as `_search knn`, to find the operation and its matching fields. `knn /_search`, `/_search knn`, `knn search` and `search knn` read the same. A word with a leading slash only ever names an endpoint. It also covers the routes under it, so `/api/fleet` lists every Fleet operation and `/_cluster health` finds the cluster health operation. A last segment that is not complete reads as the start of one, so `/_sear` finds `/_search` and then the routes under it, and `/_cat/ind` finds `/_cat/indices`. A trailing slash says the segment is complete, so `/_search/` lists `/_search` and the routes under it, and nothing that merely starts with `_search`. A lone `/` names the root route, so `/`, `GET /` and `HEAD /` find the operations on `/` and nothing under it. The underscore that starts an Elasticsearch system route is optional, so `/search` and `/cluster health` read as `/_search` and `/_cluster/health`. An HTTP method typed before it belongs to that endpoint. It lifts the operations with that method and is not a word of any title, so `GET /_search` finds **Run a search**, a `POST` operation, ahead of **Get the search shards**. A field word needs no endpoint beside it, so `cluster flat_settings` lists the Cluster operations that take `flat_settings`, `GET /_cluster/state` and `GET /_cluster/settings` among them, each with its `flat_settings` query parameter, and `es|ql drop_null_columns` finds `POST /_query` with its `drop_null_columns` parameter. A field row lists under the operation only when its word matched a field at least as well as anything else about the operation, so `search retriever` lists `retriever` but no `search_type` row. Each matching operation lists up to three matching fields beneath it, with their paths, types, and locations. Child rows match the field's own name; ancestor names and descriptions provide context without adding unrelated children. Select a field to open its anchor, including fields inside collapsed sections. Arrow keys move through operations and fields in order; Enter opens the selected row. Type a field's path with a trailing dot, such as `retriever.`, and the operation also lists the fields nested under it as rows of their own, `retriever.standard`, `retriever.knn`, and the rest in page order, right after the field they belong to; without the dot the result is the matching fields alone. Each row shows where the field lives: `path`, `query`, `header`, `request body`, or `response body`. The child rows mirror the operation page: a field whose type has its own page, such as `query`, lists none, and a field that repeats an earlier listing lists none either.
+
+An operation result shows one route in place of the description: the method the page leads with and the path, with a match highlighted when a query word names a path. The route whose whole path is the query word wins, so `/_search` shows `/_search`; otherwise the operation's primary route shows when it contains the word, an alternate route only when the primary does not, and the primary route when no word names a route. Every result uses the same bordered box, with matching fields grouped beneath the operation when present. Matches use the same yellow tint as the destination property's flash. Navigating to a field reveals it and flashes its name, including when search replaces the current page without a full reload. Each result's breadcrumb ends with the operation's group, the same group the page shows. A deprecated operation is struck through and dimmed in the results, its method chip keeps its colour at lower saturation as in the sidebar, and the same outlined `Deprecated` badge as on its page sits beside the title at the method chip's height. The header search and the design-system search dialog mark a deprecated operation the same way.
+
+The assembler indexes fields from the same property trees used to render operation pages. Fields of a repeated shape appear under its first listing. On the existing semantic index, the indexer adds the nested `api.properties` mapping before incremental synchronization. Property changes participate in the document hash, so a field update is synchronized even when the operation description stays the same.
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
@@ -23,8 +29,8 @@ This feature is still under development and the functionality described on this 
 ## Configure the API Explorer
 
 Add the `api` key to your `docset.yml` file to enable the API Explorer. Each product key takes a
-single-entry sequence with a required `spec:` and `product:`, and optional `repository:`,
-`children:`, and `catalog:`:
+single-entry sequence with a required `spec:` and `product:`, and optional `repository:` and
+`children:`:
 
 ```yaml
 api:
@@ -74,7 +80,7 @@ api:
 Most docsets omit `repository:` — it's only needed for this cross-repo case. When omitted,
 {{dbuild}} derives the repository from the current checkout's GitHub remote.
 
-### `children:` (optional)
+### `children:` (optional) [api-children]
 
 Explicit hand-written pages rendered under `api/<key>/`, in the declared order:
 
@@ -87,7 +93,9 @@ api:
         - file: kibana-api-overview.md
 ```
 
-`children:` is the only way to inject hand-written content into an API reference section:
+Child pages are listed at the top of the sidebar, right after the **Overview** row, in the order you declare them, after Authentication and Rate limiting, which always come first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build. The build warns about a child page whose navigation title is `Overview`, because the sidebar would show two **Overview** rows that lead to different pages. The label comes from `navigation_title` in front matter, or else from the file name, so set `navigation_title` to clear the warning without changing the page URL.
+
+Child pages also behave as follows:
 
 - Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
 - Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
@@ -113,8 +121,10 @@ The following slugs are reserved and cannot be used as child file names:
 | `tags` | API Explorer uses this path for tag landing pages |
 | `group` | Tag landing pages use `/group/` |
 | `operation` | Operation pages use `/operation/` |
+| `topic` | Topic pages from `x-topics` use `/topic/` |
 | `authentication` | Reserved for API Explorer and cannot be used as a child file slug |
 | `servers` | Reserved for API Explorer and cannot be used as a child file slug |
+| `next` | The unreleased `main` spec lives at `/api/<key>/next/` |
 
 Additionally, the slug must not match any operation moniker already generated by the spec. The
 build fails with a descriptive error if either collision occurs, naming the conflicting file and
@@ -123,38 +133,13 @@ the reserved or operation segment.
 If the same slug is produced by two different child files in the same product, the build
 also fails with a duplicate-slug error.
 
-### `catalog:` (optional)
-
-This sets the deployment tags on the API's row on the Elastic APIs page. An API may list several categories. The same identifiers are used in `applies_to`, but a category here does not mean the API is generally available for every version of that deployment. An API with no `catalog:` shows no tags.
-
-```yaml
-api:
-  elasticsearch:
-    - spec: elasticsearch-openapi.json
-      product: elasticsearch
-      catalog:
-        categories:
-          - self
-          - ece
-          - ess
-```
-
-`catalog.categories:` accepts:
-
-- `self` → Self-managed
-- `ece` → Elastic Cloud Enterprise
-- `ess` or `ech` → Elastic Cloud Hosted
-- `serverless` → Serverless
-
-Unknown values fail the build.
-
 ### One spec per product
 
 Each product key in the `api:` block must have **exactly one** entry, with **exactly one**
 `spec:`. The build fails if a product sequence is empty or has more than one entry. Multiple
 specs per product are not currently supported.
 
-The left navigation starts with one selector that says which API you are reading and which version: `[logo] Elasticsearch API  main ⇅`. It opens a menu with the versions of this API, then every API whose spec loaded (a versioned API opens its latest numbered version, such as `/v9/`) (each with its logo), then an **All APIs** link back to the catalog. Each row uses that spec's title (`info.title`), the same text as the landing page heading. It is the same on assembler and isolated builds, and with or without `navigation-preview`. With a single version the menu lists only the APIs; with a single API and a single version the name is plain text. The **Copy page** menu at the top right of each page also holds **Download OpenAPI spec (JSON)** and **(YAML)**, which download the whole spec. The page itself starts with the full breadcrumb, which begins at Docs. The catalog page has no API, so it has no selector; its finder sits in the title band instead.
+The left navigation starts with one selector that says which API you are reading and which version: `[logo] Elasticsearch API  v9 ⇅`. It opens a menu with the versions of this API, then every API whose spec loaded, each with its logo and each opening at its versionless URL, then an **All APIs** link back to the catalog. Each row uses that spec's title (`info.title`), the same text as the landing page heading. It is the same on assembler and isolated builds, and with or without `navigation-preview`. With a single version the menu lists only the APIs; with a single API and a single version the name is plain text. The **Copy page** menu at the end of the breadcrumb row also holds **Download OpenAPI spec (JSON)** and **(YAML)**, which download the whole spec. The page itself starts with the full breadcrumb, which begins at Docs. The catalog page has no API, so it has no selector; its finder sits in the title band instead.
 
 Below the selector, the left navigation has a box labelled **Type ❲/❳ to explore API**. It explores operations across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Type <kbd>/</kbd> or <kbd>s</kbd> anywhere on the page, outside a text field, to jump to the box, as on GitHub. The shortcut is off on narrow screens, where the navigation sits in a drawer. Isolated and air-gapped builds omit it. Markdown docs pages do not get it back.
 
@@ -207,22 +192,36 @@ rendering the local file.
 
 For versioned products, {{dbuild}} renders every resolved version from the index:
 
-| Index moniker | URL path | Role |
-|---|---|---|
-| `main` | `/api/doc/<key>/` | Canonical current-major tree |
-| `9`, `8`, … | `/api/doc/<key>/v9/`, `/api/doc/<key>/v8/`, … | Released major snapshots |
+| Index moniker | URL path | Role | Notice |
+|---|---|---|---|
+| `9`, the highest numeric major | `/api/<key>/` and `/api/<key>/v9/` | Newest released major, the default. Both URLs serve the same pages. | None |
+| `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8` label and a link to the latest version |
+| `main` | `/api/<key>/next/` | Unreleased spec | An `Unreleased` warning and a link to the latest version |
+
+On every generated API page, the `Unreleased` warning sits directly under the title. The `Version 8` label and its link sit under the title too, except on operation pages. There they join the badges row, next to `Auth` and `Deprecated`, as `Version 8` and `Latest: v9`, so the title stays next to its request line.
+
+Hand-written `children:` Markdown pages show no notice, so a page without one is not proof that it belongs to the latest version.
+The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise. If the newest major failed to load, the notice keeps the page's own version and has no link.
 
 The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.
+Search indexes the default version at `/api/<key>/` and older majors at `/api/<key>/vN/`, not `main` at `/next/` or the `/v9/` copy of the newest major. Search from a `/next/` page is the normal search with a lift for that API's default-version results. It does not filter by version, and operations that exist only in older majors stay hidden.
+An API whose index lists no numeric major keeps `main` at `/api/<key>/` and has no `/next/`.
+The default comes from the versions the index declares. If the newest major fails to load, nothing
+renders at `/api/<key>/`, and no older major takes its place.
+A version named `next` in the index is a build error, because `next` is the URL segment of `main`.
+
 When a local spec file exists, it overrides only the `main` moniker. Older majors still resolve
-remotely through the index.
+remotely through the index. In `docs-builder serve`, a local spec edit therefore shows under
+`/api/<key>/next/`, not at `/api/<key>/`.
 
 Versionless products (`versioning: serverless` and similar) render only the unversioned
-`/api/doc/<key>/` path even when the index lists historical monikers. When more than one
-version is rendered, the bar shows a version picker beside the API name. The current tree is
-labeled `main`, and each frozen major is `v9`, `v8`. The highest frozen major carries `(latest)`, as in `v9 (latest)`. This is a label only: the unversioned URL still serves `main`. Isolated builds put the same picker
+`/api/<key>/` path even when the index lists historical monikers. When more than one
+version is rendered, the bar shows a version picker beside the API name. The unreleased tree is
+labeled `Next (unreleased)`, and each frozen major is `v9`, `v8`. When the API has a numbered major, the unreleased tree is served at `/next`. Without one, it is the default and keeps the unversioned URL. The highest frozen major carries `(latest)`, as in `v9 (latest)`, and the unversioned URL serves it. Isolated builds put the same picker
 under the API name in the left navigation.
 Picking a version opens the same page in that version when it has one, for example the same
-operation, and that version's landing page otherwise.
+operation, and that version's landing page otherwise. On a `/v9/` page, the `v9 (latest)` entry
+keeps the reader on `/v9/` URLs.
 
 ### Smoke-test every CloudFront spec locally
 
@@ -292,6 +291,57 @@ toc:
     crosslink: elasticsearch://api/elasticsearch/
 ```
 
+## APIs in the navigation tree [api-navigation]
+
+A docset that declares an API in its `api:` block has that API in its navigation tree. The `toc.yml` or `docset.yml` table of contents needs no entry for it, and the API pages still render at the same URLs.
+
+Each API is an island at the end of the table of contents, with its own sidebar. Every version of the API is part of it, and only the current version is visible. The sidebar of your pages does not show the API for now, so a docset's sidebar does not change because it declares one.
+
+The API in the tree is what the rest of the build reads:
+
+- `links.json` lists the pages of the API, so other docsets can [link to them](#api-cross-links).
+- The assembler lists every declared API under the `APIs` section of the site navigation, which the sitemap and `llms.txt` read. Refer to [`navigation.yml`](../../documentation/assembler/navigation.md#navigation-floating).
+- The sitemap lists the API pages that search engines may index and that name themselves as canonical. Refer to [API pages in the sitemap](#api-sitemap).
+
+An isolated build and an assembler build put the APIs in the tree when they render the API Explorer. A build run with `--skip-api` leaves them out. The `serve` and Codex builds do not put them in the tree yet.
+
+:::{note}
+A toc entry such as `- api: elasticsearch` is not valid. Declare the API in the `api:` block, and the docset has it.
+:::
+
+### API pages in the sitemap [api-sitemap]
+
+`/docs/sitemap.xml` is a sitemap index. It lists `sitemap-docs.xml`, with the narrative pages, and `sitemap-api.xml`, with the API pages. The API file exists only where the build renders the API Explorer (the `assembler-api-explorer` feature flag).
+
+The type of each version tree decides whether its pages are in the API file:
+
+| Tree | URL | In the sitemap |
+|---|---|---|
+| Newest released major, or the only tree of a versionless API | `/api/{key}` | Yes |
+| Older major | `/api/{key}/v{N}` | Yes |
+| Numbered copy of the newest major | `/api/{key}/v{N}` | No. Its canonical is the page at `/api/{key}`. |
+| Unreleased `main` | `/api/{key}/next` | No. The page is `noindex`. |
+
+Older majors are hidden in the navigation, but they are still listed in the sitemap. So are the pages that the sidebar leaves out, such as Servers. Redirects and the `.md` renderings of pages are not listed.
+
+`assembler build` writes all three files with the build time as the date. `assembler sitemap` runs after `assembler index`, in the same output folder. It keeps the pages the build listed and dates each one from the search index, so a page's date changes only when its content changes.
+
+The search export indexes one document for every API page. Operation and landing pages are search results. Group, type, topic, authentication, servers and Markdown pages are indexed only for their date, and search never returns them. A document's content hash is the hash of the page's `.md` rendering, with links into the page's own version tree made relative. A page that reads the same in two majors shares one document and one date. The `/docs/api` hub takes the newest date of the API landing pages. If a listed page has no document, `assembler sitemap` warns and keeps the build date for it.
+
+### Link to an API page from Markdown [api-cross-links]
+
+A docset that declares an API in its `api:` block publishes the pages of that API in its `links.json`. Other docsets can then use a cross-link to any page of it, and the build checks that the page exists:
+
+```markdown
+[Search API](elasticsearch://api/elasticsearch/operation/operation-search)
+[Search API in 8.x](elasticsearch://api/elasticsearch/8/operation/operation-search)
+[Elasticsearch API](elasticsearch://api/elasticsearch)
+```
+
+The scheme is the repository of the docset that declares the API. The path is `api/<key>`, then an optional version, then the path of the page under the API. The version is the exact name of an API version, such as `8` or `main`, and not a URL segment: `main` resolves to `/api/<key>/next/` when the API has a numbered major. A versionless API, or one with no numbered major, serves `main` at `/api/<key>/`, and a link that names `main` resolves there. Without a version, the link reaches the current version at `/api/<key>/`: the newest released major, or `main` when the API has no numeric major. A link to a page under the numbered copy, such as `/api/<key>/v9/`, is also checked, because `links.json` lists that copy as the version's `mirror_root`. The published page keeps whatever URL that version has. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them, in the versions that list them. A `#fragment` stays on the resolved URL, but the build does not check that the anchor exists.
+
+An assembler build links to the page on the site it builds. An isolated build links to the published page on `https://www.elastic.co/docs/`.
+
 ## What the API Explorer renders
 
 The API Explorer generates the following types of pages from your OpenAPI spec:
@@ -311,16 +361,19 @@ A request body leaves out `readOnly` fields, because only the server sets them, 
 
 A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
 
-Each section is a collapsible heading, folded by default. Its summary punctuation says what the names are:
+A row of section links sits above the description of an operation page: **Overview**, then one link for each of **Path**, **Query**, **Headers**, **Body** and **Responses** that the operation has. It stays under the page header as you scroll and marks the section in view. **Overview** scrolls back to the top. Once you reach the sections, the row also shows **Expand all**. A page with a single section has no row.
+
+A link to a property scrolls it to just below the row, so its name stays in view. A page without the row keeps the site's usual scroll position for links.
+
+Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Under **Responses** only the first response starts open, counting successes before errors, as the examples rail does. The responses work as an accordion: opening one closes the others and switches the examples rail to the same status code, and choosing a status in the rail opens its response. An object field starts open only when the spec marks it required and every field above it is open too, so a required field inside an optional object stays folded with it. Every other object field starts folded, and its toggle says how many properties it hides, such as **Show 6 properties**. Select it to open them, or **Hide 6 properties** to fold them again. One button, **Expand all**, sits on a row of its own above the first section. On a page with the section links row, it also shows at the end of that row once you reach the sections, on screens 1280px and wider. It opens every section and field at once, and then reads **Collapse all** to fold them again. It leaves the responses to their accordion. It doesn't remember its state, so a page always loads the way the build rendered it. Its summary punctuation says what the names are:
 
 | Summary | Meaning |
 |---|---|
 | `{ a, b }` | The fields of a JSON request body |
 | `A \| B` | Alternatives, such as the variants of a `oneOf` or the credentials of **Authentication** |
-| `A + B` | Needed together, such as the privileges in **Required authorization** |
 | `a, b` | Anything else, such as parameters or the fields of a form |
 
-The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the folded section, which then opens. This relies on `hidden="until-found"`: in a browser without it, the folded sections can't be searched.
+The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the section, which opens if a reader has folded it. Sections and required fields start expanded, so find-in-page reaches them on first load. Select **Expand all** to reach every other section and field in a browser without `hidden="until-found"`. Reaching a section or field a reader has folded relies on `hidden="until-found"`: in a browser without it, a folded section can't be searched.
 
 Path, query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
 
@@ -343,6 +396,7 @@ The API Explorer supports some OpenAPI specification extensions to enhance navig
 - [x-displayName](#x-displayname)
 - [x-req-auth](#x-req-auth)
 - [x-tagGroups](#x-taggroups)
+- [x-topics](#x-topics)
 
 For background on OpenAPI vendor extensions, refer to [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#specification-extensions).
 
@@ -371,6 +425,7 @@ How the rail is laid out:
 - **Full screen preview.** Every code card that has code to show, request and response alike, has a button next to **Copy** that opens its code in a dialog 100 characters wide and as tall as the code, up to the window height; longer code scrolls inside it and longer lines scroll sideways. The dialog shows the language or status you were looking at, has its own **Copy** and **Close** buttons, and closes with `Esc` or a click outside it.
 - **Language order.** Console comes first. The other languages follow GitHub's [Innovation Graph](https://innovationgraph.github.com/global-metrics/programming-languages) global ranking of programming languages by developers using them: JavaScript, Python, curl (as Shell), Java, C#, PHP, Ruby, Go, Rust. Languages not in that list keep their order from the spec, after the ranked ones.
 - **Language names.** The `lang` of an `x-codeSamples` entry is matched without regard to case (`cURL`, `Curl` and `curl` are the same language). A suffix after a known language name, such as `cURL_tag_names`, makes that sample part of a separate example named after the suffix ("Tag names") instead of a language of its own. When the operation already lists a request example with that title, the samples join it instead of adding another example: use the example's `summary` (or its key, when it has none) as the suffix.
+- **Labels.** When an operation lists two or more samples in the same language, such as two `curl` calls, a `label` on an entry names the example it belongs to, the same way a suffix does. Give the `label` the `summary` of the request example it belongs to, so the samples join that example instead of adding another. A `label` is ignored when the operation lists that language once, or when it only repeats the language name.
 - **Samples on an example.** A request example can carry its own `x-codeSamples`, next to its `summary` and `value`. Those samples belong to that example, whatever their language names. An operation can keep repeating the first example's samples in its own `x-codeSamples`, for tools that read only the operation; the page shows each of those once, and a sample on the example wins over an operation sample of the same example and language. The Markdown copy of the page lists the samples of each example under its title. The example is shown once, with its body and its samples. Examples are read from every request content type, and when two examples have the same title, only the first one's samples are used, because they show as one example.
 - **Where samples attach.** `x-codeSamples` attach to the example whose request body matches the Console sample. When the samples' body matches no named example, they become their own first example, titled **Example**.
 - **Sample methods.** On a path that lists several methods (`POST` also `GET`), the request method in Console and curl samples, and in a ``Run `METHOD path` `` example description, follows the path's dominant method when the sample's own method is one the path lists; those methods are interchangeable, so the call is the same. A sample whose method or path matches none of the operation's paths, and every client-library sample, is shown as written.
@@ -410,9 +465,9 @@ The paths come from either of two sources, and both produce the same rows:
 - The `**All methods and paths for this operation:**` (or `**Spaces method and path for this operation:**`) HTML block that bump.sh-flavoured specs put in the operation description. The block is removed from the rendered description. When it lists a `/s/{space_id}/…` route, the page also lists an optional `space_id` path parameter, described as the space identifier, defaulting to the default space, followed by the `Refer to [Spaces](…) for more information.` sentence that follows the block. That sentence is removed from the operation description.
 - Separate spec operations that share `x-namespace` and `x-api-name` (see below).
 
-### Required authorization [x-req-auth]
+### Required privileges [x-req-auth]
 
-The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. Like the other sections it is folded by default. Its header names the privileges: `a + b` when they are needed together and `a | b` when they are alternatives.
+The required privileges show under the description, above the parameters, in a **Required privileges** block: one row for each kind of privilege, with the privileges as tags. The block appears in the on-page table of contents, and it doesn't fold. A row keeps its label without the word *privileges* (`Cluster privileges` reads **Cluster**), and privileges that are alternatives or needed together are joined by **or** or **and**.
 
 Add the operation-level `x-req-auth` extension to list those privileges. It is a JSON array of strings. Each non-empty string becomes one row, with leading and trailing whitespace trimmed.
 
@@ -435,15 +490,28 @@ Specs that do not use `x-req-auth` still work. The API Explorer reads two patter
 - An Elasticsearch `## Required authorization` heading followed by bullets such as ``* Cluster privileges: `monitor` ``.
 - A Kibana line such as `[Required authorization] Route required privileges: fleet-agent-policies-read OR fleet-settings-read.` The privileges show as chips joined by **or**, or by **and** when the line uses `AND`.
 
-A line that mixes `OR` and `AND`, or a bullet with extra words around the values, stays in the description as written. When `x-req-auth` is present, it wins over the description. When neither source has privileges, the section is omitted. Malformed `x-req-auth` values are skipped and the build may log a warning.
+A line that mixes `OR` and `AND`, or a bullet with extra words around the values, stays in the description as written. When `x-req-auth` is present, it wins over the description. When neither source has privileges, there is no **Required privileges** block. Malformed `x-req-auth` values are skipped and the build may log a warning.
 
-`x-req-auth` is independent of OpenAPI `security` and `securitySchemes`. Privileges go in **Required authorization**. The credentials to send go in **Authentication**.
+`x-req-auth` is independent of OpenAPI `security` and `securitySchemes`. Privileges go in **Required privileges**. The credentials to send go in **Authentication**.
 
 ### Authentication
 
-The **Authentication** section shows how to send a credential. It sits below **Required authorization** and is collapsed by default, because a reader who already has auth set up does not need it. The header shows the scheme names, for example `Api key | Basic | Bearer`, and also appears in the on-page table of contents.
+The **Authentication** section shows how to send a credential. It is expanded by default, and a reader who already has auth set up can fold it. The header shows the scheme names, for example `Api key | Basic | Bearer`.
 
-The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field. An empty operation `security: []` is an explicit override to none and hides the section.
+The API Explorer reads the document-level `security`, or one alternative per scheme in `components.securitySchemes` when the document has none. The full section lives on the product's `/authentication` page. An endpoint page shows its own section, below **Required privileges** and in the on-page table of contents, only when the operation sets a `security` that names other alternatives than the document's. An empty operation `security: []` is an explicit override to none and shows no section.
+
+Every endpoint with authentication has an `Auth` badge in the row under its path, before the availability badge. The badges in that row, `Auth` and `Deprecated`, share the outlined look of the availability badge. `Deprecated` keeps a red outline and text, and a badge that links is underlined:
+
+| Badge | When | Links to |
+|---|---|---|
+| `Auth` | The operation inherits the document `security` | The Authentication page |
+| `Auth` | The operation sets its own, different `security` | Its own **Authentication** section |
+| `Auth optional` | One alternative is empty (`{}`), which OpenAPI reads as "no authentication is fine too" | The Authentication page |
+| `No auth` | The operation sets `security: []` | Nothing |
+
+A spec that declares no `security` shows no badge.
+
+The sidebar marks an operation that the spec sets `deprecated: true` on, in both the legacy and the design-system look. Its title is struck through and dimmed, and its method chip keeps its colour at lower saturation. Screen readers hear the word "Deprecated" after the title. The row keeps its width, so long titles wrap as before.
 
 Each listed scheme is resolved against `components.securitySchemes`, in the order the spec lists them:
 
@@ -460,9 +528,33 @@ Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in th
 
 Open the section to see one tab per scheme. A tab shows the header or query parameter to send, for example `Authorization: Basic <credentials>`, and the scheme `description`. One scheme shows no tabs. A search with the browser's find-in-page opens the section and selects the tab that contains the match.
 
-The `/authentication` page is still generated, so old links keep working. It is not in the navigation, and operation pages do not link to it.
+The `/authentication` page is generated for every spec that declares security schemes, and the sidebar lists it right after the **Overview** row. It shows the same tabs as an endpoint's section, so the Markdown below also applies there. The tabs are always open, under the page's own title, without the collapsible **Authentication** heading. Any prose comes first: an `x-topics` entry titled `Authentication` renders above the tabs, and so does a [`children:`](#api-children) page whose first heading is `Authentication`. When a child page stands for Authentication, it takes the place of the generated page in the sidebar and the badge links to it. The generated `/authentication` page stays for old links. Refer to [Topic pages](#x-topics).
 
 The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
+
+### Topic pages [x-topics]
+
+`x-topics` is deprecated: write these pages as [`children:`](#api-children) pages instead. A child page that covers a topic replaces it.
+
+The document-level `x-topics` extension lists pages of prose that explain the API as a whole, such as rate limits or how to use spaces. Each entry has a `title` and a Markdown `content`:
+
+```yaml
+x-topics:
+  - title: Rate limiting
+    content: |
+      API calls are rate limited in a timing window.
+  - title: Authentication
+    content: |
+      Elastic Cloud APIs support key-based authentication.
+```
+
+Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slug is the title in lowercase with spaces replaced by hyphens, so `Rate limiting` becomes `/topic/topic-rate-limiting`. Entries without a `title` are skipped.
+
+The sidebar lists the topics right after the **Overview** row, above the endpoint groups, with no heading of their own. The Authentication page always comes first and Rate limiting second, whether each comes from a `children:` page or the spec. Any other `children:` pages follow in the order the docset declares them, then the spec's other topics in alphabetical order of their titles.
+
+A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the authentication tabs. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
+
+A `children:` page whose first heading or text matches a topic replaces it. Refer to [`children:`](#api-children).
 
 ### Tag labels [x-displayname]
 
@@ -517,7 +609,9 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 }
 ```
 
-The default sidebar matches bump.sh. The product overview, Authentication, Servers, and any `children:` markdown pages sit in one group. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag.
+The sidebar opens with an **Overview** row that links to the product landing page, then the guide pages: Authentication, Rate limiting, the docset's `children:` pages and the spec's `x-topics`. The endpoint groups follow under an **Operations** label, or under their `x-tagGroups` headings. Each OpenAPI operation is a visible child of its tag. The **Types** heading comes last. Operations and Types are labels with no page of their own.
+
+Within a tag, operations are sorted by path, not by their order in the spec. Operations on the same path follow the resource lifecycle: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `TRACE`, `CONNECT`. The sidebar, the product and tag landing pages, and their Markdown exports all use this order. A merged page sorts by the path and method its endpoint block shows first.
 
 Operations that share `x-namespace` and `x-api-name` render as **one page** when they are the same call (same parameters, request body and responses), built around the dominant method on the longest path. A sibling with a different contract keeps its own page. Specs without those extensions group by operation summary instead. The page URL uses the operation id without its numeric suffix: `search`, `search-1`, `search-2` and `search-3` become `operation-search`. The former per-operation URLs, such as `operation-search-2`, become redirect pages to the merged page, and they keep any query string and `#fragment`. Code samples carried by any of the merged operations show the dominant method of the path they call.
 

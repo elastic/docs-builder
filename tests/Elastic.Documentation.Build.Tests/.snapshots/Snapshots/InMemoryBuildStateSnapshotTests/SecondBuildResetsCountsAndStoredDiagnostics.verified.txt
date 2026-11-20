@@ -1,0 +1,15 @@
+before: status=Idle errors=0 warnings=0 hints=0 stored=0
+state event: state errors=0 warnings=0 hints=0 status=idle diagnostics=[]
+event: build_start
+event: diagnostic [error {docs}/index.md:3:1 `does-not-exist.md` does not exist. If it was recently removed add a redirect. resolved to `{docs}/does-not-exist.md`]
+event: build_complete errors=1 warnings=0 hints=0
+after: status=Complete errors=1 warnings=0 hints=0 stored=1
+state event: state errors=1 warnings=0 hints=0 status=complete diagnostics=[error {docs}/index.md:3:1 `does-not-exist.md` does not exist. If it was recently removed add a redirect. resolved to `{docs}/does-not-exist.md`]
+
+=== second build
+before: status=Complete errors=1 warnings=0 hints=0 stored=1
+state event: state errors=1 warnings=0 hints=0 status=complete diagnostics=[error {docs}/index.md:3:1 `does-not-exist.md` does not exist. If it was recently removed add a redirect. resolved to `{docs}/does-not-exist.md`]
+event: build_start
+event: build_complete errors=0 warnings=0 hints=0
+after: status=Complete errors=0 warnings=0 hints=0 stored=0
+state event: state errors=0 warnings=0 hints=0 status=complete diagnostics=[]

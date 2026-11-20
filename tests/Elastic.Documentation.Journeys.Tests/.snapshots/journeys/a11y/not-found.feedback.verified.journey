@@ -1,0 +1,10 @@
+## a11y
+url: {origin}/this/page/does/not/exist
+> violations: 3
+> [serious] color-contrast: Text contrast meets WCAG AA (4.5:1, or 3:1 for large text) (2 nodes)
+>   - span.css-16juuyo (3.15:1)
+>   - span.css-n4hum7 (3.15:1)
+> [critical] image-alt: Images need alternative text (alt), or alt="" when decorative (1 node)
+>   - svg.link-arrow
+> [moderate] landmark-one-main: A page has exactly one main landmark (1 node)
+>   - html

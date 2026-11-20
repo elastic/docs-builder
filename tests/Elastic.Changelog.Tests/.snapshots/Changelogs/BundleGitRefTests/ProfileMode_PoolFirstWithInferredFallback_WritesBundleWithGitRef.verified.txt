@@ -1,0 +1,44 @@
+products:
+  - product: cloud-hosted
+    target: 2026-08-13
+    repo: widget
+    owner: elastic
+release-date: {today}
+git_ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
+entries:
+  - file:
+      name: 100.yaml
+      checksum: {sha1}
+    type: feature
+    title: Faster hosted search
+    products:
+      - product: cloud-hosted
+        versions:
+          - 2026-08-13
+        lifecycle: ga
+  - file:
+      name: sturdier-snapshots.yaml
+      checksum: {sha1}
+    type: bug-fix
+    title: Sturdier snapshots
+    products:
+      - product: cloud-hosted
+        versions:
+          - 2026-08-13
+        lifecycle: ga
+    prs:
+      - "https://github.com/elastic/widget/pull/200"
+  - file:
+      name: 300.yaml
+      checksum: {sha1}
+    type: feature
+    title: Sharper autocomplete
+    products:
+      - product: cloud-hosted
+        versions:
+          - 2026-08-13
+    description: Autocomplete now ranks recent indices first.
+    impact: Saved searches that relied on alphabetical order change position.
+    action: Pin the indices you need at the top.
+    prs:
+      - "https://github.com/elastic/widget/pull/300"

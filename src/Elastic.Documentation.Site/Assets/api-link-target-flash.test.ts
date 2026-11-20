@@ -5,7 +5,8 @@ const MARKUP = `
     <section id="elastic-api-v3">
         <dl><dt id="prop"><code id="prop-name">rule</code></dt></dl>
         <h2 id="heading">Query parameters</h2>
-    </section>`
+    </section>
+    <header class="api-page-intro" id="api-operation-overview"></header>`
 
 const observers: {
     cb: (entries: { isIntersecting: boolean }[]) => void
@@ -109,6 +110,12 @@ describe('flash of the linked target', () => {
         expect(flashing('heading')).toBe(false)
     })
 
+    it('stays quiet when the fragment points at the page intro, as Overview does', async () => {
+        ;(await open('#api-operation-overview')).initApiDocs()
+        scrollIntoView()
+        expect(flashing('api-operation-overview')).toBe(false)
+    })
+
     it('does not replay the opening flash on an htmx swap', async () => {
         const api = await open('#prop')
         api.initApiDocs()
@@ -117,6 +124,26 @@ describe('flash of the linked target', () => {
         api.initApiDocs()
         scrollIntoView()
         expect(flashing('prop-name')).toBe(false)
+    })
+
+    it('flashes a property reached by an htmx search navigation', async () => {
+        const api = await open('')
+        api.initApiDocs()
+        document.body.innerHTML = MARKUP
+        history.pushState(null, '', '#prop')
+        api.initApiDocs()
+        scrollIntoView()
+        expect(flashing('prop-name')).toBe(true)
+    })
+
+    it('flashes the same fragment again when navigation replaces the page', async () => {
+        const api = await open('#prop')
+        api.initApiDocs()
+        scrollIntoView()
+        document.body.innerHTML = MARKUP
+        api.initApiDocs()
+        scrollIntoView()
+        expect(flashing('prop-name')).toBe(true)
     })
 
     it('waits until the target is on screen', async () => {

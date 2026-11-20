@@ -1,0 +1,219 @@
+public-reference products:
+  apm
+  apm-agent
+  apm-agent-dotnet
+  apm-agent-go
+  apm-agent-java
+  apm-agent-node
+  apm-agent-php
+  apm-agent-python
+  apm-agent-ruby
+  apm-agent-rum-js
+  apm-aws-lambda
+  apm-k8s-attacher
+  apm-server
+  auditbeat
+  beats
+  cloud-control-ecctl
+  cloud-enterprise
+  cloud-hosted
+  cloud-kubernetes
+  cloud-serverless
+  cloud-terraform
+  curator
+  ecs
+  ecs-dotnet
+  ecs-logging
+  ecs-logging-go-logrus
+  ecs-logging-go-zap
+  ecs-logging-go-zerolog
+  ecs-logging-java
+  ecs-logging-nodejs
+  ecs-logging-php
+  ecs-logging-python
+  ecs-logging-ruby
+  edot-android
+  edot-browser
+  edot-cf
+  edot-cf-aws
+  edot-cf-azure
+  edot-cf-gcp
+  edot-collector
+  edot-dotnet
+  edot-ios
+  edot-java
+  edot-node
+  edot-php
+  edot-python
+  edot-react-native
+  edot-sdk
+  eland
+  elastic-agent
+  elastic-serverless-forwarder
+  elastic-stack
+  elasticsearch
+  elasticsearch-client
+  elasticsearch-client-dotnet
+  elasticsearch-client-go
+  elasticsearch-client-java
+  elasticsearch-client-javascript
+  elasticsearch-client-php
+  elasticsearch-client-python
+  elasticsearch-client-ruby
+  elasticsearch-client-rust
+  elasticsearch-hadoop
+  ess
+  filebeat
+  fleet
+  fleet-server
+  heartbeat
+  integrations
+  kibana
+  logstash
+  machine-learning
+  metricbeat
+  observability
+  packetbeat
+  painless
+  search-ui
+  security
+  self
+  serverless-elasticsearch
+  serverless-observability
+  serverless-security
+  serverless-vector-database
+  terraform-google-edot-cf
+  winlogbeat
+not public-reference:
+  agent-skills
+  cloud-defend
+  cloudbeat
+  connectors
+  docs-builder
+  elastic-agent-complete
+  elastic-agent-package
+  elastic-defend
+  elastic-docs
+  elastic-maps-server
+  elastic-package-registry
+  elastic-stack-installers
+  elasticsearch-sql-odbc
+  ems-server
+  endpoint-dev
+  enterprise-search
+  ml-cpp
+  private-repo-3
+  private-repo-4
+  private-repo-5
+  prodfiler
+  synthetics-recorder
+  transport-go
+display names:
+  agent-skills: Elastic Agent Skills
+  apm: APM
+  apm-agent: APM Agent
+  apm-agent-dotnet: APM .NET Agent
+  apm-agent-go: APM Go Agent
+  apm-agent-java: APM Java Agent
+  apm-agent-node: APM Node.js Agent
+  apm-agent-php: APM PHP Agent
+  apm-agent-python: APM Python Agent
+  apm-agent-ruby: APM Ruby Agent
+  apm-agent-rum-js: APM RUM JavaScript Agent
+  apm-aws-lambda: APM AWS Lambda extension
+  apm-k8s-attacher: APM Attacher for Kubernetes
+  apm-server: APM Server
+  auditbeat: Auditbeat
+  beats: Beats
+  cloud-control-ecctl: Elastic Cloud Control
+  cloud-defend: Elastic Cloud Defend
+  cloud-enterprise: Elastic Cloud Enterprise
+  cloud-hosted: Elastic Cloud Hosted
+  cloud-kubernetes: Elastic Cloud on Kubernetes
+  cloud-serverless: Elastic Cloud Serverless
+  cloud-terraform: Elastic Cloud Terraform Provider
+  cloudbeat: Cloudbeat
+  connectors: Elastic Connectors
+  curator: Elasticsearch Curator
+  docs-builder: Elastic Docs Builder
+  ecs: Elastic Common Schema (ECS)
+  ecs-dotnet: ECS Logging .NET
+  ecs-logging: ECS Logging
+  ecs-logging-go-logrus: ECS Logging Go (Logrus)
+  ecs-logging-go-zap: ECS Logging Go (Zap)
+  ecs-logging-go-zerolog: ECS Logging Go (Zerolog)
+  ecs-logging-java: ECS Logging Java
+  ecs-logging-nodejs: ECS Logging Node.js
+  ecs-logging-php: ECS Logging PHP
+  ecs-logging-python: ECS Logging Python
+  ecs-logging-ruby: ECS Logging Ruby
+  edot-android: Elastic Distribution of OpenTelemetry Android
+  edot-browser: Elastic Distribution of OpenTelemetry Browser (RUM)
+  edot-cf: Elastic Cloud Forwarder
+  edot-cf-aws: Elastic Cloud Forwarder for AWS
+  edot-cf-azure: Elastic Cloud Forwarder for Azure
+  edot-cf-gcp: Elastic Cloud Forwarder for GCP
+  edot-collector: Elastic Agent
+  edot-dotnet: Elastic Distribution of OpenTelemetry .NET
+  edot-ios: Elastic Distribution of OpenTelemetry iOS
+  edot-java: Elastic Distribution of OpenTelemetry Java
+  edot-node: Elastic Distribution of OpenTelemetry Node
+  edot-php: Elastic Distribution of OpenTelemetry PHP
+  edot-python: Elastic Distribution of OpenTelemetry Python
+  edot-react-native: Elastic Distribution of OpenTelemetry React Native
+  edot-sdk: Elastic Distribution of OpenTelemetry SDK
+  eland: Eland
+  elastic-agent: Elastic Agent
+  elastic-agent-complete: Elastic Agent Complete
+  elastic-agent-package: Elastic Agent Package
+  elastic-defend: Elastic Defend
+  elastic-docs: Elastic Documentation
+  elastic-maps-server: Elastic Maps Server
+  elastic-package-registry: Elastic Package Registry
+  elastic-serverless-forwarder: Elastic Serverless Forwarder
+  elastic-stack: Elastic Stack
+  elastic-stack-installers: Elastic Stack Installers
+  elasticsearch: Elasticsearch
+  elasticsearch-client: Elasticsearch Client
+  elasticsearch-client-dotnet: Elasticsearch .NET Client
+  elasticsearch-client-go: Elasticsearch Go Client
+  elasticsearch-client-java: Elasticsearch Java Client
+  elasticsearch-client-javascript: Elasticsearch JavaScript Client
+  elasticsearch-client-php: Elasticsearch PHP Client
+  elasticsearch-client-python: Elasticsearch Python Client
+  elasticsearch-client-ruby: Elasticsearch Ruby Client
+  elasticsearch-client-rust: Elasticsearch Rust Client
+  elasticsearch-hadoop: Elasticsearch for Apache Hadoop
+  elasticsearch-sql-odbc: Elasticsearch SQL ODBC Driver
+  ems-server: Elastic Maps Server
+  endpoint-dev: Endpoint Dev
+  enterprise-search: Elastic Enterprise Search
+  ess: Elastic Cloud Hosted
+  filebeat: Filebeat
+  fleet: Fleet
+  fleet-server: Fleet Server
+  heartbeat: Heartbeat
+  integrations: Elastic integrations
+  kibana: Kibana
+  logstash: Logstash
+  machine-learning: Machine Learning
+  metricbeat: Metricbeat
+  ml-cpp: Machine Learning C++
+  observability: Elastic Observability
+  packetbeat: Packetbeat
+  painless: Painless
+  private-repo-3: Release Notes Playground (Changelogs)
+  private-repo-4: Release Notes Playground (Tagged)
+  private-repo-5: Release Notes Playground (Tagged Workflow)
+  prodfiler: Elastic Universal Profiling
+  search-ui: Search UI
+  security: Elastic Security
+  self: Self-managed Elastic
+  serverless-elasticsearch: Elasticsearch Serverless
+  serverless-observability: Elastic Observability Serverless
+  serverless-security: Elastic Security Serverless
+  serverless-vector-database: Elasticsearch Vector Database Serverless
+  synthetics-recorder: Elastic Synthetics Recorder
+  terraform-google-edot-cf: Terraform Google Elastic Cloud Forwarder
+  transport-go: Elastic Transport Go
+  winlogbeat: Winlogbeat

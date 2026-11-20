@@ -1,7 +1,7 @@
 @using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Documentation.Site.ApiIdentity>
 @* Which API this is, and which version of it: one choice, one menu. The top of the API sidebar.
-   The menu is a popover (top layer), positioned by api-menu.ts. *@
+   The menu is a popover (top layer), positioned by floating.ts. *@
 @{
 	var hasVersions = Model.Versions.Count > 1;
 	var hasProducts = Model.ProductGroups.Count > 0;

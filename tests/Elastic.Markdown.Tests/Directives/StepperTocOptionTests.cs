@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -31,13 +33,22 @@ First install the dependencies.
 	}
 
 	[Test]
-	public void Render_WhenDefault_UsesHeadingElement()
-	{
-		Html.Should().Contain("<h2");
-		Html.Should().Contain("id=\"install\"");
-		Html.Should().NotContain("step-title");
-		Html.Should().NotContain("role=\"heading\"");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="stepper">
+			<ol>
+				<li class="step">
+					<h2 id="install">
+						<a href="#install">Install</a>
+					</h2>
+					<p>First install the dependencies.</p>
+				</li>
+			</ol>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -62,15 +73,22 @@ First install the dependencies.
 	}
 
 	[Test]
-	public void Render_WhenTocFalse_UsesDiv()
-	{
-		Html.Should().NotContain("<h2");
-		Html.Should().Contain("class=\"step-title step-title-2\"");
-		Html.Should().Contain("role=\"heading\"");
-		Html.Should().Contain("aria-level=\"2\"");
-		Html.Should().Contain("id=\"install\"");
-		Html.Should().Contain("Install");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="stepper">
+			<ol>
+				<li class="step">
+					<div id="install" class="step-title step-title-2" role="heading" aria-level="2">
+						<a href="#install">Install</a>
+					</div>
+					<p>First install the dependencies.</p>
+				</li>
+			</ol>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -99,12 +117,7 @@ Some content under the internal heading.
 	}
 
 	[Test]
-	public void Render_WhenTocFalse_KeepsInternalHeadingLevel()
-	{
-		Html.Should().Contain("<h3");
-		Html.Should().NotContain("<h4");
-		Html.Should().Contain("class=\"step-title step-title-3\"");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -140,10 +153,25 @@ public class StepperTocFalseNoPrecedingHeadingTests() : DirectiveTest<StepperBlo
 	}
 
 	[Test]
-	public void Render_WhenNoPrecedingHeading_AdjustsInternalHeading()
-	{
-		Html.Should().Contain("<h2");
-		Html.Should().NotContain("<h1");
-		Html.Should().Contain("class=\"step-title step-title-2\"");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="stepper">
+			<ol>
+				<li class="step">
+					<div id="first" class="step-title step-title-2" role="heading" aria-level="2">
+						<a href="#first">First</a>
+					</div>
+					<div class="heading-wrapper" id="too-high">
+						<h2>
+							<a class="headerlink" href="#too-high">Too high</a>
+						</h2>
+					</div>
+					<p>Body.</p>
+				</li>
+			</ol>
+		</div>
+		"""
+		);
 }

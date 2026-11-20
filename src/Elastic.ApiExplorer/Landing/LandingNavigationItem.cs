@@ -48,14 +48,19 @@ public class ApiLanding : IApiGroupingModel
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		return Task.FromResult<string?>(
-			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)
+			LandingCommonMark.Product(
+				context.Model.Info,
+				overviewRows,
+				context.CurrentNavigation.NavigationRoot.Url,
+				ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems)
+			)
 		);
 	}
 
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
-public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>
+public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>, ISidebarOverviewRowNavigationItem
 {
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
@@ -63,8 +68,26 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
+
+	/// <summary>The page the <c>auth</c> badge on endpoints links to, when the product has one.</summary>
+	public string? AuthenticationUrl { get; set; }
+
+	/// <summary>The product landing of a root: itself, or the landing a classification heading hangs from.</summary>
+	public static LandingNavigationItem? Of(IRootNavigationItem<INavigationModel, INavigationItem> root) => root switch
+	{
+		LandingNavigationItem landing => landing,
+		ClassificationNavigationItem classification => classification.Landing,
+		_ => null
+	};
+
 	public string Url => Index.Url;
-	public bool Hidden => false;
+
+	/// <summary>True for a version tree that is not the current one, so navigation and first-level walks skip it.</summary>
+	public bool Hidden { get; set; }
+
+	/// <summary>Whether the sitemap lists the pages of this tree. The page type of the tree decides it, not <see cref="Hidden"/>.</summary>
+	public bool InSitemap { get; set; } = true;
+
 	public Uri Identifier { get; } = new Uri("todo://");
 
 	public string NavigationTitle => Index.NavigationTitle;
@@ -133,8 +156,10 @@ public class ClassificationNavigationItem(
 	classification,
 	rootNavigation,
 	parent
-), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem
+), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem, ISidebarOverviewRowNavigationItem
 {
+	public LandingNavigationItem Landing => rootNavigation;
+
 	/// <summary>
 	/// Classifications have no dedicated page. Kept as the product overview URL for any code that still
 	/// reads <see cref="INavigationItem.Url"/>; Nav V2 renders these as non-clickable sidebar headings.
@@ -145,7 +170,10 @@ public class ClassificationNavigationItem(
 	public override string NavigationTitle { get; } = classification.Name;
 
 	/// <inheritdoc />
-	public override string Id { get; } = ShortId.Create(classification.Name);
+	/// <remarks>
+	/// The prefix sits outside the hash: tag ids are eight hex characters, so no tag name can produce a group's toggle id.
+	/// </remarks>
+	public override string Id { get; } = $"group-{ShortId.Create(classification.Name)}";
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;
@@ -162,14 +190,32 @@ public class TagNavigationItem(
 	string apiUrlSuffix,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent)
+) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent), IDeprecatableNavigationItem
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
+
+	/// <summary>True when the group has operations and every one is deprecated; one current operation keeps the group current.</summary>
+	public bool Deprecated
+	{
+		get
+		{
+			var any = false;
+			foreach (var operation in NavigationItems.OfType<OperationNavigationItem>())
+			{
+				if (!operation.Model.Deprecated)
+					return false;
+				any = true;
+			}
+			return any;
+		}
+	}
 
 	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
 	{
 		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
-		var headings = introHeadings.Select(
+		// Only the top-level sections get a nav entry; deeper headings stay on the page as subsections of their parent.
+		var topLevel = introHeadings.Count == 0 ? 0 : introHeadings.Min(heading => heading.Level);
+		var headings = introHeadings.Where(heading => heading.Level == topLevel).Select(
 			heading => new IntroHeadingNavigationItem(this, new IntroHeading(heading.Heading, heading.Slug))
 		);
 		NavigationItems = [.. headings, .. operations];

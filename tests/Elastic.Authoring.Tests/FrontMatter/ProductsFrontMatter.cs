@@ -25,13 +25,16 @@ public class ProductsFrontMatterInHtml : AuthoringTest
 			""");
 
 	[Test, DisplayName("includes products meta tags when products are specified")]
-	public async Task IncludesProductsMetaTags() =>
-		await Docs.Converts("index.md").ContainsHtml(
-			"""
-			<meta class="elastic" name="product_name" content="Elasticsearch,Elastic Cloud Control ECCTL"/>
-			<meta name="DC.subject" content="Elasticsearch,Elastic Cloud Control ECCTL"/>
-			"""
+	public async Task IncludesProductsMetaTags()
+	{
+		// The meta tags live in <head>, which ContainsHtml does not look at, so check the raw page.
+		await Docs.Converts("index.md").ContainsRawHtml(
+			"""<meta class="elastic" name="product_name" content="Elasticsearch,Elastic Cloud Control ECCTL"/>"""
 		);
+		await Docs.Converts("index.md").ContainsRawHtml(
+			"""<meta name="DC.subject" content="Elasticsearch,Elastic Cloud Control ECCTL"/>"""
+		);
+	}
 
 	[Test, DisplayName("does not include products meta tags when no products are specified")]
 	public async Task DoesNotIncludeProductsMetaTags()
@@ -84,8 +87,7 @@ public class ProductsFrontMatterInLlmMarkdown : AuthoringTest
 		);
 		var file = await noProducts.Converts("index.md").MarkdownFile();
 		var products = file.YamlFrontMatter?.Products;
-		if (products is not null)
-			products.Count.Should().Be(0);
+		products?.Count.Should().Be(0);
 	}
 }
 
@@ -118,11 +120,13 @@ public class DocsetProductsMerging : AuthoringTest
 		await DocsetOnly.Converts("index.md").ContainsRawHtml("""<meta class="elastic" name="product_name" content="Elasticsearch"/>""");
 
 	[Test, DisplayName("docset products merge with frontmatter products")]
-	public async Task DocsetProductsMergeWithFrontmatter() =>
-		await DocsetAndFrontmatter.Converts("index.md").ContainsHtml(
-			"""
-			<meta class="elastic" name="product_name" content="Elasticsearch,Elastic Cloud Control ECCTL"/>
-			<meta name="DC.subject" content="Elasticsearch,Elastic Cloud Control ECCTL"/>
-			"""
+	public async Task DocsetProductsMergeWithFrontmatter()
+	{
+		await DocsetAndFrontmatter.Converts("index.md").ContainsRawHtml(
+			"""<meta class="elastic" name="product_name" content="Elasticsearch,Elastic Cloud Control ECCTL"/>"""
 		);
+		await DocsetAndFrontmatter.Converts("index.md").ContainsRawHtml(
+			"""<meta name="DC.subject" content="Elasticsearch,Elastic Cloud Control ECCTL"/>"""
+		);
+	}
 }

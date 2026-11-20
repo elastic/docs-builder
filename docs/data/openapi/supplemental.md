@@ -34,7 +34,7 @@ api/docs-builder-elasticsearch/
 
 A top-level `.md` file that is not `op-*.md` or `tag-*.md` is not a supplemental file. If you want that file as its own page, list it under `children:`.
 
-If the file lives under the documentation source directory, give it a `#` title so the docset scanner has a page title. That heading is not the operation description. Use `## Description` for the generated API page.
+Supplemental files need no `#` title. Start them at `## Description`. docs-builder skips the missing-title warning for them.
 
 ## Heading rules
 
@@ -87,6 +87,10 @@ On a **tag** file, those headings are not shown. Tag files use the description a
 
 Any other `##` heading is appended after the generated reference content. Headings stay in document order.
 
+### Sidebar entries for tag intros
+
+A group's intro lists its top-level sections in the sidebar, above the endpoints. Only the shallowest heading level in the intro gets an entry, which is `##` when the intro follows the rules above. A `###` heading stays on the page as a subsection of its parent `##` and has no sidebar entry. Use the heading structure to keep the sidebar short.
+
 ## Version-specific files
 
 If one major needs different text, add a `.vN.md` file next to the base file:
@@ -106,7 +110,7 @@ The version file uses the same heading rules as the base file. The two files mer
 
 If a version has no `.vN.md` file, that version uses the base file only.
 
-The unversioned `/api/doc/{key}/` tree uses the overlay of the highest numeric major that this product renders. Versionless products render only `main`. They have no numeric major, so they get no overlay.
+The unreleased `main` tree at `/api/{key}/next/` uses the overlay of the highest numeric major that this product renders. The unversioned `/api/{key}/` tree is that major, so it has the same overlay. Versionless products render only `main`. They have no numeric major, so they get no overlay.
 
 {{dbuild}} checks a version-suffixed file against that major's spec. `op-search.v8.md` must match an `operationId` in the v8 spec.
 
@@ -125,7 +129,7 @@ api:
 
 Paths are relative to `api/<key>/`. These pages can use MyST directives, substitutions, and cross-links.
 
-A `*.vN.md` suffix limits that child to major `N`. `getting-started.md` appears in every version. `knn-guide.v9.md` appears in 9.x. If 9 is the highest numeric major, it also appears on the unversioned `main` tree.
+A `*.vN.md` suffix limits that child to major `N`. `getting-started.md` appears in every version. `knn-guide.v9.md` appears in 9.x. If 9 is the highest numeric major, it also appears on the unreleased `main` tree at `/api/{key}/next/`.
 
 ### Child slugs
 
@@ -147,6 +151,7 @@ These slugs are reserved:
 | `operation` | Operation pages use `/operation/` |
 | `authentication` | Each API product has an `/authentication` page |
 | `servers` | Each API product has a `/servers` page |
+| `next` | The unreleased `main` spec lives at `/api/{key}/next/` |
 
 Do not list `op-*.md` or `tag-*.md` under `children:`.
 
@@ -171,7 +176,7 @@ Unmatched base files are reported against `the latest spec`. Version-suffixed fi
 ```text
 Child page 'op-search.md' for API 'elasticsearch' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:.
 Child page 'missing.md' for API 'elasticsearch' does not exist under 'api/elasticsearch/'.
-Markdown file slug 'types' (from 'types.md') conflicts with reserved API Explorer segment in product 'elasticsearch'. Reserved segments: types, group, operation, authentication, servers
+Markdown file slug 'types' (from 'types.md') conflicts with reserved API Explorer segment in product 'elasticsearch'. Reserved segments: types, group, operation, topic, authentication, servers, next
 Duplicate markdown slug 'getting-started' found in API product 'elasticsearch'.
 ```
 

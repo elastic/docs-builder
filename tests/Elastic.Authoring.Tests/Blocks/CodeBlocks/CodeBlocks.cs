@@ -14,8 +14,9 @@ public class WarnsOnInvalidLanguage : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("validate HTML: generates link and alt attr")]
-	public async Task ValidateHtml() => await Docs.HasWarning("Unknown language: not-a-valid-language");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("warning {repo}/docs/index.md:2 Unknown language: not-a-valid-language");
 
 	[Test, DisplayName("parses to EnhancedCodeBlock")]
 	public async Task ParsesCodeBlock()

@@ -33,11 +33,28 @@ public class PageTitleTests()
 	}
 
 	[Test]
-	public async Task GenerateAll_WithoutMetaTitle_UsesH1()
+	public async Task GenerateAll_TitleMatchesSiteName_OmitsSuffix()
 	{
 		var html = await Generate(BuildType.Assembler, "# Query DSL");
 
-		html.Should().Contain("<title>Query DSL | Query DSL</title>");
+		html.Should().Contain("<title>Query DSL</title>");
+	}
+
+	[Test]
+	public async Task GenerateAll_TitleMatchesSiteNameIgnoringCase_KeepsPageCasing()
+	{
+		var html = await Generate(
+			BuildType.Assembler,
+			"""
+			---
+			navigation_title: query dsl
+			---
+
+			# Query DSL
+			"""
+		);
+
+		html.Should().Contain("<title>Query DSL</title>");
 	}
 
 	[Test]
@@ -54,7 +71,7 @@ public class PageTitleTests()
 			"""
 		);
 
-		html.Should().Contain("<title>Query DSL | Query DSL</title>");
+		html.Should().Contain("<title>Query DSL</title>");
 	}
 
 	[Test]
@@ -76,7 +93,7 @@ public class PageTitleTests()
 				"""
 		);
 
-		html.Should().Contain("<title>Real page title | Real page title</title>");
+		html.Should().Contain("<title>Real page title</title>");
 	}
 
 	[Test]
@@ -84,7 +101,7 @@ public class PageTitleTests()
 	{
 		var html = await Generate(BuildType.Assembler, markdown: "# Install `ecctl` *quickly*");
 
-		html.Should().Contain("<title>Install ecctl quickly | Install ecctl quickly</title>");
+		html.Should().Contain("<title>Install ecctl quickly</title>");
 		html.Should().Contain("<h1>Install <code>ecctl</code> <em>quickly</em></h1>");
 	}
 
@@ -146,7 +163,8 @@ public class PageTitleTests()
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
-			BuildType = buildType
+			BuildType = buildType,
+			SkipStaticAssetExtraction = true
 		};
 		var set = new DocumentationSet(context, new TestLoggerFactory(), new TestCrossLinkResolver());
 		var generator = new DocumentationGenerator(set, new TestLoggerFactory());

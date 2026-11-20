@@ -1,0 +1,44 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Documentation.Diagnostics;
+
+namespace Elastic.Documentation.Links.CrossLinks;
+
+/// <summary>Checks a link to an API reference page against the API sections the cross-link resolver holds.</summary>
+public static class ApiLinkCheck
+{
+	/// <summary>
+	/// Returns a hint when <paramref name="url"/> targets an API page that the resolver knows does not exist, or uses the
+	/// legacy <c>/docs/api/doc/</c> prefix, and <c>null</c> for any other link. A link to a root with no pages at all
+	/// always hints. Old bump.sh URLs are checked at the page the edge redirects them to.
+	/// </summary>
+	public static string? GetHint(ICrossLinkResolver resolver, string? url, string? urlPathPrefix, HashSet<HintType>? suppressions)
+	{
+		if (
+			!ApiLinkMatcher.TryCanonicalize(url, urlPathPrefix, out var canonical) || !ApiLinkMatcher.TryGetApiPath(canonical, out var path)
+		)
+			return null;
+
+		// The spec downloads next to a product root, kibana.json and kibana.yaml, are files, not pages of its section.
+		if (Path.GetExtension(path) is ".json" or ".yaml")
+			return null;
+
+		var legacy = ApiLegacyRedirects.IsLegacy(path);
+		var page = legacy ? ApiLegacyRedirects.Resolve(path) : path;
+		if ((legacy && ApiLegacyRedirects.IsGone(path)) || resolver.CheckApiPage(page) == ApiPageStatus.Missing)
+			return suppressions.ShouldSuppress(HintType.ApiLinkMissingPage)
+				? null
+				: $"API link '{canonical}' does not resolve to a page of that API. Link to a page that exists, such as one in a versioned tree like "
+					+ "/docs/api/doc/<product>/v8/..., or confirm the endpoint was removed intentionally. Links in API descriptions are fixed in the OpenAPI spec.";
+
+		if (!legacy || suppressions.ShouldSuppress(HintType.ApiLinkLegacyPrefix))
+			return null;
+
+		// The page path drops the query and fragment, so the suggestion takes them back from the link.
+		var suffix = canonical.IndexOfAny(['?', '#']) is var at and >= 0 ? canonical[at..] : string.Empty;
+		return $"API link '{canonical}' uses the legacy {ApiLegacyRedirects.LegacyPrefix} prefix. After the API Explorer cutover this page lives at "
+			+ $"'https://www.elastic.co{page}{suffix}'.";
+	}
+}

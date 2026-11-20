@@ -1,0 +1,33 @@
+{
+  "repositories": {
+    "example-repo": {
+      "main": {
+        "repository": "example-repo",
+        "path": "elastic/example-repo/main/links.json",
+        "branch": "main",
+        "etag": "etag-1",
+        "ref": "abc",
+        "updated_at": "2025-01-02T03:04:05Z"
+      },
+      "9.0": {
+        "repository": "example-repo",
+        "path": "elastic/example-repo/9.0/links.json",
+        "branch": "9.0",
+        "etag": "etag-2",
+        "ref": "unknown",
+        "updated_at": "0001-01-01T00:00:00"
+      }
+    },
+    "other-repo": {},
+    "future-repo": {
+      "main": {
+        "repository": "future-repo",
+        "path": "p",
+        "branch": "main",
+        "etag": "e",
+        "ref": "unknown",
+        "updated_at": "0001-01-01T00:00:00"
+      }
+    }
+  }
+}

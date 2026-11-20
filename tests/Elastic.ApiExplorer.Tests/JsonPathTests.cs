@@ -94,7 +94,7 @@ public class JsonPathTests
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("""<code data-tippy-content="bool.must[].field" data-tippy-theme="mono">field</code>""");
+		html.Should().Contain("""<code data-tooltip="bool.must[].field" data-tooltip-theme="mono">field</code>""");
 	}
 
 	[Test]
@@ -114,7 +114,7 @@ public class JsonPathTests
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<code>bool</code>").And.NotContain("data-tippy-theme");
+		html.Should().Contain("<code>bool</code>").And.NotContain("data-tooltip-theme");
 	}
 
 	[Test]

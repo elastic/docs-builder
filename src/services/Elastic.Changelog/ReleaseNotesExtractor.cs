@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog;
 
@@ -29,30 +30,30 @@ internal static class ReleaseNoteExtractionDiagnostics
 /// </summary>
 public static partial class ReleaseNotesExtractor
 {
-	[GeneratedRegex(@"<!--[\s\S]*?-->", RegexOptions.None)]
+	[GeneratedRegex(@"<!--[\s\S]*?-->", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlCommentRegex();
 
-	[GeneratedRegex(@"(\r?\n){3,}", RegexOptions.None)]
+	[GeneratedRegex(@"(\r?\n){3,}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MultipleNewlinesRegex();
 
 	[GeneratedRegex(@"(?:\n|^)\s*#*\s*release[\s-]?notes?[:\s-]*(.*?)(?:(\r?\n|\r){2}|$|((\r?\n|\r)\s*#+))", RegexOptions.IgnoreCase
-		| RegexOptions.Singleline)]
+		| RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ReleaseNoteRegex();
 
 	// A line that starts a section: a markdown heading ("## Impact") or a bare label ("Impact: ...").
 	// Group 1 = heading hashes (empty for a label), group 2 = colon (if any), group 3 = inline text after the name.
-	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**impact\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**impact\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ImpactStartRegex();
 
-	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**actions?\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**actions?\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ActionStartRegex();
 
-	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S")]
+	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingRegex();
 
 	// Blockquote markers at the start of a line: "> ", ">" or nested ">> " and "> > ". Markdown allows up to three
 	// spaces before the marker; four spaces or a tab start an indented code block, whose ">" is content.
-	[GeneratedRegex(@"^ {0,3}(?:>[ \t]?)+")]
+	[GeneratedRegex(@"^ {0,3}(?:>[ \t]?)+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BlockquoteMarkerRegex();
 
 	/// <summary>
@@ -113,7 +114,8 @@ public static partial class ReleaseNotesExtractor
 
 	/// <summary>
 	/// Finds the "Impact" section of a PR description: a heading such as <c>## Impact</c> or a label such as <c>Impact: ...</c>.
-	/// Heading sections run until the next heading of the same or a higher level; label sections end at the first blank line
+	/// Heading sections run until the next heading of any level, so the template sections that follow an author's
+	/// <c>## Action</c> (such as <c>### Checklist</c>) never become part of it; label sections end at the first blank line
 	/// after their content or at the next heading. HTML comments are stripped first.
 	/// </summary>
 	public static string? FindImpact(string? markdown) => FindSection(markdown, ImpactStartRegex());
@@ -217,8 +219,9 @@ public static partial class ReleaseNotesExtractor
 					|| IsSectionStart(ActionStartRegex().Match(line), out _, out _)
 				)
 					break;
-				var heading = HeadingRegex().Match(line);
-				if (heading.Success && (!isHeading || heading.Groups[1].Value.Length <= hashes))
+				// Any heading ends the section, whatever its level. The Kibana PR template puts `### Checklist` and
+				// `### Identify risks` after the author's sections, so a deeper heading is the next section, not a child.
+				if (HeadingRegex().IsMatch(line))
 					break;
 				// Label sections stop at the first blank line once they have content.
 				if (!isHeading && string.IsNullOrWhiteSpace(line) && content.Count > 0)

@@ -5,7 +5,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -65,16 +67,11 @@ public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBl
 	public void EmitsErrorNamingBundleAndEntry() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.ContainSingle(
-				d => d.Severity == Severity.Error && d.Message.Contains("9.3.0.yaml") && d.Message.Contains(
-					"1234-referenced-entry.yaml"
-				) && d.Message.Contains("no inline content")
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Bundle '9.3.0.yaml' entry '1234-referenced-entry.yaml' has no inline content (title and type are required); bundles must inline their entries. Skipping."
 			);
-
-	[Test]
-	public void ErrorIsNotAWarning() =>
-		Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Warning && d.Message.Contains("1234-referenced-entry.yaml"));
 
 	[Test]
 	public void NeverLoadsTheReferencedFile() => Block!.LoadedBundles.Should().ContainSingle(b => b.Entries.Count == 0);
@@ -116,7 +113,7 @@ public class ChangelogInlineEntriesNoErrorTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void HasNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoDiagnostics() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void LoadsEntries() => Block!.LoadedBundles.Should().ContainSingle(b => b.Entries.Count == 1);

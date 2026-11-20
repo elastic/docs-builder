@@ -4,6 +4,9 @@
  * This file defines custom attribute names for search telemetry.
  * Standard OpenTelemetry semconv attributes are imported from @opentelemetry/semantic-conventions.
  *
+ * Add every new attribute key to browser-allowlist.json too. The collectors keep only the keys on that list and
+ * drop the rest without an error. browser-allowlist.test.ts fails when a key here is missing from it.
+ *
  * References:
  * - https://opentelemetry.io/docs/specs/semconv/
  * - https://opentelemetry.io/docs/specs/semconv/attributes-registry/
@@ -199,6 +202,13 @@ export const ATTR_NAVIGATION_SEARCH_RESULT_POSITION =
  */
 export const ATTR_NAVIGATION_SEARCH_RESULT_SCORE =
     'navigation_search.result.score'
+
+/**
+ * Anchor of the clicked property on its operation page
+ * @example "req-track_total_hits"
+ */
+export const ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR =
+    'navigation_search.result.anchor'
 
 /**
  * Retry-After header value in seconds (for rate limiting)

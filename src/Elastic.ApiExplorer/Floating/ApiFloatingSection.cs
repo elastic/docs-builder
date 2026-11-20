@@ -1,0 +1,238 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Navigation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Links;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Floating;
+
+namespace Elastic.ApiExplorer.Floating;
+
+/// <summary>
+/// Offers one section for each API that a docset declares in its <c>api:</c> block. The key of a section is the one the
+/// API's URL uses: <c>/api/{key}/</c>.
+/// </summary>
+/// <remarks>
+/// The provider is created before the <see cref="OpenApiGenerator"/> exists, because the docset needs the provider
+/// to build its navigation and the generator needs the docset's Markdown renderer. The build calls
+/// <see cref="Attach"/> once the generator exists and before the docset resolves its sections. A build that
+/// skips the API Explorer never attaches one, and its sections stay empty and hidden.
+/// </remarks>
+public sealed class ApiFloatingSectionProvider(BuildContext context) : IFloatingSectionProvider
+{
+	/// <summary>The generator that builds the API trees. It stays unset when the build skips the API Explorer.</summary>
+	internal OpenApiGenerator? Generator { get; private set; }
+
+	public string Kind => "api";
+
+	/// <summary>The page that lists every API, <c>/api/</c> under the site prefix.</summary>
+	public string? HubPath => "api";
+
+	/// <summary>A docset that declares an API has it in its navigation tree, with no toc entry.</summary>
+	public bool MountsImplicitly => true;
+
+	public void Attach(OpenApiGenerator generator) => Generator = generator;
+
+	public IReadOnlyList<IFloatingSection> GetSections() =>
+		[
+			.. OpenApiGenerator.ApiConfigsToRender(context).Select(
+				c => (IFloatingSection)new ApiFloatingSection(c.Key, c.Value, this, context)
+			)
+		];
+}
+
+internal sealed class ApiFloatingSection(
+	string urlKey,
+	ResolvedApiConfiguration config,
+	ApiFloatingSectionProvider provider,
+	BuildContext context
+) : IFloatingSection
+{
+	private ApiFloatingRoot? _root;
+	private bool _createdHidden;
+	private ApiProductTrees? _trees;
+
+	public string Kind => "api";
+
+	public string Key => urlKey;
+
+	public string UrlRoot => $"api/{urlKey}";
+
+	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
+		_root = new ApiFloatingRoot(
+			urlKey,
+			ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, urlKey),
+			config.Product.DisplayName ?? urlKey,
+			parent
+		)
+		{ Hidden = _createdHidden = hidden };
+
+	public async Task ResolveAsync(Cancel ctx)
+	{
+		// Nothing mounted this section, so there is no root to fill.
+		if (_root is null)
+			return;
+
+		if (provider.Generator is not { } generator)
+		{
+			_root.Hidden = true;
+			return;
+		}
+
+		// A resolve before the generator existed hid the root; a later resolve starts from how the root was created.
+		_root.Hidden = _createdHidden;
+		_root.InSitemap = false;
+
+		ApiProductTrees trees;
+		try
+		{
+			trees = await generator.TreesFor(urlKey, config, ctx).ConfigureAwait(false);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			// The generator awaits the same cached task and reports the failure with its stack trace, so don't report it twice.
+			_root.Hidden = true;
+			return;
+		}
+
+		// The versions that rendered keep their link metadata, so cross-links that name them resolve even when the root is hidden.
+		_trees = trees;
+
+		// Only the tree at the unversioned URL is visible. The other trees stay reachable for links but out of navigation
+		// and first-level walks; their page type decides whether the sitemap lists them. The trees keep no parent: the
+		// API pages render with these trees as their own roots.
+		var versionless = trees.Trees.FirstOrDefault(t => t.Suffix == urlKey);
+		foreach (var tree in trees.Trees)
+			tree.Navigation.Hidden = tree != versionless;
+		_root.SetNavigationItems([.. trees.Trees.Select(static t => t.Navigation)]);
+		_root.InSitemap = !_createdHidden && trees.Trees.Count > 0;
+
+		// No tree at the unversioned URL means the root links nowhere, so it leaves the navigation. The trees that did
+		// render stay in the sitemap. The generator has already reported why a spec could not be loaded.
+		if (versionless is null)
+		{
+			_root.Hidden = true;
+			return;
+		}
+
+		// The catalog titles an API the same way, so the navigation and the API hub agree.
+		_root.Title = versionless.Version.Document.Info?.Title ?? _root.Title;
+	}
+
+	public FloatingLinkSection? ToLinkSection() => _trees is null ? null : ApiLinkSections.Create(_trees);
+}
+
+internal static class ApiLinkSections
+{
+	/// <summary>
+	/// The API Explorer owns its routing, so it states where each version lives, including the numbered copy of the
+	/// default major. Only the default version is visible and current.
+	/// </summary>
+	private static FloatingLinkVersion Version(ApiVersionRoutes routes, string moniker) =>
+		new()
+		{
+			Name = moniker,
+			Root = ApiUrlBuilder.ProductRoot(null, routes.Suffix(moniker)).Trim('/'),
+			MirrorRoot = routes.MirrorSuffix(moniker) is { } mirror ? ApiUrlBuilder.ProductRoot(null, mirror).Trim('/') : null,
+			Hidden = moniker != routes.DefaultMoniker,
+			Current = moniker == routes.DefaultMoniker
+		};
+
+	/// <summary>
+	/// One page path once, with the versions that contain it. A collapsed operation also answers to its former
+	/// per-operation paths, which become aliases of the canonical path, kept per version.
+	/// </summary>
+	public static FloatingLinkSection Create(ApiProductTrees trees)
+	{
+		var monikers = trees.Resolved.Documents.Select(d => d.Version.Moniker).Take(FloatingLinkSection.MaxVersions).ToArray();
+		var pages = new Dictionary<string, ulong>(StringComparer.Ordinal);
+		var aliases = new Dictionary<string, Dictionary<string, string[]>>(StringComparer.Ordinal);
+
+		for (var bit = 0; bit < monikers.Length; bit++)
+		{
+			var mask = 1UL << bit;
+
+			var formerPaths = new List<(string Canonical, string Alias)>();
+			foreach (var (name, all) in trees.PageNames[monikers[bit]])
+			{
+				var page = name.Trim('/');
+				var canonical = all[0].Trim('/');
+				if (page == canonical)
+					pages[page] = pages.GetValueOrDefault(page) | mask;
+				else
+					formerPaths.Add((canonical, page));
+			}
+
+			// sorted, so a rebuild that changes nothing writes a byte-identical links.json
+			if (formerPaths.Count > 0)
+			{
+				aliases[monikers[bit]] = formerPaths
+					.GroupBy(p => p.Canonical, StringComparer.Ordinal)
+					.OrderBy(g => g.Key, StringComparer.Ordinal)
+					.ToDictionary(
+						g => g.Key,
+						g => g.Select(p => p.Alias).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+						StringComparer.Ordinal
+					);
+			}
+		}
+
+		return new FloatingLinkSection
+		{
+			Versions = [.. monikers.Select(moniker => Version(trees.Resolved.Routes, moniker))],
+			Pages = pages,
+			Aliases = aliases.Count == 0 ? null : aliases
+		};
+	}
+}
+
+internal sealed class ApiFloatingRoot : IFloatingSectionRoot, IAssignableIslandNavigation
+{
+	private readonly RootIndexLeaf _index;
+
+	public ApiFloatingRoot(string key, string url, string title, INodeNavigationItem<INavigationModel, INavigationItem>? parent)
+	{
+		Id = key;
+		Parent = parent;
+		_index = new RootIndexLeaf(url, title, this);
+	}
+
+	/// <summary>The title in the navigation. It starts as the product name and becomes the spec title once the spec is read.</summary>
+	public string Title { get => _index.NavigationTitle; set => _index.NavigationTitle = value; }
+
+	public string Url => _index.Url;
+	public string NavigationTitle => _index.NavigationTitle;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+	public bool Hidden { get; set; }
+
+	/// <summary>Whether the sitemap walks the trees of this API. It can while the root is hidden, when only the versionless tree failed to load.</summary>
+	public bool InSitemap { get; set; }
+
+	public int NavigationIndex { get; set; }
+	public bool IsIsland { get; set; }
+	public string Id { get; }
+	public ILeafNavigationItem<INavigationModel> Index => _index;
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
+	public bool IsUsingNavigationDropdown => false;
+	public Uri Identifier => new($"api://{Url}");
+
+	public void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => NavigationItems = navigationItems;
+
+	private sealed class RootIndexLeaf(string url, string title, ApiFloatingRoot root) : ILeafNavigationItem<ApiLanding>
+	{
+		public ApiLanding Model { get; } = new();
+		public string Url { get; } = url;
+		public string NavigationTitle { get; set; } = title;
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => root;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = root;
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+	}
+}

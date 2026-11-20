@@ -30,47 +30,11 @@ public class DocsBarRenderingTests : DocumentationSetNavigationTestBase
 		"""[{"name":"9.0","href":"/docs/9.0","disabled":false},{"name":"8.19","href":"/docs/8.19","disabled":false}]""";
 
 	[Test]
-	public async Task DocsBar_MarksTheActiveSection_AndRendersDropdownAndExternalLinks()
+	public async Task DocsBar_RendersTheActiveSectionDropdownExternalSlotSearchAndThemeSwitch()
 	{
 		var html = await RenderHeader(airGapped: false);
 
-		html.Should().Contain("id=\"docs-bar\"");
-		html.Should().Contain("href=\"/docs/guides\" aria-current=\"page\"", "the guides section is current");
-		html.Should().NotContain("href=\"/docs/reference\" aria-current=\"page\"");
-		html.Should().Contain("<details class=\"docs-bar__dropdown\" data-menu data-popover>");
-		html.Should().Contain("data-popover-panel", "the menu is shown in the top layer, so the scrolling tab list cannot clip it");
-		html.Should().Contain("Elasticsearch");
-		html.Should().Contain("rel=\"noopener noreferrer\"").And.Contain("(opens in a new tab)");
-	}
-
-	[Test]
-	public async Task DocsBar_KeepsTheExternalNavigationSlot()
-	{
-		var html = await RenderHeader(airGapped: false);
-
-		html.Should().Contain("id=\"elastic-nav-wrapper\"").And.Contain("hx-preserve").And.Contain("id=\"elastic-nav\"");
-		html
-			.IndexOf("id=\"elastic-nav\"", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("id=\"docs-bar\"", StringComparison.Ordinal));
-	}
-
-	[Test]
-	public async Task DocsBar_RendersTheSearchDialogThatTheShortcutAndTheNotFoundPageOpen()
-	{
-		var html = await RenderHeader(airGapped: false);
-
-		html.Should().Contain("data-search-dialog");
-	}
-
-	[Test]
-	public async Task DocsBar_CarriesTheThemeSwitchAndLeavesTheVersionPickerToTheSidebar()
-	{
-		var html = await RenderHeader(airGapped: false);
-
-		html.Should().Contain("theme-switch").And.Contain("data-pref=\"contrast\"");
-		html.Should().NotContain("All versions", "the version picker sits at the top of the sidebar, not in the bar");
-		html.Should().NotContain("<version-dropdown");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	[Test]
@@ -78,8 +42,7 @@ public class DocsBarRenderingTests : DocumentationSetNavigationTestBase
 	{
 		var html = await RenderHeader(airGapped: true);
 
-		html.Should().Contain("class=\"site-header\"").And.Contain("Elastic Docs (air-gapped)");
-		html.Should().NotContain("<elastic-docs-header").And.NotContain("id=\"docs-bar\"");
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 	}
 
 	private async Task<string> RenderHeader(bool airGapped)

@@ -23,7 +23,7 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 {
-	private static readonly Uri BaseUri = new("https://cdn.example/");
+	internal static readonly Uri BaseUri = new("https://cdn.example/");
 
 	[Test]
 	public async Task Generate_WritesJsonAndYamlSiblingsForProductLanding()
@@ -43,8 +43,8 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var write = context.WriteFileSystem.File;
-		var jsonPath = Path.Join(outputRoot, "api", "doc", "elasticsearch.json");
-		var yamlPath = Path.Join(outputRoot, "api", "doc", "elasticsearch.yaml");
+		var jsonPath = Path.Join(outputRoot, "api", "elasticsearch.json");
+		var yamlPath = Path.Join(outputRoot, "api", "elasticsearch.yaml");
 		write.Exists(jsonPath).Should().BeTrue();
 		write.Exists(yamlPath).Should().BeTrue();
 
@@ -77,8 +77,8 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var write = context.WriteFileSystem.File;
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8.json")).Should().BeTrue();
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8.yaml")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8.json")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch", "v8.yaml")).Should().BeTrue();
 	}
 
 	[Test]
@@ -101,14 +101,11 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(
-				Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"),
-				TestContext.Current!.Execution.CancellationToken
-			);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch", "index.html"), TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("Download OpenAPI spec (JSON)");
-		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"");
-		html.Should().Contain("href=\"/api/doc/elasticsearch.yaml\"");
+		html.Should().Contain("href=\"/api/elasticsearch.json\"");
+		html.Should().Contain("href=\"/api/elasticsearch.yaml\"");
 		html.Should().Contain("download");
 		// One place for the download: the old landing fact is gone.
 		html.Should().NotContain("<dt>Download spec</dt>");
@@ -131,16 +128,13 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var ct = TestContext.Current!.Execution.CancellationToken;
-		var html = await context
-			.WriteFileSystem
-			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ct);
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch", "index.html"), ct);
 		html.Should().Contain("<dt>Base URL");
 		html.Should().Contain("data-copy=\"https://fixture.example.com\"");
 		html.Should().Contain("<dt>Version</dt>").And.Contain("1.2.3");
 		html.Should().Contain("api-index");
 
-		var markdown = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), ct);
+		var markdown = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch.md"), ct);
 		markdown = markdown.ReplaceLineEndings("\n");
 		markdown.Should().Contain("version: \"1.2.3\"");
 		markdown.Should().Contain("servers:\n  - \"https://fixture.example.com\"");
@@ -169,15 +163,12 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 
 		await generator.Generate(ct);
 
-		var html = await context
-			.WriteFileSystem
-			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ct);
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch", "index.html"), ct);
 		html.Should().Contain("<dt>Version</dt>");
 		html.Should().NotContain("<dt>License").And.NotContain("Apache 2.0");
 	}
 
-	private static BuildContext CreateGenerateContext(string outputRoot)
+	internal static BuildContext CreateGenerateContext(string outputRoot)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -225,7 +216,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		);
 	}
 
-	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
+	internal static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
 		var queue = new ConcurrentQueue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
@@ -235,7 +226,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		return reader;
 	}
 
-	private static HttpMessageHandler MainOnlyHandler() =>
+	internal static HttpMessageHandler MainOnlyHandler() =>
 		new StubHandler(request =>
 		{
 			if (request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal))
@@ -306,10 +297,4 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 				)
 			};
 		});
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(responder(request));
-	}
 }

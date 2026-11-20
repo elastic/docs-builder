@@ -50,6 +50,7 @@ public class NavigationTestsBase : IAsyncInitializer, IAsyncDisposable
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
+		LoggerFactory.Dispose();
 		return ValueTask.CompletedTask;
 	}
 }

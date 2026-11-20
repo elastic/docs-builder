@@ -1,11 +1,27 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationRenderNode>
 @using Elastic.Documentation.Site.Components.Navigation.NavTree
 <span class="nav-tree__text">@Model.NavigationTitle</span>
+@if (Model.Deprecated)
+{
+	<span class="sr-only">Deprecated</span>
+}
 @if (Model.Badge is { } badge)
 {
 	@await RenderPartialAsync(_Badge.Create(new BadgeModel { Text = badge, Tone = Tone.Info }))
 }
-@if (NavTreeModel.TryParseMethod(Model.HttpMethod, out var method))
+@if (NavTreeModel.ParseMethods(Model.HttpMethods) is { Count: > 0 } methods)
 {
-	@await RenderPartialAsync(_MethodBadge.Create(new MethodBadgeModel { Method = method, Small = true }))
+	if (methods.Count == 1)
+	{
+		@await RenderPartialAsync(_MethodBadge.Create(new MethodBadgeModel { Method = methods[0], Small = true }))
+	}
+	else
+	{
+		<span class="method-group">
+			@foreach (var method in methods)
+			{
+				@await RenderPartialAsync(_MethodBadge.Create(new MethodBadgeModel { Method = method, Small = true }))
+			}
+		</span>
+	}
 }

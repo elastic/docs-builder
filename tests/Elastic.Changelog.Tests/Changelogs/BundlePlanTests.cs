@@ -7,6 +7,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -165,10 +167,7 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a repository name"));
+		Collector.Diagnostics.WithoutAmbient().ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 
 	[Test]
@@ -413,8 +412,13 @@ public class BundlePlanTests : ChangelogTestBase
 		);
 
 		result.Should().BeNull();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. Remove the CLI description, or remove the description from changelog.yml."
+			);
 	}
 
 	[Test]

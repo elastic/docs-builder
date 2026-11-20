@@ -1,0 +1,14 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<IReadOnlyList<Elastic.ApiExplorer.Operations.SectionLink>>
+@* The section links are one row above the description that stays under the header as the reader scrolls; the scroll-spy of ds/toc.ts marks the part of the page in view. Overview is the title, badges and description, and doubles as the way back to the top. *@
+<nav class="api-section-links" aria-label="On this page" data-toc data-toc-sticky>
+	<div class="api-section-links-track">
+		@* Back to the top through the page's back-to-top handler: smooth, and without the highlight a section gets on arrival. *@
+		<a href="#api-operation-overview" data-toc-link data-api-back-to-top>Overview</a>
+		@foreach (var link in Model)
+		{
+			<a href="#@link.Anchor" data-toc-link>@link.Label</a>
+		}
+	</div>
+	@(await RenderPartialAsync(_ExpandAllControl.Create(false)))
+</nav>

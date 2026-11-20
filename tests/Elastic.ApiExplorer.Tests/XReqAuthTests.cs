@@ -36,31 +36,17 @@ public class XReqAuthTests
 		  }
 		}
 		""";
-		var jsonPath = Path.Join(Path.GetTempPath(), $"xreqauth-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var op = document.Paths!["/a"].Operations![HttpMethod.Get]!;
 
-			var lines = OpenApiXReqAuthParser.TryGetPrerequisiteLines(op, null, "/a", "op-a");
+		var lines = OpenApiXReqAuthParser.TryGetPrerequisiteLines(op, null, "/a", "op-a");
 
-			lines.Should().NotBeNull();
-			lines!.Should().HaveCount(2);
-			lines[0].Should().Contain("Index");
-			lines[0].Should().Contain("monitor");
-			lines[1].Should().Contain("Cluster");
-			lines[1].Should().Contain("monitor");
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		lines.Should().NotBeNull();
+		lines!.Should().HaveCount(2);
+		lines[0].Should().Contain("Index");
+		lines[0].Should().Contain("monitor");
+		lines[1].Should().Contain("Cluster");
+		lines[1].Should().Contain("monitor");
 	}
 
 	[Test]
@@ -82,27 +68,13 @@ public class XReqAuthTests
 		  }
 		}
 		""";
-		var jsonPath = Path.Join(Path.GetTempPath(), $"xreqauth-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var op = document.Paths!["/a"].Operations![HttpMethod.Get]!;
 
-			OpenApiXReqAuthParser
-				.TryGetPrerequisiteLines(op, null, "/a", "op-a")
-				.Should()
-				.BeNull("empty x-req-auth should not show Prerequisites");
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		OpenApiXReqAuthParser
+			.TryGetPrerequisiteLines(op, null, "/a", "op-a")
+			.Should()
+			.BeNull("empty x-req-auth should not show Prerequisites");
 	}
 
 	[Test]

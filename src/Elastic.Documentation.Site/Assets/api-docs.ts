@@ -4,12 +4,15 @@
  * for both OperationView and SchemaView pages.
  */
 import { decorateApiCodeTokens } from './api-code-tokens'
+import { initApiColumnResize } from './api-column-resize'
+import { initExamplesBalance } from './api-examples-balance'
 import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
-import { flashTooltip, initTooltips } from './tooltip'
+import { flashTooltip } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -24,7 +27,14 @@ function setDisclosureToggle(
     const icon = toggleBtn.querySelector('.toggle-icon')
     const label = toggleBtn.querySelector('.toggle-label')
     if (icon) icon.textContent = expanded ? '−' : '+'
-    if (label && noun)
+    const count = Number((toggleBtn as HTMLElement).dataset.count)
+    if (
+        label &&
+        !Number.isNaN(count) &&
+        (toggleBtn as HTMLElement).dataset.count
+    )
+        label.textContent = `${expanded ? 'Hide' : 'Show'} ${count} ${count === 1 ? 'property' : 'properties'}`
+    else if (label && noun)
         label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
 }
 
@@ -99,6 +109,11 @@ const DISCLOSURES: Disclosure[] = [
     RESPONSE_DISCLOSURE,
 ]
 
+// Only clicks within these count; the path list sits in the header, outside them.
+// #elastic-docs-v3 holds the topic, structural and Markdown pages, such as the shared Authentication section.
+const API_ROOTS =
+    '#elastic-api-v3, #elastic-docs-v3, #schema-definition, #paths'
+
 function disclosureFor(el: Element): Disclosure | undefined {
     return DISCLOSURES.find((d) => el.matches(d.container))
 }
@@ -161,6 +176,7 @@ export function revealCollapsedAncestors(target: HTMLElement): boolean {
         setDisclosureExpanded(el, d, true)
         revealed = true
     }
+    if (revealed) syncExpandAll()
     return revealed
 }
 
@@ -233,7 +249,7 @@ const FLASH_CLASS = 'api-link-target-flash'
 const FLASH_FALLBACK_MS = 3200
 const FLASH_SETTLE_MS = 200
 const FLASH_GIVE_UP_MS = 10000
-let initialHashFlashDone = false
+let initializedHashTarget: HTMLElement | null = null
 
 const flashCleanups = new WeakMap<HTMLElement, () => void>()
 
@@ -287,7 +303,8 @@ function playFlashWhenSettled(el: HTMLElement): void {
  * heading keeps the browser's plain jump, and anything else pulses as a whole.
  */
 function flashTarget(target: HTMLElement): void {
-    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    // A heading needs no pointing out, and neither does the page intro: reaching it is going back to the top.
+    if (target.matches('h1, h2, h3, h4, h5, h6, .api-page-intro')) return
     const name = target.matches('dt')
         ? target.querySelector<HTMLElement>(':scope > code')
         : null
@@ -297,6 +314,7 @@ function flashTarget(target: HTMLElement): void {
 function onHashChange(): void {
     revealHashTarget()
     const target = hashTarget()
+    initializedHashTarget = target
     if (target) flashTarget(target)
 }
 
@@ -318,6 +336,7 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
+    initToc()
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true
@@ -360,11 +379,35 @@ function initGlobalClickHandlers(): void {
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
-        // Only handle clicks within API doc sections; the path list sits in the header, outside them
-        const apiSection = target.closest(
-            '#elastic-api-v3, #schema-definition, #paths'
-        ) as HTMLElement
+        // Only handle clicks within API doc sections; the path list sits in the header, outside them.
+        // #elastic-docs-v3 holds the topic, structural and Markdown pages, such as the shared Authentication section.
+        const apiSection = target.closest<HTMLElement>(API_ROOTS)
         if (!apiSection) return
+
+        const backToTop = target.closest<HTMLElement>('[data-api-back-to-top]')
+        if (backToTop) {
+            // A modified click on the Overview link opens it elsewhere, as any link does.
+            if (
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey
+            )
+                return
+            e.preventDefault()
+            // The address follows, so a reload or a shared link opens at the top rather than the section left behind.
+            // Pushed before scrolling: the entry left behind keeps the reader's place, which an instant scroll (reduced
+            // motion) would otherwise have reset to the top, so Back returns to that section.
+            const hash = backToTop.getAttribute('href')
+            if (hash?.startsWith('#') && window.location.hash !== hash)
+                history.pushState(null, '', hash)
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+            })
+            return
+        }
 
         // Before the generic .expand-toggle branch, which would toggle the enclosing property instead
         const enumValuesToggle = target.closest<HTMLButtonElement>(
@@ -393,6 +436,7 @@ function initGlobalClickHandlers(): void {
                 d,
                 !container.classList.contains('expanded')
             )
+            syncExpandAll()
             // pushState sets the hash without a hashchange, so the page doesn't jump to the
             // title and the section the click just collapsed isn't re-opened.
             if (
@@ -403,9 +447,59 @@ function initGlobalClickHandlers(): void {
             return
         }
 
+        if (target.closest('[data-api-expand-all]')) {
+            e.preventDefault()
+            setAllExpanded(apiSection, !isAllExpanded(apiSection))
+            return
+        }
+
         const link = target.closest<HTMLAnchorElement>('a[href^="#"]')
         if (link) scrollToLinkTarget(e, link)
     })
+}
+
+/**
+ * The disclosures the page control drives: every one with a toggle, so rows with nothing to fold are left out.
+ * Responses are an accordion that follows the examples rail, so the control leaves them to it.
+ */
+function foldables(root: HTMLElement): [HTMLElement, Disclosure][] {
+    return DISCLOSURES.filter((d) => d !== RESPONSE_DISCLOSURE).flatMap((d) =>
+        [...root.querySelectorAll<HTMLElement>(d.container)]
+            .filter((container) => container.querySelector(d.toggle))
+            .map((container): [HTMLElement, Disclosure] => [container, d])
+    )
+}
+
+function isAllExpanded(root: HTMLElement): boolean {
+    return foldables(root).every(([container]) =>
+        container.classList.contains('expanded')
+    )
+}
+
+/** Expand all and Collapse all share one button. */
+export function setAllExpanded(root: HTMLElement, expanded: boolean): void {
+    foldables(root).forEach(([container, d]) =>
+        setDisclosureExpanded(container, d, expanded)
+    )
+    syncExpandAll()
+}
+
+/** The page control offers whichever of the two the page is not in already, and is absent where nothing can fold. */
+function syncExpandAll(): void {
+    document
+        .querySelectorAll<HTMLElement>('[data-api-expand-all]')
+        .forEach((button) => {
+            const root = button.closest<HTMLElement>(API_ROOTS)
+            if (!root) return
+            const nothingToFold = foldables(root).length === 0
+            button.hidden = nothingToFold
+            button
+                .closest('.api-expand-standalone')
+                ?.toggleAttribute('hidden', nothingToFold)
+            button.textContent = isAllExpanded(root)
+                ? 'Collapse all'
+                : 'Expand all'
+        })
 }
 
 /**
@@ -629,10 +723,8 @@ export function initApiPageActions(): void {
 
         event.preventDefault()
         const root = trigger.closest('.api-page-actions')
-        const dropdown = root?.querySelector<HTMLDetailsElement>(
-            '.api-page-actions-dropdown'
-        )
-        if (dropdown) dropdown.open = false
+        const menu = trigger.closest<HTMLElement>('[popover]')
+        if (menu?.matches(':popover-open')) menu.hidePopover()
         void copyPageMarkdown(trigger.dataset.copyPage, root).catch((error) => {
             console.error(error)
         })
@@ -692,14 +784,16 @@ export function initExamplesRailSteadying(): void {
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
-    initTooltips()
     initApiEndpointCopy()
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()
     initApiExamples()
+    initExamplesBalance()
     initUnionChips()
     initApiPageActions()
+    initApiColumnResize()
     initExamplesRailSteadying()
+    syncExpandAll()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
 
@@ -710,10 +804,8 @@ export function initApiDocs(): void {
     if (operationSection) initOperationView()
     // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
     revealHashTarget()
-    // initApiDocs also runs for later htmx swaps, which must not replay a flash for a stale hash
-    if (!initialHashFlashDone) {
-        initialHashFlashDone = true
-        const target = hashTarget()
-        if (target) flashTarget(target)
-    }
+    // A replacement page gets a new target element, even when its fragment is unchanged.
+    const target = hashTarget()
+    if (target && target !== initializedHashTarget) flashTarget(target)
+    initializedHashTarget = target
 }

@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -45,11 +47,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains("source") && d.Message.Contains(
-					"deprecated"
-				) && d.Message.Contains("bundle.releases.github")
+			.MatchInlineSnapshot(
+				"warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.source is deprecated. Use bundle.releases.github to map release tags to profiles instead."
 			);
 	}
 }

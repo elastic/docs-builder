@@ -9,7 +9,9 @@ using Elastic.Changelog.GithubRelease;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -139,7 +141,17 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		var entryPath = FileSystem.Path.Join(outputDir, "12345.yaml");
 		FileSystem.File.Exists(entryPath).Should().BeTrue("the pool entry keeps its original file name");
 		var content = await FileSystem.File.ReadAllTextAsync(entryPath, TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Curated checked-in title", "checked-in entries win over synthesis");
+		// the checked-in entry wins over synthesis and is written as it is
+		content.Should().MatchInlineSnapshot(
+			"""
+			title: Curated checked-in title
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			"""
+		);
 
 		A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).MustNotHaveHappened();
 	}
@@ -175,13 +187,28 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().ContainSingle("a synthesized entry must exist for the PR despite the unusable pool file");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Fix query parsing edge case");
+		content
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: other
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Fix query parsing edge case
+			"""
+			);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains("could not be parsed", StringComparison.Ordinal),
-				"the parse failure on the checked-in entry must still be surfaced"
+			.MatchInlineSnapshot(
+				"error 12345.yaml Checked-in changelog entry '12345.yaml' matches PR #12345 but could not be parsed: 12345.yaml: (Lin: 0, Col: 7, Chr: 7) - (Lin: 0, Col: 7, Chr: 7): Expected a Scalar token but found 'StartSequence'."
 			);
 	}
 
@@ -246,11 +273,33 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		result.Success.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2, "each PR must synthesize its own entry rather than one silently disappearing");
-		var contents = await Task.WhenAll(
-			files.Select(f => FileSystem.File.ReadAllTextAsync(f, TestContext.Current!.Execution.CancellationToken))
-		);
-		contents.Should().Contain(c => c.Contains("Fix query parsing edge case", StringComparison.Ordinal));
-		contents.Should().Contain(c => c.Contains("Improve indexing throughput", StringComparison.Ordinal));
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir, "*.yaml")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 12345-other-fix-query-parsing-edge-case.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: other
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Fix query parsing edge case
+			=== 12346-other-improve-indexing-throughput.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12346"
+			type: other
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Improve indexing throughput
+			"""
+			);
 	}
 
 	[Test]
@@ -276,7 +325,23 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().ContainSingle();
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("Queries with trailing wildcards no longer fail.");
+		content
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: other
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Fix query parsing edge case
+			description: Queries with trailing wildcards no longer fail.
+			"""
+			);
 	}
 
 	[Test]
@@ -301,7 +366,24 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		content.Should().Contain("https://github.com/elastic/elasticsearch/issues/999");
+		content
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			issues:
+			  - "https://github.com/elastic/elasticsearch/issues/999"
+			type: other
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Fix query parsing edge case
+			"""
+			);
 	}
 
 	[Test]
@@ -326,8 +408,22 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		content.Should().NotContain("description:");
-		content.Should().Contain("Fix query parsing edge case");
+		content
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: other
+			products:
+			  - product: elasticsearch
+			    versions:
+			      - 9.2.0
+			    lifecycle: ga
+			title: Fix query parsing edge case
+			"""
+			);
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("no release note"));
 	}
 
@@ -373,8 +469,28 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		var bundleFiles = FileSystem.Directory.GetFiles(bundlesDir, "*.yml");
 		bundleFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(bundleFiles[0], TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Curated checked-in title");
-		bundle.Should().Contain("name: 12345.yaml");
+		bundle.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			    owner: elastic
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 12345.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Curated checked-in title
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			"""
+		);
 	}
 
 	private static HttpResponseMessage Json(string body) =>

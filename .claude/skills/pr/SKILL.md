@@ -64,7 +64,7 @@ Required structure:
 
 ## Verify
 <How a reviewer confirms this locally. Use real commands they would run:
- `./build.sh`, `dotnet test`, `npm run test`, `dotnet run --project …`.
+ `mise run test`, `dotnet test`, `mise run site:test`, `mise run serve`.
  If there is no clear local verification step, omit this section entirely.
  Do not list CI checks, YAML linting, or bash scripts an agent would run
  to prove their own work — those are not reviewer steps.>

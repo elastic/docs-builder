@@ -63,6 +63,9 @@ public record ProductApplicability
 	[JsonPropertyName("edot-browser")]
 	public AppliesCollection? EdotBrowser { get; set; }
 
+	[JsonPropertyName("edot-react-native")]
+	public AppliesCollection? EdotReactNative { get; set; }
+
 	[JsonPropertyName("edot-php")]
 	public AppliesCollection? EdotPhp { get; set; }
 
@@ -115,6 +118,7 @@ public record ProductApplicability
 		AppendProduct("edot-java", EdotJava);
 		AppendProduct("edot-node", EdotNode);
 		AppendProduct("edot-browser", EdotBrowser);
+		AppendProduct("edot-react-native", EdotReactNative);
 		AppendProduct("edot-php", EdotPhp);
 		AppendProduct("edot-python", EdotPython);
 		AppendProduct("edot-cf-aws", EdotCfAws);
@@ -148,6 +152,7 @@ public static class ProductApplicabilityConversion
 		{ EdotJava: not null } => "edot-java",
 		{ EdotNode: not null } => "edot-node",
 		{ EdotBrowser: not null } => "edot-browser",
+		{ EdotReactNative: not null } => "edot-react-native",
 		{ EdotPhp: not null } => "edot-php",
 		{ EdotPython: not null } => "edot-python",
 		{ EdotCfAws: not null } => "edot-cf-aws",

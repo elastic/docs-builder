@@ -20,7 +20,11 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 	public UnifiedReleaseNotesTests() => _temp = new ScopedTempDirectory(_fileSystem, "unified-release-notes");
 
-	public void Dispose() => _temp.Dispose();
+	public void Dispose()
+	{
+		_temp.Dispose();
+		GC.SuppressFinalize(this);
+	}
 
 	private static Product CreateProduct(string id, string display, ReleaseNotesPath path) =>
 		new()

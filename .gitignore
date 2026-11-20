@@ -90,6 +90,7 @@ StyleCopReport.xml
 *.pgc
 *.pgd
 *.rsp
+!/Directory.Build.rsp
 *.sbr
 *.tlb
 *.tli
@@ -289,6 +290,7 @@ FakesAssemblies/
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
+.npm-ci.lock
 
 # Visual Studio 6 build log
 *.plg
@@ -405,3 +407,9 @@ FodyWeavers.xsd
 # Elastic synthetics
 .synthetics/
 .worktrees/
+
+# Personal mise overrides
+mise.local.toml
+
+# Generated from the F# build targets by `mise install` (see mise.toml)
+.runna/

@@ -1,0 +1,104 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/elasticsearch-9.3.0.yaml",
+        "description": "Parent intro",
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "keep.yaml",
+          "other.yaml",
+          "added.yaml"
+        ],
+        "entries": [
+          "Feature: Keep prs=[] subtype=",
+          "BugFix: Also keep prs=[] subtype=",
+          "Feature: Added later prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "elasticsearch-9.3.0.yaml",
+        "description": "Parent intro",
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "keep.yaml",
+          "other.yaml",
+          "added.yaml"
+        ],
+        "entries": [
+          "Feature: Keep prs=[] subtype=",
+          "BugFix: Also keep prs=[] subtype=",
+          "Feature: Added later prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "elasticsearch",
+        "owner": "elastic",
+        "filePath": "/docs/releases/elasticsearch-9.3.0.yaml",
+        "description": "Parent intro",
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "keep.yaml",
+          "other.yaml",
+          "added.yaml"
+        ],
+        "entries": [
+          "Feature: Keep prs=[] subtype=",
+          "BugFix: Also keep prs=[] subtype=",
+          "Feature: Added later prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

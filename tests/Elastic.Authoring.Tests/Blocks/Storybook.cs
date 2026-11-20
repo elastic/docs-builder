@@ -11,8 +11,9 @@ public class StorybookMissingReference : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("has error")]
-	public async Task HasError() => await Docs.HasError("requires :id: or :project:");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 storybook directive requires :id: or :project:.");
 }
 
 public class StorybookMissingRegistry : MarkdownTest
@@ -24,6 +25,7 @@ public class StorybookMissingRegistry : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("has error")]
-	public async Task HasError() => await Docs.HasError("requires docset.yml storybook.registry");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 storybook directive requires docset.yml storybook.registry.");
 }

@@ -26,10 +26,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public IReadOnlyList<ApiOverviewSection> OverviewSections => field ??= ApiOverviewBuilder.Sections(OverviewRows);
 
-	private ApiOverviewIndex Index => field ??= ApiOverviewBuilder.SplitTopics(OverviewSections);
-
 	/// <summary>The sections the grouped index shows.</summary>
-	public IReadOnlyList<ApiOverviewSection> IndexSections => Index.Groups;
+	public IReadOnlyList<ApiOverviewSection> IndexSections => field ??= ApiOverviewBuilder.WithoutGuidePages(OverviewSections);
 
 	private ApiMarkdown.HtmlSplit DescriptionParts =>
 		field ??= ApiMarkdown.SplitAtFirstHeading(RenderMarkdown(ApiInfo.Description).Value ?? "");
@@ -39,6 +37,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public HtmlString? DescriptionRemainder => DescriptionParts.Remainder is { } rest ? new HtmlString(rest) : null;
 
+	public string Heading => ApiPageTitle.Heading(ApiInfo.Title, ApiPageTitle.ReleasedVersionLabel(RenderContext.VersionSwitcherItems));
+
 	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
 
 	public bool HasFacts => Servers.Count > 0 || Version is not null;
@@ -47,5 +47,5 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
 
-	protected override string? LayoutPageDescription => ApiInfo.Description;
+	protected override string? LayoutPageDescription => RenderContext.LandingDescription;
 }

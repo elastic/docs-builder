@@ -1,0 +1,76 @@
+## plain-target
+  | redirects:
+  |   'old.md': 'new.md'
+{"old.md":{"to":"new.md"}}
+(no diagnostics)
+
+## bang-prefix-is-a-catch-all
+  | redirects:
+  |   'old.md': '!new.md'
+{"old.md":{"anchors":{"!":"!"},"to":"new.md"}}
+(no diagnostics)
+
+## empty-scalar-redirects-to-index
+  | redirects:
+  |   'old.md': ''
+{"old.md":{"anchors":{"!":"!"},"to":"index.md"}}
+(no diagnostics)
+
+## null-scalar-redirects-to-index
+  | redirects:
+  |   'old.md': ~
+{"old.md":{"to":"~"}}
+(no diagnostics)
+
+## bare-key-without-value
+  | redirects:
+  |   'old.md':
+{"old.md":{"anchors":{"!":"!"},"to":"index.md"}}
+(no diagnostics)
+
+## cross-repo-target
+  | redirects:
+  |   'old.md': 'other-repo://page.md'
+{"old.md":{"to":"other-repo://page.md"}}
+(no diagnostics)
+
+## cross-repo-catch-all
+  | redirects:
+  |   'old.md': '!other-repo://page.md'
+{"old.md":{"anchors":{"!":"!"},"to":"other-repo://page.md"}}
+(no diagnostics)
+
+## many-bangs
+  | redirects:
+  |   'old.md': '!!new.md'
+{"old.md":{"anchors":{"!":"!"},"to":"new.md"}}
+(no diagnostics)
+
+## keys-are-kept-verbatim
+  | redirects:
+  |   'Old/Page.md': 'new.md'
+  |   'trailing/': 'new.md'
+  |   '/leading.md': 'new.md'
+{"Old/Page.md":{"to":"new.md"},"trailing/":{"to":"new.md"},"/leading.md":{"to":"new.md"}}
+(no diagnostics)
+
+## duplicate-key
+  | redirects:
+  |   'old.md': 'a.md'
+  |   'old.md': 'b.md'
+throws ArgumentException
+error /docs/redirects.yml Could not load docset.yml
+
+## keys-differing-by-case
+  | redirects:
+  |   'old.md': 'a.md'
+  |   'OLD.md': 'b.md'
+throws ArgumentException
+error /docs/redirects.yml Could not load docset.yml
+
+## numeric-and-boolean-scalars
+  | redirects:
+  |   'a.md': 123
+  |   'b.md': true
+{"a.md":{"to":"123"},"b.md":{"to":"true"}}
+(no diagnostics)

@@ -9,8 +9,9 @@
 	else if (item.Kind == NavigationRenderNodeKind.Leaf)
 	{
 		<li class="flex group/li pr-8 @(item.IsTopLevel ? "font-semibold mt-6" : "mt-4")">
-			<a href="@item.Url" class="sidebar-link nav-link"@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
+			<a href="@item.Url" class="sidebar-link nav-link@(item.Deprecated ? " nav-link--deprecated" : "")"@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
 				<span>@item.NavigationTitle</span>
+				@if (item.Deprecated) { <span class="sr-only">Deprecated</span> }
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 			</a>
@@ -30,6 +31,15 @@
 					</div>
 				</a>
 			</div>
+		</li>
+	}
+	else if (item.Kind == NavigationRenderNodeKind.Group)
+	{
+		<li class="nav-group mt-7">
+			<span id="@item.Id-label" class="nav-group-label">@item.NavigationTitle</span>
+			<ul class="nav-group-items" aria-labelledby="@item.Id-label">
+				@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
+			</ul>
 		</li>
 	}
 	else if (item.Kind == NavigationRenderNodeKind.Heading)
@@ -65,8 +75,9 @@
 	{
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
+				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")@(item.Deprecated ? " nav-link--deprecated" : "")">
 					<span>@item.NavigationTitle</span>
+					@if (item.Deprecated) { <span class="sr-only">Deprecated</span> }
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 					@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 				</a>

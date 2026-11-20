@@ -1,0 +1,113 @@
+<div class="hub-zone">
+	<h2 class="hub-zone-title">Links</h2>
+</div>
+<ul class="hub-card-grid">
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="/guide/page">Absolute path</a>
+			</h3>
+		</div>
+	</li>
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="/guide/page#known-section">Absolute path with anchor</a>
+			</h3>
+		</div>
+	</li>
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="/guide/missing">Missing absolute path</a>
+			</h3>
+		</div>
+	</li>
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="guide/page">Relative path</a>
+			</h3>
+		</div>
+	</li>
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="/guide/page">Without extension</a>
+			</h3>
+		</div>
+	</li>
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="https://example.test/page" target="_blank" rel="noopener noreferrer">External</a>
+			</h3>
+		</div>
+	</li>
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="#links">Anchor only</a>
+			</h3>
+		</div>
+	</li>
+	<li class="hub-card hub-card-linked">
+		<div class="hub-card-head">
+			<h3 class="hub-card-title">
+				<a href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started">Cross link</a>
+			</h3>
+		</div>
+		<ul class="hub-card-links">
+			<li>
+				<a href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started#elasticsearch-intro-use-cases">With anchor</a>
+			</li>
+			<li>
+				<a href="docs-content://get-started#nope">Unknown anchor</a>
+			</li>
+			<li>
+				<a href="docs-content://nope">Unknown page</a>
+			</li>
+			<li>
+				<a href="unknown-repo://page">Undeclared</a>
+			</li>
+			<li>
+				<a href="/old/moved">Redirected path</a>
+			</li>
+			<li>
+				<a href="cursor://file/path">Passthrough</a>
+			</li>
+		</ul>
+	</li>
+</ul>
+<a href="/guide/page" style="text-decoration:none;" class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group">
+	<div class="min-w-0">
+		<div class="font-semibold text-blue-elastic group-hover:underline">Relative</div>
+	</div>
+	<svg class="size-5 shrink-0 ml-4 text-ink-light" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+		<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+	</svg>
+</a>
+<a href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started" style="text-decoration:none;" class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group">
+	<div class="min-w-0">
+		<div class="font-semibold text-blue-elastic group-hover:underline">Cross link</div>
+	</div>
+	<svg class="size-5 shrink-0 ml-4 text-ink-light" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+		<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+	</svg>
+</a>
+<a href="docs-content://nope.md" style="text-decoration:none;" class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group">
+	<div class="min-w-0">
+		<div class="font-semibold text-blue-elastic group-hover:underline">Unknown cross link</div>
+	</div>
+	<svg class="size-5 shrink-0 ml-4 text-ink-light" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+		<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+	</svg>
+</a>
+<a href="unknown-repo://page.md" style="text-decoration:none;" class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group">
+	<div class="min-w-0">
+		<div class="font-semibold text-blue-elastic group-hover:underline">Undeclared</div>
+	</div>
+	<svg class="size-5 shrink-0 ml-4 text-ink-light" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+		<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+	</svg>
+</a>

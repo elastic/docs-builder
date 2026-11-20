@@ -1,0 +1,8 @@
+### a page as Markdown
+GET /syntax/tabs.md
+
+### the home page as Markdown
+GET /index.md
+
+### a page that does not exist
+GET /missing/page.md

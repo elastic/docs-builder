@@ -65,6 +65,23 @@ public static partial class ApiMarkdown
 			: renderer.ReadApiDescriptionHeadings(ApiAdmonitions.Convert(Prepare(markdown, apiBaseUrl)), null);
 
 	/// <summary>
+	/// Renders a page's prose with anchors on its headings, and returns those headings for the page's table of contents.
+	/// A heading whose slug is in <paramref name="reservedSlugs"/> gets no anchor, because another part of the page owns that id.
+	/// </summary>
+	public static (HtmlString Html, IReadOnlyList<TocItem> Headings) RenderWithHeadings(
+		ApiRenderContext context,
+		string? markdown,
+		IReadOnlySet<string>? reservedSlugs = null
+	)
+	{
+		var headings = ReadHeadings(context.MarkdownRenderer, markdown, context.CurrentNavigation.NavigationRoot.Url)
+			.Where(heading => reservedSlugs?.Contains(heading.Slug) != true)
+			.ToArray();
+		var anchors = headings.Select(static heading => heading.Slug).ToHashSet(StringComparer.Ordinal);
+		return (RenderWithHeadingAnchors(context, markdown, anchors), headings);
+	}
+
+	/// <summary>
 	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
 	/// so an intro heading with the same slug is left out rather than linking to the post section.
 	/// </summary>
@@ -181,20 +198,20 @@ public static partial class ApiMarkdown
 	}
 
 	// Tag tokens, with quoted attribute values skipped so a ">" inside one does not end the tag.
-	[GeneratedRegex(@"</?[a-zA-Z][a-zA-Z0-9]*(?:[^>""']|""[^""]*""|'[^']*')*>")]
+	[GeneratedRegex(@"</?[a-zA-Z][a-zA-Z0-9]*(?:[^>""']|""[^""]*""|'[^']*')*>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlTag();
 
-	[GeneratedRegex(@"\]\(\.\./group/([^)#]+)\)")]
+	[GeneratedRegex(@"\]\(\.\./group/([^)#]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GroupLinkPattern();
 
-	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)")]
+	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationLinkPattern();
 
-	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)")]
+	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkDestinationPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
-	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
+	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MustachePattern();
 
 	private static readonly HtmlParser DescriptionParser = new();
@@ -259,6 +276,6 @@ public static partial class ApiMarkdown
 		}
 	}
 
-	[GeneratedRegex(@"[ \t]{2,}")]
+	[GeneratedRegex(@"[ \t]{2,}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespaceCollapsePattern();
 }

@@ -1,0 +1,116 @@
+{
+  "bool": {
+    "must": {
+      "bool": {
+        "should": [
+          {
+            "constant_score": {
+              "boost": 3,
+              "filter": {
+                "multi_match": {
+                  "analyzer": "synonyms_analyzer",
+                  "fields": [
+                    "search_title.completion",
+                    "search_title.completion._2gram",
+                    "search_title.completion._3gram"
+                  ],
+                  "operator": "and",
+                  "query": "_search",
+                  "type": "bool_prefix"
+                }
+              }
+            }
+          },
+          {
+            "multi_match": {
+              "analyzer": "synonyms_analyzer",
+              "boost": 0.1,
+              "fields": "body",
+              "operator": "and",
+              "query": "_search",
+              "type": "best_fields"
+            }
+          },
+          {
+            "term": {
+              "title.keyword": {
+                "value": "_search"
+              }
+            }
+          },
+          {
+            "dis_max": {
+              "queries": [
+                {
+                  "constant_score": {
+                    "boost": 5,
+                    "filter": {
+                      "terms": {
+                        "api.endpoints": [
+                          "_search"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "constant_score": {
+              "filter": {
+                "term": {
+                  "title.starts_with": {
+                    "value": "_search"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "constant_score": {
+              "boost": 0.3,
+              "filter": {
+                "match": {
+                  "path.match": {
+                    "query": "_search"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "should": [
+      {
+        "rank_feature": {
+          "boost": 0.8,
+          "field": "navigation.depth"
+        }
+      },
+      {
+        "rank_feature": {
+          "boost": 0.8,
+          "field": "navigation.table_of_contents"
+        }
+      },
+      {
+        "term": {
+          "section": {
+            "boost": 0.15,
+            "value": "reference"
+          }
+        }
+      },
+      {
+        "term": {
+          "section": {
+            "boost": 0.1,
+            "value": "getting-started"
+          }
+        }
+      }
+    ]
+  }
+}

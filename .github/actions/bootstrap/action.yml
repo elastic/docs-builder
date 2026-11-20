@@ -29,13 +29,14 @@ runs:
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj', '**/*.fsproj', 'dotnet-tools.json', 'global.json') }}
         restore-keys: ${{ runner.os }}-nuget-
 
-    # Ensure we fetch all tags
+    # MinVer needs the full history of HEAD and every tag. The explicit refspec keeps the fetch off the
+    # ~130 remote branches that the default refspec would also pull.
     - shell: bash
       run: |
         if [ -f .git/shallow ]; then
-          git fetch --prune --unshallow --tags
+          git fetch --prune --unshallow --tags origin '+refs/tags/*:refs/tags/*'
         else
-          git fetch --prune --tags
+          git fetch --prune --tags origin '+refs/tags/*:refs/tags/*'
         fi
         git tag --list
 

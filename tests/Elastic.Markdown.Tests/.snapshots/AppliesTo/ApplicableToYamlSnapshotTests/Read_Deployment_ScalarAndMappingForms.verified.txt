@@ -1,0 +1,203 @@
+yaml: deployment:
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"}]
+text: deployment: self=all, ece=all, eck=all, ess=all
+
+yaml: deployment: ~
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"}]
+text: deployment: self=all, ece=all, eck=all, ess=all
+
+yaml: deployment: ''
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"}]
+text: deployment: self=all, ece=all, eck=all, ess=all
+
+yaml: deployment: ga
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga"},{"type":"deployment","sub_type":"ece","lifecycle":"ga"},{"type":"deployment","sub_type":"eck","lifecycle":"ga"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+text: deployment: self=ga, , ece=ga, , eck=ga, , ess=ga, 
+
+yaml: deployment: all
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"}]
+text: deployment: self=all, ece=all, eck=all, ess=all
+
+yaml: deployment: beta 9.0
+json: [{"type":"deployment","sub_type":"self","lifecycle":"beta","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"beta","version":"9.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"beta","version":"9.0\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"beta","version":"9.0\u002B"}]
+text: deployment: self=beta 9.0+, , ece=beta 9.0+, , eck=beta 9.0+, , ess=beta 9.0+, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: deployment: ga 9.0
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: self=ga 9.0+, , ece=ga 9.0+, , eck=ga 9.0+, , ess=ga 9.0+, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: deployment: preview 9.1, ga 9.2+
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.2\u002B"},{"type":"deployment","sub_type":"self","lifecycle":"preview","version":"=9.1"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"9.2\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"preview","version":"=9.1"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"9.2\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"preview","version":"=9.1"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.2\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"preview","version":"=9.1"}]
+text: deployment: self=ga 9.2+, preview =9.1, , ece=ga 9.2+, preview =9.1, , eck=ga 9.2+, preview =9.1, , ess=ga 9.2+, preview =9.1, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: deployment: nonsense
+json: []
+text: deployment: 
+  error: Unknown product lifecycle: 'nonsense'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml: deployment: [ga]
+json: []
+text: 
+
+yaml: deployment: {}
+json: []
+text: 
+
+yaml:
+  | deployment:
+  |   self: ga 9.0
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: self=ga 9.0+, 
+
+yaml:
+  | deployment:
+  |   ece: ga 3.0
+json: [{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"}]
+text: deployment: ece=ga 3.0+, 
+
+yaml:
+  | deployment:
+  |   eck: beta 3.1
+json: [{"type":"deployment","sub_type":"eck","lifecycle":"beta","version":"3.1\u002B"}]
+text: deployment: eck=beta 3.1+, 
+
+yaml:
+  | deployment:
+  |   ess: ga
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+text: deployment: ess=ga, 
+
+yaml:
+  | deployment:
+  |   ess: ga 9.0
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: ess=ga 9.0+, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml:
+  | deployment:
+  |   ech: ga
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+text: deployment: ess=ga, 
+
+yaml:
+  | deployment:
+  |   ech: beta
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"beta"}]
+text: deployment: ess=beta, 
+
+yaml:
+  | deployment:
+  |   ess: ga
+  |   ech: beta
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"beta"}]
+text: deployment: ess=beta, 
+  warning: Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss.
+
+yaml:
+  | deployment:
+  |   self: ga 9.0
+  |   ece: ga 3.0
+  |   eck: ga 3.0
+  |   ess: ga
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+text: deployment: self=ga 9.0+, , ece=ga 3.0+, , eck=ga 3.0+, , ess=ga, 
+
+yaml:
+  | deployment:
+  |   self:
+  |   ece:
+  |   eck:
+  |   ess:
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"}]
+text: deployment: self=all, ece=all, eck=all, ess=all
+
+yaml:
+  | deployment:
+  |   self: ~
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"}]
+text: deployment: self=all
+
+yaml:
+  | deployment:
+  |   unknown: ga
+json: []
+text: 
+
+yaml:
+  | deployment:
+  |   self: ga 9.0
+  |   unknown: ga
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: self=ga 9.0+, 
+
+yaml:
+  | deployment:
+  |   Self: ga 9.0
+json: []
+text: 
+
+yaml:
+  | deployment:
+  |   serverless: ga
+json: []
+text: 
+
+yaml:
+  | deployment:
+  |   - self: ga 9.0
+json: []
+text: 
+
+yaml: ece: ga 3.0
+json: [{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"}]
+text: deployment: ece=ga 3.0+, 
+
+yaml: eck: beta 3.1
+json: [{"type":"deployment","sub_type":"eck","lifecycle":"beta","version":"3.1\u002B"}]
+text: deployment: eck=beta 3.1+, 
+
+yaml: ess: ga
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+text: deployment: ess=ga, 
+
+yaml: ess: ga 9.0
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: ess=ga 9.0+, 
+  error: Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.
+
+yaml: ech: ga
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+text: deployment: ess=ga, 
+
+yaml: self: ga 9.0
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"}]
+text: deployment: self=ga 9.0+, 
+
+yaml:
+  | ess: ga
+  | ech: beta
+json: [{"type":"deployment","sub_type":"ess","lifecycle":"beta"}]
+text: deployment: ess=beta, 
+  warning: Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss.
+
+yaml:
+  | self: ga 9.0
+  | ece: ga 3.0
+  | eck: ga 3.0
+  | ess: ga
+  | ech: ga
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"9.0\u002B"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"ess","lifecycle":"ga"}]
+text: deployment: self=ga 9.0+, , ece=ga 3.0+, , eck=ga 3.0+, , ess=ga, 
+  warning: Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss.
+
+yaml:
+  | ece:
+  | eck:
+  | self:
+  | ess:
+json: [{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"}]
+text: deployment: self=all, ece=all, eck=all, ess=all

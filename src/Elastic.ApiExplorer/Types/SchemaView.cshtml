@@ -26,6 +26,7 @@
 <section id="schema-definition">
 	<div class="api-page-heading">
 		<h1>@schema.DisplayName</h1>
+		@await RenderPartialAsync(_VersionNotice.Create(Model))
 	</div>
 
 	@if (!string.IsNullOrEmpty(pageModel.DictionaryTypeName))
@@ -69,6 +70,11 @@
 	@if (pageModel.Requires is { } requires)
 	{
 		<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))</p>
+	}
+
+	@if (pageModel.UnionVariants is not null || pageModel.Properties is not null)
+	{
+		@(await RenderPartialAsync(_ExpandAllControl.Create(true)))
 	}
 
 	@if (pageModel.UnionVariants is { } unionVariants)

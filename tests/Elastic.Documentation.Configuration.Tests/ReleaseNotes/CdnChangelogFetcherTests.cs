@@ -916,7 +916,7 @@ public class CdnChangelogFetcherTests
 	public async Task FetchAsync_ShallowTokenWithColdCache_FetchesAsUsualThenSkipsOnNextRun()
 	{
 		var fs = new MockFileSystem();
-		var mapJson = /*lang=json,strict*/  """{ "elasticsearch": "tok1" }""";
+		var mapJson = /*lang=json,strict*/ """{ "elasticsearch": "tok1" }""";
 		var coldHandler = new StubHandler(
 			req =>
 				req.RequestUri!.AbsolutePath switch

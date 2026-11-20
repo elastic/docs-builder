@@ -1,0 +1,28 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "published_date": "2023-09-01T00:00:00+00:00",
+  "modified_date": "2023-09-05T10:30:00+00:00",
+  "og": {},
+  "twitter": {},
+  "http": {},
+  "title": "Elastic Announces New Security Analytics Features",
+  "search_title": "Press: Elastic Announces New Security Analytics Features",
+  "content_type": "site",
+  "path": "/about/press/elastic-announces-new-security-analytics",
+  "url": "/about/press/elastic-announces-new-security-analytics",
+  "hash": "1d2f23a5e401ef66",
+  "last_updated": "2023-09-05T10:30:00+00:00",
+  "description": null,
+  "headings": [],
+  "body": "Elastic today announced new security analytics features designed to help organizations detect and respond to cyber threats more effectively. The new features include advanced threat detection rules, improved investigation workflows, and enhanced integration with cloud security tools. These capabilities build on Elastic Security's unified approach to SIEM, endpoint security, and cloud security.",
+  "summary": "Elastic today announced new security analytics features designed to help organizations detect and respond to cyber threats more effectively. The new features include advanced threat detection rules, improved investigation workflows, and enhanced integration with cloud security tools. These capabilities build on Elastic Security's unified approach to SIEM, endpoint security, and cloud security.",
+  "parents": [],
+  "translated": true,
+  "section": "press",
+  "content_tier": "peripheral",
+  "navigation": {
+    "depth": 4,
+    "table_of_contents": 100
+  }
+}

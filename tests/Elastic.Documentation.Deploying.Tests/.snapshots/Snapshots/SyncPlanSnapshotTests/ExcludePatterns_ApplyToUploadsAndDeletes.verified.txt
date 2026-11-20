@@ -1,0 +1,31 @@
+{
+  "deletion_threshold_default": null,
+  "exclude_patterns": [
+    "docs/_preview/*",
+    "**/*.map"
+  ],
+  "remote_listing_completed": true,
+  "total_source_files": 4,
+  "total_remote_files": 3,
+  "total_sync_requests": 3,
+  "delete": [
+    {
+      "destination_path": "docs/stale.html"
+    }
+  ],
+  "add": [
+    {
+      "local_path": "{output}/docs/index.html",
+      "destination_path": "docs/index.html"
+    },
+    {
+      "local_path": "{output}/docs/keep.js",
+      "destination_path": "docs/keep.js"
+    }
+  ],
+  "update": [],
+  "skip": [],
+  "retain": []
+}
+--- validation: valid=True ratio=0.3333 threshold=0.8
+--- diagnostics

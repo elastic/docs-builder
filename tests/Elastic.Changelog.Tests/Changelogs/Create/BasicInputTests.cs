@@ -4,6 +4,8 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -46,12 +48,21 @@ public class BasicInputTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Add new search feature");
-		yamlContent.Should().Contain("type: feature");
-		yamlContent.Should().Contain("product: elasticsearch");
-		// entries no longer carry a target/version — the origin branch is the address
-		yamlContent.Should().Contain("lifecycle: ga");
-		yamlContent.Should().Contain("description: This is a new search feature");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Add new search feature
+			description: This is a new search feature
+			"""
+			);
 	}
 
 	[Test]
@@ -92,12 +103,22 @@ public class BasicInputTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("products:");
-		// Should contain both products
-		var elasticsearchIndex = yamlContent.IndexOf("product: elasticsearch", StringComparison.Ordinal);
-		var kibanaIndex = yamlContent.IndexOf("product: kibana", StringComparison.Ordinal);
-		elasticsearchIndex.Should().BeGreaterThan(-1);
-		kibanaIndex.Should().BeGreaterThan(-1);
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			  - product: kibana
+			    lifecycle: ga
+			title: Multi-product feature
+			"""
+			);
 	}
 
 	[Test]
@@ -137,9 +158,21 @@ public class BasicInputTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("type: breaking-change");
-		yamlContent.Should().Contain("subtype: api");
-		yamlContent.Should().Contain("impact: API clients will need to update");
-		yamlContent.Should().Contain("action: Update your API client code");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: breaking-change
+			subtype: api
+			products:
+			  - product: elasticsearch
+			title: Breaking API change
+			impact: API clients will need to update
+			action: Update your API client code
+			"""
+			);
 	}
 }

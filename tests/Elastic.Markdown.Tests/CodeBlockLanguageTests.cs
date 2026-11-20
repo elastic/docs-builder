@@ -78,7 +78,8 @@ public class CodeBlockLanguageTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
-			BuildType = buildType
+			BuildType = buildType,
+			SkipStaticAssetExtraction = true
 		};
 		var set = new DocumentationSet(context, new TestLoggerFactory(), new TestCrossLinkResolver());
 		var generator = new DocumentationGenerator(set, new TestLoggerFactory());

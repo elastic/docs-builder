@@ -1,0 +1,116 @@
+yaml: stack: ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: GA
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: Ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: preview
+json: [{"type":"stack","sub_type":"stack","lifecycle":"preview"}]
+text: stack: preview, 
+
+yaml: stack: Preview
+json: [{"type":"stack","sub_type":"stack","lifecycle":"preview"}]
+text: stack: preview, 
+
+yaml: stack: tech-preview
+json: [{"type":"stack","sub_type":"stack","lifecycle":"preview"}]
+text: stack: preview, 
+
+yaml: stack: experimental
+json: [{"type":"stack","sub_type":"stack","lifecycle":"experimental"}]
+text: stack: experimental, 
+
+yaml: stack: beta
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta"}]
+text: stack: beta, 
+
+yaml: stack: BETA
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta"}]
+text: stack: beta, 
+
+yaml: stack: deprecated
+json: [{"type":"stack","sub_type":"stack","lifecycle":"deprecated"}]
+text: stack: deprecated, 
+
+yaml: stack: removed
+json: [{"type":"stack","sub_type":"stack","lifecycle":"removed"}]
+text: stack: removed, 
+
+yaml: stack: unavailable
+json: [{"type":"stack","sub_type":"stack","lifecycle":"unavailable"}]
+text: stack: unavailable, 
+
+yaml: stack: dev
+json: [{"type":"stack","sub_type":"stack","lifecycle":"development"}]
+text: stack: dev, 
+  hint: The 'dev' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: development
+json: [{"type":"stack","sub_type":"stack","lifecycle":"development"}]
+text: stack: dev, 
+  hint: The 'development' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: coming
+json: [{"type":"stack","sub_type":"stack","lifecycle":"planned"}]
+text: stack: planned, 
+  hint: The 'coming' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: planned
+json: [{"type":"stack","sub_type":"stack","lifecycle":"planned"}]
+text: stack: planned, 
+  hint: The 'planned' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: discontinued
+json: [{"type":"stack","sub_type":"stack","lifecycle":"discontinued"}]
+text: stack: discontinued, 
+  hint: The 'discontinued' lifecycle is deprecated and will be removed in a future release.
+
+yaml: stack: technical-preview
+json: []
+text: 
+  error: Unknown product lifecycle: 'technical-preview'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml: stack: preview9.0
+json: []
+text: 
+  error: Unknown product lifecycle: 'preview9.0'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml: stack: released
+json: []
+text: 
+  error: Unknown product lifecycle: 'released'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml: stack: unknown
+json: []
+text: 
+  error: Unknown product lifecycle: 'unknown'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.
+
+yaml: stack: all
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ALL
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: All
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ''
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ' '
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ~
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all

@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Elastic.Documentation.Search.Contract;
 using Elastic.SiteSearch.Cli.ContentStack;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.SiteSearch.Tests;
 
@@ -14,6 +17,18 @@ namespace Elastic.SiteSearch.Tests;
 /// </summary>
 public class ContentStackMappingTests
 {
+	private static readonly JsonSerializerOptions DocumentOptions = new() { TypeInfoResolver = SourceGenerationContext.Default };
+
+	/// <summary>The mapped document as JSON, without the fields stamped with the current time (index date, and last_updated when the entry has no modified date).</summary>
+	private static string ToJson(SiteDocument doc)
+	{
+		var node = JsonNode.Parse(JsonSerializer.Serialize<ISearchDocument>(doc, DocumentOptions))!.AsObject();
+		_ = node.Remove("batch_index_date");
+		if (doc.ModifiedDate is null)
+			_ = node.Remove("last_updated");
+		return node.ToJsonString();
+	}
+
 	private static SyncItem LoadFixture(string fixtureName, string contentTypeUid)
 	{
 		var path = Path.Combine("Fixtures", "ContentStack", fixtureName);
@@ -30,21 +45,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/blog/getting-started-with-kibana-dashboards");
-		doc.Title.Should().Be("Getting Started with Kibana Dashboards");
-		doc.SearchTitle.Should().StartWith("Blog:");
-		doc.Section.Should().Be("blog");
-		doc.Locale.Should().Be("en");
-		doc.Body.Should().Contain("Kibana is a powerful visualization tool");
-		doc.Body.Should().NotContain("<p>");
-		doc.Body.Should().Be(doc.Body);
-		doc.Headings.Should().Contain("Creating Your First Dashboard");
-		doc.Description.Should().Contain("Learn how to create interactive dashboards");
-		doc.PublishedDate.Should().NotBeNull();
-		doc.ModifiedDate.Should().NotBeNull();
-		doc.Og.Title.Should().Contain("Kibana Dashboards");
-		doc.Og.Description.Should().NotBeNullOrEmpty();
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: blog_v2 (modular blocks with nested title_text arrays)</summary>
@@ -55,16 +56,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/blog/building-search-applications-with-elasticsearch");
-		doc.Title.Should().Be("Building Search Applications with Elasticsearch");
-		doc.SearchTitle.Should().StartWith("Blog:");
-		doc.Section.Should().Be("blog");
-		doc.Body.Should().Contain("Search is at the heart of modern applications");
-		doc.Body.Should().Contain("Query DSL");
-		doc.Body.Should().NotContain("<p>");
-		doc.Description.Should().Contain("Explore how to build production-ready");
-		doc.PublishedDate.Should().NotBeNull();
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: videos (paragraph_l10n body, presentation_date)</summary>
@@ -75,15 +67,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/webinars/ingesting-data-into-elasticsearch");
-		doc.Title.Should().Be("Ingesting Data into Elasticsearch");
-		doc.SearchTitle.Should().StartWith("Webinar:");
-		doc.Section.Should().Be("webinar");
-		doc.Body.Should().Contain("data ingestion patterns");
-		doc.Body.Should().NotContain("<p>");
-		doc.PublishedDate.Should().NotBeNull();
-		doc.Og.Image.Should().NotBeNullOrEmpty();
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: press (intro_paragraph_l10n + paragraph_l10n, date field)</summary>
@@ -94,15 +78,46 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Contain("/about/press/");
-		doc.Title.Should().Contain("Security Analytics");
-		doc.SearchTitle.Should().StartWith("Press:");
-		doc.Section.Should().Be("press");
-		doc.Body.Should().Contain("Elastic today announced");
-		doc.Body.Should().Contain("advanced threat detection");
-		doc.PublishedDate.Should().NotBeNull();
-		doc.PublishedDate.Value.Year.Should().Be(2023);
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
+	}
+
+	/// <summary>
+	/// A date without an offset is UTC whatever the machine's time zone is. TZ is read by .NET on Linux and macOS (Windows
+	/// ignores it), and the cached zone is dropped so the mapper sees the change.
+	/// </summary>
+	[Test]
+	[NotInParallel]
+	[Arguments("Asia/Tokyo")]
+	[Arguments("America/Los_Angeles")]
+	public void PressRelease_DateWithoutOffset_IsUtcInAnyTimeZone(string timeZone)
+	{
+		var previous = Environment.GetEnvironmentVariable("TZ");
+		try
+		{
+			Environment.SetEnvironmentVariable("TZ", timeZone);
+			TimeZoneInfo.ClearCachedData();
+
+			var item = LoadFixture("press_release.json", "press");
+			var doc = ContentStackMapper.ToSiteDocument(item);
+
+			doc.Should().NotBeNull();
+			doc!.PublishedDate.Should().Be(new DateTimeOffset(2023, 9, 1, 0, 0, 0, TimeSpan.Zero));
+			doc.PublishedDate!.Value.Offset.Should().Be(TimeSpan.Zero);
+		}
+		finally
+		{
+			Environment.SetEnvironmentVariable("TZ", previous);
+			TimeZoneInfo.ClearCachedData();
+		}
+	}
+
+	/// <summary>A date that carries an offset keeps it.</summary>
+	[Test]
+	public void ParseDate_KeepsAnExplicitOffset()
+	{
+		ContentStackMapper.ParseDate("2023-09-01T10:00:00+05:00")!.Value.Offset.Should().Be(TimeSpan.FromHours(5));
+		ContentStackMapper.ParseDate("2023-09-01T10:00:00Z")!.Value.Offset.Should().Be(TimeSpan.Zero);
+		ContentStackMapper.ParseDate("not a date").Should().BeNull();
 	}
 
 	/// <summary>Covers: product_versions (release_notes body, date, version_number)</summary>
@@ -113,14 +128,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Contain("/downloads/past-releases/");
-		doc.Title.Should().Contain("Elasticsearch 8.12.0");
-		doc.SearchTitle.Should().StartWith("Download:");
-		doc.Section.Should().Be("download");
-		doc.Body.Should().Contain("release notes");
-		doc.PublishedDate.Should().NotBeNull();
-		doc.Og.Title.Should().Contain("Download");
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: agreements, forms (paragraph_l10n as single body)</summary>
@@ -131,15 +139,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Contain("/agreements/");
-		doc.Title.Should().Contain("Terms of Service");
-		doc.SearchTitle.Should().StartWith("Legal:");
-		doc.Section.Should().Be("legal");
-		doc.Body.Should().Contain("Terms of Service govern");
-		doc.Body.Should().NotContain("<p>");
-		doc.Headings.Should().Contain("1. Definitions");
-		doc.Og.Title.Should().NotBeNullOrEmpty();
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: default_detail, account_based_marketing, product_detail (modular_blocks with flat title_text)</summary>
@@ -150,15 +150,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/security/cloud-workload-protection");
-		doc.Title.Should().Contain("Cloud Workloads");
-		doc.SearchTitle.Should().StartWith("Product:");
-		doc.Section.Should().Be("product");
-		doc.Body.Should().Contain("comprehensive protection");
-		doc.Body.Should().Contain("pre-built detection rules");
-		doc.Body.Should().NotContain("<p>");
-		doc.Og.Image.Should().NotBeNullOrEmpty();
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: use_cases (introduction + challenge_solution + modular_blocks)</summary>
@@ -169,15 +161,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/customers/acme-corp");
-		doc.Title.Should().Be("Acme Corp");
-		doc.SearchTitle.Should().StartWith("Customer Story:");
-		doc.Section.Should().Be("customer-story");
-		doc.Body.Should().Contain("millions of events per day");
-		doc.Body.Should().Contain("could not handle the growing data volume");
-		doc.Body.Should().Contain("sub-second query times");
-		doc.Description.Should().Contain("scalable solution");
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: faq (topic[].subtopic[].paragraph_l10n)</summary>
@@ -188,14 +172,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/what-is/cloud-security");
-		doc.Title.Should().Contain("Cloud Security");
-		doc.SearchTitle.Should().StartWith("What is:");
-		doc.Section.Should().Be("concept");
-		doc.Body.Should().Contain("technologies, policies, and controls");
-		doc.Body.Should().Contain("organizations migrate workloads");
-		doc.Body.Should().NotContain("<p>");
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: customer_tile (short paragraph_l10n, partial URL coverage)</summary>
@@ -206,12 +183,8 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Contain("/kr/videos/");
-		doc.Title.Should().Be("TechCo Industries");
 		// URL prefix wins over the entry's own (en-us) locale — see GetLanguageFromUrl.
-		doc.Locale.Should().Be("ko");
-		doc.Body.Should().Contain("global e-commerce platform");
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>
@@ -230,19 +203,9 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/blog");
-		doc.Title.Should().Be("Elastic Blog");
 		// ContentTypeUid "blog_overview" is now mapped to "blog" via GetSectionFromContentType,
 		// even though the URL alone ("/blog", no trailing slash) doesn't match the URL heuristic.
-		doc.Section.Should().Be("blog");
-		doc.Locale.Should().Be("en");
-		doc.Body.Should().Contain("latest from Elastic");
-		doc.Body.Should().Be(doc.Body);
-		doc.Description.Should().Contain("latest from Elastic");
-		doc.Og.Title.Should().NotBeNullOrEmpty();
-		doc.Og.Description.Should().NotBeNullOrEmpty();
-		doc.Og.Image.Should().NotBeNullOrEmpty();
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: tutorial, tutorial_page, tutorial_chapter, labs_integration (rich-text JSON AST body + description)</summary>
@@ -253,15 +216,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/search-labs/integrations/amazon-bedrock");
-		doc.Section.Should().Be("search-labs");
-		doc.Body.Should().Contain("Amazon Bedrock makes leading foundation models available");
-		doc.Body.Should().Contain("RAG using Bedrock");
-		doc.Body.Should().NotContain("<p>");
-		doc.Body.Should().NotContain("<h3>");
-		doc.Headings.Should().Contain("Blogs to get started");
-		doc.Description.Should().Contain("fully managed service offering foundation models");
-		doc.Hash.Should().NotBeNullOrEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: blog_v3 (rich-text body nested under main_content.body.content_l10n + summary_l10n description)</summary>
@@ -272,13 +227,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/search-labs/blog/hybrid-search-with-elasticsearch");
-		doc.Section.Should().Be("search-labs");
-		doc.Body.Should().Contain("Hybrid search combines BM25 lexical scoring");
-		doc.Body.Should().NotContain("<p>");
-		doc.Headings.Should().Contain("Why hybrid search");
-		doc.Description.Should().Be("Combine lexical and semantic search for better relevance.");
-		doc.PublishedDate.Should().NotBeNull();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: tutorials_landing, integrations_landing, blog_landing (page_info.subheading_l10n description, no body)</summary>
@@ -289,11 +238,8 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/search-labs/tutorials");
-		doc.Section.Should().Be("search-labs");
-		doc.Description.Should().Be("Long-form guides to get you started");
 		// No main_content on landing pages — body falls back to the description.
-		doc.Body.Should().Be(doc.Description);
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: notebook, series, labs_category, labs_homepage, glossary, examples_landing (plain description_l10n, no body)</summary>
@@ -304,10 +250,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Section.Should().Be("search-labs");
-		doc.Description.Should().Contain("Learn how to build a RAG system");
-		doc.Body.Should().Be(doc.Description);
-		doc.Headings.Should().BeEmpty();
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: reports, threat_command (main_content.markdown_l10n plain-Markdown body + summary_l10n description)</summary>
@@ -318,21 +261,10 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/security-labs/threat-command/tracking-a-novel-loader-pipedance");
-		doc.Section.Should().Be("security-labs");
-		doc.Headings.Should().BeEquivalentTo(["Key takeaways", "Analysis", "API resolution"]);
-		doc.Body.Should().Contain("PIPEDANCE is a novel loader used to stage secondary payloads");
 		// Links keep their visible text, drop the URL.
-		doc.Body.Should().Contain("process injection");
-		doc.Body.Should().NotContain("example.com/injection");
 		// Bold/inline-code markers are stripped but the wrapped text is kept.
-		doc.Body.Should().Contain("kernel32.dll");
-		doc.Body.Should().Contain("PEB");
-		doc.Body.Should().NotContain("**");
-		doc.Body.Should().NotContain("`");
 		// Fenced code blocks are dropped entirely.
-		doc.Body.Should().NotContain("walk_peb");
-		doc.Description.Should().Be("An analysis of the PIPEDANCE loader observed in recent intrusions.");
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: reports_landing, threat_command_landing (top-level subheading_l10n description, no body)</summary>
@@ -343,10 +275,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/security-labs/reports");
-		doc.Section.Should().Be("security-labs");
-		doc.Description.Should().Be("In-depth research reports from the Elastic Security Labs team.");
-		doc.Body.Should().Be(doc.Description);
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>Covers: security_labs_homepage, observability_labs_homepage (page_description_l10n description, no body)</summary>
@@ -357,10 +286,7 @@ public class ContentStackMappingTests
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
-		doc.Path.Should().Be("/security-labs");
-		doc.Section.Should().Be("security-labs");
-		doc.Description.Should().Be("Research, tools, and insights from the Elastic Security Labs team.");
-		doc.Body.Should().Be(doc.Description);
+		ToJson(doc!).Should().MatchJsonSnapshot();
 	}
 
 	/// <summary>blog_description_l10n is used when page_description_l10n is absent.</summary>

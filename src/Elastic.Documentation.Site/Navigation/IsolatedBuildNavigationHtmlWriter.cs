@@ -5,6 +5,7 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Floating;
 using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
@@ -56,7 +57,12 @@ public class IsolatedBuildNavigationHtmlWriter(
 	{
 		// Top-level items always come from the docset root (siteRoot) so the dropdown
 		// correctly lists all sections even when renderRoot is a nested island.
-		var topLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
+		var topLevelItems = siteRoot
+			.NavigationItems
+			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
+			// a floating section the build could not fill (skipped or failed API) has no page to link to
+			.Where(i => i is not IFloatingSectionRoot { Hidden: true })
+			.ToList();
 		var isUsingDropdown = !suppressNavigationDropdown
 			&& (context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown);
 		var model = NavigationRenderModel.Create(

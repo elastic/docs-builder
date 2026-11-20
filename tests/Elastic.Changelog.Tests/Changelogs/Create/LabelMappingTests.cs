@@ -6,7 +6,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -67,7 +69,19 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("type: bug-fix");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			title: Fix memory leak in search
+			"""
+			);
 	}
 
 	[Test]
@@ -214,7 +228,19 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- product: elasticsearch");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Add new search feature
+			"""
+			);
 	}
 
 	[Test]
@@ -269,8 +295,20 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- product: elasticsearch");
-		yamlContent.Should().Contain("- product: kibana");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			  - product: kibana
+			title: Cross-product change
+			"""
+			);
 	}
 
 	[Test]
@@ -322,9 +360,21 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- product: security");
-		yamlContent.Should().Contain("- product: kibana");
-		yamlContent.Should().Contain("- product: cloud-serverless");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/kibana/pull/12345"
+			type: feature
+			products:
+			  - product: security
+			  - product: kibana
+			  - product: cloud-serverless
+			title: Add a new feature
+			"""
+			);
 	}
 
 	[Test]
@@ -370,11 +420,10 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"No matching product label found on PR https://github.com/elastic/elasticsearch/pull/12345"
-				) && d.Message.Contains(":stack/elasticsearch, :stack/kibana")
+			.MatchInlineSnapshot(
+				"error  No matching product label found on PR https://github.com/elastic/elasticsearch/pull/12345. Add one of the following labels: :stack/elasticsearch, :stack/kibana. Or pass --products."
 			);
 		var outputDir = input.Output!;
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -427,11 +476,10 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"No matching product label found on issue https://github.com/elastic/elasticsearch/issues/12345"
-				)
+			.MatchInlineSnapshot(
+				"error  No matching product label found on issue https://github.com/elastic/elasticsearch/issues/12345. Add one of the following labels: :stack/elasticsearch, :stack/kibana. Or pass --products."
 			);
 	}
 
@@ -482,8 +530,19 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- product: kibana");
-		yamlContent.Should().NotContain("- product: elasticsearch");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: bug-fix
+			products:
+			  - product: kibana
+			title: Fix something
+			"""
+			);
 	}
 
 	[Test]
@@ -548,9 +607,22 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("areas:");
-		yamlContent.Should().Contain("- security");
-		yamlContent.Should().Contain("- search");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			areas:
+			  - security
+			  - search
+			title: Add security enhancements
+			"""
+			);
 	}
 
 	[Test]
@@ -626,7 +698,21 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- \"Alerting, connectors, and reporting\""); // Full name, not split
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			areas:
+			  - "Alerting, connectors, and reporting"
+			title: Fix alerting issues
+			"""
+			);
 	}
 
 	[Test]
@@ -678,8 +764,22 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- Search");
-		yamlContent.Should().Contain("- Observability");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			areas:
+			  - Search
+			  - Observability
+			title: Cross-area change
+			"""
+			);
 	}
 
 	[Test]
@@ -728,7 +828,13 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		result.Should().Be("feature:foo");
 		Collector.Warnings.Should().Be(1);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple feature-id values matched"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning  Multiple feature-id values matched from labels (feature:foo, feature:bar). Using first match 'feature:foo'. Provide --feature-id to override."
+			);
 	}
 
 	[Test]
@@ -790,7 +896,20 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("feature-id: \"feature:new-search-api\"");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Add new search API
+			feature-id: "feature:new-search-api"
+			"""
+			);
 	}
 
 	[Test]
@@ -833,8 +952,20 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("feature-id: \"feature:cli-override\"");
-		yamlContent.Should().NotContain("feature-id: feature:new-search-api");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Add new search API
+			feature-id: "feature:cli-override"
+			"""
+			);
 	}
 
 	[Test]
@@ -875,12 +1006,30 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple feature-id values matched"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning  Multiple feature-id values matched from labels (feature:foo, feature:bar). Using first match 'feature:foo'. Provide --feature-id to override."
+			);
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("feature-id: \"feature:foo\"");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Cross-feature change
+			feature-id: "feature:foo"
+			"""
+			);
 	}
 
 	[Test]
@@ -922,7 +1071,19 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Split('\n').Should().NotContain(line => line.TrimStart().StartsWith("feature-id:", StringComparison.Ordinal));
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Unrelated feature
+			"""
+			);
 	}
 
 	private const string RequiredAreaConfig =
@@ -962,11 +1123,10 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains(
-					"No matching area label found on PR https://github.com/elastic/kibana/pull/12345"
-				) && d.Message.Contains("--areas")
+			.MatchInlineSnapshot(
+				"error  No matching area label found on PR https://github.com/elastic/kibana/pull/12345. Add one of the following labels: :Search. Or pass --areas."
 			);
 	}
 

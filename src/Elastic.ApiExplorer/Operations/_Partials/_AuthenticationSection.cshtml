@@ -1,0 +1,13 @@
+@using Elastic.ApiExplorer.Components.PropertyTree
+@using Elastic.ApiExplorer.Infrastructure
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthenticationSectionModel>
+@if (Model.Requirements.Count > 0)
+{
+	<div @ParamSectionHeader.WrapAttributes()>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. Model.Requirements.Select(static r => r.Label)], Style: SummaryStyle.Variants)))
+		<div @ParamSectionHeader.BodyAttributes("authentication-list")>
+			@(await RenderPartialAsync<_AuthenticationTabs, AuthenticationSectionModel>(Model))
+		</div>
+	</div>
+}

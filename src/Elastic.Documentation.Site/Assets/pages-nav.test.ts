@@ -842,54 +842,133 @@ describe('navSurfaceKey', () => {
     })
 })
 
-describe('shouldRetargetArticleSwap', () => {
-    it('retargets when both pages are docs articles', () => {
-        document.body.innerHTML =
-            '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
-        expect(
-            shouldRetargetArticleSwap(
-                document.getElementById('content-container'),
-                '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
-            )
-        ).toBe(true)
-    })
+const ARTICLE =
+    '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
 
-    it('keeps the full swap for a landing page without the article column', () => {
-        document.body.innerHTML =
-            '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
+describe('shouldRetargetArticleSwap', () => {
+    it.each([
+        ['retargets when both pages are docs articles', ARTICLE, true],
+        [
+            'keeps the full swap for a landing page without the article column',
+            '<div class="w-full" id="hero"></div>',
+            false,
+        ],
+    ])('%s', (_name, incoming, expected) => {
+        document.body.innerHTML = ARTICLE
         expect(
             shouldRetargetArticleSwap(
                 document.getElementById('content-container'),
-                '<div class="w-full" id="hero"></div>'
+                incoming
             )
-        ).toBe(false)
+        ).toBe(expected)
     })
 })
 
 describe('shouldRetargetApiContentSwap', () => {
-    it('retargets when both pages are API content columns', () => {
+    it.each([
+        [
+            'retargets when both pages are API content columns',
+            '<div id="api-content-grid" class="api-content-grid"></div>',
+            true,
+        ],
+        ['keeps the full swap when leaving an API page', ARTICLE, false],
+    ])('%s', (_name, incoming, expected) => {
         document.body.innerHTML = '<div id="api-content-grid"></div>'
         expect(
             shouldRetargetApiContentSwap(
                 document.getElementById('api-content-grid'),
-                '<div id="api-content-grid" class="api-content-grid"></div>'
+                incoming
             )
-        ).toBe(true)
+        ).toBe(expected)
+    })
+})
+
+describe('API sidebar scroller', () => {
+    const operation = '/api/es/operation/operation-search'
+
+    // The switcher sits outside the scroller, so the tree scrolls on its own and the nav itself never does.
+    function apiSidebar() {
+        document.body.innerHTML = `
+            <div id="api-content-grid"></div>
+            <nav id="pages-nav">
+                <div class="api-sidebar-chrome">switcher</div>
+                <div class="sidebar-nav-scroll" id="tree-scroll">
+                    <ul id="nav-tree-es">
+                        <li><a class="sidebar-link current" href="${operation}">Run a search</a></li>
+                    </ul>
+                </div>
+            </nav>
+        `
+        return document.querySelector<HTMLElement>('#tree-scroll')!
+    }
+
+    const sameTreeResponse = `<html><head><meta name="docs:nav-active" content="${operation}"></head><body><nav id="pages-nav"><div class="api-sidebar-chrome">switcher</div><div class="sidebar-nav-scroll"><ul id="nav-tree-es"></ul></div></nav></body></html>`
+
+    function setScrollTop(el: HTMLElement, value: number) {
+        Object.defineProperty(el, 'scrollTop', {
+            configurable: true,
+            writable: true,
+            value,
+        })
+    }
+
+    afterEach(() => {
+        vi.useRealTimers()
+        window.history.pushState({}, '', '/')
     })
 
-    it('keeps the full swap when leaving an API page', () => {
-        document.body.innerHTML = '<div id="api-content-grid"></div>'
-        expect(
-            shouldRetargetApiContentSwap(
-                document.getElementById('api-content-grid'),
-                '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
-            )
-        ).toBe(false)
+    it('keeps the tree scroll position across a same-tree swap', () => {
+        vi.useFakeTimers()
+        const scroll = apiSidebar()
+        setScrollTop(scroll, 80)
+
+        pinPagesNavScroll()
+        syncPagesNavFromResponse(sameTreeResponse)
+        scroll.scrollTop = 0
+        initNav()
+        vi.advanceTimersByTime(150)
+
+        expect(scroll.scrollTop).toBe(80)
+    })
+
+    it('scrolls the current row into view inside the tree, not the nav', () => {
+        vi.useFakeTimers()
+        const scroll = apiSidebar()
+        const nav = document.querySelector<HTMLElement>('#pages-nav')!
+        const link = document.querySelector<HTMLElement>(
+            `a[href="${operation}"]`
+        )!
+        setScrollTop(scroll, 80)
+        setScrollTop(nav, 0)
+        vi.spyOn(scroll, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 0, width: 100, height: 200 })
+        )
+        vi.spyOn(link, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 500, width: 100, height: 20 })
+        )
+
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: { xhr: { response: sameTreeResponse } },
+            })
+        )
+        document.head.insertAdjacentHTML(
+            'beforeend',
+            `<meta name="docs:nav-active" content="${operation}">`
+        )
+        initNav()
+        vi.advanceTimersByTime(150)
+
+        expect(scroll.scrollTop).toBeCloseTo(
+            80 + 500 - (200 * 0.381966 - 10),
+            1
+        )
+        expect(nav.scrollTop).toBe(0)
     })
 })
 
 describe('API nav deep link', () => {
-    const operation = '/api/doc/es/operation/operation-search'
+    const operation = '/api/es/operation/operation-search'
 
     function scrolledApiPage() {
         document.body.innerHTML = `
@@ -900,14 +979,14 @@ describe('API nav deep link', () => {
                         <li class="nav-folder">
                             <div class="peer nav-folder-peer">
                                 <input id="other-group" type="checkbox" checked>
-                                <a class="sidebar-link current" href="/api/doc/es/operation/operation-other">Other</a>
+                                <a class="sidebar-link current" href="/api/es/operation/operation-other">Other</a>
                             </div>
                             <ul class="nav-subtree"><li>Other child</li></ul>
                         </li>
                         <li class="nav-folder">
                             <div class="peer nav-folder-peer">
                                 <input id="search-group" type="checkbox">
-                                <a class="sidebar-link" href="/api/doc/es/group/search">Search</a>
+                                <a class="sidebar-link" href="/api/es/group/search">Search</a>
                             </div>
                             <ul class="nav-subtree">
                                 <li><a class="sidebar-link" href="${operation}">Run a search</a></li>
@@ -925,6 +1004,14 @@ describe('API nav deep link', () => {
             value,
         })
     }
+
+    const spyOnScrollTo = () =>
+        vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+
+    afterEach(() => {
+        setScrollY(0)
+        window.history.pushState({}, '', '/')
+    })
 
     it('expands the current operation after a same-tree swap', () => {
         scrolledApiPage()
@@ -956,9 +1043,7 @@ describe('API nav deep link', () => {
         ).toBe(true)
         expect(
             document
-                .querySelector(
-                    'a[href="/api/doc/es/operation/operation-other"]'
-                )
+                .querySelector('a[href="/api/es/operation/operation-other"]')
                 ?.classList.contains('current')
         ).toBe(false)
         expect(
@@ -1008,9 +1093,7 @@ describe('API nav deep link', () => {
     it('scrolls the article to the top when an API nav swap settles', () => {
         scrolledApiPage()
         setScrollY(240)
-        const scrollTo = vi
-            .spyOn(window, 'scrollTo')
-            .mockImplementation(() => undefined)
+        const scrollTo = spyOnScrollTo()
         const grid = document.getElementById('api-content-grid')!
         grid.dispatchEvent(
             new CustomEvent('htmx:afterSwap', {
@@ -1019,16 +1102,12 @@ describe('API nav deep link', () => {
             })
         )
         expect(scrollTo).toHaveBeenCalledWith(0, 0)
-        scrollTo.mockRestore()
-        setScrollY(0)
     })
 
     it('scrolls the article to the top on keyboard activation', () => {
         scrolledApiPage()
         setScrollY(180)
-        const scrollTo = vi
-            .spyOn(window, 'scrollTo')
-            .mockImplementation(() => undefined)
+        const scrollTo = spyOnScrollTo()
         const link = document.querySelector<HTMLAnchorElement>(
             `a[href="${operation}"]`
         )!
@@ -1039,16 +1118,12 @@ describe('API nav deep link', () => {
             shouldResetPageScroll(document.getElementById('api-content-grid'))
         ).toBe(true)
         expect(scrollTo).toHaveBeenCalledWith(0, 0)
-        scrollTo.mockRestore()
-        setScrollY(0)
     })
 
     it('keeps the article scroll when Space is pressed on a nav link', () => {
         scrolledApiPage()
         setScrollY(180)
-        const scrollTo = vi
-            .spyOn(window, 'scrollTo')
-            .mockImplementation(() => undefined)
+        const scrollTo = spyOnScrollTo()
         const link = document.querySelector<HTMLAnchorElement>(
             `a[href="${operation}"]`
         )!
@@ -1056,19 +1131,15 @@ describe('API nav deep link', () => {
             new KeyboardEvent('keydown', { key: ' ', bubbles: true })
         )
         expect(scrollTo).not.toHaveBeenCalled()
-        scrollTo.mockRestore()
-        setScrollY(0)
     })
 
     it('keeps the article scroll when the current folder row is toggled', () => {
-        const currentHref = '/api/doc/es/operation/operation-other'
+        const currentHref = '/api/es/operation/operation-other'
         window.history.pushState({}, '', currentHref)
         scrolledApiPage()
         initNav()
         setScrollY(220)
-        const scrollTo = vi
-            .spyOn(window, 'scrollTo')
-            .mockImplementation(() => undefined)
+        const scrollTo = spyOnScrollTo()
         const link = document.querySelector<HTMLAnchorElement>(
             `a[href="${currentHref}"]`
         )!
@@ -1079,19 +1150,14 @@ describe('API nav deep link', () => {
         expect(
             document.querySelector<HTMLInputElement>('#other-group')?.checked
         ).toBe(false)
-        scrollTo.mockRestore()
-        setScrollY(0)
-        window.history.pushState({}, '', '/')
     })
 
     it('keeps the article scroll when Enter toggles the current folder row', () => {
-        const currentHref = '/api/doc/es/operation/operation-other'
+        const currentHref = '/api/es/operation/operation-other'
         window.history.pushState({}, '', currentHref)
         scrolledApiPage()
         setScrollY(220)
-        const scrollTo = vi
-            .spyOn(window, 'scrollTo')
-            .mockImplementation(() => undefined)
+        const scrollTo = spyOnScrollTo()
         const link = document.querySelector<HTMLAnchorElement>(
             `a[href="${currentHref}"]`
         )!
@@ -1099,8 +1165,5 @@ describe('API nav deep link', () => {
             new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
         )
         expect(scrollTo).not.toHaveBeenCalled()
-        scrollTo.mockRestore()
-        setScrollY(0)
-        window.history.pushState({}, '', '/')
     })
 })

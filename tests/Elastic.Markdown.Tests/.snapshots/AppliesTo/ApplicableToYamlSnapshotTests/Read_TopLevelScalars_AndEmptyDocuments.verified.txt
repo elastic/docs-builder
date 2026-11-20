@@ -1,0 +1,54 @@
+yaml: all
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"all"}]
+text: stack: all, deployment: self=all, ece=all, eck=all, ess=all, serverless: elasticsearch=all, observability=all, security=all, vectordb=all, product: all
+
+yaml: ALL
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"all"}]
+text: stack: all, deployment: self=all, ece=all, eck=all, ess=all, serverless: elasticsearch=all, observability=all, security=all, vectordb=all, product: all
+
+yaml: All
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"all"}]
+text: stack: all, deployment: self=all, ece=all, eck=all, ess=all, serverless: elasticsearch=all, observability=all, security=all, vectordb=all, product: all
+
+yaml: ga
+result: null
+
+yaml: stack
+result: null
+
+yaml: '  '
+result: null
+
+yaml: ''
+result: null
+
+yaml: ~
+result: null
+
+yaml: null
+result: null
+
+yaml: 9.0
+result: null
+
+yaml: true
+result: null
+
+yaml: []
+result: null
+
+yaml: {}
+result: null
+
+yaml: # only a comment
+result: null
+
+yaml: ---
+result: null
+
+yaml: - 
+result: null
+
+yaml: ! all
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"all"}]
+text: stack: all, deployment: self=all, ece=all, eck=all, ess=all, serverless: elasticsearch=all, observability=all, security=all, vectordb=all, product: all

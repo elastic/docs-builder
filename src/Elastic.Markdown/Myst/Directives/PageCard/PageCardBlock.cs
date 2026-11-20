@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 
@@ -96,6 +97,6 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 		return [path, path + ".md", path.TrimEnd('/') + "/index.md"];
 	}
 
-	[GeneratedRegex(@"^\[([^\]]+)\]\(([^)]+)\)$")]
+	[GeneratedRegex(@"^\[([^\]]+)\]\(([^)]+)\)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkArgumentRegex();
 }

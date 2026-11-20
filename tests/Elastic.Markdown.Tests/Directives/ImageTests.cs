@@ -5,7 +5,10 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Image;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -38,8 +41,38 @@ public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 	public void ImageIsFoundSoNoErrorIsEmitted()
 	{
 		Block!.Found.Should().BeTrue();
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
+}
+
+[InheritsTests]
+public class ImageAltWithQuoteTests() : DirectiveTest<ImageBlock>("""
+:::{image} img/observability.png
+:alt: Say "hi"
+:::
+""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/observability.png", "");
+
+	[Test]
+	public void QuoteInAltStaysInsideTheAttributes() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-D9161EE2">
+			<img loading="lazy" title="Say &quot;hi&quot;" alt="Say &quot;hi&quot;" src="/img/observability.png" style="">
+		</a>
+		<dialog id="modal-D9161EE2" class="modal" aria-label="Say &quot;hi&quot;">
+			<div class="modal-content">
+				<form method="dialog" class="modal-close">
+					<button type="submit" class="close-button" aria-label="Close">×</button>
+				</form>
+				<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
+					<img loading="lazy" title="Say &quot;hi&quot;" alt="Say &quot;hi&quot;" src="/img/observability.png">
+				</a>
+			</div>
+		</dialog>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -88,7 +121,7 @@ public class AllowedExternalHostTests() : DirectiveTest<ImageBlock>(
 	public void AllowedHostDoesNotWarn()
 	{
 		Block!.Found.Should().BeTrue();
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -113,6 +146,12 @@ Relaxing at the beach 🏝 🌊 😎
 	{
 		Block!.Found.Should().BeTrue();
 
-		Collector.Diagnostics.Should().HaveCount(1).And.OnlyContain(d => d.Severity == Severity.Warning);
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 image is using an external URI: https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true "
+			);
 	}
 }

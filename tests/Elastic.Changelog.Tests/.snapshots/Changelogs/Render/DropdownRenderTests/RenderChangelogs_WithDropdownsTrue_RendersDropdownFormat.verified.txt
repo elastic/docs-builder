@@ -1,0 +1,21 @@
+=== 9.2.0/breaking-changes.md ===
+## 9.2.0 [elastic-9.2.0-breaking-changes]
+
+::::{dropdown} Breaking API change.
+API has been changed to improve performance
+
+For more information, check [#123](https://github.com/elastic/elastic/pull/123).
+
+**Impact**<br>Existing API calls will fail
+
+**Action**<br>Update your code to use the new API endpoints
+::::
+=== 9.2.0/deprecations.md ===
+## 9.2.0 [elastic-9.2.0-deprecations]
+_There are no deprecations associated with this release._
+=== 9.2.0/index.md ===
+## 9.2.0 [elastic-release-notes-9.2.0]
+_There are no new features, enhancements, or fixes associated with this release._
+=== 9.2.0/known-issues.md ===
+## 9.2.0 [elastic-9.2.0-known-issues]
+_There are no known issues associated with this release._
