@@ -838,41 +838,9 @@ public class OpenApiGeneratorMultiVersionTests
 
 		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
 
-		string Notice(params string[] segments)
-		{
-			var html = context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "index.html"]));
-			var notice = Regex.Match(
-				html,
-				"<p class=\"api-version-notice.*?</p>",
-				RegexOptions.Singleline,
-				RegexTimeouts.MatchTimeout
-			).Value;
-			return notice.Length == 0
-				? "none"
-				: Regex.Replace(notice, @"\s+", " ", RegexOptions.None, RegexTimeouts.MatchTimeout).Replace(
-					"> <",
-					"><",
-					StringComparison.Ordinal
-				);
-		}
+		string Notice(params string[] segments) => ReadNotice(context, outputRoot, segments);
 
-		string Badges(params string[] segments)
-		{
-			var html = context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "index.html"]));
-			var badges = Regex.Match(
-				html,
-				"<span class=\"api-title-badges\">.*?</span>\\s*</header>",
-				RegexOptions.Singleline,
-				RegexTimeouts.MatchTimeout
-			).Value;
-			return badges.Length == 0
-				? "none"
-				: Regex.Replace(badges, @"\s+", " ", RegexOptions.None, RegexTimeouts.MatchTimeout).Replace(
-					"> <",
-					"><",
-					StringComparison.Ordinal
-				);
-		}
+		string Badges(params string[] segments) => ReadBadges(context, outputRoot, segments);
 
 		string[] ping = ["operation", "operation-ping"];
 		var notices = string.Join(
@@ -903,6 +871,42 @@ public class OpenApiGeneratorMultiVersionTests
 			versionless landing: none
 			v8 landing: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
 			next landing: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
+			"""
+		);
+	}
+
+	[Test]
+	public async Task Generate_NewestMajorFailsToLoad_RendersTheNoticesWithoutALatestVersionLink()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			missingVersionsAreUnreadable: true,
+			("main", SpecDocument("Elasticsearch main")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		string[] ping = ["operation", "operation-ping"];
+		var notices = string.Join(
+			"\n",
+			$"v8 notice: {ReadNotice(context, outputRoot, ["v8", .. ping])}",
+			$"v8 badges: {ReadBadges(context, outputRoot, ["v8", .. ping])}",
+			$"next notice: {ReadNotice(context, outputRoot, ["next", .. ping])}",
+			$"v8 landing notice: {ReadNotice(context, outputRoot, ["v8"])}"
+		);
+
+		notices.Should().MatchInlineSnapshot(
+			"""
+			v8 notice: none
+			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span></span></header>
+			next notice: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span></p>
+			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span></p>
 			"""
 		);
 	}
@@ -1062,6 +1066,27 @@ public class OpenApiGeneratorMultiVersionTests
 		var topic = new JsonObject { ["title"] = title, ["content"] = "Topic text." };
 		document.Extensions = new Dictionary<string, IOpenApiExtension> { ["x-topics"] = new JsonNodeExtension(new JsonArray(topic)) };
 		return document;
+	}
+
+	/// <summary>The version notice under the title of a generated page, on one line, or <c>none</c>.</summary>
+	private static string ReadNotice(BuildContext context, string outputRoot, string[] segments) =>
+		ReadFragment(context, outputRoot, segments, "<p class=\"api-version-notice.*?</p>");
+
+	/// <summary>The badges row of a generated operation page, on one line, or <c>none</c>.</summary>
+	private static string ReadBadges(BuildContext context, string outputRoot, string[] segments) =>
+		ReadFragment(context, outputRoot, segments, "<span class=\"api-title-badges\">.*?</span>\\s*</header>");
+
+	private static string ReadFragment(BuildContext context, string outputRoot, string[] segments, string pattern)
+	{
+		var html = context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "index.html"]));
+		var fragment = Regex.Match(html, pattern, RegexOptions.Singleline, RegexTimeouts.MatchTimeout).Value;
+		return fragment.Length == 0
+			? "none"
+			: Regex.Replace(fragment, @"\s+", " ", RegexOptions.None, RegexTimeouts.MatchTimeout).Replace(
+				"> <",
+				"><",
+				StringComparison.Ordinal
+			);
 	}
 
 	private static BuildContext CreateGenerateContext(
