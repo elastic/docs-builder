@@ -50,7 +50,8 @@
 				{
 					if (block.Heading is { } classification)
 					{
-						<h3 class="api-index-heading">@classification</h3>
+						@* Not an h3: the docs scroll spy follows every h2 and h3 in the page, and a heading with no link in On this page would drop Endpoints as the current entry. *@
+						<div class="api-index-heading" role="heading" aria-level="3">@classification</div>
 					}
 					<ul class="api-group-list">
 						@foreach (var group in block.Groups)
