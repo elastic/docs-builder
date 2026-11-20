@@ -202,7 +202,7 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
-	/// Every version tree the explorer renders for every configured API, for the search index. A tree the version index
+	/// Every version tree the explorer renders for every configured API, for the search index, except <c>main</c> at <c>/next</c>. A tree the version index
 	/// declares that did not load, or a version index that could not be fetched, fails the export: indexing without
 	/// those trees would delete their documents. Page rendering keeps its warning and its local-spec fallback.
 	/// </summary>
@@ -238,7 +238,11 @@ public class OpenApiGenerator(
 
 		return [
 			.. apis.SelectMany(
-				static a => a.Resolved.Documents.Select(v => new IndexedTree(a.Resolved.Routes, a.Id, v.Version.Moniker, v.Document))
+				static a => a
+					.Resolved
+					.Documents
+					.Where(v => !a.Resolved.Routes.IsNext(v.Version.Moniker))
+					.Select(v => new IndexedTree(a.Resolved.Routes, a.Id, v.Version.Moniker, v.Document))
 			)
 		];
 	}

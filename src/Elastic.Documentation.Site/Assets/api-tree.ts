@@ -2,7 +2,7 @@ import { config } from './config'
 
 export interface ApiTree {
     product: string
-    /** `8` for `/v8/`, `main` for `/next/` (the unreleased spec), `null` on the unversioned path. */
+    /** `8` for `/v8/`, `null` on the unversioned path and on `/next/`, which the search index leaves out. */
     tree: string | null
 }
 
@@ -20,8 +20,8 @@ export function parseApiTree(
 ): ApiTree | null {
     const match = matchApiTree(path, root)
     if (!match) return null
-    // The search index names the unreleased tree `main`; only its URL segment is `next`.
-    return { product: match[1], tree: match[2] ?? (match[3] ? 'main' : null) }
+    // The unreleased `/next/` tree is not indexed, so a reader there searches the default tree.
+    return { product: match[1], tree: match[2] ?? null }
 }
 
 /** The product and URL root of an API path, such as `es/`, `es/v9` or `es/next`. `null` outside an API product. */

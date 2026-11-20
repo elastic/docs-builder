@@ -79,7 +79,7 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task ResolveIndexedTrees_MainAndMajorDeclared_ReturnsEveryTree()
+	public async Task ResolveIndexedTrees_MainAndMajorDeclared_LeavesOutNext()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -99,7 +99,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var trees = await generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		trees.Select(t => $"{t.Moniker} at {t.Suffix}").Should().Equal("main at elasticsearch/next", "8 at elasticsearch");
+		trees.Select(t => $"{t.Moniker} at {t.Suffix}").Should().Equal("8 at elasticsearch");
 	}
 
 	[Test]
@@ -205,6 +205,60 @@ public class OpenApiGeneratorCatalogSplitTests
 	/*lang=json,strict*/
 	private const string MainAnd8Index =
 		"""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"main":{"version":"main"},"8":{"version":"8.19"}}}}""";
+
+	/*lang=json,strict*/
+	private const string MainNineAnd8Index =
+		"""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"main":{"version":"main"},"9":{"version":"9.2"},"8":{"version":"8.19"}}}}""";
+
+	[Test]
+	public async Task ExportDocuments_MainNineAndEight_IndexesNineVersionlessAndEightAtV8()
+	{
+		using var versionIndexClient = MainNineAnd8Client();
+		var generator = MainNineAnd8Generator(versionIndexClient);
+		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
+
+		var trees = new List<string>();
+		var paths = new List<string>();
+		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
+		{
+			paths.Add(doc.Path);
+			trees.AddRange(doc.Api!.Trees.Select(t => $"{t.Tree} {t.Root}"));
+		}
+
+		paths.Should().OnlyContain(p => !p.Contains("/next") && !p.Contains("/v9"));
+		trees.Distinct().Should().BeEquivalentTo("9 /docs/api/elasticsearch", "8 /docs/api/elasticsearch/v8");
+	}
+
+	[Test]
+	public async Task ResolveCatalogEntries_MainAndMajorDeclared_LinksTheVersionlessUrl()
+	{
+		using var versionIndexClient = MainNineAnd8Client();
+		var generator = MainNineAnd8Generator(versionIndexClient);
+
+		var entries = await generator.ResolveCatalogEntries(TestContext.Current!.Execution.CancellationToken);
+
+		entries.Select(e => e.Url).Should().NotContain(url => url.Contains("/next") || url.Contains("/v9"));
+	}
+
+	private static VersionIndexClient MainNineAnd8Client() =>
+		new(
+			BaseUri,
+			new StubHandler(
+				request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+					? IndexResponse(MainNineAnd8Index)
+					: SpecResponse()
+			),
+			sleep: (_, _) => Task.CompletedTask
+		);
+
+	private static OpenApiGenerator MainNineAnd8Generator(VersionIndexClient versionIndexClient) =>
+		new(
+			NullLoggerFactory.Instance,
+			CreateGenerateContext(Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}")),
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch main"), SpecDocument("Elasticsearch 9"), SpecDocument("Elasticsearch 8"))
+		);
 
 	[Test]
 	public async Task ExportDocuments_ApisBeyondElasticsearchAndKibana_AreIndexedOncePerKey()

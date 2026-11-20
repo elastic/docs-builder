@@ -25,5 +25,8 @@ public sealed record ApiVersionRoutes(string ApiKey, string? DefaultMoniker)
 	public IReadOnlyList<string> Suffixes(string moniker) =>
 		MirrorSuffix(moniker) is { } mirror ? [Suffix(moniker), mirror] : [Suffix(moniker)];
 
+	/// <summary>Whether <paramref name="moniker"/> is the unreleased <c>main</c> tree served at <c>/next</c>, which the search index leaves out.</summary>
+	public bool IsNext(string moniker) => moniker == "main" && moniker != DefaultMoniker;
+
 	private string Numbered(string moniker) => moniker == "main" ? $"{ApiKey}/{ApiUrlBuilder.NextSegment}" : $"{ApiKey}/v{moniker}";
 }
