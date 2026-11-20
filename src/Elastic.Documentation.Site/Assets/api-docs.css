@@ -177,9 +177,10 @@
 }
 
 /*
- * The breadcrumbs, with Copy page at the right end of the same row. When both do not fit on one line Copy page wraps
- * onto its own line under the breadcrumbs, at their left edge, as on a phone. Lined up on the last line of text, so
- * the button sits level with the breadcrumbs on one line and under them when wrapped.
+ * The breadcrumbs, with Copy page at the right end of the same row. Below 1024px, when both do not fit on one line,
+ * Copy page wraps onto its own line under the breadcrumbs, at their left edge, as on a phone. Lined up on the last line
+ * of text, so the button sits level with the breadcrumbs on one line and under them when wrapped. From 1024px up the
+ * row does not wrap (see the media block below).
  */
 .api-page-toolbar {
 	display: flex;
@@ -204,18 +205,25 @@
 }
 
 /* Beside the sidebar the breadcrumb row is centred on the first line of the API selector's name.
-   Its own 24px top padding and the page's pt-6 would put it about 22px lower. */
+   Its own 24px top padding and the page's pt-6 would put it about 22px lower.
+   On desktop Copy page stays at the top right and never wraps: the trail shrinks and wraps its own crumbs beside it. */
 @media (width >= 1024px) {
 	.api-page-main .api-page-toolbar {
 		margin-top: calc(var(--spacing) * -2.5);
-		/* The breadcrumbs' 36px min-height already leaves 10px under their line, so a wrapped Copy page sits 12px under it. */
-		row-gap: 2px;
+		flex-wrap: nowrap;
+		align-items: first baseline;
 	}
 
 	.api-page-main .api-page-toolbar #breadcrumbs {
 		box-sizing: border-box;
+		flex: 1 1 0;
+		min-width: 0;
 		min-height: 36px;
 		padding-top: 0;
+	}
+
+	.api-page-main .api-page-toolbar .api-page-actions {
+		margin-left: auto;
 	}
 }
 
