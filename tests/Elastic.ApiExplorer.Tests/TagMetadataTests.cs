@@ -934,4 +934,29 @@ public class TagMetadataTests
 		html.Should().Contain("<div class=\"api-index-heading\" role=\"heading\" aria-level=\"3\">Platform</div>");
 		html.Should().NotContain("<h3 class=\"api-index-heading\"");
 	}
+
+	[Test]
+	public async Task ProductLanding_OnThisPage_ListsIntroHeadingsThenEndpoints()
+	{
+		var openApiJson = new MinimalSpec([new("/spaces", "get-spaces", ["spaces"])], [new("spaces", DisplayName: "Spaces")])
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			ResponseDescription = "ok"
+		}.ToJson();
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+		var info = new OpenApiInfo
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			Description = "Intro.\n\n## Authentication\n\n### Keys\n\n#### Rotation\n\n## Endpoints\n"
+		};
+
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation, info);
+
+		// Headings down to level 3 keep their order, level 4 is left out, and the page's own Endpoints entry comes last.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#toc-nav"));
+		html.Split("id=\"endpoints\"").Length.Should().Be(2, "an intro heading cannot claim the id the endpoint list owns");
+	}
 }

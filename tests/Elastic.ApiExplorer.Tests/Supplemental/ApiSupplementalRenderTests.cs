@@ -635,6 +635,36 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Tag_OnThisPage_ListsIntroHeadingsSectionsThenEndpoints()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(
+			nav.Index.Model,
+			nav,
+			tags: Doc(
+				"search",
+				"""
+			## Description
+
+			### Overview
+
+			#### Too deep
+
+			### Endpoints
+
+			## Getting started
+
+			SUPP_TAG_GETTING_STARTED
+			"""
+			)
+		);
+
+		// Intro headings down to level 3, then the supplemental sections as level 3, then the page's Endpoints entry.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#toc-nav"));
+		html.Split("id=\"endpoints\"").Length.Should().Be(2, "an intro heading cannot claim the id the endpoint list owns");
+	}
+
+	[Test]
 	public async Task Tag_OverviewRows_LinkTheTitleNotTheMethodPath()
 	{
 		var nav = SearchTag();
