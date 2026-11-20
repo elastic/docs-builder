@@ -25,6 +25,12 @@ describe('api version switcher sync', () => {
 
     it('replaces the picker with the one of the page that was swapped in and has htmx process it', () => {
         const before = document.getElementById('api-version-switcher')
+        // A detached picker would miss the `hx-boost` it inherits from `<body>`, so htmx must see it in the live page.
+        let processedInLivePage = false
+        vi.mocked(htmx.process).mockImplementationOnce((element) => {
+            processedInLivePage =
+                element instanceof Element && document.contains(element)
+        })
 
         const changed = syncApiVersionSwitcher(
             `<html><body>${picker([
@@ -41,6 +47,7 @@ describe('api version switcher sync', () => {
         ])
         expect(after).not.toBe(before)
         expect(htmx.process).toHaveBeenCalledExactlyOnceWith(after)
+        expect(processedInLivePage).toBe(true)
     })
 
     it('leaves the picker alone when the response has no picker', () => {
