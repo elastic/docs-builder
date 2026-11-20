@@ -192,13 +192,13 @@ rendering the local file.
 
 For versioned products, {{dbuild}} renders every resolved version from the index:
 
-| Index moniker | URL path | Role | Notice beside the title |
+| Index moniker | URL path | Role | Notice under the title |
 |---|---|---|---|
 | `9`, the highest numeric major | `/api/<key>/` and `/api/<key>/v9/` | Newest released major, the default. Both URLs serve the same pages. | None |
 | `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8` pill and a link to the latest version |
 | `main` | `/api/<key>/next/` | Unreleased spec | An `Unreleased` warning and a link to the latest version |
 
-The notice sits in the title row, beside the title. It wraps under the title when the row is full, so the title keeps its normal distance to the request line.
+The notice sits directly under the title, on every page type.
 The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise. If the newest major failed to load, the notice keeps the page's own version and has no link.
 
 The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.

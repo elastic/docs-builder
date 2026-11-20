@@ -172,9 +172,9 @@
 	min-width: 0;
 }
 
-/* The version line beside the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. It wraps under the title when the row is full. */
+/* The version line under the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. It takes its own row of the title row. */
 .api-version-notice {
-	flex: 0 1 auto;
+	flex: 1 0 100%;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
