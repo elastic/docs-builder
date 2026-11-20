@@ -266,7 +266,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var entries = await generator.ResolveCatalogEntries(TestContext.Current!.Execution.CancellationToken);
 
-		entries.Select(e => e.Url).Should().NotContain(url => url.Contains("/next") || url.Contains("/v9"));
+		entries.Select(e => e.Url).Should().Equal("/docs/api/elasticsearch");
 	}
 
 	private static VersionIndexClient MainNineAnd8Client() =>
