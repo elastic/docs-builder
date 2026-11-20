@@ -8,18 +8,7 @@ using Elastic.Documentation.Site.Icons;
 
 namespace Elastic.ApiExplorer.Landing;
 
-/// <summary>A deployment an API is available on. <see cref="Label"/> is the short tag text, <see cref="Name"/> the full name.</summary>
-public sealed record ApiCatalogDeployment(string Label, string Name);
-
-public sealed record ApiCatalogItem(
-	string Key,
-	string Title,
-	string Url,
-	string IconSvg,
-	string? Summary,
-	IReadOnlyList<ApiCatalogDeployment> Deployments,
-	string? ParentKey = null
-);
+public sealed record ApiCatalogItem(string Key, string Title, string Url, string IconSvg, string? Summary, string? ParentKey = null);
 
 /// <summary>
 /// One labelled band of the page. <see cref="Title"/> is null for a lone group, which needs no label. A
@@ -98,14 +87,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 		("Orchestration", ApiCatalogOrder.OrchestrationKeys)
 	];
 
-	private static readonly (string Category, string Label)[] DeploymentLabels =
-	[
-		(ApplicabilityKeys.Self, "Self-managed"),
-		(ApplicabilityKeys.Ece, "ECE"),
-		(ApplicabilityKeys.Ess, "ECH"),
-		(ApplicabilityKeys.Serverless, "Serverless")
-	];
-
 	private const string FallbackIconSvg =
 		"""<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5 10.5 19"/></svg>""";
 
@@ -168,13 +149,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			: new(title, Grouped: true, [], members);
 	}
 
-	internal static IReadOnlyList<ApiCatalogDeployment> DeploymentsOf(ApiCatalogEntry entry) =>
-		[
-			.. DeploymentLabels.Where(d => entry.CatalogCategories.Contains(d.Category)).Select(
-				d => new ApiCatalogDeployment(d.Label, ApiCatalogCategory.DisplayName(d.Category))
-			)
-		];
-
 	internal static ApiCatalogItem ToItem(ApiCatalogEntry entry) =>
 		new(
 			entry.Key,
@@ -182,7 +156,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			entry.Url,
 			entry.IconSvg ?? FallbackIconSvg,
 			ApiSeoDescription.Excerpt(entry.Description),
-			DeploymentsOf(entry),
 			ApiCatalogOrder.VariantParents.GetValueOrDefault(entry.Key)
 		);
 }

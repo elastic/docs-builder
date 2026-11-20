@@ -12,7 +12,7 @@ The assembler also writes a combined **Elastic APIs** page at `/docs/api/`, on i
 
 Under the line of text sits the same box as in the API sidebar, labelled **Type ❲/❳ to explore API**. It explores operations across every API, so you can jump to an endpoint without knowing which product it belongs to. Type <kbd>/</kbd> or <kbd>s</kbd> anywhere on the page, outside a text field, to jump to it. Like the sidebar box, it is omitted on isolated and air-gapped builds.
 
-The cards for APIs that are in neither group show the API's deployments as small pills taken from `catalog.categories`. They use the same look as `applies_to` badges and the same names (**Self-managed**, **ECE**, **ECH**, **Serverless**), but show the name only: the catalog knows the deployment, not a lifecycle or version. The grouped cards leave them out, and an API with no categories shows no pills. The description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export.
+Each card's description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export.
 
 The API title comes from `info.title` in the spec, so fix naming and description copy in the spec.
 
@@ -29,8 +29,8 @@ This feature is still under development and the functionality described on this 
 ## Configure the API Explorer
 
 Add the `api` key to your `docset.yml` file to enable the API Explorer. Each product key takes a
-single-entry sequence with a required `spec:` and `product:`, and optional `repository:`,
-`children:`, and `catalog:`:
+single-entry sequence with a required `spec:` and `product:`, and optional `repository:` and
+`children:`:
 
 ```yaml
 api:
@@ -132,31 +132,6 @@ the reserved or operation segment.
 
 If the same slug is produced by two different child files in the same product, the build
 also fails with a duplicate-slug error.
-
-### `catalog:` (optional)
-
-This sets the deployment tags on the API's row on the Elastic APIs page. An API may list several categories. The same identifiers are used in `applies_to`, but a category here does not mean the API is generally available for every version of that deployment. An API with no `catalog:` shows no tags.
-
-```yaml
-api:
-  elasticsearch:
-    - spec: elasticsearch-openapi.json
-      product: elasticsearch
-      catalog:
-        categories:
-          - self
-          - ece
-          - ess
-```
-
-`catalog.categories:` accepts:
-
-- `self` → Self-managed
-- `ece` → Elastic Cloud Enterprise
-- `ess` or `ech` → Elastic Cloud Hosted
-- `serverless` → Serverless
-
-Unknown values fail the build.
 
 ### One spec per product
 

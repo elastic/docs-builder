@@ -13,8 +13,7 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 {
-	private static ApiCatalogEntry Entry(string key, string title, params string[] categories) =>
-		new(key, title, $"/api/{key}/") { CatalogCategories = categories };
+	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/{key}/");
 
 	private async Task<string> RenderAsync(params ApiCatalogEntry[] entries)
 	{
@@ -41,10 +40,10 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync(
 			Entry("logstash", "Logstash APIs"),
-			Entry("kibana-serverless", "Kibana Serverless APIs", "serverless"),
+			Entry("kibana-serverless", "Kibana Serverless APIs"),
 			Entry("elasticsearch", "Elasticsearch API"),
 			Entry("kibana", "Kibana APIs"),
-			Entry("elasticsearch-serverless", "Elasticsearch Serverless API", "serverless")
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API")
 		);
 
 		var keys = new[] { "elasticsearch", "elasticsearch-serverless", "kibana", "kibana-serverless", "logstash" };
@@ -62,7 +61,7 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 			Entry("elasticsearch", "Elasticsearch API"),
 			Entry("kibana", "Kibana APIs"),
 			Entry("logstash", "Logstash APIs"),
-			Entry("elasticsearch-serverless", "Elasticsearch Serverless API", "serverless"),
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API"),
 			Entry("cloud", "Elastic Cloud API")
 		);
 

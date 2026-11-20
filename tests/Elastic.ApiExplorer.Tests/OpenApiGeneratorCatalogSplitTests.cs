@@ -51,7 +51,6 @@ public class OpenApiGeneratorCatalogSplitTests
 		entries[0].Title.Should().Be("Elasticsearch main");
 		entries[0].ProductId.Should().Be("elasticsearch");
 		entries[0].Description.Should().Be("A **distributed** [search](https://example.com) engine.\n\nMore detail.");
-		entries[0].CatalogCategories.Should().Equal("ece", "ess", "self");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
 	}
@@ -619,7 +618,7 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task GenerateCatalog_GroupedApis_ShowNoDeploymentTagsAndUngroupedOnesDo()
+	public async Task GenerateCatalog_GroupedApis_AttachTheVariantAndLabelTheGroups()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -627,14 +626,11 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 		var entries = new List<ApiCatalogEntry>
 		{
-			new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch") { CatalogCategories = ["self"] },
-			new("kibana", "Kibana", "/docs/api/kibana", "kibana") { CatalogCategories = ["self"] },
-			new("elasticsearch-serverless", "Elasticsearch Serverless", "/docs/api/elasticsearch-serverless", "elasticsearch")
-			{
-				CatalogCategories = ["serverless"]
-			},
-			new("cloud", "Elastic Cloud", "/docs/api/cloud", "cloud-hosted") { CatalogCategories = ["ess"] },
-			new("extra", "Extra API", "/docs/api/extra", "extra") { CatalogCategories = ["ece"] }
+			new("elasticsearch", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch"),
+			new("kibana", "Kibana", "/docs/api/kibana", "kibana"),
+			new("elasticsearch-serverless", "Elasticsearch Serverless", "/docs/api/elasticsearch-serverless", "elasticsearch"),
+			new("cloud", "Elastic Cloud", "/docs/api/cloud", "cloud-hosted"),
+			new("extra", "Extra API", "/docs/api/extra", "extra")
 		};
 
 		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);
@@ -643,33 +639,8 @@ public class OpenApiGeneratorCatalogSplitTests
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
-		// Only the API that no group covers shows its deployment, the Serverless card is attached under Elasticsearch,
-		// the groups are labelled and the cards sit one level below them; the Serverless tag-on and the Cloud API are compact.
-		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("svg"));
-	}
-
-	[Test]
-	public async Task GenerateCatalog_CategoriesDeclared_RendersOneListWithDeploymentTags()
-	{
-		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
-		var context = CreateGenerateContext(outputRoot);
-		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
-		var entries = new List<ApiCatalogEntry>
-		{
-			new("search", "Elasticsearch", "/docs/api/elasticsearch", "elasticsearch") { CatalogCategories = ["self", "ess"] },
-			new("serverless", "Elasticsearch Serverless", "/docs/api/serverless", "elasticsearch") { CatalogCategories = ["serverless"] },
-			new("connect", "Cloud Connect", "/docs/api/connect", "ess")
-		};
-
-		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);
-
-		var html = await context
-			.WriteFileSystem
-			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
-		// Kibana is missing, so there is no featured pair; an API shows once however many deployments it declares;
-		// APIs without a priority key sort by title; a label that is already the full name needs no tooltip.
+		// The Serverless card is attached under Elasticsearch, the groups are labelled and the cards sit one level
+		// below them; the Serverless tag-on and the Cloud API are compact.
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("svg"));
 	}
 
@@ -814,11 +785,6 @@ public class OpenApiGeneratorCatalogSplitTests
 			  elasticsearch:
 			    - spec: elasticsearch-openapi.json
 			      product: elasticsearch
-			      catalog:
-			        categories:
-			          - self
-			          - ece
-			          - ess
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
