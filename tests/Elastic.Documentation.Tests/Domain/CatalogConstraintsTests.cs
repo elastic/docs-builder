@@ -83,6 +83,10 @@ public class CatalogConstraintsTests
 	}
 
 	[Test]
+	public void ProductCatalog_PublicReferenceProductWithACopyOfTheNoneSentinel_IsAnError() =>
+		ProductCatalog.Constraints.Report(Products(Widgets(VersioningSystem.None with { }))).Violations.Should().ContainSingle();
+
+	[Test]
 	public void ProductCatalog_Projections_FollowTheComparerOfTheProducts()
 	{
 		var catalog = new ProductCatalog
