@@ -58,7 +58,9 @@ public class ApiGroupDeprecationTests
 	}
 
 	[Test]
-	public async Task Render_RetiredGroup_StrikesItsSidebarFolder()
+	[Arguments("legacy", false)]
+	[Arguments("preview", true)]
+	public async Task Render_RetiredGroup_StrikesItsSidebarFolder(string sidebar, bool navigationPreview)
 	{
 		var navigation = await NavigationAsync();
 		var model = NavigationRenderModel.Create(
@@ -66,12 +68,17 @@ public class ApiGroupDeprecationTests
 			[navigation],
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false
+			isGlobalAssemblyBuild: false,
+			navigationPreviewEnabled: navigationPreview
 		);
 
-		var html = await _TocTreeNav.Create(model.Tree).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".nav-folder-peer"));
+		html.Should().MatchHtmlSnapshot(
+			new HtmlSnapshotOptions().Select(".nav-folder > .peer, .nav-tree__row"),
+			options: new SnapshotOptions { NameReplacesArguments = true },
+			name: sidebar
+		);
 	}
 
 	[Test]
