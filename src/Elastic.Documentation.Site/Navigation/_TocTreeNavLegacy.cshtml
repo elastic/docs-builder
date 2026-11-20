@@ -75,8 +75,9 @@
 	{
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
+				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")@(item.Deprecated ? " nav-link--deprecated" : "")">
 					<span>@item.NavigationTitle</span>
+					@if (item.Deprecated) { <span class="sr-only">Deprecated</span> }
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 					@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 				</a>

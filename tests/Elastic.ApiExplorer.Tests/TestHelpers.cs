@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
@@ -20,6 +21,8 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
@@ -155,6 +158,28 @@ public static class TestHelpers
 
 	public static Product CreateProduct(string id, VersioningSystem versioningSystem, string? displayName = null) =>
 		new() { Id = id, DisplayName = displayName ?? id, VersioningSystem = versioningSystem };
+
+	/// <summary>Renders a group page the way the build does, with the group as the current navigation item.</summary>
+	public static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
+
+	/// <summary>Renders an index page (product landing or group page) to HTML.</summary>
+	public static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
+	{
+		var collector = new DiagnosticsCollector([]);
+		var context = CreateBuildContext(collector);
+		var renderContext = new ApiRenderContext(
+			context,
+			new OpenApiDocument(),
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		)
+		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+
+		return fs.File.ReadAllText("/out.html");
+	}
 }
 
 /// <summary>

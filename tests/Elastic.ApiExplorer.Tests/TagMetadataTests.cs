@@ -806,7 +806,7 @@ public class TagMetadataTests
 			.Should()
 			.Equal(typeof(IntroHeadingNavigationItem), typeof(IntroHeadingNavigationItem), typeof(OperationNavigationItem));
 
-		var html = await RenderTagAsync(tag);
+		var html = await TestHelpers.RenderTagAsync(tag);
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
@@ -888,7 +888,7 @@ public class TagMetadataTests
 		tag.Should().NotBeNull();
 		tag.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<OperationNavigationItem>();
 
-		var html = await RenderTagAsync(tag);
+		var html = await TestHelpers.RenderTagAsync(tag);
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
@@ -905,29 +905,9 @@ public class TagMetadataTests
 		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("kibana", document);
 
-		var html = await RenderIndexAsync(navigation.Index, navigation);
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation);
 		// Every endpoint stays in the page so the browser's find-in-page matches it. Authentication and Servers are
 		// topics, so they sit above the index, not in a group.
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
-	}
-
-	private static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
-
-	private static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
-	{
-		var collector = new DiagnosticsCollector([]);
-		var context = TestHelpers.CreateBuildContext(collector);
-		var renderContext = new ApiRenderContext(
-			context,
-			new OpenApiDocument(),
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
-
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
 	}
 }

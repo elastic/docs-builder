@@ -116,7 +116,7 @@ public static partial class ApiUrlBuilder
 
 	/// <summary>URL of a <c>children:</c> page, from its file slug.</summary>
 	public static string ChildUrl(string? urlPathPrefix, string apiUrlSuffix, string slug) =>
-		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{slug}/";
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{slug}";
 
 	public static string AuthenticationUrl(string? urlPathPrefix, string apiUrlSuffix) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{AuthenticationSegment}";

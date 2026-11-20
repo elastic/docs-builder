@@ -30,6 +30,12 @@ public class ApiUrlBuilderTests
 		ApiUrlBuilder.AuthenticationUrl(urlPathPrefix, apiUrlSuffix).Should().Be(expected);
 
 	[Test]
+	[Arguments("", "kibana", "/api/kibana/spaces")]
+	[Arguments("/docs", "kibana/v8", "/docs/api/kibana/v8/spaces")]
+	public void ChildUrl_HasNoTrailingSlash(string urlPathPrefix, string apiUrlSuffix, string expected) =>
+		ApiUrlBuilder.ChildUrl(urlPathPrefix, apiUrlSuffix, "spaces").Should().Be(expected);
+
+	[Test]
 	[Arguments("", "cloud-connect", "/api/cloud-connect/servers")]
 	[Arguments("", "elasticsearch/v9", "/api/elasticsearch/v9/servers")]
 	public void ServersUrl_UsesProductSuffix(string urlPathPrefix, string apiUrlSuffix, string expected) =>

@@ -411,6 +411,17 @@
 	overflow-wrap: anywhere;
 }
 
+/* The same deprecated treatment as the sidebar's nav-tree rows: the title strikes its own <s>, so a hover underline adds to it. */
+.api-deprecated-title {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+/* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
+.api-group-row--deprecated .api-method {
+	filter: saturate(0.4);
+}
+
 .api-index-tile-count {
 	align-self: baseline;
 	color: var(--color-text-muted);

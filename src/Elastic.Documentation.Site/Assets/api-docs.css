@@ -443,6 +443,7 @@
 }
 
 .api-group .api-page-heading > h1 {
+	flex: 0 1 auto;
 	font-size: 24px;
 	line-height: 32px;
 }
@@ -1126,13 +1127,17 @@
 	border-color: var(--color-grey-100);
 }
 
-#pages-nav a.nav-link--deprecated > span:first-child {
+/* Every row that links to a deprecated operation looks the same; the operation page itself only shows the badge. */
+/* API titles strike their own <s>, so a row's hover underline adds to the strike instead of replacing it. */
+#pages-nav a.nav-link--deprecated > span:first-child,
+.api-deprecated-title {
 	text-decoration: line-through;
 	opacity: 0.7;
 }
 
 /* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
-#pages-nav a.nav-link--deprecated .nav-v2-api-method {
+#pages-nav a.nav-link--deprecated .nav-v2-api-method,
+.api-group-row--deprecated .api-method {
 	filter: saturate(0.4);
 }
 

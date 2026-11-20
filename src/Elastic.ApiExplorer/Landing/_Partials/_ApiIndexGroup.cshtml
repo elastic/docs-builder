@@ -7,7 +7,7 @@
 @if (heading is { Url: { } url })
 {
 	<a class="api-index-tile" href="@url" @(new HtmlString(Model.HxAttributes))>
-		<span class="api-index-tile-title">@heading.Title</span>
+		<span class="api-index-tile-title">@if (heading.Deprecated){<s class="api-deprecated-title">@heading.Title</s><span class="sr-only">Deprecated</span>}else{@heading.Title}</span>
 		<span class="api-index-tile-count">@count @(count == 1 ? "endpoint" : "endpoints")</span>
 		@if (heading.Summary is { } summary)
 		{

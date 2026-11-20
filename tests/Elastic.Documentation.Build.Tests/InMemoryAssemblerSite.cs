@@ -126,10 +126,14 @@ public static class InMemoryAssemblerSite
 		};
 	}
 
-	public static async Task<InMemoryAssemblerSiteResult> BuildAsync(Cancel ctx, FakeSiteContent? content = null)
+	public static async Task<InMemoryAssemblerSiteResult> BuildAsync(
+		Cancel ctx,
+		FakeSiteContent? content = null,
+		MockFileSystem? fileSystem = null
+	)
 	{
 		content ??= FakeRepositories.Default;
-		var fileSystem = new MockFileSystem();
+		fileSystem ??= new MockFileSystem();
 		content.WriteTo(fileSystem);
 
 		var output = new CapturingDiagnosticsOutput();

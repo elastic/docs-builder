@@ -154,7 +154,8 @@ public static class ApiOverviewBuilder
 						Kind = OverviewRowKind.TagHeading,
 						Title = tag.NavigationTitle,
 						Url = tag.Url,
-						Summary = ApiSeoDescription.Excerpt(tag.Index.Model.Description)
+						Summary = ApiSeoDescription.Excerpt(tag.Index.Model.Description),
+						Deprecated = tag.Deprecated
 					});
 					AddProductRows(tag, rows, versionsConfig, designSystem);
 					break;
