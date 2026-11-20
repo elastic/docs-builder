@@ -257,6 +257,37 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task PageShell_IsAContainerOnlyFrom1280px()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			var lines = new List<string>();
+			// Below 1280px the mobile nav drawer is available. Older browsers make a size container the containing block of
+			// fixed boxes, which would anchor the drawer and its backdrop to the shell instead of the window.
+			foreach (var width in new[] { 800, 1279, 1280, 1600 })
+			{
+				await page.SetViewportAsync(width, 600, 1).ConfigureAwait(false);
+				await Task.Delay(300).ConfigureAwait(false);
+				var containerType = await page.EvaluateAsync(
+					"getComputedStyle(document.querySelector('.api-page-shell')).containerType"
+				).ConfigureAwait(false);
+				lines.Add($"{width}px: container-type {containerType.GetString()}");
+			}
+			report = string.Join('\n', lines);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"""
+			800px: container-type normal
+			1279px: container-type normal
+			1280px: container-type inline-size
+			1600px: container-type inline-size
+			"""
+		);
+	}
+
+	[Test]
 	public async Task LinksThatDoNotFit_ScrollInsideTheRowAndTheLastOneIsReachable()
 	{
 		var report = string.Empty;
