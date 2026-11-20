@@ -63,12 +63,17 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 		StringComparer.Ordinal
 	);
 
-	internal static IReadOnlyList<ApiPostSection> From(ApiRenderContext context, IReadOnlyList<ApiSupplementalSection> sections)
+	/// <summary><paramref name="reserved"/> names anchors the page owns beyond the operation ones, so a section never takes them.</summary>
+	internal static IReadOnlyList<ApiPostSection> From(
+		ApiRenderContext context,
+		IReadOnlyList<ApiSupplementalSection> sections,
+		IReadOnlyCollection<string>? reserved = null
+	)
 	{
 		if (sections.Count == 0)
 			return [];
 
-		var anchors = Anchors(sections);
+		var anchors = Anchors(sections, reserved);
 		var result = new List<ApiPostSection>(sections.Count);
 		for (var i = 0; i < sections.Count; i++)
 		{
@@ -80,9 +85,12 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 	}
 
 	/// <summary>The anchor of each section, without rendering the bodies. Group intro headings use it to avoid these anchors.</summary>
-	internal static IReadOnlyList<string> Anchors(IReadOnlyList<ApiSupplementalSection> sections)
+	internal static IReadOnlyList<string> Anchors(
+		IReadOnlyList<ApiSupplementalSection> sections,
+		IReadOnlyCollection<string>? reserved = null
+	)
 	{
-		var used = OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		var used = OperationReservedAnchors.Concat(reserved ?? []).ToHashSet(StringComparer.Ordinal);
 		var anchors = new List<string>(sections.Count);
 		foreach (var s in sections)
 		{

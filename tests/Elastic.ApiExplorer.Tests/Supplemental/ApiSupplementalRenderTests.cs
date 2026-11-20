@@ -665,6 +665,32 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Tag_SupplementalEndpointsSection_LeavesTheEndpointsAnchorToTheList()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(
+			nav.Index.Model,
+			nav,
+			tags: Doc(
+				"search",
+				"""
+			## Description
+
+			Intro.
+
+			## Endpoints
+
+			SUPP_TAG_ENDPOINTS_BODY
+			"""
+			)
+		);
+
+		html.Split("id=\"endpoints\"").Length.Should().Be(2, "only the list's heading owns the anchor On this page links to");
+		html.Should().Contain("<h3 id=\"endpoints-2\">Endpoints</h3>");
+		html.Should().Contain("href=\"#endpoints-2\"");
+	}
+
+	[Test]
 	public async Task Tag_OverviewRows_LinkTheTitleNotTheMethodPath()
 	{
 		var nav = SearchTag();

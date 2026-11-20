@@ -58,7 +58,7 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	public IReadOnlyList<ApiPostSection> PostSections =>
 		field ??= RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc)
-			? ApiPostSection.From(RenderContext, doc.PostSections)
+			? ApiPostSection.From(RenderContext, doc.PostSections, ApiMarkdown.GroupPageAnchors)
 			: [];
 
 	public TagExternalDocsDisplay? ExternalDocsDisplay =>
