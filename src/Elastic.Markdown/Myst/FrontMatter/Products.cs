@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
-using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Suggestions;
 using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;

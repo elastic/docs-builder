@@ -8,12 +8,12 @@ using DotNet.Globbing;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Loading;
-using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Suggestions;
 using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
