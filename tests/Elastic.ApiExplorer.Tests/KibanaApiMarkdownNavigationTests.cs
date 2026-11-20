@@ -165,7 +165,7 @@ public class KibanaApiMarkdownNavigationTests
 	{
 		var (_, introNav) = SetupKibanaNavigation();
 
-		introNav.Url.Should().Be("/api/kibana/kibana-api-overview/");
+		introNav.Url.Should().Be("/api/kibana/kibana-api-overview");
 	}
 
 	[Test]

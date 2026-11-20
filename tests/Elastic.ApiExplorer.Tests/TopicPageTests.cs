@@ -207,7 +207,7 @@ public partial class TopicPageTests
 
 		var all = ApiExplorerFixture.Walk(navigation).ToList();
 		all.OfType<StructuralNavigationItem>().Should().BeEmpty("the child page replaces the Authentication topic");
-		all.OfType<SimpleMarkdownNavigationItem>().Single().Url.Should().Be("/api/cloud/auth-intro/");
+		all.OfType<SimpleMarkdownNavigationItem>().Single().Url.Should().Be("/api/cloud/auth-intro");
 	}
 
 	[Test]
@@ -298,7 +298,7 @@ public partial class TopicPageTests
 
 		var topics = ApiExplorerFixture.GuidePages(navigation);
 		var child = topics.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
-		child.Url.Should().Be("/api/cloud/kibana-api-overview/");
+		child.Url.Should().Be("/api/cloud/kibana-api-overview");
 		child.ReplacedTopicUrls.Should().Equal("/api/cloud/topic/topic-kibana-spaces");
 		ApiExplorerFixture.Walk(navigation).OfType<TopicNavigationItem>().Should().BeEmpty();
 	}
@@ -318,7 +318,7 @@ public partial class TopicPageTests
 			.Should()
 			.Equal(
 				(nameof(StructuralNavigationItem), "/api/cloud/authentication"),
-				(nameof(SimpleMarkdownNavigationItem), "/api/cloud/kibana-api-overview/"),
+				(nameof(SimpleMarkdownNavigationItem), "/api/cloud/kibana-api-overview"),
 				(nameof(TopicNavigationItem), "/api/cloud/topic/topic-principles")
 			);
 	}
