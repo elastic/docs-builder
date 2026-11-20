@@ -139,7 +139,13 @@ public sealed record NavigationRenderModel
 		{
 			nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
 			if (tree is ISidebarOverviewRowNavigationItem)
-				nodes = FlattenIslandOverview(SectionOverviewLeaf(tree.Url), nodes);
+			{
+				// A heading tree, such as one x-tagGroups group, keeps its title under the Overview row, as in the full API sidebar.
+				var overview = SectionOverviewLeaf(tree.Url);
+				nodes = tree is ISidebarHeadingNavigationItem
+					? FlattenIslandOverview(overview, [CreateNode(tree, isTopLevel: true)])
+					: FlattenIslandOverview(overview, nodes);
+			}
 			else if (rootIndex is not null && IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild))
 			{
 				treeHeading = rootIndex.NavigationTitle;

@@ -643,6 +643,11 @@ public class TagMetadataTests
 			.Match<NavigationRenderNode>(
 				n => n.Kind == NavigationRenderNodeKind.Leaf && n.NavigationTitle == "Overview" && n.Url == navigation.Url
 			);
+		// The group keeps its name, as the heading it is in the full API sidebar.
+		model
+			.Tree[1]
+			.Should()
+			.Match<NavigationRenderNode>(n => n.Kind == NavigationRenderNodeKind.Heading && n.NavigationTitle == group.NavigationTitle);
 	}
 
 	[Test]
