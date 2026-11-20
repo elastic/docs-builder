@@ -1955,6 +1955,10 @@ a.type-linked:hover {
 	text-underline-offset: 0.2em;
 }
 
+.api-version-notice__icon {
+	display: inline-flex;
+}
+
 .api-version-notice--unreleased {
 	color: var(--color-warning);
 }

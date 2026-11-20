@@ -4,7 +4,9 @@
 	<span>View the latest version (@Model.Latest.Label)</span>
 	@if (Model.DesignSystem)
 	{
-		@await RenderPartialAsync(Elastic.Documentation.Site.Components.Primitives.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Primitives.Icon.IconModel { Name = "arrow_right", Size = Elastic.Documentation.Site.Components.Primitives.Icon.IconSize.Small }))
+		<span class="api-version-notice__icon" aria-hidden="true">
+			@await RenderPartialAsync(Elastic.Documentation.Site.Components.Primitives.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Primitives.Icon.IconModel { Name = "arrow_right", Size = Elastic.Documentation.Site.Components.Primitives.Icon.IconSize.Small }))
+		</span>
 	}
 	else
 	{
