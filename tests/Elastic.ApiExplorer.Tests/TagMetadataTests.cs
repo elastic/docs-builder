@@ -606,6 +606,7 @@ public class TagMetadataTests
 
 		// The Overview row sits in line with the first pages, so there is no separate root row and no automatic rule under it.
 		model.RootIndex.Should().BeNull();
+		model.HasOverviewRow.Should().BeTrue("the API row spacing rule applies only to trees that open with an Overview row");
 		model
 			.Tree[0]
 			.Should()

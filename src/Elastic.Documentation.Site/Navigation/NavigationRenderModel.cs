@@ -86,6 +86,8 @@ public sealed record NavigationRenderModel
 	/// The clickable index sits in <see cref="Tree"/> as "Overview".
 	/// </summary>
 	public string? TreeHeading { get; init; }
+	/// <summary>True when the tree opens with an in-line Overview row; see <see cref="ISidebarOverviewRowNavigationItem"/>.</summary>
+	public bool HasOverviewRow { get; init; }
 	/// <summary>Slug for the heading icon (<c>reference</c>, <c>elasticsearch</c>, …); null when none maps.</summary>
 	public string? TreeHeadingIcon { get; init; }
 	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
@@ -158,6 +160,7 @@ public sealed record NavigationRenderModel
 			BackLinks = backLinks,
 			RootIndex = rootIndex,
 			TreeHeading = treeHeading,
+			HasOverviewRow = tree is ISidebarOverviewRowNavigationItem,
 			TreeHeadingIcon = treeHeadingIcon,
 			Tree = nodes,
 			ContentHash = HashContent(rootIndex, treeHeading, treeHeadingIcon, nodes),
