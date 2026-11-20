@@ -173,7 +173,9 @@ body {
 		border: 1px solid #bae6fd;
 	}
 
-	.nav-link {
+	/* A leaf row's link in the sidebar tree drops the nav-link class; :where keeps the selector at one class. */
+	.nav-link,
+	:where([id^='nav-tree-'] li) > .sidebar-link {
 		@apply group-[.current]/li:text-blue-elastic! flex w-full grow items-center;
 	}
 
@@ -581,4 +583,16 @@ h1:has(.cli-badge-ns, .cli-badge-cmd) {
    and the label sits that far above its first row. Unlayered, so it wins over the utility margin the nav rows carry. */
 .nav-group-items > li {
 	margin-top: 16px;
+}
+
+/* The layout the sidebar's leaf rows used to carry as classes on every <li> (flex group/li pr-8 mt-4), in the same
+   layer as those utilities, so the cascade does not change. :where keeps the bare row at no specificity. */
+@layer utilities {
+	:where([id^='nav-tree-'] li:not([class])) {
+		@apply mt-4 flex pr-8;
+	}
+
+	:where([id^='nav-tree-']) li.nav-top {
+		@apply mt-6 flex pr-8 font-semibold;
+	}
 }
