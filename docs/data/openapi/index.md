@@ -19,4 +19,4 @@ api:
       product: elasticsearch
 ```
 
-The map key is the URL suffix. `elasticsearch` produces pages under `/api/doc/elasticsearch/`.
+The map key is the URL suffix. `elasticsearch` produces pages under `/api/elasticsearch/`.

@@ -128,7 +128,8 @@ public class FloatingHubNavigationTests
 
 		var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).ToArray();
 
-		urls.Should().Contain("/api/doc/demo/operation/operation-search").And.Contain("/docs/api");
+		urls.Should().Contain("/api/demo/operation/operation-search").And.Contain("/docs/api");
+		urls.Should().Contain(provider.Section!.Root!.Url, "a visible floating root lists its own landing");
 
 		provider.Section!.Root!.Hidden = true;
 		navigation
@@ -136,7 +137,9 @@ public class FloatingHubNavigationTests
 			.SelectMany(SitemapNavigationHelper.Flatten)
 			.Select(i => i.Url)
 			.Should()
-			.NotContain("/api/doc/demo/operation/operation-search", "a hidden root takes its pages out of the sitemap");
+			.NotContain("/api/demo/operation/operation-search", "a hidden root takes its pages out of the sitemap")
+			.And
+			.NotContain("/docs/api", "a hub without a rendered section has no page");
 	}
 
 	[Test]
@@ -153,7 +156,7 @@ public class FloatingHubNavigationTests
 
 		var listed = enhancer.GenerateNavigationSections(navigation, baseUrl);
 
-		listed.Should().Contain("## APIs").And.Contain("* [Demo API](https://www.elastic.co/api/doc/demo.md)");
+		listed.Should().Contain("## APIs").And.Contain("* [Demo API](https://www.elastic.co/api/demo.md)");
 
 		provider.Section!.Root!.Hidden = true;
 		enhancer.GenerateNavigationSections(navigation, baseUrl).Should().NotContain("Demo API");
@@ -197,7 +200,7 @@ public class FloatingHubNavigationTests
 	private sealed class AnchorLeaf : ILeafNavigationItem<DemoModel>
 	{
 		public DemoModel Model { get; } = new();
-		public string Url => "/api/doc/demo/group/endpoint-demo#intro";
+		public string Url => "/api/demo/group/endpoint-demo#intro";
 		public string NavigationTitle => "Intro";
 		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => throw new NotSupportedException();
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }

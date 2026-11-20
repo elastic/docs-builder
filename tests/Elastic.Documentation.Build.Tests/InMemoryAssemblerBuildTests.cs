@@ -67,6 +67,7 @@ public partial class InMemoryAssemblerBuildTests
 			docs/reference/kibana/experimental.md
 			docs/reference/kibana/experimental/index.html
 			docs/reference/kibana/index.html
+			docs/sitemap-docs.xml
 			docs/sitemap.xml
 			redirects.json
 			"""
@@ -81,7 +82,23 @@ public partial class InMemoryAssemblerBuildTests
 
 	[Test]
 	public async Task Sitemap_WithTheBuildTimeScrubbed_MatchesSnapshot() =>
-		LastModified().Replace((await Built).Read("sitemap.xml"), "<lastmod>{build time}</lastmod>").Should().MatchSnapshot("xml");
+		LastModified().Replace((await Built).Read("sitemap-docs.xml"), "<lastmod>{build time}</lastmod>").Should().MatchSnapshot("xml");
+
+	[Test]
+	public async Task SitemapIndex_ListsTheNarrativeSitemapOnly_WhenTheBuildRendersNoApis() =>
+		(await Built)
+			.Read("sitemap.xml")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+			<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+			  <sitemap>
+			    <loc>https://www.elastic.co/docs/sitemap-docs.xml</loc>
+			  </sitemap>
+			</sitemapindex>
+			"""
+			);
 
 	[Test]
 	public async Task Redirects_MatchSnapshot() =>

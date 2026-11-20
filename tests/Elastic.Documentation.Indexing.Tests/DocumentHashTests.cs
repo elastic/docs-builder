@@ -15,7 +15,7 @@ public class DocumentHashTests
 		{
 			Title = "Search",
 			SearchTitle = "Search",
-			Path = "/docs/api/doc/elasticsearch/operation/operation-search",
+			Path = "/docs/api/elasticsearch/operation/operation-search",
 			Body = "Run a search.",
 			Api = new ApiOperationMetadata
 			{

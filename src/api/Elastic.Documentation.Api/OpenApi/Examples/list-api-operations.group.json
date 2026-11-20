@@ -5,7 +5,7 @@
       "operation": {
         "api": "elasticsearch",
         "title": "Get the cluster health",
-        "url": "/docs/api/doc/elasticsearch/operation/operation-health-report",
+        "url": "/docs/api/elasticsearch/operation/operation-health-report",
         "description": "Get a report with the health status of an Elasticsearch cluster.\nThe report contains a list of indicators that compose Elasticsearch functionality.\n\nEach ind…",
         "method": "GET",
         "path": "/_health_report/{feature}",

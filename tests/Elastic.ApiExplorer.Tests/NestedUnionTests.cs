@@ -163,7 +163,7 @@ public class NestedUnionTests
 		var document = await LoadSpecAsync(WithSchemas(Schemas));
 		var shallow = new ApiPropertyTreeBuilder(
 			document,
-			new PropertyDisplayOptions { RenderMarkdown = static s => new HtmlString(s), ApiRootUrl = "/api/doc/fixture", MaxDepth = 1 }
+			new PropertyDisplayOptions { RenderMarkdown = static s => new HtmlString(s), ApiRootUrl = "/api/fixture", MaxDepth = 1 }
 		);
 
 		var list = shallow.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
@@ -181,12 +181,7 @@ public class NestedUnionTests
 		var document = await LoadSpecAsync(WithSchemas(Schemas));
 		var builder = new ApiPropertyTreeBuilder(
 			document,
-			new PropertyDisplayOptions
-			{
-				RenderMarkdown = static s => new HtmlString(s),
-				ApiRootUrl = "/api/doc/fixture",
-				MaxDepth = maxDepth
-			}
+			new PropertyDisplayOptions { RenderMarkdown = static s => new HtmlString(s), ApiRootUrl = "/api/fixture", MaxDepth = maxDepth }
 		);
 
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;

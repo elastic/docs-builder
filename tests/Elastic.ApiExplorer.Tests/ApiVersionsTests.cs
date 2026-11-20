@@ -10,10 +10,13 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiVersionsTests
 {
 	[Test]
-	public void DefaultTree_MainAmongMajors_ReturnsMain() => ApiVersions.DefaultTree(["9", "main", "8"]).Should().Be("main");
+	public void DefaultTree_MainAmongMajors_ReturnsTheHighestMajor() => ApiVersions.DefaultTree(["main", "8", "9"]).Should().Be("9");
 
 	[Test]
-	public void DefaultTree_NoMain_ReturnsFirstResolvedTree() => ApiVersions.DefaultTree(["9", "8"]).Should().Be("9");
+	public void DefaultTree_MainOnly_ReturnsMain() => ApiVersions.DefaultTree(["main"]).Should().Be("main");
+
+	[Test]
+	public void DefaultTree_NoNumericMajor_ReturnsMainBeforeTheFirstTree() => ApiVersions.DefaultTree(["beta", "main"]).Should().Be("main");
 
 	[Test]
 	public void DefaultTree_NoTrees_ReturnsNull() => ApiVersions.DefaultTree([]).Should().BeNull();

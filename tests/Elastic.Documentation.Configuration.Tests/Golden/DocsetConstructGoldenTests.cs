@@ -357,10 +357,6 @@ public class DocsetConstructGoldenTests
 			    - spec: elasticsearch.json
 			      product: elasticsearch
 			      repository: elastic/elasticsearch-specification
-			      catalog:
-			        categories:
-			          - self
-			          - ess
 			  kibana:
 			    - spec: specs/kibana.yaml
 			      product: kibana

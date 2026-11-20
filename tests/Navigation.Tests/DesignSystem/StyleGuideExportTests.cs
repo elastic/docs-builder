@@ -93,6 +93,18 @@ public class StyleGuideExportTests
 	}
 
 	[Test]
+	public async Task Zip_LinksOnePreviewToAnotherAsSiblingFiles()
+	{
+		var from = StyleGuidePreviewCatalog.Entries[0].Id;
+		var to = StyleGuidePreviewCatalog.Entries[1].Id;
+		using var zip = await ExportAsync(id => Task.FromResult<string?>($"<a href=\"{StyleGuidePreviewCatalog.Route}/{to}\">{id}</a>"));
+
+		var html = Read(zip, $"preview/{from}.html");
+
+		html.Should().Contain($"<a href=\"{to}.html\">").And.NotContain($"href=\"{StyleGuidePreviewCatalog.Route}");
+	}
+
+	[Test]
 	public async Task Zip_HoldsTheLayoutSamplesTheBreakpointsPageFrames()
 	{
 		using var zip = await ExportAsync();

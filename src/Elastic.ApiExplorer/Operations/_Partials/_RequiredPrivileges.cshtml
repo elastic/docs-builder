@@ -1,0 +1,7 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthorizationSectionModel>
+@* What the caller needs before using the operation: a quiet label, then each kind of privilege with its names as tags. It sits between the description and the parameters. *@
+<section class="api-requirements" id="required-privileges" aria-labelledby="required-privileges-title">
+	<h2 class="api-requirements-title" id="required-privileges-title">Required privileges</h2>
+	@(await RenderPartialAsync<_PrivilegeRows, AuthorizationSectionModel>(Model))
+</section>

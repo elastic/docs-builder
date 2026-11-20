@@ -116,42 +116,6 @@
 	padding-bottom: 40px; /* Space for indicators */
 }
 
-/* Override modal styles for image carousels */
-.modal .modal-content {
-	max-width: 95vw !important;
-	max-height: 95vh !important;
-	width: auto !important;
-	height: auto !important;
-	padding: 0 !important;
-	background: transparent !important;
-	box-shadow: none !important;
-}
-
-.modal .modal-content img {
-	max-width: 95vw;
-	max-height: 95vh;
-	width: auto;
-	height: auto;
-	object-fit: contain;
-	display: block;
-}
-
-/* Ensure the close button is visible */
-.modal .modal-close {
-	background: rgba(0, 0, 0, 0.7);
-	border-radius: 50%;
-	width: 40px;
-	height: 40px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	top: -20px;
-	right: -20px;
-}
-
-.modal .modal-close a {
-	color: white;
-}
 @media (max-width: 768px) {
 	.carousel-control {
 		width: 30px;

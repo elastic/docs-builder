@@ -502,8 +502,5 @@ Content-Type: application/json
   "reaction": "thumbsUp"
 }
 
-### delete with an id that is not a guid
-DELETE /docs/_api/v1/page-feedback/not-a-guid
-
 ### get is not mapped
 GET /docs/_api/v1/page-feedback/{{$guid}}

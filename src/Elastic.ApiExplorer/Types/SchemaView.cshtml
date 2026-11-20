@@ -26,6 +26,7 @@
 <section id="schema-definition">
 	<div class="api-page-heading">
 		<h1>@schema.DisplayName</h1>
+		@await RenderPartialAsync(_VersionNotice.Create(Model))
 	</div>
 
 	@if (!string.IsNullOrEmpty(pageModel.DictionaryTypeName))

@@ -1,2 +1,9 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Primitives.Tooltip.TooltipModel>
-<span class="tooltip@(Model.Open ? " tooltip--open" : "")"><span class="tooltip__trigger" tabindex="0" aria-describedby="@Model.Id">@Model.Label</span><span class="tooltip__bubble" role="tooltip" id="@Model.Id">@Model.Text</span></span>
+@if (Model.Open)
+{
+<span class="tooltip-shown"><span class="tooltip" aria-hidden="true">@Model.Text</span><span class="tooltip-trigger" tabindex="0" data-tooltip="@Model.Text">@Model.Label</span></span>
+}
+else
+{
+<span class="tooltip-trigger" tabindex="0" data-tooltip="@Model.Text">@Model.Label</span>
+}

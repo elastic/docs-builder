@@ -11,6 +11,7 @@
 		SectionMenu = Model.IsUsingNavigationDropdown
 			? new LinkMenuModel
 			{
+				Id = "section-menu",
 				Label = "Section",
 				Current = Model.CurrentTopLevelNavigationTitle,
 				Items = [.. Model.DropdownItems.Select(i => new LinkMenuItem(i.NavigationTitle, i.Url, i.IsActive))]
@@ -25,46 +26,44 @@ else
 		<div id="nav-dropdown">
 		@if (Model.IsUsingNavigationDropdown)
 			{
+				@* The section link and the chevron that opens the menu of sections are separate controls. The menu is a popover
+				   (top layer) that floating.ts places under the whole box, named by data-anchor. *@
 				<div class="py-4 bg-white border-grey-20 pr-4">
-					<div tabindex="0" id="pages-dropdown" class="block group border border-grey-20 rounded-sm font-sans relative">
-						<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
-							<div>
-								<a
-									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
-									href="@Model.CurrentTopLevelUrl"
-									preload="mousedown">
-									@Model.CurrentTopLevelNavigationTitle
-								</a>
-							</div>
-							<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+					<div id="pages-dropdown" class="flex items-stretch border border-grey-20 rounded-sm font-sans font-semibold">
+						<a
+							class="pages-dropdown_active pl-4 py-2 hover:underline text-blue-elastic hover:text-blue-elastic-100"
+							href="@Model.CurrentTopLevelUrl"
+							preload="mousedown">
+							@Model.CurrentTopLevelNavigationTitle
+						</a>
+						<button type="button" class="group flex flex-1 items-center justify-end pl-1 pr-2 cursor-pointer hover:text-black" popovertarget="pages-dropdown-menu" aria-label="Choose a section">
+							<span class="flex items-center justify-center size-6 group-hover:bg-grey-20 rounded-sm">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke-width="1.5"
 									stroke="currentColor"
-									class="w-4 group-open:rotate-180">
+									aria-hidden="true"
+									class="w-4 group-aria-expanded:rotate-180">
 									<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 								</svg>
-							</div>
+							</span>
 						</button>
-					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
-						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md"
-						preload="mouseover">
-				@foreach (var item in Model.DropdownItems)
-				{
-								<li class="block">
-									<a
-										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.IsActive ? "text-blue-elastic" : "")"
-										href="@item.Url">
-							@item.NavigationTitle
-						</a>
-					</li>
-				}
-				</ul>
 					</div>
+					<ul id="pages-dropdown-menu" popover data-anchor="pages-dropdown" class="min-w-(--floating-anchor-width) max-h-(--floating-available-height) overflow-y-auto px-0 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md font-sans" preload="mouseover">
+						@foreach (var item in Model.DropdownItems)
+						{
+							<li class="block">
+								<a
+									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.IsActive ? "text-blue-elastic" : "")"
+									href="@item.Url">
+									@item.NavigationTitle
+								</a>
+							</li>
+						}
+					</ul>
 				</div>
-			</div>
 		}
 		</div>
 		@if (Model.BackLinks.Count > 0)

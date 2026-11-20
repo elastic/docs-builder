@@ -57,7 +57,6 @@ public partial class PageFeedbackEndpointTests
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).Returns(Task.FromResult(true));
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult(true));
 		using var client = CreateClient(feedbackService);
 
 		await HttpFileTest.RunAsync(
@@ -293,20 +292,18 @@ public partial class PageFeedbackEndpointTests
 	}
 
 	[Test]
-	public async Task Delete_ExistingFeedback_DeletesFeedback()
+	public async Task Delete_Feedback_ReturnsMethodNotAllowed()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
-		var feedbackId = Guid.NewGuid();
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).Returns(Task.FromResult(true));
 		using var client = CreateClient(feedbackService);
 
 		using var response = await client.DeleteAsync(
-			$"/docs/_api/v1/page-feedback/{feedbackId}",
+			$"/docs/_api/v1/page-feedback/{Guid.NewGuid()}",
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+		response.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
 	private const string ValidPayload = /*lang=json,strict*/

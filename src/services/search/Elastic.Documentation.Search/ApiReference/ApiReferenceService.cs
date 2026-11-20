@@ -431,7 +431,7 @@ public sealed record ApiOperationListItemDto
 	/// <example>"Get the cluster health status"</example>
 	public required string Title { get; init; }
 	/// <summary>The operation's page on www.elastic.co.</summary>
-	/// <example>"/docs/api/doc/elasticsearch/operation/operation-cluster-health"</example>
+	/// <example>"/docs/api/elasticsearch/operation/operation-cluster-health"</example>
 	public required string Url { get; init; }
 	/// <summary>The HTTP method of the operation's main route.</summary>
 	/// <example>"GET"</example>

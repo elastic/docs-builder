@@ -625,7 +625,7 @@ public class TagMetadataTests
 
 		var alpha = FindTagNavigationItem(navigation, "alpha");
 		alpha.Should().NotBeNull();
-		alpha.Url.Should().EndWith("/api/doc/es/group/endpoint-alpha");
+		alpha.Url.Should().EndWith("/api/es/group/endpoint-alpha");
 
 		alpha.Index.Model.Should().BeOfType<ApiTag>().Which.TagUrlSegment.Should().Be("endpoint-alpha");
 	}
@@ -645,7 +645,7 @@ public class TagMetadataTests
 
 		var operation = navigation.Tags().Single().NavigationItems.OfType<OperationNavigationItem>().Single();
 
-		operation.Url.Should().Be("/api/doc/elasticsearch/operation/operation-search-op");
+		operation.Url.Should().Be("/api/elasticsearch/operation/operation-search-op");
 	}
 
 	[Test]

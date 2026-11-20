@@ -208,7 +208,6 @@ public class OpenApiExamplesTests
 
 	[Test]
 	[Arguments("put-page-feedback", "503", "feedback-unavailable")]
-	[Arguments("delete-page-feedback", "503", "feedback-unavailable")]
 	[Arguments("ask-ai-message-feedback", "503", "feedback-unavailable")]
 	[Arguments("search", "503", "search-unavailable")]
 	[Arguments("get-api-operation", "404", "operation-not-found")]

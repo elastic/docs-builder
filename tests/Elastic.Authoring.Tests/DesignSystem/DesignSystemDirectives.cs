@@ -435,6 +435,18 @@ public class AppliesToComponent : DesignSystemDirectiveTest
 	public async Task RendersHtml() => await Docs.ConvertsToHtmlSnapshot();
 }
 
+public class AppliesToBlockComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown => """
+		```{applies_to}
+		stack: ga 9.1
+		```
+		""";
+
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() => await Docs.ConvertsToHtmlSnapshot();
+}
+
 public class VectorSizingComponent : DesignSystemDirectiveTest
 {
 	protected override string Markdown => """

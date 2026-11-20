@@ -470,18 +470,6 @@ content-type: application/problem+json
   "traceId": "{trace-id}"
 }
 
-## delete with an id that is not a guid: DELETE /docs/_api/v1/page-feedback/not-a-guid
-status: 404 Not Found
-content-type: application/problem+json
-
-{
-  "type": "https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/data/api#not-found",
-  "title": "Not found",
-  "status": 404,
-  "detail": "No endpoint matches this path.",
-  "traceId": "{trace-id}"
-}
-
 ## get is not mapped: GET /docs/_api/v1/page-feedback/{{$guid}}
 status: 405 Method Not Allowed
 content-type: application/problem+json

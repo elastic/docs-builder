@@ -87,7 +87,7 @@ public class TocTreeRenderingTests
 		{
 			IsUsingNavigationDropdown = false,
 			CurrentTopLevelNavigationTitle = "API",
-			CurrentTopLevelUrl = "/api/doc/es/",
+			CurrentTopLevelUrl = "/api/es/",
 			DropdownItems = [],
 			BackLinks = [],
 			Tree =
@@ -107,7 +107,7 @@ public class TocTreeRenderingTests
 							Kind = NavigationRenderNodeKind.Leaf,
 							IsTopLevel = false,
 							NavigationTitle = "Run a search",
-							Url = "/api/doc/es/operation/operation-search"
+							Url = "/api/es/operation/operation-search"
 						}
 					]
 				}
@@ -195,14 +195,14 @@ public class TocTreeRenderingTests
 		{
 			IsUsingNavigationDropdown = false,
 			CurrentTopLevelNavigationTitle = "APIs",
-			CurrentTopLevelUrl = "/api/doc/elasticsearch/",
+			CurrentTopLevelUrl = "/api/elasticsearch/",
 			DropdownItems = [],
 			BackLinks = [],
 			VersionSwitcher =
 			[
-				new NavigationSelectOption("latest", "/api/doc/elasticsearch/", Selected: false),
-				new NavigationSelectOption("v9", "/api/doc/elasticsearch/v9/", Selected: true),
-				new NavigationSelectOption("v8", "/api/doc/elasticsearch/v8/", Selected: false)
+				new NavigationSelectOption("latest", "/api/elasticsearch/", Selected: false),
+				new NavigationSelectOption("v9", "/api/elasticsearch/v9/", Selected: true),
+				new NavigationSelectOption("v8", "/api/elasticsearch/v8/", Selected: false)
 			],
 			Tree =
 			[
@@ -211,7 +211,7 @@ public class TocTreeRenderingTests
 					Kind = NavigationRenderNodeKind.Leaf,
 					IsTopLevel = true,
 					NavigationTitle = "Overview",
-					Url = "/api/doc/elasticsearch/"
+					Url = "/api/elasticsearch/"
 				}
 			],
 			ContentHash = "api-versions",
@@ -230,7 +230,7 @@ public class TocTreeRenderingTests
 		{
 			IsUsingNavigationDropdown = false,
 			CurrentTopLevelNavigationTitle = "APIs",
-			CurrentTopLevelUrl = "/api/doc/elasticsearch/",
+			CurrentTopLevelUrl = "/api/elasticsearch/",
 			DropdownItems = [],
 			BackLinks = [],
 			RootIndex = new NavigationRenderNode
@@ -238,7 +238,7 @@ public class TocTreeRenderingTests
 				Kind = NavigationRenderNodeKind.Leaf,
 				IsTopLevel = true,
 				NavigationTitle = "Api Overview",
-				Url = "/api/doc/elasticsearch/"
+				Url = "/api/elasticsearch/"
 			},
 			Tree =
 			[
@@ -247,7 +247,7 @@ public class TocTreeRenderingTests
 					Kind = NavigationRenderNodeKind.Leaf,
 					IsTopLevel = true,
 					NavigationTitle = "Authentication",
-					Url = "/api/doc/elasticsearch/authentication"
+					Url = "/api/elasticsearch/authentication"
 				},
 				new NavigationRenderNode { Kind = NavigationRenderNodeKind.Separator, IsTopLevel = true, NavigationTitle = "", Url = "" },
 				new NavigationRenderNode
@@ -255,7 +255,7 @@ public class TocTreeRenderingTests
 					Kind = NavigationRenderNodeKind.Node,
 					IsTopLevel = true,
 					NavigationTitle = "search",
-					Url = "/api/doc/elasticsearch/group/endpoint-search",
+					Url = "/api/elasticsearch/group/endpoint-search",
 					Id = "search",
 					ShowToggle = true
 				}
@@ -312,7 +312,7 @@ public class TocTreeRenderingTests
 		{
 			IsUsingNavigationDropdown = false,
 			CurrentTopLevelNavigationTitle = "API",
-			CurrentTopLevelUrl = "/api/doc/es/",
+			CurrentTopLevelUrl = "/api/es/",
 			DropdownItems = [],
 			BackLinks = [],
 			Tree =
@@ -332,7 +332,7 @@ public class TocTreeRenderingTests
 							Kind = NavigationRenderNodeKind.Leaf,
 							IsTopLevel = false,
 							NavigationTitle = "Run a search",
-							Url = "/api/doc/es/operation/operation-search"
+							Url = "/api/es/operation/operation-search"
 						}
 					]
 				}
@@ -377,12 +377,32 @@ public class TocTreeRenderingTests
 		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("li.nav-group"));
 	}
 
+	[Test]
+	public async Task LegacySectionDropdown_OpensAMenuOfTheTopLevelSections()
+	{
+		var model = GroupModel(navigationPreviewEnabled: false) with
+		{
+			IsUsingNavigationDropdown = true,
+			CurrentTopLevelNavigationTitle = "Elasticsearch",
+			CurrentTopLevelUrl = "/docs/elasticsearch/",
+			DropdownItems =
+			[
+				new NavigationDropdownItem("Elasticsearch", "/docs/elasticsearch/", IsActive: true),
+				new NavigationDropdownItem("Kibana", "/docs/kibana/", IsActive: false)
+			]
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchHtmlSnapshot(DocsHtml.Body().Select("#nav-dropdown"));
+	}
+
 	private static NavigationRenderModel GroupModel(bool navigationPreviewEnabled) =>
 		new()
 		{
 			IsUsingNavigationDropdown = false,
 			CurrentTopLevelNavigationTitle = "API",
-			CurrentTopLevelUrl = "/api/doc/es/",
+			CurrentTopLevelUrl = "/api/es/",
 			DropdownItems = [],
 			BackLinks = [],
 			Tree =
@@ -401,7 +421,7 @@ public class TocTreeRenderingTests
 							Kind = NavigationRenderNodeKind.Node,
 							IsTopLevel = false,
 							NavigationTitle = "Search",
-							Url = "/api/doc/es/group/endpoint-search",
+							Url = "/api/es/group/endpoint-search",
 							Id = "search",
 							ShowToggle = true
 						}

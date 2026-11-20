@@ -25,7 +25,7 @@ public class SchemaTypeRenderingTests
 		html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<code class="schema-type">
-				<span class="type-constraint" data-tippy-content="pattern: long" tabindex="0">pattern: long</span>
+				<span class="type-constraint" data-tooltip="pattern: long" tabindex="0">pattern: long</span>
 			</code>
 			"""
 		);
@@ -41,7 +41,7 @@ public class SchemaTypeRenderingTests
 		html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<code class="schema-type">
-				<span class="type-constraint" data-tippy-content="">min: 1</span>
+				<span class="type-constraint" data-tooltip="">min: 1</span>
 			</code>
 			"""
 		);

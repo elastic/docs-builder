@@ -43,7 +43,6 @@ internal static class ApiDescriptions
 		["ask-ai-message-feedback"] = "Records whether an Ask AI answer helped.",
 		["put-page-feedback"] = "Records or replaces a reader's rating of a page. The id is chosen by the client, so sending it again "
 			+ "updates the same feedback.",
-		["delete-page-feedback"] = "Deletes a reader's rating of a page.",
 		["list-apis"] = "Lists every API that API Explorer documents, with the keys and versions the other requests take.",
 		["get-api"] = "Reads one API by its key.",
 		["list-api-groups"] = "Counts an API's operations by group, without listing them. Deprecated operations count only with "
@@ -131,7 +130,6 @@ internal static class ApiDescriptions
 		["ask-ai-stream"] = "The answer, as server-sent events.",
 		["ask-ai-message-feedback"] = "The rating was stored.",
 		["put-page-feedback"] = "The feedback was stored.",
-		["delete-page-feedback"] = "The feedback was deleted.",
 		["list-apis"] = "Every API.",
 		["get-api"] = "The API.",
 		["list-api-groups"] = "The API's groups with their operation counts.",

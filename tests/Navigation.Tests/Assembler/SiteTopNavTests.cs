@@ -169,8 +169,8 @@ public class SiteTopNavTests
 			      FileNavigationLeaf  /docs/get-started/tutorial  "docs-content: get-started/tutorial"
 			  SectionNavigation  /docs/api  "APIs" [island]
 			    index: SectionIndexLeaf  /docs/api  "APIs"
-			    DemoRoot  /api/doc/demo  "Demo API" [island]
-			      index: DemoLandingLeaf  /api/doc/demo  "Demo API"
+			    DemoRoot  /api/demo  "Demo API" [island]
+			      index: DemoLandingLeaf  /api/demo  "Demo API"
 			  SectionNavigation  /docs/reference  "Reference" [island]
 			    index: SectionIndexLeaf  /docs/reference  "Reference"
 			    TableOfContentsNavigation  /docs/reference  "docs-content: reference/index"

@@ -154,7 +154,7 @@ public class OpenApiOperationIdSearchTitleTests
 		);
 
 		var docs = new OpenApiDocumentExporter(VersionsConfiguration)
-			.ConvertToDocuments(TestHelpers.EsTree("main", spec))
+			.ConvertToDocuments(TestHelpers.Tree("elasticsearch", "elasticsearch", "main", spec))
 			.ToDictionary(d => d.Api!.OperationId);
 
 		var flush = docs["ml-flush-job"];
@@ -171,11 +171,11 @@ public class OpenApiOperationIdSearchTitleTests
 			.BeEquivalentTo(
 				[
 					new ParentDocument { Title = "API", Path = "/docs/api" },
-					new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/doc/elasticsearch" },
+					new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/elasticsearch" },
 					new ParentDocument
 					{
 						Title = "Machine learning anomaly detection",
-						Path = "/docs/api/doc/elasticsearch/group/endpoint-ml-anomaly"
+						Path = "/docs/api/elasticsearch/group/endpoint-ml-anomaly"
 					}
 				],
 				o => o.WithStrictOrdering()
@@ -197,7 +197,7 @@ public class OpenApiOperationIdSearchTitleTests
 			.BeEquivalentTo(
 				[
 					new ParentDocument { Title = "API", Path = "/docs/api" },
-					new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/doc/elasticsearch" }
+					new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/elasticsearch" }
 				],
 				o => o.WithStrictOrdering()
 			);

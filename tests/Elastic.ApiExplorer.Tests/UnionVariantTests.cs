@@ -175,7 +175,7 @@ public class UnionVariantTests
 		incident.Children.Properties!.Items.Select(p => p.Name).Should().Equal("correlation_id", "externalId");
 		list.Items.Single(p => p.Name == "range").Requires!.Options.Should().Equal("from + to", "window");
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, list, "/api/fixture");
 		markdown
 			.ToString()
 			.Should()
@@ -518,7 +518,7 @@ public class UnionVariantTests
 		sort.Union.MoreOptions.Should().Be("or an object listed below");
 		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("SortObject");
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([sort]), "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([sort]), "/api/fixture");
 		markdown.ToString().Should().Contain("One of: `asc` or `desc` or an object listed below").And.NotContain("Values:");
 
 		var order = list.Items.Single(p => p.Name == "order");
@@ -575,7 +575,7 @@ public class UnionVariantTests
 			);
 		Row("nodes").SingleOrArray.Should().BeNull("a primitive X lists no fields, so the options row still names both shapes");
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("rescore")]), "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("rescore")]), "/api/fixture");
 		markdown.ToString().Should().Contain("`object` or `object[]`");
 	}
 
@@ -612,7 +612,7 @@ public class UnionVariantTests
 		like.Children.Variants!.Label.Should().Be("A value or an array; each item is any of:");
 		like.Children.Variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: doc", "kind: LikeText");
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([like]), "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([like]), "/api/fixture");
 		markdown.ToString().Should().Contain("A value or an array; each item is any of:");
 	}
 
@@ -729,12 +729,12 @@ public class UnionVariantTests
 			.Select(b => (b.LinkText, b.AfterLink, b.Url))
 			.Should()
 			.Equal(
-				("Query", "[]", "/api/doc/fixture/types/_types-query_dsl-querycontainer"),
-				("Query", "", "/api/doc/fixture/types/_types-query_dsl-querycontainer")
+				("Query", "[]", "/api/fixture/types/_types-query_dsl-querycontainer"),
+				("Query", "", "/api/fixture/types/_types-query_dsl-querycontainer")
 			);
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([filter]), "/api/doc/fixture");
-		markdown.ToString().Should().Contain("One of: [`Query[]`](/api/doc/fixture/types/_types-query_dsl-querycontainer) or ");
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([filter]), "/api/fixture");
+		markdown.ToString().Should().Contain("One of: [`Query[]`](/api/fixture/types/_types-query_dsl-querycontainer) or ");
 
 		var local = list.Items.Single(p => p.Name == "local");
 		local.TypeLink.Should().BeNull("only the schema with the page's id links there, not another one sharing its short name");
@@ -820,7 +820,7 @@ public class UnionVariantTests
 		and.Repeats.Should().Be(new RepeatedShape("where", "where", IsUnion: true));
 		and.Children.Kind.Should().Be(ChildKind.None);
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, variants[1].Properties, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, variants[1].Properties, "/api/fixture");
 		markdown
 			.ToString()
 			.Should()

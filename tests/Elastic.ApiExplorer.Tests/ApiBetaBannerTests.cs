@@ -18,17 +18,17 @@ public class ApiBetaBannerTests
 	[Test]
 	public void For_WithCanonicalBaseUrl_FillsInThePageLink() =>
 		ApiBetaBanner
-			.For(new Uri("https://www.elastic.co"), "/docs/api/doc/elasticsearch/operation/operation-search")
+			.For(new Uri("https://www.elastic.co"), "/docs/api/elasticsearch/operation/operation-search")
 			.FeedbackUrl
 			.Should()
 			.MatchInlineSnapshot(
-				"""https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&labels=source:web&link=https%3A%2F%2Fwww.elastic.co%2Fdocs%2Fapi%2Fdoc%2Felasticsearch%2Foperation%2Foperation-search"""
+				"""https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&labels=source:web&link=https%3A%2F%2Fwww.elastic.co%2Fdocs%2Fapi%2Felasticsearch%2Foperation%2Foperation-search"""
 			);
 
 	[Test]
 	public void For_WithoutCanonicalBaseUrl_LeavesTheLinkOut() =>
 		ApiBetaBanner
-			.For(null, "/api/doc/elasticsearch")
+			.For(null, "/api/elasticsearch")
 			.FeedbackUrl
 			.Should()
 			.MatchInlineSnapshot("""https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&labels=source:web""");
@@ -53,8 +53,8 @@ public class ApiBetaBannerTests
 	{
 		var features = new FeatureFlags((enabledFlags ?? []).ToDictionary(static f => f, static _ => true));
 		var model = ApiPagesNavRenderingTests.CreateLayoutModel(
-			"/docs/api/doc/elasticsearch",
-			"/docs/api/doc/elasticsearch.md",
+			"/docs/api/elasticsearch",
+			"/docs/api/elasticsearch.md",
 			null,
 			features,
 			buildType

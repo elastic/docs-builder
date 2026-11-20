@@ -134,6 +134,6 @@ public record NavigationSearchProperty
 	/// <example>"query"</example>
 	public required string Location { get; init; }
 	/// <summary>The operation page, with the field's anchor.</summary>
-	/// <example>"/docs/api/doc/elasticsearch/operation/operation-cluster-health#query-wait_for_status"</example>
+	/// <example>"/docs/api/elasticsearch/operation/operation-cluster-health#query-wait_for_status"</example>
 	public required string Url { get; init; }
 }

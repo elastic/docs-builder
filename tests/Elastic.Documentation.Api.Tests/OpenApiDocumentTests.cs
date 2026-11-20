@@ -50,7 +50,6 @@ public class OpenApiDocumentTests
 			.ToList();
 
 		operations.Should().Equal(
-			"DELETE /page-feedback/{feedbackId} 204,500,503",
 			"GET /apis 200,500",
 			"GET /apis/{api} 200,404,500",
 			"GET /apis/{api}/groups 200,400,404,500",
@@ -78,7 +77,7 @@ public class OpenApiDocumentTests
 			.ToList();
 
 		// API Explorer turns these into page slugs and the api-operations ids, such as docs-api:search.
-		ids.Should().NotContainNulls().And.OnlyHaveUniqueItems().And.HaveCount(12);
+		ids.Should().NotContainNulls().And.OnlyHaveUniqueItems().And.HaveCount(11);
 		ids.Should().Contain(["search", "get-api-operation", "list-api-operations"]);
 	}
 

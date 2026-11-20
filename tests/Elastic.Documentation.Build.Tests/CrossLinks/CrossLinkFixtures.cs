@@ -71,8 +71,8 @@ internal static class CrossLinkFixtures
 		  "floating": {
 		    "api/example-api": {
 		      "versions": [
-		        { "name": "8", "root": "api/doc/example-api/v8", "hidden": true },
-		        { "name": "main", "root": "api/doc/example-api", "current": true }
+		        { "name": "8", "root": "api/example-api/v8", "hidden": true },
+		        { "name": "main", "root": "api/example-api", "current": true }
 		      ],
 		      "pages": { "": 3, "operation/operation-search": 3, "operation/operation-new": 2, "operation/operation-old": 1, "8": 2 },
 		      "aliases": { "8": { "operation/operation-search": [ "operation/operation-search-legacy" ] } }
@@ -134,7 +134,7 @@ internal static class CrossLinkFixtures
 			RegistryByRepository = registries
 		};
 
-	public static IUriEnvironmentResolver Publish(string uri, string? pathPrefix) =>
+	public static IUriEnvironmentResolver Publish(string uri, string? pathPrefix, bool apiExplorer = false) =>
 		new PublishEnvironmentUriResolver(
 			new Dictionary<Uri, NavigationTocMapping>
 			{
@@ -151,7 +151,7 @@ internal static class CrossLinkFixtures
 				},
 				[new Uri("other-repo://target")] = new() { Source = new Uri("other-repo://target"), SourcePathPrefix = "docs/other/target" }
 			}.ToFrozenDictionary(),
-			new PublishEnvironment { Uri = uri, PathPrefix = pathPrefix }
+			new PublishEnvironment { Uri = uri, PathPrefix = pathPrefix, FeatureFlags = new() { ["ASSEMBLER_API_EXPLORER"] = apiExplorer } }
 		);
 
 	/// <summary>One of each environment shape a <see cref="IUriEnvironmentResolver"/> is created for.</summary>
@@ -162,7 +162,8 @@ internal static class CrossLinkFixtures
 		new("codex-relative", () => new CodexAwareUriResolver(["codex-repo"], useRelativePaths: true)),
 		new("publish", () => Publish("https://docs.example.test", null)),
 		new("publish-prefixed", () => Publish("https://docs.example.test", "docs/9.0")),
-		new("publish-prefixed-slash", () => Publish("https://docs.example.test/base/", "/versioned"))
+		new("publish-prefixed-slash", () => Publish("https://docs.example.test/base/", "/versioned")),
+		new("publish-api-explorer", () => Publish("https://docs.example.test", "docs", apiExplorer: true))
 	];
 
 	/// <summary>Appends a line of text. The text is built from strings only, so the culture has no say in it.</summary>

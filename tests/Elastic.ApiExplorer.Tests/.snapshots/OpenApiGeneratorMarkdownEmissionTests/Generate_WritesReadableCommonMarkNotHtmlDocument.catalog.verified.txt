@@ -8,6 +8,6 @@ resource: /api
 
 # Elastic APIs
 
-- [Fixture API](/api/doc/elasticsearch) (`elasticsearch`)
+- [Fixture API](/api/elasticsearch) (`elasticsearch`)
   A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges...
-  [Markdown](/api/doc/elasticsearch.md) · [JSON](/api/doc/elasticsearch.json) · [YAML](/api/doc/elasticsearch.yaml)
+  [Markdown](/api/elasticsearch.md) · [JSON](/api/elasticsearch.json) · [YAML](/api/elasticsearch.yaml)
