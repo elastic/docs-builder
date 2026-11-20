@@ -146,7 +146,13 @@ public static class ApiOverviewBuilder
 					AddProductRows(classification, rows, versionsConfig, designSystem);
 					break;
 				case TagNavigationItem tag:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.TagHeading,
+						Title = tag.NavigationTitle,
+						Url = tag.Url,
+						Deprecated = tag.Deprecated
+					});
 					AddProductRows(tag, rows, versionsConfig, designSystem);
 					break;
 				case OperationNavigationItem operation:

@@ -4,9 +4,9 @@
 	var row = Model.Row;
 }
 <li>
-	<a class="api-group-row" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
+	<a class="api-group-row@(row.Deprecated ? " api-group-row--deprecated" : "")" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
 		<span class="api-group-heading">
-			<span class="api-overview-title">@row.Title</span>
+			<span class="api-overview-title">@if (row.Deprecated){<s class="api-deprecated-title">@row.Title</s>}else{@row.Title}</span>
 			@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(row.Availability, row.Deprecated, row.DesignSystem)))
 		</span>
 		<div class="api-group-routes">
