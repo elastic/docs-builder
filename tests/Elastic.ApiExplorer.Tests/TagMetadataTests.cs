@@ -617,6 +617,35 @@ public class TagMetadataTests
 	}
 
 	[Test]
+	public async Task Sidebar_TagGroupTree_StartsWithAnOverviewRowToTheApiLanding()
+	{
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
+			[new("search"), new("indices")]
+		)
+		{ TagGroups = [new("Search", ["search"]), new("Cluster", ["indices"])] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+		// Tag and operation pages of one x-tagGroups group render that group's tree as their sidebar.
+		var group = navigation.NavigationItems.OfType<ClassificationNavigationItem>().First();
+
+		var model = NavigationRenderModel.Create(
+			group,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: false
+		);
+
+		model
+			.Tree[0]
+			.Should()
+			.Match<NavigationRenderNode>(
+				n => n.Kind == NavigationRenderNodeKind.Leaf && n.NavigationTitle == "Overview" && n.Url == navigation.Url
+			);
+	}
+
+	[Test]
 	public async Task Tag_Url_Uses_Group_Segment()
 	{
 		var openApiJson = new MinimalSpec([new("/a", "a1", ["alpha"]), new("/b", "b1", ["beta"])], [new("alpha"), new("beta")])

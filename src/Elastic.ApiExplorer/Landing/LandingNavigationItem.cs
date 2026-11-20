@@ -156,7 +156,7 @@ public class ClassificationNavigationItem(
 	classification,
 	rootNavigation,
 	parent
-), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem
+), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem, ISidebarOverviewRowNavigationItem
 {
 	public LandingNavigationItem Landing => rootNavigation;
 
