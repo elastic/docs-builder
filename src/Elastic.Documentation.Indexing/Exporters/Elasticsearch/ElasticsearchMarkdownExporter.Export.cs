@@ -51,6 +51,8 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Type,
 			doc.Hidden ? "hidden" : "listed",
 			doc.Body ?? string.Empty,
+			// An API document's content hash covers the rendered page, which its other fields do not.
+			doc.ContentBodyHash,
 			string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,
 			doc.Section ?? string.Empty,
@@ -277,7 +279,9 @@ public partial class ElasticsearchMarkdownExporter
 			// enrichment input, and content hashing.
 			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
 			CommonEnrichments(doc, null);
-			AssignContentHash(doc);
+			// The exporter hashes the page an API document stands for; only a document that is not a page hashes its body.
+			if (string.IsNullOrEmpty(doc.ContentBodyHash))
+				AssignContentHash(doc);
 			AssignDocumentMetadata(doc);
 
 			if (!await WriteDocumentAsync(doc, ctx))

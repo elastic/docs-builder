@@ -18,6 +18,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search.Contract;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
@@ -268,6 +269,118 @@ public class OpenApiGeneratorCatalogSplitTests
 		entries.Select(e => e.Url).Should().Equal("/docs/api/elasticsearch");
 	}
 
+	[Test]
+	public async Task ExportDocuments_SameSpecsTwice_GiveEveryDocumentTheSameContentHash()
+	{
+		var first = await ContentHashes(TwoOperationSpecs("Ping the cluster."));
+		var second = await ContentHashes(TwoOperationSpecs("Ping the cluster."));
+
+		second.Should().Equal(first);
+	}
+
+	[Test]
+	public async Task ExportDocuments_SamePageInTwoTrees_IsOneDocumentWithOneHash()
+	{
+		var hashes = await ContentHashes(TwoOperationSpecs("Ping the cluster."));
+
+		hashes
+			.Keys
+			.Should()
+			.Contain(
+				"/docs/api/elasticsearch/group/endpoint-core [9, 8]",
+				"the group page links to its operations in its own tree, and otherwise reads the same"
+			);
+	}
+
+	[Test]
+	public async Task ExportDocuments_OneEditedDescription_ChangesTheHashOfThatPageOnly()
+	{
+		var before = await ContentHashes(TwoOperationSpecs("Ping the cluster."));
+		var after = await ContentHashes(TwoOperationSpecs("Check that the cluster answers."));
+
+		after.Keys.Should().Equal(before.Keys);
+		before
+			.Where(kv => after[kv.Key] != kv.Value)
+			.Select(kv => kv.Key)
+			.Should()
+			.Equal("/docs/api/elasticsearch/operation/operation-ping [9, 8]");
+	}
+
+	[Test]
+	public async Task ExportDocuments_PagesWithoutASearchDocument_AreHiddenSitemapOnlyDocuments()
+	{
+		using var versionIndexClient = MainNineAnd8Client();
+		var generator = MainNineAnd8Generator(versionIndexClient, TwoOperationSpecs("Ping the cluster."));
+		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
+
+		var sitemapOnly = new List<DocumentationDocument>();
+		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
+		{
+			if (doc.Api!.SitemapOnly)
+				sitemapOnly.Add(doc);
+		}
+
+		sitemapOnly
+			.Select(d => d.Path)
+			.Should()
+			.BeEquivalentTo("/docs/api/elasticsearch/group/endpoint-admin", "/docs/api/elasticsearch/group/endpoint-core");
+		sitemapOnly.Should().OnlyContain(d => d.Hidden && d.Body == "" && d.ContentBodyHash != "", "the default tree does not unhide them");
+	}
+
+	/// <summary>Each exported document's content hash, keyed by its URL and the trees it stands for.</summary>
+	private static async Task<Dictionary<string, string>> ContentHashes(OpenApiDocument[] specs)
+	{
+		using var versionIndexClient = MainNineAnd8Client();
+		var generator = MainNineAnd8Generator(versionIndexClient, specs);
+		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
+		var hashes = new Dictionary<string, string>(StringComparer.Ordinal);
+		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
+			hashes[$"{doc.Path} [{string.Join(", ", doc.Api!.Trees.Select(t => t.Tree))}]"] = doc.ContentBodyHash;
+		return hashes;
+	}
+
+	/// <summary>The main, 9 and 8 specs of an API with two operations in two groups, all three the same.</summary>
+	private static OpenApiDocument[] TwoOperationSpecs(string pingDescription) =>
+		[TwoOperationSpec(pingDescription), TwoOperationSpec(pingDescription), TwoOperationSpec(pingDescription)];
+
+	private static OpenApiDocument TwoOperationSpec(string pingDescription) =>
+		new()
+		{
+			Info = new OpenApiInfo { Title = "Elasticsearch", Version = "1.0", Description = "A search engine." },
+			Paths = new OpenApiPaths
+			{
+				["/ping"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new()
+						{
+							OperationId = "ping",
+							Summary = "Ping",
+							Description = pingDescription,
+							Tags = new HashSet<OpenApiTagReference> { new("core") },
+							Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+						}
+					}
+				},
+				["/_status"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new()
+						{
+							OperationId = "status",
+							Summary = "Get the status",
+							Description = "Returns the status.",
+							Tags = new HashSet<OpenApiTagReference> { new("admin") },
+							Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+						}
+					}
+				}
+			},
+			Tags = new HashSet<OpenApiTag> { new() { Name = "core" }, new() { Name = "admin" } }
+		};
+
 	private static VersionIndexClient MainNineAnd8Client() =>
 		new(
 			BaseUri,
@@ -279,13 +392,15 @@ public class OpenApiGeneratorCatalogSplitTests
 			sleep: (_, _) => Task.CompletedTask
 		);
 
-	private static OpenApiGenerator MainNineAnd8Generator(VersionIndexClient versionIndexClient) =>
+	private static OpenApiGenerator MainNineAnd8Generator(VersionIndexClient versionIndexClient, OpenApiDocument[]? specs = null) =>
 		new(
 			NullLoggerFactory.Instance,
 			CreateGenerateContext(Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}")),
 			NoopMarkdownStringRenderer.Instance,
 			versionIndexClient,
-			CreateSequentialReader(SpecDocument("Elasticsearch main"), SpecDocument("Elasticsearch 9"), SpecDocument("Elasticsearch 8"))
+			CreateSequentialReader(
+				specs ?? [SpecDocument("Elasticsearch main"), SpecDocument("Elasticsearch 9"), SpecDocument("Elasticsearch 8")]
+			)
 		);
 
 	[Test]
@@ -325,13 +440,15 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var paths = new List<string>();
 		await foreach (var doc in exporter.ExportDocuments(generators, TestContext.Current!.Execution.CancellationToken))
-			paths.Add(doc.Path);
+			paths.Add($"{doc.Path}{(doc.Api!.SitemapOnly ? " (sitemap only)" : "")}");
 
 		paths.Should().BeEquivalentTo(
 			"/docs/api/cloud-billing",
 			"/docs/api/cloud-billing/operation/operation-ping",
+			"/docs/api/cloud-billing/group/endpoint-core (sitemap only)",
 			"/docs/api/cloud-connect",
-			"/docs/api/cloud-connect/operation/operation-ping"
+			"/docs/api/cloud-connect/operation/operation-ping",
+			"/docs/api/cloud-connect/group/endpoint-core (sitemap only)"
 		);
 	}
 

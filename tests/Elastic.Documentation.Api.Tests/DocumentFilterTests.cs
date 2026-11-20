@@ -34,11 +34,11 @@ public class DocumentFilterTests
 		Serialize(SearchQueryBuilder.DocumentFilterFor(new ApiPageContext("elasticsearch", null))).Should().Be(UnscopedFilter);
 
 	[Test]
-	public void DocumentFilterFor_Scope_ShowsTheScopedTreeOfThatApiAndDefaultRenderingsOfTheRest() =>
+	public void DocumentFilterFor_Scope_ShowsTheScopedTreeOfThatApiWithoutSitemapOnlyPagesAndDefaultRenderingsOfTheRest() =>
 		Serialize(SearchQueryBuilder.DocumentFilterFor(new ApiPageContext("elasticsearch", "8")))
 			.Should()
 			.Be(
-				"""{"bool":{"minimum_should_match":1,"must_not":{"terms":{"path.keyword":["/docs","/docs/","/docs/404","/docs/404/"]}},"should":[{"bool":{"must_not":[{"term":{"hidden":{"value":true}}},{"term":{"api.key":{"value":"elasticsearch"}}}]}},{"bool":{"filter":[{"term":{"api.key":{"value":"elasticsearch"}}},{"term":{"api.trees.tree":{"value":"8"}}}]}}]}}"""
+				"""{"bool":{"minimum_should_match":1,"must_not":{"terms":{"path.keyword":["/docs","/docs/","/docs/404","/docs/404/"]}},"should":[{"bool":{"must_not":[{"term":{"hidden":{"value":true}}},{"term":{"api.key":{"value":"elasticsearch"}}}]}},{"bool":{"filter":[{"term":{"api.key":{"value":"elasticsearch"}}},{"term":{"api.trees.tree":{"value":"8"}}}],"must_not":{"term":{"api.sitemap_only":{"value":true}}}}}]}}"""
 			);
 
 	[Test]

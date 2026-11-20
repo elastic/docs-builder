@@ -39,8 +39,6 @@ public sealed record NavigationRenderNode
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
-	/// <summary>True when the group starts expanded on every page; see <see cref="ISidebarExpandedNavigationItem"/>.</summary>
-	public bool Expanded { get; init; }
 	public IReadOnlyList<NavigationRenderNode> NavigationItems { get; init; } = [];
 }
 
@@ -87,7 +85,12 @@ public sealed record NavigationRenderModel
 	/// Non-clickable label above an island/section tree (e.g. "Elasticsearch", "Reference").
 	/// The clickable index sits in <see cref="Tree"/> as "Overview".
 	/// </summary>
+	/// <summary>The label of the row that leads to a section's or an API's own landing page.</summary>
+	public const string OverviewTitle = "Overview";
+
 	public string? TreeHeading { get; init; }
+	/// <summary>True when the tree opens with an in-line Overview row; see <see cref="ISidebarOverviewRowNavigationItem"/>.</summary>
+	public bool HasOverviewRow { get; init; }
 	/// <summary>Slug for the heading icon (<c>reference</c>, <c>elasticsearch</c>, …); null when none maps.</summary>
 	public string? TreeHeadingIcon { get; init; }
 	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
@@ -135,6 +138,14 @@ public sealed record NavigationRenderModel
 				nodes = FlattenIslandOverview(SectionOverviewLeaf(tree.Url), nodes);
 			rootIndex = null;
 		}
+		else if (tree is ISidebarOverviewRowNavigationItem)
+		{
+			// A heading tree, such as one x-tagGroups group, keeps its title under the Overview row, as in the full API sidebar.
+			var overview = SectionOverviewLeaf(tree.Url);
+			nodes = tree is ISidebarHeadingNavigationItem
+				? FlattenIslandOverview(overview, [CreateNode(tree, isTopLevel: true)])
+				: FlattenIslandOverview(overview, CreateNavigationItems(tree, isTopLevel: true).ToList());
+		}
 		else
 		{
 			nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
@@ -158,6 +169,7 @@ public sealed record NavigationRenderModel
 			BackLinks = backLinks,
 			RootIndex = rootIndex,
 			TreeHeading = treeHeading,
+			HasOverviewRow = tree is ISidebarOverviewRowNavigationItem,
 			TreeHeadingIcon = treeHeadingIcon,
 			Tree = nodes,
 			ContentHash = HashContent(rootIndex, treeHeading, treeHeadingIcon, nodes),
@@ -213,7 +225,7 @@ public sealed record NavigationRenderModel
 		bool isGlobalAssemblyBuild
 	)
 	{
-		if (tree.Index.Hidden || tree is ISidebarWithoutRootIndexNavigationItem)
+		if (tree.Index.Hidden || tree is ISidebarOverviewRowNavigationItem)
 			return null;
 
 		if (isGlobalAssemblyBuild)
@@ -310,14 +322,14 @@ public sealed record NavigationRenderModel
 	}
 
 	private static NavigationRenderNode SectionOverviewLeaf(string url) =>
-		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = true, NavigationTitle = "Overview", Url = url };
+		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = true, NavigationTitle = OverviewTitle, Url = url };
 
 	private static List<NavigationRenderNode> FlattenIslandOverview(NavigationRenderNode overview, List<NavigationRenderNode> children)
 	{
 		var overviewLeaf = overview with
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
-			NavigationTitle = "Overview",
+			NavigationTitle = OverviewTitle,
 			Id = null,
 			ShowToggle = false,
 			NavigationItems = []
@@ -375,7 +387,6 @@ public sealed record NavigationRenderModel
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
 			ShowToggle = !isGroup && !node.NavigationItems.All(n => n.Hidden),
-			Expanded = node is ISidebarExpandedNavigationItem,
 			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: isGroup)]
 		};
 	}
@@ -457,8 +468,6 @@ public sealed record NavigationRenderModel
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);
 		// Flags are hashed only when set, each with its own marker, so trees without them keep the hash, and so the tree id, they had before.
-		if (node.Expanded)
-			AppendInt(hash, 1);
 		if (node.Deprecated)
 			AppendInt(hash, 2);
 		AppendNodes(hash, node.NavigationItems);

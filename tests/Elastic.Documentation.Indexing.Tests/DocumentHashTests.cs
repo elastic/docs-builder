@@ -59,4 +59,13 @@ public class DocumentHashTests
 	[Test]
 	public void DocumentHash_ParentChanges_ChangesTheHash() =>
 		Hash(Operation(Property("knn.field") with { Parent = "knn" })).Should().NotBe(Hash(Operation(Property("knn.field"))));
+
+	[Test]
+	public void DocumentHash_PageContentHashChanges_ChangesTheHash() =>
+		Hash(Operation(Property("knn")) with { ContentBodyHash = "page-a" })
+			.Should()
+			.NotBe(
+				Hash(Operation(Property("knn")) with { ContentBodyHash = "page-b" }),
+				"a page whose rendered content changed must be written again"
+			);
 }

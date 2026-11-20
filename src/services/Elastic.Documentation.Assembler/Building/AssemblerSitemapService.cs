@@ -56,10 +56,15 @@ public class AssemblerSitemapService(
 		_logger.LogInformation("Querying index {Index} for sitemap entries", indexName);
 
 		var reader = new EsSitemapReader(transport, _logger, indexName);
-		// API pages keep the file `assembler build` wrote from their page types; the reader returns narrative pages only.
+		var output = SitemapOutput.For(assembleContext);
+		var documents = new List<SitemapEntry>();
 		var entries = new Dictionary<string, DateTimeOffset>();
 		await foreach (var entry in reader.ReadAllAsync(ctx))
-			entries[entry.Url] = entry.LastUpdated;
+		{
+			documents.Add(entry);
+			if (entry.ApiTreeRoots.Count == 0 && !output.IsApiUrl(entry.Url))
+				entries[entry.Url] = entry.LastUpdated;
+		}
 
 		_logger.LogInformation("Fetched {Count} narrative sitemap entries from ES", entries.Count);
 
@@ -69,7 +74,16 @@ public class AssemblerSitemapService(
 			return false;
 		}
 
-		var files = SitemapBuilder.Generate(entries, SitemapOutput.For(assembleContext), collector);
+		// API pages are the ones `assembler build` listed; the index dates them.
+		var api = ApiSitemapDates.Resolve(SitemapBuilder.ReadApiPages(output), documents, output.ApiRoot);
+		if (api.Missing.Count > 0)
+			collector.EmitGlobalWarning(
+				$"{api.Missing.Count} API sitemap pages have no document in {indexName}, so they keep the build date: {string.Join(", ", api.Missing.Take(10))}"
+			);
+		foreach (var (url, date) in api.Entries)
+			entries[url] = date;
+
+		var files = SitemapBuilder.Generate(entries, output, collector);
 		foreach (var file in files)
 			_logger.LogInformation("Sitemap file {File}: {Count} URLs", file.Name, file.EntryCount);
 

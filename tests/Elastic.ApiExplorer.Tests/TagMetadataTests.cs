@@ -586,7 +586,7 @@ public class TagMetadataTests
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public async Task Sidebar_ApiTree_HasNoRowForTheOverviewAndNoDividerBeforeItsFirstGroup(bool withTagGroups)
+	public async Task Sidebar_ApiTree_StartsWithTheOverviewRowAndHasNoDivider(bool withTagGroups)
 	{
 		var spec = new MinimalSpec(
 			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
@@ -604,10 +604,78 @@ public class TagMetadataTests
 			isGlobalAssemblyBuild: false
 		);
 
-		// The product switcher already leads to the overview, so the tree starts at its first group. With no root row there is nothing for an automatic rule to sit under.
+		// The Overview row sits in line with the first pages, so there is no separate root row and no automatic rule under it.
 		model.RootIndex.Should().BeNull();
-		model.Tree.Should().NotBeEmpty();
+		model.HasOverviewRow.Should().BeTrue("the API row spacing rule applies only to trees that open with an Overview row");
+		model
+			.Tree[0]
+			.Should()
+			.Match<NavigationRenderNode>(
+				n => n.Kind == NavigationRenderNodeKind.Leaf && n.NavigationTitle == "Overview" && n.Url == navigation.Url
+			);
 		model.Tree.Should().NotContain(n => n.Kind == NavigationRenderNodeKind.Separator);
+	}
+
+	[Test]
+	[Arguments("search")]
+	[Arguments("api-tag-groupsearch")]
+	public async Task Sidebar_TagGroupSharingATagName_GetsItsOwnToggleId(string tagName)
+	{
+		// The group is named "search"; the tag either shares that name or prepends a prefix the group id could have hashed.
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", [tagName]), new("/indices", "indices-op", ["indices"])],
+			[new(tagName), new("indices")]
+		)
+		{ TagGroups = [new("search", [tagName]), new("indices", ["indices"])] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+		var group = navigation.NavigationItems.OfType<ClassificationNavigationItem>().First();
+
+		var model = NavigationRenderModel.Create(
+			group,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: false
+		);
+
+		// The tag's chevron must open the tag, not collapse the group around it.
+		var heading = model.Tree[1];
+		heading.NavigationItems.Should().ContainSingle().Which.Id.Should().NotBe(heading.Id);
+	}
+
+	[Test]
+	public async Task Sidebar_TagGroupTree_StartsWithAnOverviewRowToTheApiLanding()
+	{
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
+			[new("search"), new("indices")]
+		)
+		{ TagGroups = [new("Search", ["search"]), new("Cluster", ["indices"])] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+		// Tag and operation pages of one x-tagGroups group render that group's tree as their sidebar.
+		var group = navigation.NavigationItems.OfType<ClassificationNavigationItem>().First();
+
+		var model = NavigationRenderModel.Create(
+			group,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: false
+		);
+
+		model
+			.Tree[0]
+			.Should()
+			.Match<NavigationRenderNode>(
+				n => n.Kind == NavigationRenderNodeKind.Leaf && n.NavigationTitle == "Overview" && n.Url == navigation.Url
+			);
+		// The group keeps its name, as the heading it is in the full API sidebar.
+		model
+			.Tree[1]
+			.Should()
+			.Match<NavigationRenderNode>(n => n.Kind == NavigationRenderNodeKind.Heading && n.NavigationTitle == group.NavigationTitle);
 	}
 
 	[Test]

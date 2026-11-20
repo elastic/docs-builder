@@ -33,7 +33,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			.Subject;
 
 		authentication.Url.Should().Be("/api/fixture/authentication");
-		authentication.Hidden.Should().BeFalse("the Topics heading lists it");
+		authentication.Hidden.Should().BeFalse("the sidebar lists it with the guide pages");
 		servers.Hidden.Should().BeTrue("the page stays for old links but is not listed in the nav");
 		authentication.NavigationTitle.Should().Be("Authentication");
 		servers.Url.Should().Be("/api/fixture/servers");

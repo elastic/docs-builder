@@ -72,13 +72,7 @@ public class KibanaApiMarkdownNavigationTests
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("kibana", doc, apiConfig);
-		var introNav = navigation
-			.NavigationItems
-			.OfType<TopicsNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<SimpleMarkdownNavigationItem>()
-			.First();
+		var introNav = ApiExplorerFixture.GuidePages(navigation).OfType<SimpleMarkdownNavigationItem>().First();
 
 		return (navigation, introNav, context, doc);
 	}
@@ -121,14 +115,12 @@ public class KibanaApiMarkdownNavigationTests
 	}
 
 	[Test]
-	public void IntroNav_ShouldAppearFirstUnderTopicsHeading()
+	public void IntroNav_ShouldAppearFirst()
 	{
 		var (navigation, introNav) = SetupKibanaNavigation();
 
-		var topics = navigation.NavigationItems.First().Should().BeOfType<TopicsNavigationItem>().Subject;
-		topics.NavigationTitle.Should().Be("Topics");
-		topics.NavigationItems.First().Should().Be(introNav);
-		introNav.Parent.Should().Be(topics);
+		navigation.NavigationItems.First().Should().Be(introNav);
+		introNav.Parent.Should().Be(navigation);
 	}
 
 	[Test]

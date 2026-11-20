@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using System.Text;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -17,6 +18,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
@@ -254,6 +256,106 @@ public class OpenApiGenerator(
 					.Select(v => new IndexedTree(a.Resolved.Routes, a.Id, v.Version.Moniker, v.Document))
 			)
 		];
+	}
+
+	/// <summary>Stands in for the tree root in hashed Markdown, so a link's tree does not change the hash.</summary>
+	private const string TreeRootToken = "{api-root}";
+
+	/// <summary>
+	/// Replaces <paramref name="root"/> with <see cref="TreeRootToken"/> where it starts a link into that tree. A link into
+	/// another version tree below the root, such as <c>/v8</c> or <c>/next</c>, and a sibling API that shares the prefix, such as
+	/// <c>elasticsearch-serverless</c>, keep their URL. The rule reads only the link, so the set of trees cannot change the hash.
+	/// </summary>
+	internal static string RelativeToTree(string markdown, string root)
+	{
+		var result = new StringBuilder(markdown.Length);
+		var start = 0;
+		for (var i = markdown.IndexOf(root, StringComparison.Ordinal); i >= 0; i = markdown.IndexOf(
+			root,
+			i + root.Length,
+			StringComparison.Ordinal
+		))
+		{
+			var end = i + root.Length;
+			if (!EndsAt(markdown, end) || StartsVersionSegment(markdown, end))
+				continue;
+			_ = result.Append(markdown, start, i - start).Append(TreeRootToken);
+			start = end;
+		}
+		return result.Append(markdown, start, markdown.Length - start).ToString();
+
+		// Sentence punctuation ends a bare autolink only before a space or the end, as the Markdown renderer reads it,
+		// so a slug such as `v8.19` stays one segment.
+		static bool EndsAt(string text, int index) =>
+			index == text.Length
+				|| text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']'
+				|| char.IsWhiteSpace(text[index])
+				|| (text[index] is '.' or ',' or ';' or ':' or '!' && (index + 1 == text.Length || char.IsWhiteSpace(text[index + 1])));
+
+		// `/v8` or `/next` right after the root names another version tree of the API.
+		static bool StartsVersionSegment(string text, int index)
+		{
+			if (index >= text.Length || text[index] != '/')
+				return false;
+			var segmentStart = index + 1;
+			var segmentEnd = segmentStart;
+			while (segmentEnd < text.Length && char.IsAsciiLetterOrDigit(text[segmentEnd]))
+				segmentEnd++;
+			var segment = text.AsSpan(segmentStart, segmentEnd - segmentStart);
+			var isVersion = segment.SequenceEqual(ApiUrlBuilder.NextSegment)
+				|| (segment.Length > 1 && segment[0] == 'v' && segment[1..].IndexOfAnyExceptInRange('0', '9') < 0);
+			return isVersion && EndsAt(text, segmentEnd);
+		}
+	}
+
+	/// <summary>
+	/// The content of every page in <paramref name="tree"/>, hashed from the page's Markdown export, so the search export can
+	/// date each page by what it says. Links into the tree are hashed relative to its root: the same page in two trees hashes the same.
+	/// </summary>
+	public async Task<IReadOnlyList<ApiPageContent>> PageContentsAsync(IndexedTree tree, Cancel ctx = default)
+	{
+		var apiConfig = ApiConfigsToRender().First(c => string.Equals(c.Key, tree.ApiKey, StringComparison.OrdinalIgnoreCase)).Value;
+		var trees = await TreesFor(tree.ApiKey, apiConfig, ctx).ConfigureAwait(false);
+		var versionTree = trees.Trees.First(t => t.Moniker == tree.Moniker && !t.IsMirror);
+		var renderContext = CreateRenderContext(
+			new(
+				versionTree.Version.Document,
+				apiConfig,
+				versionTree.Navigation,
+				VersionSwitcherItems: [],
+				tree.Moniker,
+				trees.Resolved.Routes.DefaultMoniker,
+				ValidateSupplemental: false,
+				EmitUnmatchedBaseFiles: false,
+				versionTree.PageType,
+				VersionlessRootUrl: null,
+				SupplementalMajor(tree.Moniker, trees.HighestMajor),
+				CatalogEntries: [],
+				CurrentApiKey: tree.ApiKey
+			)
+		);
+
+		var pages = UniquePages(versionTree.Navigation);
+		var root = versionTree.Navigation.Url.TrimEnd('/');
+		var contents = new ApiPageContent?[pages.Length];
+		await Parallel.ForAsync(0, pages.Length, new ParallelOptions
+		{
+			CancellationToken = ctx,
+			MaxDegreeOfParallelism = Environment.ProcessorCount
+		}, async (i, token) =>
+		{
+			var (item, page) = pages[i];
+			var pageContext = renderContext with { CurrentNavigation = item };
+			var markdown = await page.RenderCommonMarkAsync(pageContext, page.CreatePageModel(pageContext), token).ConfigureAwait(false);
+			if (!string.IsNullOrEmpty(markdown))
+				contents[i] = new ApiPageContent(
+					item.Url,
+					item.NavigationTitle,
+					ContentHash.CreateNormalized(RelativeToTree(markdown, root))
+				);
+		}).ConfigureAwait(false);
+
+		return [.. contents.OfType<ApiPageContent>()];
 	}
 
 	/// <summary>
@@ -555,10 +657,10 @@ public class OpenApiGenerator(
 		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, ctx).ConfigureAwait(false);
 	}
 
-	private async Task GenerateApiProduct(ApiProductGeneration generation, Cancel ctx)
+	/// <summary>The render context of one tree, with its supplemental files applied. Page HTML and the search export share it.</summary>
+	private ApiRenderContext CreateRenderContext(ApiProductGeneration generation)
 	{
-		var title = generation.Document.Info?.Title ?? "<no title>";
-		var started = Stopwatch.StartNew();
+		var navigation = generation.Navigation;
 		var discovery = DiscoverSupplemental(generation.Document, generation.ApiConfig);
 		if (generation.ValidateSupplemental)
 		{
@@ -567,20 +669,6 @@ public class OpenApiGenerator(
 				new(generation.Document, context.Collector, generation.Moniker, EmitUnmatchedBaseFiles: generation.EmitUnmatchedBaseFiles)
 			);
 		}
-		var navigation = generation.Navigation;
-		_logger.LogInformation(
-			"Generating OpenApiDocument {Title} ({Operations} operations)",
-			title,
-			generation.Document.Paths.Sum(static p => p.Value.Operations?.Count ?? 0)
-		);
-
-		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(
-			context,
-			navigation,
-			MapVersionSwitcher(generation.VersionSwitcherItems),
-			suppressNavigationDropdown: true
-		);
-
 		var operations = ApiSupplementalDoc.Load(discovery.Operations);
 		var tags = ApiSupplementalDoc.Load(discovery.Tags);
 		if (generation.SupplementalMajor is { } major && discovery.VersionSuffixed.Count > 0)
@@ -603,7 +691,7 @@ public class OpenApiGenerator(
 
 		ApplySupplementalIntroHeadings(navigation, navigation.Url, tags);
 
-		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
+		return new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
 			SiteTopNav = SiteTopNav,
 			NavigationHtml = string.Empty,
@@ -621,6 +709,26 @@ public class OpenApiGenerator(
 			TagSupplemental = tags,
 			Product = generation.ApiConfig?.Product
 		};
+	}
+
+	private async Task GenerateApiProduct(ApiProductGeneration generation, Cancel ctx)
+	{
+		var title = generation.Document.Info?.Title ?? "<no title>";
+		var started = Stopwatch.StartNew();
+		var navigation = generation.Navigation;
+		_logger.LogInformation(
+			"Generating OpenApiDocument {Title} ({Operations} operations)",
+			title,
+			generation.Document.Paths.Sum(static p => p.Value.Operations?.Count ?? 0)
+		);
+
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(
+			context,
+			navigation,
+			MapVersionSwitcher(generation.VersionSwitcherItems),
+			suppressNavigationDropdown: true
+		);
+		var renderContext = CreateRenderContext(generation);
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
 		await WriteSpecDownloads(navigation, generation.Document, ctx).ConfigureAwait(false);
@@ -698,20 +806,13 @@ public class OpenApiGenerator(
 			ApplySupplementalIntroHeadings(child, apiBaseUrl, tags);
 	}
 
-	private async Task RenderNavigationItems(
+	private Task RenderNavigationItems(
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
 		INavigationItem root,
 		Cancel ctx
-	)
-	{
-		var pages = new List<(INavigationItem Item, IApiModel Model)>();
-		CollectPages(root, pages);
-
-		// Pages of one version render in parallel. When two items share a URL the last one wins,
-		// as it did when pages were written sequentially in depth-first order.
-		var unique = pages.AsEnumerable().Reverse().DistinctBy(p => p.Item.Url).ToArray();
-		await Parallel.ForEachAsync(unique, new ParallelOptions
+	) =>
+		Parallel.ForEachAsync(UniquePages(root), new ParallelOptions
 		{
 			CancellationToken = ctx,
 			MaxDegreeOfParallelism = Environment.ProcessorCount
@@ -720,8 +821,7 @@ public class OpenApiGenerator(
 			_ = await Render(page.Item, page.Model, renderContext, navigationRenderer, token).ConfigureAwait(false);
 			if (page.Item is OperationNavigationItem { AliasUrls.Count: > 0 } collapsed)
 				await WriteRedirects(collapsed, token).ConfigureAwait(false);
-		}).ConfigureAwait(false);
-	}
+		});
 
 	/// <summary>Former per-operation URLs of a collapsed page forward to it, keeping any <c>#fragment</c>.</summary>
 	private async Task WriteRedirects(OperationNavigationItem page, Cancel ctx)
@@ -776,6 +876,17 @@ public class OpenApiGenerator(
 				.Select(url => url[root.Length..])
 				.Distinct(StringComparer.Ordinal)
 		];
+	}
+
+	/// <summary>
+	/// The pages of a tree, one per URL. When two items share a URL the last one wins, as it did when pages were written
+	/// sequentially in depth-first order. Rendering and the search export's content hashes both read this set.
+	/// </summary>
+	private static (INavigationItem Item, IApiModel Model)[] UniquePages(INavigationItem root)
+	{
+		var pages = new List<(INavigationItem Item, IApiModel Model)>();
+		CollectPages(root, pages);
+		return [.. pages.AsEnumerable().Reverse().DistinctBy(p => p.Item.Url)];
 	}
 
 	private static void CollectPages(INavigationItem item, List<(INavigationItem Item, IApiModel Model)> pages)
