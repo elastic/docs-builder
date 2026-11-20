@@ -73,11 +73,14 @@ public static class SearchQueryBuilder
 
 	internal static readonly Query HiddenDocuments = new TermQuery { Field = QueryFieldNames.Hidden, Value = true };
 
+	/// <summary>API pages indexed only for their content date. They are hidden too, so only the tree-scoped clause has to name them.</summary>
+	private static readonly Query SitemapOnlyDocuments = new TermQuery { Field = QueryFieldNames.ApiSitemapOnly, Value = true };
+
 	private static readonly Query UnscopedDocumentFilter = new BoolQuery { MustNot = [RootUrlPlaceholders, HiddenDocuments] };
 
 	/// <summary>
 	/// Excludes bare root-URL placeholders and hidden documents. A reader in one version tree of an API instead gets
-	/// that API's documents for the tree, hidden or not, and every other document that is not hidden.
+	/// that API's documents for the tree, hidden or not, except sitemap-only pages, and every other document that is not hidden.
 	/// </summary>
 	public static Query DocumentFilterFor(ApiPageContext? page)
 	{
@@ -91,7 +94,11 @@ public static class SearchQueryBuilder
 			Should =
 			[
 				new BoolQuery { MustNot = [HiddenDocuments, scopedApi] },
-				new BoolQuery { Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = tree }] }
+				new BoolQuery
+				{
+					Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = tree }],
+					MustNot = [SitemapOnlyDocuments]
+				}
 			],
 			MinimumShouldMatch = 1
 		};

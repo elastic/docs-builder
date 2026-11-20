@@ -316,7 +316,14 @@ public class ApiGatewayTests
 			                              }
 			                            }
 			                          }
-			                        ]
+			                        ],
+			                        "must_not": {
+			                          "term": {
+			                            "api.sitemap_only": {
+			                              "value": true
+			                            }
+			                          }
+			                        }
 			                      }
 			                    }
 			                  ]

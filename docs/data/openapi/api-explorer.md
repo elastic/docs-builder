@@ -324,7 +324,9 @@ The type of each version tree decides whether its pages are in the API file:
 
 Older majors are hidden in the navigation, but they are still listed in the sitemap. So are the pages that the sidebar leaves out, such as Servers. Redirects and the `.md` renderings of pages are not listed.
 
-`assembler build` writes all three files. `assembler sitemap` runs after `assembler index`, in the same output folder. It rewrites the narrative pages with the dates from the search index and keeps the API pages from the build.
+`assembler build` writes all three files with the build time as the date. `assembler sitemap` runs after `assembler index`, in the same output folder. It keeps the pages the build listed and dates each one from the search index, so a page's date changes only when its content changes.
+
+The search export indexes one document for every API page. Operation and landing pages are search results. Group, type, topic, authentication, servers and Markdown pages are indexed only for their date, and search never returns them. A document's content hash is the hash of the page's `.md` rendering, with links into the page's own version tree made relative. A page that reads the same in two majors shares one document and one date. The `/docs/api` hub takes the newest date of the API landing pages. If a listed page has no document, `assembler sitemap` warns and keeps the build date for it.
 
 ### Link to an API page from Markdown [api-cross-links]
 

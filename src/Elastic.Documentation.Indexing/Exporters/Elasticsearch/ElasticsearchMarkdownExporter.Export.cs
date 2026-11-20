@@ -277,7 +277,9 @@ public partial class ElasticsearchMarkdownExporter
 			// enrichment input, and content hashing.
 			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
 			CommonEnrichments(doc, null);
-			AssignContentHash(doc);
+			// The exporter hashes the page an API document stands for; only a document that is not a page hashes its body.
+			if (string.IsNullOrEmpty(doc.ContentBodyHash))
+				AssignContentHash(doc);
 			AssignDocumentMetadata(doc);
 
 			if (!await WriteDocumentAsync(doc, ctx))

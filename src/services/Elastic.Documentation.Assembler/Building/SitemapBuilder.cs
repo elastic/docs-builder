@@ -21,7 +21,8 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public record SitemapOutput(IFileSystem FileSystem, IDirectoryInfo Folder, string? PathPrefix, Uri Host)
 {
-	private string ApiRoot => ApiUrlBuilder.ApiRoot($"/{PathPrefix?.Trim('/')}");
+	/// <summary>The API hub, the page that lists every API.</summary>
+	public string ApiRoot => ApiUrlBuilder.ApiRoot($"/{PathPrefix?.Trim('/')}");
 
 	public static SitemapOutput For(AssembleContext context) =>
 		new(
@@ -89,6 +90,21 @@ public static class SitemapBuilder
 		using var indexXml = Serialize(index);
 		Write(indexXml, output, IndexFileName);
 		return files;
+	}
+
+	/// <summary>The pages and dates of the API sitemap the build wrote, keyed by site path; empty when the build wrote none.</summary>
+	public static IReadOnlyDictionary<string, DateTimeOffset> ReadApiPages(SitemapOutput output)
+	{
+		var path = output.PathOf(ApiFileName);
+		if (!output.FileSystem.File.Exists(path))
+			return new Dictionary<string, DateTimeOffset>();
+
+		using var stream = output.FileSystem.File.OpenRead(path);
+		return XDocument.Load(stream).Root!.Elements(Ns + "url").ToDictionary(
+			url => new Uri((string)url.Element(Ns + "loc")!).AbsolutePath,
+			url => DateTimeOffset.Parse((string)url.Element(Ns + "lastmod")!, CultureInfo.InvariantCulture),
+			StringComparer.Ordinal
+		);
 	}
 
 	private static SitemapFile WriteUrlSet(
