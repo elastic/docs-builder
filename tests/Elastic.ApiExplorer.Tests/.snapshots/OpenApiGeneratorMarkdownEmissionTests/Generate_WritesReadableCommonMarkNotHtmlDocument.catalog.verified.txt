@@ -1,7 +1,7 @@
 ---
 type: api
 title: Elastic APIs
-description: Reference documentation for Elastic REST APIs, including Elasticsearch, Kibana and Elastic Cloud.
+description: "Reference documentation for Elastic REST APIs, including Elasticsearch, Kibana and Elastic Cloud."
 url: /api
 resource: /api
 ---

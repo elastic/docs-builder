@@ -66,6 +66,15 @@ public record ApiRenderContext(
 	/// <summary>The root of the versionless tree, set on the numbered copy of the newest major so its pages name the versionless pages as canonical.</summary>
 	public string? VersionlessRootUrl { get; init; }
 
+	/// <summary>
+	/// The landing description. A versioned spec that carries none borrows the one its API's catalog entry takes from the
+	/// canonical spec, so v8 and v9 landings are not left without a meta description.
+	/// </summary>
+	internal string? LandingDescription =>
+		!string.IsNullOrWhiteSpace(Model.Info?.Description)
+			? Model.Info.Description
+			: CatalogEntries.FirstOrDefault(entry => entry.Key == CurrentApiKey)?.Description;
+
 	/// <summary>The absolute canonical URL of <paramref name="pageUrl"/>, or its path when the build has no canonical base URL.</summary>
 	public string CanonicalUrl(string pageUrl)
 	{

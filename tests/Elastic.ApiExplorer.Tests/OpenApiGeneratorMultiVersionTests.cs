@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
@@ -29,7 +30,7 @@ using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OpenApiGeneratorMultiVersionTests
+public partial class OpenApiGeneratorMultiVersionTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
@@ -1060,6 +1061,145 @@ public class OpenApiGeneratorMultiVersionTests
 		var child = files.ReadAllText(Path.Join(root, "v9", "auth", "index.html"));
 		child.Should().Contain("href=\"/api/elasticsearch/v8/authentication\"");
 	}
+
+	[Test]
+	public async Task Generate_EmptyMetaDescriptions_AreOnlyPagesWithNoSourceSentence()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SeoSample("Elasticsearch main", null)),
+			("9.4", WithTopic(SeoSample("Elasticsearch 9", "## Overview\n\nSearch and analyze data."), "Authentication")),
+			("8.19", SeoSample("Elasticsearch 8", null))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var pages = ReadMetaDescriptions(context.WriteFileSystem, outputRoot);
+		EmptyDescriptionPages(pages)
+			.Should()
+			.Equal(
+				"/api/elasticsearch/group/endpoint-bare",
+				"/api/elasticsearch/next/authentication",
+				"/api/elasticsearch/next/group/endpoint-bare",
+				"/api/elasticsearch/next/operation/operation-bare",
+				"/api/elasticsearch/next/servers",
+				"/api/elasticsearch/operation/operation-bare",
+				"/api/elasticsearch/servers",
+				"/api/elasticsearch/v8/authentication",
+				"/api/elasticsearch/v8/group/endpoint-bare",
+				"/api/elasticsearch/v8/operation/operation-bare",
+				"/api/elasticsearch/v8/servers",
+				"/api/elasticsearch/v9/group/endpoint-bare",
+				"/api/elasticsearch/v9/operation/operation-bare",
+				"/api/elasticsearch/v9/servers"
+			);
+		pages["/api/elasticsearch/next"]
+			.Should()
+			.Be("Search and analyze data.", "a landing with no description of its own takes the canonical one");
+		pages["/api/elasticsearch/v8"].Should().Be("Search and analyze data.");
+		pages["/api/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
+		pages["/api/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
+		pages["/api/elasticsearch/v9/authentication"].Should().Be("Topic text.");
+
+		var markdown = ReadMarkdownDescriptions(context.WriteFileSystem, outputRoot);
+		markdown["/api/elasticsearch"].Should().Be("Search and analyze data.");
+		markdown["/api/elasticsearch/next"].Should().Be("Search and analyze data.");
+		markdown["/api/elasticsearch/v8"].Should().Be("Search and analyze data.");
+		markdown["/api/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
+		markdown["/api/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
+		markdown["/api/elasticsearch/v9/authentication"].Should().Be("Topic text.");
+		markdown["/api/elasticsearch/next/authentication"].Should().BeEmpty();
+		foreach (var (url, description) in markdown.Where(page => pages.ContainsKey(page.Key)))
+			description.Should().Be(pages[url], $"the Markdown of {url} carries the same description as its HTML");
+	}
+
+	/// <summary>Front matter description per page URL, read from every generated Markdown file. A page without one reads as empty.</summary>
+	private static IReadOnlyDictionary<string, string> ReadMarkdownDescriptions(IFileSystem fileSystem, string outputRoot)
+	{
+		var pages = new SortedDictionary<string, string>(StringComparer.Ordinal);
+		foreach (var file in fileSystem.Directory.EnumerateFiles(outputRoot, "*.md", SearchOption.AllDirectories))
+		{
+			var line = fileSystem.File.ReadLines(file).FirstOrDefault(l => l.StartsWith("description: ", StringComparison.Ordinal));
+			var url = "/" + fileSystem.Path.GetRelativePath(outputRoot, file).Replace('\\', '/')[..^".md".Length];
+			pages[url] = line is null ? "" : JsonSerializer.Deserialize<string>(line["description: ".Length..]) ?? "";
+		}
+
+		return pages;
+	}
+
+	[GeneratedRegex("<meta name=\"description\" content=\"([^\"]*)\"")]
+	private static partial Regex MetaDescription();
+
+	/// <summary>Meta description per page URL, read from every generated page. The layout drops the tag when a page has none, which reads as empty.</summary>
+	private static IReadOnlyDictionary<string, string> ReadMetaDescriptions(IFileSystem fileSystem, string outputRoot)
+	{
+		var pages = new SortedDictionary<string, string>(StringComparer.Ordinal);
+		foreach (var file in fileSystem.Directory.EnumerateFiles(outputRoot, "index.html", SearchOption.AllDirectories))
+		{
+			var html = fileSystem.File.ReadAllText(file);
+			if (!html.Contains("<meta charset", StringComparison.Ordinal))
+				continue;
+
+			var match = MetaDescription().Match(html);
+			var url = "/" + fileSystem.Path.GetRelativePath(outputRoot, fileSystem.Path.GetDirectoryName(file)!).Replace('\\', '/');
+			pages[url] = match.Success ? System.Net.WebUtility.HtmlDecode(match.Groups[1].Value).Trim() : "";
+		}
+
+		return pages;
+	}
+
+	private static string[] EmptyDescriptionPages(IReadOnlyDictionary<string, string> pages) =>
+		[.. pages.Where(page => page.Value.Length == 0).Select(page => page.Key)];
+
+	private static OpenApiDocument SeoSample(string title, string? description)
+	{
+		var document = SpecDocument(title);
+		document.Info.Description = description;
+		document.Servers = [new OpenApiServer { Url = "https://example.com" }];
+		document.Components = new OpenApiComponents
+		{
+			SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+			{
+				["apiKey"] = new OpenApiSecurityScheme
+				{
+					Type = SecuritySchemeType.ApiKey,
+					Name = "Authorization",
+					In = ParameterLocation.Header
+				}
+			}
+		};
+		document.Tags = new HashSet<OpenApiTag>
+		{
+			new() { Name = "described", Description = "## Overview\n\nThe described APIs manage documents.\n\nMore detail." },
+			new() { Name = "bare" }
+		};
+		document.Paths = new OpenApiPaths
+		{
+			["/summarized"] = SeoPath("summarized", "described", "Summarize things"),
+			["/bare"] = SeoPath("bare", "bare", null)
+		};
+		return document;
+	}
+
+	private static OpenApiPathItem SeoPath(string operationId, string tag, string? summary) =>
+		new()
+		{
+			Operations = new Dictionary<HttpMethod, OpenApiOperation>
+			{
+				[HttpMethod.Get] = new()
+				{
+					OperationId = operationId,
+					Summary = summary,
+					Tags = new HashSet<OpenApiTagReference> { new(tag) },
+					Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+				}
+			}
+		};
 
 	private static OpenApiDocument WithTopic(OpenApiDocument document, string title)
 	{
