@@ -26,11 +26,10 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public IReadOnlyList<ApiOverviewSection> OverviewSections => field ??= ApiOverviewBuilder.Sections(OverviewRows);
 
-	/// <summary>The sections the grouped index shows.</summary>
-	public IReadOnlyList<ApiOverviewSection> IndexSections => field ??= ApiOverviewBuilder.WithoutGuidePages(OverviewSections);
+	/// <summary>The endpoint groups in lists of their own, one per classification heading, so each list can carry the group page's frame.</summary>
+	public IReadOnlyList<ApiIndexBlock> IndexBlocks => field ??= ApiIndexBlock.Of(ApiOverviewBuilder.WithoutGuidePages(OverviewSections));
 
-	/// <summary>The anchors the page itself owns, so a description heading never takes them.</summary>
-	public const string EndpointsAnchor = "endpoints";
+	public int GroupCount => IndexBlocks.Sum(static block => block.Groups.Count);
 
 	private RenderedIntro Intro => field ??= RenderIntro();
 
@@ -54,11 +53,7 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	protected override string? LayoutPageDescription => RenderContext.LandingDescription;
 
 	/// <summary>On this page, in page order: the description's headings, then the endpoint groups.</summary>
-	protected override IReadOnlyList<TocItem> GetTocItems()
-	{
-		TocItem[] endpoints = IndexSections.Count > 0 ? [new TocItem("Endpoints", EndpointsAnchor, 2)] : [];
-		return [.. Intro.Headings.Where(static heading => heading.Level <= 3), .. endpoints];
-	}
+	protected override IReadOnlyList<TocItem> GetTocItems() => WithEndpoints(Intro.Headings, IndexBlocks.Count > 0);
 
 	private RenderedIntro RenderIntro()
 	{
@@ -71,4 +66,35 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	}
 
 	private sealed record RenderedIntro(HtmlString Html, IReadOnlyList<TocItem> Headings);
+}
+
+/// <summary>A classification heading (null before the first) and the endpoint groups listed under it.</summary>
+public sealed record ApiIndexBlock(string? Heading, IReadOnlyList<ApiOverviewSection> Groups)
+{
+	public static IReadOnlyList<ApiIndexBlock> Of(IReadOnlyList<ApiOverviewSection> sections)
+	{
+		var blocks = new List<ApiIndexBlock>();
+		string? heading = null;
+		var groups = new List<ApiOverviewSection>();
+		foreach (var section in sections)
+		{
+			if (section.Heading is { Kind: OverviewRowKind.ClassificationHeading } classification)
+			{
+				Flush();
+				heading = classification.Title;
+				continue;
+			}
+			if (section.Heading is { Url: not null })
+				groups.Add(section);
+		}
+		Flush();
+		return blocks;
+
+		void Flush()
+		{
+			if (groups.Count > 0)
+				blocks.Add(new ApiIndexBlock(heading, groups));
+			groups = [];
+		}
+	}
 }

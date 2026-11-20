@@ -204,14 +204,8 @@
 	line-height: 2rem;
 }
 
-.api-group .api-tag-description {
-	margin-top: var(--space-2);
-	font-size: 1rem;
-	line-height: 1.5rem;
-}
-
 /* The group's intro is the page's lead: a step up from body text, a step quieter in color. */
-.api-group .api-group-lead {
+.api-group .api-tag-description {
 	margin-top: var(--space-3);
 	color: var(--color-text-muted);
 	font-size: 1.0625rem;
@@ -219,22 +213,26 @@
 }
 
 .api-group-count {
-	margin: var(--space-6) 0 var(--space-2);
+	margin: 0 0 var(--space-2);
 	color: var(--color-text-muted);
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 }
 
-/* One frame around the whole ledger, dividers between rows: never a box per row. */
+/* The list reset both pages share; each page then frames it its own way (a ledger on the group page, cards on the landing). */
 .api-group-list {
 	display: flex;
 	flex-direction: column;
 	margin: 0;
 	padding: 0;
+	list-style: none;
+}
+
+/* One frame around the whole ledger, dividers between rows: never a box per row. */
+.api-group .api-group-list {
 	overflow: hidden;
 	border: 1px solid var(--color-border);
 	border-radius: 0.5rem;
-	list-style: none;
 }
 
 /* Docs list styles indent every ul. This list is the page body, not a bullet list. */
@@ -248,7 +246,7 @@
 	list-style: none;
 }
 
-.api-group-list > li + li {
+.api-group .api-group-list > li + li {
 	border-top: 1px solid var(--color-border);
 }
 
@@ -302,6 +300,24 @@
 	text-underline-offset: 2px;
 }
 
+.api-group-heading {
+	grid-area: title;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: 0.5rem;
+	row-gap: 0.25rem;
+	min-width: 0;
+}
+
+/* Badges that wrap onto a second line keep a gap above it, as the title keeps one above the first line. */
+.api-group-heading .api-title-badges {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.5rem;
+}
+
 .api-group-row .api-overview-title {
 	color: inherit;
 	font-size: 0.9375rem;
@@ -353,64 +369,6 @@
 	transform: rotate(-90deg);
 }
 
-/* Product landing: the endpoint groups, two to a line where they fit. Every row of the grid takes its tallest cell's
-   height and the description stops at two lines, so the cells line up instead of stepping. */
-.api-index {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	grid-auto-rows: 1fr;
-	gap: 12px;
-}
-
-@container api-group (min-width: 36rem) {
-	.api-index {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-
-/* A classification spans the grid and labels the groups under it. */
-.api-index .api-index-heading {
-	grid-column: 1 / -1;
-	margin: 16px 0 0;
-	font-size: 16px;
-	line-height: 24px;
-}
-
-/* A group: its name and endpoint count on one line, then what it is for. */
-#markdown-content a.api-index-tile {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	grid-template-rows: auto 1fr;
-	align-content: start;
-	column-gap: 12px;
-	row-gap: 4px;
-	min-width: 0;
-	padding: 14px 16px;
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	color: var(--color-heading);
-	text-decoration: none;
-}
-
-#markdown-content a.api-index-tile:hover,
-#markdown-content a.api-index-tile:focus-visible {
-	border-color: var(--color-border-strong);
-	background: var(--color-surface-sunken);
-}
-
-#markdown-content a.api-index-tile:focus-visible {
-	outline: 2px solid var(--color-accent);
-	outline-offset: 2px;
-}
-
-.api-index-tile-title {
-	min-width: 0;
-	font-size: 15px;
-	font-weight: 600;
-	line-height: 22px;
-	overflow-wrap: anywhere;
-}
-
 /* The same deprecated treatment as the sidebar's nav-tree rows: the title strikes its own <s>, so a hover underline adds to it. */
 .api-deprecated-title {
 	text-decoration: line-through;
@@ -422,26 +380,74 @@
 	filter: saturate(0.4);
 }
 
-.api-index-tile-count {
-	align-self: baseline;
+/* Product landing: each endpoint group is a row of the group page's list. The endpoint count follows the name the way
+   badges follow an operation title, then comes what the group is for, which the sidebar does not say. */
+.api-index .api-index-heading {
+	margin: var(--space-6) 0 8px;
+	font-size: 16px;
+	line-height: 24px;
+}
+
+.api-group-row.api-index-row {
+	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-rows: auto 1fr;
+	grid-template-areas:
+		'title chevron'
+		'summary chevron';
+	align-items: start;
+}
+
+/* A cell beside a taller one grows: the text stays at the top, and only the chevron centers on the cell. */
+.api-index-row .api-group-chevron {
+	align-self: center;
+}
+
+.api-index-row-count {
 	color: var(--color-text-muted);
 	font-size: 13px;
 	font-variant-numeric: tabular-nums;
+	line-height: 24px;
 	white-space: nowrap;
 }
 
-/* Two lines at most; the cap keeps the grid's stretched cell from showing a third line under the ellipsis. */
-.api-index-tile-summary {
+.api-index-row-summary {
 	display: -webkit-box;
-	grid-column: 1 / -1;
-	align-self: start;
-	max-height: 40px;
+	grid-area: summary;
 	overflow: hidden;
 	color: var(--color-text-muted);
 	font-size: 14px;
 	line-height: 20px;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
+}
+
+/* Landing groups are separate cards, not rows of one frame: a gap between them, a border and radius on each. They sit two to
+   a line where they fit, and the two cards of a line share its height. */
+.api-index .api-group-list {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
+}
+
+.api-index .api-group-list > li {
+	display: flex;
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
+
+.api-index .api-group-list > li:hover {
+	border-color: var(--color-border-strong);
+}
+
+.api-index .api-group-list > li > a {
+	flex: 1;
+}
+
+@container api-group (min-width: 36rem) {
+	.api-index .api-group-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 }
 
 /* The /api catalog card. The border is grey-80 on hover for the same reason the hub cards use it: it clears the 3:1 ratio a
@@ -4320,14 +4326,44 @@ body[data-api-column-dragging] {
 	border-top: 0;
 }
 
-/* Space between the landing intro and the group index, as in the legacy stylesheet. */
-.api-landing .api-overview {
+/* Both pages put their list under an Endpoints heading: the same space after it, and the count caption starts the list. */
+.api-landing .api-overview,
+.api-group .api-overview {
 	margin-top: var(--space-6);
+}
+
+/* On this page shows only where the rail sits beside the content: the design system's wide breakpoint, not the docs' 1024px, which its CSS test rules out. */
+@media (max-width: 1100px) {
+	.api-rail-toc {
+		display: none;
+	}
+}
+
+/* The docs list's Tailwind classes, which the design system bundle does not build: no bullets, a rule down the left that
+   marks the current heading, and level 3 headings set in. */
+.api-rail-toc ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.api-rail-toc li {
+	padding: 0 1rem;
+	border-left: 1px solid var(--color-border);
+}
+
+.api-rail-toc li:has(.current) {
+	border-left-color: var(--color-accent);
+}
+
+.api-rail-toc .sidebar-link.ml-4 {
+	margin-left: 1rem;
 }
 
 /* The API rail is not inside the docs .sidebar, so its On this page links take the docs sidebar link size here. */
 .api-rail-toc .sidebar-link {
 	display: inline-block;
+	margin: 0.375rem 0;
 	color: var(--color-text-muted);
 	font-size: 0.875rem;
 	line-height: 1.2em;

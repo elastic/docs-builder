@@ -627,7 +627,11 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().NotContain("id=\"sneaky\"", "raw HTML cannot claim an id the sidebar does not link to");
 		html.Split("id=\"getting-started\"").Length.Should().Be(2, "the post section owns its anchor");
 		html.Should().Contain("<h3 id=\"getting-started\">");
-		html.Should().NotContain("href=\"#getting-started\"", "the intro heading's own link would land on the post section");
+		html
+			.Split("href=\"#getting-started\"")
+			.Length
+			.Should()
+			.Be(2, "only On this page links the post section; the intro heading's own link would land on it too");
 	}
 
 	[Test]
@@ -715,9 +719,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
 
-		html.Should().Contain("class=\"api-index-tile\" href=\"/api/fixture/group/");
-		html.Should().NotContain("api-index-item");
-		html.Should().NotContain("api-group-row");
+		html.Should().Contain("class=\"api-group-row api-index-row\" href=\"/api/fixture/group/");
+		html.Should().NotContain("api-group-route", "operation rows carry a route; group rows do not");
 	}
 
 	[Test]

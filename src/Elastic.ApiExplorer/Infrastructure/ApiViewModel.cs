@@ -79,6 +79,16 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
 
+	/// <summary>The anchor of the Endpoints heading that the landing and group pages put above their list. A description heading never takes it.</summary>
+	public const string EndpointsAnchor = "endpoints";
+
+	/// <summary>On this page for a landing or group page: the headings down to level 3, then Endpoints when the page lists any.</summary>
+	protected static IReadOnlyList<TocItem> WithEndpoints(IEnumerable<TocItem> headings, bool hasEndpoints) =>
+		[
+			.. headings.Where(static heading => heading.Level <= 3),
+			.. hasEndpoints ? [new TocItem("Endpoints", EndpointsAnchor, 2)] : Array.Empty<TocItem>()
+		];
+
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
 

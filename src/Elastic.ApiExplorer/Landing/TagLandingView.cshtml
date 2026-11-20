@@ -4,19 +4,23 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 
-	// The external docs link sits in the right rail, under Copy page.
+	// The external docs link sits in the right rail, under Copy page, with On this page under it as on the product landing page.
 	protected override async Task ExecuteSectionAsync(string name)
 	{
-		if (name != ApiPageSections.Rail || Model.ExternalDocsDisplay is not { } ed)
+		if (name != ApiPageSections.Rail)
 			return;
-		<dl class="api-rail-facts">
-			<div class="api-rail-fact">
-				<dt>Learn more</dt>
-				<dd>
-					<a href="@ed.Url" class="docs-reference-btn" target="@(ed.IsElasticDocs ? null : "_blank")" rel="@(ed.IsElasticDocs ? null : "noopener noreferrer")">@ed.LinkText</a>
-				</dd>
-			</div>
-		</dl>
+		if (Model.ExternalDocsDisplay is { } ed)
+		{
+			<dl class="api-rail-facts">
+				<div class="api-rail-fact">
+					<dt>Learn more</dt>
+					<dd>
+						<a href="@ed.Url" class="docs-reference-btn" target="@(ed.IsElasticDocs ? null : "_blank")" rel="@(ed.IsElasticDocs ? null : "noopener noreferrer")">@ed.LinkText</a>
+					</dd>
+				</div>
+			</dl>
+		}
+		@await RenderPartialAsync(_ApiToc.Create(Model.TocItems))
 	}
 }
 <section id="elastic-api-v3" class="api-group">
@@ -27,7 +31,7 @@
 	</div>
 	@if (!string.IsNullOrEmpty(Model.DescriptionMarkdown))
 	{
-		<div class="api-tag-description api-group-lead docs-measure">@Model.RenderDescription()</div>
+		<div class="api-tag-description docs-measure">@Model.RenderDescription()</div>
 	}
 	@foreach (var extra in Model.PostSections)
 	{
@@ -36,6 +40,7 @@
 	}
 	@if (Model.OverviewRows.Count > 0)
 	{
+		<h2 id="@ApiViewModel.EndpointsAnchor">Endpoints</h2>
 		<div class="api-overview">
 			@(await RenderPartialAsync<_ApiGroupList, ApiGroupListModel>(new ApiGroupListModel(Model.OverviewRows, LayoutModel.HxAttributes)))
 		</div>

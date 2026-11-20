@@ -1,17 +1,19 @@
 @inherits RazorSlice<ApiIndexGroupModel>
-@* One endpoint group on the product landing page: its name, how many endpoints its page lists, and what it is for, which the sidebar does not say. *@
+@* One endpoint group on the product landing page, as a row of the group page's list: its name, how many endpoints its page lists, and what it is for, which the sidebar does not say. *@
 @{
-	var heading = Model.Group.Heading;
+	var heading = Model.Group.Heading!;
 	var count = Model.Group.Items.Count;
 }
-@if (heading is { Url: { } url })
-{
-	<a class="api-index-tile" href="@url" @(new HtmlString(Model.HxAttributes))>
-		<span class="api-index-tile-title">@if (heading.Deprecated){<s class="api-deprecated-title">@heading.Title</s><span class="sr-only">Deprecated</span>}else{@heading.Title}</span>
-		<span class="api-index-tile-count">@count @(count == 1 ? "endpoint" : "endpoints")</span>
+<li>
+	<a class="api-group-row api-index-row" href="@heading.Url" @(new HtmlString(Model.HxAttributes))>
+		<span class="api-group-heading">
+			<span class="api-overview-title">@if (heading.Deprecated){<s class="api-deprecated-title">@heading.Title</s><span class="sr-only">Deprecated</span>}else{@heading.Title}</span>
+			<span class="api-index-row-count">@count @(count == 1 ? "endpoint" : "endpoints")</span>
+		</span>
 		@if (heading.Summary is { } summary)
 		{
-			<span class="api-index-tile-summary">@summary</span>
+			<span class="api-index-row-summary">@summary</span>
 		}
+		<svg class="api-group-chevron" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
 	</a>
-}
+</li>
