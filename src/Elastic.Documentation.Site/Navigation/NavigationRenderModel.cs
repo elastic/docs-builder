@@ -34,6 +34,11 @@ public sealed record NavigationRenderNode
 	public string? Badge { get; init; }
 	/// <summary>Lowercase HTTP methods for API operation leaves, the dominant one first; drives the sidebar method chip.</summary>
 	public IReadOnlyList<string> HttpMethods { get; init; } = [];
+	/// <summary>
+	/// The one method of a single-method operation leaf as written on the chip (<c>POST</c>), or null. The legacy sidebar
+	/// draws that chip from a <c>data-method</c> attribute, so hundreds of rows do not each carry a chip element.
+	/// </summary>
+	public string? SingleHttpMethod => HttpMethods is [var only] ? only.ToUpperInvariant() : null;
 	/// <summary>True for an API operation leaf the spec marks deprecated.</summary>
 	public bool Deprecated { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
