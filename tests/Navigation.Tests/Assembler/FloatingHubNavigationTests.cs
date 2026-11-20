@@ -129,6 +129,7 @@ public class FloatingHubNavigationTests
 		var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).ToArray();
 
 		urls.Should().Contain("/api/demo/operation/operation-search").And.Contain("/docs/api");
+		urls.Should().Contain(provider.Section!.Root!.Url, "a visible floating root lists its own landing");
 
 		provider.Section!.Root!.Hidden = true;
 		navigation

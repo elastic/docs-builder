@@ -156,8 +156,8 @@ public static class SitemapNavigationHelper
 		ILeafNavigationItem<INavigationModel> { Url: var url } when url.Contains('#') => [],
 		ILeafNavigationItem<INavigationModel> file => [file],
 		INodeNavigationItem<INavigationModel, INavigationItem> { InSitemap: false } => [],
-		// the URL of a floating root is the landing of its default tree, which lists itself when it rendered
-		IFloatingSectionRoot root => root.NavigationItems.SelectMany(Flatten),
+		// a hidden floating root still in the sitemap has pages but no landing of its own, such as an API whose versionless tree failed to load
+		IFloatingSectionRoot { Hidden: true } root => root.NavigationItems.SelectMany(Flatten),
 		INodeNavigationItem<INavigationModel, INavigationItem> group => group.NavigationItems.SelectMany(Flatten).Append(group),
 		_ => []
 	};
