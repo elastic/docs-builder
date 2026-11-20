@@ -21,22 +21,22 @@ public class ApiPageHashTests
 
 	[Test]
 	public void RelativeToTree_SamePageInTwoTrees_ReadsTheSame() =>
-		OpenApiGenerator
-			.RelativeToTree(Page(Versionless), Versionless, [V8])
-			.Should()
-			.Be(OpenApiGenerator.RelativeToTree(Page(V8), V8, [Versionless]));
+		OpenApiGenerator.RelativeToTree(Page(Versionless), Versionless).Should().Be(OpenApiGenerator.RelativeToTree(Page(V8), V8));
 
 	[Test]
 	public void RelativeToTree_VersionlessTree_KeepsSiblingApisAndOtherTrees() =>
 		OpenApiGenerator
-			.RelativeToTree(Page(Versionless) + $"\nOlder: [8.19]({V8}/operation/operation-search)", Versionless, [V8])
+			.RelativeToTree(
+				Page(Versionless) + $"\nOlder: [8.19]({V8}/operation/operation-search), [next]({Versionless}/next)",
+				Versionless
+			)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
 				See [search]({api-root}/operation/operation-search) and [bool]({api-root}/types/query#bool).
 				Also [serverless](/docs/api/elasticsearch-serverless/operation/operation-search).
 				Back to {api-root}
-				Older: [8.19](/docs/api/elasticsearch/v8/operation/operation-search)
+				Older: [8.19](/docs/api/elasticsearch/v8/operation/operation-search), [next](/docs/api/elasticsearch/next)
 				"""
 			);
 }

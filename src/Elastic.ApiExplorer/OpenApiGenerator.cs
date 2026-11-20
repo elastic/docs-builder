@@ -262,11 +262,11 @@ public class OpenApiGenerator(
 	private const string TreeRootToken = "{api-root}";
 
 	/// <summary>
-	/// Replaces <paramref name="root"/> with <see cref="TreeRootToken"/> where it starts a link into that tree. A longer root of
-	/// another tree of the API, such as <c>/v8</c> below the versionless root, and a sibling API that shares the prefix, such as
-	/// <c>elasticsearch-serverless</c>, keep their URL.
+	/// Replaces <paramref name="root"/> with <see cref="TreeRootToken"/> where it starts a link into that tree. A link into
+	/// another version tree below the root, such as <c>/v8</c> or <c>/next</c>, and a sibling API that shares the prefix, such as
+	/// <c>elasticsearch-serverless</c>, keep their URL. The rule reads only the link, so the set of trees cannot change the hash.
 	/// </summary>
-	internal static string RelativeToTree(string markdown, string root, IReadOnlyCollection<string> otherRoots)
+	internal static string RelativeToTree(string markdown, string root)
 	{
 		var result = new StringBuilder(markdown.Length);
 		var start = 0;
@@ -276,18 +276,31 @@ public class OpenApiGenerator(
 			StringComparison.Ordinal
 		))
 		{
-			if (
-				!EndsAt(markdown, i + root.Length)
-				|| otherRoots.Any(r => r.Length > root.Length && markdown.AsSpan(i).StartsWith(r) && EndsAt(markdown, i + r.Length))
-			)
+			var end = i + root.Length;
+			if (!EndsAt(markdown, end) || StartsVersionSegment(markdown, end))
 				continue;
 			_ = result.Append(markdown, start, i - start).Append(TreeRootToken);
-			start = i + root.Length;
+			start = end;
 		}
 		return result.Append(markdown, start, markdown.Length - start).ToString();
 
 		static bool EndsAt(string text, int index) =>
 			index == text.Length || text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']' || char.IsWhiteSpace(text[index]);
+
+		// `/v8` or `/next` right after the root names another version tree of the API.
+		static bool StartsVersionSegment(string text, int index)
+		{
+			if (index >= text.Length || text[index] != '/')
+				return false;
+			var segmentStart = index + 1;
+			var segmentEnd = segmentStart;
+			while (segmentEnd < text.Length && char.IsAsciiLetterOrDigit(text[segmentEnd]))
+				segmentEnd++;
+			var segment = text.AsSpan(segmentStart, segmentEnd - segmentStart);
+			var isVersion = segment.SequenceEqual(ApiUrlBuilder.NextSegment)
+				|| (segment.Length > 1 && segment[0] == 'v' && segment[1..].IndexOfAnyExceptInRange('0', '9') < 0);
+			return isVersion && EndsAt(text, segmentEnd);
+		}
 	}
 
 	/// <summary>
@@ -319,7 +332,6 @@ public class OpenApiGenerator(
 
 		var pages = UniquePages(versionTree.Navigation);
 		var root = versionTree.Navigation.Url.TrimEnd('/');
-		string[] otherRoots = [.. trees.Trees.Select(static t => t.Navigation.Url.TrimEnd('/')).Where(r => r != root)];
 		var contents = new ApiPageContent?[pages.Length];
 		await Parallel.ForAsync(0, pages.Length, new ParallelOptions
 		{
@@ -334,7 +346,7 @@ public class OpenApiGenerator(
 				contents[i] = new ApiPageContent(
 					item.Url,
 					item.NavigationTitle,
-					ContentHash.CreateNormalized(RelativeToTree(markdown, root, otherRoots))
+					ContentHash.CreateNormalized(RelativeToTree(markdown, root))
 				);
 		}).ConfigureAwait(false);
 
