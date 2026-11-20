@@ -1568,15 +1568,12 @@ button.response-status-toggle:focus {
 		margin: 0;
 		line-height: 24px;
 
-		/* Icon-only link, pulled out of flow so the name stays plain, selectable text. */
+		/* Icon-only link, pulled out of flow so the name stays plain, selectable text. The icon is its ::after. */
 		> a.property-anchor {
 			position: absolute;
 			right: 100%;
 			top: var(--property-row-pad);
 			z-index: 2;
-		}
-
-		.property-anchor-icon {
 			display: block;
 			box-sizing: content-box;
 			width: 24px;
@@ -1586,7 +1583,7 @@ button.response-status-toggle:focus {
 			transition: opacity 0.15s ease;
 		}
 
-		.property-anchor-icon::after {
+		> a.property-anchor::after {
 			content: '';
 			display: block;
 			box-sizing: border-box;
@@ -1601,13 +1598,13 @@ button.response-status-toggle:focus {
 			background-size: 12px 12px;
 		}
 
-		&:hover > .property-anchor .property-anchor-icon,
-		> .property-anchor:hover .property-anchor-icon,
-		> .property-anchor:focus-visible .property-anchor-icon {
+		&:hover > .property-anchor,
+		> .property-anchor:hover,
+		> .property-anchor:focus-visible {
 			opacity: 1;
 		}
 
-		> .property-anchor:focus-visible .property-anchor-icon::after {
+		> .property-anchor:focus-visible::after {
 			outline: 2px solid var(--color-blue-elastic, #0b64dd);
 			outline-offset: 2px;
 		}
@@ -1631,7 +1628,7 @@ button.response-status-toggle:focus {
 		}
 	}
 
-	.property-item:hover > dt > .property-anchor .property-anchor-icon {
+	.property-item:hover > dt > .property-anchor {
 		opacity: 1;
 	}
 

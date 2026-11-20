@@ -1198,7 +1198,7 @@ button.response-status-toggle:focus {
 	overflow: visible;
 }
 
-.responses-list .property-list dt .property-anchor-icon {
+.responses-list .property-list dt > .property-anchor {
 	z-index: 4;
 }
 
@@ -1333,30 +1333,28 @@ button.response-status-toggle:focus {
 		margin: 0;
 		line-height: 1.5rem;
 
+		/* Icon-only link: the anchor is the icon's box, so the "Copy link" tooltip centres on it. It is out of flow, and
+		   the name below keeps its place through the margin that replaces the gap the anchor used to take. */
 		> a.property-anchor {
-			display: inline-flex;
-			flex: 0 0 auto;
-			align-items: center;
-			width: fit-content;
-			max-width: 100%;
-			overflow: visible;
-			text-decoration: none;
-		}
-
-		.property-anchor-icon {
 			position: absolute;
 			right: 100%;
 			top: 1rem;
 			z-index: 2;
+			display: block;
 			box-sizing: content-box;
 			width: 1.5rem;
 			height: 1.5rem;
 			padding-right: var(--space-2);
 			opacity: 0;
 			transition: opacity 0.15s ease;
+			text-decoration: none;
 		}
 
-		.property-anchor-icon::after {
+		> a.property-anchor + code {
+			margin-left: var(--space-2);
+		}
+
+		> a.property-anchor::after {
 			content: '';
 			display: block;
 			box-sizing: border-box;
@@ -1371,15 +1369,20 @@ button.response-status-toggle:focus {
 			background-size: 12px 12px;
 		}
 
-		&:hover > .property-anchor .property-anchor-icon,
-		> .property-anchor:hover .property-anchor-icon,
-		> .property-anchor:focus-visible .property-anchor-icon {
+		&:hover > .property-anchor,
+		> .property-anchor:hover,
+		> .property-anchor:focus-visible {
 			opacity: 1;
 		}
 
-		> .property-anchor:focus-visible .property-anchor-icon::after {
+		> .property-anchor:focus-visible::after {
 			outline: 2px solid var(--color-accent);
 			outline-offset: 2px;
+		}
+
+		/* One focus ring, the icon's: the shared ring on the anchor would also frame the clickable gap beside it. */
+		> a.property-anchor:focus-visible {
+			outline: none;
 		}
 
 		> a.property-anchor > code,
@@ -1402,9 +1405,9 @@ button.response-status-toggle:focus {
 		}
 	}
 
-	.property-item:hover > dt > .property-anchor .property-anchor-icon,
-	.query-param:hover > dt > .property-anchor .property-anchor-icon,
-	.path-param:hover > dt > .property-anchor .property-anchor-icon {
+	.property-item:hover > dt > .property-anchor,
+	.query-param:hover > dt > .property-anchor,
+	.path-param:hover > dt > .property-anchor {
 		opacity: 1;
 	}
 
