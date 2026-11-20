@@ -182,7 +182,7 @@ public record ConfigurationFile
 		}
 		if (relativePath is { Length: > 0 })
 		{
-			var normalizedPath = DocumentationSetFile.NormalizeDocsetRelativePath(relativePath);
+			var normalizedPath = DocumentationSetDto.NormalizeDocsetRelativePath(relativePath);
 			if (_resolved.TocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && Ctas.TryGetValue(tocDefault, out var scoped))
 				return scoped;
 		}

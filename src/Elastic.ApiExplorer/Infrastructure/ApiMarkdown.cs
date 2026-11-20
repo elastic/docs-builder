@@ -59,7 +59,7 @@ public static partial class ApiMarkdown
 	/// Reads the headings <see cref="Render"/> produces for <paramref name="markdown"/>, with the slugs of their anchor ids.
 	/// <paramref name="apiBaseUrl"/> must be the product root the page renders under, because link rewrites change heading slugs.
 	/// </summary>
-	public static IReadOnlyList<TocItem> ReadHeadings(IMarkdownStringRenderer renderer, string? markdown, string apiBaseUrl) =>
+	public static IReadOnlyList<HeadingItem> ReadHeadings(IMarkdownStringRenderer renderer, string? markdown, string apiBaseUrl) =>
 		string.IsNullOrEmpty(markdown)
 			? []
 			: renderer.ReadApiDescriptionHeadings(ApiAdmonitions.Convert(Prepare(markdown, apiBaseUrl)), null);
@@ -68,7 +68,7 @@ public static partial class ApiMarkdown
 	/// Renders a page's prose with anchors on its headings, and returns those headings for the page's table of contents.
 	/// A heading whose slug is in <paramref name="reservedSlugs"/> gets no anchor, because another part of the page owns that id.
 	/// </summary>
-	public static (HtmlString Html, IReadOnlyList<TocItem> Headings) RenderWithHeadings(
+	public static (HtmlString Html, IReadOnlyList<HeadingItem> Headings) RenderWithHeadings(
 		ApiRenderContext context,
 		string? markdown,
 		IReadOnlySet<string>? reservedSlugs = null
@@ -85,7 +85,7 @@ public static partial class ApiMarkdown
 	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
 	/// so an intro heading with the same slug is left out rather than linking to the post section.
 	/// </summary>
-	internal static IReadOnlyList<TocItem> ReadIntroHeadings(
+	internal static IReadOnlyList<HeadingItem> ReadIntroHeadings(
 		IMarkdownStringRenderer renderer,
 		string? markdown,
 		string apiBaseUrl,

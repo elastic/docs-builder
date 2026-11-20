@@ -38,7 +38,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().BeNull();
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
 			["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"],
 			options => options.WithStrictOrdering()
@@ -70,7 +70,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be("desc");
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
 			["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"],
 			options => options.WithStrictOrdering()
@@ -102,7 +102,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be("descending");
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
 			["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"],
 			options => options.WithStrictOrdering()
@@ -134,7 +134,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be("asc");
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
 			["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"],
 			options => options.WithStrictOrdering()
@@ -166,7 +166,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().HaveCount(4);
 		fileNames[0].Should().Be("api-versions/index.md");
 		fileNames[1].Should().Be("api-versions/v3.md");
@@ -223,7 +223,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
 			["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"],
 			options => options.WithStrictOrdering()
@@ -278,7 +278,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
 			["api-versions/3_0_0.md", "api-versions/3_1_0.md", "api-versions/3_2_0.md", "api-versions/3_10_0.md"],
 			options => options.WithStrictOrdering()
@@ -310,7 +310,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
 			["api-versions/3_10_0.md", "api-versions/3_2_0.md", "api-versions/3_1_0.md", "api-versions/3_0_0.md"],
 			options => options.WithStrictOrdering()

@@ -104,7 +104,7 @@ public class HtmlWriter(
 	}
 
 	/// <inheritdoc />
-	public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
+	public IReadOnlyList<HeadingItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);

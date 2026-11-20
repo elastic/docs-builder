@@ -37,7 +37,7 @@ public class UnknownYamlKeyTests
 		fileSystem.AddFile("/docs/other.md", new MockFileData("# Other"));
 
 		var collector = new CapturingDiagnosticsCollector();
-		_ = DocumentationSetFile.LoadAndResolve(
+		_ = DocumentationSetDto.LoadAndResolve(
 			collector,
 			fileSystem.FileInfo.New("/docs/docset.yml"),
 			new ScopedFileSystem(fileSystem, "/docs")

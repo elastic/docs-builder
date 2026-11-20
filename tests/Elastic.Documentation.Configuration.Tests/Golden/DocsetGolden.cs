@@ -23,7 +23,7 @@ namespace Elastic.Documentation.Configuration.Tests.Golden;
 internal readonly record struct DocFile(string Path, string Content = "# Page\n");
 
 /// <summary>
-/// Loads a docset the way the builder does, <c>DocumentationSetFile.LoadAndResolve</c> and then <c>ConfigurationFile</c>, from a
+/// Loads a docset the way the builder does, <c>DocumentationSetDto.LoadAndResolve</c> and then <c>ConfigurationFile</c>, from a
 /// mock file system that holds <c>/docs/docset.yml</c> and the given files, and writes what came out as text.
 /// </summary>
 internal static partial class DocsetGolden
@@ -36,7 +36,7 @@ internal static partial class DocsetGolden
 	{
 		var collector = new CapturingDiagnosticsCollector();
 		var sb = new StringBuilder();
-		DocumentationSetFile? docSet = null;
+		DocumentationSetDto? docSet = null;
 		try
 		{
 			docSet = LoadAndResolve(collector, docsetYaml, files);
@@ -150,8 +150,8 @@ internal static partial class DocsetGolden
 		return fileSystem;
 	}
 
-	public static DocumentationSetFile LoadAndResolveBaselineDocs(IDiagnosticsCollector collector, MockFileSystem fileSystem) =>
-		DocumentationSetFile.LoadAndResolve(
+	public static DocumentationSetDto LoadAndResolveBaselineDocs(IDiagnosticsCollector collector, MockFileSystem fileSystem) =>
+		DocumentationSetDto.LoadAndResolve(
 			collector,
 			fileSystem.FileInfo.New($"{Root}/_docset.yml"),
 			new ScopedFileSystem(fileSystem, Root)
@@ -163,11 +163,11 @@ internal static partial class DocsetGolden
 	[GeneratedRegex("(?<![A-Za-z0-9])[A-Za-z]:(?=/)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex DriveLetter();
 
-	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string docsetYaml, params DocFile[] files)
+	public static DocumentationSetDto LoadAndResolve(IDiagnosticsCollector collector, string docsetYaml, params DocFile[] files)
 	{
 		var fileSystem = CreateFileSystem(docsetYaml, files);
 		var docsetPath = fileSystem.FileInfo.New($"{Root}/docset.yml");
-		return DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, Root));
+		return DocumentationSetDto.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, Root));
 	}
 
 	public static MockFileSystem CreateFileSystem(string docsetYaml, params DocFile[] files)
@@ -192,7 +192,7 @@ internal static partial class DocsetGolden
 		);
 
 	public static ConfigurationFile CreateConfiguration(
-		DocumentationSetFile docSet,
+		DocumentationSetDto docSet,
 		IDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		bool withGlobalConfig,

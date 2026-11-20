@@ -4,7 +4,7 @@ IndexFileRef  index.md
 CliReferenceRef  cli
 CliReferenceRef  other/schema
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <IndexFileRef>:

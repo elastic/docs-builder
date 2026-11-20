@@ -9,7 +9,7 @@ IsolatedTableOfContentsRef  file-only [island]
 IsolatedTableOfContentsRef  neither
   FileRef  neither/a.md (container-relative: a.md)
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <IsolatedTableOfContentsRef>:

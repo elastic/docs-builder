@@ -172,13 +172,13 @@ public class TagMetadataTests
 	}
 
 	/// <summary>Returns fixed headings so navigation tests cover plumbing; the heading parser has its own tests.</summary>
-	private sealed class HeadingsRenderer(IReadOnlyList<TocItem> headings) : IMarkdownStringRenderer
+	private sealed class HeadingsRenderer(IReadOnlyList<HeadingItem> headings) : IMarkdownStringRenderer
 	{
 		public List<string> Markdown { get; } = [];
 
 		public string Render(string markdown, IFileInfo? source) => string.Empty;
 
-		public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
+		public IReadOnlyList<HeadingItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
 		{
 			Markdown.Add(markdown);
 			return headings;
@@ -697,8 +697,8 @@ public class TagMetadataTests
 		{ Title = "Kibana", Version = "1.0", ResponseDescription = "ok" }.ToJson();
 
 		var renderer = new HeadingsRenderer([
-			new TocItem("Panel types", "panel-types", 2),
-			new TocItem("What's supported", "whats-supported", 2)
+			new HeadingItem("Panel types", "panel-types", 2),
+			new HeadingItem("What's supported", "whats-supported", 2)
 		]);
 		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson, renderer);
 		var navigation = generator.CreateNavigation("kibana", document);
@@ -734,11 +734,11 @@ public class TagMetadataTests
 		tag.Should().NotBeNull();
 
 		var renderer = new HeadingsRenderer([
-			new TocItem("When to use this API", "when-to-use-this-api", 2),
-			new TocItem("Get started", "get-started", 2),
-			new TocItem("Try it now", "try-it-now", 3),
-			new TocItem("Panel types", "panel-types", 2),
-			new TocItem("Embedding", "embedding", 3)
+			new HeadingItem("When to use this API", "when-to-use-this-api", 2),
+			new HeadingItem("Get started", "get-started", 2),
+			new HeadingItem("Try it now", "try-it-now", 3),
+			new HeadingItem("Panel types", "panel-types", 2),
+			new HeadingItem("Embedding", "embedding", 3)
 		]);
 		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(renderer, "## x", tag.NavigationRoot.Url, []));
 
@@ -764,8 +764,8 @@ public class TagMetadataTests
 		tag.Should().NotBeNull();
 
 		var renderer = new HeadingsRenderer([
-			new TocItem("Panel types", "panel-types", 2),
-			new TocItem("What's supported", "whats-supported", 2)
+			new HeadingItem("Panel types", "panel-types", 2),
+			new HeadingItem("What's supported", "whats-supported", 2)
 		]);
 		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
 			renderer,

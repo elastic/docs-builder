@@ -78,7 +78,7 @@ public class ConfigurationFileStorybookRegistryTests
 		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary() };
 
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			TableOfContents = [],

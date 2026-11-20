@@ -21,8 +21,8 @@ public record CliReferenceRef(
 	string? SupplementalFolder,
 	string? Title,
 	string? NavigationTitle,
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	string Context,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	ApplicableTo? AppliesTo = null

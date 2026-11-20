@@ -16,14 +16,14 @@ public static class RenderedHeadings
 	public static HeadingBlock? FirstLevel1(MarkdownDocument document) =>
 		document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
 
-	public static IReadOnlyList<TocItem> Read(MarkdownDocument document, bool stripFirstHeadingLevel1)
+	public static IReadOnlyList<HeadingItem> Read(MarkdownDocument document, bool stripFirstHeadingLevel1)
 	{
 		var dropped = stripFirstHeadingLevel1 ? FirstLevel1(document) : null;
 		return [
 			.. document
 				.Descendants<HeadingBlock>()
 				.Where(heading => heading != dropped)
-				.Select(heading => new TocItem(Title(heading), SectionedHeadingRenderer.Slug(heading), heading.Level))
+				.Select(heading => new HeadingItem(Title(heading), SectionedHeadingRenderer.Slug(heading), heading.Level))
 				.Where(item => item.Slug.Length > 0)
 		];
 	}

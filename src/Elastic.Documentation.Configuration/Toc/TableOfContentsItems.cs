@@ -9,12 +9,12 @@ namespace Elastic.Documentation.Configuration.Toc;
 /// <summary>
 /// Sentinel produced when a bare scalar (e.g. <c>- toc.yml</c>) is used as a toc entry.
 /// The converter consumes the token to prevent an infinite parse loop; this ref carries the
-/// raw value so <see cref="DocumentationSetFile"/> can emit a clear diagnostic.
+/// raw value so <see cref="DocumentationSetDto"/> can emit a clear diagnostic.
 /// </summary>
 internal record InvalidTocItemRef(string RawValue) : ITableOfContentsItem
 {
-	public string PathRelativeToDocumentationSet => RawValue;
-	public string PathRelativeToContainer => RawValue;
+	public DocsetPath PathRelativeToDocumentationSet => DocsetPath.From(RawValue);
+	public ContainerPath PathRelativeToContainer => ContainerPath.From(RawValue);
 	public string Context => "";
 }
 

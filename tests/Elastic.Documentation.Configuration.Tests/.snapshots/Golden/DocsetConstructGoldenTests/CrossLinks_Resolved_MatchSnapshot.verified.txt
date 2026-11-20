@@ -6,7 +6,7 @@ CrossLinkRef  elasticsearch://reference/elasticsearch title="Elasticsearch refer
 FolderRef  area
   CrossLinkRef  kibana://reference/ title="Kibana"
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <IndexFileRef>:

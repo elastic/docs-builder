@@ -110,7 +110,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 	public required string EmptyMessage { get; init; }
 	public bool AuthenticationOptional { get; init; }
 	public HtmlString? IntroHtml { get; init; }
-	public IReadOnlyList<TocItem> IntroHeadings { get; init; } = [];
+	public IReadOnlyList<HeadingItem> IntroHeadings { get; init; } = [];
 
 	/// <summary>The empty message only shows when the page has nothing else to say.</summary>
 	public bool ShowEmptyMessage =>
@@ -121,7 +121,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageTitle => Page.Title;
 
-	protected override IReadOnlyList<TocItem> GetTocItems() => Page.Kind == ApiStructuralKind.Authentication ? IntroHeadings : [];
+	protected override IReadOnlyList<HeadingItem> GetTocItems() => Page.Kind == ApiStructuralKind.Authentication ? IntroHeadings : [];
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
 	{
@@ -149,7 +149,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		};
 	}
 
-	private static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderIntro(string? intro, ApiRenderContext context)
+	private static (HtmlString? Html, IReadOnlyList<HeadingItem> Headings) RenderIntro(string? intro, ApiRenderContext context)
 	{
 		if (string.IsNullOrWhiteSpace(intro))
 			return (null, []);

@@ -188,7 +188,7 @@ public class TagNavigationItem(
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
 
-	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
+	internal void ApplyIntroHeadings(IReadOnlyList<HeadingItem> introHeadings)
 	{
 		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
 		// Only the top-level sections get a nav entry; deeper headings stay on the page as subsections of their parent.

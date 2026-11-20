@@ -341,7 +341,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesLocalSpecProductAndChildren()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -380,7 +380,7 @@ public class ConfigurationFileApiTests
 		// A declared 'spec:' that does not exist on disk is expected, not an error: it means
 		// the current version resolves remotely through the version index instead of a local
 		// override. The basename is still captured for that remote lookup.
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -402,7 +402,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesSpecFileName_FromBasenameOfNestedPath()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -424,7 +424,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenSpecMissing()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -447,7 +447,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenSpecEscapesDocumentationSourceDirectory()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -470,7 +470,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenProductMissing()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -493,7 +493,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenProductUnknown()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -519,7 +519,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void NormalizesUnderscoreProductId()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -539,7 +539,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesRepositoryOverride()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -567,7 +567,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesCatalogCategories_NormalizesAliasAndDedupes()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -595,7 +595,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenCatalogCategoryUnknown()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -629,7 +629,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void CatalogCategories_DefaultEmpty_WhenOmitted()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -649,7 +649,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void Repository_DefaultsToNull_WhenOmitted()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -672,7 +672,7 @@ public class ConfigurationFileApiTests
 	[Arguments("trailing-slash/")]
 	public void EmitsError_WhenRepositoryNotInOrgSlashRepoForm(string repository)
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -699,7 +699,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenMultipleEntries()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -725,7 +725,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenChildFileMissing()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -759,7 +759,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenChildPathEscapesApiKeyDirectory()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -793,7 +793,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenChildFileUsesSupplementalName()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -827,7 +827,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void AcceptsNestedChildWhoseBasenameLooksSupplemental()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -855,7 +855,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void GetMarkdownPathsToExclude_IncludesChildrenAndSupplementalFiles()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -892,7 +892,7 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ApiContentDirectory_IsSetToApiKeyFolder()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
@@ -913,7 +913,7 @@ public class ConfigurationFileApiTests
 	private static readonly string[] DefaultProductIds = ["elasticsearch", "kibana"];
 
 	private static (ConfigurationFile Config, CapturingDiagnosticsCollector Collector) CreateConfiguration(
-		DocumentationSetFile docSet,
+		DocumentationSetDto docSet,
 		string[]? extraProducts = null,
 		bool withLocalSpecFile = true,
 		string[]? extraMarkdownFiles = null

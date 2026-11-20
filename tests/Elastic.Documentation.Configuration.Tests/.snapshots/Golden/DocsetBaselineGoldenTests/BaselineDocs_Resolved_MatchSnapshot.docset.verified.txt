@@ -1,4 +1,4 @@
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "doc-builder"
   Island: False
   SuppressDiagnostics:

@@ -92,30 +92,30 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	protected override string? LayoutPageDescription =>
 		ApiSeoDescription.OperationText(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
 
-	protected override IReadOnlyList<TocItem> GetTocItems()
+	protected override IReadOnlyList<HeadingItem> GetTocItems()
 	{
 		var operation = Operation.Operation;
-		var tocItems = new List<TocItem> { new("Paths", "paths", 2) };
+		var tocItems = new List<HeadingItem> { new("Paths", "paths", 2) };
 
 		if (Page.RequiredPrivileges.Count > 0)
-			tocItems.Add(new TocItem("Required privileges", "required-privileges", 2));
+			tocItems.Add(new HeadingItem("Required privileges", "required-privileges", 2));
 
 		if (Page.AuthRequirements.Count > 0)
-			tocItems.Add(new TocItem("Authentication", "authentication", 2));
+			tocItems.Add(new HeadingItem("Authentication", "authentication", 2));
 
 		// The path parameters have never had an entry: they sit right under the paths they belong to.
 		tocItems.AddRange(
 			Page
 				.ParameterSections
 				.Where(static s => s.Location != ParameterLocation.Path)
-				.Select(static s => new TocItem(s.Header.Title, s.Header.Anchor, 2))
+				.Select(static s => new HeadingItem(s.Header.Title, s.Header.Anchor, 2))
 		);
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new TocItem("Request body", "request-body", 2));
+			tocItems.Add(new HeadingItem("Request body", "request-body", 2));
 
 		if (operation.Responses is { Count: > 0 })
-			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
+			tocItems.Add(new HeadingItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
 
 		return tocItems;
 	}

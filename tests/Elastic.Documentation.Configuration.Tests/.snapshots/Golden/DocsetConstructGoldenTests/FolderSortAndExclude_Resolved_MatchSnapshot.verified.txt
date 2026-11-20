@@ -12,7 +12,7 @@ FolderRef  filtered exclude=[draft-*.md, skip/**]
   FileRef  filtered/draft-one.md
   FileRef  filtered/keep.md
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <FolderRef>:

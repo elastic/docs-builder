@@ -16,7 +16,7 @@ FolderRef  discovered
   FileRef  discovered/a.md
   FileRef  discovered/b.md
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <IndexFileRef>:

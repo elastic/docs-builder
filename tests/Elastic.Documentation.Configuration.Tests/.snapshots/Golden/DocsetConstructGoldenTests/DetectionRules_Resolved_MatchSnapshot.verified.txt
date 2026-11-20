@@ -8,7 +8,7 @@ DetectionRuleOverviewRef  rules/index.md
 FileRef  rules/rules/deprecated.md
   DetectionRuleRef  docs/rules-source/_deprecated/old.toml [hidden]
 model:
-model <DocumentationSetFile>:
+model <DocumentationSetDto>:
   Project: "constructs"
   TableOfContents:
     - <IndexFileRef>:
