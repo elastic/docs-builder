@@ -85,7 +85,8 @@ public static class SitemapBuilder
 			Ns + "sitemapindex",
 			listed.Select(name => new XElement(Ns + "sitemap", new XElement(Ns + "loc", new Uri(output.Host, prefix + name))))
 		);
-		_ = Save(index, output, IndexFileName);
+		using var indexXml = Serialize(index);
+		Write(indexXml, output, IndexFileName);
 		return files;
 	}
 
@@ -113,8 +114,9 @@ public static class SitemapBuilder
 				)
 			)
 		);
-		var size = Save(urlSet, output, name);
-
+		// checked before the file is replaced, so a refresh that fails keeps the previous file
+		using var xml = Serialize(urlSet);
+		var size = xml.Length;
 		if (size > MaxFileSizeBytes)
 			throw new InvalidOperationException(
 				$"{name} is {size / (1024.0 * 1024.0):F1} MB, which exceeds the sitemap protocol limit of 50 MB. Split it into more files below the index."
@@ -122,18 +124,22 @@ public static class SitemapBuilder
 		if (size >= WarningFileSizeBytes)
 			collector.EmitGlobalWarning($"{name} is {size / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit.");
 
+		Write(xml, output, name);
 		return new SitemapFile(name, entries.Count, size);
 	}
 
-	private static long Save(XElement root, SitemapOutput output, string name)
+	private static MemoryStream Serialize(XElement root)
 	{
-		var doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
-		using var buffer = new MemoryStream();
-		doc.Save(buffer);
-		using var file = output.FileSystem.File.Create(output.PathOf(name));
+		var buffer = new MemoryStream();
+		new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root).Save(buffer);
 		buffer.Position = 0;
-		buffer.CopyTo(file);
-		return buffer.Length;
+		return buffer;
+	}
+
+	private static void Write(MemoryStream xml, SitemapOutput output, string name)
+	{
+		using var file = output.FileSystem.File.Create(output.PathOf(name));
+		xml.CopyTo(file);
 	}
 }
 
