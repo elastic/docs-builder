@@ -124,6 +124,21 @@ public class SitemapTests
 		);
 
 		files.Select(f => $"{f.Name} {f.EntryCount}").Should().Equal("sitemap-docs.xml 1");
+		fileSystem
+			.File
+			.ReadAllText("/output/docs/sitemap-docs.xml")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+			<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+			  <url>
+			    <loc>https://www.elastic.co/docs/reference</loc>
+			    <lastmod>2026-11-04T00:00:00.0000000+00:00</lastmod>
+			  </url>
+			</urlset>
+			"""
+			);
 		fileSystem.File.ReadAllText("/output/docs/sitemap-api.xml").Should().Be(apiSitemap);
 		fileSystem.File.ReadAllText("/output/docs/sitemap.xml").Should().Contain("sitemap-api.xml");
 	}
