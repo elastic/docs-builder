@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
@@ -117,6 +118,27 @@ public static partial class ApiUrlBuilder
 	/// <summary>URL of a <c>children:</c> page, from its file slug.</summary>
 	public static string ChildUrl(string? urlPathPrefix, string apiUrlSuffix, string slug) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{slug}";
+
+	/// <summary>
+	/// Anchor of one alternative on the Authentication page, the same as Bump.sh: <c>apiKeyAuth</c> becomes
+	/// <c>doc-authentication-api-key-auth</c>. Schemes sent together join their ids.
+	/// </summary>
+	public static string AuthenticationAnchor(IEnumerable<string> schemeIds) =>
+		$"doc-authentication-{string.Join("-", schemeIds.Select(KebabCase))}";
+
+	private static string KebabCase(string id)
+	{
+		var kebab = new StringBuilder(id.Length + 4);
+		for (var i = 0; i < id.Length; i++)
+		{
+			var c = id[i];
+			if (char.IsUpper(c) && i > 0 && char.IsLetterOrDigit(id[i - 1]) && !char.IsUpper(id[i - 1]))
+				_ = kebab.Append('-');
+			_ = kebab.Append(c is '_' or ' ' or '.' ? '-' : char.ToLowerInvariant(c));
+		}
+
+		return kebab.ToString();
+	}
 
 	public static string AuthenticationUrl(string? urlPathPrefix, string apiUrlSuffix) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{AuthenticationSegment}";

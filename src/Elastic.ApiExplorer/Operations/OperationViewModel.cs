@@ -16,8 +16,7 @@ namespace Elastic.ApiExplorer.Operations;
 public record AuthenticationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	bool Optional,
-	Func<string?, HtmlString> RenderMarkdown,
-	bool AlwaysTabs = false
+	Func<string?, HtmlString> RenderMarkdown
 );
 
 /// <summary>Required privileges and credentials for the Required privileges and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>

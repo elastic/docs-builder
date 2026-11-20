@@ -134,27 +134,46 @@ internal static class OperationCommonMark
 		if (page.AuthRequirements.Count == 0)
 			return;
 
+		// An endpoint lists its alternatives as bullets under one Authentication heading.
 		ApiCommonMark.Heading(markdown, 2, "Authentication");
-		WriteAuthentication(markdown, page.AuthRequirements, page.AuthBadge?.Kind == AuthBadgeKind.Optional, apiBaseUrl);
-	}
-
-	/// <summary>The alternatives under an Authentication heading, on endpoint, Authentication and child pages alike.</summary>
-	internal static void WriteAuthentication(
-		StringBuilder markdown,
-		IReadOnlyList<AuthRequirement> requirements,
-		bool optional,
-		string apiBaseUrl
-	)
-	{
-		if (requirements.Count == 0)
-			return;
-
-		if (optional)
+		if (page.AuthBadge?.Kind == AuthBadgeKind.Optional)
 			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
-		foreach (var requirement in requirements)
+		foreach (var requirement in page.AuthRequirements)
 			WriteRequirement(markdown, requirement, apiBaseUrl);
 
 		_ = markdown.AppendLine();
+	}
+
+	/// <summary>
+	/// The alternatives on the Authentication page and its child page, as Markdown the page renders with its own prose: a
+	/// heading each, then the description and the credential to send. The HTML page sets each heading's Bump.sh anchor; the
+	/// <c>.md</c> output leaves anchors out, as docs pages do. Unprepared, so the caller prepares the page's Markdown once.
+	/// </summary>
+	internal static string AuthenticationSections(IReadOnlyList<AuthRequirement> requirements, bool optional, bool anchors)
+	{
+		var markdown = new StringBuilder();
+		if (optional)
+			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
+		foreach (var requirement in requirements)
+		{
+			var together = requirement.Schemes.Count > 1;
+			var anchor = anchors ? $" [{ApiUrlBuilder.AuthenticationAnchor(requirement.Schemes.Select(static s => s.Id))}]" : "";
+			ApiCommonMark.Heading(markdown, 2, requirement.Label + anchor);
+			if (together)
+				ApiCommonMark.Paragraph(markdown, "Send all of these together.");
+			foreach (var scheme in requirement.Schemes)
+			{
+				if (together)
+					ApiCommonMark.Heading(markdown, 3, scheme.Label);
+				ApiCommonMark.Paragraph(markdown, scheme.DescriptionMarkdown);
+				ApiCommonMark.Fence(markdown, "http", scheme.CredentialExample);
+				// OAuth 2.0 and OpenID Connect have no credential example, and a description is optional. The section must still name the scheme.
+				if (!together && string.IsNullOrEmpty(scheme.CredentialExample) && scheme.DescriptionMarkdown is null)
+					ApiCommonMark.Paragraph(markdown, $"Uses {scheme.Label} authentication.");
+			}
+		}
+
+		return markdown.ToString();
 	}
 
 	// One scheme is a plain bullet. Several schemes are sent together, so they nest under one bullet that says so.

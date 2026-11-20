@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -134,13 +135,72 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			"""
 			# Authentication
 
-			- Api key: `Authorization: <value>`
-			  Send the encoded key with the ApiKey prefix.
-			- Basic: `Authorization: Basic <credentials>`
-			- Bearer: `Authorization: Bearer <token>`
+			## Api key
+
+			Send the encoded key with the ApiKey prefix.
+
+			```http
+			Authorization: <value>
+			```
+
+			## Basic
+
+			```http
+			Authorization: Basic <credentials>
+			```
+
+			## Bearer
+
+			```http
+			Authorization: Bearer <token>
+			```
 			"""
 		);
 	}
+
+	[Test]
+	public void AuthenticationPage_GivesEachAlternativeAHeadingWithItsBumpShAnchor()
+	{
+		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
+		var page = StructuralViewModel.Create(item.Model, RenderContext(item));
+
+		// The page renders this Markdown with its prose, so the headings are docs headings with these anchors.
+		OperationCommonMark
+			.AuthenticationSections(page.Requirements, page.AuthenticationOptional, anchors: true)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				## Api key [doc-authentication-api-key]
+
+				Send the encoded key with the ApiKey prefix.
+
+				```http
+				Authorization: <value>
+				```
+
+				## Basic [doc-authentication-basic-auth]
+
+				```http
+				Authorization: Basic <credentials>
+				```
+
+				## Bearer [doc-authentication-bearer-auth]
+
+				```http
+				Authorization: Bearer <token>
+				```
+				"""
+			);
+	}
+
+	[Test]
+	[Arguments("apiKeyAuth", "doc-authentication-api-key-auth")]
+	[Arguments("apiKey", "doc-authentication-api-key")]
+	[Arguments("basicAuth", "doc-authentication-basic-auth")]
+	[Arguments("es_api_key", "doc-authentication-es-api-key")]
+	[Arguments("OAuth2", "doc-authentication-oauth2")]
+	public void AuthenticationAnchor_SchemeId_MatchesBumpSh(string schemeId, string expected) =>
+		ApiUrlBuilder.AuthenticationAnchor([schemeId]).Should().Be(expected);
 
 	[Test]
 	public async Task ServersPage_WritesCommonMarkFromServers()

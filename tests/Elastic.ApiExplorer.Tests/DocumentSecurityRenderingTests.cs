@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -106,8 +107,25 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 
 		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
-		markdown.Should().Contain("- Api key: `Authorization: <value>`").And.Contain("- Basic: `Authorization: Basic <credentials>`");
-		markdown.Should().NotContain("Bearer");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Authentication
+
+			## Api key
+
+			Send the encoded key with the ApiKey prefix.
+
+			```http
+			Authorization: <value>
+			```
+
+			## Basic
+
+			```http
+			Authorization: Basic <credentials>
+			```
+			"""
+		);
 	}
 
 	private async Task<string> RenderOperationAsync(string operationId)

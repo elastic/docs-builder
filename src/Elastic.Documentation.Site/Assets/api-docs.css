@@ -3541,15 +3541,20 @@ navigation-search[variant='hero'] {
 	column-gap: 14px;
 }
 
-/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group), so they step down from it instead of matching it. */
+/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group, 30px on a
+   topic, Authentication or children: page), so they step down from it instead of matching it. */
 .api-landing .docs-measure h2,
-.api-group .api-tag-description h2 {
+.api-group .api-tag-description h2,
+.api-page-intro + #elastic-docs-v3 h2,
+.api-markdown-page h2 {
 	margin-top: 32px;
 	font-size: var(--text-2xl);
 }
 
 .api-landing .docs-measure h3,
-.api-group .api-tag-description h3 {
+.api-group .api-tag-description h3,
+.api-page-intro + #elastic-docs-v3 h3,
+.api-markdown-page h3 {
 	font-size: var(--text-xl);
 }
 
