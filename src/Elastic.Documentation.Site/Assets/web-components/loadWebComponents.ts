@@ -42,4 +42,5 @@ export const loadWebComponents = createWebComponentLoader({
     'storybook-story': () => import('./StorybookStory/StorybookStoryComponent'),
     'vector-sizing-calculator': () =>
         import('./VectorSizingCalculator/VectorSizingCalculatorComponent'),
+    'docs-wizard': () => import('./Wizard/WizardComponent'),
 })
