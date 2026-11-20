@@ -177,29 +177,22 @@ public class ApiCatalogViewModelTests
 		ApiCatalogViewModel.DeploymentsOf(Entry("cloud", "Elastic Cloud API")).Should().BeEmpty();
 
 	[Test]
-	public void ToItem_LinksToTheLatestVersionWhenThereIsOne()
-	{
-		ApiCatalogViewModel.ToItem(Entry("kibana", "Kibana") with { LatestUrl = "/api/kibana/v9" }).Url.Should().Be("/api/kibana/v9");
-		ApiCatalogViewModel.ToItem(Entry("cloud", "Elastic Cloud API")).Url.Should().Be("/api/cloud/");
-	}
+	public void ToItem_LinksToTheVersionlessRoot() => ApiCatalogViewModel.ToItem(Entry("kibana", "Kibana")).Url.Should().Be("/api/kibana/");
 
 	[Test]
-	public void CatalogMarkdown_LinksToTheLatestVersionAndItsSiblingFiles()
+	public void CatalogMarkdown_LinksToTheVersionlessRootAndItsSiblingFiles()
 	{
-		var markdown = LandingCommonMark.Catalog([
-			Entry("kibana", "Kibana") with { LatestUrl = "/api/kibana/v9" },
-			Entry("cloud", "Elastic Cloud API")
-		]);
+		var markdown = LandingCommonMark.Catalog([Entry("kibana", "Kibana")]);
 
-		markdown.Should().Contain("[Kibana](/api/kibana/v9)");
 		markdown
 			.Should()
-			.Contain("[Markdown](/api/kibana/v9.md)")
+			.Contain("[Kibana](/api/kibana/)")
 			.And
-			.Contain("[JSON](/api/kibana/v9.json)")
+			.Contain("[Markdown](/api/kibana.md)")
 			.And
-			.Contain("[YAML](/api/kibana/v9.yaml)");
-		markdown.Should().Contain("[Elastic Cloud API](/api/cloud/)").And.Contain("[Markdown](/api/cloud.md)");
+			.Contain("[JSON](/api/kibana.json)")
+			.And
+			.Contain("[YAML](/api/kibana.yaml)");
 	}
 
 	private static ApiCatalogItem Item(string key, string? parentKey = null) =>

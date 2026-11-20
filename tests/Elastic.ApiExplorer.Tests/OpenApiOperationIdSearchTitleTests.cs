@@ -154,7 +154,7 @@ public class OpenApiOperationIdSearchTitleTests
 		);
 
 		var docs = new OpenApiDocumentExporter(VersionsConfiguration)
-			.ConvertToDocuments(TestHelpers.EsTree("main", spec))
+			.ConvertToDocuments(TestHelpers.Tree("elasticsearch", "elasticsearch", "main", spec))
 			.ToDictionary(d => d.Api!.OperationId);
 
 		var flush = docs["ml-flush-job"];

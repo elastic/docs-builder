@@ -43,6 +43,7 @@ if (isAssemblerApiExplorerEnabled()) {
         })
 
         step('Open the Elasticsearch API landing page', async () => {
+            // The catalog links to the versionless URL, which serves the newest released major.
             await page
                 .locator('#elastic-docs-v3')
                 .getByRole('link', { name: /Elasticsearch/i })
@@ -60,6 +61,7 @@ if (isAssemblerApiExplorerEnabled()) {
             await expect(picker).toBeVisible()
 
             await picker.locator('button').click()
+            // The newest major links to the versionless URL and main to /next, so the first /v link is an older major.
             const target = page
                 .locator('a[href*="/docs/api/elasticsearch/v"]')
                 .first()

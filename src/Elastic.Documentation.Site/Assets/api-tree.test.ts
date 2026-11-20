@@ -7,10 +7,16 @@ describe('parseApiTree', () => {
         ).toEqual({ product: 'elasticsearch', tree: '8' })
     })
 
-    it('reads the main tree', () => {
+    it('reads the next segment as the main tree', () => {
+        expect(
+            parseApiTree('/docs/api/elasticsearch/next/group/x', '/docs')
+        ).toEqual({ product: 'elasticsearch', tree: 'main' })
+    })
+
+    it('takes a main segment for a page, not a tree', () => {
         expect(
             parseApiTree('/docs/api/elasticsearch/main/group/x', '/docs')
-        ).toEqual({ product: 'elasticsearch', tree: 'main' })
+        ).toEqual({ product: 'elasticsearch', tree: null })
     })
 
     it('has no tree on the unversioned path', () => {
@@ -59,7 +65,7 @@ describe('apiPageSearchParams', () => {
             api_tree: '8',
         })
         expect(
-            apiPageSearchParams('/docs/api/elasticsearch/main/group/x', '/docs')
+            apiPageSearchParams('/docs/api/elasticsearch/next/group/x', '/docs')
         ).toEqual({ api_key: 'elasticsearch', api_tree: 'main' })
     })
 

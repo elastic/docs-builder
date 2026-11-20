@@ -9,11 +9,11 @@ open api/
 wait --load networkidle
 expect visible find role heading --name "Elastic APIs"
 
-# Catalog to the Elasticsearch API.
+# Catalog to the Elasticsearch API. The catalog opens the versionless URL, which serves the newest released major.
 click "#elastic-docs-v3 a[href*='/docs/api/elasticsearch']"
 wait --url **/docs/api/elasticsearch**
 
-# Switch to an older version than the one the catalog opens (v9), so the assertions fail if switching is broken.
+# Switch to an older major than the one the versionless URL serves, so the assertions fail if switching is broken.
 feature !navigation-preview
   expect visible "#api-hub-switcher button"
   click "#api-hub-switcher button"

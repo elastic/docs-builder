@@ -64,7 +64,7 @@ public class ApiTreeExportUrlTests
 
 	private static HashSet<string> PageUrls(OpenApiGenerator generator, string moniker, OpenApiDocument spec)
 	{
-		var navigation = generator.CreateNavigation(ApiUrlBuilder.ProductSuffix("elasticsearch", moniker), spec);
+		var navigation = generator.CreateNavigation(TestHelpers.EsRoutes.Suffix(moniker), spec);
 		var root = navigation.Url.TrimEnd('/');
 		return [.. OpenApiGenerator.PageNames(navigation).Keys.Select(name => root + name)];
 	}

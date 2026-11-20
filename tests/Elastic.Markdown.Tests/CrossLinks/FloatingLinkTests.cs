@@ -37,7 +37,19 @@ public class FloatingLinkTests
 		}
 	};
 
-	private static FetchedCrossLinks CrossLinks()
+	// What the API Explorer publishes for an API with a newest major: it owns the root and also has a numbered copy.
+	private static readonly FloatingLinkSection Versioned = new()
+	{
+		Versions =
+		[
+			new() { Name = "9", Root = "api/elasticsearch", MirrorRoot = "api/elasticsearch/v9", Current = true },
+			new() { Name = "8", Root = "api/elasticsearch/v8", Hidden = true },
+			new() { Name = "main", Root = "api/elasticsearch/next", Hidden = true }
+		],
+		Pages = new Dictionary<string, ulong> { [""] = 0b111, ["operation/operation-search"] = 0b111 }
+	};
+
+	private static FetchedCrossLinks CrossLinks(FloatingLinkSection? api = null)
 	{
 		var links = new RepositoryLinks
 		{
@@ -45,7 +57,7 @@ public class FloatingLinkTests
 			UrlPathPrefix = "/elastic/elasticsearch/tree/main",
 			Links = new Dictionary<string, LinkMetadata> { ["index.md"] = new() },
 			CrossLinks = [],
-			Floating = new Dictionary<string, FloatingLinkSection> { ["api/elasticsearch"] = Api }
+			Floating = new Dictionary<string, FloatingLinkSection> { ["api/elasticsearch"] = api ?? Api }
 		};
 		return new FetchedCrossLinks
 		{
@@ -55,10 +67,10 @@ public class FloatingLinkTests
 		};
 	}
 
-	private static (bool Resolved, string? Url, string? Error) Resolve(string crossLink)
+	private static (bool Resolved, string? Url, string? Error) Resolve(string crossLink, FloatingLinkSection? api = null)
 	{
 		var crossLinkUri = new Uri(crossLink);
-		var resolution = CrossLinkResolver.Resolve(CrossLinks(), new IsolatedBuildEnvironmentUriResolver(), crossLinkUri);
+		var resolution = CrossLinkResolver.Resolve(CrossLinks(api), new IsolatedBuildEnvironmentUriResolver(), crossLinkUri);
 		var uri = resolution.ResolvedUri();
 		return (uri is not null, uri?.ToString(), uri is null ? resolution.ToDiagnosticMessage(crossLinkUri) : null);
 	}
@@ -93,6 +105,45 @@ public class FloatingLinkTests
 
 		resolved.Should().Be(expected);
 		path.Should().Be(sitePath);
+	}
+
+	[Test]
+	[Arguments("9", "api/elasticsearch/v9/operation/operation-search", "api/doc/elasticsearch/v9/operation/operation-search")]
+	[Arguments("8", "api/elasticsearch/v8/operation/operation-search", "api/doc/elasticsearch/v8/operation/operation-search")]
+	[Arguments("main", "api/elasticsearch/next/operation/operation-search", "api/doc/elasticsearch/operation/operation-search")]
+	[Arguments("", "api/elasticsearch/v9/operation/operation-search", "api/doc/elasticsearch/v9/operation/operation-search")]
+	public void TryResolveNumberedPage_AnyVersion_KeepsItsNumberedPathAndMainReachesTheLegacyRoot(
+		string version,
+		string numbered,
+		string legacy
+	)
+	{
+		var name = version.Length == 0 ? null : version;
+
+		Versioned.TryResolveNumberedPage(name, "operation/operation-search", out var path).Should().BeTrue();
+
+		path.Should().Be(numbered);
+		ApiLegacyRedirects.ToLegacy(path).Should().Be(legacy);
+	}
+
+	[Test]
+	public void TryResolvePage_NamedNewestMajor_StillResolvesToTheVersionlessRoot()
+	{
+		Versioned.TryResolvePage("9", "operation/operation-search", out var path).Should().BeTrue();
+
+		path.Should().Be("api/elasticsearch/operation/operation-search");
+	}
+
+	[Test]
+	[Arguments("elasticsearch://api/elasticsearch/9/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search")]
+	[Arguments("elasticsearch://api/elasticsearch/main/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search")]
+	[Arguments("elasticsearch://api/elasticsearch/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search")]
+	public void CrossLink_OnTheLegacyHost_LandsWhereBumpShServesTheVersion(string crossLink, string expected)
+	{
+		var (resolved, url, error) = Resolve(crossLink, Versioned);
+
+		resolved.Should().BeTrue(error);
+		url.Should().Be(expected);
 	}
 
 	[Test]
