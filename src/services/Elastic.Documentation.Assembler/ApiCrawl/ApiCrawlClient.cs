@@ -17,7 +17,8 @@ public sealed record FetchedText(int Status, string Body, string? Error = null)
 
 /// <summary>
 /// Fetches pages without following redirects, so each hop is counted, and reads only the <c>&lt;head&gt;</c> of a page.
-/// A 5xx answer or a timeout is retried once. Reading a body has its own deadline: the client timeout stops at the headers.
+/// A 5xx answer or a timeout before the headers arrive is retried once. Reading a body has its own deadline, because the client
+/// timeout stops at the headers, and a body that misses it is recorded as an error without a retry.
 /// </summary>
 public sealed class ApiCrawlClient : IDisposable
 {
