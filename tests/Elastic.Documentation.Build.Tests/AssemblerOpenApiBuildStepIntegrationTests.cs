@@ -139,8 +139,31 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 	public async Task BuildAsync_GeneratesApiPagesFromTheLiveVersionIndex(CancellationToken cancellationToken) =>
 		await BuildApiPagesAsync(versionIndexClient: null, cancellationToken);
 
-	private static VersionIndexClient CreateInMemoryVersionIndexClient() =>
-		new(new Uri("https://specs.example.test/"), new InMemorySpecHandler(), sleep: (_, _) => Task.CompletedTask);
+	/// <summary>A site navigation whose only section mounts every API, as <c>navigation.yml</c> does with <c>floating: api</c>.</summary>
+	private static (AssemblerApiSections Sections, SiteNavigation Navigation) ApisSiteNavigation(Workspace workspace)
+	{
+		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
+		var siteNavFile = SiteNavigationFile.Deserialize(
+			// language=yaml
+			"""
+			toc:
+			  - section: APIs
+			    floating: api
+			"""
+		);
+		var navigation = new SiteNavigation(
+			siteNavFile,
+			workspace.Context,
+			[workspace.Set.DocumentationSet.Navigation],
+			"/docs",
+			navigationPreviewEnabled: false,
+			new FloatingSectionRegistry([apiSections])
+		);
+		return (apiSections, navigation);
+	}
+
+	private static VersionIndexClient CreateInMemoryVersionIndexClient(string index = InMemorySpecHandler.DefaultIndex) =>
+		new(new Uri("https://specs.example.test/"), new InMemorySpecHandler(index), sleep: (_, _) => Task.CompletedTask);
 
 	private static async Task BuildApiPagesAsync(VersionIndexClient? versionIndexClient, CancellationToken cancellationToken)
 	{
@@ -197,22 +220,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		using var versionIndexClient = CreateInMemoryVersionIndexClient();
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
-		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
-		var navigation = new SiteNavigation(
-			SiteNavigationFile.Deserialize(
-				// language=yaml
-				"""
-				toc:
-				  - section: APIs
-				    floating: api
-				"""
-			),
-			workspace.Context,
-			[workspace.Set.DocumentationSet.Navigation],
-			"/docs",
-			navigationPreviewEnabled: false,
-			new FloatingSectionRegistry([apiSections])
-		);
+		var (apiSections, navigation) = ApisSiteNavigation(workspace);
 
 		// AssembleAsync resolves the docset before any generator exists
 		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
@@ -248,23 +256,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		using var versionIndexClient = CreateInMemoryVersionIndexClient();
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
-		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
-		var siteNavFile = SiteNavigationFile.Deserialize(
-			// language=yaml
-			"""
-			toc:
-			  - section: APIs
-			    floating: api
-			"""
-		);
-		var navigation = new SiteNavigation(
-			siteNavFile,
-			workspace.Context,
-			[workspace.Set.DocumentationSet.Navigation],
-			"/docs",
-			navigationPreviewEnabled: false,
-			new FloatingSectionRegistry([apiSections])
-		);
+		var (apiSections, navigation) = ApisSiteNavigation(workspace);
 
 		// the build creates the generators before the docsets resolve their trees
 		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
@@ -311,15 +303,81 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			"the sitemap walk reaches the pages of the API"
 		);
 		urls.Should().NotContain(u => u.Contains('#'), "a heading inside a page is not a page");
-		urls.Should().NotContain(u => u.Contains("/api/elasticsearch/v", StringComparison.Ordinal), "older versions are hidden");
+		urls.Should().Contain("/docs/api/elasticsearch/v9.4", "an older version is hidden from navigation but listed in the sitemap");
 
 		var listing = new LlmsNavigationEnhancer().GenerateNavigationSections(navigation, new Uri(workspace.Context.Environment.Uri));
 		listing.Should().Contain("## APIs").And.Contain("api/elasticsearch.md)", "the llms.txt listing comes from the navigation walk");
 	}
 
-	private sealed class InMemorySpecHandler : HttpMessageHandler
+	[Test]
+	public async Task ApiSitemap_ListsExactlyThePagesWhosePageTypeAllowsIt_EachNamingItselfCanonical(CancellationToken cancellationToken)
 	{
-		private const string Index = /*lang=json,strict*/
+		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
+			return;
+
+		using var versionIndexClient = CreateInMemoryVersionIndexClient(
+			/*lang=json,strict*/
+			"""
+			{
+				"elastic/elasticsearch-specification": {
+					"elasticsearch.json": {
+						"main": { "version": "10.0" },
+						"9": { "version": "9.4" },
+						"8": { "version": "8.19" }
+					}
+				}
+			}
+			"""
+		);
+		using var workspace = await CreateWorkspaceAsync(cancellationToken);
+		var (apiSections, navigation) = ApisSiteNavigation(workspace);
+		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
+		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			workspace.Context,
+			apiSections,
+			navigation.TopNav,
+			cancellationToken,
+			versionIndexClient
+		);
+		workspace.Collector.Errors.Should().Be(0);
+
+		var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).ToHashSet();
+		// one row per page type: the landing page of each rendered tree
+		var trees = new (string Url, string PageType, bool Listed)[]
+		{
+			("/docs/api/elasticsearch", "versionless newest major", true),
+			("/docs/api/elasticsearch/v9", "numbered copy of the newest major", false),
+			("/docs/api/elasticsearch/v8", "older major", true),
+			("/docs/api/elasticsearch/next", "unreleased", false)
+		};
+		foreach (var (url, pageType, listed) in trees)
+		{
+			workspace
+				.FileSystem
+				.File
+				.Exists(Path.Join(workspace.OutputDirectory, url, "index.html"))
+				.Should()
+				.BeTrue($"the {pageType} tree renders");
+			urls.Contains(url).Should().Be(listed, $"the sitemap {(listed ? "lists" : "leaves out")} the {pageType} tree");
+		}
+		urls.Should().NotContain(u => u.Contains("/v9/", StringComparison.Ordinal) || u.Contains("/next/", StringComparison.Ordinal));
+		urls.Should().Contain(
+			u => u.StartsWith("/docs/api/elasticsearch/v8/", StringComparison.Ordinal),
+			"an older major lists its pages, not just its landing"
+		);
+
+		foreach (var url in urls.Where(SitemapOutput.For(workspace.Context).IsApiUrl))
+		{
+			var html = workspace.FileSystem.File.ReadAllText(Path.Join(workspace.OutputDirectory, url, "index.html"));
+			html.Should().Contain($"<link rel=\"canonical\" href=\"https://www.elastic.co{url}\"", $"{url} names itself as canonical");
+		}
+	}
+
+	private sealed class InMemorySpecHandler(string index) : HttpMessageHandler
+	{
+		public const string DefaultIndex = /*lang=json,strict*/
 			"""
 			{
 				"elastic/elasticsearch-specification": {
@@ -352,7 +410,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			var body = request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal) ? Index : Spec;
+			var body = request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal) ? index : Spec;
 			return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
 			{
 				Content = new StringContent(body, Encoding.UTF8, "application/json")

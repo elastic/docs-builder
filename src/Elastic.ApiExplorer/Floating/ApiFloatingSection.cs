@@ -111,8 +111,9 @@ internal sealed class ApiFloatingSection(
 			return;
 		}
 
-		// Only the tree at the unversioned URL is visible. The other trees stay reachable for links but out of the sitemap
-		// and first-level walks. The trees keep no parent: the API pages render with these trees as their own roots.
+		// Only the tree at the unversioned URL is visible. The other trees stay reachable for links but out of navigation
+		// and first-level walks; their page type decides whether the sitemap lists them. The trees keep no parent: the
+		// API pages render with these trees as their own roots.
 		foreach (var tree in trees.Trees)
 			tree.Navigation.Hidden = tree != versionless;
 

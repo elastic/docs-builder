@@ -296,12 +296,30 @@ The API in the tree is what the rest of the build reads:
 
 - `links.json` lists the pages of the API, so other docsets can [link to them](#api-cross-links).
 - The assembler lists every declared API under the `APIs` section of the site navigation, which the sitemap and `llms.txt` read. Refer to [`navigation.yml`](../../documentation/assembler/navigation.md#navigation-floating).
+- The sitemap lists the API pages that search engines may index and that name themselves as canonical. Refer to [API pages in the sitemap](#api-sitemap).
 
 An isolated build and an assembler build put the APIs in the tree when they render the API Explorer. A build run with `--skip-api` leaves them out. The `serve` and Codex builds do not put them in the tree yet.
 
 :::{note}
 A toc entry such as `- api: elasticsearch` is not valid. Declare the API in the `api:` block, and the docset has it.
 :::
+
+### API pages in the sitemap [api-sitemap]
+
+`/docs/sitemap.xml` is a sitemap index. It lists `sitemap-docs.xml`, with the narrative pages, and `sitemap-api.xml`, with the API pages. The API file exists only where the build renders the API Explorer (the `assembler-api-explorer` feature flag).
+
+The type of each version tree decides whether its pages are in the API file:
+
+| Tree | URL | In the sitemap |
+|---|---|---|
+| Newest released major, or the only tree of a versionless API | `/api/{key}` | Yes |
+| Older major | `/api/{key}/v{N}` | Yes |
+| Numbered copy of the newest major | `/api/{key}/v{N}` | No. Its canonical is the page at `/api/{key}`. |
+| Unreleased `main` | `/api/{key}/next` | No. The page is `noindex`. |
+
+Older majors are hidden in the navigation, but they are still listed in the sitemap. Redirects and the `.md` renderings of pages are not listed.
+
+`assembler build` writes all three files. `assembler sitemap` runs after `assembler index`, in the same output folder. It rewrites the narrative pages with the dates from the search index and keeps the API pages from the build.
 
 ### Link to an API page from Markdown [api-cross-links]
 

@@ -329,18 +329,18 @@ public class OpenApiGenerator(
 		var trees = await Task.WhenAll(
 			roots.Select(
 				r => Task.Run(
-					() => new ApiVersionTree(
-						r.Version,
-						r.Suffix,
-						r.IsMirror,
-						ApiPageTypes.Of(resolved.Routes, r.Version.Version.Moniker, r.IsMirror),
-						CreateNavigation(
+					() =>
+					{
+						var pageType = ApiPageTypes.Of(resolved.Routes, r.Version.Version.Moniker, r.IsMirror);
+						var navigation = CreateNavigation(
 							r.Suffix,
 							r.Version.Document,
 							apiConfig,
 							SupplementalMajor(r.Version.Version.Moniker, highestMajor)
-						)
-					),
+						);
+						navigation.InSitemap = ApiPageTypes.Indexing(pageType).InSitemap;
+						return new ApiVersionTree(r.Version, r.Suffix, r.IsMirror, pageType, navigation);
+					},
 					ctx
 				)
 			)

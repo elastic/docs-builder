@@ -33,7 +33,7 @@ public record FloatingLinkVersion
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? MirrorRoot { get; init; }
 
-	/// <summary>The version exists for links but not in the sitemap or first-level walks.</summary>
+	/// <summary>The version exists for links but not in navigation or first-level walks.</summary>
 	[JsonPropertyName("hidden")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool Hidden { get; init; }

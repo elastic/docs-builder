@@ -214,7 +214,7 @@ public static class InMemoryAssemblerSite
 		// the same steps as the end of AssemblerBuildService.BuildAll
 		var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(n => n.Url).Distinct();
 		var now = DateTimeOffset.UtcNow;
-		_ = SitemapBuilder.Generate(urls.ToDictionary(u => u, _ => now), context.WriteFileSystem, context.OutputWithPathPrefixDirectory);
+		_ = SitemapBuilder.Generate(urls.ToDictionary(u => u, _ => now), SitemapOutput.For(context), collector);
 		var llmsPath = $"{context.OutputWithPathPrefixDirectory.FullName}/llms.txt";
 		if (fileSystem.File.Exists(llmsPath))
 		{

@@ -56,12 +56,16 @@ public class AssemblerSitemapService(
 		_logger.LogInformation("Querying index {Index} for sitemap entries", indexName);
 
 		var reader = new EsSitemapReader(transport, _logger, indexName);
+		// API pages keep the file `assembler build` wrote from their page types: the index holds operations, not pages.
+		var output = SitemapOutput.For(assembleContext);
 		var entries = new Dictionary<string, DateTimeOffset>();
-
 		await foreach (var entry in reader.ReadAllAsync(ctx))
-			entries[entry.Url] = entry.LastUpdated;
+		{
+			if (!output.IsApiUrl(entry.Url))
+				entries[entry.Url] = entry.LastUpdated;
+		}
 
-		_logger.LogInformation("Fetched {Count} sitemap entries from ES", entries.Count);
+		_logger.LogInformation("Fetched {Count} narrative sitemap entries from ES", entries.Count);
 
 		if (entries.Count == 0)
 		{
@@ -69,19 +73,9 @@ public class AssemblerSitemapService(
 			return false;
 		}
 
-		if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
-			collector.EmitGlobalWarning(
-				$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
-					"Consider implementing sitemap index files."
-			);
-
-		var result = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
-
-		if (result.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
-			collector.EmitGlobalWarning(
-				$"Sitemap file size is {result.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
-					"Consider implementing sitemap index files."
-			);
+		var files = SitemapBuilder.Generate(entries, output, collector);
+		foreach (var file in files)
+			_logger.LogInformation("Sitemap file {File}: {Count} URLs", file.Name, file.EntryCount);
 
 		_logger.LogInformation("Sitemap written to {Path}", assembleContext.OutputWithPathPrefixDirectory.FullName);
 		return true;
