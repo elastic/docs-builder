@@ -910,4 +910,53 @@ public class TagMetadataTests
 		// topics, so they sit above the index, not in a group.
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
+
+	[Test]
+	public async Task ProductLanding_Render_ClassificationHeadingsAreNotScrollSpyHeadings()
+	{
+		var openApiJson = new MinimalSpec(
+			[new("/spaces", "get-spaces", ["spaces"]), new("/agents", "get-agents", ["agents"])],
+			[new("spaces", DisplayName: "Spaces"), new("agents", DisplayName: "Agents")]
+		)
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			ResponseDescription = "ok",
+			TagGroups = [new("Platform", ["spaces"]), new("AI", ["agents"])]
+		}.ToJson();
+
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation);
+
+		// The docs scroll spy follows every h2 and h3. A classification has no On this page link, so as an h3 it would drop Endpoints as the current entry.
+		html.Should().Contain("<div class=\"api-index-heading\" role=\"heading\" aria-level=\"3\">Platform</div>");
+		html.Should().NotContain("<h3 class=\"api-index-heading\"");
+	}
+
+	[Test]
+	public async Task ProductLanding_OnThisPage_ListsIntroHeadingsThenEndpoints()
+	{
+		var openApiJson = new MinimalSpec([new("/spaces", "get-spaces", ["spaces"])], [new("spaces", DisplayName: "Spaces")])
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			ResponseDescription = "ok"
+		}.ToJson();
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+		var info = new OpenApiInfo
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			Description = "Intro.\n\n## Authentication\n\n### Keys\n\n#### Rotation\n\n## Endpoints\n"
+		};
+
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation, info);
+
+		// Headings down to level 3 keep their order, level 4 is left out, and the page's own Endpoints entry comes last.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#toc-nav"));
+		html.Split("id=\"endpoints\"").Length.Should().Be(2, "an intro heading cannot claim the id the endpoint list owns");
+	}
 }

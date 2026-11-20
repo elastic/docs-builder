@@ -1,4 +1,11 @@
 @inherits RazorSlice<ApiGroupListModel>
+@{
+	var endpoints = Model.Rows.Count(row => row.Endpoint is not null);
+}
+@if (endpoints > 0)
+{
+	<p class="api-group-count">@endpoints @(endpoints == 1 ? "endpoint" : "endpoints")</p>
+}
 <ul class="api-group-list">
 	@foreach (var row in Model.Rows)
 	{

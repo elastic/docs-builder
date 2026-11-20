@@ -1,5 +1,4 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Landing.LandingViewModel>
-@using Elastic.ApiExplorer.Operations
 @using Elastic.ApiExplorer.Landing;
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @functions {
@@ -12,6 +11,7 @@
 		if (name != ApiPageSections.Rail)
 			return;
 		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "rail")))
+		@await RenderPartialAsync(_ApiToc.Create(Model.TocItems))
 	}
 }
 @{
@@ -39,17 +39,28 @@
 			@remainder
 		</div>
 	}
-	<div class="api-overview">
-		<div class="api-index">
-			@foreach (var group in Model.IndexSections)
-			{
-				if (group.Heading is { Kind: OverviewRowKind.ClassificationHeading } classification)
+	@if (Model.IndexBlocks.Count > 0)
+	{
+		<h2 id="@ApiViewModel.EndpointsAnchor">Endpoints</h2>
+		@* The groups only, in the same framed list as a group page's operations: each group page lists its operations, and search finds any of them. *@
+		<div class="api-overview">
+			<div class="api-index">
+				<p class="api-group-count">@Model.GroupCount @(Model.GroupCount == 1 ? "group" : "groups")</p>
+				@foreach (var block in Model.IndexBlocks)
 				{
-					<h2 class="api-index-heading">@classification.Title</h2>
-					continue;
+					if (block.Heading is { } classification)
+					{
+						@* Not an h3: the docs scroll spy follows every h2 and h3 in the page, and a heading with no link in On this page would drop Endpoints as the current entry. *@
+						<div class="api-index-heading" role="heading" aria-level="3">@classification</div>
+					}
+					<ul class="api-group-list">
+						@foreach (var group in block.Groups)
+						{
+							@(await RenderPartialAsync<_ApiIndexGroup, ApiIndexGroupModel>(new ApiIndexGroupModel(group, apiHxAttrs)))
+						}
+					</ul>
 				}
-				@(await RenderPartialAsync<_ApiIndexGroup, ApiIndexGroupModel>(new ApiIndexGroupModel(group, apiHxAttrs)))
-			}
+			</div>
 		</div>
-	</div>
+	}
 </section>

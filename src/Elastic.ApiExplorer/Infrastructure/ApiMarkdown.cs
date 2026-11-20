@@ -81,9 +81,12 @@ public static partial class ApiMarkdown
 		return (RenderWithHeadingAnchors(context, markdown, anchors), headings);
 	}
 
+	/// <summary>The anchors a group page owns beyond the operation ones: its supplemental sections never take them.</summary>
+	internal static readonly string[] GroupPageAnchors = [ApiViewModel.EndpointsAnchor];
+
 	/// <summary>
-	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
-	/// so an intro heading with the same slug is left out rather than linking to the post section.
+	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor, and the
+	/// page owns <c>endpoints</c> for its list, so an intro heading with either slug is left out rather than linking to them.
 	/// </summary>
 	internal static IReadOnlyList<TocItem> ReadIntroHeadings(
 		IMarkdownStringRenderer renderer,
@@ -92,12 +95,11 @@ public static partial class ApiMarkdown
 		IReadOnlyList<ApiSupplementalSection> postSections
 	)
 	{
-		var headings = ReadHeadings(renderer, markdown, apiBaseUrl);
-		if (postSections.Count == 0)
-			return headings;
-
-		var postAnchors = ApiPostSection.Anchors(postSections).ToHashSet(StringComparer.Ordinal);
-		return [.. headings.Where(heading => !postAnchors.Contains(heading.Slug))];
+		var pageAnchors = ApiPostSection
+			.Anchors(postSections, GroupPageAnchors)
+			.Append(ApiViewModel.EndpointsAnchor)
+			.ToHashSet(StringComparer.Ordinal);
+		return [.. ReadHeadings(renderer, markdown, apiBaseUrl).Where(heading => !pageAnchors.Contains(heading.Slug))];
 	}
 
 	/// <summary>
