@@ -793,13 +793,13 @@ public class OpenApiGeneratorMultiVersionTests
 		}
 		else
 		{
-			// the build's own noindex wins on every page; without a canonical base there is no canonical tag
+			// the build's own noindex wins on every page, and the canonical still follows the page type, as on staging and edge
 			heads.Should().MatchInlineSnapshot(
 				"""
-				versionless: canonical= robots=noindex, nofollow
-				v9: canonical= robots=noindex, nofollow
-				v8: canonical= robots=noindex, nofollow
-				next: canonical= robots=noindex, nofollow
+				versionless: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=noindex, nofollow
+				v9: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=noindex, nofollow
+				v8: canonical=https://www.elastic.co/api/elasticsearch/v8/operation/operation-ping robots=noindex, nofollow
+				next: canonical=https://www.elastic.co/api/elasticsearch/next/operation/operation-ping robots=noindex, nofollow
 				"""
 			);
 		}
@@ -1002,7 +1002,7 @@ public class OpenApiGeneratorMultiVersionTests
 			),
 			configurationContext
 		)
-		{ AllowIndexing = allowIndexing, CanonicalBaseUrl = allowIndexing ? new Uri("https://www.elastic.co") : null };
+		{ AllowIndexing = allowIndexing, CanonicalBaseUrl = new Uri("https://www.elastic.co") };
 	}
 
 	private static OpenApiGenerator CreateGenerator(
