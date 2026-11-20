@@ -51,6 +51,8 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Type,
 			doc.Hidden ? "hidden" : "listed",
 			doc.Body ?? string.Empty,
+			// An API document's content hash covers the rendered page, which its other fields do not.
+			doc.ContentBodyHash,
 			string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,
 			doc.Section ?? string.Empty,
