@@ -9,6 +9,9 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// <param name="Url">The same page in the newest major, or its landing page when the page does not exist there.</param>
 public sealed record LatestVersionLink(string Label, string Url);
 
+/// <param name="DesignSystem">True when the design system look is on, so the arrow is that look's icon.</param>
+public sealed record VersionNoticeLinkModel(LatestVersionLink Latest, bool DesignSystem);
+
 /// <summary>The notice beside an API page's title that names a version other than the newest major.</summary>
 /// <param name="Latest">Where the newest major is, or null when that major did not render, so the notice has nothing to link to.</param>
 public closed record ApiVersionNotice(LatestVersionLink? Latest);

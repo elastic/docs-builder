@@ -1,0 +1,15 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.VersionNoticeLinkModel>
+@* The arrow of the docs landing page's links: the design system's icon, or the legacy page's inline glyph. *@
+<a href="@Model.Latest.Url">
+	<span>View the latest version (@Model.Latest.Label)</span>
+	@if (Model.DesignSystem)
+	{
+		@await RenderPartialAsync(Elastic.Documentation.Site.Components.Primitives.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Primitives.Icon.IconModel { Name = "arrow_right", Size = Elastic.Documentation.Site.Components.Primitives.Icon.IconSize.Small }))
+	}
+	else
+	{
+		<svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
+		</svg>
+	}
+</a>

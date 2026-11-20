@@ -1947,6 +1947,9 @@ a.type-linked:hover {
 }
 
 .api-version-notice a {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
 	color: var(--color-accent);
 	text-decoration: underline;
 	text-underline-offset: 0.2em;

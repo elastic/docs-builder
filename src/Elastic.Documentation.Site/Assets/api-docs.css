@@ -186,8 +186,14 @@
 }
 
 .api-version-notice a {
-	@apply text-blue-elastic underline;
+	@apply text-blue-elastic inline-flex items-center gap-1 underline;
 	text-underline-offset: 2px;
+}
+
+.api-version-notice__arrow {
+	width: 1.25em;
+	height: 1.25em;
+	flex: none;
 }
 
 .api-version-notice--unreleased {

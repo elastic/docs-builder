@@ -9,7 +9,7 @@
 			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel($"Version {older.Version}", designSystem)))
 			@if (older.Latest is { } olderLatest)
 			{
-				<a href="@olderLatest.Url">View the latest version (@olderLatest.Label)<span aria-hidden="true"> &rarr;</span></a>
+				@await RenderPartialAsync(_VersionNoticeLink.Create(new VersionNoticeLinkModel(olderLatest, designSystem)))
 			}
 		</p>
 		break;
@@ -19,7 +19,7 @@
 			<span>This version is not released yet and can change.</span>
 			@if (unreleased.Latest is { } nextLatest)
 			{
-				<a href="@nextLatest.Url">View the latest version (@nextLatest.Label)<span aria-hidden="true"> &rarr;</span></a>
+				@await RenderPartialAsync(_VersionNoticeLink.Create(new VersionNoticeLinkModel(nextLatest, designSystem)))
 			}
 		</p>
 		break;

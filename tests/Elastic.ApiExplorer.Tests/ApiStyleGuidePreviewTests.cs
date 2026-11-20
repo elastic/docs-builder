@@ -89,7 +89,7 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync(id);
 
-		html.Should().Contain("<a href=\"/style-guide/preview/api-operation\">View the latest version (v9)");
+		html.Should().Contain("<a href=\"/style-guide/preview/api-operation\">").And.Contain("View the latest version (v9)");
 	}
 
 	[Test]
