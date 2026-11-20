@@ -4511,7 +4511,9 @@ html:has(.api-page-shell) {
 	align-items: center;
 	gap: 8px;
 	height: 44px;
-	margin: 20px calc(-1 * var(--api-column-bleed-right, 40px)) 24px
+	/* In the page, as much space above as the title row takes once pinned, so the bar sits the same under what is above it. */
+	margin: max(20px, var(--api-section-links-title-height, 0px))
+		calc(-1 * var(--api-column-bleed-right, 40px)) 24px
 		calc(-1 * var(--api-column-bleed-left, 40px));
 	padding: 0 var(--api-column-bleed-right, 40px) 0
 		var(--api-column-bleed-left, 40px);
