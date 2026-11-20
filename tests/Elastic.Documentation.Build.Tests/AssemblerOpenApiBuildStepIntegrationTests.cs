@@ -56,20 +56,20 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 	}
 
 	/// <summary>A narrative checkout whose docset declares the Elasticsearch API. The caller resolves the tree, as the build does.</summary>
-	private static async Task<Workspace> CreateWorkspaceAsync(CancellationToken cancellationToken)
+	private static async Task<Workspace> CreateWorkspaceAsync(CancellationToken cancellationToken, bool apiExplorer = true)
 	{
 		var fileSystem = new FileSystem();
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var assemblyConfig = AssemblyConfiguration.Deserialize(
-			"""
+			$$"""
 			environments:
 			  staging:
 			    uri: https://staging-website.elastic.co
 			    path_prefix: docs
 			    content_source: next
 			    feature_flags:
-			      ASSEMBLER_API_EXPLORER: true
+			      ASSEMBLER_API_EXPLORER: {{(apiExplorer ? "true" : "false")}}
 			narrative:
 			  checkout_strategy: full
 			references: {}
@@ -362,6 +362,27 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		urls.Should().Contain("/docs/api", "the API hub links to the older major");
 		urls.Should().NotContain(u => u.Contains("/next", StringComparison.Ordinal));
 		ShouldEachNameItselfCanonical(workspace, urls);
+	}
+
+	[Test]
+	public async Task ApiSitemap_WithTheApiExplorerFlagOff_IsNotWritten(CancellationToken cancellationToken)
+	{
+		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
+			return;
+		Skip.When(
+			Environment.GetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER") is not null,
+			"FEATURE_ASSEMBLER_API_EXPLORER overrides the flag of the environment"
+		);
+
+		// the docset still declares an API, and the build runs every API step
+		using var workspace = await CreateWorkspaceAsync(cancellationToken, apiExplorer: false);
+		var urls = await BuildNumberedMajorsSitemapAsync(workspace, failingVersion: null, cancellationToken);
+		var output = SitemapOutput.For(workspace.Context);
+		_ = SitemapBuilder.Generate(urls.ToDictionary(u => u, _ => DateTimeOffset.UnixEpoch), output, workspace.Collector);
+
+		urls.Should().NotContain(u => output.IsApiUrl(u));
+		workspace.FileSystem.File.Exists(output.PathOf("sitemap-api.xml")).Should().BeFalse();
+		workspace.FileSystem.File.ReadAllText(output.PathOf("sitemap.xml")).Should().NotContain("sitemap-api.xml");
 	}
 
 	/// <summary>Builds an API with <c>main</c>, <c>9</c> and <c>8</c> and returns the URLs of its sitemap walk.</summary>
