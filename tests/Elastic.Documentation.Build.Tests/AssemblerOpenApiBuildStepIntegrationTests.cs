@@ -367,6 +367,10 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			u => u.StartsWith("/docs/api/elasticsearch/v8/", StringComparison.Ordinal),
 			"an older major lists its pages, not just its landing"
 		);
+		urls.Should().Contain(
+			["/docs/api/elasticsearch/servers", "/docs/api/elasticsearch/v8/servers"],
+			"a page hidden from the sidebar still renders and names itself as canonical"
+		);
 
 		foreach (var url in urls.Where(SitemapOutput.For(workspace.Context).IsApiUrl))
 		{
@@ -394,6 +398,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			{
 				"openapi": "3.0.3",
 				"info": { "title": "Elasticsearch", "version": "1.0" },
+				"servers": [{ "url": "https://localhost:9200" }],
 				"tags": [{ "name": "search" }],
 				"paths": {
 					"/_search": {
