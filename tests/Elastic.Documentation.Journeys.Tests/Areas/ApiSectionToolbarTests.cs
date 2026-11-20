@@ -228,6 +228,10 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 				var atRest = await SidebarGapAsync(page).ConfigureAwait(false);
 				await ScrollBarTopToAsync(page, 20).ConfigureAwait(false);
 				var pinned = await SidebarGapAsync(page).ConfigureAwait(false);
+				// The gap only counts once the row is on screen and stuck under the header.
+				var stuck = (await page.EvaluateAsync(
+					"(() => { const bar = document.querySelector('.api-section-links'); const r = bar.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && Math.abs(r.top - parseFloat(getComputedStyle(bar).top)) < 1; })()"
+				).ConfigureAwait(false)).GetBoolean();
 				// Measured, not the width asked for: the resize script drops an override it did not save when it reconciles the layout.
 				var sidebarWidth = await page.EvaluateAsync(
 					"Math.round(document.getElementById('pages-nav').getBoundingClientRect().width)"
@@ -235,7 +239,7 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 				lines.Add(
 					string.Create(
 						CultureInfo.InvariantCulture,
-						$"{width}px window, {sidebarWidth.GetDouble()}px sidebar: gap at rest {atRest}px, pinned {pinned}px"
+						$"{width}px window, {sidebarWidth.GetDouble()}px sidebar: gap at rest {atRest}px, pinned {stuck} with gap {pinned}px"
 					)
 				);
 			}
@@ -244,10 +248,10 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 
 		_ = report.Should().MatchInlineSnapshot(
 			"""
-			1100px window, 259px sidebar: gap at rest 1px, pinned 1px
-			1600px window, 259px sidebar: gap at rest 1px, pinned 1px
-			2560px window, 259px sidebar: gap at rest 1px, pinned 1px
-			2560px window, 399px sidebar: gap at rest 1px, pinned 1px
+			1100px window, 259px sidebar: gap at rest 1px, pinned True with gap 1px
+			1600px window, 259px sidebar: gap at rest 1px, pinned True with gap 1px
+			2560px window, 259px sidebar: gap at rest 1px, pinned True with gap 1px
+			2560px window, 399px sidebar: gap at rest 1px, pinned True with gap 1px
 			"""
 		);
 	}
