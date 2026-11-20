@@ -133,7 +133,14 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
 			: new DocumentationSetFile();
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
-		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
-		Configuration.Features.PageFeedbackEnabled = previousFeatures.PageFeedbackEnabled;
+		var diagnosticsPanel = previousFeatures.DiagnosticsPanelEnabled;
+		var pageFeedback = previousFeatures.PageFeedbackEnabled;
+		OverrideFeatures(f => f.With("diagnostics-panel", diagnosticsPanel).With("page-feedback", pageFeedback));
 	}
+
+	/// <summary>
+	/// Layers a runtime override (serve's HUD, an assembler environment's flags) on top of the docset's flags. The one
+	/// place the feature flags change after construction; readers of <c>Configuration.Features</c> see the new flags from then on.
+	/// </summary>
+	public void OverrideFeatures(Func<FeatureFlags, FeatureFlags> apply) => Configuration.OverrideFeatures(apply);
 }

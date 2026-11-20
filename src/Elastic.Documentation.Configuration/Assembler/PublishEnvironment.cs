@@ -44,11 +44,5 @@ public record PublishEnvironment
 	/// Use this rather than accessing the raw dictionary so that key normalization and env-var overrides
 	/// are applied consistently with how docset-level flags are processed.
 	/// </summary>
-	public Builder.FeatureFlags ToFeatureFlags()
-	{
-		var flags = new Builder.FeatureFlags([]);
-		foreach (var (key, value) in FeatureFlags)
-			flags.Set(key, value);
-		return flags;
-	}
+	public Builder.FeatureFlags ToFeatureFlags() => new Builder.FeatureFlags([]).With(FeatureFlags);
 }
