@@ -779,7 +779,19 @@ public class OpenApiGeneratorMultiVersionTests
 			return $"canonical={Attribute(html, "<link rel=\"canonical\" href=")} robots={Attribute(html, "<meta name=\"robots\" content=")}";
 		}
 
-		var heads = $"versionless: {Head()}\nv9: {Head("v9")}\nv8: {Head("v8")}\nnext: {Head("next")}";
+		// the Markdown export names the same canonical as the HTML page, so the numbered copy never names itself
+		string MarkdownUrl(params string[] segments) =>
+			context.WriteFileSystem.File.ReadAllLines(Path.Join([
+				outputRoot,
+				"api",
+				"elasticsearch",
+				.. segments,
+				"operation",
+				"operation-ping.md"
+			])).First(static l => l.StartsWith("url: ", StringComparison.Ordinal))["url: ".Length..];
+
+		var heads =
+			$"versionless: {Head()}\nv9: {Head("v9")}\nv8: {Head("v8")}\nnext: {Head("next")}\nmarkdown v9: {MarkdownUrl("v9")}\nmarkdown versionless: {MarkdownUrl()}";
 		if (allowIndexing)
 		{
 			heads.Should().MatchInlineSnapshot(
@@ -788,6 +800,8 @@ public class OpenApiGeneratorMultiVersionTests
 				v9: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=index, follow
 				v8: canonical=https://www.elastic.co/api/elasticsearch/v8/operation/operation-ping robots=index, follow
 				next: canonical=https://www.elastic.co/api/elasticsearch/next/operation/operation-ping robots=noindex
+				markdown v9: https://www.elastic.co/api/elasticsearch/operation/operation-ping
+				markdown versionless: https://www.elastic.co/api/elasticsearch/operation/operation-ping
 				"""
 			);
 		}
@@ -800,6 +814,8 @@ public class OpenApiGeneratorMultiVersionTests
 				v9: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=noindex, nofollow
 				v8: canonical=https://www.elastic.co/api/elasticsearch/v8/operation/operation-ping robots=noindex, nofollow
 				next: canonical=https://www.elastic.co/api/elasticsearch/next/operation/operation-ping robots=noindex, nofollow
+				markdown v9: https://www.elastic.co/api/elasticsearch/operation/operation-ping
+				markdown versionless: https://www.elastic.co/api/elasticsearch/operation/operation-ping
 				"""
 			);
 		}
