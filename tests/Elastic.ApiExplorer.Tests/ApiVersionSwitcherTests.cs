@@ -25,7 +25,7 @@ public class ApiVersionSwitcherTests
 		var items = ApiVersionSwitcher.Build("", Es, ["main", "9", "8"], "elasticsearch/v8");
 
 		items.Should().HaveCount(3);
-		items.Select(i => i.Label).Should().Equal("main", "v9 (latest)", "v8");
+		items.Select(i => i.Label).Should().Equal("Next (unreleased)", "v9 (latest)", "v8");
 		items.Select(i => i.Url).Should().Equal("/api/elasticsearch/next", "/api/elasticsearch", "/api/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v8");
 	}
@@ -35,7 +35,7 @@ public class ApiVersionSwitcherTests
 	{
 		var items = ApiVersionSwitcher.Build("", Es, ["main", "9", "8"], "elasticsearch/next");
 
-		items.Select(i => i.Label).Should().Equal("main", "v9 (latest)", "v8");
+		items.Select(i => i.Label).Should().Equal("Next (unreleased)", "v9 (latest)", "v8");
 		items.Single(i => i.Selected).Url.Should().Be("/api/elasticsearch/next");
 	}
 

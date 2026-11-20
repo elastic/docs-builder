@@ -37,6 +37,45 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
+	public async Task DesignSystemNav_VersionTriggerNamesTheVersionWhileTheMenuKeepsTheHint()
+	{
+		var model = CreateLayoutModel(
+			"/api/elasticsearch/next/",
+			"/api/elasticsearch/next.md",
+			apiContext: CreateApiContext(versions: [
+				new("Next (unreleased)", "/api/elasticsearch/next/", Selected: true, ShortLabel: "Next"),
+				new("v9 (latest)", "/api/elasticsearch/", Selected: false, ShortLabel: "v9")
+			]),
+			features: NavigationPreview
+		);
+
+		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<span class=\"link-menu__current\">Next</span>");
+		html.Should().Contain(">Next (unreleased)</a>");
+		html.Should().Contain(">v9 (latest)</a>");
+	}
+
+	[Test]
+	public async Task DesignSystemNav_VersionTriggerFollowsTheSelectedVersionNotTheFirstRow()
+	{
+		var model = CreateLayoutModel(
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
+			apiContext: CreateApiContext(versions: [
+				new("Next (unreleased)", "/api/elasticsearch/next/", Selected: false, ShortLabel: "Next"),
+				new("v9 (latest)", "/api/elasticsearch/", Selected: true, ShortLabel: "v9")
+			]),
+			features: NavigationPreview
+		);
+
+		var html = await _DesignSystemApiNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<span class=\"link-menu__current\">v9</span>");
+		html.Should().NotContain("<span class=\"link-menu__current\">Next</span>");
+	}
+
+	[Test]
 	public async Task DesignSystemNav_JumpFieldStaysHiddenUntilScriptRevealsIt()
 	{
 		var model = CreateLayoutModel(

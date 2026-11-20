@@ -154,7 +154,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 			[],
 			"/docs/api/",
 			[
-				new NavigationSelectOption("main", "/a/", false),
+				new NavigationSelectOption("Next (unreleased)", "/a/next/", false, "Next"),
 				new NavigationSelectOption("v9 (latest)", "/a/v9/", true, "v9"),
 				new NavigationSelectOption("v8", "/a/v8/", false)
 			],

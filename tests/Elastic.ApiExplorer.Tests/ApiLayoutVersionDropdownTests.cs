@@ -52,7 +52,7 @@ public class ApiLayoutVersionDropdownTests
 	}
 
 	[Test]
-	[Arguments("main", "Elasticsearch API main")]
+	[Arguments("main", "Elasticsearch API Next")]
 	[Arguments("9", "Elasticsearch API v9")]
 	[Arguments("8", "Elasticsearch API v8")]
 	public void CreateGlobalLayoutModel_NamesTheSelectedVersionInTheBreadcrumb(string selectedMoniker, string expected)
@@ -87,7 +87,7 @@ public class ApiLayoutVersionDropdownTests
 
 		layout.StructuredBreadcrumbsJson.Should().Contain("\"name\": \"Elasticsearch API\"");
 		layout.StructuredBreadcrumbsJson.Should().NotContain("Elasticsearch API v");
-		layout.StructuredBreadcrumbsJson.Should().NotContain("Elasticsearch API main");
+		layout.StructuredBreadcrumbsJson.Should().NotContain("Elasticsearch API Next");
 	}
 
 	[Test]

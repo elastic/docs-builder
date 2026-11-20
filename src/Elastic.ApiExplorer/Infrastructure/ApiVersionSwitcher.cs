@@ -44,11 +44,11 @@ public static class ApiVersionSwitcher
 			.ToArray();
 	}
 
-	private static string ShortLabelFor(string moniker) => moniker == "main" ? moniker : $"v{moniker}";
+	private static string ShortLabelFor(string moniker) => moniker == "main" ? "Next" : $"v{moniker}";
 
-	/// <summary>The highest numeric major reads as the latest. <c>main</c> keeps its name.</summary>
+	/// <summary>The highest numeric major reads as the latest. <c>main</c> is the unreleased build served at <c>/next</c>.</summary>
 	private static string LabelFor(string moniker, string? latest) =>
-		moniker == "main" ? moniker : moniker == latest ? $"v{moniker} (latest)" : $"v{moniker}";
+		moniker == "main" ? "Next (unreleased)" : moniker == latest ? $"v{moniker} (latest)" : $"v{moniker}";
 
 	/// <summary>
 	/// Points each version at the same page as <paramref name="pageUrl"/> when that version renders it,
