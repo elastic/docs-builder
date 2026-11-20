@@ -1,4 +1,4 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<EndpointRow>
-@* The route of an overview row as plain text. A <wbr> before each slash lets a long route wrap between segments, not mid-word. Segments stay on the brace lines so Razor emits no whitespace between them. *@
-<code class="api-group-route">@if (Model.Segments.Count == 0){@("/")}@foreach (var segment in Model.Segments){<wbr>@("/" + segment.Text)}</code>
+@* The route of an overview row as plain text; a segment some variants leave out sits in brackets, so the longest route does not read as the only one. A <wbr> before each slash lets a long route wrap between segments, not mid-word. Segments stay on the brace lines so Razor emits no whitespace between them. *@
+<code class="api-group-route">@if (Model.Segments.Count == 0){@("/")}@foreach (var segment in Model.Segments){<wbr>@(segment.Optional ? $"[/{segment.Text}]" : "/" + segment.Text)}</code>

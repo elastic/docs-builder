@@ -64,6 +64,26 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		html.Should().MatchHtmlSnapshot();
 	}
 
+	[Test]
+	public async Task Render_RouteWithOptionalSegment_BracketsTheSegmentSomeVariantsLeaveOut()
+	{
+		var route = new EndpointRow(
+			"/{index}/_search",
+			"post",
+			["get"],
+			[new EndpointSegment("{index}", Optional: true), new EndpointSegment("_search", Optional: false)]
+		);
+
+		var html = await _GroupRoute.Create(route).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<code class="api-group-route">
+				<wbr>[/{index}]<wbr>/_search</code>
+			"""
+		);
+	}
+
 	private (ApiOverviewRow Row, IReadOnlyList<ApiOverviewRow> Siblings) RowFor(string operationId) =>
 		RowFor(fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == operationId));
 
