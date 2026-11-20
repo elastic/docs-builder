@@ -14,13 +14,21 @@ using Elastic.Markdown.Extensions.DetectionRules;
 
 namespace Elastic.Documentation.Assembler.Building;
 
-/// <summary>Where the sitemap goes: <see cref="Folder"/> is served at <see cref="PathPrefix"/>.</summary>
-public record SitemapOutput(IFileSystem FileSystem, IDirectoryInfo Folder, string? PathPrefix)
+/// <summary>
+/// Where the sitemap goes: <see cref="Folder"/> is served at <see cref="PathPrefix"/> on <see cref="Host"/>, the host the
+/// environment deploys to. The index points to its files there; the pages keep their canonical host.
+/// </summary>
+public record SitemapOutput(IFileSystem FileSystem, IDirectoryInfo Folder, string? PathPrefix, Uri Host)
 {
 	private string ApiRoot => ApiUrlBuilder.ApiRoot($"/{PathPrefix?.Trim('/')}");
 
 	public static SitemapOutput For(AssembleContext context) =>
-		new(context.WriteFileSystem, context.OutputWithPathPrefixDirectory, context.Environment.PathPrefix);
+		new(
+			context.WriteFileSystem,
+			context.OutputWithPathPrefixDirectory,
+			context.Environment.PathPrefix,
+			new Uri(context.Environment.Uri)
+		);
 
 	/// <summary>Whether a site path is an API Explorer page: the API hub or a page below it.</summary>
 	public bool IsApiUrl(string path) =>
@@ -75,7 +83,7 @@ public static class SitemapBuilder
 		var prefix = string.IsNullOrEmpty(output.PathPrefix) ? string.Empty : $"{output.PathPrefix.Trim('/')}/";
 		var index = new XElement(
 			Ns + "sitemapindex",
-			listed.Select(name => new XElement(Ns + "sitemap", new XElement(Ns + "loc", new Uri(BaseUri, prefix + name))))
+			listed.Select(name => new XElement(Ns + "sitemap", new XElement(Ns + "loc", new Uri(output.Host, prefix + name))))
 		);
 		_ = Save(index, output, IndexFileName);
 		return files;

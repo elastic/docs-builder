@@ -23,10 +23,10 @@ public class SitemapTests
 		["/docs/api/elasticsearch/operation/search"] = Date
 	};
 
-	private static (MockFileSystem FileSystem, SitemapOutput Output) Output()
+	private static (MockFileSystem FileSystem, SitemapOutput Output) Output(string host = "https://www.elastic.co")
 	{
 		var fileSystem = new MockFileSystem();
-		return (fileSystem, new SitemapOutput(fileSystem, fileSystem.DirectoryInfo.New("/output/docs"), "docs"));
+		return (fileSystem, new SitemapOutput(fileSystem, fileSystem.DirectoryInfo.New("/output/docs"), "docs", new Uri(host)));
 	}
 
 	[Test]
@@ -134,4 +134,19 @@ public class SitemapTests
 			.ToJsonString()
 			.Should()
 			.MatchInlineSnapshot("{\"bool\":{\"must_not\":[{\"term\":{\"hidden\":true}},{\"term\":{\"content_type\":\"api\"}}]}}");
+
+	[Test]
+	public void Generate_OnAPreviewHost_PointsTheIndexAtTheFilesOnThatHost_AndKeepsCanonicalPageUrls()
+	{
+		var (fileSystem, output) = Output(host: "https://docs-v3-preview.elastic.dev");
+
+		_ = SitemapBuilder.Generate(Entries, output, new DiagnosticsCollector([]));
+
+		fileSystem
+			.File
+			.ReadAllText("/output/docs/sitemap.xml")
+			.Should()
+			.Contain("<loc>https://docs-v3-preview.elastic.dev/docs/sitemap-api.xml</loc>");
+		fileSystem.File.ReadAllText("/output/docs/sitemap-docs.xml").Should().Contain("<loc>https://www.elastic.co/docs/reference</loc>");
+	}
 }
