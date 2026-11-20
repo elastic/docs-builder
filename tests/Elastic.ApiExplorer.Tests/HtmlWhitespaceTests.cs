@@ -27,7 +27,7 @@ public class HtmlWhitespaceTests
 	[Test]
 	public void Collapse_AttributeValues_StayAsTheyAre()
 	{
-		const string kept = "<span data-tippy-content=\"line one\n\n    line two > three\" title='a\n  b'>x</span>";
+		const string kept = "<span data-tooltip=\"line one\n\n    line two > three\" title='a\n  b'>x</span>";
 		HtmlWhitespace.Collapse(kept).Should().Be(kept);
 	}
 
