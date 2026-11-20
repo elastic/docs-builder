@@ -228,17 +228,26 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 				var atRest = await SidebarGapAsync(page).ConfigureAwait(false);
 				await ScrollBarTopToAsync(page, 20).ConfigureAwait(false);
 				var pinned = await SidebarGapAsync(page).ConfigureAwait(false);
-				lines.Add($"{width}px{(sidebar is null ? "" : $", {sidebar} sidebar")}: gap at rest {atRest}px, pinned {pinned}px");
+				// Measured, not the width asked for: the resize script drops an override it did not save when it reconciles the layout.
+				var sidebarWidth = await page.EvaluateAsync(
+					"Math.round(document.getElementById('pages-nav').getBoundingClientRect().width)"
+				).ConfigureAwait(false);
+				lines.Add(
+					string.Create(
+						CultureInfo.InvariantCulture,
+						$"{width}px window, {sidebarWidth.GetDouble()}px sidebar: gap at rest {atRest}px, pinned {pinned}px"
+					)
+				);
 			}
 			report = string.Join('\n', lines);
 		}).ConfigureAwait(false);
 
 		_ = report.Should().MatchInlineSnapshot(
 			"""
-			1100px: gap at rest 1px, pinned 1px
-			1600px: gap at rest 1px, pinned 1px
-			2560px: gap at rest 1px, pinned 1px
-			2560px, 400px sidebar: gap at rest 1px, pinned 1px
+			1100px window, 259px sidebar: gap at rest 1px, pinned 1px
+			1600px window, 259px sidebar: gap at rest 1px, pinned 1px
+			2560px window, 259px sidebar: gap at rest 1px, pinned 1px
+			2560px window, 399px sidebar: gap at rest 1px, pinned 1px
 			"""
 		);
 	}
