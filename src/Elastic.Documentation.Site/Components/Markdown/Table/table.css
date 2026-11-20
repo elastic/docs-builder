@@ -131,6 +131,61 @@
 	mix-blend-mode: multiply;
 }
 
+/* Pinned first column (opt-in with :pin-first-column:): the first column stays at the left edge while the table scrolls sideways. Pinned cells need an opaque background, or scrolled cells show through, so their tints are mixed with the surface colour instead of blended. */
+.table-pinned table {
+	/* The table's own left border sits outside the pinned cells and lets scrolled text show through, so the pinned cells draw it instead. */
+	border-left-width: 0;
+}
+
+.table-pinned th:first-child,
+.table-pinned td:first-child {
+	position: sticky;
+	left: 0;
+	z-index: 2;
+	width: min(16rem, 45vw);
+	max-width: min(16rem, 45vw);
+	background: var(--color-surface);
+	box-shadow:
+		inset var(--border-width) 0 0 var(--color-border),
+		inset calc(var(--border-width) * -1) 0 0 var(--color-border),
+		4px 0 6px -4px color-mix(in oklab, var(--color-text) 18%, transparent);
+}
+
+.table-pinned thead th:first-child {
+	z-index: 3;
+	background: var(--color-surface-sunken);
+}
+
+.table-pinned tbody tr:hover td:first-child {
+	background: color-mix(
+		in oklab,
+		var(--color-text-muted) 12%,
+		var(--color-surface)
+	);
+}
+
+/* A matrix table clips its crosshair with overflow:hidden, which makes the table the scroll container a sticky cell pins to, so the column wouldn't stay put. overflow:clip clips the same way without creating one. */
+.table-matrix.table-pinned table {
+	overflow: clip;
+}
+
+.table-matrix.table-pinned tbody td:first-child {
+	background: color-mix(
+		in oklab,
+		var(--color-text-muted) 12%,
+		var(--color-surface)
+	);
+	mix-blend-mode: normal;
+}
+
+.table-matrix.table-pinned tbody tr:hover td:first-child {
+	background: color-mix(
+		in oklab,
+		var(--color-text-muted) 37%,
+		var(--color-surface)
+	);
+}
+
 /* The fullscreen button docks on the table's top-right corner and appears only when the table overflows. */
 .table-container {
 	display: flex;

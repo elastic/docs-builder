@@ -174,6 +174,73 @@
 		mix-blend-mode: multiply;
 	}
 
+	/* Pinned first column: opt-in via {table} :pin-first-column:. The first
+	   column stays at the left edge while the table scrolls sideways, so a
+	   reader who scrolls to the right-hand columns can still see which row
+	   they're reading. Pinned cells need an opaque background, or scrolled
+	   cells show through them, so they don't use the translucent multiply
+	   tints above. An inset line marks the column's edge, and a soft shadow
+	   shows that other columns pass beneath it. The column is capped in width
+	   so it never takes most of a narrow screen. The class survives cloning
+	   into the fullscreen dialog, so the column stays pinned there too. */
+	.table-pinned {
+		/* The table's own left border sits outside the pinned cells, and
+		   scrolled cells show through that 1px gap. The pinned cells draw
+		   the left border instead. */
+		table {
+			border-left-width: 0;
+		}
+
+		th:first-child,
+		td:first-child {
+			position: sticky;
+			left: 0;
+			z-index: 2;
+			width: min(16rem, 45vw);
+			max-width: min(16rem, 45vw);
+			background: var(--color-white);
+			box-shadow:
+				inset 1px 0 0 var(--color-grey-20),
+				inset -1px 0 0 var(--color-grey-20),
+				4px 0 6px -4px rgb(0 0 0 / 0.15);
+		}
+
+		thead th:first-child {
+			z-index: 3;
+			background: var(--color-grey-10);
+		}
+
+		tbody tr:hover td:first-child {
+			background: var(--color-grey-10);
+		}
+	}
+
+	/* A matrix table clips its crosshair with overflow:hidden on the table,
+	   which makes the table the scroll container a sticky cell pins to. The
+	   table never scrolls, so the column wouldn't stay put. overflow:clip
+	   clips the same way without creating a scroll container. */
+	.table-matrix.table-pinned table {
+		overflow: clip;
+	}
+
+	/* A pinned matrix table keeps its row-heading tint, mixed to an opaque color. */
+	.table-matrix.table-pinned tbody td:first-child {
+		background: color-mix(
+			in srgb,
+			var(--color-grey-30) 12%,
+			var(--color-white)
+		);
+		mix-blend-mode: normal;
+	}
+
+	.table-matrix.table-pinned tbody tr:hover td:first-child {
+		background: color-mix(
+			in srgb,
+			var(--color-grey-30) 37%,
+			var(--color-white)
+		);
+	}
+
 	/* Fullscreen view for tables that overflow the content column. The
 	   button is injected by table.ts; data-overflowing is kept in sync by
 	   a ResizeObserver. It docks onto the table's top-right corner like a

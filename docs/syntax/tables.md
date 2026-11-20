@@ -147,6 +147,42 @@ The `{table}` directive's `:matrix:` option highlights the whole row *and* colum
 
 :::::
 
+## Pinned first column
+
+The `{table}` directive's `:pin-first-column:` option keeps the first column in view while a wide table scrolls sideways. Use it when the first column names each row, so readers who scroll to the right-hand columns can still see which row they're reading. The pinned column is capped in width so it never takes over a narrow screen. It also stays pinned in the fullscreen view.
+
+:::::{tab-set}
+
+::::{tab-item} Output
+:::{table}
+:pin-first-column:
+
+| Team | Sprint 1 | Sprint 2 | Sprint 3 | Sprint 4 | Sprint 5 | Sprint 6 | Sprint 7 | Sprint 8 |
+|------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| Team Falcon | 34 | 38 | 41 | 36 | 44 | 47 | 42 | 50 |
+| Team Nimbus | 28 | 31 | 27 | 33 | 30 | 35 | 38 | 40 |
+| Team Orbit  | 45 | 42 | 48 | 51 | 47 | 53 | 55 | 58 |
+| Team Vertex | 22 | 25 | 24 | 28 | 26 | 30 | 29 | 33 |
+:::
+::::
+
+::::{tab-item} Markdown
+```markdown
+:::{table}
+:pin-first-column:
+
+| Team | Sprint 1 | Sprint 2 | Sprint 3 | Sprint 4 | Sprint 5 | Sprint 6 | Sprint 7 | Sprint 8 |
+|------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| Team Falcon | 34 | 38 | 41 | 36 | 44 | 47 | 42 | 50 |
+| Team Nimbus | 28 | 31 | 27 | 33 | 30 | 35 | 38 | 40 |
+| Team Orbit  | 45 | 42 | 48 | 51 | 47 | 53 | 55 | 58 |
+| Team Vertex | 22 | 25 | 24 | 28 | 26 | 30 | 29 | 33 |
+:::
+```
+::::
+
+:::::
+
 ## Filterable table
 
 The `{table}` directive's `:filterable:` option adds a search box above the table, plus a dropdown filter for each column that has a small number of repeated values — for example a type or status column. Search matches text in every column. Search and filters combine — each one you set narrows the results further. A live "Showing N of M" count is announced to assistive technologies.

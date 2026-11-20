@@ -19,6 +19,9 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 
 	public required bool Matrix { get; init; }
 
+	/// <summary>When set, adds the table-pinned class so the first column stays in view while the table scrolls sideways.</summary>
+	public bool PinFirstColumn { get; init; }
+
 	/// <summary>
 	/// When set, the rendered table is wrapped in a <c>&lt;filterable-table&gt;</c> custom
 	/// element for client-side search + facet filtering (progressive enhancement).
@@ -27,13 +30,18 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 
 	/// <summary>
 	/// Renders the table content. When <see cref="ColumnWidths"/> is specified, injects a colgroup and table-layout:fixed.
-	/// When <see cref="Matrix"/> is set, adds the table-matrix class to the wrapper.
+	/// When <see cref="Matrix"/> or <see cref="PinFirstColumn"/> is set, adds the table-matrix or table-pinned class to the wrapper.
 	/// </summary>
 	public HtmlString RenderTableWithColumns()
 	{
 		var html = RenderBlock().Value ?? string.Empty;
+		var wrapperClasses = new List<string>(2);
 		if (Matrix)
-			html = InjectMatrixClass(html);
+			wrapperClasses.Add("table-matrix");
+		if (PinFirstColumn)
+			wrapperClasses.Add("table-pinned");
+		if (wrapperClasses.Count > 0)
+			html = InjectWrapperClasses(html, wrapperClasses);
 		if (ColumnWidths.Count > 0)
 			html = InjectColumnWidths(html);
 		if (Filterable)
@@ -73,16 +81,18 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 	private static string WrapFilterable(string html) => "<filterable-table>" + html + "</filterable-table>";
 
 	/// <summary>
-	/// Adds the table-matrix class to the wrapper div's opening tag emitted by WrappedTableRenderer,
+	/// Adds classes to the wrapper div's opening tag emitted by WrappedTableRenderer,
 	/// locating that specific tag rather than replacing the class attribute wherever it appears.
 	/// </summary>
-	private static string InjectMatrixClass(string html)
+	private static string InjectWrapperClasses(string html, IEnumerable<string> classes)
 	{
 		const string wrapperOpenTag = "<div class=\"table-wrapper\">";
 		var wrapperIndex = html.IndexOf(wrapperOpenTag, StringComparison.Ordinal);
 		return wrapperIndex < 0
 			? html
-			: html[..wrapperIndex] + "<div class=\"table-wrapper table-matrix\">" + html[(wrapperIndex + wrapperOpenTag.Length)..];
+			: html[..wrapperIndex]
+				+ $"<div class=\"table-wrapper {string.Join(' ', classes)}\">"
+				+ html[(wrapperIndex + wrapperOpenTag.Length)..];
 	}
 
 	[GeneratedRegex(@"\sstyle\s*=\s*""([^""]*)""", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
