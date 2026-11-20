@@ -315,35 +315,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
 
-		using var versionIndexClient = CreateInMemoryVersionIndexClient(
-			/*lang=json,strict*/
-			"""
-			{
-				"elastic/elasticsearch-specification": {
-					"elasticsearch.json": {
-						"main": { "version": "10.0" },
-						"9": { "version": "9.4" },
-						"8": { "version": "8.19" }
-					}
-				}
-			}
-			"""
-		);
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
-		var (apiSections, navigation) = ApisSiteNavigation(workspace);
-		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
-		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
-		await AssemblerOpenApiBuildStep.BuildAsync(
-			NullLoggerFactory.Instance,
-			workspace.Context,
-			apiSections,
-			navigation.TopNav,
-			cancellationToken,
-			versionIndexClient
-		);
-		workspace.Collector.Errors.Should().Be(0);
-
-		var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).ToHashSet();
+		var urls = await BuildNumberedMajorsSitemapAsync(workspace, failingVersion: null, cancellationToken);
 		// one row per page type: the landing page of each rendered tree
 		var trees = new (string Url, string PageType, bool Listed)[]
 		{
@@ -372,14 +345,79 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			"a page hidden from the sidebar still renders and names itself as canonical"
 		);
 
+		ShouldEachNameItselfCanonical(workspace, urls);
+	}
+
+	[Test]
+	public async Task ApiSitemap_WhenTheNewestMajorFailsToLoad_StillListsTheOlderMajor(CancellationToken cancellationToken)
+	{
+		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
+			return;
+
+		using var workspace = await CreateWorkspaceAsync(cancellationToken);
+		var urls = await BuildNumberedMajorsSitemapAsync(workspace, failingVersion: "9.4", cancellationToken);
+
+		urls.Should().NotContain("/docs/api/elasticsearch", "nothing renders at the versionless URL");
+		urls.Should().Contain("/docs/api/elasticsearch/v8", "the older major rendered");
+		urls.Should().Contain("/docs/api", "the API hub links to the older major");
+		urls.Should().NotContain(u => u.Contains("/next", StringComparison.Ordinal));
+		ShouldEachNameItselfCanonical(workspace, urls);
+	}
+
+	/// <summary>Builds an API with <c>main</c>, <c>9</c> and <c>8</c> and returns the URLs of its sitemap walk.</summary>
+	private static async Task<HashSet<string>> BuildNumberedMajorsSitemapAsync(Workspace workspace, string? failingVersion, Cancel ctx)
+	{
+		using var versionIndexClient = new VersionIndexClient(
+			new Uri("https://specs.example.test/"),
+			new InMemorySpecHandler(
+				/*lang=json,strict*/
+				"""
+				{
+					"elastic/elasticsearch-specification": {
+						"elasticsearch.json": {
+							"main": { "version": "10.0" },
+							"9": { "version": "9.4" },
+							"8": { "version": "8.19" }
+						}
+					}
+				}
+				""",
+				failingVersion
+			),
+			sleep: (_, _) => Task.CompletedTask
+		);
+		var (apiSections, navigation) = ApisSiteNavigation(workspace);
+		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav, versionIndexClient);
+		await workspace.Set.DocumentationSet.ResolveDirectoryTree(ctx);
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			workspace.Context,
+			apiSections,
+			navigation.TopNav,
+			ctx,
+			versionIndexClient
+		);
+		workspace.Collector.Errors.Should().Be(0);
+		return navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).ToHashSet();
+	}
+
+	private static void ShouldEachNameItselfCanonical(Workspace workspace, IEnumerable<string> urls)
+	{
 		foreach (var url in urls.Where(SitemapOutput.For(workspace.Context).IsApiUrl))
 		{
-			var html = workspace.FileSystem.File.ReadAllText(Path.Join(workspace.OutputDirectory, url, "index.html"));
-			html.Should().Contain($"<link rel=\"canonical\" href=\"https://www.elastic.co{url}\"", $"{url} names itself as canonical");
+			var page = Path.Join(workspace.OutputDirectory, url, "index.html");
+			workspace.FileSystem.File.Exists(page).Should().BeTrue($"{url} is listed, so it renders");
+			workspace
+				.FileSystem
+				.File
+				.ReadAllText(page)
+				.Should()
+				.Contain($"<link rel=\"canonical\" href=\"https://www.elastic.co{url}\"", $"{url} names itself as canonical");
 		}
 	}
 
-	private sealed class InMemorySpecHandler(string index) : HttpMessageHandler
+	/// <summary>Serves the version index and one spec for every version, except <paramref name="failingVersion"/>, which is not found.</summary>
+	private sealed class InMemorySpecHandler(string index, string? failingVersion = null) : HttpMessageHandler
 	{
 		public const string DefaultIndex = /*lang=json,strict*/
 			"""
@@ -415,7 +453,10 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			var body = request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal) ? index : Spec;
+			var path = request.RequestUri!.AbsolutePath;
+			if (failingVersion is not null && path.Contains($"/{failingVersion}/", StringComparison.Ordinal))
+				return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+			var body = path.EndsWith("index.json", StringComparison.Ordinal) ? index : Spec;
 			return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
 			{
 				Content = new StringContent(body, Encoding.UTF8, "application/json")

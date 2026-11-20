@@ -87,6 +87,7 @@ internal sealed class ApiFloatingSection(
 
 		// A resolve before the generator existed hid the root; a later resolve starts from how the root was created.
 		_root.Hidden = _createdHidden;
+		_root.InSitemap = false;
 
 		ApiProductTrees trees;
 		try
@@ -103,24 +104,25 @@ internal sealed class ApiFloatingSection(
 		// The versions that rendered keep their link metadata, so cross-links that name them resolve even when the root is hidden.
 		_trees = trees;
 
-		// No tree at the unversioned URL means the root links nowhere.
-		// The generator has already reported why a spec could not be loaded.
-		if (trees.Trees.FirstOrDefault(t => t.Suffix == urlKey) is not { } versionless)
+		// Only the tree at the unversioned URL is visible. The other trees stay reachable for links but out of navigation
+		// and first-level walks; their page type decides whether the sitemap lists them. The trees keep no parent: the
+		// API pages render with these trees as their own roots.
+		var versionless = trees.Trees.FirstOrDefault(t => t.Suffix == urlKey);
+		foreach (var tree in trees.Trees)
+			tree.Navigation.Hidden = tree != versionless;
+		_root.SetNavigationItems([.. trees.Trees.Select(static t => t.Navigation)]);
+		_root.InSitemap = !_createdHidden && trees.Trees.Count > 0;
+
+		// No tree at the unversioned URL means the root links nowhere, so it leaves the navigation. The trees that did
+		// render stay in the sitemap. The generator has already reported why a spec could not be loaded.
+		if (versionless is null)
 		{
 			_root.Hidden = true;
 			return;
 		}
 
-		// Only the tree at the unversioned URL is visible. The other trees stay reachable for links but out of navigation
-		// and first-level walks; their page type decides whether the sitemap lists them. The trees keep no parent: the
-		// API pages render with these trees as their own roots.
-		foreach (var tree in trees.Trees)
-			tree.Navigation.Hidden = tree != versionless;
-
 		// The catalog titles an API the same way, so the navigation and the API hub agree.
 		_root.Title = versionless.Version.Document.Info?.Title ?? _root.Title;
-
-		_root.SetNavigationItems([.. trees.Trees.Select(static t => t.Navigation)]);
 	}
 
 	public FloatingLinkSection? ToLinkSection() => _trees is null ? null : ApiLinkSections.Create(_trees);
@@ -209,6 +211,10 @@ internal sealed class ApiFloatingRoot : IFloatingSectionRoot, IAssignableIslandN
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public bool Hidden { get; set; }
+
+	/// <summary>Whether the sitemap walks the trees of this API. It can while the root is hidden, when only the versionless tree failed to load.</summary>
+	public bool InSitemap { get; set; }
+
 	public int NavigationIndex { get; set; }
 	public bool IsIsland { get; set; }
 	public string Id { get; }

@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Floating;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Markdown.Extensions.DetectionRules;
@@ -155,6 +156,8 @@ public static class SitemapNavigationHelper
 		ILeafNavigationItem<INavigationModel> { Url: var url } when url.Contains('#') => [],
 		ILeafNavigationItem<INavigationModel> file => [file],
 		INodeNavigationItem<INavigationModel, INavigationItem> { InSitemap: false } => [],
+		// the URL of a floating root is the landing of its default tree, which lists itself when it rendered
+		IFloatingSectionRoot root => root.NavigationItems.SelectMany(Flatten),
 		INodeNavigationItem<INavigationModel, INavigationItem> group => group.NavigationItems.SelectMany(Flatten).Append(group),
 		_ => []
 	};
