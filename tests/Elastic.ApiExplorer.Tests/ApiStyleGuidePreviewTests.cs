@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.StyleGuide;
 using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -100,6 +101,14 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(id);
 
 		html.Should().Contain(">Guides<").And.Contain(">Products<");
+	}
+
+	[Test]
+	public async Task NextPreview_ShowsTheWarningWithALinkToTheLatestPreview()
+	{
+		var html = await RenderAsync("api-operation-next");
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-version-notice"));
 	}
 
 	[Test]
