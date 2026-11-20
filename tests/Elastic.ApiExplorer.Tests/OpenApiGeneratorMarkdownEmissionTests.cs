@@ -19,7 +19,6 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using FakeItEasy;
-using Microsoft.AspNetCore.Html;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Nullean.Snapshots;
@@ -164,20 +163,6 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		var wrapped = ApiMarkdownFrontMatter.Wrap(markdown!, item, renderContext, item);
 
 		wrapped.Should().MatchSnapshot();
-	}
-
-	[Test]
-	public void SimpleMarkdownPage_OffersCopyPageForItsExport()
-	{
-		var file = new FileSystem().FileInfo.New(
-			Path.Combine(Paths.WorkingDirectoryRoot.FullName, "tests", "Elastic.ApiExplorer.Tests", "TestData", "kibana-api-overview.md")
-		);
-		var item = new SimpleMarkdownNavigationItem("/api/kibana/kibana-api-overview", "Spaces", file, fixture.Navigation);
-		var page = new MarkdownPageViewModel(fixture.RenderContextFor(item)) { PageTitle = "Spaces", BodyHtml = HtmlString.Empty };
-
-		var layout = page.CreateGlobalLayoutModel();
-
-		layout.PageActions!.MarkdownUrl.Should().Be("/api/kibana/kibana-api-overview.md");
 	}
 
 	[Test]

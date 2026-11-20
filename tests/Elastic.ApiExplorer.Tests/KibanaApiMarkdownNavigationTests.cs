@@ -105,6 +105,43 @@ public class KibanaApiMarkdownNavigationTests
 	}
 
 	[Test]
+	public async Task IntroNav_CopyPageCopiesItsMarkdownExport()
+	{
+		var html = await RenderIntroAsync(navigationPreview: false);
+
+		html.Should().Contain(
+			"""<button type="button" class="api-page-actions-button" data-copy-page="/api/kibana/kibana-api-overview.md">"""
+		);
+	}
+
+	[Test]
+	public async Task IntroNav_DesignSystemRailLinksItsMarkdownExport()
+	{
+		var html = await RenderIntroAsync(navigationPreview: true);
+
+		html.Should().Contain(
+			"""<a class="page-actions__link" href="/api/kibana/kibana-api-overview.md" target="_blank" rel="noopener">"""
+		);
+	}
+
+	private static async Task<string> RenderIntroAsync(bool navigationPreview)
+	{
+		var (_, introNav, context, document) = SetupKibanaRendering();
+		context.Configuration.Features.NavigationPreviewEnabled = navigationPreview;
+		var renderContext = new ApiRenderContext(
+			context,
+			document,
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		)
+		{ NavigationHtml = string.Empty, CurrentNavigation = introNav, MarkdownRenderer = new StubMarkdownRenderer() };
+
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await introNav.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+		return fs.File.ReadAllText("/out.html");
+	}
+
+	[Test]
 	public void IntroNav_ShouldBeLeafNavigationItem()
 	{
 		var (_, introNav) = SetupKibanaNavigation();
