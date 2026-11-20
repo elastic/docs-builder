@@ -25,7 +25,15 @@ namespace Elastic.ApiExplorer.StyleGuide;
 /// </summary>
 public static class ApiStyleGuidePreviews
 {
-	public static IReadOnlyList<string> Ids { get; } = ["api-catalog", "api-product", "api-operation", "api-operation-plain"];
+	public static IReadOnlyList<string> Ids { get; } =
+	[
+		"api-catalog",
+		"api-product",
+		"api-operation",
+		"api-operation-plain",
+		"api-operation-older-major",
+		"api-operation-next"
+	];
 
 	private sealed class PassthroughMarkdown : IMarkdownStringRenderer
 	{
@@ -136,14 +144,26 @@ public static class ApiStyleGuidePreviews
 		INavigationItem? current = id switch
 		{
 			"api-product" => navigation,
-			"api-operation" => Operations(navigation).FirstOrDefault(o => o.Model.Operation.OperationId == "search"),
+			"api-operation" or "api-operation-older-major" or "api-operation-next" =>
+				Operations(navigation).FirstOrDefault(o => o.Model.Operation.OperationId == "search"),
 			_ => Operations(navigation).FirstOrDefault(o => o.Model.Operation.OperationId == "get")
 		};
 		if (current is null)
 			return null;
 
 		// A real API has several versions, so its tree opens with a version switcher; the generator builds it the same way.
-		ApiVersionSwitcherItem[] versions = [new("9", "latest", "/api/lorem/", true), new("8", "v8", "/api/lorem/v8/", false)];
+		var (pageType, selected) = id switch
+		{
+			"api-operation-older-major" => (ApiPageType.OlderMajor, "8"),
+			"api-operation-next" => (ApiPageType.Unreleased, "main"),
+			_ => (ApiPageType.Versionless, "9")
+		};
+		ApiVersionSwitcherItem[] versions =
+		[
+			new("main", "Next (unreleased)", "/api/lorem/next/", selected == "main", "Next"),
+			new("9", "v9 (latest)", "/api/lorem/", selected == "9", "v9"),
+			new("8", "v8", "/api/lorem/v8/", selected == "8", "v8")
+		];
 		var renderer = new IsolatedBuildNavigationHtmlWriter(
 			context,
 			navigation,
@@ -158,6 +178,7 @@ public static class ApiStyleGuidePreviews
 			MarkdownRenderer = markdown,
 			SiteTopNav = PreviewNavigation.TopNav,
 			VersionSwitcherItems = versions,
+			PageType = pageType,
 			CurrentApiKey = "lorem"
 		};
 

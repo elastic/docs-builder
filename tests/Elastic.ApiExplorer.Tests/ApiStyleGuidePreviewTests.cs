@@ -23,6 +23,8 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	[Arguments("api-product", "Lorem API")]
 	[Arguments("api-operation", "Run a search")]
 	[Arguments("api-operation-plain", "Get a document")]
+	[Arguments("api-operation-older-major", "api-version-notice--older")]
+	[Arguments("api-operation-next", "api-version-notice--unreleased")]
 	public async Task Preview_RendersTheRealPageWithTheNewDesign(string id, string expected)
 	{
 		var html = await RenderAsync(id);
