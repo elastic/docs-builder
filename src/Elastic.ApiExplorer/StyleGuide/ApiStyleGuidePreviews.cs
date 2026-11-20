@@ -143,7 +143,7 @@ public static class ApiStyleGuidePreviews
 			return null;
 
 		// A real API has several versions, so its tree opens with a version switcher; the generator builds it the same way.
-		ApiVersionSwitcherItem[] versions = [new("latest", "/api/lorem/", true), new("v8", "/api/lorem/v8/", false)];
+		ApiVersionSwitcherItem[] versions = [new("9", "latest", "/api/lorem/", true), new("8", "v8", "/api/lorem/v8/", false)];
 		var renderer = new IsolatedBuildNavigationHtmlWriter(
 			context,
 			navigation,

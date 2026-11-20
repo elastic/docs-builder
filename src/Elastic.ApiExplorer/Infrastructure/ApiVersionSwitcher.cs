@@ -30,6 +30,7 @@ public static class ApiVersionSwitcher
 			.Select(m => (Moniker: m, Selected: routes.Suffixes(m).Contains(currentSuffix)))
 			.Select(
 				v => new ApiVersionSwitcherItem(
+					Moniker: v.Moniker,
 					Label: LabelFor(v.Moniker, latest),
 					Url: ApiUrlBuilder.ProductRoot(urlPathPrefix, v.Selected ? currentSuffix : routes.Suffix(v.Moniker)),
 					Selected: v.Selected,
