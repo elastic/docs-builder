@@ -19,6 +19,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -181,7 +182,7 @@ public partial class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildTitledAuthentication_ShowsTheTabsAndTakesTheBadgeLink()
+	public async Task CreateNavigation_ChildTitledAuthentication_ShowsTheSectionsAndTakesTheBadgeLink()
 	{
 		var navigation = await NavigationWithChild(
 			Spec(topics: null, withSchemes: true),
@@ -247,15 +248,9 @@ public partial class TopicPageTests
 		// The title sits in the same header as on an operation page, which sets its size and the space above it.
 		topic.Should().Contain("<header class=\"api-page-intro\">");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
-		authentication
-			.Should()
-			.Contain("Use an API key.")
-			.And
-			.Contain("api-authorization-panel")
-			.And
-			.Contain("<label class=\"tabs-label\"");
-		// The page shows the credentials open, under its own title, with no collapsible Authentication heading.
-		authentication.Should().NotContain("data-section=\"authentication\"").And.NotContain("api-param-section-toggle");
+		authentication.Should().Contain("Use an API key.").And.Contain("<h2 id=\"apikey\">Api key</h2>");
+		// Each alternative is a section of its own, not a tab, and there is no collapsible Authentication heading.
+		authentication.Should().NotContain("tabs-label").And.NotContain("api-param-section-toggle");
 		// The sidebar opens with an Overview row and the guide pages, with no group label above them, then the Operations label.
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
 		landing.Should().NotContain(">Topics</span>").And.Contain("class=\"nav-group-label\">Operations</span>");
@@ -417,13 +412,19 @@ public partial class TopicPageTests
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		markdown.Should().Contain("Use an API key.");
-		markdown.Should().Contain("- Api key: `Authorization: <value>`");
-		markdown!
-			.IndexOf("Use an API key.", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(markdown.IndexOf("- Api key", StringComparison.Ordinal));
-		markdown.Should().NotContain("does not declare");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Authentication
+
+			Use an API key.
+
+			## Api key
+
+			```http
+			Authorization: <value>
+			```
+			"""
+		);
 	}
 
 	[Test]

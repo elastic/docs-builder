@@ -115,15 +115,17 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 	public bool ShowEmptyMessage =>
 		IntroHtml is null && (Page.Kind == ApiStructuralKind.Authentication ? Requirements.Count == 0 : Servers.Count == 0);
 
-	public AuthenticationSectionModel Authentication =>
-		new(Requirements, AuthenticationOptional, markdown => RenderMarkdown(markdown), AlwaysTabs: true);
+	public AuthenticationSectionModel Authentication => new(Requirements, AuthenticationOptional, markdown => RenderMarkdown(markdown));
 
 	protected override string? LayoutPageTitle => Page.Title;
 
 	/// <summary>Only the authentication page written as a topic has a sentence of its own; no copy is made up for the rest.</summary>
 	protected override string? LayoutPageDescription => Page.Intro;
 
-	protected override IReadOnlyList<TocItem> GetTocItems() => Page.Kind == ApiStructuralKind.Authentication ? IntroHeadings : [];
+	protected override IReadOnlyList<TocItem> GetTocItems() =>
+		Page.Kind == ApiStructuralKind.Authentication
+			? [.. IntroHeadings, .. Requirements.Select(static requirement => new TocItem(requirement.Label, requirement.Slug, 2))]
+			: [];
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
 	{
@@ -138,11 +140,12 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 			};
 		}
 
-		var (introHtml, introHeadings) = RenderIntro(page.Intro, context);
+		var requirements = ReadRequirements(context.Model);
+		var (introHtml, introHeadings) = RenderIntro(page.Intro, requirements, context);
 		return new StructuralViewModel(context)
 		{
 			Page = page,
-			Requirements = ReadRequirements(context.Model),
+			Requirements = requirements,
 			AuthenticationOptional = OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
 			Servers = [],
 			EmptyMessage = "This API does not declare authentication schemes.",
@@ -151,12 +154,21 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		};
 	}
 
-	private static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderIntro(string? intro, ApiRenderContext context)
+	// Requirement headings own their anchors, so an intro heading with the same slug gets none.
+	private static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderIntro(
+		string? intro,
+		IReadOnlyList<AuthRequirement> requirements,
+		ApiRenderContext context
+	)
 	{
 		if (string.IsNullOrWhiteSpace(intro))
 			return (null, []);
 
-		return ApiMarkdown.RenderWithHeadings(context, intro);
+		return ApiMarkdown.RenderWithHeadings(
+			context,
+			intro,
+			requirements.Select(static requirement => requirement.Slug).ToHashSet(StringComparer.Ordinal)
+		);
 	}
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
@@ -196,7 +208,7 @@ internal static class StructuralCommonMark
 			return;
 		}
 
-		OperationCommonMark.WriteAuthentication(markdown, page.Requirements, page.AuthenticationOptional, apiBaseUrl);
+		OperationCommonMark.WriteAuthenticationSections(markdown, page.Requirements, page.AuthenticationOptional, apiBaseUrl);
 	}
 
 	private static void WriteServers(StringBuilder markdown, StructuralViewModel page)

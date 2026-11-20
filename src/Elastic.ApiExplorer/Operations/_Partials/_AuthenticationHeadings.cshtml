@@ -1,0 +1,12 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthenticationSectionModel>
+@* The Authentication page gives each alternative a heading of its own, so a reader can scan them and link to one. *@
+@if (Model.Optional)
+{
+	<p>Authentication is optional.</p>
+}
+@foreach (var requirement in Model.Requirements)
+{
+	<h2 id="@requirement.Slug">@requirement.Label</h2>
+	@(await RenderPartialAsync<_AuthenticationPanel, AuthenticationPanelModel>(new AuthenticationPanelModel(requirement, Model.RenderMarkdown)))
+}

@@ -103,15 +103,14 @@ public class SimpleMarkdownNavigationItem(
 		if (requirements.Count == 0)
 			return markdown;
 
-		var tabs = new StringBuilder();
-		ApiCommonMark.Heading(tabs, 2, "Authentication");
-		OperationCommonMark.WriteAuthentication(
-			tabs,
+		var sections = new StringBuilder();
+		OperationCommonMark.WriteAuthenticationSections(
+			sections,
 			requirements,
 			OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
 			apiBaseUrl
 		);
-		return $"{markdown?.TrimEnd()}\n\n{tabs}";
+		return $"{markdown?.TrimEnd()}\n\n{sections}";
 	}
 
 	// pageModel is unused (no pre-built model for markdown pages); delegate to the real implementation.

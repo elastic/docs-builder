@@ -134,27 +134,41 @@ internal static class OperationCommonMark
 		if (page.AuthRequirements.Count == 0)
 			return;
 
+		// An endpoint lists its alternatives as bullets under one Authentication heading.
 		ApiCommonMark.Heading(markdown, 2, "Authentication");
-		WriteAuthentication(markdown, page.AuthRequirements, page.AuthBadge?.Kind == AuthBadgeKind.Optional, apiBaseUrl);
+		if (page.AuthBadge?.Kind == AuthBadgeKind.Optional)
+			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
+		foreach (var requirement in page.AuthRequirements)
+			WriteRequirement(markdown, requirement, apiBaseUrl);
+
+		_ = markdown.AppendLine();
 	}
 
-	/// <summary>The alternatives under an Authentication heading, on endpoint, Authentication and child pages alike.</summary>
-	internal static void WriteAuthentication(
+	/// <summary>The alternatives on the Authentication page and its child page: a heading each, as the HTML page shows them.</summary>
+	internal static void WriteAuthenticationSections(
 		StringBuilder markdown,
 		IReadOnlyList<AuthRequirement> requirements,
 		bool optional,
 		string apiBaseUrl
 	)
 	{
-		if (requirements.Count == 0)
-			return;
-
 		if (optional)
 			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
 		foreach (var requirement in requirements)
-			WriteRequirement(markdown, requirement, apiBaseUrl);
-
-		_ = markdown.AppendLine();
+		{
+			var together = requirement.Schemes.Count > 1;
+			ApiCommonMark.Heading(markdown, 2, requirement.Label);
+			if (together)
+				ApiCommonMark.Paragraph(markdown, "Send all of these together.");
+			foreach (var scheme in requirement.Schemes)
+			{
+				if (together)
+					ApiCommonMark.Heading(markdown, 3, scheme.Label);
+				if (!string.IsNullOrEmpty(scheme.CredentialExample))
+					ApiCommonMark.Fence(markdown, "http", scheme.CredentialExample);
+				ApiCommonMark.Prepared(markdown, scheme.DescriptionMarkdown, apiBaseUrl);
+			}
+		}
 	}
 
 	// One scheme is a plain bullet. Several schemes are sent together, so they nest under one bullet that says so.

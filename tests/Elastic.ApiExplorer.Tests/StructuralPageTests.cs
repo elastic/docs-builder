@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -10,6 +11,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
 using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -134,12 +136,55 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			"""
 			# Authentication
 
-			- Api key: `Authorization: <value>`
-			  Send the encoded key with the ApiKey prefix.
-			- Basic: `Authorization: Basic <credentials>`
-			- Bearer: `Authorization: Bearer <token>`
+			## Api key
+
+			```http
+			Authorization: <value>
+			```
+
+			Send the encoded key with the ApiKey prefix.
+
+			## Basic
+
+			```http
+			Authorization: Basic <credentials>
+			```
+
+			## Bearer
+
+			```http
+			Authorization: Bearer <token>
+			```
 			"""
 		);
+	}
+
+	[Test]
+	public async Task AuthenticationPage_RendersEachAlternativeUnderItsOwnHeading()
+	{
+		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await item.Model.RenderAsync(stream, RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
+
+		fs.File.ReadAllText("/out.html").Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#elastic-docs-v3"));
+	}
+
+	[Test]
+	public void AuthenticationPage_ListsEachAlternativeInTheRail()
+	{
+		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
+
+		var toc = StructuralViewModel.Create(item.Model, RenderContext(item)).TocItems;
+
+		string
+			.Join("\n", toc.Select(static t => $"{t.Level} {t.Heading} #{t.Slug}"))
+			.Should()
+			.MatchInlineSnapshot("""
+			2 Api key #apikey
+			2 Basic #basicauth
+			2 Bearer #bearerauth
+			""");
 	}
 
 	[Test]
