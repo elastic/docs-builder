@@ -170,8 +170,10 @@ public class ClassificationNavigationItem(
 	public override string NavigationTitle { get; } = classification.Name;
 
 	/// <inheritdoc />
-	/// <remarks>Prefixed so a group and a tag with the same name get different toggle ids.</remarks>
-	public override string Id { get; } = ShortId.Create("api-tag-group", classification.Name);
+	/// <remarks>
+	/// The prefix sits outside the hash: tag ids are eight hex characters, so no tag name can produce a group's toggle id.
+	/// </remarks>
+	public override string Id { get; } = $"group-{ShortId.Create(classification.Name)}";
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;

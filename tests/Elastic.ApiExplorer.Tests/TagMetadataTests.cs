@@ -617,13 +617,16 @@ public class TagMetadataTests
 	}
 
 	[Test]
-	public async Task Sidebar_TagGroupSharingATagName_GetsItsOwnToggleId()
+	[Arguments("search")]
+	[Arguments("api-tag-groupsearch")]
+	public async Task Sidebar_TagGroupSharingATagName_GetsItsOwnToggleId(string tagName)
 	{
+		// The group is named "search"; the tag either shares that name or prepends a prefix the group id could have hashed.
 		var spec = new MinimalSpec(
-			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
-			[new("search"), new("indices")]
+			[new("/search", "search-op", [tagName]), new("/indices", "indices-op", ["indices"])],
+			[new(tagName), new("indices")]
 		)
-		{ TagGroups = [new("search", ["search"]), new("indices", ["indices"])] };
+		{ TagGroups = [new("search", [tagName]), new("indices", ["indices"])] };
 		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 		var group = navigation.NavigationItems.OfType<ClassificationNavigationItem>().First();
