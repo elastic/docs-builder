@@ -6,6 +6,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.DocumentationSets;
 using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;

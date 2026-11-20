@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
@@ -48,6 +49,31 @@ public class ConfigurationFileCtaTests
 		var cta = config.ResolveCta("monitor-kubernetes", "solutions/observability/get-started/quickstart.md", out var warning);
 
 		cta.Name.Should().Be("monitor-kubernetes");
+		warning.Should().BeNull();
+	}
+
+	// no docset.yml: the built-in template is still found whatever the casing, as main's case-insensitive map did
+	[Test]
+	[Arguments("trial")]
+	[Arguments("Trial")]
+	[Arguments("TRIAL")]
+	public void ResolveCta_NoDocsetFile_FindsTheBuiltInTemplateIgnoringCase(string id)
+	{
+		var collector = new DiagnosticsCollector([]);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>(), "/docs");
+		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var docsDir = fileSystem.DirectoryInfo.New("/docs");
+		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
+		var config = new ConfigurationFile(
+			DocumentationSetLoader.ToDefinition(new DocumentationSetFile(), configPath, docsDir),
+			context,
+			new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
+			new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary() }
+		);
+
+		var cta = config.ResolveCta(id, "index.md", out var warning);
+
+		cta.Name.Should().Be("trial");
 		warning.Should().BeNull();
 	}
 

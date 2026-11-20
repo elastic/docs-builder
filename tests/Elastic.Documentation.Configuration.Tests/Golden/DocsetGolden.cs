@@ -179,6 +179,18 @@ internal static partial class DocsetGolden
 		return fileSystem;
 	}
 
+	public static IDocumentationSetContext CreateContext(
+		IDiagnosticsCollector collector,
+		MockFileSystem fileSystem,
+		string docsetName = "docset.yml"
+	) =>
+		new TestDocumentationSetContext(
+			collector,
+			fileSystem,
+			fileSystem.FileInfo.New($"{Root}/{docsetName}"),
+			fileSystem.DirectoryInfo.New(Root)
+		);
+
 	public static ConfigurationFile CreateConfiguration(
 		DocumentationSetFile docSet,
 		IDiagnosticsCollector collector,

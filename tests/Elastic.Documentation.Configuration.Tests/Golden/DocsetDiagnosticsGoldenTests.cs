@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 
@@ -885,7 +886,7 @@ public class DocsetDiagnosticsGoldenTests
 				error /docs/docset.yml 'branding.og-image' path '../outside.png' escapes the documentation source directory.
 				error /docs/docset.yml 'branding.favicon' file '/abs/path.ico' does not exist.
 				model <ConfigurationFile>:
-				  Branding <BrandingConfiguration>:
+				  Branding <Branding>:
 				    Icon: null
 				    HeaderBg: "not-a-colour"
 				    OgImage: null
@@ -908,7 +909,7 @@ public class DocsetDiagnosticsGoldenTests
 				diagnostics:
 				error /docs/docset.yml 'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation.
 				model <ConfigurationFile>:
-				  Branding <BrandingConfiguration>:
+				  Branding <Branding>:
 				    Icon: null
 				    HeaderBg: null
 				    OgImage: null

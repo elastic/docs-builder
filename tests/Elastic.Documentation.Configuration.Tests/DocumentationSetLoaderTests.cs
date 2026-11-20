@@ -66,6 +66,38 @@ public class DocumentationSetLoaderTests
 		""";
 
 	[Test]
+	public void Resolve_EveryDocsetKey_IsOnTheResolvedSet()
+	{
+		var fileSystem = DocsetGolden.CreateFileSystem(FullDocset, new DocFile("index.md"));
+		var configPath = fileSystem.FileInfo.New($"{DocsetGolden.Root}/docset.yml");
+		var context = DocsetGolden.CreateContext(new DiagnosticsCollector([]), fileSystem);
+		var definition = DocumentationSetLoader.Load(
+			new DiagnosticsCollector([]),
+			configPath,
+			new ScopedFileSystem(fileSystem, DocsetGolden.Root)
+		).Value;
+
+		ResolvedDocumentationSet Resolve() =>
+			DocumentationSetResolver.Resolve(definition, context, GoldenConfig.LoadVersions(), GoldenConfig.LoadProducts()).Set;
+
+		var resolved = Resolve();
+
+		resolved.Should().Be(Resolve());
+		resolved.Project.Should().Be("settings");
+		resolved.MaxTocDepth.Should().Be(4);
+		resolved.DevelopmentDocs.Should().BeTrue();
+		resolved.Exclusions.ExcludeGlobs.Should().Equal("_*.md");
+		resolved.Exclusions.IncludeOverrides.Should().Equal("drafts/keep.md");
+		resolved.CrossLinkEntries.Select(e => e.Repository).Should().Equal("docs-content", "elasticsearch");
+		resolved.Extensions.IsDetectionRulesEnabled.Should().BeTrue();
+		resolved.Ctas.Keys.Should().BeEquivalentTo(Cta.DefaultName, "custom");
+		resolved.Branding!.HeaderBg.Should().Be("#112233");
+		resolved.FeatureToggles.Should().BeEquivalentTo(new Dictionary<string, bool> { ["primary-nav"] = true, ["guide-nav"] = false });
+		resolved.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().Equal("self");
+		resolved.Products.Select(p => p.Id).Should().Equal("elasticsearch");
+	}
+
+	[Test]
 	public void Load_EveryDocsetKey_IsOnTheDefinition()
 	{
 		var fileSystem = DocsetGolden.CreateFileSystem(FullDocset, new DocFile("index.md"));
@@ -125,6 +157,8 @@ public class DocumentationSetLoaderTests
 		"Unknown 'release_notes' product 'a'. It must be a product id defined in products.yml."
 	})]
 	[Arguments("cta:\n  x:\n", new string[0])]
+	[Arguments("extensions:\n", new string[0])]
+	[Arguments("extensions:\napi:\n  p:\n    - spec: a\nbranding:\n  icon: x.exe\n", new string[0])]
 	[Arguments("products:\n  - \n", new string[0])]
 	[Arguments("products:\n  - id:\n", new string[0])]
 	public void Configure_NullInsideAList_FailsWhileTheConfigurationIsBuilt(string declaration, string[] before)
@@ -181,5 +215,25 @@ public class DocumentationSetLoaderTests
 		config.IsExcluded("sub/draft.md").Should().BeTrue();
 		config.IsExcluded("sub/DRAFT.md").Should().BeTrue();
 		config.IsExcluded("sub/index.md").Should().BeFalse();
+	}
+
+	// the globs are parsed once, while the set is resolved, and the configuration matches with those
+	[Test]
+	public void Resolve_ExcludePatterns_AreReturnedParsedForMatching()
+	{
+		var yaml = "project: p\nexclude:\n  - '_*.md'\n  - '!keep.md'\ntoc:\n  - file: index.md\n";
+		var fileSystem = DocsetGolden.CreateFileSystem(yaml, new DocFile("index.md"));
+		var context = DocsetGolden.CreateContext(new DiagnosticsCollector([]), fileSystem);
+		var definition = DocumentationSetLoader.Load(
+			new DiagnosticsCollector([]),
+			fileSystem.FileInfo.New($"{DocsetGolden.Root}/docset.yml"),
+			new ScopedFileSystem(fileSystem, DocsetGolden.Root)
+		).Value;
+
+		var resolution = DocumentationSetResolver.Resolve(definition, context, GoldenConfig.LoadVersions(), GoldenConfig.LoadProducts());
+
+		resolution.ExcludeGlobs.Should().HaveCount(1);
+		resolution.ExcludeGlobs[0].IsMatch("_draft.md").Should().BeTrue();
+		resolution.ExcludeGlobs[0].IsMatch("index.md").Should().BeFalse();
 	}
 }

@@ -8,6 +8,7 @@ using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;

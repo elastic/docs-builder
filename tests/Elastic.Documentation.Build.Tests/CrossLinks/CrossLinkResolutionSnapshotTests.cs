@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Testing;

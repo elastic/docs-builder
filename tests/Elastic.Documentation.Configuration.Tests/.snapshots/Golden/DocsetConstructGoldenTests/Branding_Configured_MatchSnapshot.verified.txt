@@ -31,7 +31,7 @@ model <ConfigurationFile>:
   StorybookRegistryFallback: null
   ApiConfigurations: null
   SuppressDiagnostics: []
-  Branding <BrandingConfiguration>:
+  Branding <Branding>:
     Icon: "images/icon.svg"
     HeaderBg: "#112233"
     OgImage: "images/og.png"

@@ -5,7 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using NetEscapades.EnumGenerators;
 
-namespace Elastic.Documentation.Configuration.Builder;
+namespace Elastic.Documentation.DocumentationSets;
 
 /// <summary>
 /// Registry type for cross-link resolution. Maps to the link index source:

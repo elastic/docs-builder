@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 
