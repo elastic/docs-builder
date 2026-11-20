@@ -48,7 +48,7 @@ internal static class LlmMarkdownAssertions
 				AppliesTo = appliesTo,
 				Inline = true,
 				ShowTooltip = true,
-				VersionsConfig = buildContext.VersionsConfiguration
+				VersionsConfig = buildContext.Catalog.VersioningSystems
 			};
 
 			var items = viewModel.GetApplicabilityItems();

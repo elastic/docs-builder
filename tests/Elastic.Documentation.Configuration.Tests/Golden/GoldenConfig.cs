@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
@@ -88,13 +89,13 @@ internal static partial class GoldenConfig
 			SnapshotScrubbing.AddPrivateRepositories(config.AllPrivateRepositoryNames);
 	}
 
-	public static VersionsConfiguration LoadVersions()
+	public static VersioningSystemCatalog LoadVersions()
 	{
 		using var provider = CreateProvider();
 		return provider.CreateVersionConfiguration();
 	}
 
-	public static ProductsConfiguration LoadProducts()
+	public static ProductCatalog LoadProducts()
 	{
 		using var provider = CreateProvider();
 		return provider.CreateProducts(provider.CreateVersionConfiguration());

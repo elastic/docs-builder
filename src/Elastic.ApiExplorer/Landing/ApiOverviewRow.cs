@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.ApplicabilityBadges;
@@ -54,7 +55,7 @@ public static class ApiOverviewBuilder
 	/// <summary>Rows for the product landing page: the full navigation tree.</summary>
 	public static IReadOnlyList<ApiOverviewRow> Build(
 		INavigationItem root,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem = false
 	)
 	{
@@ -118,7 +119,7 @@ public static class ApiOverviewBuilder
 	/// <summary>Rows for a tag landing page: endpoints and operations only.</summary>
 	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(
 		INavigationItem tagItem,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem = false
 	)
 	{
@@ -130,7 +131,7 @@ public static class ApiOverviewBuilder
 	private static void AddProductRows(
 		INavigationItem item,
 		List<ApiOverviewRow> rows,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem
 	)
 	{
@@ -192,7 +193,7 @@ public static class ApiOverviewBuilder
 	private static void AddTagRows(
 		INavigationItem item,
 		List<ApiOverviewRow> rows,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem
 	)
 	{
@@ -216,7 +217,7 @@ public static class ApiOverviewBuilder
 
 	private static ApiOverviewRow OperationRow(
 		OperationNavigationItem operation,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem
 	) =>
 		new()

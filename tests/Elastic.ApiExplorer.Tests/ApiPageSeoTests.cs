@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;

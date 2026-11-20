@@ -5,8 +5,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -51,11 +51,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
-		Products = build.ProductsConfiguration;
+		Products = build.Catalog.Products;
 		Title = RelativePath;
 	}
 
-	public ProductsConfiguration Products { get; }
+	public ProductCatalog Products { get; }
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
@@ -193,7 +193,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-			frontMatter = ReadYamlFrontMatter(raw, build.ProductsConfiguration, build.Collector, source.FullName);
+			frontMatter = ReadYamlFrontMatter(raw, build.Catalog.Products, build.Collector, source.FullName);
 		}
 		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter?.Properties);
 
@@ -514,7 +514,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	// are reported once, by the full page parse.
 	private static YamlFrontMatter ReadYamlFrontMatter(
 		string raw,
-		ProductsConfiguration products,
+		ProductCatalog products,
 		IDiagnosticsCollector collector,
 		string filePath,
 		YamlUnmappedMemberReporting? reporting = null

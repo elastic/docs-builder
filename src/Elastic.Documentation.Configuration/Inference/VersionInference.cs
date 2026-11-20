@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Configuration.Inference;
@@ -21,12 +20,12 @@ public interface IVersionInferrerService
 }
 
 public class ProductVersionInferrerService(
-	ProductsConfiguration productsConfiguration,
-	VersionsConfiguration versionsConfiguration
+	ProductCatalog productsConfiguration,
+	VersioningSystemCatalog versionsConfiguration
 ) : IVersionInferrerService
 {
-	private ProductsConfiguration ProductsConfiguration { get; } = productsConfiguration;
-	private VersionsConfiguration VersionsConfiguration { get; } = versionsConfiguration;
+	private ProductCatalog ProductsConfiguration { get; } = productsConfiguration;
+	private VersioningSystemCatalog VersionsConfiguration { get; } = versionsConfiguration;
 	public VersioningSystem InferVersion(
 		string repositoryName,
 		IReadOnlyCollection<LegacyPageMapping>? legacyPages,

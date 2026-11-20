@@ -19,7 +19,7 @@ public class ApiLanding : IApiGroupingModel
 	public object? CreatePageModel(ApiRenderContext context) =>
 		ApiOverviewBuilder.Build(
 			context.CurrentNavigation.NavigationRoot,
-			context.BuildContext.VersionsConfiguration,
+			context.BuildContext.Catalog.VersioningSystems,
 			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 		);
 
@@ -28,7 +28,7 @@ public class ApiLanding : IApiGroupingModel
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.Build(
 				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Catalog.VersioningSystems,
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
@@ -44,7 +44,7 @@ public class ApiLanding : IApiGroupingModel
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.Build(
 				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Catalog.VersioningSystems,
 				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 			);
 		return Task.FromResult<string?>(

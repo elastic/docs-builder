@@ -69,9 +69,9 @@ public class AssemblerBuilder(
 
 			// Create inferrer per-repository with git context
 			var documentInferrer = new DocumentInferrerService(
-				context.ProductsConfiguration,
-				context.VersionsConfiguration,
-				context.LegacyUrlMappings,
+				context.Catalog.Products,
+				context.Catalog.VersioningSystems,
+				context.Catalog.LegacyUrlMappings,
 				set.DocumentationSet.Configuration,
 				set.DocumentationSet.Context.Git
 			);

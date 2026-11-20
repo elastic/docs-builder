@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using CsCheck;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -70,7 +71,7 @@ public class YamlForwardCompatTests
 
 		unknownValueGen.Sample(value =>
 		{
-			ProductsConfiguration config = default!;
+			ProductCatalog config = default!;
 			var act =
 				() => config = ParseProducts(
 					$"""
@@ -92,7 +93,7 @@ public class YamlForwardCompatTests
 		});
 	}
 
-	private static ProductsConfiguration ParseProducts(string yaml)
+	private static ProductCatalog ParseProducts(string yaml)
 	{
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();

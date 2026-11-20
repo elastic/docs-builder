@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
@@ -33,7 +34,7 @@ public class OpenApiEndpointSearchKeysTests
 		Get search hits that match the query.
 		""";
 
-	private static readonly VersionsConfiguration VersionsConfiguration = new()
+	private static readonly VersioningSystemCatalog VersioningSystemCatalog = new()
 	{
 		VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 		{
@@ -79,7 +80,7 @@ public class OpenApiEndpointSearchKeysTests
 		};
 
 	private static Dictionary<string, DocumentationDocument> ConvertByOperationId() =>
-		new OpenApiDocumentExporter(VersionsConfiguration)
+		new OpenApiDocumentExporter(VersioningSystemCatalog)
 			.ConvertToDocuments(TestHelpers.EsTree("main", CreateSpec()))
 			.ToDictionary(d => d.Api!.OperationId);
 

@@ -6,11 +6,9 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 
@@ -40,11 +38,11 @@ public static class TestHelpers
 
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null
+		VersioningSystemCatalog? versionsConfiguration = null,
+		ProductCatalog? productsConfiguration = null
 	)
 	{
-		versionsConfiguration ??= new VersionsConfiguration
+		versionsConfiguration ??= new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
@@ -116,22 +114,15 @@ public static class TestHelpers
 					}
 				}
 			};
-			productsConfiguration = new ProductsConfiguration
-			{
-				Products = products.ToFrozenDictionary(),
-				PublicReferenceProducts = products.ToFrozenDictionary(),
-				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-			};
+			productsConfiguration = new ProductCatalog { Products = products.ToFrozenDictionary() };
 		}
 		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem(fileSystem)),
-			VersionsConfiguration = versionsConfiguration,
-			ProductsConfiguration = productsConfiguration,
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
 			SearchConfiguration = search,
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
 }

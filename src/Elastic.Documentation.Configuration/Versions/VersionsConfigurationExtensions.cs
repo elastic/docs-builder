@@ -2,19 +2,23 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Versions;
 
-public static class VersionsConfigurationExtensions
+internal static class VersionsConfigurationExtensions
 {
-	public static VersionsConfiguration CreateVersionConfiguration(this ConfigurationFileProvider provider)
+	public static VersioningSystemCatalog CreateVersionConfiguration(this ConfigurationFileProvider provider)
 	{
 		var versionFilePath = provider.VersionFile;
 
-		var versionsDto = ConfigurationFileProvider.Deserialize<VersionsConfigDto>(versionFilePath.OpenText(), versionFilePath.FullName);
+		return ToCatalog(ConfigurationFileProvider.Deserialize<VersionsConfigDto>(versionFilePath.OpenText(), versionFilePath.FullName));
+	}
 
+	internal static VersioningSystemCatalog ToCatalog(VersionsConfigDto versionsDto)
+	{
 		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
 			kvp => new VersioningSystem
@@ -24,7 +28,7 @@ public static class VersionsConfigurationExtensions
 				Current = ToSemVersion(kvp.Value.Current)
 			}
 		);
-		var config = new VersionsConfiguration { VersioningSystems = versions };
+		var config = new VersioningSystemCatalog { VersioningSystems = versions };
 
 		return config;
 	}

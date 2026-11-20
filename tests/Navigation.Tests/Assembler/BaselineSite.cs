@@ -8,6 +8,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Reflection;
 using System.Text;
 using Elastic.Documentation.Assembler;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -122,18 +123,12 @@ internal static class BaselineSite
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") } },
 			ConfigurationFileProvider = provider,
-			VersionsConfiguration = new VersionsConfiguration
-			{
-				VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-			},
-			ProductsConfiguration = new ProductsConfiguration
-			{
-				Products = FrozenDictionary<string, Product>.Empty,
-				PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-				ProductDisplayNames = FrozenDictionary<string, string>.Empty
-			},
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] }
+			Catalog = new GlobalCatalog(
+				new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
+				new ProductCatalog { Products = FrozenDictionary<string, Product>.Empty },
+				new LegacyUrlMappingCatalog { Mappings = [] }
+			),
+			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 		var fileSystem = new MockFileSystem();
 		var collector = new TestDiagnosticsCollector();
