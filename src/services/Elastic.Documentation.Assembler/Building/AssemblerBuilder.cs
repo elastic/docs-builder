@@ -45,8 +45,6 @@ public class AssemblerBuilder(
 		Cancel ctx
 	)
 	{
-		if (context.OutputDirectory.Exists)
-			context.OutputDirectory.Delete(true);
 		context.OutputDirectory.Create();
 
 		var redirects = new Dictionary<string, string>();
