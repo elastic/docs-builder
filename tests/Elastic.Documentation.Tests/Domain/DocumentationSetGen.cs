@@ -425,6 +425,8 @@ internal static class DocumentationSetGen
 			"img/../logo.svg",
 			"icon.ICO",
 			"a\0.svg",
+			"a\0.exe",
+			"a\0",
 			"\\x.svg"
 		)
 	);

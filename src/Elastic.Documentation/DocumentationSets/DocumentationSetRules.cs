@@ -126,8 +126,13 @@ public static class DocumentationSetRules
 			);
 	}
 
-	/// <summary>Whether reading <paramref name="path"/> fails: a path with a NUL character throws where it is resolved against the files.</summary>
-	public static bool IsUnreadablePath(string path) => path.Contains('\0', StringComparison.Ordinal);
+	/// <summary>
+	/// Whether <see cref="BrandingImageProblem"/> throws for <paramref name="imagePath"/>: a path with a NUL character throws where it is resolved
+	/// against the files, which it reaches only after the extension check accepts it.
+	/// </summary>
+	public static bool IsUnreadablePath(string imagePath) =>
+		imagePath.Contains('\0', StringComparison.Ordinal)
+			&& AllowedImageExtensions.Contains(Path.GetExtension(imagePath).ToLowerInvariant());
 
 	/// <summary>The finding for a <c>branding</c> image that is set, or null when the image is usable. <paramref name="field"/> is how it is reported.</summary>
 	public static string? BrandingImageProblem(string field, string imagePath, IFileSystem fileSystem, IDirectoryInfo sourceDirectory)

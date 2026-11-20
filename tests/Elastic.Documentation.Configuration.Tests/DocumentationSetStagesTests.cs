@@ -280,6 +280,31 @@ public class DocumentationSetStagesTests
 			);
 
 	[Test]
+	public void Configure_BrandingImageWithANulCharacterAndARejectedExtension_ReportsEveryFinding() =>
+		Configure(
+			"""
+			branding:
+			  icon: "a\0.exe"
+			  og-image: "b\0"
+			cta:
+			  b:
+			    button:
+			      label: L
+
+			"""
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml 'branding.icon' has unsupported extension '.exe'. Allowed: .svg, .png, .jpg, .jpeg, .gif, .webp, .ico
+			error /docs/docset.yml 'branding.og-image' has unsupported extension ''. Allowed: .svg, .png, .jpg, .jpeg, .gif, .webp, .ico
+			error /docs/docset.yml 'cta.b' must define both 'button.label' and 'button.url'.
+			model <ConfigurationFile>:
+			"""
+			);
+
+	[Test]
 	public void Configure_CtaBenefitsWithNoValueAfterAFinding_ReportsTheFindingThenFails() =>
 		Configure(
 			"""

@@ -77,7 +77,10 @@ public class DocumentationSetPresentationConstraintsAutoTests
 		);
 
 	private static bool HasUnreadableImage(DocumentationSetPresentation s) =>
-		s.Docset.Branding is { } b && new[] { b.Icon, b.OgImage, b.Favicon, b.AppleTouchIcon }.Any(i => i?.Contains('\0') == true);
+		s.Docset.Branding is { } b
+			&& new[] { b.Icon, b.OgImage, b.Favicon, b.AppleTouchIcon }.Any(
+				i => !string.IsNullOrEmpty(i) && DocumentationSetRules.IsUnreadablePath(i)
+			);
 
 	private static DocumentationSetPresentation Stage(BrandingDeclaration? branding, params CtaDeclaration?[] ctas) =>
 		new(
@@ -127,5 +130,23 @@ public class DocumentationSetPresentationConstraintsAutoTests
 			.Should()
 			.MatchInlineSnapshot(
 				"Error branding-images-valid 'branding.icon' has unsupported extension '.exe'. Allowed: .svg, .png, .jpg, .jpeg, .gif, .webp, .ico"
+			);
+
+	// Found by Libra: a NUL path with a rejected extension never throws, so its finding and everything after it are still reported.
+	[Test]
+	public void BrandingImage_NulPathWithARejectedExtension_IsReportedLikeAnyOther() =>
+		DocumentationSetLaw
+			.Report(
+				DocumentationSetPresentation.Constraints,
+				Stage(new BrandingDeclaration { Icon = "a\0.exe", OgImage = "b\0", Favicon = "missing.svg" }, NoButton("template"))
+			)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				Error branding-images-valid 'branding.icon' has unsupported extension '.exe'. Allowed: .svg, .png, .jpg, .jpeg, .gif, .webp, .ico
+				Error branding-images-valid 'branding.og-image' has unsupported extension ''. Allowed: .svg, .png, .jpg, .jpeg, .gif, .webp, .ico
+				Error branding-images-valid 'branding.favicon' file 'missing.svg' does not exist.
+				Error cta-template-valid 'cta.template' must define both 'button.label' and 'button.url'.
+				"""
 			);
 }
