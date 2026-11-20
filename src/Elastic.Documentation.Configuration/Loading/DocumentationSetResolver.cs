@@ -21,14 +21,17 @@ namespace Elastic.Documentation.Configuration.Loading;
 /// </summary>
 internal static class DocumentationSetResolver
 {
+	/// <summary>The resolved set with the <c>exclude</c> globs parsed while it was resolved, so matching does not parse them again.</summary>
+	internal sealed record Resolution(ResolvedDocumentationSet Set, Glob[] ExcludeGlobs);
+
 	/// <summary>The set of a <c>docset.yml</c> that is not there.</summary>
-	internal static ResolvedDocumentationSet Missing(IDocumentationSetContext context)
+	internal static Resolution Missing(IDocumentationSetContext context)
 	{
 		context.EmitWarning(context.ConfigurationPath, "No configuration file found");
-		return Empty(context) with { Project = "unknown" };
+		return new Resolution(Empty(context) with { Project = "unknown" }, []);
 	}
 
-	internal static ResolvedDocumentationSet Resolve(
+	internal static Resolution Resolve(
 		DocumentationSetDefinition docSetFile,
 		IDocumentationSetContext context,
 		VersioningSystemCatalog versionsConfig,
@@ -49,7 +52,7 @@ internal static class DocumentationSetResolver
 	private static ResolvedDocumentationSet Empty(IDocumentationSetContext context) =>
 		new() { SourceFile = context.ConfigurationPath, ScopeDirectory = context.ConfigurationPath.Directory! };
 
-	private static ResolvedDocumentationSet Map(
+	private static Resolution Map(
 		DocumentationSetDefinition docSetFile,
 		IDocumentationSetContext context,
 		VersioningSystemCatalog versionsConfig,
@@ -58,7 +61,7 @@ internal static class DocumentationSetResolver
 	{
 		// Glob patterns are parsed here so an invalid one fails the load, as it always has; matching lives in ConfigurationFile.IsExcluded.
 		var excludeGlobs = docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).ToArray();
-		_ = excludeGlobs.Select(Glob.Parse).ToArray();
+		var parsedGlobs = excludeGlobs.Select(Glob.Parse).ToArray();
 		var exclusions = new DocumentationSetExclusions(
 			excludeGlobs,
 			[.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))],
@@ -197,7 +200,7 @@ internal static class DocumentationSetResolver
 			substitutions[$".{alternativeProductId}"] = product.DisplayName;
 		}
 
-		return Empty(context) with
+		var set = Empty(context) with
 		{
 			Project = docSetFile.Project,
 			MaxTocDepth = docSetFile.MaxTocDepth,
@@ -219,6 +222,7 @@ internal static class DocumentationSetResolver
 			Ctas = ctas,
 			TocDefaultCtas = docSetFile.TocDefaultCtas
 		};
+		return new Resolution(set, parsedGlobs);
 	}
 
 	private static Cta? ValidateCta(CtaDeclaration definition, IDocumentationSetContext context)

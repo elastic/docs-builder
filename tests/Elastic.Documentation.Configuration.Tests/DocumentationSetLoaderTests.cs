@@ -78,7 +78,7 @@ public class DocumentationSetLoaderTests
 		).Value;
 
 		ResolvedDocumentationSet Resolve() =>
-			DocumentationSetResolver.Resolve(definition, context, GoldenConfig.LoadVersions(), GoldenConfig.LoadProducts());
+			DocumentationSetResolver.Resolve(definition, context, GoldenConfig.LoadVersions(), GoldenConfig.LoadProducts()).Set;
 
 		var resolved = Resolve();
 
@@ -215,5 +215,25 @@ public class DocumentationSetLoaderTests
 		config.IsExcluded("sub/draft.md").Should().BeTrue();
 		config.IsExcluded("sub/DRAFT.md").Should().BeTrue();
 		config.IsExcluded("sub/index.md").Should().BeFalse();
+	}
+
+	// the globs are parsed once, while the set is resolved, and the configuration matches with those
+	[Test]
+	public void Resolve_ExcludePatterns_AreReturnedParsedForMatching()
+	{
+		var yaml = "project: p\nexclude:\n  - '_*.md'\n  - '!keep.md'\ntoc:\n  - file: index.md\n";
+		var fileSystem = DocsetGolden.CreateFileSystem(yaml, new DocFile("index.md"));
+		var context = DocsetGolden.CreateContext(new DiagnosticsCollector([]), fileSystem);
+		var definition = DocumentationSetLoader.Load(
+			new DiagnosticsCollector([]),
+			fileSystem.FileInfo.New($"{DocsetGolden.Root}/docset.yml"),
+			new ScopedFileSystem(fileSystem, DocsetGolden.Root)
+		).Value;
+
+		var resolution = DocumentationSetResolver.Resolve(definition, context, GoldenConfig.LoadVersions(), GoldenConfig.LoadProducts());
+
+		resolution.ExcludeGlobs.Should().HaveCount(1);
+		resolution.ExcludeGlobs[0].IsMatch("_draft.md").Should().BeTrue();
+		resolution.ExcludeGlobs[0].IsMatch("index.md").Should().BeFalse();
 	}
 }
