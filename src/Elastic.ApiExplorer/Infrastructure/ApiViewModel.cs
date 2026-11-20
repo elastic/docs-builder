@@ -69,6 +69,17 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public IReadOnlyList<TocItem> TocItems => field ??= GetTocItems();
 
+	/// <summary>The version switcher items, each pointed at this page when its version renders it.</summary>
+	private IReadOnlyList<ApiVersionSwitcherItem> PageVersions =>
+		field ??= ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
+
+	/// <summary>The line under the title of an older or unreleased version, or null on the newest major.</summary>
+	public ApiVersionNotice? VersionNotice =>
+		ApiVersionNotices.For(RenderContext.PageType, RenderContext.Moniker, RenderContext.DefaultMoniker, PageVersions);
+
+	/// <summary>True when the page shows the quiet older-major label and link as badges, so the notice under the title keeps only the warning.</summary>
+	public virtual bool VersionNoticeInBadges => false;
+
 	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
 
 	protected virtual bool ShowPageActions => true;
@@ -197,7 +208,6 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	private ApiIdentity BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
 	{
 		var productId = RenderContext.Product?.Id ?? RenderContext.CurrentApiKey;
-		var versions = ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
 		var productGroups = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey);
 		// Same text as the menu row, so the trigger and the menu name the API alike.
 		var title = productGroups.SelectMany(static g => g.Products).FirstOrDefault(static p => p.Selected)?.Label
@@ -208,7 +218,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			ProductIcons.Get(productId),
 			productGroups,
 			catalogUrl,
-			[.. versions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected, v.ShortLabel))],
+			[.. PageVersions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected, v.ShortLabel))],
 			new ApiSpecDownload(ApiOutputPaths.JsonUrl(specRootUrl), ApiOutputPaths.YamlUrl(specRootUrl))
 		);
 	}

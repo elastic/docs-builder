@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.StyleGuide;
 using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -23,6 +24,8 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	[Arguments("api-product", "Lorem API")]
 	[Arguments("api-operation", "Run a search")]
 	[Arguments("api-operation-plain", "Get a document")]
+	[Arguments("api-operation-older-major", "Version 8")]
+	[Arguments("api-operation-next", "api-version-notice--unreleased")]
 	public async Task Preview_RendersTheRealPageWithTheNewDesign(string id, string expected)
 	{
 		var html = await RenderAsync(id);
@@ -77,7 +80,15 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync("api-operation");
 
-		html.Should().Contain("/api/lorem/v8/");
+		html.Should().Contain("/style-guide/preview/api-operation-older-major");
+	}
+
+	[Test]
+	public async Task OlderMajorPreview_ShowsTheVersionBadgesWithALinkToTheLatestPreview()
+	{
+		var html = await RenderAsync("api-operation-older-major");
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-title-badges"));
 	}
 
 	[Test]
@@ -88,6 +99,14 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(id);
 
 		html.Should().Contain(">Guides<").And.Contain(">Products<");
+	}
+
+	[Test]
+	public async Task NextPreview_ShowsTheWarningWithALinkToTheLatestPreview()
+	{
+		var html = await RenderAsync("api-operation-next");
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-version-notice"));
 	}
 
 	[Test]

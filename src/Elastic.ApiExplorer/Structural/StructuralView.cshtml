@@ -16,6 +16,7 @@
 <header class="api-page-intro">
 	<div class="api-page-heading">
 		<h1>@Model.Page.Title</h1>
+		@await RenderPartialAsync(_VersionNotice.Create(Model))
 	</div>
 </header>
 <section id="elastic-docs-v3">

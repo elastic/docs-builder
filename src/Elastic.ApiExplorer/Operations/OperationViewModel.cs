@@ -35,6 +35,8 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 {
 	public required ApiOperation Operation { get; init; }
 
+	public override bool VersionNoticeInBadges => true;
+
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
 

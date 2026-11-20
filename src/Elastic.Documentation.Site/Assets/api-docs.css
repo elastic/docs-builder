@@ -160,8 +160,9 @@
 
 .api-page-heading {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 16px;
+	gap: 4px 16px;
 	min-width: 0;
 	overflow: visible;
 }
@@ -169,6 +170,38 @@
 .api-page-heading > h1 {
 	flex: 1 1 auto;
 	min-width: 0;
+}
+
+/* The version line under the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. It takes its own row of the title row. */
+.api-version-notice {
+	flex: 1 0 100%;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 8px;
+	margin: 0;
+	font-size: 14px;
+	line-height: 20px;
+	@apply text-grey-80;
+}
+
+.api-version-notice a {
+	@apply text-blue-elastic inline-flex items-center gap-1 underline;
+	text-underline-offset: 2px;
+}
+
+.api-version-notice__arrow {
+	width: 1.25em;
+	height: 1.25em;
+	flex: none;
+}
+
+.api-version-notice--unreleased {
+	@apply text-yellow-110;
+}
+
+.api-version-notice .applicable-info.api-badge--warning {
+	@apply text-yellow-110 border-yellow-40 bg-yellow-10;
 }
 
 /* Docs reading measure (--max-text-width): group-page intros and the product landing text. */

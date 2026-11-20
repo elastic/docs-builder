@@ -36,6 +36,7 @@
 <header class="api-page-intro" id="api-operation-overview">
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
+		@await RenderPartialAsync(_VersionNotice.Create(Model))
 	</div>
 	@if (Model.Servers.Count > 0)
 	{
@@ -58,7 +59,7 @@
 			</li>
 		}
 	</ul>
-	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
+	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref, Model.VersionNotice as OlderMajorNotice)))
 </header>
 <section id="elastic-api-v3" class="@(ShowSectionLinks ? "api-has-toolbar" : null)">
 	@if (ShowSectionLinks)

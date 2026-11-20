@@ -192,11 +192,16 @@ rendering the local file.
 
 For versioned products, {{dbuild}} renders every resolved version from the index:
 
-| Index moniker | URL path | Role |
-|---|---|---|
-| `9`, the highest numeric major | `/api/<key>/` and `/api/<key>/v9/` | Newest released major, the default. Both URLs serve the same pages. |
-| `8`, … | `/api/<key>/v8/`, … | Older released majors |
-| `main` | `/api/<key>/next/` | Unreleased spec |
+| Index moniker | URL path | Role | Notice |
+|---|---|---|---|
+| `9`, the highest numeric major | `/api/<key>/` and `/api/<key>/v9/` | Newest released major, the default. Both URLs serve the same pages. | None |
+| `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8` label and a link to the latest version |
+| `main` | `/api/<key>/next/` | Unreleased spec | An `Unreleased` warning and a link to the latest version |
+
+On every generated API page, the `Unreleased` warning sits directly under the title. The `Version 8` label and its link sit under the title too, except on operation pages. There they join the badges row, next to `Auth` and `Deprecated`, as `Version 8` and `Latest: v9`, so the title stays next to its request line.
+
+Hand-written `children:` Markdown pages show no notice, so a page without one is not proof that it belongs to the latest version.
+The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise. If the newest major failed to load, the notice keeps the page's own version and has no link.
 
 The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.
 Search indexes the default version at `/api/<key>/` and older majors at `/api/<key>/vN/`, not `main` at `/next/` or the `/v9/` copy of the newest major. Search from a `/next/` page is the normal search with a lift for that API's default-version results. It does not filter by version, and operations that exist only in older majors stay hidden.
