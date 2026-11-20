@@ -69,7 +69,7 @@ public partial class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_XTopics_AddsTopicsHeadingAboveEndpoints()
+	public async Task CreateNavigation_XTopics_ListsTopicsAboveEndpoints()
 	{
 		var navigation = await Navigation(Spec([
 			"""{ "title": "Principles", "content": "REST." }""",
@@ -77,10 +77,8 @@ public partial class TopicPageTests
 		]));
 
 		var items = navigation.NavigationItems.ToList();
-		var topics = items[0].Should().BeOfType<TopicsNavigationItem>().Subject;
-		topics.Should().BeAssignableTo<ISidebarGroupNavigationItem>();
-		topics
-			.NavigationItems
+		ApiExplorerFixture
+			.GuidePages(navigation)
 			.Cast<TopicNavigationItem>()
 			.Select(t => (t.NavigationTitle, t.Url))
 			.Should()
@@ -98,12 +96,7 @@ public partial class TopicPageTests
 			"""{ "title": "authentication", "content": "Use an API key." }"""
 		]));
 
-		var titles = navigation
-			.NavigationItems
-			.OfType<TopicsNavigationItem>()
-			.Single()
-			.NavigationItems
-			.Select(item => item.NavigationTitle);
+		var titles = ApiExplorerFixture.GuidePages(navigation).Select(item => item.NavigationTitle);
 
 		titles.Should().Equal("Authentication", "Rate limiting", "Errors", "Principles");
 	}
@@ -114,9 +107,9 @@ public partial class TopicPageTests
 		var folder = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "api", "cloud");
 		var navigation = await Navigation(Spec(topics: null), [Path.Combine(folder, "z-first.md"), Path.Combine(folder, "a-second.md")]);
 
-		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+		var topics = ApiExplorerFixture.GuidePages(navigation);
 
-		topics.NavigationItems.Cast<SimpleMarkdownNavigationItem>().Select(child => child.Slug).Should().Equal("z-first", "a-second");
+		topics.Cast<SimpleMarkdownNavigationItem>().Select(child => child.Slug).Should().Equal("z-first", "a-second");
 	}
 
 	[Test]
@@ -132,13 +125,9 @@ public partial class TopicPageTests
 			"# Overview\n\nHow the API works.\n"
 		);
 
-		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+		var topics = ApiExplorerFixture.GuidePages(navigation);
 
-		topics
-			.NavigationItems
-			.Select(item => item.NavigationTitle)
-			.Should()
-			.Equal("Authentication", "Rate limiting", "Overview", "Principles");
+		topics.Select(item => item.NavigationTitle).Should().Equal("Authentication", "Rate limiting", "Overview", "Principles");
 	}
 
 	[Test]
@@ -150,10 +139,10 @@ public partial class TopicPageTests
 			"# Rate limiting\n\nCalls are limited.\n"
 		);
 
-		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+		var topics = ApiExplorerFixture.GuidePages(navigation);
 
-		topics.NavigationItems.Select(item => item.NavigationTitle).Should().Equal("Authentication", "Limits");
-		topics.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Single().PinnedTitle.Should().Be("Rate limiting");
+		topics.Select(item => item.NavigationTitle).Should().Equal("Authentication", "Limits");
+		topics.OfType<SimpleMarkdownNavigationItem>().Single().PinnedTitle.Should().Be("Rate limiting");
 	}
 
 	[Test]
@@ -161,22 +150,18 @@ public partial class TopicPageTests
 	{
 		var navigation = await Navigation(Spec(topics: null, withSchemes: true), [KibanaOverview]);
 
-		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+		var topics = ApiExplorerFixture.GuidePages(navigation);
 
-		topics
-			.NavigationItems
-			.Select(item => item.GetType().Name)
-			.Should()
-			.Equal(nameof(StructuralNavigationItem), nameof(SimpleMarkdownNavigationItem));
+		topics.Select(item => item.GetType().Name).Should().Equal(nameof(StructuralNavigationItem), nameof(SimpleMarkdownNavigationItem));
 	}
 
 	[Test]
-	public async Task CreateNavigation_SchemesWithoutTopics_ListsTheGeneratedAuthenticationPageUnderTopics()
+	public async Task CreateNavigation_SchemesWithoutTopics_ListsTheGeneratedAuthenticationPage()
 	{
 		var navigation = await Navigation(Spec(topics: null, withSchemes: true));
 
-		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
-		var authentication = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Subject;
+		var topics = ApiExplorerFixture.GuidePages(navigation);
+		var authentication = topics.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Subject;
 		authentication.Hidden.Should().BeFalse();
 		navigation.AuthenticationUrl.Should().Be("/api/cloud/authentication");
 	}
@@ -257,9 +242,10 @@ public partial class TopicPageTests
 			.Contain("<label class=\"tabs-label\"");
 		// The page shows the credentials open, under its own title, with no collapsible Authentication heading.
 		authentication.Should().NotContain("data-section=\"authentication\"").And.NotContain("api-param-section-toggle");
-		// Topics is a static label, so it is there on pages outside it too, such as the product landing page, with no toggle to open.
+		// The sidebar opens with an Overview row and the guide pages, with no group label above them, then the Operations label.
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
-		landing.Should().Contain("class=\"nav-group-label\">Topics</span>").And.Contain("class=\"nav-group-label\">Operations</span>");
+		landing.Should().NotContain(">Topics</span>").And.Contain("class=\"nav-group-label\">Operations</span>");
+		OverviewRowRegex().IsMatch(landing).Should().BeTrue("the first sidebar row links to the product overview");
 		// Every folder stays collapsed there.
 		CheckedToggleRegex().Matches(landing).Should().BeEmpty();
 		// elastic/docs-infra redirects the bump.sh topic URL; the build writes no page there.
@@ -282,11 +268,11 @@ public partial class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_NoTopicsOrChildren_OmitsTopicsHeading()
+	public async Task CreateNavigation_NoTopicsOrChildren_ListsNoGuidePages()
 	{
 		var navigation = await Navigation(Spec(topics: null));
 
-		navigation.NavigationItems.OfType<TopicsNavigationItem>().Should().BeEmpty();
+		ApiExplorerFixture.GuidePages(navigation).Should().BeEmpty();
 	}
 
 	[Test]
@@ -294,8 +280,8 @@ public partial class TopicPageTests
 	{
 		var navigation = await Navigation(Spec(["""{ "title": "Kibana spaces", "content": "Spaces." }"""]), [KibanaOverview]);
 
-		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
-		var child = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
+		var topics = ApiExplorerFixture.GuidePages(navigation);
+		var child = topics.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
 		child.Url.Should().Be("/api/cloud/kibana-api-overview/");
 		child.ReplacedTopicUrls.Should().Equal("/api/cloud/topic/topic-kibana-spaces");
 		ApiExplorerFixture.Walk(navigation).OfType<TopicNavigationItem>().Should().BeEmpty();
@@ -309,10 +295,9 @@ public partial class TopicPageTests
 			[KibanaOverview]
 		);
 
-		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+		var topics = ApiExplorerFixture.GuidePages(navigation);
 
 		topics
-			.NavigationItems
 			.Select(item => (item.GetType().Name, item.Url))
 			.Should()
 			.Equal(
@@ -346,7 +331,7 @@ public partial class TopicPageTests
 		var authentication = all.OfType<StructuralNavigationItem>().Should().ContainSingle().Subject;
 		authentication.Url.Should().Be("/api/cloud/authentication");
 		authentication.Hidden.Should().BeFalse();
-		authentication.Parent.Should().BeOfType<TopicsNavigationItem>();
+		authentication.Parent.Should().Be(navigation);
 		authentication.Model.Intro.Should().Be("Use an API key.");
 	}
 
@@ -364,7 +349,7 @@ public partial class TopicPageTests
 	}
 
 	[Test]
-	public async Task Overview_XTopics_ListsTopicsOutsideEndpointGroups()
+	public async Task Overview_XTopics_KeepsTopicsOutOfTheEndpointIndex()
 	{
 		var context = TestHelpers.CreateBuildContext();
 		var navigation = await Navigation(
@@ -372,12 +357,15 @@ public partial class TopicPageTests
 			context: context
 		);
 
-		var index = ApiOverviewBuilder.SplitTopics(
+		var groups = ApiOverviewBuilder.WithoutGuidePages(
 			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.VersionsConfiguration))
 		);
 
-		index.Topics.Select(row => row.Url).Should().Equal("/api/cloud/authentication", "/api/cloud/topic/topic-principles");
-		index.Groups.SelectMany(group => group.Items).Select(row => row.Url).Should().NotContain(url => url.Contains("/topic/"));
+		groups
+			.SelectMany(group => group.Items)
+			.Select(row => row.Url)
+			.Should()
+			.NotContain(url => url.Contains("/topic/") || url.EndsWith("/authentication"));
 	}
 
 	[Test]
@@ -507,4 +495,7 @@ public partial class TopicPageTests
 
 	[System.Text.RegularExpressions.GeneratedRegex("<input[^>]*\\bchecked\\b[^>]*>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex CheckedToggleRegex();
+
+	[System.Text.RegularExpressions.GeneratedRegex("<ul[^>]*id=\"nav-tree-[^\"]*\"[^>]*>\\s*<li[^>]*>\\s*<a href=\"/api/elasticsearch\"[^>]*>\\s*<span>Overview</span>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial System.Text.RegularExpressions.Regex OverviewRowRegex();
 }

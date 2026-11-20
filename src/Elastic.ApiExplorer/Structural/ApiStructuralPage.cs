@@ -56,7 +56,7 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 		INodeNavigationItem<INavigationModel, INavigationItem> parent
 	) : base(UrlFor(urlPathPrefix, apiUrlSuffix, page.Kind), page.Title, page, root, parent) =>
 		// Authentication and Servers are still generated so old Bump.sh links keep working; operation pages show both inline.
-		// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other topics.
+		// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other guide pages.
 		Hidden = true;
 
 	private static string UrlFor(string? urlPathPrefix, string apiUrlSuffix, ApiStructuralKind kind) =>
@@ -79,7 +79,7 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 		return items;
 	}
 
-	/// <summary>The Authentication page the Topics heading lists when the spec declares schemes, with no prose of its own.</summary>
+	/// <summary>The Authentication page the sidebar lists when the spec declares schemes, with no prose of its own.</summary>
 	public static StructuralNavigationItem ForGeneratedAuthentication(
 		string? urlPathPrefix,
 		string apiUrlSuffix,
@@ -88,7 +88,6 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 
 	/// <summary>
 	/// The Authentication page for a spec that writes it as an <c>x-topics</c> entry, with or without security schemes.
-	/// The caller sets <see cref="Parent"/> to the Topics heading.
 	/// </summary>
 	public static StructuralNavigationItem ForAuthenticationTopic(
 		string? urlPathPrefix,

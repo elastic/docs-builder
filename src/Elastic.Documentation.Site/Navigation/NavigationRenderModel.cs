@@ -39,8 +39,6 @@ public sealed record NavigationRenderNode
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
-	/// <summary>True when the group starts expanded on every page; see <see cref="ISidebarExpandedNavigationItem"/>.</summary>
-	public bool Expanded { get; init; }
 	public IReadOnlyList<NavigationRenderNode> NavigationItems { get; init; } = [];
 }
 
@@ -138,7 +136,9 @@ public sealed record NavigationRenderModel
 		else
 		{
 			nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
-			if (rootIndex is not null && IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild))
+			if (tree is ISidebarOverviewRowNavigationItem)
+				nodes = FlattenIslandOverview(SectionOverviewLeaf(tree.Url), nodes);
+			else if (rootIndex is not null && IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild))
 			{
 				treeHeading = rootIndex.NavigationTitle;
 				nodes = FlattenIslandOverview(rootIndex, nodes);
@@ -213,7 +213,7 @@ public sealed record NavigationRenderModel
 		bool isGlobalAssemblyBuild
 	)
 	{
-		if (tree.Index.Hidden || tree is ISidebarWithoutRootIndexNavigationItem)
+		if (tree.Index.Hidden || tree is ISidebarOverviewRowNavigationItem)
 			return null;
 
 		if (isGlobalAssemblyBuild)
@@ -375,7 +375,6 @@ public sealed record NavigationRenderModel
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
 			ShowToggle = !isGroup && !node.NavigationItems.All(n => n.Hidden),
-			Expanded = node is ISidebarExpandedNavigationItem,
 			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: isGroup)]
 		};
 	}
@@ -457,8 +456,6 @@ public sealed record NavigationRenderModel
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);
 		// Flags are hashed only when set, each with its own marker, so trees without them keep the hash, and so the tree id, they had before.
-		if (node.Expanded)
-			AppendInt(hash, 1);
 		if (node.Deprecated)
 			AppendInt(hash, 2);
 		AppendNodes(hash, node.NavigationItems);

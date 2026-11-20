@@ -82,7 +82,7 @@ public class ApiNavParityTests
 		var navigation = generator.CreateNavigation("test", document);
 
 		var types = navigation.NavigationItems.OfType<TypesNavigationItem>().Should().ContainSingle().Subject;
-		types.Should().BeAssignableTo<ISidebarGroupNavigationItem>("Types is a static group label with no page, like Topics");
+		types.Should().BeAssignableTo<ISidebarGroupNavigationItem>("Types is a static group label with no page, like Operations");
 		types.Url.Should().Be(navigation.Url);
 		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
 		var items = navigation.NavigationItems.ToList();

@@ -56,34 +56,6 @@ public class TopicNavigationItem(
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
 ) : ApiPageNavigationItem<ApiTopicPage>(url, page.Title, page, root, parent);
 
-/// <summary>The Topics sidebar heading. It groups the topic pages above the endpoint groups and starts expanded on every page.</summary>
-public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(
-	Title,
-	rootNavigation
-), ISidebarExpandedNavigationItem
-{
-	public const string Title = "Topics";
-
-	/// <summary>Topics listed first, in this order. Every other topic follows alphabetically. Add a title here to pin it.</summary>
-	public static readonly string[] PinnedTitles = ["Authentication", "Rate limiting"];
-
-	/// <summary>Pinned topics first, in <see cref="PinnedTitles"/> order, then the rest by title.</summary>
-	public static IReadOnlyList<INavigationItem> Order(IEnumerable<INavigationItem> items) =>
-		[
-			.. items.OrderBy(static item => PinnedRank(item.NavigationTitle)).ThenBy(
-				static item => item.NavigationTitle,
-				StringComparer.OrdinalIgnoreCase
-			)
-		];
-
-	/// <summary>The position of a pinned title in <see cref="PinnedTitles"/>, or one past the end for any other page.</summary>
-	internal static int PinnedRank(string? title)
-	{
-		var rank = Array.FindIndex(PinnedTitles, pinned => string.Equals(pinned, title, StringComparison.OrdinalIgnoreCase));
-		return rank < 0 ? PinnedTitles.Length : rank;
-	}
-}
-
 public class TopicViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiTopicPage Page { get; init; }

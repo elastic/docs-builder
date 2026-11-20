@@ -26,10 +26,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public IReadOnlyList<ApiOverviewSection> OverviewSections => field ??= ApiOverviewBuilder.Sections(OverviewRows);
 
-	private ApiOverviewIndex Index => field ??= ApiOverviewBuilder.SplitTopics(OverviewSections);
-
 	/// <summary>The sections the grouped index shows.</summary>
-	public IReadOnlyList<ApiOverviewSection> IndexSections => Index.Groups;
+	public IReadOnlyList<ApiOverviewSection> IndexSections => field ??= ApiOverviewBuilder.WithoutGuidePages(OverviewSections);
 
 	private ApiMarkdown.HtmlSplit DescriptionParts =>
 		field ??= ApiMarkdown.SplitAtFirstHeading(RenderMarkdown(ApiInfo.Description).Value ?? "");

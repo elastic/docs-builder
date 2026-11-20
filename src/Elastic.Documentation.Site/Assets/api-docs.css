@@ -4921,3 +4921,12 @@ body[data-api-column-dragging] {
 	border-top: 0;
 	padding-top: 0;
 }
+
+/* The rows above the first group (Overview, Authentication, guides) sit as close as the rows inside a group
+   (.nav-group-items > li in styles.css), so only a group label gets the larger gap. */
+#pages-nav
+	[id^='nav-tree-']
+	> li:not(.nav-folder, .nav-group)
+	+ li:not(.nav-folder, .nav-group) {
+	margin-top: 16px;
+}

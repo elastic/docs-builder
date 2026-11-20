@@ -586,7 +586,7 @@ public class TagMetadataTests
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public async Task Sidebar_ApiTree_HasNoRowForTheOverviewAndNoDividerBeforeItsFirstGroup(bool withTagGroups)
+	public async Task Sidebar_ApiTree_StartsWithTheOverviewRowAndHasNoDivider(bool withTagGroups)
 	{
 		var spec = new MinimalSpec(
 			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
@@ -604,9 +604,14 @@ public class TagMetadataTests
 			isGlobalAssemblyBuild: false
 		);
 
-		// The product switcher already leads to the overview, so the tree starts at its first group. With no root row there is nothing for an automatic rule to sit under.
+		// The Overview row sits in line with the first pages, so there is no separate root row and no automatic rule under it.
 		model.RootIndex.Should().BeNull();
-		model.Tree.Should().NotBeEmpty();
+		model
+			.Tree[0]
+			.Should()
+			.Match<NavigationRenderNode>(
+				n => n.Kind == NavigationRenderNodeKind.Leaf && n.NavigationTitle == "Overview" && n.Url == navigation.Url
+			);
 		model.Tree.Should().NotContain(n => n.Kind == NavigationRenderNodeKind.Separator);
 	}
 
