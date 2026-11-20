@@ -141,18 +141,20 @@ public record ConfigurationFile
 	)
 	{
 		_context = context;
+		DocumentationSetResolver.Resolution resolution;
 		if (!context.ConfigurationPath.Exists)
-			_resolved = DocumentationSetResolver.Missing(context);
+			resolution = DocumentationSetResolver.Missing(context);
 		else
 		{
 			var redirectFile = new RedirectFile(_context);
 			Redirects = redirectFile.Redirects;
 			RedirectsSource = redirectFile.Source;
-			_resolved = DocumentationSetResolver.Resolve(docSetFile, context, versionsConfig, productsConfig);
+			resolution = DocumentationSetResolver.Resolve(docSetFile, context, versionsConfig, productsConfig);
 		}
+		_resolved = resolution.Set;
 
 		// the patterns parsed when the set was resolved
-		_exclude = [.. _resolved.Exclusions.ExcludeGlobs.Select(Glob.Parse)];
+		_exclude = resolution.ExcludeGlobs;
 		CrossLinkEntries = [.. _resolved.CrossLinkEntries];
 		CrossLinkRepositories = [.. _resolved.CrossLinkRepositories];
 		ReleaseNotesProducts = [.. _resolved.ReleaseNotesProducts];
