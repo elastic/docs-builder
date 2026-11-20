@@ -40,6 +40,9 @@ internal sealed record ResolvedProductDocuments(
 
 	/// <summary>Trees the version index declares whose spec could not be fetched or parsed.</summary>
 	public IReadOnlyList<string> UnresolvedMonikers { get; init; } = [];
+
+	/// <summary>Trees the version index declares under a reserved name, such as <c>next</c>. They are not rendered.</summary>
+	public IReadOnlyList<string> ReservedMonikers { get; init; } = [];
 }
 
 /// <summary>
@@ -216,6 +219,13 @@ public class OpenApiGenerator(
 					.Resolved
 					.UnresolvedMonikers
 					.Select(m => $"API '{a.Key}': version '{m}' is declared in the version index but could not be loaded")
+			),
+			// A reserved version is not rendered, but it is still declared: an export without it would delete its documents.
+			.. apis.SelectMany(
+				static a => a
+					.Resolved
+					.ReservedMonikers
+					.Select(m => $"API '{a.Key}': version '{m}' uses a reserved name, so it is not rendered")
 			)
 		];
 		if (_versionIndexClient.RootIndexFetchError is { } fetchError)
@@ -416,7 +426,7 @@ public class OpenApiGenerator(
 		var versionsToRender = versionless ? declaredVersions.Where(v => v.Moniker == "main").ToArray() : declaredVersions;
 
 		if (versionsToRender.Length == 0)
-			return ResolvedProductDocuments.Empty(apiKey) with { UnresolvedMonikers = reserved };
+			return ResolvedProductDocuments.Empty(apiKey) with { ReservedMonikers = reserved };
 
 		var declared = versionsToRender.Select(static v => v.Moniker).ToArray();
 		var routes = ApiVersionRoutes.For(apiKey, declared);
@@ -430,12 +440,13 @@ public class OpenApiGenerator(
 			.Zip(documents, static (version, document) => document is null ? null : new VersionedOpenApiDocument(version, document))
 			.OfType<VersionedOpenApiDocument>()
 			.ToList();
-		// A reserved version is left out of the render, but it is still declared: a search export that skipped it would delete its documents.
-		var unresolved = reserved.Concat(
-			versionsToRender.Zip(documents).Where(static x => x.Second is null).Select(static x => x.First.Moniker)
-		).ToArray();
+		var unresolved = versionsToRender.Zip(documents).Where(static x => x.Second is null).Select(static x => x.First.Moniker).ToArray();
 
-		return ToResolvedProductDocuments(routes, results, unmatchedBaseFiles) with { UnresolvedMonikers = unresolved };
+		return ToResolvedProductDocuments(routes, results, unmatchedBaseFiles) with
+		{
+			UnresolvedMonikers = unresolved,
+			ReservedMonikers = reserved
+		};
 	}
 
 	/// <summary>

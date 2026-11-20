@@ -147,7 +147,8 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 
 		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9"]);
-		resolved.UnresolvedMonikers.Should().Equal("next");
+		resolved.ReservedMonikers.Should().Equal("next");
+		resolved.UnresolvedMonikers.Should().BeEmpty("the reserved version is left out on purpose, not lost");
 		// the scoped docset fixture adds its own product errors, which this test is not about
 		collector
 			.Diagnostics

@@ -194,7 +194,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var export = () => generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
 		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
-			"The API search export stops: API 'elasticsearch': version 'next' is declared in the version index but could not be loaded."
+			"The API search export stops: API 'elasticsearch': version 'next' uses a reserved name, so it is not rendered."
 		);
 	}
 
