@@ -59,6 +59,8 @@ public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
 			step.Description = DirectiveLinkValidator.ResolveMarkdownLinks(step.Description, this, context);
 			foreach (var option in step.Options)
 			{
+				if (!string.IsNullOrWhiteSpace(option.Code) && option.Commands.Length > 0)
+					this.EmitError("{get-started} option takes either `code` or `commands`, not both.");
 				option.Url = DirectiveLinkValidator.ValidateAndResolve(option.Url, this, context);
 				option.Description = DirectiveLinkValidator.ResolveMarkdownLinks(option.Description, this, context);
 			}
@@ -112,6 +114,10 @@ public record GetStartedStepOption
 	[YamlPropertyName("code")]
 	public string? Code { get; set; }
 
+	/// <summary>Labeled variants of one command. Each gets its own code block and copy button.</summary>
+	[YamlPropertyName("commands")]
+	public GetStartedCommand[] Commands { get; set; } = [];
+
 	[YamlPropertyName("language")]
 	public string? Language { get; set; }
 
@@ -120,4 +126,13 @@ public record GetStartedStepOption
 
 	[YamlPropertyName("url-label")]
 	public string? UrlLabel { get; set; }
+}
+
+public record GetStartedCommand
+{
+	[YamlPropertyName("label")]
+	public string? Label { get; set; }
+
+	[YamlPropertyName("code")]
+	public string? Code { get; set; }
 }

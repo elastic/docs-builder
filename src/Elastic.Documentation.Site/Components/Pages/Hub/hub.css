@@ -607,6 +607,28 @@ a:focus-visible .hub-arrow {
 	color: var(--color-code-text);
 }
 
+/* Labeled variants of one command, stacked, each with its own copy button. */
+.get-started__commands {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin-top: auto;
+}
+
+.get-started__commands .get-started__code {
+	margin-top: 0;
+}
+
+.get-started__command-label {
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+}
+
+.get-started__command-label:not(:first-child) {
+	margin-top: var(--space-2);
+}
+
 .get-started__prompt {
 	color: var(--color-code-keyword);
 	font-family: var(--font-mono);
