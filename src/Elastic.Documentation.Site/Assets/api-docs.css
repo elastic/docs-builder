@@ -3137,8 +3137,10 @@ button.example-response-tab:focus-visible {
 		border-right: 1px solid var(--color-grey-20, #e5e9f0);
 	}
 
-	/* The section links' rule stops at that line, as it stops at the divider on wider screens. */
+	/* The section links' rule stops at that line, as it stops at the divider on wider screens. On the left it meets the
+	   sidebar across the 42px nav gap. */
 	.api-section-links {
+		--api-column-bleed-left: 42px;
 		--api-column-bleed-right: 16px;
 	}
 }
@@ -3174,6 +3176,12 @@ button.example-response-tab:focus-visible {
 	#api-content-grid {
 		--api-column-gap: 32px;
 		max-width: calc(1920px - var(--max-sidebar-width) - 72px);
+	}
+
+	/* Past 1920px the centring adds (window - 1920px) / 2 between the sidebar and the column, whatever the sidebar's
+	   width, so the section links' rule reaches over it too. 100cqi is the shell's width, without the scrollbar. */
+	.api-section-links {
+		--api-column-bleed-left: calc(40px + max(0px, (100cqi - 1920px) / 2));
 	}
 
 	.api-page-grid {
@@ -4478,8 +4486,9 @@ html:has(.api-page-shell) {
 /*
  * The section links: one row above the description, ruled below from edge to edge of the article column, that stays
  * under the header as the reader scrolls. Plain text links, not tabs: the section in view is only blue.
- * Beside the rail the column's edges sit 40px past its text on both sides (the page padding on the left, the column's
+ * Beside the rail the column's edges sit 40px past its text on both sides (the nav gap on the left, the column's
  * padding and half the gap to the rail on the right), so the row reaches out that far and pads its content back in.
+ * Past a 1920px window the left edge also takes in the space the centred content leaves beside the sidebar.
  */
 .api-section-links {
 	position: sticky;
@@ -4658,6 +4667,13 @@ html:has(.api-page-shell) {
 }
 
 @media (min-width: 1280px) {
+	/* The section links read the shell's width (100cqi) to reach the sidebar past a 1920px window. Only from 1280px:
+	   older browsers make a container the containing block of fixed boxes, such as the mobile nav drawer. The
+	   NavigationPreview layout (.layout) has its own geometry. */
+	.api-page-shell:not(.layout) {
+		container-type: inline-size;
+	}
+
 	.api-column-handle {
 		--api-column-line-width: 1px;
 		display: block;
