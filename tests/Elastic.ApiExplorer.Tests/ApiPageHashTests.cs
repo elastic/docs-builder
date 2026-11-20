@@ -16,7 +16,7 @@ public class ApiPageHashTests
 		$"""
 		See [search]({root}/operation/operation-search) and [bool]({root}/types/query#bool).
 		Also [serverless](/docs/api/elasticsearch-serverless/operation/operation-search).
-		Back to {root}
+		Back to {root}, and the [8.19 notes]({root}/v8.19) page.
 		Read https://www.elastic.co{root}.
 		""";
 
@@ -36,7 +36,7 @@ public class ApiPageHashTests
 				"""
 				See [search]({api-root}/operation/operation-search) and [bool]({api-root}/types/query#bool).
 				Also [serverless](/docs/api/elasticsearch-serverless/operation/operation-search).
-				Back to {api-root}
+				Back to {api-root}, and the [8.19 notes]({api-root}/v8.19) page.
 				Read https://www.elastic.co{api-root}.
 				Older: [8.19](/docs/api/elasticsearch/v8/operation/operation-search), [next](/docs/api/elasticsearch/next)
 				"""

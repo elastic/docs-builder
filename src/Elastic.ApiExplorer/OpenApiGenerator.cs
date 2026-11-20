@@ -284,11 +284,13 @@ public class OpenApiGenerator(
 		}
 		return result.Append(markdown, start, markdown.Length - start).ToString();
 
-		// Sentence punctuation ends a bare autolink, as the Markdown renderer reads it.
+		// Sentence punctuation ends a bare autolink only before a space or the end, as the Markdown renderer reads it,
+		// so a slug such as `v8.19` stays one segment.
 		static bool EndsAt(string text, int index) =>
 			index == text.Length
-				|| text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']' or '.' or ',' or ';' or ':' or '!'
-				|| char.IsWhiteSpace(text[index]);
+				|| text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']'
+				|| char.IsWhiteSpace(text[index])
+				|| (text[index] is '.' or ',' or ';' or ':' or '!' && (index + 1 == text.Length || char.IsWhiteSpace(text[index + 1])));
 
 		// `/v8` or `/next` right after the root names another version tree of the API.
 		static bool StartsVersionSegment(string text, int index)
