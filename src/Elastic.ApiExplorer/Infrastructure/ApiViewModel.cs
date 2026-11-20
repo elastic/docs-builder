@@ -77,6 +77,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public ApiVersionNotice? VersionNotice =>
 		ApiVersionNotices.For(RenderContext.PageType, RenderContext.Moniker, RenderContext.DefaultMoniker, PageVersions);
 
+	/// <summary>True when the page shows the quiet older-major label and link as badges, so the notice under the title keeps only the warning.</summary>
+	public virtual bool VersionNoticeInBadges => false;
+
 	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
 
 	protected virtual bool ShowPageActions => true;

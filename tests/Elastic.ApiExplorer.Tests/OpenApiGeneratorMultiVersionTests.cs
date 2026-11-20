@@ -856,9 +856,31 @@ public class OpenApiGeneratorMultiVersionTests
 				);
 		}
 
+		string Badges(params string[] segments)
+		{
+			var html = context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "index.html"]));
+			var badges = Regex.Match(
+				html,
+				"<span class=\"api-title-badges\">.*?</span>\\s*</header>",
+				RegexOptions.Singleline,
+				RegexTimeouts.MatchTimeout
+			).Value;
+			return badges.Length == 0
+				? "none"
+				: Regex.Replace(badges, @"\s+", " ", RegexOptions.None, RegexTimeouts.MatchTimeout).Replace(
+					"> <",
+					"><",
+					StringComparison.Ordinal
+				);
+		}
+
 		string[] ping = ["operation", "operation-ping"];
 		var notices = string.Join(
 			"\n",
+			$"versionless badges: {Badges(ping)}",
+			$"v9 badges: {Badges(["v9", .. ping])}",
+			$"v8 badges: {Badges(["v8", .. ping])}",
+			$"next badges: {Badges(["next", .. ping])}",
 			$"versionless: {Notice(ping)}",
 			$"v9: {Notice(["v9", .. ping])}",
 			$"v8: {Notice(["v8", .. ping])}",
@@ -870,9 +892,13 @@ public class OpenApiGeneratorMultiVersionTests
 
 		notices.Should().MatchInlineSnapshot(
 			"""
+			versionless badges: none
+			v9 badges: none
+			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><span class="applies applies-inline"><a class="applicable-info" href="/api/elasticsearch/operation/operation-ping"><span class="applicable-name">Latest: v9</span></a></span></span></header>
+			next badges: none
 			versionless: none
 			v9: none
-			v8: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><a href="/api/elasticsearch/operation/operation-ping"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
+			v8: none
 			next: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch/operation/operation-ping"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
 			versionless landing: none
 			v8 landing: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>

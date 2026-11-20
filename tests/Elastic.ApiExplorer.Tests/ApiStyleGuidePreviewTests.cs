@@ -23,7 +23,7 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	[Arguments("api-product", "Lorem API")]
 	[Arguments("api-operation", "Run a search")]
 	[Arguments("api-operation-plain", "Get a document")]
-	[Arguments("api-operation-older-major", "api-version-notice--older")]
+	[Arguments("api-operation-older-major", "Version 8")]
 	[Arguments("api-operation-next", "api-version-notice--unreleased")]
 	public async Task Preview_RendersTheRealPageWithTheNewDesign(string id, string expected)
 	{
@@ -83,13 +83,13 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	[Arguments("api-operation-older-major")]
-	[Arguments("api-operation-next")]
-	public async Task VersionNoticePreview_LinksToTheLatestVersionPreview(string id)
+	[Arguments("api-operation-older-major", "Latest: v9")]
+	[Arguments("api-operation-next", "View the latest version (v9)")]
+	public async Task VersionNoticePreview_LinksToTheLatestVersionPreview(string id, string linkText)
 	{
 		var html = await RenderAsync(id);
 
-		html.Should().Contain("<a href=\"/style-guide/preview/api-operation\">").And.Contain("View the latest version (v9)");
+		html.Should().Contain("href=\"/style-guide/preview/api-operation\"").And.Contain(linkText);
 	}
 
 	[Test]

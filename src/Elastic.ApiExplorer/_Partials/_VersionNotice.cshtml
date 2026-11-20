@@ -4,7 +4,7 @@
 }
 @switch (Model.VersionNotice)
 {
-	case OlderMajorNotice older:
+	case OlderMajorNotice older when !Model.VersionNoticeInBadges:
 		<p class="api-version-notice api-version-notice--older" role="note">
 			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel($"Version {older.Version}", designSystem)))
 			@if (older.Latest is { } olderLatest)

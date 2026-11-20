@@ -59,7 +59,7 @@
 			</li>
 		}
 	</ul>
-	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
+	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref, Model.VersionNotice as OlderMajorNotice)))
 </header>
 <section id="elastic-api-v3" class="@(ShowSectionLinks ? "api-has-toolbar" : null)">
 	@if (ShowSectionLinks)
