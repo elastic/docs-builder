@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
 /// Merges one API's per-tree documents: an operation that reads the same in several trees becomes one document listing
-/// every tree, and a document whose trees leave out the API's default tree is hidden, so readers that ignore trees see
+/// every tree, and a document whose trees leave out the API's default tree is hidden (a sitemap-only document stays hidden), so readers that ignore trees see
 /// one document per operation.
 /// </summary>
 internal static class ApiTreeCollapse
@@ -40,7 +40,7 @@ internal static class ApiTreeCollapse
 		foreach (var (lead, trees) in groups.Values)
 		{
 			ApiTreeEntry[] ordered = [.. trees.DistinctBy(static t => t.Tree).OrderByDescending(t => Rank(t, defaultTree))];
-			yield return lead with { Api = lead.Api! with { Trees = ordered }, Hidden = ordered[0].Tree != defaultTree };
+			yield return lead with { Api = lead.Api! with { Trees = ordered }, Hidden = lead.Hidden || ordered[0].Tree != defaultTree };
 		}
 	}
 

@@ -53,7 +53,10 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					continue;
 
 				var defaultTree = api.First().Routes.DefaultMoniker!;
-				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToIndexedDocuments), defaultTree))
+				var apiTrees = api.ToArray();
+				var pages = await Task.WhenAll(apiTrees.Select(t => generator.PageContentsAsync(t, ctx))).ConfigureAwait(false);
+				var renderings = apiTrees.SelectMany((t, i) => DatedByPage(t, ConvertToIndexedDocuments(t), pages[i]));
+				foreach (var doc in ApiTreeCollapse.Collapse(renderings, defaultTree))
 					yield return doc;
 			}
 		}
@@ -62,6 +65,52 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// <summary>Everything one version tree adds to the index: the API's landing page, then each operation.</summary>
 	private IEnumerable<DocumentationDocument> ConvertToIndexedDocuments(IndexedTree tree) =>
 		[ConvertToLandingDocument(tree), .. ConvertToDocuments(tree)];
+
+	/// <summary>
+	/// Dates the documents of one tree by the pages they stand for. A search document of a page takes the page's content hash,
+	/// and every other page gets a hidden sitemap-only document, so each page in the sitemap has one document with a content date.
+	/// </summary>
+	internal static IEnumerable<DocumentationDocument> DatedByPage(
+		IndexedTree tree,
+		IEnumerable<DocumentationDocument> searchDocuments,
+		IReadOnlyList<ApiPageContent> pages
+	)
+	{
+		var uncovered = pages.ToDictionary(static p => p.Url, StringComparer.Ordinal);
+		foreach (var doc in searchDocuments)
+		{
+			if (uncovered.Remove(doc.Path, out var page))
+				doc.ContentBodyHash = page.ContentHash;
+			yield return doc;
+		}
+
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
+		foreach (var page in uncovered.Values)
+		{
+			yield return new DocumentationDocument
+			{
+				ContentType = "api",
+				Path = page.Url,
+				Title = page.Title,
+				SearchTitle = page.Title,
+				Body = "",
+				Headings = [],
+				Links = [],
+				Hidden = true,
+				ContentBodyHash = page.ContentHash,
+				Api = new ApiOperationMetadata
+				{
+					Key = tree.ApiKey,
+					Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
+					Endpoints = [],
+					Method = "",
+					Path = "",
+					OperationId = "",
+					SitemapOnly = true
+				}
+			};
+		}
+	}
 
 	/// <summary>
 	/// Converts one version tree of an API to one document per operation, with URLs into that tree. The API key builds

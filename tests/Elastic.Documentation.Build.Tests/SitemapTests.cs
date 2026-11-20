@@ -144,11 +144,74 @@ public class SitemapTests
 	}
 
 	[Test]
-	public void EsSearchBody_LeavesOutHiddenPagesAndApiDocuments() =>
+	public void EsSearchBody_ReadsVisibleNarrativePagesAndEveryApiDocument() =>
 		JsonNode.Parse(EsSitemapReader.BuildSearchBody("pit", null))!["query"]!
 			.ToJsonString()
 			.Should()
-			.MatchInlineSnapshot("{\"bool\":{\"must_not\":[{\"term\":{\"hidden\":true}},{\"term\":{\"content_type\":\"api\"}}]}}");
+			.MatchInlineSnapshot(
+				"{\"bool\":{\"should\":[{\"term\":{\"content_type\":\"api\"}},{\"bool\":{\"must_not\":[{\"term\":{\"hidden\":true}}]}}],\"minimum_should_match\":1}}"
+			);
+
+	[Test]
+	public void ApiDates_DateEachPageOfTheBuildFromTheDocumentOfItsTree()
+	{
+		var build = Date.AddDays(10);
+		Dictionary<string, DateTimeOffset> buildPages = new()
+		{
+			["/docs/api"] = build,
+			["/docs/api/elasticsearch"] = build,
+			["/docs/api/elasticsearch/operation/search"] = build,
+			["/docs/api/elasticsearch/v8/operation/search"] = build,
+			["/docs/api/elasticsearch/group/endpoint-search"] = build,
+			["/docs/api/elasticsearch/v8/group/endpoint-search"] = build,
+			["/docs/api/kibana/operation/get-status"] = build
+		};
+		SitemapEntry[] documents =
+		[
+			new("/docs/reference", Date, []),
+			new("/docs/api/elasticsearch", Date.AddDays(1), ["/docs/api/elasticsearch"], ApiLanding: true),
+			new("/docs/api/kibana", Date.AddDays(4), ["/docs/api/kibana"], ApiLanding: true),
+			// one document for the page in both trees
+			new("/docs/api/elasticsearch/operation/search", Date.AddDays(2), ["/docs/api/elasticsearch", "/docs/api/elasticsearch/v8"]),
+			// the page differs per tree: two documents
+			new("/docs/api/elasticsearch/group/endpoint-search", Date.AddDays(3), ["/docs/api/elasticsearch"]),
+			new("/docs/api/elasticsearch/v8/group/endpoint-search", Date, ["/docs/api/elasticsearch/v8"])
+		];
+
+		var api = ApiSitemapDates.Resolve(buildPages, documents, "/docs/api");
+
+		api
+			.Entries
+			.OrderBy(e => e.Key, StringComparer.Ordinal)
+			.Select(e => $"{e.Key} {e.Value:yyyy-MM-dd}")
+			.Should()
+			.Equal(
+				"/docs/api 2026-11-05",
+				"/docs/api/elasticsearch 2026-11-02",
+				"/docs/api/elasticsearch/group/endpoint-search 2026-11-04",
+				"/docs/api/elasticsearch/operation/search 2026-11-03",
+				"/docs/api/elasticsearch/v8/group/endpoint-search 2026-11-01",
+				"/docs/api/elasticsearch/v8/operation/search 2026-11-03",
+				"/docs/api/kibana/operation/get-status 2026-11-11"
+			);
+		api.Missing.Should().Equal(["/docs/api/kibana/operation/get-status"], "no document stands for it, so it keeps the build date");
+	}
+
+	[Test]
+	public void ReadApiPages_ReadsThePathsAndDatesTheBuildWrote()
+	{
+		var (_, output) = Output();
+		_ = SitemapBuilder.Generate(Entries, output, new DiagnosticsCollector([]));
+
+		SitemapBuilder
+			.ReadApiPages(output)
+			.Should()
+			.BeEquivalentTo(new Dictionary<string, DateTimeOffset>
+			{
+				["/docs/api"] = Date,
+				["/docs/api/elasticsearch/operation/search"] = Date
+			});
+	}
 
 	[Test]
 	public void Generate_OnAPreviewHost_PointsTheIndexAtTheFilesOnThatHost_AndKeepsCanonicalPageUrls()
