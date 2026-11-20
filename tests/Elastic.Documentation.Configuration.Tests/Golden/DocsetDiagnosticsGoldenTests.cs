@@ -936,11 +936,6 @@ public class DocsetDiagnosticsGoldenTests
 			    - spec: a.json
 			      product: elasticsearch
 			      repository: not-a-repo
-			  bad-category:
-			    - spec: a.json
-			      product: elasticsearch
-			      catalog:
-			        categories: [nowhere]
 			  two-entries:
 			    - spec: a.json
 			      product: elasticsearch
@@ -965,21 +960,11 @@ public class DocsetDiagnosticsGoldenTests
 				error /docs/docset.yml:7 Unknown 'product: elasticsarch' for API 'unknown-product'. It must be a product id defined in products.yml. Did you mean "elasticsearch"?
 				error /docs/docset.yml:9 API 'no-spec' is missing required 'spec:'. Its basename is required to resolve the remote version index, even when the file is not present locally.
 				error /docs/docset.yml:13 'repository: not-a-repo' for API 'bad-repository' must be in 'org/repo' form, e.g. 'elastic/elasticsearch-specification'.
-				error /docs/docset.yml:18 Unknown catalog category 'nowhere' for API 'bad-category'. Valid categories: ece, ess, self, serverless (or ech for ess).
 				error /docs/docset.yml API configuration for 'two-entries' must have exactly one entry, found 2.
-				error /docs/docset.yml:25 'spec: ../a.json' for API 'escaping-spec' escapes the documentation source directory.
-				error /docs/docset.yml:28 'spec: dir/' for API 'blank-spec' does not resolve to a file name.
+				error /docs/docset.yml:20 'spec: ../a.json' for API 'escaping-spec' escapes the documentation source directory.
+				error /docs/docset.yml:23 'spec: dir/' for API 'blank-spec' does not resolve to a file name.
 				model <ConfigurationFile>:
-				  ApiConfigurations:
-				    bad-category <ResolvedApiConfiguration>:
-				      ProductKey: "bad-category"
-				      Product: <Product elasticsearch>
-				      SpecFileName: "a.json"
-				      LocalSpecFile: null
-				      Repository: null
-				      Children: []
-				      ApiContentDirectory: <path /docs/api/bad-category>
-				      CatalogCategories: []
+				  ApiConfigurations: null
 				"""
 			);
 

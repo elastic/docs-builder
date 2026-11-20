@@ -3538,18 +3538,6 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Deployment tag: the applies_to pill look, standalone. It sits inside the card link, so it keeps the link's pointer. */
-.api-catalog .api-catalog-tag {
-	padding: 1px var(--space-2);
-	border: 1px solid var(--color-border);
-	border-radius: 624.9375rem;
-	background-color: var(--color-surface);
-	color: var(--color-text-muted);
-	font-size: 0.75rem;
-	line-height: 1rem;
-	white-space: nowrap;
-}
-
 .api-landing-heading {
 	display: flex;
 	align-items: center;

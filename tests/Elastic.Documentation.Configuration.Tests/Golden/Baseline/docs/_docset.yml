@@ -52,36 +52,20 @@ api:
     - spec: elasticsearch.json
       product: elasticsearch
       repository: elastic/elasticsearch-specification
-      catalog:
-        categories:
-          - self
-          - ece
-          - ess
   docs-builder-elasticsearch-serverless:
     - spec: elasticsearch-serverless.json
       product: serverless-elasticsearch
       repository: elastic/elasticsearch-specification
-      catalog:
-        categories:
-          - serverless
   docs-builder-kibana:
     - spec: kibana.yaml
       product: kibana
       repository: elastic/kibana
       children:
         - file: kibana-api-overview.md
-      catalog:
-        categories:
-          - self
-          - ece
-          - ess
   docs-builder-kibana-serverless:
     - spec: kibana-serverless.yaml
       product: kibana
       repository: elastic/kibana
-      catalog:
-        categories:
-          - serverless
   docs-builder-cloud:
     - spec: cloud.json
       product: cloud-hosted
@@ -94,9 +78,6 @@ api:
     - spec: cloud-billing.yaml
       product: ess
       repository: elastic/private-repo-2
-      catalog:
-        categories:
-          - ess
   docs-builder-cloud-connect:
     - spec: cloud-connect.yml
       product: ess
@@ -105,16 +86,10 @@ api:
     - spec: elastic-cloud-serverless.yml
       product: cloud-serverless
       repository: elastic/serverless-api-specification
-      catalog:
-        categories:
-          - serverless
   docs-builder-logstash:
     - spec: logstash.yaml
       product: logstash
       repository: elastic/logstash
-      catalog:
-        categories:
-          - self
 
 cta:
   docs-builder:

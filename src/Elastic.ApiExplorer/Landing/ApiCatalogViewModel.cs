@@ -3,23 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Infrastructure;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Site.Icons;
 
 namespace Elastic.ApiExplorer.Landing;
 
-/// <summary>A deployment an API is available on. <see cref="Label"/> is the short tag text, <see cref="Name"/> the full name.</summary>
-public sealed record ApiCatalogDeployment(string Label, string Name);
-
-public sealed record ApiCatalogItem(
-	string Key,
-	string Title,
-	string Url,
-	string IconSvg,
-	string? Summary,
-	IReadOnlyList<ApiCatalogDeployment> Deployments,
-	string? ParentKey = null
-);
+public sealed record ApiCatalogItem(string Key, string Title, string Url, string IconSvg, string? Summary, string? ParentKey = null);
 
 /// <summary>
 /// One labelled band of the page. <see cref="Title"/> is null for a lone group, which needs no label. A
@@ -63,7 +51,7 @@ internal sealed record ApiCatalogEntryGroup(string? Title, bool Grouped, ApiCata
 
 public enum ApiCatalogCardKind
 {
-	/// <summary>The full-size card, with the deployment pills.</summary>
+	/// <summary>The full-size card.</summary>
 	Standard,
 
 	/// <summary>The larger card for the core APIs.</summary>
@@ -96,14 +84,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 	[
 		("Elastic Stack", [.. ApiCatalogOrder.StackKeys, .. ApiCatalogOrder.VariantParents.Keys]),
 		("Orchestration", ApiCatalogOrder.OrchestrationKeys)
-	];
-
-	private static readonly (string Category, string Label)[] DeploymentLabels =
-	[
-		(ApplicabilityKeys.Self, "Self-managed"),
-		(ApplicabilityKeys.Ece, "ECE"),
-		(ApplicabilityKeys.Ess, "ECH"),
-		(ApplicabilityKeys.Serverless, "Serverless")
 	];
 
 	private const string FallbackIconSvg =
@@ -168,13 +148,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			: new(title, Grouped: true, [], members);
 	}
 
-	internal static IReadOnlyList<ApiCatalogDeployment> DeploymentsOf(ApiCatalogEntry entry) =>
-		[
-			.. DeploymentLabels.Where(d => entry.CatalogCategories.Contains(d.Category)).Select(
-				d => new ApiCatalogDeployment(d.Label, ApiCatalogCategory.DisplayName(d.Category))
-			)
-		];
-
 	internal static ApiCatalogItem ToItem(ApiCatalogEntry entry) =>
 		new(
 			entry.Key,
@@ -182,7 +155,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			entry.Url,
 			entry.IconSvg ?? FallbackIconSvg,
 			ApiSeoDescription.Excerpt(entry.Description),
-			DeploymentsOf(entry),
 			ApiCatalogOrder.VariantParents.GetValueOrDefault(entry.Key)
 		);
 }

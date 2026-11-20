@@ -3495,18 +3495,6 @@ navigation-search[variant='hero'] {
 	}
 }
 
-/* Deployment tag: the applies_to pill look, standalone. It sits inside the card link, so it keeps the link's pointer. */
-.api-catalog .api-catalog-tag {
-	padding: 1px 8px;
-	border: 1px solid var(--color-grey-20);
-	border-radius: 9999px;
-	background-color: #fff;
-	color: var(--color-subdued, #516381);
-	font-size: 12px;
-	line-height: 16px;
-	white-space: nowrap;
-}
-
 .api-landing-heading {
 	display: flex;
 	align-items: center;

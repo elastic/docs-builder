@@ -69,13 +69,6 @@ public class ApiProductEntry
 	public List<ApiEntryChild> Children { get; set; } = [];
 
 	/// <summary>
-	/// Optional catalog grouping. Categories identify filter chips only; they do not
-	/// claim versioned availability.
-	/// </summary>
-	[YamlPropertyName("catalog")]
-	public ApiCatalogSettings? Catalog { get; set; }
-
-	/// <summary>
 	/// 1-based line of this entry's mapping start in the source YAML. Populated by
 	/// <see cref="ApiConfigurationConverter"/>; used to attribute diagnostics that have no more
 	/// specific location, such as a missing <c>product:</c> key.
@@ -122,21 +115,6 @@ public class ApiProductEntry
 
 	public bool HasSpec => !string.IsNullOrWhiteSpace(Spec);
 	public bool HasProduct => !string.IsNullOrWhiteSpace(Product);
-}
-
-/// <summary>
-/// Category-only catalog metadata under <c>catalog:</c> on an API entry.
-/// </summary>
-public class ApiCatalogSettings
-{
-	[YamlPropertyName("categories")]
-	public List<string> Categories { get; set; } = [];
-
-	[YamlIgnore]
-	public int? Line { get; set; }
-
-	[YamlIgnore]
-	public int? Column { get; set; }
 }
 
 /// <summary>
@@ -203,12 +181,6 @@ public class ResolvedApiConfiguration
 	/// Supplemental <c>op-*.md</c> / <c>tag-*.md</c> files are discovered from here.
 	/// </summary>
 	public IDirectoryInfo? ApiContentDirectory { get; init; }
-
-	/// <summary>
-	/// Normalized catalog categories (<c>ece</c>, <c>ess</c>, <c>self</c>, <c>serverless</c>).
-	/// Empty when the API is unclassified and appears only under All.
-	/// </summary>
-	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
 
 	/// <summary>
 	/// Whether <paramref name="fileName"/> is an auto-discovered supplemental file
