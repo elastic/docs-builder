@@ -1073,7 +1073,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = CreateVersionedReader(
 			("main", SeoSample("Elasticsearch main", null)),
-			("9.4", WithTopic(SeoSample("Elasticsearch 9", "Search and analyze data."), "Authentication")),
+			("9.4", WithTopic(SeoSample("Elasticsearch 9", "## Overview\n\nSearch and analyze data."), "Authentication")),
 			("8.19", SeoSample("Elasticsearch 8", null))
 		);
 

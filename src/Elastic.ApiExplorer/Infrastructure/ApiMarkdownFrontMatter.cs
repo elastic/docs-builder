@@ -135,7 +135,7 @@ internal static class ApiMarkdownFrontMatter
 		return page switch
 		{
 			ApiCatalog => ApiCatalog.PageDescription,
-			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
+			ApiLanding => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
 			ApiTag tag => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
 			ApiOperation operation =>
 				FirstLine(
