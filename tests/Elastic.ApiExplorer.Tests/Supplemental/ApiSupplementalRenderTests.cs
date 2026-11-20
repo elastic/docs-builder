@@ -724,6 +724,25 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Product_Landing_GroupCard_SummarizesTheSupplementalDescription()
+	{
+		var html = await RenderAsync(
+			fixture.Navigation.Index.Model,
+			fixture.Navigation,
+			tags: Doc("search", """
+			## Description
+
+			SupplementalCardSummary
+			""")
+		);
+
+		html.Should().Contain(
+			"<span class=\"api-index-row-summary\">SupplementalCardSummary</span>",
+			"the card says what the group page says"
+		);
+	}
+
+	[Test]
 	public async Task Tag_EmptySpecDescription_ShowsSupplemental()
 	{
 		var nav = SearchTag();
