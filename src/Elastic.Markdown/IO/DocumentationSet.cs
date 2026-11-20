@@ -272,10 +272,9 @@ public class DocumentationSet : INavigationTraversable
 		_resolved = true;
 	}
 
-	public RepositoryLinks CreateLinkReference()
+	public LinkManifest CreateLinkReference()
 	{
 		var redirects = Configuration.Redirects;
-		var crossLinks = Context.Collector.CrossLinks.ToHashSet().OrderBy(l => l).ToArray();
 
 		var leafs = NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
 		var nodes = NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToArray();
@@ -289,31 +288,24 @@ public class DocumentationSet : INavigationTraversable
 			)
 			.ToList();
 
-		var links = markdownInNavigation
-			.Select(tuple =>
-			{
-				var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+		var pages = markdownInNavigation.Select(
+			tuple => new LinkPage(
+				RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 					? tuple.Markdown.LinkReferenceRelativePath.Replace('\\', '/')
-					: tuple.Markdown.LinkReferenceRelativePath;
-				return (Path: path, tuple.Markdown, tuple.Navigation);
-			})
-			.DistinctBy(tuple => tuple.Path)
-			.OrderBy(tuple => tuple.Path)
-			.ToDictionary(tuple => tuple.Path, tuple =>
-			{
-				var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = tuple.Navigation.ExcludeFromIndexing };
-			});
+					: tuple.Markdown.LinkReferenceRelativePath,
+				[.. tuple.Markdown.Anchors],
+				tuple.Navigation.ExcludeFromIndexing
+			)
+		);
 
-		return new RepositoryLinks
-		{
-			Redirects = redirects,
-			UrlPathPrefix = Context.UrlPathPrefix,
-			Origin = Context.Git,
-			Links = links,
-			CrossLinks = crossLinks,
-			Floating = CreateFloatingLinkSections()
-		};
+		return LinkManifest.From(
+			Context.Git,
+			Context.UrlPathPrefix,
+			pages,
+			Context.Collector.CrossLinks,
+			redirects,
+			CreateFloatingLinkSections()
+		);
 	}
 
 	private Dictionary<string, FloatingLinkSection>? CreateFloatingLinkSections()

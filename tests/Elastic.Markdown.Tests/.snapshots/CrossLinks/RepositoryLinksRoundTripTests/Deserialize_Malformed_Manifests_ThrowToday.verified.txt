@@ -1,8 +1,8 @@
-empty-object: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'origin', 'url_path_prefix', 'links', 'cross_links'.
-no-origin: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'origin'.
-no-url-path-prefix: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'url_path_prefix'.
-no-links: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'links'.
-no-cross-links: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.RepositoryLinks' was missing required properties including: 'cross_links'.
+empty-object: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.LinkManifest' was missing required properties including: 'origin', 'url_path_prefix', 'links', 'cross_links'.
+no-origin: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.LinkManifest' was missing required properties including: 'origin'.
+no-url-path-prefix: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.LinkManifest' was missing required properties including: 'url_path_prefix'.
+no-links: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.LinkManifest' was missing required properties including: 'links'.
+no-cross-links: throws JsonException: JSON deserialization for type 'Elastic.Documentation.Links.LinkManifest' was missing required properties including: 'cross_links'.
 origin-without-ref: throws JsonException: JSON deserialization for type 'Elastic.Documentation.GitCheckoutInformation' was missing required properties including: 'ref'.
 origin-without-branch: throws JsonException: JSON deserialization for type 'Elastic.Documentation.GitCheckoutInformation' was missing required properties including: 'branch'.
 origin-without-remote: throws JsonException: JSON deserialization for type 'Elastic.Documentation.GitCheckoutInformation' was missing required properties including: 'remote'.

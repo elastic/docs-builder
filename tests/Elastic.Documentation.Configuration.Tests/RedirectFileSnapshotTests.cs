@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Testing;
 using Nullean.Snapshots;
 
@@ -64,9 +65,7 @@ public class RedirectFileSnapshotTests
 		try
 		{
 			var file = new RedirectFile(context);
-			redirects = file.Redirects is null
-				? "(null)"
-				: JsonNode.Parse(RepositoryLinks.SerializeRedirects(file.Redirects))!.ToJsonString();
+			redirects = file.Redirects is null ? "(null)" : JsonNode.Parse(LinkJson.SerializeRedirects(file.Redirects))!.ToJsonString();
 		}
 		catch (Exception e)
 		{

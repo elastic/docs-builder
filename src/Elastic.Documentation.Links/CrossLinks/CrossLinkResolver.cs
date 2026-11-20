@@ -82,7 +82,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		return ApiPageStatus.Unknown;
 	}
 
-	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
+	public FetchedCrossLinks UpdateLinkReference(string repository, LinkManifest repositoryLinks)
 	{
 		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		dictionary[repository] = repositoryLinks;
