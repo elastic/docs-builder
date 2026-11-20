@@ -170,7 +170,8 @@ public class ClassificationNavigationItem(
 	public override string NavigationTitle { get; } = classification.Name;
 
 	/// <inheritdoc />
-	public override string Id { get; } = ShortId.Create(classification.Name);
+	/// <remarks>Prefixed so a group and a tag with the same name get different toggle ids.</remarks>
+	public override string Id { get; } = ShortId.Create("api-tag-group", classification.Name);
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;

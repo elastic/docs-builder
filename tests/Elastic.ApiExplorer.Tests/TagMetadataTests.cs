@@ -617,6 +617,31 @@ public class TagMetadataTests
 	}
 
 	[Test]
+	public async Task Sidebar_TagGroupSharingATagName_GetsItsOwnToggleId()
+	{
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
+			[new("search"), new("indices")]
+		)
+		{ TagGroups = [new("search", ["search"]), new("indices", ["indices"])] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+		var group = navigation.NavigationItems.OfType<ClassificationNavigationItem>().First();
+
+		var model = NavigationRenderModel.Create(
+			group,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: false
+		);
+
+		// The tag's chevron must open the tag, not collapse the group around it.
+		var heading = model.Tree[1];
+		heading.NavigationItems.Should().ContainSingle().Which.Id.Should().NotBe(heading.Id);
+	}
+
+	[Test]
 	public async Task Sidebar_TagGroupTree_StartsWithAnOverviewRowToTheApiLanding()
 	{
 		var spec = new MinimalSpec(
