@@ -6,6 +6,9 @@ using System.Diagnostics;
 using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.PageFeedback;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.ApiReference;
 using Microsoft.AspNetCore.Builder;
@@ -405,35 +408,9 @@ public static class MappingsExtension
 			.Produces(StatusCodes.Status204NoContent)
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
 
+	// the rules answer with a generic invalid-arguments problem (400): naming the broken field is a separate change
 	private static bool IsValidPageFeedback(PageFeedbackRequest request) =>
-		!string.IsNullOrWhiteSpace(request.PageUrl)
-			&& request.PageUrl.Length <= 2048
-			&& request.PageUrl.StartsWith('/')
-			&& !request.PageUrl.StartsWith("//", StringComparison.Ordinal)
-			&& Uri.TryCreate(request.PageUrl, UriKind.Relative, out _)
-			&& !string.IsNullOrWhiteSpace(request.PageTitle)
-			&& request.PageTitle.Length <= 500
-			&& request.Reaction is PageFeedbackReaction.ThumbsUp or PageFeedbackReaction.ThumbsDown
-			&& (request.Comment is null || request.Comment.Length <= 2000)
-			&& IsValidFeedbackDetails(request);
-
-	private static bool IsValidFeedbackDetails(PageFeedbackRequest request)
-	{
-		if (request.Reasons is null or [])
-			return request.ReasonSetVersion is null && string.IsNullOrWhiteSpace(request.Comment);
-
-		return request.ReasonSetVersion is > 0
-			&& request.Reasons.All(r => Enum.IsDefined(r) && IsReasonValidForReaction(request.Reaction, r));
-	}
-
-	private static bool IsReasonValidForReaction(PageFeedbackReaction reaction, PageFeedbackReason reason) => reaction switch
-	{
-		PageFeedbackReaction.ThumbsUp =>
-			reason is PageFeedbackReason.Accurate or PageFeedbackReason.SolvedProblem or PageFeedbackReason.EasyToUnderstand or PageFeedbackReason.HelpfulExamples or PageFeedbackReason.EasyToFind or PageFeedbackReason.AnotherReason,
-		PageFeedbackReaction.ThumbsDown =>
-			reason is PageFeedbackReason.Inaccurate or PageFeedbackReason.MissingInformation or PageFeedbackReason.HardToUnderstand or PageFeedbackReason.CodeSampleErrors or PageFeedbackReason.OutOfDate or PageFeedbackReason.AnotherReason,
-		_ => false
-	};
+		!request.Check("page-feedback").Findings.Any(d => d.Severity == Severity.Error);
 
 	private static string? TryGetEuid(HttpContext context)
 	{

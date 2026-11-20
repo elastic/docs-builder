@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Nullean.Entities;
 
-namespace Elastic.Documentation.Api.PageFeedback;
+namespace Elastic.Documentation.PageFeedback;
 
 /// <summary>A reader's rating of a documentation page.</summary>
 /// <param name="PageUrl">The page's path, starting with <c>/</c>, at most 2048 characters.</param>
@@ -20,7 +21,10 @@ public record PageFeedbackRequest(
 	IReadOnlyList<PageFeedbackReason>? Reasons,
 	int? ReasonSetVersion,
 	string? Comment
-);
+) : IHaveConstraints<PageFeedbackRequest>
+{
+	public static ConstraintSet<PageFeedbackRequest> Constraints => PageFeedbackRequestConstraints.All;
+}
 
 /// <summary>How a reader rated a page: <c>thumbsUp</c> or <c>thumbsDown</c>.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<PageFeedbackReaction>))]
