@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Tests.Golden;
 using Elastic.Documentation.DocumentationSets;
+using Nullean.Entities;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -197,6 +199,18 @@ public class DocumentationSetStagesTests
 			throws NullReferenceException: Object reference not set to an instance of an object.
 			"""
 			);
+
+	// the stage reports the resolutions it is given; it does not resolve the entries a second time
+	[Test]
+	public void Apis_GivenAResolution_ReportsThatResolution()
+	{
+		var docset = new DocumentationSetDefinition { SourceFile = null!, SourceDirectory = null! };
+		ApiResolution rejected = new ApiRejected([Violation.Error("first"), Violation.Error("second")]);
+
+		var findings = new DocumentationSetApis(docset, [rejected]).Check("docset.yml").Findings;
+
+		findings.Select(f => f.Message).Should().Equal("first", "second");
+	}
 
 	[Test]
 	public void ResolveCrossLink_PublicSetLinkingToInternal_IsRejected()

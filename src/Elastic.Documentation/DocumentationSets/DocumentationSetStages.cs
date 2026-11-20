@@ -23,12 +23,10 @@ public sealed record DocumentationSetInCatalog(
 	public static ConstraintSet<DocumentationSetInCatalog> Constraints => DocumentationSetInCatalogConstraints.All;
 }
 
-/// <summary>The <c>api</c> and <c>storybook</c> of a documentation set with the catalog and the files they resolve against.</summary>
+/// <summary>The <c>api</c> and <c>storybook</c> of a documentation set, with each api entry already resolved against the catalog and the files.</summary>
 public sealed record DocumentationSetApis(
 	DocumentationSetDefinition Docset,
-	ProductCatalog Products,
-	IFileSystem FileSystem,
-	IDirectoryInfo SourceDirectory
+	IReadOnlyList<ApiResolution> Resolutions
 ) : IHaveConstraints<DocumentationSetApis>
 {
 	public static ConstraintSet<DocumentationSetApis> Constraints => DocumentationSetApisConstraints.All;
@@ -81,11 +79,9 @@ public static partial class DocumentationSetInCatalogConstraints
 [Constraints<DocumentationSetApis>]
 public static partial class DocumentationSetApisConstraints
 {
+	// each entry is resolved once, by the caller, and the same result is used to report it and to build the configuration
 	public static readonly Constraint<DocumentationSetApis> ApiEntryValid = Constraints<DocumentationSetApis>.Check(
-		// an api key written with no value leaves the list null: the step that reads it fails, after the findings before it
-		m => ((IEnumerable<ApiDeclaration>?)m.Docset.Api ?? []).SelectMany(
-			api => DocumentationSetRules.ProblemsOf(DocumentationSetRules.ResolveApi(api, m.Products, m.FileSystem, m.SourceDirectory))
-		)
+		m => m.Resolutions.SelectMany(DocumentationSetRules.ProblemsOf)
 	).Describe(
 		"Each api key has one entry naming a products.yml product and a spec file inside the docset, an optional 'org/repo' repository, known catalog categories and child pages under api/<key>/."
 	);

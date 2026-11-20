@@ -95,22 +95,21 @@ internal static class DocumentationSetResolver
 			StringComparer.OrdinalIgnoreCase
 		);
 
+		// Each api entry is resolved once; a key written with no value leaves the list null and fails at Api.Count below, after the findings so far.
+		var apiResolutions = ((IEnumerable<ApiDeclaration>?)docSetFile.Api ?? []).Select(
+			api => DocumentationSetRules.ResolveApi(api, productsConfig, context.ReadFileSystem, context.DocumentationSourceDirectory)
+		).ToArray();
+
 		// api and storybook are reported together, in that order
-		Report(new DocumentationSetApis(docSetFile, productsConfig, context.ReadFileSystem, context.DocumentationSourceDirectory), context);
+		Report(new DocumentationSetApis(docSetFile, apiResolutions), context);
 		Dictionary<string, ResolvedApiConfiguration>? apiConfigurations = null;
-		if (docSetFile.Api.Count > 0)
+		if (docSetFile.Api!.Count > 0)
 		{
 			var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
-			foreach (var api in docSetFile.Api)
+			for (var i = 0; i < apiResolutions.Length; i++)
 			{
-				var resolution = DocumentationSetRules.ResolveApi(
-					api,
-					productsConfig,
-					context.ReadFileSystem,
-					context.DocumentationSourceDirectory
-				);
-				if (resolution.Value is ApiAccepted accepted)
-					apiConfigs[api.ProductKey] = accepted.Configuration;
+				if (apiResolutions[i].Value is ApiAccepted accepted)
+					apiConfigs[docSetFile.Api[i].ProductKey] = accepted.Configuration;
 			}
 
 			apiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
