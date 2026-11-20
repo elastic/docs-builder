@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Text;
@@ -60,8 +61,12 @@ public class ApiCrawlServiceTests
 			.Where(p => ApiPageTypes.Indexing(p.Type).InSitemap)
 			.Select(p => p.Path);
 
+		/// <summary>Every URL the crawl asked for.</summary>
+		public ConcurrentQueue<Uri> Requested { get; } = new();
+
 		public HttpResponseMessage Respond(HttpRequestMessage request)
 		{
+			Requested.Enqueue(request.RequestUri!);
 			// Like the edge WAF, refuse a request without a User-Agent.
 			if (request.Headers.UserAgent.Count == 0)
 				return new HttpResponseMessage(HttpStatusCode.Forbidden);
@@ -114,6 +119,21 @@ public class ApiCrawlServiceTests
 		}
 
 		return (exitCode, collector.Diagnostics.ToSnapshotText(), output.ToString());
+	}
+
+	[Test]
+	public async Task CrawlAsync_SiteServedAtItsRoot_RequestsStayOnTheSite()
+	{
+		var site = new FixtureSite();
+
+		_ = await Crawl(site, sitePrefix: "");
+
+		site.Requested.Should().OnlyContain(uri => uri.Host == "site.test");
+		var paths = site.Requested.Select(uri => uri.AbsolutePath).ToArray();
+		paths.Should().Contain(["/sitemap.xml", "/sitemap-api.xml", "/api", "/api/elasticsearch"]);
+		paths.Should().NotContain(
+			path => path.StartsWith("//", StringComparison.Ordinal) || path.StartsWith("/docs/", StringComparison.Ordinal)
+		);
 	}
 
 	[Test]
