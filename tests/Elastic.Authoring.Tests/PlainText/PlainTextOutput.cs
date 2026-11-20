@@ -41,6 +41,25 @@ public class CodeBlocks : DocumentTest
 	public async Task RendersCodeContentWithoutFences() => await Docs.ConvertsToPlainText("def hello():\n    print(\"Hello, world!\")");
 }
 
+public class ConsoleCodeBlocks : DocumentTest
+{
+	protected override string Document =>
+		"""
+		```console
+		PUT /books
+		POST /books/_doc
+		{
+		  "name": "Snow Crash"
+		}
+		GET /books/_search
+		```
+		""";
+
+	[Test, DisplayName("keeps the request lines")]
+	public async Task KeepsTheRequestLines() =>
+		await Docs.ConvertsToPlainText("PUT /books\nPOST /books/_doc\n{\n  \"name\": \"Snow Crash\"\n}\nGET /books/_search");
+}
+
 public class Links : DocumentTest
 {
 	protected override string Document => "This is a [link to docs](https://www.elastic.co/docs) in a sentence.\n";
