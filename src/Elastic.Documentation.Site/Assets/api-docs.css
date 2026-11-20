@@ -160,8 +160,9 @@
 
 .api-page-heading {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 16px;
+	gap: 4px 16px;
 	min-width: 0;
 	overflow: visible;
 }
@@ -171,8 +172,9 @@
 	min-width: 0;
 }
 
-/* The version line under the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. */
+/* The version line beside the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. It wraps under the title when the row is full. */
 .api-version-notice {
+	flex: 0 1 auto;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -181,12 +183,6 @@
 	font-size: 14px;
 	line-height: 20px;
 	@apply text-grey-80;
-}
-
-.api-landing-heading + .api-version-notice,
-.api-group .api-page-heading + .api-version-notice,
-#schema-definition > .api-page-heading + .api-version-notice {
-	margin-top: 12px;
 }
 
 .api-version-notice a {
