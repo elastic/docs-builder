@@ -4499,7 +4499,7 @@ html:has(.api-page-shell) {
 }
 
 #elastic-api-v3:has(.api-section-links-title) {
-	--api-section-links-title-height: 36px;
+	--api-section-links-title-height: 42px;
 }
 
 .api-section-links {
@@ -4532,7 +4532,7 @@ html:has(.api-page-shell) {
 	left: 0;
 	right: 0;
 	display: flex;
-	/* On the links, not centred in its own row: the title and the links read as one block under the header. */
+	/* On the links, not centred in its own row: closer to the links than to the header, so the two read as one block. */
 	align-items: flex-end;
 	gap: 8px;
 	height: var(--api-section-links-title-height);
