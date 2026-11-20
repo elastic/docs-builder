@@ -93,7 +93,7 @@ api:
         - file: kibana-api-overview.md
 ```
 
-Child pages are listed under the **Topics** heading in the sidebar, in the order you declare them, after Authentication and Rate limiting, which always come first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build.
+Child pages are listed at the top of the sidebar, right after the **Overview** row, in the order you declare them, after Authentication and Rate limiting, which always come first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build. The build warns about a child page whose navigation title is `Overview`, because the sidebar would show two **Overview** rows that lead to different pages. The label comes from `navigation_title` in front matter, or else from the file name, so set `navigation_title` to clear the warning without changing the page URL.
 
 Child pages also behave as follows:
 
@@ -526,7 +526,7 @@ Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in th
 
 Open the section to see one tab per scheme. A tab shows the header or query parameter to send, for example `Authorization: Basic <credentials>`, and the scheme `description`. One scheme shows no tabs. A search with the browser's find-in-page opens the section and selects the tab that contains the match.
 
-The `/authentication` page is generated for every spec that declares security schemes, and the sidebar lists it under **Topics**. It shows the same tabs as an endpoint's section, so the Markdown below also applies there. The tabs are always open, under the page's own title, without the collapsible **Authentication** heading. Any prose comes first: an `x-topics` entry titled `Authentication` renders above the tabs, and so does a [`children:`](#api-children) page whose first heading is `Authentication`. When a child page stands for Authentication, it takes the place of the generated page in the sidebar and the badge links to it. The generated `/authentication` page stays for old links. Refer to [Topic pages](#x-topics).
+The `/authentication` page is generated for every spec that declares security schemes, and the sidebar lists it right after the **Overview** row. It shows the same tabs as an endpoint's section, so the Markdown below also applies there. The tabs are always open, under the page's own title, without the collapsible **Authentication** heading. Any prose comes first: an `x-topics` entry titled `Authentication` renders above the tabs, and so does a [`children:`](#api-children) page whose first heading is `Authentication`. When a child page stands for Authentication, it takes the place of the generated page in the sidebar and the badge links to it. The generated `/authentication` page stays for old links. Refer to [Topic pages](#x-topics).
 
 The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
@@ -548,7 +548,7 @@ x-topics:
 
 Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slug is the title in lowercase with spaces replaced by hyphens, so `Rate limiting` becomes `/topic/topic-rate-limiting`. Entries without a `title` are skipped.
 
-The sidebar lists the topics under a **Topics** heading, above the endpoint groups. The Authentication page always comes first and Rate limiting second, whether each comes from a `children:` page or the spec. Any other `children:` pages follow in the order the docset declares them, then the spec's other topics in alphabetical order of their titles. The heading starts expanded on every page, and it only appears when the product has at least one topic page.
+The sidebar lists the topics right after the **Overview** row, above the endpoint groups, with no heading of their own. The Authentication page always comes first and Rate limiting second, whether each comes from a `children:` page or the spec. Any other `children:` pages follow in the order the docset declares them, then the spec's other topics in alphabetical order of their titles.
 
 A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the authentication tabs. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
 
@@ -607,7 +607,7 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 }
 ```
 
-The default sidebar matches bump.sh. The product overview and the **Topics** heading sit in one group, and the Topics heading starts expanded on every page. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag. A second divider sets the **Types** heading apart after the tag folders. Like Topics, Types is a heading with no page of its own.
+The sidebar opens with an **Overview** row that links to the product landing page, then the guide pages: Authentication, Rate limiting, the docset's `children:` pages and the spec's `x-topics`. The endpoint groups follow under an **Operations** label, or under their `x-tagGroups` headings. Each OpenAPI operation is a visible child of its tag. The **Types** heading comes last. Operations and Types are labels with no page of their own.
 
 Within a tag, operations are sorted by path, not by their order in the spec. Operations on the same path follow the resource lifecycle: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `TRACE`, `CONNECT`. The sidebar, the product and tag landing pages, and their Markdown exports all use this order. A merged page sorts by the path and method its endpoint block shows first.
 

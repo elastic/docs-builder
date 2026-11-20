@@ -60,7 +60,7 @@ public class ApiLanding : IApiGroupingModel
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
-public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>, ISidebarWithoutRootIndexNavigationItem
+public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>, ISidebarOverviewRowNavigationItem
 {
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
@@ -156,7 +156,7 @@ public class ClassificationNavigationItem(
 	classification,
 	rootNavigation,
 	parent
-), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem
+), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem, ISidebarOverviewRowNavigationItem
 {
 	public LandingNavigationItem Landing => rootNavigation;
 
@@ -170,7 +170,10 @@ public class ClassificationNavigationItem(
 	public override string NavigationTitle { get; } = classification.Name;
 
 	/// <inheritdoc />
-	public override string Id { get; } = ShortId.Create(classification.Name);
+	/// <remarks>
+	/// The prefix sits outside the hash: tag ids are eight hex characters, so no tag name can produce a group's toggle id.
+	/// </remarks>
+	public override string Id { get; } = $"group-{ShortId.Create(classification.Name)}";
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;

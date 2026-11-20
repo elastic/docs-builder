@@ -100,6 +100,15 @@ public class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 
 	public IEnumerable<INavigationItem> Walk() => Walk(Navigation);
 
+	/// <summary>The guide pages the sidebar lists under its Overview row: the visible rows before the first group.</summary>
+	public static IReadOnlyList<INavigationItem> GuidePages(LandingNavigationItem navigation) =>
+		[
+			.. navigation
+				.NavigationItems
+				.Where(static item => !item.Hidden)
+				.TakeWhile(static item => item is not INodeNavigationItem<INavigationModel, INavigationItem>)
+		];
+
 	public static IEnumerable<INavigationItem> Walk(INavigationItem item)
 	{
 		yield return item;

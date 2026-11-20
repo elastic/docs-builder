@@ -83,11 +83,19 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	}
 
 	[Test]
-	public void CreateNavigation_DocumentSecurity_ListsTheAuthenticationPageUnderTopicsAndPointsTheBadgeAtIt()
+	public void CreateNavigation_DocumentSecurity_ListsTheAuthenticationPageAsAGuidePageAndPointsTheBadgeAtIt()
 	{
-		var topics = fixture.Walk().OfType<TopicsNavigationItem>().Single();
-
-		topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Which.Hidden.Should().BeFalse();
+		ApiExplorerFixture
+			.GuidePages(fixture.Navigation)
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.BeOfType<StructuralNavigationItem>()
+			.Which
+			.Hidden
+			.Should()
+			.BeFalse();
 		fixture.Navigation.AuthenticationUrl.Should().Be("/api/fixture/authentication");
 	}
 

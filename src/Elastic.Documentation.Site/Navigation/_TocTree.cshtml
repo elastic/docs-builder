@@ -83,7 +83,7 @@ else
 		}
 	</div>
 
-	<ul class="block px-4" id="nav-tree-@(Model.ContentHash)" hx-preserve>
+	<ul class="block px-4@(Model.HasOverviewRow ? " nav-tree--overview-row" : "")" id="nav-tree-@(Model.ContentHash)" hx-preserve>
 		@if (Model.RootIndex is { } rootIndex)
 		{
 			<li class="flex group/li pr-8 mt-6">
