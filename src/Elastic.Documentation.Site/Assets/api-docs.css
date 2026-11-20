@@ -4662,17 +4662,18 @@ html:has(.api-page-shell) {
 	position: relative;
 }
 
-/* The section links read the shell's width (100cqi) to reach the sidebar past a 1920px window. The NavigationPreview
-   layout (.layout) has its own geometry. */
-.api-page-shell:not(.layout) {
-	container-type: inline-size;
-}
-
 .api-column-handle {
 	display: none;
 }
 
 @media (min-width: 1280px) {
+	/* The section links read the shell's width (100cqi) to reach the sidebar past a 1920px window. Only from 1280px:
+	   older browsers make a container the containing block of fixed boxes, such as the mobile nav drawer. The
+	   NavigationPreview layout (.layout) has its own geometry. */
+	.api-page-shell:not(.layout) {
+		container-type: inline-size;
+	}
+
 	.api-column-handle {
 		--api-column-line-width: 1px;
 		display: block;
