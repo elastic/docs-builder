@@ -35,6 +35,13 @@ The same directive can drive any decision. This one helps readers choose a searc
 :::{wizard} wizard-search-approach-sample.yaml
 :::
 
+### Pointing readers to a tutorial
+
+A wizard can also route readers to the right page. This one starts from the [Search solutions](https://www.elastic.co/docs/solutions/search) page and asks up to three questions. Every path ends on one tutorial or quickstart, so the result is a single thing to do next.
+
+:::{wizard} wizard-search-tutorial-sample.yaml
+:::
+
 ## How the flow works
 
 The reader moves through **screens**. Each screen has a `type`:

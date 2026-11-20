@@ -1,0 +1,243 @@
+# A third sample for the {wizard} directive: "Which search tutorial should you start with?"
+# Built from https://www.elastic.co/docs/solutions/search and the tutorials and quickstarts it leads to.
+# Every path ends on one tutorial, so the result is a single, specific thing to do next.
+#
+# Answers this file uses
+#   tutorial   the tutorial to start with (always set)
+#   flag       notes shown on the result for tutorials with a caveat
+
+meta:
+  title: Which search tutorial should you start with?
+  intro: >-
+    Tell us what you want to build. We'll point you to the tutorial that gets you there fastest.
+  start_button: Find my tutorial
+  start: goal
+  progress_label: Your progress
+
+screens:
+
+  # ------------------------------------------------------------------ what do you want to do
+  goal:
+    type: question
+    layout: cards
+    progress: 15
+    question: What do you want to do?
+    why: Pick the closest match. Each tutorial is hands-on, so you finish with something that works.
+    options:
+      - label: Learn the basics of Elasticsearch
+        hint: Create an index, add documents and run your first searches.
+        tags: [Indices, Documents, Mappings]
+        next: how_to_work
+      - label: Search text by the words in it
+        hint: Keyword search with filters and relevance.
+        tags: [Full-text, Filters]
+        next: how_to_work
+      - label: Search by meaning, not just keywords
+        hint: People ask in everyday language and the wording may differ from your content.
+        tags: [Semantic, Embeddings]
+        next: semantic_control
+      - label: Combine keyword and meaning in one search
+        hint: Exact matches and matches by meaning in a single set of results.
+        tags: [Hybrid, RRF]
+        next: hybrid_how
+      - label: Search with embeddings I already have
+        hint: Store pre-generated vectors and query them with kNN.
+        tags: [Vectors, kNN]
+        set: { tutorial: bring_vectors }
+        next: done
+      - label: Search images, audio or PDFs
+        hint: For example, find a picture by describing it.
+        tags: [Multimodal]
+        set: { tutorial: multimodal, flag: multimodal_preview }
+        next: done
+      - label: Not sure yet? No problem.
+        hint: We'll start you with the basics so you can explore.
+        wide: true
+        set: { tutorial: index_basics }
+        next: done
+
+  # ------------------------------------------------------------------ basics and keyword search
+  how_to_work:
+    type: question
+    progress: 55
+    question: How do you want to work through it?
+    why: The tutorials cover the same ideas in different tools, so choose the one you're most comfortable in.
+    options:
+      - label: In Kibana, sending requests in Console
+        hint: No code to set up.
+        set: { tutorial: index_basics }
+        next: done
+      - label: In Python
+        hint: Connect a backend application to Elasticsearch.
+        set: { tutorial: keyword_python }
+        next: done
+      - label: With Query DSL, building full-text queries and filters
+        set: { tutorial: query_dsl_filters }
+        next: done
+      - label: With ES|QL, the piped query language
+        set: { tutorial: esql_start }
+        next: done
+
+  # ------------------------------------------------------------------ semantic search
+  semantic_control:
+    type: question
+    progress: 40
+    question: How do you want to get your embeddings?
+    why: This is the main difference between the semantic search tutorials. The more Elasticsearch manages, the faster you finish.
+    options:
+      - label: Let Elasticsearch create them for me
+        hint: The simplest path, with a `semantic_text` field.
+        next: semantic_pace
+      - label: Use a third-party provider such as Cohere or OpenAI
+        next: provider
+      - label: Use Elastic's ELSER model with an ingest pipeline
+        hint: A sparse vector model trained by Elastic.
+        set: { tutorial: elser_pipeline }
+        next: done
+      - label: Deploy my own NLP model, for dense or sparse vectors
+        hint: The most control, and the most to manage.
+        set: { tutorial: own_model, flag: prefer_semantic_text }
+        next: done
+      - label: I'm not sure
+        hint: We'll start with the quickstart, the fastest way to see semantic search work.
+        set: { tutorial: semantic_quickstart }
+        next: done
+
+  semantic_pace:
+    type: question
+    progress: 75
+    question: How much time do you want to spend?
+    why: Both tutorials use `semantic_text`. The quickstart is shorter, and the full tutorial covers the mapping, ingest and queries step by step.
+    options:
+      - label: A quick first look
+        hint: Index documents and run a hybrid query in a few minutes.
+        set: { tutorial: semantic_quickstart }
+        next: done
+      - label: A complete walkthrough
+        hint: From the index mapping to ingesting data and running queries.
+        set: { tutorial: semantic_text }
+        next: done
+
+  provider:
+    type: question
+    progress: 75
+    question: Which provider do you want to use?
+    why: Both tutorials use the inference API, which connects Elasticsearch to a model that runs elsewhere.
+    options:
+      - label: Cohere
+        hint: Compute embeddings and store them for vector or hybrid search, using the Python client.
+        set: { tutorial: cohere }
+        next: done
+      - label: OpenAI, or any model with an OpenAI-compatible API
+        hint: Includes models you deploy in your own environment.
+        set: { tutorial: openai_compatible }
+        next: done
+
+  # ------------------------------------------------------------------ hybrid search
+  hybrid_how:
+    type: question
+    progress: 55
+    question: How do you want to build it?
+    why: The first tutorial teaches the technique step by step. The second one builds a small application.
+    options:
+      - label: Learn the technique, from mapping to hybrid queries
+        hint: Combine a `text` field with a `semantic_text` field.
+        set: { tutorial: hybrid_semantic_text }
+        next: done
+      - label: Connect an application and run semantic, hybrid and ES|QL searches
+        hint: Takes about 10 minutes.
+        set: { tutorial: vector_10min, flag: needs_vectordb }
+        next: done
+      - label: I'm not sure
+        hint: We'll start with the step-by-step tutorial.
+        set: { tutorial: hybrid_semantic_text }
+        next: done
+
+  done:
+    type: result
+    progress: 100
+
+results:
+  heading: "Start with {tutorial}"
+  answers_heading: Your answers
+  change_label: Change
+  start_over_label: Start over
+  back_label: Back
+
+  variables:
+    tutorial:
+      answer: tutorial
+      items:
+        index_basics:
+          name: "Index and search basics"
+          blurb: Create an index, add documents, work with dynamic and explicit mappings, and run your first searches in Kibana.
+          docs: { title: Index and search basics, href: "https://www.elastic.co/docs/solutions/search/get-started/index-basics" }
+        keyword_python:
+          name: "Build your first search query with Python"
+          blurb: Index a couple of documents and query them from Python, the way a backend application would.
+          docs: { title: Build your first search query with Python, href: "https://www.elastic.co/docs/solutions/search/get-started/keyword-search-python" }
+        query_dsl_filters:
+          name: "Get started with Query DSL search and filters"
+          blurb: Build full-text queries and combine them with filters to narrow your results.
+          docs: { title: Get started with Query DSL search and filters, href: "https://www.elastic.co/docs/reference/query-languages/query-dsl/full-text-filter-tutorial" }
+        esql_start:
+          name: "Get started with ES|QL queries"
+          blurb: Query your data with ES|QL, a piped language that filters, transforms and analyzes in one request.
+          docs: { title: Get started with ES|QL queries, href: "https://www.elastic.co/docs/reference/query-languages/esql/esql-getting-started" }
+        semantic_quickstart:
+          name: "the semantic search quickstart"
+          blurb: Index documents, let `semantic_text` create the embeddings for you, and run your first hybrid semantic search query.
+          docs: { title: Get started with semantic search, href: "https://www.elastic.co/docs/solutions/search/get-started/semantic-search" }
+        semantic_text:
+          name: "the semantic_text tutorial"
+          blurb: Create an index mapping with a `semantic_text` field, ingest data and run semantic queries, step by step.
+          docs: { title: "Semantic search with semantic_text", href: "https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-semantic-text" }
+        elser_pipeline:
+          name: "semantic search with ELSER"
+          blurb: Use ELSER, Elastic's sparse vector model, to search by meaning with an ingest pipeline.
+          docs: { title: Semantic search with ELSER, href: "https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-elser-ingest-pipelines" }
+        own_model:
+          name: "the dense and sparse ingest pipelines tutorial"
+          blurb: Set up semantic search with an NLP model you deploy yourself, using ingest pipelines for dense or sparse vector embeddings.
+          docs: { title: "Tutorial: Dense and sparse workflows using ingest pipelines", href: "https://www.elastic.co/docs/solutions/search/semantic-search/dense-versus-sparse-ingest-pipelines" }
+        cohere:
+          name: "the Cohere tutorial"
+          blurb: Compute embeddings with Cohere through the inference API, and store them for vector or hybrid search.
+          docs: { title: Using Cohere with Elasticsearch, href: "https://www.elastic.co/docs/solutions/search/semantic-search/cohere-es" }
+        openai_compatible:
+          name: "the OpenAI-compatible models tutorial"
+          blurb: Use OpenAI, or any model with an OpenAI-compatible API, through the inference API.
+          docs: { title: Using OpenAI compatible models with the inference API, href: "https://www.elastic.co/docs/solutions/search/semantic-search/using-openai-compatible-models" }
+        hybrid_semantic_text:
+          name: "the hybrid search tutorial"
+          blurb: Combine lexical and semantic search with a `text` field and a `semantic_text` field, from mapping through bulk ingest to hybrid queries.
+          docs: { title: "Hybrid search with semantic_text", href: "https://www.elastic.co/docs/solutions/search/hybrid-semantic-text" }
+        vector_10min:
+          name: "vector and full-text search in 10 minutes"
+          blurb: Connect an application to an Elasticsearch Vector Database project, index data, and run semantic, hybrid and ES|QL searches.
+          docs: { title: Elasticsearch vector and full-text search in 10 minutes, href: "https://www.elastic.co/docs/solutions/vector-database/vector-full-text-search" }
+        bring_vectors:
+          name: "the bring your own vectors tutorial"
+          blurb: Index pre-generated dense vector embeddings and search them with kNN queries.
+          docs: { title: Bring your own dense vector embeddings, href: "https://www.elastic.co/docs/solutions/search/vector/bring-own-vectors" }
+        multimodal:
+          name: "the multimodal search tutorial"
+          blurb: Build a small visual archive and search it with text, another image, or a PDF, using Jina multimodal embeddings.
+          docs: { title: "Tutorial: Build multimodal search in Elasticsearch", href: "https://www.elastic.co/docs/solutions/search/multimodal-search/multimodal-search-tutorial" }
+
+  cta:
+    - label: Open the tutorial
+      href_from: tutorial
+
+  extra_docs:
+    - when: { key: tutorial, in: [index_basics, keyword_python, query_dsl_filters, esql_start, semantic_quickstart] }
+      title: See all search quickstarts
+      href: https://www.elastic.co/docs/solutions/search/get-started/quickstarts
+    - when: { key: tutorial, in: [semantic_text, elser_pipeline, own_model, cohere, openai_compatible, hybrid_semantic_text, vector_10min, bring_vectors, multimodal] }
+      title: Compare all search approaches
+      href: https://www.elastic.co/docs/solutions/search/search-approaches
+
+  flag_notes:
+    multimodal_preview: "The `semantic` field for multimodal search is in technical preview and isn't recommended for production yet."
+    prefer_semantic_text: "For most projects, the `semantic_text` tutorial is simpler. Choose this one when you need to deploy and manage your own model."
+    needs_vectordb: "This tutorial uses an Elasticsearch Vector Database project on Elastic Cloud Serverless. New users can start a free 14-day trial."

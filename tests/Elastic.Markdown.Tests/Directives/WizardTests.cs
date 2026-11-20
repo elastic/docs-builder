@@ -477,6 +477,19 @@ public class WizardSearchApproachSampleTests() : WizardShippedSampleTests("wizar
 }
 
 [InheritsTests]
+public class WizardSearchTutorialSampleTests() : WizardShippedSampleTests("wizard-search-tutorial-sample.yaml")
+{
+	[Test]
+	public void EveryPathEndsOnOneTutorialWithADocsLink()
+	{
+		var tutorial = Block!.Config!.Results.Variables["tutorial"];
+		tutorial.Optional.Should().BeFalse();
+		tutorial.Items.Should().HaveCount(14);
+		tutorial.Items.Values.Should().OnlyContain(i => i.Docs != null && (i.Docs.Href ?? "").StartsWith("https://www.elastic.co/docs/"));
+	}
+}
+
+[InheritsTests]
 public class WizardCardsAndTagsTests() : DirectiveTest<WizardBlock>("""
 :::{wizard} wizard.yaml
 :::
