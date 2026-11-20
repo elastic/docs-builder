@@ -203,6 +203,151 @@ public class DocumentationSetStagesTests
 			"""
 			);
 
+	// Found by generated data. The expected text of each of these is what origin/main reports for the same file.
+	[Test]
+	public void Configure_ApiEntryWithANulCharacterAfterAFinding_ReportsTheFindingThenFails() =>
+		Configure(
+			"""
+			api:
+			  a:
+			    - spec: x
+			  b:
+			    - product: elasticsearch
+			      spec: "a\0.json"
+			  c:
+			    - spec: y
+			storybook:
+			  registry: ${A}
+
+			"""
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml:6 API 'a' is missing required 'product:'. It must match a product id defined in products.yml.
+			error /docs/docset.yml Could not load docset.yml: Null character in path. (Parameter 'path')
+			throws ArgumentException: (message omitted)
+			"""
+			);
+
+	[Test]
+	public void Configure_ApiChildWithANulCharacterAfterAFinding_ReportsTheChildFindingThenFails() =>
+		Configure(
+			"""
+			api:
+			  b:
+			    - product: elasticsearch
+			      spec: s.json
+			      children:
+			        - file: missing.md
+			        - file: "a\0.md"
+
+			"""
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Child page 'missing.md' for API 'b' does not exist under 'api/b/'.
+			error /docs/docset.yml Could not load docset.yml: Null character in path. (Parameter 'path')
+			throws ArgumentException: (message omitted)
+			"""
+			);
+
+	[Test]
+	public void Configure_BrandingImageWithANulCharacterAfterAFinding_ReportsTheFindingThenFailsBeforeTheTemplates() =>
+		Configure(
+			"""
+			branding:
+			  icon: x.exe
+			  og-image: "a\0.svg"
+			cta:
+			  b:
+			    button:
+			      label: L
+
+			"""
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml 'branding.icon' has unsupported extension '.exe'. Allowed: .svg, .png, .jpg, .jpeg, .gif, .webp, .ico
+			error /docs/docset.yml Could not load docset.yml: Null character in path. (Parameter 'path')
+			throws ArgumentException: (message omitted)
+			"""
+			);
+
+	[Test]
+	public void Configure_CtaBenefitsWithNoValueAfterAFinding_ReportsTheFindingThenFails() =>
+		Configure(
+			"""
+			cta:
+			  b:
+			    button:
+			      label: L
+			  a:
+			    button:
+			      label: L
+			      url: http://example.test
+			    benefits:
+			  c:
+			    button:
+			      label: L
+			default_cta: q
+
+			"""
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml 'cta.b' must define both 'button.label' and 'button.url'.
+			error /docs/docset.yml Could not load docset.yml: Object reference not set to an instance of an object.
+			throws NullReferenceException: Object reference not set to an instance of an object.
+			"""
+			);
+
+	[Test]
+	public void Configure_CtaBenefitsWithNoValueAndAnUnusableButton_ReportsTheButtonAndGoesOn() =>
+		Configure(
+			"""
+			cta:
+			  a:
+			    button:
+			      label: L
+			    benefits:
+			  b:
+			    button:
+			      label: L
+			      url: ftp://example.test
+			    benefits:
+
+			"""
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml 'cta.a' must define both 'button.label' and 'button.url'.
+			error /docs/docset.yml 'cta.b.button.url' must use http/https or a relative URL.
+			model <ConfigurationFile>:
+			"""
+			);
+
+	[Test]
+	public void Configure_CrossLinksWithNoValueAndALaterFinding_FailsBeforeReportingIt() =>
+		Configure("cross_links:\nrelease_notes:\n  - product: nope\napi:\n  p:\n    - spec: a\n")
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			diagnostics:
+			error /docs/docset.yml Could not load docset.yml: Value cannot be null. (Parameter 'source')
+			throws ArgumentNullException: (message omitted)
+			"""
+			);
+
 	// the stage reports the resolutions it is given; it does not resolve the entries a second time
 	[Test]
 	public void Apis_GivenAResolution_ReportsThatResolution()

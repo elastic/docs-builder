@@ -54,6 +54,9 @@ public static partial class DocumentationSetInCatalogConstraints
 {
 	public static readonly Constraint<DocumentationSetInCatalog> CrossLinkWellFormed = Constraints<DocumentationSetInCatalog>.Check(m =>
 	{
+		// a cross_links key written with no value fails the step that reads it, before anything of this stage is reported
+		if (m.Docset.CrossLinks is null)
+			return [];
 		var registry = DocumentationSetRules.ParseRegistry(m.Docset.Registry);
 		return m
 			.Docset
@@ -67,11 +70,14 @@ public static partial class DocumentationSetInCatalogConstraints
 	);
 
 	public static readonly Constraint<DocumentationSetInCatalog> ReleaseNotesProductKnown = Constraints<DocumentationSetInCatalog>.Check(
-		m => DocumentationSetRules
-			.UntilNoValue(m.Docset.ReleaseNotes)
-			.Select(reference => DocumentationSetRules.ResolveReleaseNotes(reference, m.Products).Value)
-			.OfType<ReleaseNotesRejected>()
-			.Select(rejected => Violation.Error(rejected.Problem))
+		// with a cross_links key written with no value the step that reads it fails before release_notes is reached
+		m => m.Docset.CrossLinks is null
+			? []
+			: DocumentationSetRules
+				.UntilNoValue(m.Docset.ReleaseNotes)
+				.Select(reference => DocumentationSetRules.ResolveReleaseNotes(reference, m.Products).Value)
+				.OfType<ReleaseNotesRejected>()
+				.Select(rejected => Violation.Error(rejected.Problem))
 	).Describe("Each release_notes entry names a products.yml product with the 'release-notes' feature.");
 }
 
@@ -87,8 +93,8 @@ public static partial class DocumentationSetApisConstraints
 	);
 
 	public static readonly Constraint<DocumentationSetApis> StorybookVariablesAllowed = Constraints<DocumentationSetApis>.Check(
-		// with an api key written with no value the step that reads api fails before storybook is reached
-		m => !m.Docset.HasStorybook || m.Docset.Api is null
+		// with an api key written with no value, or an api entry that failed, the step that reads api fails before storybook is reached
+		m => !m.Docset.HasStorybook || m.Docset.Api is null || m.Resolutions.Any(r => r.Value is ApiFailed)
 			? []
 			: EnvironmentInterpolation.DisallowedVariables(m.Docset.StorybookRegistry?.Trim()).Select(
 				name => Violation.Warning(
@@ -103,7 +109,9 @@ public static partial class DocumentationSetApisConstraints
 public static partial class DocumentationSetPresentationConstraints
 {
 	public static readonly Constraint<DocumentationSetPresentation> BrandingImagesValid = Constraints<DocumentationSetPresentation>.Check(
+		// an image whose path cannot be read fails the step that reads it, after the findings of the images before it
 		m => BrandingImages(m.Docset)
+			.TakeWhile(image => !DocumentationSetRules.IsUnreadablePath(image.Path))
 			.Select(image => DocumentationSetRules.BrandingImageProblem(image.Field, image.Path, m.FileSystem, m.SourceDirectory))
 			.OfType<string>()
 			.Select(Violation.Error)
@@ -124,11 +132,10 @@ public static partial class DocumentationSetPresentationConstraints
 			}.Where(i => !string.IsNullOrEmpty(i.Item2));
 
 	public static readonly Constraint<DocumentationSetPresentation> CtaTemplateValid = Constraints<DocumentationSetPresentation>.Check(
-		m => DocumentationSetRules
-			.UntilNoValue(m.Docset.Ctas)
-			.Select(DocumentationSetRules.CtaProblem)
-			.OfType<string>()
-			.Select(Violation.Error)
+		// the images are read before the templates: with an unreadable image path the step fails before any template is reported
+		m => BrandingImages(m.Docset).Any(image => DocumentationSetRules.IsUnreadablePath(image.Path))
+			? []
+			: DocumentationSetRules.CtaProblems(m.Docset.Ctas).Select(Violation.Error)
 	).Describe("Each cta template has a button label and url, an absolute url uses http(s), and it lists at most three benefits.");
 }
 
@@ -139,7 +146,8 @@ public static partial class DocumentationSetFeaturesConstraints
 	public static readonly Constraint<DocumentationSetFeatures> DefaultCtaKnown = Constraints<DocumentationSetFeatures>.Check(m =>
 	{
 		var usable = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = true };
-		foreach (var cta in m.Docset.Ctas.Where(c => DocumentationSetRules.CtaProblem(c!) is null))
+		// resolution fails on a template with no value before this stage is reached, so such a template is simply not usable here
+		foreach (var cta in (m.Docset.Ctas ?? []).Where(c => c is { Benefits: not null } && DocumentationSetRules.CtaProblem(c) is null))
 			usable[cta!.Name] = true;
 		return m
 			.Docset

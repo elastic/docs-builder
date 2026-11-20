@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Runtime.ExceptionServices;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Extensions;
@@ -36,8 +37,14 @@ public sealed record ApiAccepted(ResolvedApiConfiguration Configuration, IReadOn
 /// <summary>An <c>api</c> entry that is dropped, with its findings in the order they are reported.</summary>
 public sealed record ApiRejected(IReadOnlyList<Violation> Problems);
 
+/// <summary>
+/// An <c>api</c> entry whose resolution threw (a path with a NUL character cannot be resolved against the files), with the findings made before it did.
+/// The stage reports them and the resolver then throws <see cref="Failure"/>, as the step that read the entry always did.
+/// </summary>
+public sealed record ApiFailed(IReadOnlyList<Violation> Problems, ExceptionDispatchInfo Failure);
+
 /// <summary>What an <c>api</c> entry makes of itself against the catalog and the files next to <c>docset.yml</c>.</summary>
-public readonly union ApiResolution(ApiAccepted, ApiRejected);
+public readonly union ApiResolution(ApiAccepted, ApiRejected, ApiFailed);
 
 /// <summary>
 /// How the parts of a <c>docset.yml</c> are read, shared by the constraints that report what is wrong with them and by the resolution that keeps
@@ -119,6 +126,9 @@ public static class DocumentationSetRules
 			);
 	}
 
+	/// <summary>Whether reading <paramref name="path"/> fails: a path with a NUL character throws where it is resolved against the files.</summary>
+	public static bool IsUnreadablePath(string path) => path.Contains('\0', StringComparison.Ordinal);
+
 	/// <summary>The finding for a <c>branding</c> image that is set, or null when the image is usable. <paramref name="field"/> is how it is reported.</summary>
 	public static string? BrandingImageProblem(string field, string imagePath, IFileSystem fileSystem, IDirectoryInfo sourceDirectory)
 	{
@@ -138,24 +148,48 @@ public static class DocumentationSetRules
 	}
 
 	/// <summary>The finding for a <c>cta</c> template that cannot be used, or null. A template written with no value is null and throws here, as it always has.</summary>
-	public static string? CtaProblem(CtaDeclaration definition)
+	public static string? CtaProblem(CtaDeclaration definition) => CtaButtonProblem(definition) ?? CtaBenefitsProblem(definition);
+
+	/// <summary>
+	/// The findings of the <c>cta</c> templates up to the first one written with no value: a null template, or one whose <c>benefits</c> key has no
+	/// value and whose button is usable, which is where <see cref="CtaProblem"/> fails. The step that keeps the templates fails on it, so nothing after
+	/// it was ever reported.
+	/// </summary>
+	public static IEnumerable<string> CtaProblems(IEnumerable<CtaDeclaration?>? templates)
+	{
+		foreach (var template in templates ?? [])
+		{
+			if (template is null)
+				yield break;
+			if (CtaButtonProblem(template) is { } buttonProblem)
+			{
+				yield return buttonProblem;
+				continue;
+			}
+
+			if (template.Benefits is null)
+				yield break;
+			if (CtaBenefitsProblem(template) is { } benefitsProblem)
+				yield return benefitsProblem;
+		}
+	}
+
+	private static string? CtaButtonProblem(CtaDeclaration definition)
 	{
 		var name = definition.Name;
 		if (string.IsNullOrWhiteSpace(definition.Label) || string.IsNullOrWhiteSpace(definition.Url))
 			return $"'cta.{name}' must define both 'button.label' and 'button.url'.";
 
-		if (
-			Uri.TryCreate(definition.Url.Trim(), UriKind.RelativeOrAbsolute, out var uri)
+		return Uri.TryCreate(definition.Url.Trim(), UriKind.RelativeOrAbsolute, out var uri)
 			&& uri.IsAbsoluteUri
 			&& uri.Scheme != Uri.UriSchemeHttp
-			&& uri.Scheme != Uri.UriSchemeHttps
-		)
-			return $"'cta.{name}.button.url' must use http/https or a relative URL.";
-
-		return definition.Benefits.Count > Cta.MaxBenefits
-			? $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed."
-			: null;
+			&& uri.Scheme != Uri.UriSchemeHttps ? $"'cta.{name}.button.url' must use http/https or a relative URL." : null;
 	}
+
+	private static string? CtaBenefitsProblem(CtaDeclaration definition) =>
+		definition.Benefits.Count > Cta.MaxBenefits
+			? $"'cta.{definition.Name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed."
+			: null;
 
 	/// <summary>
 	/// Reads one <c>api</c> entry against the catalog and the files next to <c>docset.yml</c>, checked in order: one entry, a known product, a spec
@@ -167,6 +201,48 @@ public static class DocumentationSetRules
 		ProductCatalog products,
 		IFileSystem fileSystem,
 		IDirectoryInfo sourceDirectory
+	)
+	{
+		var problems = new List<Violation>();
+		try
+		{
+			return ResolveApiEntry(api, products, fileSystem, sourceDirectory, problems);
+		}
+		catch (Exception e)
+		{
+			return new ApiFailed([.. problems], ExceptionDispatchInfo.Capture(e));
+		}
+	}
+
+	/// <summary>
+	/// Reads the <c>api</c> entries in order and stops after the first one that fails: the entries after it were never read, so nothing about them
+	/// is reported. A list written with no value has no entries to read.
+	/// </summary>
+	public static IReadOnlyList<ApiResolution> ResolveApis(
+		IEnumerable<ApiDeclaration>? apis,
+		ProductCatalog products,
+		IFileSystem fileSystem,
+		IDirectoryInfo sourceDirectory
+	)
+	{
+		var resolutions = new List<ApiResolution>();
+		foreach (var api in apis ?? [])
+		{
+			var resolution = ResolveApi(api, products, fileSystem, sourceDirectory);
+			resolutions.Add(resolution);
+			if (resolution.Value is ApiFailed)
+				break;
+		}
+
+		return resolutions;
+	}
+
+	private static ApiResolution ResolveApiEntry(
+		ApiDeclaration api,
+		ProductCatalog products,
+		IFileSystem fileSystem,
+		IDirectoryInfo sourceDirectory,
+		List<Violation> problems
 	)
 	{
 		var productKey = api.ProductKey;
@@ -244,7 +320,6 @@ public static class DocumentationSetRules
 			repository = candidate;
 		}
 
-		var problems = new List<Violation>();
 		var apiContentDirectory = fileSystem.DirectoryInfo.New(Path.Join(sourceDirectory.FullName, "api", productKey));
 		var children = ResolveApiChildren(productKey, entry.Children, fileSystem, apiContentDirectory, problems);
 
@@ -269,6 +344,7 @@ public static class DocumentationSetRules
 	{
 		ApiAccepted accepted => accepted.Problems,
 		ApiRejected rejected => rejected.Problems,
+		ApiFailed failed => failed.Problems,
 		_ => []
 	};
 
