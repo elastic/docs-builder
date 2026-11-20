@@ -5,8 +5,9 @@
 // Progressive-enhancement custom element for the `{table}` directive's
 // `:filterable:` option. The server renders a normal, fully-usable table; when
 // this module loads, it wraps that table with a search box and per-column
-// dropdown filters (auto-generated for low-cardinality columns) and shows/hides
-// rows client-side. No framework is required, so there is no hydration cost and
+// dropdown filters and shows/hides rows client-side. The dropdowns are
+// auto-generated for low-cardinality columns unless the author chose them:
+// `:filterable: search` turns them off and `:filter-columns:` names them. No framework is required, so there is no hydration cost and
 // the table degrades gracefully when JavaScript is unavailable.
 
 // Columns with at most this many distinct values become dropdown filters.
@@ -149,14 +150,37 @@ class FilterableTableElement extends HTMLElement {
         return this.rows.map((row) => this.cellValues(row.cells[colIndex]))
     }
 
+    /**
+     * The zero-based positions of the columns the author chose for dropdowns,
+     * or null when the choice is automatic. `:filterable: search` renders
+     * `data-facets="none"` (an empty choice). `:filter-columns:` names columns
+     * by header text, and the build matches those names and renders the
+     * positions in `data-facet-columns`, so header text is never compared here.
+     */
+    private chosenColumns(): Set<number> | null {
+        if (this.dataset.facets === 'none') return new Set()
+        const listed = this.dataset.facetColumns
+        if (listed === undefined) return null
+        return new Set(
+            listed
+                .split(',')
+                .map((position) => Number.parseInt(position.trim(), 10))
+                .filter((position) => Number.isInteger(position))
+        )
+    }
+
     /** The dropdowns the current table content warrants, in column order. */
     private facetSpecs(): FacetSpec[] {
         const specs: FacetSpec[] = []
+        const chosen = this.chosenColumns()
         this.headerLabels().forEach((label, colIndex) => {
             // A blank header leaves the dropdown with no label and no
             // accessible name, so skip the column: a nameless filter is worse
             // than none.
             if (!label) return
+            // The author's choice replaces the heuristic below, so a column of
+            // scores never gets a dropdown just because it has few values.
+            if (chosen && !chosen.has(colIndex)) return
             const perRow = this.columnValues(colIndex)
             const values = Array.from(new Set(perRow.flat())).sort((a, b) =>
                 a.localeCompare(b)
@@ -168,14 +192,12 @@ class FilterableTableElement extends HTMLElement {
             const isKeyColumn =
                 perRow.every((v) => v.length === 1) &&
                 values.length === this.rows.length
-            // Only offer a dropdown for columns that partition the data
-            // meaningfully: at least two values, few enough to scan, and not a
-            // key column.
-            if (
-                values.length < 2 ||
-                values.length > FACET_MAX_DISTINCT ||
-                isKeyColumn
-            )
+            // A column with one value can't narrow anything, chosen or not.
+            if (values.length < 2) return
+            // Left to the heuristic, only offer a dropdown for columns that
+            // partition the data meaningfully: few enough values to scan, and
+            // not a key column. A column the author chose skips both checks.
+            if (!chosen && (values.length > FACET_MAX_DISTINCT || isKeyColumn))
                 return
             specs.push({ colIndex, label, values })
         })

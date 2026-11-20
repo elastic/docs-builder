@@ -516,3 +516,123 @@ describe('filterable-table', () => {
         expect(visibleRows()).toHaveLength(2)
     })
 })
+
+describe('filterable-table author-chosen dropdowns', () => {
+    // Scores have few distinct values, so the heuristic would offer a dropdown
+    // for each score column. Provider is the column a reader wants to filter.
+    const SCORES_HTML = (attributes: string) => `
+      <filterable-table ${attributes}>
+        <table>
+          <thead><tr><th>Provider</th><th>Model</th><th>Score A</th><th>Score B</th></tr></thead>
+          <tbody>
+            <tr><td>Anthropic</td><td>m1</td><td>9.00</td><td>7.00</td></tr>
+            <tr><td>Google</td><td>m2</td><td>9.00</td><td>8.00</td></tr>
+            <tr><td>OpenAI</td><td>m3</td><td>4.00</td><td>7.00</td></tr>
+            <tr><td>Anthropic</td><td>m4</td><td>7.00</td><td>8.00</td></tr>
+          </tbody>
+        </table>
+      </filterable-table>`
+
+    const facetLabels = () =>
+        Array.from(document.querySelectorAll('.filterable-table-facet')).map(
+            (f) => f.textContent?.split(':')[0]
+        )
+
+    it('offers a dropdown for every qualifying column by default', () => {
+        document.body.innerHTML = SCORES_HTML('')
+        customElements.upgrade(document.body)
+        expect(facetLabels()).toEqual(['Provider', 'Score A', 'Score B'])
+    })
+
+    it('shows the search box but no dropdowns for data-facets="none"', () => {
+        document.body.innerHTML = SCORES_HTML('data-facets="none"')
+        customElements.upgrade(document.body)
+        expect(
+            document.querySelector('.filterable-table-search')
+        ).not.toBeNull()
+        expect(facetLabels()).toEqual([])
+        expect(
+            document.querySelector('.filterable-table-status')?.textContent
+        ).toBe('Showing 4 of 4')
+    })
+
+    it('offers dropdowns only for the listed columns', () => {
+        document.body.innerHTML = SCORES_HTML('data-facet-columns="0"')
+        customElements.upgrade(document.body)
+        expect(facetLabels()).toEqual(['Provider'])
+
+        const select = document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+        select.value = 'Anthropic'
+        select.dispatchEvent(new Event('change'))
+        expect(visibleRows().map((r) => r.cells[1].textContent)).toEqual([
+            'm1',
+            'm4',
+        ])
+    })
+
+    it('builds the listed columns in table order', () => {
+        document.body.innerHTML = SCORES_HTML('data-facet-columns="3,0"')
+        customElements.upgrade(document.body)
+        expect(facetLabels()).toEqual(['Provider', 'Score B'])
+    })
+
+    it('honors a listed column the heuristic would skip', () => {
+        // Model holds one value per row, so the heuristic treats it as a key
+        // column. Listing it is the author's call, so it gets a dropdown.
+        document.body.innerHTML = SCORES_HTML('data-facet-columns="1"')
+        customElements.upgrade(document.body)
+        expect(facetLabels()).toEqual(['Model'])
+    })
+
+    it('lifts the distinct-value cap for a listed column', () => {
+        const rows = Array.from(
+            { length: 14 },
+            (_, i) => `<tr><td>row ${i}</td><td>Provider ${i % 13}</td></tr>`
+        ).join('')
+        const table = (attributes: string) => `
+          <filterable-table ${attributes}>
+            <table>
+              <thead><tr><th>Name</th><th>Provider</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </filterable-table>`
+
+        // Thirteen providers is over the cap, so the heuristic skips it.
+        document.body.innerHTML = table('')
+        customElements.upgrade(document.body)
+        expect(facetLabels()).toEqual([])
+
+        document.body.innerHTML = table('data-facet-columns="1"')
+        customElements.upgrade(document.body)
+        expect(facetLabels()).toEqual(['Provider'])
+    })
+
+    it('finds a chosen column whose header has extra text', () => {
+        // The build matched `:filter-columns: Status` to this header, whose
+        // footnote marker and extra spaces make its text "Status  1" here.
+        // Matching by position means that text never has to agree.
+        document.body.innerHTML = `
+          <filterable-table data-facet-columns="1">
+            <table>
+              <thead><tr><th>Name</th><th>Status  <a class="footnote-ref" href="#fn:1"><sup>1</sup></a></th></tr></thead>
+              <tbody>
+                <tr><td>a</td><td>Core</td></tr>
+                <tr><td>b</td><td>Extended</td></tr>
+                <tr><td>c</td><td>Core</td></tr>
+              </tbody>
+            </table>
+          </filterable-table>`
+        customElements.upgrade(document.body)
+        expect(
+            document.querySelectorAll('.filterable-table-facet')
+        ).toHaveLength(1)
+    })
+
+    it('ignores a position that is not a number', () => {
+        document.body.innerHTML = SCORES_HTML('data-facet-columns="0,x"')
+        customElements.upgrade(document.body)
+        expect(facetLabels()).toEqual(['Provider'])
+    })
+})

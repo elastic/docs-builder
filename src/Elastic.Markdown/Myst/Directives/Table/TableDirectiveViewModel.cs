@@ -25,6 +25,12 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 	/// </summary>
 	public required bool Filterable { get; init; }
 
+	/// <summary>When set, the client adds the search box but no dropdown filters.</summary>
+	public bool FilterSearchOnly { get; init; }
+
+	/// <summary>When not empty, only the columns at these zero-based positions get a dropdown filter.</summary>
+	public IReadOnlyList<int> FilterColumnIndexes { get; init; } = [];
+
 	/// <summary>
 	/// Renders the table content. When <see cref="ColumnWidths"/> is specified, injects a colgroup and table-layout:fixed.
 	/// When <see cref="Matrix"/> is set, adds the table-matrix class to the wrapper.
@@ -68,9 +74,19 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 	/// <summary>
 	/// Wraps the rendered table in a &lt;filterable-table&gt; custom element so the client
 	/// can progressively enhance it with search + facet filters. Without JavaScript the
-	/// table renders exactly as before.
+	/// table renders exactly as before. <c>data-facets="none"</c> turns the dropdown filters
+	/// off, and <c>data-facet-columns</c> lists the zero-based positions of the only columns
+	/// that get one.
 	/// </summary>
-	private static string WrapFilterable(string html) => "<filterable-table>" + html + "</filterable-table>";
+	private string WrapFilterable(string html)
+	{
+		var attributes = FilterSearchOnly
+			? " data-facets=\"none\""
+			: FilterColumnIndexes.Count > 0
+				? $" data-facet-columns=\"{string.Join(",", FilterColumnIndexes.Select(i => i.ToString(CultureInfo.InvariantCulture)))}\""
+				: string.Empty;
+		return $"<filterable-table{attributes}>" + html + "</filterable-table>";
+	}
 
 	/// <summary>
 	/// Adds the table-matrix class to the wrapper div's opening tag emitted by WrappedTableRenderer,
