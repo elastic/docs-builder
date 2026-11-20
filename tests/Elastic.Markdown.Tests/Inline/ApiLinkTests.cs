@@ -105,7 +105,7 @@ public class ApiRedirectedPageTests() : InlineTest(
 {
 	[Test]
 	public void ChecksTheTargetOfAnEdgeRedirect() =>
-		// The section holds topic-kibana-spaces but not kibana-api-overview, where the edge redirects it, so only the target can miss.
+		// The section holds topic-kibana-spaces but not spaces, where the edge redirects it, so only the target can miss.
 		Collector
 			.Diagnostics
 			.Should()
