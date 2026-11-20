@@ -1,15 +1,18 @@
-@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiVersionNoticeModel>
-@switch (Model.Notice)
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiViewModel>
+@{
+	var designSystem = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled;
+}
+@switch (Model.VersionNotice)
 {
 	case OlderMajorNotice older:
 		<p class="api-version-notice api-version-notice--older" role="note">
-			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel($"Version {older.Version}", Model.DesignSystem)))
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel($"Version {older.Version}", designSystem)))
 			<a href="@older.LatestUrl">View the latest version (@older.LatestLabel)<span aria-hidden="true"> &rarr;</span></a>
 		</p>
 		break;
 	case UnreleasedNotice unreleased:
 		<p class="api-version-notice api-version-notice--unreleased" role="note">
-			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel("Unreleased", Model.DesignSystem, Warning: true)))
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel("Unreleased", designSystem, Warning: true)))
 			<span>This version is not released yet and can change.</span>
 			<a href="@unreleased.LatestUrl">View the latest version (@unreleased.LatestLabel)<span aria-hidden="true"> &rarr;</span></a>
 		</p>

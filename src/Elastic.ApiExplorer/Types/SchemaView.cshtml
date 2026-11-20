@@ -27,10 +27,7 @@
 	<div class="api-page-heading">
 		<h1>@schema.DisplayName</h1>
 	</div>
-	@if (Model.VersionNotice is { } versionNotice)
-	{
-		@await RenderPartialAsync(_VersionNotice.Create(versionNotice))
-	}
+	@await RenderPartialAsync(_VersionNotice.Create(Model))
 
 	@if (!string.IsNullOrEmpty(pageModel.DictionaryTypeName))
 	{

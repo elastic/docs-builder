@@ -14,9 +14,6 @@ public sealed record OlderMajorNotice(string Version, string LatestLabel, string
 
 public sealed record UnreleasedNotice(string LatestLabel, string LatestUrl) : ApiVersionNotice(LatestLabel, LatestUrl);
 
-/// <param name="DesignSystem">True when the design system look is on, so the pill takes that look's badge markup.</param>
-public sealed record ApiVersionNoticeModel(ApiVersionNotice Notice, bool DesignSystem);
-
 public static class ApiVersionNotices
 {
 	/// <summary>
@@ -25,6 +22,9 @@ public static class ApiVersionNotices
 	/// </summary>
 	public static ApiVersionNotice? For(ApiPageType type, IReadOnlyList<ApiVersionSwitcherItem> pageItems)
 	{
+		if (type is ApiPageType.Versionless or ApiPageType.NewestMajorCopy)
+			return null;
+
 		var latestMoniker = ApiVersions.LatestMajor(pageItems.Select(static i => i.Moniker));
 		var latest = pageItems.FirstOrDefault(i => i.Moniker == latestMoniker);
 		var selected = pageItems.FirstOrDefault(static i => i.Selected);
@@ -34,7 +34,6 @@ public static class ApiVersionNotices
 		var latestLabel = latest.ShortLabel ?? latest.Label;
 		return type switch
 		{
-			ApiPageType.Versionless or ApiPageType.NewestMajorCopy => null,
 			ApiPageType.OlderMajor => new OlderMajorNotice(selected.Moniker, latestLabel, latest.Url),
 			ApiPageType.Unreleased => new UnreleasedNotice(latestLabel, latest.Url),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)

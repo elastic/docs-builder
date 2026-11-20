@@ -37,10 +37,7 @@
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
 	</div>
-	@if (Model.VersionNotice is { } versionNotice)
-	{
-		@await RenderPartialAsync(_VersionNotice.Create(versionNotice))
-	}
+	@await RenderPartialAsync(_VersionNotice.Create(Model))
 	@if (Model.Servers.Count > 0)
 	{
 		<dl class="api-rail-facts api-rail-facts--inline">
