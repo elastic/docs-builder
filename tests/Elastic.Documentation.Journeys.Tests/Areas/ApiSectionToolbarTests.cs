@@ -45,11 +45,11 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 
 		_ = report.Should().MatchInlineSnapshot(
 			"""
-			at rest: visible True, pinned False, current section Overview
-			row top at 200px: visible True, pinned False, current section Overview
-			row top at 60px: visible True, pinned True, current section Overview
-			row top at 20px: visible True, pinned True, current section Overview
-			at the last section: visible True, pinned True, current section Responses
+			at rest: visible True, pinned False, current section Overview, title shown False
+			row top at 200px: visible True, pinned False, current section Overview, title shown False
+			row top at 60px: visible True, pinned True, current section Overview, title shown True
+			row top at 20px: visible True, pinned True, current section Overview, title shown True
+			at the last section: visible True, pinned True, current section Responses, title shown True
 			"""
 		);
 	}
@@ -60,7 +60,7 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 		var report = string.Empty;
 		await WithPageAsync("#responses", async page => report = await DescribeAsync(page).ConfigureAwait(false)).ConfigureAwait(false);
 
-		_ = report.Should().MatchInlineSnapshot("visible True, pinned True, current section Responses");
+		_ = report.Should().MatchInlineSnapshot("visible True, pinned True, current section Responses, title shown True");
 	}
 
 	[Test]
@@ -379,6 +379,7 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 					visible: getComputedStyle(bar).visibility === 'visible' && rect.bottom > 0 && rect.top < innerHeight,
 					pinned: Math.abs(rect.top - pinnedAt) < 1,
 					current: [...bar.querySelectorAll('[aria-current]')].map(a => a.textContent.trim()).join(',') || 'none',
+					title: getComputedStyle(bar.querySelector('.api-section-links-title')).visibility === 'visible',
 				};
 			})()
 			"""
@@ -386,7 +387,7 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 
 		return string.Create(
 			CultureInfo.InvariantCulture,
-			$"visible {state.GetProperty("visible").GetBoolean()}, pinned {state.GetProperty("pinned").GetBoolean()}, current section {state.GetProperty("current").GetString()}"
+			$"visible {state.GetProperty("visible").GetBoolean()}, pinned {state.GetProperty("pinned").GetBoolean()}, current section {state.GetProperty("current").GetString()}, title shown {state.GetProperty("title").GetBoolean()}"
 		);
 	}
 

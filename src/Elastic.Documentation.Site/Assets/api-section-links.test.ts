@@ -66,6 +66,36 @@ describe('section links', () => {
         expect(document.querySelectorAll('[aria-current]')).toHaveLength(0)
     })
 
+    it.each([
+        ['below where it pins', 300, false],
+        ['at where it pins', 84, true],
+    ])(
+        'shows the operation title above the bar once the bar is %s',
+        (_, barTop, pinned) => {
+            document.body.innerHTML = `
+                <section id="elastic-api-v3">
+                    <nav class="api-section-links" style="top: 84px" data-toc data-toc-sticky>
+                        <div class="api-section-links-title">
+                            <a href="#api-operation-overview" data-api-back-to-top>Patch a cluster</a>
+                        </div>
+                        <a href="#responses" data-toc-link>Responses</a>
+                    </nav>
+                    <h2 id="responses"></h2>
+                </section>`
+            // jsdom has no layout: the bar is either still in the page or at its sticky top
+            document.querySelector(
+                '.api-section-links'
+            )!.getBoundingClientRect = () => ({ top: barTop }) as DOMRect
+            initApiDocs()
+
+            expect(
+                document
+                    .querySelector('.api-section-links')!
+                    .hasAttribute('data-pinned')
+            ).toBe(pinned)
+        }
+    )
+
     it('scrolls to the top of the page from the Overview link of the bar', () => {
         mountBar()
         const scrollTo = vi.fn()

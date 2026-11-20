@@ -64,7 +64,7 @@
 <section id="elastic-api-v3" class="@(ShowSectionLinks ? "api-has-toolbar" : null)">
 	@if (ShowSectionLinks)
 	{
-		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(Model.SectionLinks))
+		@(await RenderPartialAsync<_SectionLinks, SectionLinksModel>(new SectionLinksModel(operation.Summary, endpoint.Rows.FirstOrDefault()?.Methods ?? [], Model.SectionLinks)))
 	}
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
 	{
