@@ -12,6 +12,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -51,6 +52,19 @@ public record ApiRenderContext(
 	public IReadOnlyList<ApiCatalogEntry> CatalogEntries { get; init; } = [];
 
 	public string? CurrentApiKey { get; init; }
+
+	/// <summary>What the tree being rendered is for search engines. The catalog and other previews count as versionless.</summary>
+	public ApiPageType PageType { get; init; } = ApiPageType.Versionless;
+
+	/// <summary>The root of the versionless tree, set on the numbered copy of the newest major so its pages name the versionless pages as canonical.</summary>
+	public string? VersionlessRootUrl { get; init; }
+
+	/// <summary>The absolute canonical URL of <paramref name="pageUrl"/>, or its path when the build has no canonical base URL.</summary>
+	public string CanonicalUrl(string pageUrl)
+	{
+		var path = ApiPageTypes.CanonicalPath(PageType, pageUrl, CurrentNavigation.NavigationRoot.Url, VersionlessRootUrl).TrimEnd('/');
+		return UrlPath.MakeAbsolute(BuildContext.CanonicalBaseUrl, path)?.TrimEnd('/') ?? path;
+	}
 
 	/// <summary>Product bound to this API key, or <see langword="null"/> on the combined catalog.</summary>
 	public Product? Product { get; init; }

@@ -49,7 +49,13 @@ internal sealed record ResolvedProductDocuments(
 /// One rendered page tree: a version's spec at one of its URL roots, <c>/api/{Suffix}</c>. <paramref name="IsMirror"/>
 /// marks the numbered copy of the default major, which repeats the tree at the versionless root.
 /// </summary>
-internal sealed record ApiVersionTree(VersionedOpenApiDocument Version, string Suffix, bool IsMirror, LandingNavigationItem Navigation)
+internal sealed record ApiVersionTree(
+	VersionedOpenApiDocument Version,
+	string Suffix,
+	bool IsMirror,
+	ApiPageType PageType,
+	LandingNavigationItem Navigation
+)
 {
 	public string Moniker => Version.Version.Moniker;
 }
@@ -74,6 +80,8 @@ internal sealed record ApiProductGeneration(
 	string Moniker,
 	bool ValidateSupplemental,
 	bool EmitUnmatchedBaseFiles,
+	ApiPageType PageType,
+	string? VersionlessRootUrl,
 	int? SupplementalMajor,
 	IReadOnlyList<ApiCatalogEntry> CatalogEntries,
 	string? CurrentApiKey
@@ -286,6 +294,10 @@ public class OpenApiGenerator(
 					// Both copies of the default major read the same files, so only the first copy reports on them.
 					ValidateSupplemental: !tree.IsMirror,
 					EmitUnmatchedBaseFiles: moniker == resolved.UnmatchedBaseFilesMoniker,
+					PageType: tree.PageType,
+					VersionlessRootUrl: tree.IsMirror
+						? ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, resolved.Routes.Suffix(moniker))
+						: null,
 					SupplementalMajor: SupplementalMajor(moniker, trees.HighestMajor),
 					CatalogEntries: hubEntries,
 					CurrentApiKey: prefix
@@ -321,6 +333,7 @@ public class OpenApiGenerator(
 						r.Version,
 						r.Suffix,
 						r.IsMirror,
+						ApiPageTypes.Of(resolved.Routes, r.Version.Version.Moniker, r.IsMirror),
 						CreateNavigation(
 							r.Suffix,
 							r.Version.Document,
@@ -601,6 +614,8 @@ public class OpenApiGenerator(
 			VersionSwitcherItems = generation.VersionSwitcherItems,
 			CatalogEntries = generation.CatalogEntries,
 			CurrentApiKey = generation.CurrentApiKey,
+			PageType = generation.PageType,
+			VersionlessRootUrl = generation.VersionlessRootUrl,
 			OperationSupplemental = operations,
 			TagSupplemental = tags,
 			Product = generation.ApiConfig?.Product
