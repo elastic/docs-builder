@@ -198,6 +198,27 @@ public class SitemapTests
 	}
 
 	[Test]
+	[Arguments("api explorer, api documents, no build sitemap", true, true, false, true)]
+	[Arguments("api explorer off", false, true, false, false)]
+	[Arguments("narrative documents only", true, false, false, false)]
+	[Arguments("build sitemap present", true, true, true, false)]
+	public void BuildSitemapMissing_WarnsOnlyWhenRenderedApiPagesLoseTheirSitemap(
+		string _,
+		bool apiExplorerEnabled,
+		bool apiDocuments,
+		bool buildSitemap,
+		bool expected
+	)
+	{
+		Dictionary<string, DateTimeOffset> buildPages = buildSitemap ? new() { ["/docs/api"] = Date } : [];
+		List<SitemapEntry> documents = [new("/docs/reference", Date, [])];
+		if (apiDocuments)
+			documents.Add(new("/docs/api/elasticsearch", Date, ["/docs/api/elasticsearch"], ApiLanding: true));
+
+		ApiSitemapDates.BuildSitemapMissing(buildPages, documents, apiExplorerEnabled).Should().Be(expected);
+	}
+
+	[Test]
 	public void ReadApiPages_ReadsThePathsAndDatesTheBuildWrote()
 	{
 		var (_, output) = Output();

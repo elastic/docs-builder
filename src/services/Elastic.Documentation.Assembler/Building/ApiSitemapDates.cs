@@ -52,6 +52,16 @@ public static class ApiSitemapDates
 		return new ApiSitemapResolution(entries, missing);
 	}
 
+	/// <summary>
+	/// Whether the API sitemap of the build is gone although the environment renders API pages and the index has API documents,
+	/// so the sitemap index would silently drop the API pages.
+	/// </summary>
+	public static bool BuildSitemapMissing(
+		IReadOnlyDictionary<string, DateTimeOffset> buildPages,
+		IEnumerable<SitemapEntry> documents,
+		bool apiExplorerEnabled
+	) => buildPages.Count == 0 && apiExplorerEnabled && documents.Any(d => d.ApiTreeRoots.Count > 0);
+
 	/// <summary>The document's URL moved into each tree it lists. Its URL points into the first.</summary>
 	private static IEnumerable<string> PageUrls(SitemapEntry document)
 	{

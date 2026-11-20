@@ -76,7 +76,7 @@ public class AssemblerSitemapService(
 
 		// API pages are the ones `assembler build` listed; the index dates them.
 		var buildPages = SitemapBuilder.ReadApiPages(output);
-		if (buildPages.Count == 0 && AssemblerApiSections.IsEnabled(assembleContext) && documents.Any(d => d.ApiTreeRoots.Count > 0))
+		if (ApiSitemapDates.BuildSitemapMissing(buildPages, documents, AssemblerApiSections.IsEnabled(assembleContext)))
 			collector.EmitGlobalWarning(
 				$"{indexName} has API documents, but {output.Folder.FullName} has no sitemap-api.xml from `assembler build`, so sitemap.xml will not list the API pages"
 			);
