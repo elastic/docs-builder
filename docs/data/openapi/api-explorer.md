@@ -192,13 +192,14 @@ rendering the local file.
 
 For versioned products, {{dbuild}} renders every resolved version from the index:
 
-| Index moniker | URL path | Role | Notice under the title |
+| Index moniker | URL path | Role | Notice beside the title |
 |---|---|---|---|
 | `9`, the highest numeric major | `/api/<key>/` and `/api/<key>/v9/` | Newest released major, the default. Both URLs serve the same pages. | None |
 | `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8` pill and a link to the latest version |
 | `main` | `/api/<key>/next/` | Unreleased spec | An `Unreleased` warning and a link to the latest version |
 
-The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise.
+The notice sits in the title row, beside the title. It wraps under the title when the row is full, so the title keeps its normal distance to the request line.
+The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise. If the newest major failed to load, the notice keeps the page's own version and has no link.
 
 The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.
 Search indexes the default version at `/api/<key>/` and older majors at `/api/<key>/vN/`, not `main` at `/next/` or the `/v9/` copy of the newest major. Search from a `/next/` page is the normal search with a lift for that API's default-version results. It does not filter by version, and operations that exist only in older majors stay hidden.
