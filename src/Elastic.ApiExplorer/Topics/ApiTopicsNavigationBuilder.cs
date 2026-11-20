@@ -9,9 +9,11 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 
@@ -197,6 +199,13 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 
 		var url = ApiUrlBuilder.ChildUrl(context.UrlPathPrefix, apiUrlSuffix, slug);
 		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
+		if (string.Equals(title, NavigationRenderModel.OverviewTitle, StringComparison.OrdinalIgnoreCase))
+		{
+			context.EmitWarning(
+				markdownFile,
+				$"The API sidebar already opens with an '{NavigationRenderModel.OverviewTitle}' row that leads to the API landing page, so this children: page shows as a second '{title}' row. Give the page a title that names what it covers."
+			);
+		}
 		return new SimpleMarkdownNavigationItem(url, title, markdownFile, landing) { Parent = landing };
 	}
 

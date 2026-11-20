@@ -14,6 +14,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -128,6 +129,23 @@ public partial class TopicPageTests
 		var topics = ApiExplorerFixture.GuidePages(navigation);
 
 		topics.Select(item => item.NavigationTitle).Should().Equal("Authentication", "Rate limiting", "Overview", "Principles");
+	}
+
+	[Test]
+	[Arguments("overview.md", 1)]
+	[Arguments("spaces.md", 0)]
+	public async Task CreateNavigation_ChildTitledOverview_WarnsThatItRepeatsTheOverviewRow(string fileName, int warnings)
+	{
+		var collector = new DiagnosticsCollector([]);
+
+		_ = await NavigationWithChild(
+			Spec(topics: null),
+			fileName,
+			"# Guide\n\nHow it works.\n",
+			TestHelpers.CreateBuildContext(collector)
+		);
+
+		collector.Warnings.Should().Be(warnings);
 	}
 
 	[Test]
@@ -466,7 +484,12 @@ public partial class TopicPageTests
 	}
 
 	/// <summary>Builds the navigation with one child page written to disk; the child is only read while the navigation is built.</summary>
-	private static async Task<LandingNavigationItem> NavigationWithChild(string spec, string fileName, string markdown)
+	private static async Task<LandingNavigationItem> NavigationWithChild(
+		string spec,
+		string fileName,
+		string markdown,
+		BuildContext? context = null
+	)
 	{
 		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
 		var folder = Directory.CreateDirectory(
@@ -476,7 +499,7 @@ public partial class TopicPageTests
 		{
 			var child = Path.Combine(folder.FullName, fileName);
 			await File.WriteAllTextAsync(child, markdown, TestContext.Current!.Execution.CancellationToken);
-			return await Navigation(spec, [child]);
+			return await Navigation(spec, [child], context);
 		}
 		finally
 		{

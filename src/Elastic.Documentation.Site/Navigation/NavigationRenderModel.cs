@@ -85,6 +85,9 @@ public sealed record NavigationRenderModel
 	/// Non-clickable label above an island/section tree (e.g. "Elasticsearch", "Reference").
 	/// The clickable index sits in <see cref="Tree"/> as "Overview".
 	/// </summary>
+	/// <summary>The label of the row that leads to a section's or an API's own landing page.</summary>
+	public const string OverviewTitle = "Overview";
+
 	public string? TreeHeading { get; init; }
 	/// <summary>True when the tree opens with an in-line Overview row; see <see cref="ISidebarOverviewRowNavigationItem"/>.</summary>
 	public bool HasOverviewRow { get; init; }
@@ -319,14 +322,14 @@ public sealed record NavigationRenderModel
 	}
 
 	private static NavigationRenderNode SectionOverviewLeaf(string url) =>
-		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = true, NavigationTitle = "Overview", Url = url };
+		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = true, NavigationTitle = OverviewTitle, Url = url };
 
 	private static List<NavigationRenderNode> FlattenIslandOverview(NavigationRenderNode overview, List<NavigationRenderNode> children)
 	{
 		var overviewLeaf = overview with
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
-			NavigationTitle = "Overview",
+			NavigationTitle = OverviewTitle,
 			Id = null,
 			ShowToggle = false,
 			NavigationItems = []

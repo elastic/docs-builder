@@ -93,7 +93,7 @@ api:
         - file: kibana-api-overview.md
 ```
 
-Child pages are listed at the top of the sidebar, right after the **Overview** row, in the order you declare them, after Authentication and Rate limiting, which always come first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build.
+Child pages are listed at the top of the sidebar, right after the **Overview** row, in the order you declare them, after Authentication and Rate limiting, which always come first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build. The build warns about a child page whose navigation title is `Overview`, because the sidebar would show two **Overview** rows that lead to different pages.
 
 Child pages also behave as follows:
 
