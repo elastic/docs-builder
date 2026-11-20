@@ -316,7 +316,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			return;
 
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
-		var urls = await BuildNumberedMajorsSitemapAsync(workspace, failingVersion: null, cancellationToken);
+		var urls = SitemapUrls(await BuildNumberedMajorsAsync(workspace, failingVersion: null, cancellationToken));
 		// one row per page type: the landing page of each rendered tree
 		var trees = new (string Url, string PageType, bool Listed)[]
 		{
@@ -355,13 +355,29 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			return;
 
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
-		var urls = await BuildNumberedMajorsSitemapAsync(workspace, failingVersion: "9.4", cancellationToken);
+		var navigation = await BuildNumberedMajorsAsync(workspace, failingVersion: "9.4", cancellationToken);
+		var urls = SitemapUrls(navigation);
 
 		urls.Should().NotContain("/docs/api/elasticsearch", "nothing renders at the versionless URL");
 		urls.Should().Contain("/docs/api/elasticsearch/v8", "the older major rendered");
 		urls.Should().Contain("/docs/api", "the API hub links to the older major");
 		urls.Should().NotContain(u => u.Contains("/next", StringComparison.Ordinal));
 		ShouldEachNameItselfCanonical(workspace, urls);
+
+		var hub = navigation.TopLevelItems.OfType<SectionNavigation>().Should().ContainSingle(s => s.Title == "APIs").Subject;
+		hub
+			.NavigationItems
+			.OfType<IFloatingSectionRoot>()
+			.Should()
+			.ContainSingle()
+			.Which
+			.Hidden
+			.Should()
+			.BeTrue("the API has no versionless landing to link to");
+		new LlmsNavigationEnhancer()
+			.GenerateNavigationSections(navigation, new Uri(workspace.Context.Environment.Uri))
+			.Should()
+			.NotContain("/api/elasticsearch.md", "llms.txt does not link to the missing versionless landing");
 	}
 
 	[Test]
@@ -376,7 +392,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		// the docset still declares an API, and the build runs every API step
 		using var workspace = await CreateWorkspaceAsync(cancellationToken, apiExplorer: false);
-		var urls = await BuildNumberedMajorsSitemapAsync(workspace, failingVersion: null, cancellationToken);
+		var urls = SitemapUrls(await BuildNumberedMajorsAsync(workspace, failingVersion: null, cancellationToken));
 		var output = SitemapOutput.For(workspace.Context);
 		_ = SitemapBuilder.Generate(urls.ToDictionary(u => u, _ => DateTimeOffset.UnixEpoch), output, workspace.Collector);
 
@@ -385,8 +401,11 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		workspace.FileSystem.File.ReadAllText(output.PathOf("sitemap.xml")).Should().NotContain("sitemap-api.xml");
 	}
 
-	/// <summary>Builds an API with <c>main</c>, <c>9</c> and <c>8</c> and returns the URLs of its sitemap walk.</summary>
-	private static async Task<HashSet<string>> BuildNumberedMajorsSitemapAsync(Workspace workspace, string? failingVersion, Cancel ctx)
+	private static HashSet<string> SitemapUrls(SiteNavigation navigation) =>
+		navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).ToHashSet();
+
+	/// <summary>Builds an API with <c>main</c>, <c>9</c> and <c>8</c> and returns the site navigation the sitemap walks.</summary>
+	private static async Task<SiteNavigation> BuildNumberedMajorsAsync(Workspace workspace, string? failingVersion, Cancel ctx)
 	{
 		using var versionIndexClient = new VersionIndexClient(
 			new Uri("https://specs.example.test/"),
@@ -419,7 +438,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			versionIndexClient
 		);
 		workspace.Collector.Errors.Should().Be(0);
-		return navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).ToHashSet();
+		return navigation;
 	}
 
 	private static void ShouldEachNameItselfCanonical(Workspace workspace, IEnumerable<string> urls)
