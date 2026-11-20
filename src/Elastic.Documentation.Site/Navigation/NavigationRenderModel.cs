@@ -138,18 +138,18 @@ public sealed record NavigationRenderModel
 				nodes = FlattenIslandOverview(SectionOverviewLeaf(tree.Url), nodes);
 			rootIndex = null;
 		}
+		else if (tree is ISidebarOverviewRowNavigationItem)
+		{
+			// A heading tree, such as one x-tagGroups group, keeps its title under the Overview row, as in the full API sidebar.
+			var overview = SectionOverviewLeaf(tree.Url);
+			nodes = tree is ISidebarHeadingNavigationItem
+				? FlattenIslandOverview(overview, [CreateNode(tree, isTopLevel: true)])
+				: FlattenIslandOverview(overview, CreateNavigationItems(tree, isTopLevel: true).ToList());
+		}
 		else
 		{
 			nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
-			if (tree is ISidebarOverviewRowNavigationItem)
-			{
-				// A heading tree, such as one x-tagGroups group, keeps its title under the Overview row, as in the full API sidebar.
-				var overview = SectionOverviewLeaf(tree.Url);
-				nodes = tree is ISidebarHeadingNavigationItem
-					? FlattenIslandOverview(overview, [CreateNode(tree, isTopLevel: true)])
-					: FlattenIslandOverview(overview, nodes);
-			}
-			else if (rootIndex is not null && IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild))
+			if (rootIndex is not null && IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild))
 			{
 				treeHeading = rootIndex.NavigationTitle;
 				nodes = FlattenIslandOverview(rootIndex, nodes);
