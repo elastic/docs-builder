@@ -27,9 +27,10 @@ public sealed partial record SearchTuning : IHaveConstraints<SearchTuning>
 		init
 		{
 			// a copy, so the record and its derived map describe the same groups whatever the caller does to its list afterwards
-			field = value is null ? null! : [.. value];
-			// a null is for the model's `required` rule to report, not for the derived map to throw on
-			SynonymBiDirectional = value is null ? [] : BuildBiDirectional(value);
+			var copy = value is null ? null! : (IReadOnlyList<SynonymGroup>)[.. value];
+			field = copy;
+			// a null is for the model's `required` rule to report, not for the derived map to throw on; the map reads the copy, never the caller's list again
+			SynonymBiDirectional = copy is null ? [] : BuildBiDirectional(copy);
 		}
 	}
 
