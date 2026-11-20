@@ -7,8 +7,11 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
+using Amazon.Runtime;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -17,14 +20,10 @@ namespace Elastic.Documentation.Assembler.ApiCrawl;
 
 /// <param name="Site">The scheme and host to crawl, such as <c>https://docs-edge.elastic.dev</c>.</param>
 /// <param name="SitePrefix">The path the docs live under on <see cref="Site"/>, such as <c>/docs</c>.</param>
-/// <param name="LinksJson">A path or URL of the <c>links.json</c> that lists the API pages.</param>
+/// <param name="LinksJson">A local <c>links.json</c> that lists the API pages, or null for docs-content <c>main</c> in the link index.</param>
 /// <param name="AllowIndexing">Whether the build lets search engines index its pages, which sets the expected robots value.</param>
-public sealed record ApiCrawlOptions(Uri Site, string SitePrefix, string LinksJson, bool AllowIndexing)
+public sealed record ApiCrawlOptions(Uri Site, string SitePrefix, string? LinksJson, bool AllowIndexing)
 {
-	/// <summary>The links.json of docs-content main in the public link index.</summary>
-	public const string DefaultLinksJson =
-		"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/docs-content/main/links.json";
-
 	public int RedirectStatus { get; init; } = 302;
 	public int RedirectSample { get; init; } = 50;
 	public int Concurrency { get; init; } = 16;
@@ -43,6 +42,10 @@ public sealed class ApiCrawlService(
 {
 	private const string SitemapRow = "Sitemap";
 	private const string RedirectRow = "Redirects";
+	private const string DefaultLinksKey = "elastic/docs-content/main/links.json";
+
+	// ApiLegacyRedirects describes the old URLs of a site under /docs only.
+	private const string LegacyRedirectPrefix = "/docs";
 
 	private static readonly string[] RowNames = [.. Enum.GetNames<ApiPageType>(), RedirectRow, SitemapRow];
 
@@ -52,25 +55,25 @@ public sealed class ApiCrawlService(
 	{
 		using var client = new ApiCrawlClient(options.Site, handler);
 		var prefix = "/" + options.SitePrefix.Trim('/');
+		var indexPath = $"{prefix}/{SitemapBuilder.IndexFileName}";
+		var apiPath = $"{prefix}/{SitemapBuilder.ApiFileName}";
 
-		var links = await LoadLinksAsync(client, options.LinksJson, ctx).ConfigureAwait(false);
-		RepositoryLinks repositoryLinks;
-		switch (links)
-		{
-			case LinksLoaded loaded:
-				repositoryLinks = loaded.Links;
-				break;
-			case LinksFailed failed:
-				collector.EmitGlobalError($"Could not read links.json from {options.LinksJson}: {failed.Reason}");
-				return false;
-			default:
-				return false;
-		}
+		var linksTask = LoadLinksAsync(options.LinksJson, ctx);
+		var indexTask = client.GetTextAsync(new Uri(options.Site, indexPath), ctx);
+		var apiTask = client.GetTextAsync(new Uri(options.Site, apiPath), ctx);
+		await Task.WhenAll(linksTask, indexTask, apiTask).ConfigureAwait(false);
+
+		if ((await linksTask.ConfigureAwait(false)).EmitTo(collector) is not { } repositoryLinks)
+			return false;
 
 		var model = ApiUrlModel.Create(repositoryLinks, prefix);
 		var differences = new ConcurrentBag<CrawlDifference>();
 
-		var sitemap = await ReadSitemapsAsync(client, options.Site, prefix, model, ctx).ConfigureAwait(false);
+		var sitemap = ReadSitemaps(
+			(indexPath, await indexTask.ConfigureAwait(false)),
+			(apiPath, await apiTask.ConfigureAwait(false)),
+			model
+		);
 		foreach (var difference in sitemap.Differences)
 			differences.Add(difference);
 
@@ -93,8 +96,7 @@ public sealed class ApiCrawlService(
 				differences.Add(difference);
 		}).ConfigureAwait(false);
 
-		var redirects = model.RedirectSample(options.RedirectSample);
-		_logger.LogInformation("Checking {Redirects} old /docs/api/doc/ URLs", redirects.Count);
+		var redirects = RedirectSample(model, prefix, options.RedirectSample);
 		await Parallel.ForEachAsync(redirects, parallel, async (check, c) =>
 		{
 			var observed = await client.ObserveAsync(check.OldPath, c).ConfigureAwait(false);
@@ -141,37 +143,51 @@ public sealed class ApiCrawlService(
 		_ => RedirectRow
 	};
 
+	private IReadOnlyList<RedirectCheck> RedirectSample(ApiUrlModel model, string prefix, int pageSample)
+	{
+		if (prefix != LegacyRedirectPrefix)
+		{
+			_logger.LogInformation(
+				"Skipping the redirect check: the old API URL table only describes {Legacy}, and this site lives under {Prefix}",
+				LegacyRedirectPrefix,
+				prefix
+			);
+			return [];
+		}
+
+		var redirects = model.RedirectSample(pageSample);
+		_logger.LogInformation("Checking {Redirects} old /docs/api/doc/ URLs", redirects.Count);
+		return redirects;
+	}
+
 	private sealed record SitemapRead(IReadOnlySet<string> ApiPaths, IReadOnlyList<CrawlDifference> Differences);
 
-	private static async Task<SitemapRead> ReadSitemapsAsync(ApiCrawlClient client, Uri site, string prefix, ApiUrlModel model, Cancel ctx)
+	private static SitemapRead ReadSitemaps((string Path, FetchedText Text) index, (string Path, FetchedText Text) api, ApiUrlModel model)
 	{
-		var indexPath = $"{prefix}/sitemap.xml";
-		var apiPath = $"{prefix}/{ApiCrawlRules.ApiSitemapFileName}";
-		var index = await client.GetTextAsync(new Uri(site, indexPath), ctx).ConfigureAwait(false);
-		var api = await client.GetTextAsync(new Uri(site, apiPath), ctx).ConfigureAwait(false);
-
 		var differences = new List<CrawlDifference>();
-		if (!index.IsOk)
-			differences.Add(new(indexPath, null, CrawlField.SitemapIndex, "HTTP 200", index.Describe()));
-		if (!api.IsOk)
-			differences.Add(new(apiPath, null, CrawlField.SitemapIndex, "HTTP 200", api.Describe()));
+		foreach (var (path, text) in new[] { index, api })
+		{
+			if (!text.IsOk)
+				differences.Add(new(path, null, CrawlField.SitemapIndex, "HTTP 200", text.Describe()));
+		}
 
-		var indexLocations = index.IsOk ? Locations(index.Body) : [];
 		// The API sitemap names the canonical host; the path is what the crawled host serves.
-		var apiPaths = (api.IsOk ? Locations(api.Body) : []).Select(
-			loc => Uri.TryCreate(loc, UriKind.Absolute, out var uri) ? uri.AbsolutePath : loc
-		).ToHashSet(StringComparer.Ordinal);
+		var apiPaths = Locations(api.Text)
+			.Select(loc => Uri.TryCreate(loc, UriKind.Absolute, out var uri) ? uri.AbsolutePath : loc)
+			.ToHashSet(StringComparer.Ordinal);
 
-		if (index.IsOk)
-			differences.AddRange(ApiCrawlRules.CompareSitemap(indexPath, indexLocations, api.IsOk ? apiPaths : [], model));
+		if (index.Text.IsOk)
+			differences.AddRange(ApiCrawlRules.CompareSitemap(index.Path, Locations(index.Text), apiPaths, model));
 		return new SitemapRead(apiPaths, differences);
 	}
 
-	private static string[] Locations(string xml)
+	private static string[] Locations(FetchedText text)
 	{
+		if (!text.IsOk)
+			return [];
 		try
 		{
-			return [.. XDocument.Parse(xml).Descendants().Where(e => e.Name.LocalName == "loc").Select(e => e.Value.Trim())];
+			return [.. XDocument.Parse(text.Body).Descendants().Where(e => e.Name.LocalName == "loc").Select(e => e.Value.Trim())];
 		}
 		catch (XmlException)
 		{
@@ -179,28 +195,31 @@ public sealed class ApiCrawlService(
 		}
 	}
 
-	private async Task<LinksResult> LoadLinksAsync(ApiCrawlClient client, string source, Cancel ctx)
+	/// <summary>Reads <paramref name="path"/>, or docs-content <c>main</c> from the link index when it is null.</summary>
+	private async Task<LoadResult<RepositoryLinks>> LoadLinksAsync(string? path, Cancel ctx)
 	{
 		try
 		{
-			if (Uri.TryCreate(source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+			if (path is null)
 			{
-				var fetched = await client.GetTextAsync(uri, ctx).ConfigureAwait(false);
-				return fetched.IsOk ? new LinksLoaded(RepositoryLinks.Deserialize(fetched.Body)) : new LinksFailed(fetched.Describe());
+				var links = await Aws3LinkIndexReader.CreateAnonymous().GetRepositoryLinks(DefaultLinksKey, ctx).ConfigureAwait(false);
+				return new Loaded<RepositoryLinks>(links, []);
 			}
 
-			var json = await fileSystem.File.ReadAllTextAsync(source, ctx).ConfigureAwait(false);
-			return new LinksLoaded(RepositoryLinks.Deserialize(json));
+			var stream = fileSystem.File.OpenRead(path);
+			await using (stream.ConfigureAwait(false))
+				return new Loaded<RepositoryLinks>(RepositoryLinks.Deserialize(stream), []);
 		}
-		catch (Exception ex) when (ex is JsonException or IOException)
+		catch (Exception ex) when (ex is JsonException or IOException or HttpRequestException or AmazonServiceException or AmazonClientException)
 		{
-			return new LinksFailed(ex.Message);
+			return new Unreadable<RepositoryLinks>([
+				new Diagnostic
+				{
+					Severity = Severity.Error,
+					File = path ?? DefaultLinksKey,
+					Message = $"Could not read links.json: {ex.Message}"
+				}
+			]);
 		}
 	}
-
-	private abstract record LinksResult;
-
-	private sealed record LinksLoaded(RepositoryLinks Links) : LinksResult;
-
-	private sealed record LinksFailed(string Reason) : LinksResult;
 }

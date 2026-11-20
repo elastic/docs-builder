@@ -25,14 +25,14 @@ Staging answers every request with a Google sign-in redirect, so the check canno
 |---|---|---|
 | `--environment` | `edge` | Reads `uri`, `path_prefix` and `allow_indexing` from `config/assembler.yml`. |
 | `--base-url` | the environment `uri` | Crawls another scheme and host with the same expectations. |
-| `--links-json` | docs-content `main` in the link index | A path or URL of the `links.json` that lists the API pages. |
+| `--links-json` | docs-content `main` in the link index | A local `links.json` that lists the API pages. The default is read anonymously from the link index bucket. |
 | `--redirect-status` | `302` | The status an old `/docs/api/doc/` URL must redirect with. |
 | `--redirect-sample` | `50` | How many API pages to check through their old URL, on top of the redirect table and every tree root. |
 | `--concurrency` | `16` | How many requests run at once. |
 
 ## What it checks
 
-The pages come from the floating `api/{key}` sections of `links.json`: each page under its version root and its mirror root, plus the `/docs/api` hub. A URL in `sitemap-api.xml` that `links.json` does not list is crawled too. The check classifies each path by its longest version root:
+The pages come from the floating `api/{key}` sections of `links.json`: each page under its version root and its mirror root, plus the `/docs/api` hub. A URL in `sitemap-api.xml` that `links.json` does not list is crawled too. Each version root gets its page type from `ApiPageTypes.Of`, the function the renderer uses, and a path takes the type of its longest version root:
 
 | Root | Page type |
 |---|---|
@@ -56,5 +56,9 @@ The expected canonical URL, robots value and sitemap membership come from `ApiPa
 | `Hops` | An old `/docs/api/doc/` URL did not redirect exactly once. |
 | `RedirectStatus` | The redirect used another status than `--redirect-status`. |
 | `RedirectTarget` | The redirect went somewhere other than `ApiLegacyRedirects.Resolve` says: the renamed root, the exact page, or the same path without `/doc`. |
+
+The redirect sample takes the redirect table in `ApiLegacyRedirects`, then the root and a sample of pages of each `Versionless` and `OlderMajor` tree under `/docs/api/doc/`. `Unreleased` and `NewestMajorCopy` trees are left out, because their old `/next` and `/vN` URLs never existed. The table only describes a site under `/docs`, so on any other `path_prefix` the step is skipped with an info line.
+
+The `Robots` value must match exactly, spacing included.
 
 The summary counts the pages checked and the differences found per page type, plus a row for the redirect sample and one for the sitemap.

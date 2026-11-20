@@ -242,34 +242,32 @@ public class ApiCrawlRulesTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			/docs/api/doc/cloud-billing/group/endpoint-budgets -> /docs/api/cloud-billing/group/endpoint-billing-budgets
-			/docs/api/doc/cloud-billing/topic/topic-authentication -> /docs/api/cloud-billing/authentication
-			/docs/api/doc/cloud-enterprise/servers -> /docs/api/cloud-enterprise
-			/docs/api/doc/cloud-enterprise/v3/servers -> /docs/api/cloud-enterprise/v3
-			/docs/api/doc/cloud/topic/topic-authentication -> /docs/api/cloud/authentication
-			/docs/api/doc/elastic-cloud-serverless -> /docs/api/cloud-serverless
-			/docs/api/doc/elasticsearch-serverless/servers -> /docs/api/elasticsearch-serverless
-			/docs/api/doc/elasticsearch/servers -> /docs/api/elasticsearch
-			/docs/api/doc/elasticsearch/v8/servers -> /docs/api/elasticsearch/v8
-			/docs/api/doc/elasticsearch/v9/servers -> /docs/api/elasticsearch/v9
-			/docs/api/doc/kibana/topic/topic-kibana-spaces -> /docs/api/kibana/kibana-api-overview
-			/docs/api/doc/kibana/v8/topic/topic-kibana-spaces -> /docs/api/kibana/v8/kibana-api-overview
-			/docs/api/doc/kibana/v9/group/endpoint-significant_events -> /docs/api/kibana/v9/group/endpoint-streams
-			/docs/api/doc/kibana/v9/operation/operation-delete-streams-name-queries-queryid -> /docs/api/kibana/v9/group/endpoint-streams
-			/docs/api/doc/kibana/v9/operation/operation-get-streams-name-queries -> /docs/api/kibana/v9/group/endpoint-streams
-			/docs/api/doc/kibana/v9/operation/operation-get-streams-name-significant-events -> /docs/api/kibana/v9/group/endpoint-streams
-			/docs/api/doc/kibana/v9/operation/operation-post-streams-name-queries-bulk -> /docs/api/kibana/v9/group/endpoint-streams
-			/docs/api/doc/kibana/v9/operation/operation-put-streams-name-queries-queryid -> /docs/api/kibana/v9/group/endpoint-streams
-			/docs/api/doc/kibana/v9/topic/topic-kibana-spaces -> /docs/api/kibana/v9/kibana-api-overview
-			/docs/api/doc/serverless -> /docs/api/kibana-serverless
-			/docs/api/doc/cloud -> /docs/api/cloud
-			/docs/api/doc/elasticsearch -> /docs/api/elasticsearch
-			/docs/api/doc/elasticsearch/next -> /docs/api/elasticsearch/next
-			/docs/api/doc/elasticsearch/v8 -> /docs/api/elasticsearch/v8
-			/docs/api/doc/elasticsearch/v9 -> /docs/api/elasticsearch/v9
-			/docs/api/doc/cloud/operation/operation-list -> /docs/api/cloud/operation/operation-list
-			/docs/api/doc/elasticsearch/v9/operation/operation-search -> /docs/api/elasticsearch/v9/operation/operation-search
-			"""
+				/docs/api/doc/cloud-billing/group/endpoint-budgets -> /docs/api/cloud-billing/group/endpoint-billing-budgets
+				/docs/api/doc/cloud-billing/topic/topic-authentication -> /docs/api/cloud-billing/authentication
+				/docs/api/doc/cloud-enterprise/servers -> /docs/api/cloud-enterprise
+				/docs/api/doc/cloud-enterprise/v3/servers -> /docs/api/cloud-enterprise/v3
+				/docs/api/doc/cloud/topic/topic-authentication -> /docs/api/cloud/authentication
+				/docs/api/doc/elastic-cloud-serverless -> /docs/api/cloud-serverless
+				/docs/api/doc/elasticsearch-serverless/servers -> /docs/api/elasticsearch-serverless
+				/docs/api/doc/elasticsearch/servers -> /docs/api/elasticsearch
+				/docs/api/doc/elasticsearch/v8/servers -> /docs/api/elasticsearch/v8
+				/docs/api/doc/elasticsearch/v9/servers -> /docs/api/elasticsearch/v9
+				/docs/api/doc/kibana/topic/topic-kibana-spaces -> /docs/api/kibana/kibana-api-overview
+				/docs/api/doc/kibana/v8/topic/topic-kibana-spaces -> /docs/api/kibana/v8/kibana-api-overview
+				/docs/api/doc/kibana/v9/group/endpoint-significant_events -> /docs/api/kibana/v9/group/endpoint-streams
+				/docs/api/doc/kibana/v9/operation/operation-delete-streams-name-queries-queryid -> /docs/api/kibana/v9/group/endpoint-streams
+				/docs/api/doc/kibana/v9/operation/operation-get-streams-name-queries -> /docs/api/kibana/v9/group/endpoint-streams
+				/docs/api/doc/kibana/v9/operation/operation-get-streams-name-significant-events -> /docs/api/kibana/v9/group/endpoint-streams
+				/docs/api/doc/kibana/v9/operation/operation-post-streams-name-queries-bulk -> /docs/api/kibana/v9/group/endpoint-streams
+				/docs/api/doc/kibana/v9/operation/operation-put-streams-name-queries-queryid -> /docs/api/kibana/v9/group/endpoint-streams
+				/docs/api/doc/kibana/v9/topic/topic-kibana-spaces -> /docs/api/kibana/v9/kibana-api-overview
+				/docs/api/doc/serverless -> /docs/api/kibana-serverless
+				/docs/api/doc/cloud -> /docs/api/cloud
+				/docs/api/doc/elasticsearch -> /docs/api/elasticsearch
+				/docs/api/doc/elasticsearch/v8 -> /docs/api/elasticsearch/v8
+				/docs/api/doc/cloud/operation/operation-list -> /docs/api/cloud/operation/operation-list
+				/docs/api/doc/elasticsearch/v8/operation/operation-search -> /docs/api/elasticsearch/v8/operation/operation-search
+				"""
 			);
 
 	[Test]

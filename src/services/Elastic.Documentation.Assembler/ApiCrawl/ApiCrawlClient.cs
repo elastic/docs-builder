@@ -30,28 +30,27 @@ public sealed class ApiCrawlClient : IDisposable
 
 	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(30);
 
-	private static readonly HttpClient SharedHttpClient = new(new SocketsHttpHandler
-	{
-		AllowAutoRedirect = false,
-		AutomaticDecompression = DecompressionMethods.All,
-		PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-	})
-	{ Timeout = FetchTimeout };
-
 	private readonly HttpClient _httpClient;
-	private readonly HttpClient? _ownedHttpClient;
 	private readonly Uri _site;
 
 	public ApiCrawlClient(Uri site, HttpMessageHandler? handler = null)
 	{
 		_site = site;
-		if (handler is null)
-			_httpClient = SharedHttpClient;
-		else
+		var ownHandler = handler
+			?? new SocketsHttpHandler
+			{
+				AllowAutoRedirect = false,
+				AutomaticDecompression = DecompressionMethods.All,
+				PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+			};
+		// Over HTTP/2 a response disposed after its head resets the stream instead of draining the rest of the body.
+		// RequestVersionOrLower negotiates HTTP/2 over TLS and keeps HTTP/1.1 for a plain-HTTP base URL.
+		_httpClient = new HttpClient(ownHandler, disposeHandler: handler is null)
 		{
-			_ownedHttpClient = new HttpClient(handler, disposeHandler: false) { Timeout = FetchTimeout };
-			_httpClient = _ownedHttpClient;
-		}
+			Timeout = FetchTimeout,
+			DefaultRequestVersion = HttpVersion.Version20,
+			DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+		};
 	}
 
 	public async Task<FetchedText> GetTextAsync(Uri uri, Cancel ctx)
@@ -120,7 +119,12 @@ public sealed class ApiCrawlClient : IDisposable
 
 	private Task<HttpResponseMessage> GetAsync(Uri uri, Cancel ctx)
 	{
-		var request = new HttpRequestMessage(HttpMethod.Get, uri);
+		// A request built by hand does not pick up the client's default version.
+		var request = new HttpRequestMessage(HttpMethod.Get, uri)
+		{
+			Version = _httpClient.DefaultRequestVersion,
+			VersionPolicy = _httpClient.DefaultVersionPolicy
+		};
 		_ = request.Headers.UserAgent.TryParseAdd(UserAgent);
 		return _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 	}
@@ -146,5 +150,5 @@ public sealed class ApiCrawlClient : IDisposable
 		}
 	}
 
-	public void Dispose() => _ownedHttpClient?.Dispose();
+	public void Dispose() => _httpClient.Dispose();
 }

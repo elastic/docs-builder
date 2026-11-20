@@ -40,11 +40,9 @@ public sealed class ApiUrlModel
 	/// <summary>Every page in <c>links.json</c>, under its root and its mirror root, plus the API hub.</summary>
 	public IReadOnlyList<ExpectedApiPage> Pages { get; }
 
-	public IReadOnlyList<ApiTree> Trees => _treesLongestFirst;
-
-	public static ApiUrlModel Create(RepositoryLinks links, string sitePrefix = "/docs")
+	/// <param name="prefix">The path the docs live under, with a leading slash and no trailing one, such as <c>/docs</c>.</param>
+	public static ApiUrlModel Create(RepositoryLinks links, string prefix = "/docs")
 	{
-		var prefix = "/" + sitePrefix.Trim('/');
 		var hub = new ApiTree(string.Empty, $"{prefix}/api", $"{prefix}/api", ApiPageType.Versionless);
 		var trees = new List<ApiTree>();
 		var pages = new List<ExpectedApiPage> { Expect(hub.Root, hub) };
@@ -54,13 +52,14 @@ public sealed class ApiUrlModel
 			if (!sectionKey.StartsWith(SectionPrefix, StringComparison.Ordinal))
 				continue;
 			var key = sectionKey[SectionPrefix.Length..];
+			var routes = new ApiVersionRoutes(key, section.Versions.FirstOrDefault(v => v.Current)?.Name);
 			for (var bit = 0; bit < section.Versions.Length && bit < FloatingLinkSection.MaxVersions; bit++)
 			{
 				var version = section.Versions[bit];
 				var versionless = $"{prefix}/{version.Root}";
 				foreach (var (root, mirror) in RootsOf(version))
 				{
-					var tree = new ApiTree(key, $"{prefix}/{root}", versionless, Classify(version, mirror));
+					var tree = new ApiTree(key, $"{prefix}/{root}", versionless, ApiPageTypes.Of(routes, version.Name, isMirror: mirror));
 					trees.Add(tree);
 					pages.AddRange(
 						section
@@ -74,16 +73,6 @@ public sealed class ApiUrlModel
 
 		return new ApiUrlModel(hub, [.. trees], pages);
 	}
-
-	/// <summary>
-	/// The API page-type table. The numbered copy of the current major is <see cref="ApiPageType.NewestMajorCopy"/>, the
-	/// current version is <see cref="ApiPageType.Versionless"/>, <c>main</c> is <see cref="ApiPageType.Unreleased"/>
-	/// and any other version is <see cref="ApiPageType.OlderMajor"/>.
-	/// </summary>
-	public static ApiPageType Classify(FloatingLinkVersion version, bool mirror) =>
-		mirror
-			? ApiPageType.NewestMajorCopy
-			: version.Current ? ApiPageType.Versionless : version.Name == "main" ? ApiPageType.Unreleased : ApiPageType.OlderMajor;
 
 	/// <summary>The tree that serves <paramref name="path"/>, matching the longest root. The hub matches only itself.</summary>
 	public bool TryClassify(string path, out ApiTree tree)
@@ -107,13 +96,14 @@ public sealed class ApiUrlModel
 
 	/// <summary>
 	/// A stable set of old URLs to check: every table redirect, the root of every tree, then every k-th page up to
-	/// <paramref name="pageSample"/> pages.
+	/// <paramref name="pageSample"/> pages. <see cref="ApiPageType.Unreleased"/> and <see cref="ApiPageType.NewestMajorCopy"/>
+	/// trees are left out: their <c>/next</c> and <c>/vN</c> URLs never existed under <c>/docs/api/doc/</c>.
 	/// </summary>
 	public IReadOnlyList<RedirectCheck> RedirectSample(int pageSample)
 	{
-		var roots = _treesLongestFirst.Select(t => t.Root).Order(StringComparer.Ordinal);
+		var roots = _treesLongestFirst.Where(t => HadLegacyUrl(t.Type)).Select(t => t.Root).Order(StringComparer.Ordinal);
 		var candidates = Pages
-			.Where(p => p.Path != _hub.Root && !_treesLongestFirst.Any(t => t.Root == p.Path))
+			.Where(p => HadLegacyUrl(p.Type) && p.Path != _hub.Root && !_treesLongestFirst.Any(t => t.Root == p.Path))
 			.Select(p => p.Path)
 			.ToArray();
 		var step = Math.Max(1, candidates.Length / Math.Max(1, pageSample));
@@ -127,6 +117,8 @@ public sealed class ApiUrlModel
 			.. roots.Concat(sampled).Select(ToLegacy).Select(old => new RedirectCheck(old, ApiLegacyRedirects.Resolve(old)))
 		];
 	}
+
+	private static bool HadLegacyUrl(ApiPageType type) => type is ApiPageType.Versionless or ApiPageType.OlderMajor;
 
 	private string ToLegacy(string path) => string.Concat(_hub.Root, "/doc", path.AsSpan(_hub.Root.Length));
 

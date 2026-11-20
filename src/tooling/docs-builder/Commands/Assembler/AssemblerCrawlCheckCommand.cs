@@ -26,7 +26,8 @@ internal sealed class AssemblerCrawlCheckCommand(
 	/// The API URLs come from the floating sections of a published <c>links.json</c>, plus every URL in
 	/// <c>sitemap-api.xml</c>. Each page must answer 200 without a redirect, name the canonical URL and robots value its page
 	/// type gives it, and be in the sitemap only when its type belongs there. The sitemap index must list
-	/// <c>sitemap-api.xml</c>. A sample of old <c>/docs/api/doc/</c> URLs must redirect once to their current page.
+	/// <c>sitemap-api.xml</c>. A sample of old <c>/docs/api/doc/</c> URLs must redirect once to their current page; this step
+	/// runs only for a site under <c>/docs</c>.
 	/// </para>
 	/// <para>
 	/// Each difference is an error and a summary per page type is printed. The command exits 1 on any difference.
@@ -35,7 +36,7 @@ internal sealed class AssemblerCrawlCheckCommand(
 	/// </remarks>
 	/// <param name="environment">The environment in <c>config/assembler.yml</c> to crawl. Its <c>uri</c> and <c>path_prefix</c> give the site and its <c>allow_indexing</c> the expected robots value.</param>
 	/// <param name="baseUrl">Crawl this scheme and host instead of the environment's <c>uri</c>, for example <c>http://localhost:4000</c>.</param>
-	/// <param name="linksJson">The path or URL of the <c>links.json</c> that lists the API pages. Defaults to docs-content <c>main</c> in the link index.</param>
+	/// <param name="linksJson">A local <c>links.json</c> that lists the API pages. Defaults to docs-content <c>main</c>, read from the link index.</param>
 	/// <param name="redirectStatus">The status an old <c>/docs/api/doc/</c> URL must redirect with.</param>
 	/// <param name="redirectSample">How many API pages to check through their old <c>/docs/api/doc/</c> URL, on top of the redirect table and every tree root.</param>
 	/// <param name="concurrency">How many requests to run at once.</param>
@@ -63,7 +64,7 @@ internal sealed class AssemblerCrawlCheckCommand(
 		var options = new ApiCrawlOptions(
 			new Uri(baseUrl ?? publish.Uri),
 			publish.PathPrefix ?? string.Empty,
-			linksJson ?? ApiCrawlOptions.DefaultLinksJson,
+			linksJson,
 			publish.AllowIndexing
 		)
 		{ RedirectStatus = redirectStatus, RedirectSample = redirectSample, Concurrency = concurrency };

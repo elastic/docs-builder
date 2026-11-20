@@ -20,7 +20,7 @@ namespace Elastic.Documentation.Build.Tests.ApiCrawl;
 /// <summary>The crawl over a two-API fixture site served by a stub handler; the network is never touched.</summary>
 public class ApiCrawlServiceTests
 {
-	private const string LinksUrl = "https://links.test/links.json";
+	private const string LinksPath = "/links.json";
 
 	private sealed class CapturingCollector() : DiagnosticsCollector([])
 	{
@@ -65,10 +65,7 @@ public class ApiCrawlServiceTests
 			// Like the edge WAF, refuse a request without a User-Agent.
 			if (request.Headers.UserAgent.Count == 0)
 				return new HttpResponseMessage(HttpStatusCode.Forbidden);
-			var uri = request.RequestUri!;
-			if (uri.AbsoluteUri == LinksUrl)
-				return Text(ApiCrawlFixture.LinksJson);
-			var path = uri.AbsolutePath;
+			var path = request.RequestUri!.AbsolutePath;
 			if (seed?.Invoke(path) is { } seeded)
 				return seeded;
 			return path switch
@@ -96,13 +93,14 @@ public class ApiCrawlServiceTests
 	private static HttpResponseMessage Redirect(HttpStatusCode status, string location) =>
 		new(status) { Headers = { Location = new Uri(location, UriKind.Relative) } };
 
-	private static async Task<(int ExitCode, string Diagnostics, string Summary)> Crawl(FixtureSite site)
+	private static async Task<(int ExitCode, string Diagnostics, string Summary)> Crawl(FixtureSite site, string sitePrefix = "docs")
 	{
 		var collector = new CapturingCollector();
 		using var handler = new StubHandler(site.Respond);
 		await using var output = new StringWriter();
-		var service = new ApiCrawlService(NullLoggerFactory.Instance, new MockFileSystem(), output, handler);
-		var options = new ApiCrawlOptions(new Uri("https://site.test"), "docs", LinksUrl, AllowIndexing: false)
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { [LinksPath] = new(ApiCrawlFixture.LinksJson) });
+		var service = new ApiCrawlService(NullLoggerFactory.Instance, fileSystem, output, handler);
+		var options = new ApiCrawlOptions(new Uri("https://site.test"), sitePrefix, LinksPath, AllowIndexing: false)
 		{
 			RedirectSample = 2,
 			Concurrency = 4
@@ -131,7 +129,7 @@ public class ApiCrawlServiceTests
 			NewestMajorCopy         2            0
 			OlderMajor              2            0
 			Unreleased              3            0
-			Redirects              27            0
+			Redirects              25            0
 			Sitemap                 7            0
 			"""
 		);
@@ -185,10 +183,28 @@ public class ApiCrawlServiceTests
 			NewestMajorCopy         2            1
 			OlderMajor              2            0
 			Unreleased              3            1
-			Redirects              27            3
+			Redirects              25            3
 			Sitemap                 9            1
 			"""
 		);
 		exitCode.Should().Be(1);
+	}
+
+	[Test]
+	public async Task CrawlAsync_SiteNotUnderDocs_SkipsTheRedirectCheck()
+	{
+		var (_, _, summary) = await Crawl(new FixtureSite(), sitePrefix: "/guide/");
+
+		summary.Should().MatchInlineSnapshot(
+			"""
+			Check             Checked  Differences
+			Versionless             5            5
+			NewestMajorCopy         2            2
+			OlderMajor              2            2
+			Unreleased              3            0
+			Redirects               0            0
+			Sitemap                 0            1
+			"""
+		);
 	}
 }

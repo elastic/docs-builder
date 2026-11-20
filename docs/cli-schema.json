@@ -1402,7 +1402,7 @@
           ],
           "name": "crawl-check",
           "summary": "Crawl every API Explorer URL on a deployed site and compare each answer with the API page-type table.",
-          "notes": "The API URLs come from the floating sections of a published links.json, plus every URL in\nsitemap-api.xml. Each page must answer 200 without a redirect, name the canonical URL and robots value its page\ntype gives it, and be in the sitemap only when its type belongs there. The sitemap index must list\nsitemap-api.xml. A sample of old /docs/api/doc/ URLs must redirect once to their current page.\n\n\n\nEach difference is an error and a summary per page type is printed. The command exits 1 on any difference.\nStaging is behind Google sign-in, so crawl edge or prod.",
+          "notes": "The API URLs come from the floating sections of a published links.json, plus every URL in\nsitemap-api.xml. Each page must answer 200 without a redirect, name the canonical URL and robots value its page\ntype gives it, and be in the sitemap only when its type belongs there. The sitemap index must list\nsitemap-api.xml. A sample of old /docs/api/doc/ URLs must redirect once to their current page; this step\nruns only for a site under /docs.\n\n\n\nEach difference is an error and a summary per page type is printed. The command exits 1 on any difference.\nStaging is behind Google sign-in, so crawl edge or prod.",
           "usage": "docs-builder assembler crawl-check [options]",
           "examples": [],
           "parameters": [
@@ -1431,7 +1431,7 @@
               "name": "links-json",
               "type": "string",
               "required": false,
-              "summary": "The path or URL of the links.json that lists the API pages. Defaults to docs-content main in the link index."
+              "summary": "A local links.json that lists the API pages. Defaults to docs-content main, read from the link index."
             },
             {
               "role": "flag",

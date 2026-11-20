@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.Documentation.Assembler.Building;
 
 namespace Elastic.Documentation.Assembler.ApiCrawl;
 
@@ -46,8 +47,6 @@ public sealed record CrawlDifference(string Path, ApiPageType? Type, CrawlField 
 /// <summary>The checks of the crawl, as pure functions of what was expected and what the site answered.</summary>
 public static class ApiCrawlRules
 {
-	public const string ApiSitemapFileName = "sitemap-api.xml";
-
 	private const int Ok = 200;
 	private const int MaxListedSitemaps = 3;
 
@@ -74,12 +73,12 @@ public static class ApiCrawlRules
 			yield return new(expected.Path, type, CrawlField.Canonical, expected.CanonicalUrl, observed.Canonical ?? "none");
 
 		var robots = ApiPageTypes.Robots(type, buildAllowsIndexing);
-		if (!SameRobots(robots, observed.Robots))
+		if (!string.Equals(robots, observed.Robots, StringComparison.Ordinal))
 			yield return new(expected.Path, type, CrawlField.Robots, robots, observed.Robots ?? "none");
 	}
 
 	/// <summary>
-	/// Checks that the sitemap index lists <see cref="ApiSitemapFileName"/> and that every URL in it belongs to an API tree.
+	/// Checks that the sitemap index lists <see cref="SitemapBuilder.ApiFileName"/> and that every URL in it belongs to an API tree.
 	/// <paramref name="indexLocations"/> are the <c>loc</c> values of the index and <paramref name="apiPaths"/> the paths of
 	/// the API sitemap.
 	/// </summary>
@@ -90,7 +89,7 @@ public static class ApiCrawlRules
 		ApiUrlModel model
 	)
 	{
-		if (!indexLocations.Any(loc => loc.EndsWith("/" + ApiSitemapFileName, StringComparison.Ordinal)))
+		if (!indexLocations.Any(loc => loc.EndsWith("/" + SitemapBuilder.ApiFileName, StringComparison.Ordinal)))
 		{
 			var listed = indexLocations.Count switch
 			{
@@ -100,7 +99,7 @@ public static class ApiCrawlRules
 				_ =>
 					$"{indexLocations.Count} entries, starting {string.Join(", ", indexLocations.Take(MaxListedSitemaps).Select(FileName))}"
 			};
-			yield return new(indexPath, null, CrawlField.SitemapIndex, $"a {ApiSitemapFileName} entry", listed);
+			yield return new(indexPath, null, CrawlField.SitemapIndex, $"a {SitemapBuilder.ApiFileName} entry", listed);
 		}
 
 		foreach (var path in apiPaths)
@@ -117,14 +116,10 @@ public static class ApiCrawlRules
 	public static IEnumerable<CrawlDifference> CompareRedirect(RedirectCheck check, ObservedPage observed, int expectedStatus)
 	{
 		var path = check.OldPath;
-		if (observed.Hops.Count == 0)
-		{
-			yield return new(path, null, CrawlField.Hops, "1 redirect", Describe(observed));
-			yield break;
-		}
-
 		if (observed.Hops.Count != 1)
 			yield return new(path, null, CrawlField.Hops, "1 redirect", Describe(observed));
+		if (observed.Hops.Count == 0)
+			yield break;
 
 		var first = observed.Hops[0];
 		if (first.Status != expectedStatus)
@@ -140,12 +135,6 @@ public static class ApiCrawlRules
 		if (observed.Status != Ok)
 			yield return new(path, null, CrawlField.Status, "200 after the redirect", Describe(observed));
 	}
-
-	// Pages write the value with a space after the comma; a value without it means the same thing.
-	private static bool SameRobots(string expected, string? actual) => actual is not null && Normalize(expected) == Normalize(actual);
-
-	private static string Normalize(string robots) =>
-		string.Join(',', robots.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
 
 	private static string Listing(bool listed) => listed ? "listed" : "not listed";
 
