@@ -164,4 +164,20 @@ public class SitemapTests
 			.Contain("<loc>https://docs-v3-preview.elastic.dev/docs/sitemap-api.xml</loc>");
 		fileSystem.File.ReadAllText("/output/docs/sitemap-docs.xml").Should().Contain("<loc>https://www.elastic.co/docs/reference</loc>");
 	}
+
+	[Test]
+	public void Generate_OverTheSizeLimit_ThrowsAndKeepsThePreviousFile()
+	{
+		var (fileSystem, output) = Output();
+		_ = SitemapBuilder.Generate(Entries, output, new DiagnosticsCollector([]));
+		var previous = fileSystem.File.ReadAllText("/output/docs/sitemap-docs.xml");
+		// below the URL limit, but long URLs take the file over 50 MiB
+		var segment = new string('a', 1_000);
+		var oversized = Enumerable.Range(0, 49_000).ToDictionary(i => $"/docs/{i}/{segment}", _ => Date);
+
+		var generate = () => SitemapBuilder.Generate(oversized, output, new DiagnosticsCollector([]));
+
+		_ = generate.Should().Throw<InvalidOperationException>().WithMessage("sitemap-docs.xml is * MB, which exceeds *");
+		fileSystem.File.ReadAllText("/output/docs/sitemap-docs.xml").Should().Be(previous);
+	}
 }
