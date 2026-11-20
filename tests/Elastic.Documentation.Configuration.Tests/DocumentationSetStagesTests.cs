@@ -2,11 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Tests.Golden;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Nullean.Entities;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -210,6 +213,57 @@ public class DocumentationSetStagesTests
 		var findings = new DocumentationSetApis(docset, [rejected]).Check("docset.yml").Findings;
 
 		findings.Select(f => f.Message).Should().Equal("first", "second");
+	}
+
+	// the resolver probes the files of an api entry once: its result is what the stage reports and what the configuration is built from
+	[Test]
+	public void Resolve_ApiEntry_IsResolvedOnce()
+	{
+		var yaml = "project: p\napi:\n  elasticsearch:\n    - spec: spec.json\n      product: elasticsearch\ntoc:\n  - file: index.md\n";
+		var mock = DocsetGolden.CreateFileSystem(yaml, new DocFile("index.md"));
+		var fileSystem = new MockCountingFileSystem(mock);
+		var context = DocsetGolden.CreateContext(new DiagnosticsCollector([]), fileSystem);
+		var definition = DocumentationSetLoader.Load(
+			new DiagnosticsCollector([]),
+			mock.FileInfo.New($"{DocsetGolden.Root}/docset.yml"),
+			new ScopedFileSystem(mock, DocsetGolden.Root)
+		).Value;
+
+		_ = DocumentationSetResolver.Resolve(definition, context, GoldenConfig.LoadVersions(), GoldenConfig.LoadProducts());
+
+		fileSystem.FileInfoPaths.Count(p => p.EndsWith("spec.json", StringComparison.Ordinal)).Should().Be(1);
+	}
+
+	/// <summary>A file system that records the path of every file info asked of it. "Mock" in the name keeps the checkout resolver from asking for a .git folder.</summary>
+	private sealed class MockCountingFileSystem(IFileSystem inner) : IFileSystem
+	{
+		private readonly List<string> _paths = [];
+
+		public IReadOnlyList<string> FileInfoPaths => _paths;
+
+		public IFileInfoFactory FileInfo => new CountingFileInfoFactory(inner.FileInfo, _paths);
+		public IFile File => inner.File;
+		public IDirectory Directory => inner.Directory;
+		public IFileStreamFactory FileStream => inner.FileStream;
+		public IPath Path => inner.Path;
+		public IDirectoryInfoFactory DirectoryInfo => inner.DirectoryInfo;
+		public IDriveInfoFactory DriveInfo => inner.DriveInfo;
+		public IFileSystemWatcherFactory FileSystemWatcher => inner.FileSystemWatcher;
+		public IFileVersionInfoFactory FileVersionInfo => inner.FileVersionInfo;
+		public IRandomAccess RandomAccess => inner.RandomAccess;
+	}
+
+	private sealed class CountingFileInfoFactory(IFileInfoFactory inner, List<string> paths) : IFileInfoFactory
+	{
+		public IFileSystem FileSystem => inner.FileSystem;
+
+		public IFileInfo New(string fileName)
+		{
+			paths.Add(fileName);
+			return inner.New(fileName);
+		}
+
+		public IFileInfo? Wrap(System.IO.FileInfo? fileInfo) => inner.Wrap(fileInfo);
 	}
 
 	[Test]

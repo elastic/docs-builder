@@ -181,7 +181,7 @@ internal static partial class DocsetGolden
 
 	public static IDocumentationSetContext CreateContext(
 		IDiagnosticsCollector collector,
-		MockFileSystem fileSystem,
+		IFileSystem fileSystem,
 		string docsetName = "docset.yml"
 	) =>
 		new TestDocumentationSetContext(
