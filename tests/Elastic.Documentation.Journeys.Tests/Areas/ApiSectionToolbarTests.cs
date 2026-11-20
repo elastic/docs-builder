@@ -210,6 +210,40 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task AnyWindowWidth_TheRowsRuleMeetsTheSidebar()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			var lines = new List<string>();
+			// 1100px has a 42px nav gap. Past 1920px the content is centred beside the sidebar, also when the reader widens it.
+			foreach (var (width, sidebar) in new (int, string?)[] { (1100, null), (1600, null), (2560, null), (2560, "400px") })
+			{
+				await page.SetViewportAsync(width, 600, 1).ConfigureAwait(false);
+				if (sidebar is not null)
+					_ = await page.EvaluateAsync(
+						$"document.querySelector('.api-page-shell').style.setProperty('--max-sidebar-width', '{sidebar}'); true"
+					).ConfigureAwait(false);
+				_ = await page.EvaluateAsync("window.scrollTo(0, 0); true").ConfigureAwait(false);
+				var atRest = await SidebarGapAsync(page).ConfigureAwait(false);
+				await ScrollBarTopToAsync(page, 20).ConfigureAwait(false);
+				var pinned = await SidebarGapAsync(page).ConfigureAwait(false);
+				lines.Add($"{width}px{(sidebar is null ? "" : $", {sidebar} sidebar")}: gap at rest {atRest}px, pinned {pinned}px");
+			}
+			report = string.Join('\n', lines);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"""
+			1100px: gap at rest 1px, pinned 1px
+			1600px: gap at rest 1px, pinned 1px
+			2560px: gap at rest 1px, pinned 1px
+			2560px, 400px sidebar: gap at rest 1px, pinned 1px
+			"""
+		);
+	}
+
+	[Test]
 	public async Task LinksThatDoNotFit_ScrollInsideTheRowAndTheLastOneIsReachable()
 	{
 		var report = string.Empty;
@@ -310,6 +344,16 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 			CultureInfo.InvariantCulture,
 			$"visible {state.GetProperty("visible").GetBoolean()}, pinned {state.GetProperty("pinned").GetBoolean()}, current section {state.GetProperty("current").GetString()}"
 		);
+	}
+
+	// Pixels between the sidebar's right edge and the start of the row's bottom rule, after the layout settles.
+	private static async Task<string> SidebarGapAsync(Page page)
+	{
+		await Task.Delay(300).ConfigureAwait(false);
+		var gap = await page.EvaluateAsync(
+			"Math.round(document.querySelector('.api-section-links').getBoundingClientRect().left - document.getElementById('pages-nav').getBoundingClientRect().right)"
+		).ConfigureAwait(false);
+		return gap.GetDouble().ToString(CultureInfo.InvariantCulture);
 	}
 
 	// Scrolls so the row's own place in the page, the top of its section plus its top margin, sits at the given edge.
