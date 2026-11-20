@@ -246,6 +246,8 @@ public partial class TopicPageTests
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
 		landing.Should().NotContain(">Topics</span>").And.Contain("class=\"nav-group-label\">Operations</span>");
 		OverviewRowRegex().IsMatch(landing).Should().BeTrue("the first sidebar row links to the product overview");
+		// The API sidebar opts in to the tighter row spacing; Markdown sidebars keep theirs (LegacyHeadingRow_RendersTitleWithoutAnEmptyLink).
+		landing.Should().Contain("<ul class=\"block px-4 nav-tree--overview-row\" id=\"nav-tree-");
 		// Every folder stays collapsed there.
 		CheckedToggleRegex().Matches(landing).Should().BeEmpty();
 		// elastic/docs-infra redirects the bump.sh topic URL; the build writes no page there.
