@@ -26,7 +26,8 @@ public sealed partial record SearchTuning : IHaveConstraints<SearchTuning>
 		get;
 		init
 		{
-			field = value;
+			// a copy, so the record and its derived map describe the same groups whatever the caller does to its list afterwards
+			field = value is null ? null! : [.. value];
 			// a null is for the model's `required` rule to report, not for the derived map to throw on
 			SynonymBiDirectional = value is null ? [] : BuildBiDirectional(value);
 		}
@@ -159,7 +160,12 @@ public sealed partial record SynonymGroup
 	internal SynonymGroup(IReadOnlyList<string> terms) => Terms = terms;
 
 	[OrderedEquality]
-	public IReadOnlyList<string> Terms { get; internal init; }
+	public IReadOnlyList<string> Terms
+	{
+		get;
+		// a copy, so a caller changing its list afterwards cannot change the group or the map built from it
+		internal init => field = value is null ? null! : [.. value];
+	}
 
 	public void Deconstruct(out IReadOnlyList<string> terms) => terms = Terms;
 }

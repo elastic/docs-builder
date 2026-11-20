@@ -60,6 +60,22 @@ public class SearchTuningConstraintsTests
 		tuning.SynonymBiDirectional.Should().ContainKey("cat");
 	}
 
+	[Test]
+	public void Synonyms_MutatingTheSourceListsAfterConstruction_ChangesNeitherTheTuningNorItsMap()
+	{
+		var terms = new List<string> { "cat", "feline" };
+		var groups = new List<SynonymGroup> { new(terms) };
+
+		var tuning = SearchTuning.None with { Synonyms = groups };
+		terms.Add("kitty");
+		groups.Add(new SynonymGroup(["dog", "canine"]));
+
+		tuning.Synonyms.Should().HaveCount(1);
+		tuning.Synonyms[0].Terms.Should().Equal("cat", "feline");
+		tuning.SynonymBiDirectional.Keys.Should().BeEquivalentTo("cat", "feline");
+		tuning.SynonymBiDirectional["cat"].Should().Equal("feline");
+	}
+
 	private static QueryRule Rule(string id = "rule-1") =>
 		new()
 		{
