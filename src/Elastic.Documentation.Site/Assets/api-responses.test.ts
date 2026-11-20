@@ -27,25 +27,38 @@ function responseMarkup(): string {
     `
 }
 
-function syncMarkup(statuses: string[], railStatuses = statuses): string {
+/** Each response holds one foldable field; the page opens `defaultStatus` on load, as the server marks it. */
+function syncMarkup(
+    statuses: string[],
+    { rail = statuses, defaultStatus = statuses[0] } = {}
+): string {
     const panels = statuses
         .map(
             (s) => `
-            <div class="response-panel collapsed" data-status="${s}">
+            <div class="response-panel collapsed" data-status="${s}" data-api-response-default="${s === defaultStatus}">
                 <div class="response-summary">
                     <button type="button" class="response-status-toggle" aria-expanded="false">${s}</button>
                 </div>
-                <div class="response-panel-body" id="r-${s}" hidden="until-found"></div>
+                <div class="response-panel-body" id="r-${s}" hidden="until-found">
+                    <div class="property-item collapsed" id="field-${s}">
+                        <dd class="expand-toggle-row">
+                            <button class="expand-toggle" aria-expanded="false" data-count="1">
+                                <span class="toggle-label">Show 1 property</span>
+                            </button>
+                        </dd>
+                        <div class="nested-properties" hidden="until-found"></div>
+                    </div>
+                </div>
             </div>`
         )
         .join('')
-    const tabs = railStatuses
+    const tabs = rail
         .map(
             (s, i) =>
                 `<button type="button" class="example-response-tab${i === 0 ? ' is-active' : ''}" data-status="${s}">${s}</button>`
         )
         .join('')
-    const railPanels = railStatuses
+    const railPanels = rail
         .map(
             (s, i) =>
                 `<div class="example-response-panel" data-status="${s}"${i === 0 ? '' : ' hidden'}></div>`
@@ -53,6 +66,7 @@ function syncMarkup(statuses: string[], railStatuses = statuses): string {
         .join('')
     return `
         <section id="elastic-api-v3">
+            <button type="button" data-api-expand-all>Expand all</button>
             <div data-api-responses>${panels}</div>
             <div data-api-response-samples>${tabs}${railPanels}</div>
         </section>`
@@ -72,14 +86,27 @@ describe('responses accordion and examples rail sync', () => {
         panel(s).querySelector<HTMLButtonElement>('.response-status-toggle')!
     const tab = (s: string) => byStatus('example-response-tab', s)
     const railPanel = (s: string) => byStatus('example-response-panel', s)
+    const field = (s: string) => document.getElementById(`field-${s}`)!
+    const expanded = (el: HTMLElement) => el.classList.contains('expanded')
+    const expandAll = () =>
+        document.querySelector<HTMLButtonElement>('[data-api-expand-all]')!
 
     it('closes the open response when another one opens', () => {
         document.body.innerHTML = syncMarkup(['200', '400'])
         toggle('200').click()
         toggle('400').click()
 
-        expect(panel('200').classList.contains('expanded')).toBe(false)
-        expect(panel('400').classList.contains('expanded')).toBe(true)
+        expect(expanded(panel('200'))).toBe(false)
+        expect(expanded(panel('400'))).toBe(true)
+    })
+
+    it('closes the open response when its own header is clicked', () => {
+        document.body.innerHTML = syncMarkup(['200', '400'])
+        toggle('200').click()
+        toggle('200').click()
+
+        expect(expanded(panel('200'))).toBe(false)
+        expect(toggle('200').getAttribute('aria-expanded')).toBe('false')
     })
 
     it('moves the rail to the status opened in the main column', () => {
@@ -96,16 +123,16 @@ describe('responses accordion and examples rail sync', () => {
         toggle('200').click()
         tab('400').click()
 
-        expect(panel('400').classList.contains('expanded')).toBe(true)
-        expect(panel('200').classList.contains('expanded')).toBe(false)
+        expect(expanded(panel('400'))).toBe(true)
+        expect(expanded(panel('200'))).toBe(false)
     })
 
     it('leaves the main column alone for a rail status it does not list', () => {
-        document.body.innerHTML = syncMarkup(['200'], ['200', '404'])
+        document.body.innerHTML = syncMarkup(['200'], { rail: ['200', '404'] })
         toggle('200').click()
         tab('404').click()
 
-        expect(panel('200').classList.contains('expanded')).toBe(true)
+        expect(expanded(panel('200'))).toBe(true)
     })
 
     it('closes the open response when a hash target opens another', () => {
@@ -116,8 +143,43 @@ describe('responses accordion and examples rail sync', () => {
         window.location.hash = '#inside-400'
         window.dispatchEvent(new HashChangeEvent('hashchange'))
 
-        expect(panel('400').classList.contains('expanded')).toBe(true)
-        expect(panel('200').classList.contains('expanded')).toBe(false)
+        expect(expanded(panel('400'))).toBe(true)
+        expect(expanded(panel('200'))).toBe(false)
+    })
+
+    it('Expand all opens the default response and its fields, and no other response', () => {
+        // The spec lists 400 first, but the page opens 200 on load
+        document.body.innerHTML = syncMarkup(['400', '200'], {
+            defaultStatus: '200',
+        })
+        expandAll().click()
+
+        expect(expanded(panel('200'))).toBe(true)
+        expect(expanded(field('200'))).toBe(true)
+        expect(expanded(panel('400'))).toBe(false)
+        expect(expanded(field('400'))).toBe(false)
+        expect(expandAll().textContent).toBe('Collapse all')
+    })
+
+    it('Expand all keeps the open response and opens its fields', () => {
+        document.body.innerHTML = syncMarkup(['200', '400'])
+        toggle('400').click()
+        expandAll().click()
+
+        expect(expanded(panel('400'))).toBe(true)
+        expect(expanded(field('400'))).toBe(true)
+        expect(expanded(panel('200'))).toBe(false)
+        expect(expandAll().textContent).toBe('Collapse all')
+    })
+
+    it('Collapse all closes the open response and its fields', () => {
+        document.body.innerHTML = syncMarkup(['200', '400'])
+        expandAll().click()
+        expandAll().click()
+
+        for (const el of [panel('200'), panel('400'), field('200')])
+            expect(expanded(el)).toBe(false)
+        expect(expandAll().textContent).toBe('Expand all')
     })
 })
 

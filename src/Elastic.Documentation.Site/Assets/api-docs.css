@@ -1260,6 +1260,7 @@
 }
 
 .response-panel {
+	--response-body-bg: #f5f7fb;
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
@@ -1327,11 +1328,15 @@ button.response-status-toggle:focus {
 
 .response-summary {
 	cursor: pointer;
+}
+
+.response-panel {
 	transition: background-color 0.12s ease;
 }
 
-.response-summary:hover {
-	background-color: #ecf1f9;
+/* Hovering the header greys the whole response, in the colour of its open body. */
+.response-panel:has(> .response-summary:hover) {
+	background-color: var(--response-body-bg);
 }
 
 .response-status-chip {
@@ -1407,10 +1412,10 @@ button.response-status-toggle:focus {
 	margin: 8px 12px 12px;
 	padding: 4px 12px 8px;
 	border-radius: 8px;
-	background-color: #f5f7fb;
+	background-color: var(--response-body-bg);
 
 	/* The toggle's label cuts the box line, so it must match this background. */
-	--expand-toggle-bg: #f5f7fb;
+	--expand-toggle-bg: var(--response-body-bg);
 }
 
 .response-panel-body > .property-list > :first-child > dt {
