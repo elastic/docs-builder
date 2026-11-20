@@ -99,7 +99,7 @@ public class ConsoleCodeBlocks : DocumentTest
 	public async Task KeepsTheRequestLines() =>
 		await Docs.ConvertsToNewLlm(
 			"""
-			```json
+			```console
 			PUT /books
 			POST /books/_doc
 			{

@@ -211,8 +211,8 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.Write("```");
-		if (!string.IsNullOrEmpty(obj.Language))
-			renderer.Write(obj.Language);
+		// The parser relabels console blocks as json for highlighting; request lines make them console again.
+		renderer.Write(obj.ApiSegments.Count > 0 ? "console" : obj.Language);
 		renderer.WriteLine();
 		foreach (var line in obj.TextLines())
 		{
