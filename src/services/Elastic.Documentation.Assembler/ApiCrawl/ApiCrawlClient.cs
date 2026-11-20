@@ -25,6 +25,9 @@ public sealed class ApiCrawlClient : IDisposable
 	private const int MaxHeadChars = 512 * 1024;
 	private const string HeadEnd = "</head>";
 
+	// The edge WAF answers 403 to a request without a User-Agent.
+	private const string UserAgent = "docs-builder-crawl-check";
+
 	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(30);
 
 	private static readonly HttpClient SharedHttpClient = new(new SocketsHttpHandler
@@ -105,14 +108,21 @@ public sealed class ApiCrawlClient : IDisposable
 	{
 		try
 		{
-			var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ctx).ConfigureAwait(false);
+			var response = await GetAsync(uri, ctx).ConfigureAwait(false);
 			if ((int)response.StatusCode < 500)
 				return response;
 			response.Dispose();
 		}
 		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested) { }
 
-		return await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ctx).ConfigureAwait(false);
+		return await GetAsync(uri, ctx).ConfigureAwait(false);
+	}
+
+	private Task<HttpResponseMessage> GetAsync(Uri uri, Cancel ctx)
+	{
+		var request = new HttpRequestMessage(HttpMethod.Get, uri);
+		_ = request.Headers.UserAgent.TryParseAdd(UserAgent);
+		return _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
 	}
 
 	private static async Task<string> ReadHeadAsync(HttpResponseMessage response, Cancel ctx)

@@ -74,19 +74,14 @@ public sealed class ApiCrawlService(
 		foreach (var difference in sitemap.Differences)
 			differences.Add(difference);
 
+		// A sitemap URL that links.json does not list is still crawled as the page type of its tree.
 		var known = model.Pages.Select(p => p.Path).ToHashSet(StringComparer.Ordinal);
-		var pages = model
-			.Pages
-			.Concat(sitemap
-				.ApiPaths
-				.Where(path => !known.Contains(path) && model.TryClassify(path, out _))
-				.Distinct()
-				.Select(path =>
-				{
-					_ = model.TryClassify(path, out var tree);
-					return ApiUrlModel.Expect(path, tree);
-				}))
-			.ToArray();
+		var unlisted = sitemap
+			.ApiPaths
+			.Where(path => !known.Contains(path))
+			.Select(path => model.TryClassify(path, out var tree) ? ApiUrlModel.Expect(path, tree) : null)
+			.OfType<ExpectedApiPage>();
+		var pages = model.Pages.Concat(unlisted).ToArray();
 
 		_logger.LogInformation("Crawling {Pages} API pages on {Site}", pages.Length, options.Site);
 		var parallel = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, options.Concurrency), CancellationToken = ctx };
@@ -115,6 +110,8 @@ public sealed class ApiCrawlService(
 		foreach (var difference in sorted)
 			collector.EmitGlobalError(difference.ToString());
 
+		// The collector prints errors as it drains them; the summary goes after the last one.
+		await collector.WaitForDrain().ConfigureAwait(false);
 		await WriteSummaryAsync(pages, redirects.Count, sitemap.ApiPaths.Count, sorted).ConfigureAwait(false);
 		return true;
 	}

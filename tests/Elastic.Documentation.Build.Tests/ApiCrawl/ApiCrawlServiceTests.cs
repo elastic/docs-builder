@@ -62,6 +62,9 @@ public class ApiCrawlServiceTests
 
 		public HttpResponseMessage Respond(HttpRequestMessage request)
 		{
+			// Like the edge WAF, refuse a request without a User-Agent.
+			if (request.Headers.UserAgent.Count == 0)
+				return new HttpResponseMessage(HttpStatusCode.Forbidden);
 			var uri = request.RequestUri!;
 			if (uri.AbsoluteUri == LinksUrl)
 				return Text(ApiCrawlFixture.LinksJson);

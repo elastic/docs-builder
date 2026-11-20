@@ -160,6 +160,22 @@ public class ApiCrawlRulesTests
 			);
 
 	[Test]
+	public void CompareSitemap_UrlsetInsteadOfIndex_NamesTheFirstEntries() =>
+		Text(
+			ApiCrawlRules.CompareSitemap(
+				"/docs/sitemap.xml",
+				[
+					"https://www.elastic.co/docs/a",
+					"https://www.elastic.co/docs/b",
+					"https://www.elastic.co/docs/c",
+					"https://www.elastic.co/docs/d"
+				],
+				[],
+				Model
+			)
+		).Should().MatchInlineSnapshot("/docs/sitemap.xml SitemapIndex: expected a sitemap-api.xml entry, got 4 entries, starting a, b, c");
+
+	[Test]
 	public void CompareSitemap_IndexListsApiSitemap_HasNoDifferences() =>
 		ApiCrawlRules
 			.CompareSitemap("/docs/sitemap.xml", ["https://www.elastic.co/docs/sitemap-api.xml"], ["/docs/api/cloud"], Model)

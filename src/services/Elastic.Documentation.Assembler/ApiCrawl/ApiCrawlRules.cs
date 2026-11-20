@@ -49,6 +49,7 @@ public static class ApiCrawlRules
 	public const string ApiSitemapFileName = "sitemap-api.xml";
 
 	private const int Ok = 200;
+	private const int MaxListedSitemaps = 3;
 
 	/// <summary>Checks one API page: a direct 200, its canonical URL, its robots value and whether the sitemap lists it.</summary>
 	public static IEnumerable<CrawlDifference> Compare(
@@ -91,7 +92,14 @@ public static class ApiCrawlRules
 	{
 		if (!indexLocations.Any(loc => loc.EndsWith("/" + ApiSitemapFileName, StringComparison.Ordinal)))
 		{
-			var listed = indexLocations.Count == 0 ? "no sitemaps" : string.Join(", ", indexLocations.Select(FileName));
+			var listed = indexLocations.Count switch
+			{
+				0 => "no sitemaps",
+				<= MaxListedSitemaps => string.Join(", ", indexLocations.Select(FileName)),
+				// A site without an index serves its pages here; naming thousands of them says nothing more.
+				_ =>
+					$"{indexLocations.Count} entries, starting {string.Join(", ", indexLocations.Take(MaxListedSitemaps).Select(FileName))}"
+			};
 			yield return new(indexPath, null, CrawlField.SitemapIndex, $"a {ApiSitemapFileName} entry", listed);
 		}
 
