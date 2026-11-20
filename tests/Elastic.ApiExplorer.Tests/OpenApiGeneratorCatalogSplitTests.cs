@@ -142,6 +142,35 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task ResolveIndexedTrees_MainFailsToLoadWhileNineLoads_FailsTheExport()
+	{
+		var context = CreateGenerateContext(Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}"));
+		var handler = new StubHandler(
+			request =>
+				request.RequestUri!.AbsolutePath switch
+				{
+					var path when path.EndsWith("index.json", StringComparison.Ordinal) => IndexResponse(MainNineAnd8Index),
+					var path when path.Contains("/main/", StringComparison.Ordinal) => new HttpResponseMessage(HttpStatusCode.NotFound),
+					_ => SpecResponse()
+				}
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch 9"), SpecDocument("Elasticsearch 8"))
+		);
+
+		var export = () => generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
+
+		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
+			"The API search export stops: API 'elasticsearch': version 'main' is declared in the version index but could not be loaded."
+		);
+	}
+
+	[Test]
 	public async Task ResolveIndexedTrees_VersionIndexUnavailable_FailsTheExport()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
