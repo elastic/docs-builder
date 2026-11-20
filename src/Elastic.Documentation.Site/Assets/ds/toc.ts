@@ -35,8 +35,14 @@ export function initToc(scope: ParentNode = document) {
                     listeners.abort()
                     return
                 }
-                const line = toc.hasAttribute('data-toc-sticky')
-                    ? toc.getBoundingClientRect().bottom + stickySlack
+                const sticky = toc.hasAttribute('data-toc-sticky')
+                const rect = sticky ? toc.getBoundingClientRect() : null
+                // A sticky outline at its sticky top has pinned: the page can show more in it then.
+                const pinned =
+                    rect !== null &&
+                    rect.top <= parseFloat(getComputedStyle(toc).top) + 1
+                const line = rect
+                    ? rect.bottom + stickySlack
                     : window.innerHeight * activationOffset
                 let active: HTMLAnchorElement | null = null
                 for (const { link, heading } of targets) {
@@ -64,8 +70,9 @@ export function initToc(scope: ParentNode = document) {
                     }
                 }
                 // A sticky bar can be on screen above every section, so until one reaches the line none is current.
-                if (!toc.hasAttribute('data-toc-sticky'))
-                    active ??= targets[0]?.link ?? null
+                if (!sticky) active ??= targets[0]?.link ?? null
+                // Written after every read, so the frame lays the page out once.
+                if (sticky) toc.toggleAttribute('data-pinned', pinned)
                 for (const { link } of targets) {
                     if (link === active) {
                         link.setAttribute('aria-current', 'location')
