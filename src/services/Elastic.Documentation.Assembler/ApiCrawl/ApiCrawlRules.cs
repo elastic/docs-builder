@@ -78,28 +78,33 @@ public static class ApiCrawlRules
 	}
 
 	/// <summary>
-	/// Checks that the sitemap index lists <see cref="SitemapBuilder.ApiFileName"/> and that every URL in it belongs to an API tree.
+	/// Checks that the sitemap index at <paramref name="indexUrl"/> lists <see cref="SitemapBuilder.ApiFileName"/> beside itself,
+	/// the URL search engines follow, and that every URL in the API sitemap belongs to an API tree.
 	/// <paramref name="indexLocations"/> are the <c>loc</c> values of the index and <paramref name="apiPaths"/> the paths of
 	/// the API sitemap.
 	/// </summary>
 	public static IEnumerable<CrawlDifference> CompareSitemap(
-		string indexPath,
+		Uri indexUrl,
 		IReadOnlyCollection<string> indexLocations,
 		IEnumerable<string> apiPaths,
 		ApiUrlModel model
 	)
 	{
-		if (!indexLocations.Any(loc => loc.EndsWith("/" + SitemapBuilder.ApiFileName, StringComparison.Ordinal)))
+		var indexPath = indexUrl.AbsolutePath;
+		var expected = new Uri(indexUrl, SitemapBuilder.ApiFileName).AbsoluteUri;
+		if (!indexLocations.Contains(expected, StringComparer.Ordinal))
 		{
 			var listed = indexLocations.Count switch
 			{
 				0 => "no sitemaps",
+				// An entry with the right name on the wrong host or path sends search engines to a broken URL.
+				_ when indexLocations.FirstOrDefault(loc => FileName(loc) == SitemapBuilder.ApiFileName) is { } misplaced => misplaced,
 				<= MaxListedSitemaps => string.Join(", ", indexLocations.Select(FileName)),
 				// A site without an index serves its pages here; naming thousands of them says nothing more.
 				_ =>
 					$"{indexLocations.Count} entries, starting {string.Join(", ", indexLocations.Take(MaxListedSitemaps).Select(FileName))}"
 			};
-			yield return new(indexPath, null, CrawlField.SitemapIndex, $"a {SitemapBuilder.ApiFileName} entry", listed);
+			yield return new(indexPath, null, CrawlField.SitemapIndex, expected, listed);
 		}
 
 		foreach (var path in apiPaths)

@@ -141,11 +141,28 @@ public class ApiCrawlRulesTests
 			.MatchInlineSnapshot("/docs/api/cloud [Versionless] Status: expected 200 with no redirect, got 301 /docs/api/cloud/ -> 200");
 	}
 
+	private static readonly Uri EdgeIndex = new("https://docs-edge.elastic.dev/docs/sitemap.xml");
+
+	[Test]
+	public void CompareSitemap_ApiSitemapOnTheWrongHost_ReportsTheEntry() =>
+		Text(
+			ApiCrawlRules.CompareSitemap(
+				EdgeIndex,
+				["https://docs-edge.elastic.dev/docs/sitemap-docs.xml", "https://www.elastic.co/sitemap-api.xml"],
+				[],
+				Model
+			)
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"/docs/sitemap.xml SitemapIndex: expected https://docs-edge.elastic.dev/docs/sitemap-api.xml, got https://www.elastic.co/sitemap-api.xml"
+			);
+
 	[Test]
 	public void CompareSitemap_IndexWithoutApiSitemapAndUnknownUrl_ReportsBoth() =>
 		Text(
 			ApiCrawlRules.CompareSitemap(
-				"/docs/sitemap.xml",
+				EdgeIndex,
 				["https://docs-edge.elastic.dev/docs/sitemap-docs.xml"],
 				["/docs/api/cloud", "/docs/api/unknown/operation/x"],
 				Model
@@ -154,7 +171,7 @@ public class ApiCrawlRulesTests
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			/docs/sitemap.xml SitemapIndex: expected a sitemap-api.xml entry, got sitemap-docs.xml
+			/docs/sitemap.xml SitemapIndex: expected https://docs-edge.elastic.dev/docs/sitemap-api.xml, got sitemap-docs.xml
 			/docs/api/unknown/operation/x UnknownSitemapUrl: expected a URL in an API tree, got no API tree serves it
 			"""
 			);
@@ -163,7 +180,7 @@ public class ApiCrawlRulesTests
 	public void CompareSitemap_UrlsetInsteadOfIndex_NamesTheFirstEntries() =>
 		Text(
 			ApiCrawlRules.CompareSitemap(
-				"/docs/sitemap.xml",
+				EdgeIndex,
 				[
 					"https://www.elastic.co/docs/a",
 					"https://www.elastic.co/docs/b",
@@ -173,12 +190,16 @@ public class ApiCrawlRulesTests
 				[],
 				Model
 			)
-		).Should().MatchInlineSnapshot("/docs/sitemap.xml SitemapIndex: expected a sitemap-api.xml entry, got 4 entries, starting a, b, c");
+		)
+			.Should()
+			.MatchInlineSnapshot(
+				"/docs/sitemap.xml SitemapIndex: expected https://docs-edge.elastic.dev/docs/sitemap-api.xml, got 4 entries, starting a, b, c"
+			);
 
 	[Test]
 	public void CompareSitemap_IndexListsApiSitemap_HasNoDifferences() =>
 		ApiCrawlRules
-			.CompareSitemap("/docs/sitemap.xml", ["https://www.elastic.co/docs/sitemap-api.xml"], ["/docs/api/cloud"], Model)
+			.CompareSitemap(EdgeIndex, ["https://docs-edge.elastic.dev/docs/sitemap-api.xml"], ["/docs/api/cloud"], Model)
 			.Should()
 			.BeEmpty();
 

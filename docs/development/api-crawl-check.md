@@ -51,7 +51,7 @@ The expected canonical URL, robots value and sitemap membership come from `ApiPa
 | `Canonical` | The `<link rel="canonical">` names another URL. A `NewestMajorCopy` page must name its versionless page; every other page names itself. |
 | `Robots` | The `<meta name="robots">` value differs. A build without `allow_indexing` must say `noindex, nofollow` everywhere. On prod, `Unreleased` pages say `noindex` and the others `index, follow`. |
 | `Sitemap` | The page is in `sitemap-api.xml` and its type does not belong there, or the other way round. Only `Versionless` and `OlderMajor` pages belong there. |
-| `SitemapIndex` | `sitemap.xml` does not list `sitemap-api.xml`, or a sitemap did not answer 200. |
+| `SitemapIndex` | `sitemap.xml` does not list `sitemap-api.xml` at its own URL beside the index (same host and path), or a sitemap did not answer 200. |
 | `UnknownSitemapUrl` | A URL in `sitemap-api.xml` belongs to no API tree in `links.json`. |
 | `Hops` | An old `/docs/api/doc/` URL did not redirect exactly once. |
 | `RedirectStatus` | The redirect used another status than `--redirect-status`. |

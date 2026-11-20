@@ -59,7 +59,8 @@ public sealed class ApiCrawlService(
 		var apiPath = $"{prefix}/{SitemapBuilder.ApiFileName}";
 
 		var linksTask = LoadLinksAsync(options.LinksJson, ctx);
-		var indexTask = client.GetTextAsync(new Uri(options.Site, indexPath), ctx);
+		var indexUrl = new Uri(options.Site, indexPath);
+		var indexTask = client.GetTextAsync(indexUrl, ctx);
 		var apiTask = client.GetTextAsync(new Uri(options.Site, apiPath), ctx);
 		await Task.WhenAll(linksTask, indexTask, apiTask).ConfigureAwait(false);
 
@@ -70,7 +71,7 @@ public sealed class ApiCrawlService(
 		var differences = new ConcurrentBag<CrawlDifference>();
 
 		var sitemap = ReadSitemaps(
-			(indexPath, await indexTask.ConfigureAwait(false)),
+			(indexUrl, await indexTask.ConfigureAwait(false)),
 			(apiPath, await apiTask.ConfigureAwait(false)),
 			model
 		);
@@ -162,10 +163,10 @@ public sealed class ApiCrawlService(
 
 	private sealed record SitemapRead(IReadOnlySet<string> ApiPaths, IReadOnlyList<CrawlDifference> Differences);
 
-	private static SitemapRead ReadSitemaps((string Path, FetchedText Text) index, (string Path, FetchedText Text) api, ApiUrlModel model)
+	private static SitemapRead ReadSitemaps((Uri Url, FetchedText Text) index, (string Path, FetchedText Text) api, ApiUrlModel model)
 	{
 		var differences = new List<CrawlDifference>();
-		foreach (var (path, text) in new[] { index, api })
+		foreach (var (path, text) in new[] { (index.Url.AbsolutePath, index.Text), api })
 		{
 			if (!text.IsOk)
 				differences.Add(new(path, null, CrawlField.SitemapIndex, "HTTP 200", text.Describe()));
@@ -177,7 +178,7 @@ public sealed class ApiCrawlService(
 			.ToHashSet(StringComparer.Ordinal);
 
 		if (index.Text.IsOk)
-			differences.AddRange(ApiCrawlRules.CompareSitemap(index.Path, Locations(index.Text), apiPaths, model));
+			differences.AddRange(ApiCrawlRules.CompareSitemap(index.Url, Locations(index.Text), apiPaths, model));
 		return new SitemapRead(apiPaths, differences);
 	}
 

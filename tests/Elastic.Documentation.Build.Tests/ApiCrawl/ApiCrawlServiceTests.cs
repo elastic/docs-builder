@@ -173,7 +173,7 @@ public class ApiCrawlServiceTests
 			error  /docs/api/doc/cloud RedirectStatus: expected 302, got 301
 			error  /docs/api/doc/elasticsearch Hops: expected 1 redirect, got 302 /docs/api/elasticsearch/ -> 301 /docs/api/elasticsearch -> 200
 			error  /docs/api/doc/elasticsearch RedirectTarget: expected /docs/api/elasticsearch, got /docs/api/elasticsearch/
-			error  /docs/sitemap.xml SitemapIndex: expected a sitemap-api.xml entry, got sitemap-docs.xml
+			error  /docs/sitemap.xml SitemapIndex: expected https://site.test/docs/sitemap-api.xml, got sitemap-docs.xml
 			"""
 		);
 		summary.Should().MatchInlineSnapshot(
