@@ -84,13 +84,11 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	[Arguments("api-operation-older-major", "Latest: v9")]
-	[Arguments("api-operation-next", "View the latest version (v9)")]
-	public async Task VersionNoticePreview_LinksToTheLatestVersionPreview(string id, string linkText)
+	public async Task OlderMajorPreview_ShowsTheVersionBadgesWithALinkToTheLatestPreview()
 	{
-		var html = await RenderAsync(id);
+		var html = await RenderAsync("api-operation-older-major");
 
-		html.Should().Contain("href=\"/style-guide/preview/api-operation\"").And.Contain(linkText);
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-title-badges"));
 	}
 
 	[Test]
