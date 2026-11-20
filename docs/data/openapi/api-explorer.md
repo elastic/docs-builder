@@ -528,7 +528,7 @@ Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in th
 
 Open the section to see one tab per scheme. A tab shows the header or query parameter to send, for example `Authorization: Basic <credentials>`, and the scheme `description`. One scheme shows no tabs. A search with the browser's find-in-page opens the section and selects the tab that contains the match.
 
-The `/authentication` page is generated for every spec that declares security schemes, and the sidebar lists it right after the **Overview** row. It shows the same tabs as an endpoint's section, so the Markdown below also applies there. The tabs are always open, under the page's own title, without the collapsible **Authentication** heading. Any prose comes first: an `x-topics` entry titled `Authentication` renders above the tabs, and so does a [`children:`](#api-children) page whose first heading is `Authentication`. When a child page stands for Authentication, it takes the place of the generated page in the sidebar and the badge links to it. The generated `/authentication` page stays for old links. Refer to [Topic pages](#x-topics).
+The `/authentication` page is generated for every spec that declares security schemes, and the sidebar lists it right after the **Overview** row. It shows the same alternatives as an endpoint's section, each under a heading of its own instead of a tab, for example **Api key**, **Basic** and **Bearer**. Each heading's anchor is its lowercased scheme id, such as `#apikeyauth`, and an alternative with several schemes joins their ids with `-`. The headings are listed in **On this page**, and the page's `.md` output writes them as `##` headings. Any prose comes first: an `x-topics` entry titled `Authentication` renders above the headings, and so does a [`children:`](#api-children) page whose first heading is `Authentication`. When a child page stands for Authentication, it takes the place of the generated page in the sidebar and the badge links to it. The generated `/authentication` page stays for old links. Refer to [Topic pages](#x-topics).
 
 The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
@@ -552,7 +552,7 @@ Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slu
 
 The sidebar lists the topics right after the **Overview** row, above the endpoint groups, with no heading of their own. The Authentication page always comes first and Rate limiting second, whether each comes from a `children:` page or the spec. Any other `children:` pages follow in the order the docset declares them, then the spec's other topics in alphabetical order of their titles.
 
-A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the authentication tabs. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
+A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the authentication headings. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
 
 A `children:` page whose first heading or text matches a topic replaces it. Refer to [`children:`](#api-children).
 
