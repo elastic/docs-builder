@@ -4359,8 +4359,14 @@ body[data-api-column-dragging] {
 	border-left: 1px solid var(--color-border);
 }
 
-.api-rail-toc li:has(.current) {
+/* The scroll spy (Assets/ds/toc.ts) marks the heading in view with aria-current, as the docs outline does. */
+.api-rail-toc li:has([aria-current='location']) {
 	border-left-color: var(--color-accent);
+}
+
+.api-rail-toc .sidebar-link[aria-current='location'] {
+	color: var(--color-accent);
+	font-weight: var(--weight-semibold);
 }
 
 .api-rail-toc .sidebar-link.ml-4 {
