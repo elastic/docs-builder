@@ -65,6 +65,38 @@ public class CatalogConstraintsTests
 	public void ProductCatalog_PublicReferenceProductWithNoneVersioning_IsAnError() =>
 		ProductCatalog.Constraints.Report(Products(Widgets(VersioningSystem.None))).Violations.Should().ContainSingle();
 
+	/// <summary>
+	/// A public-reference product that names a <c>none</c> system defined in versions.yml resolves to it, and the parser accepts that. Only the
+	/// fallback the parser gives a product that is not public-reference (the <c>VersioningSystem.None</c> sentinel) is "no versioning".
+	/// </summary>
+	[Test]
+	public void ProductCatalog_PublicReferenceProductWithADefinedNoneSystem_HasNoViolation()
+	{
+		var defined = new VersioningSystem
+		{
+			Id = VersioningSystemId.None,
+			Base = new SemVersion(1, 0, 0),
+			Current = new SemVersion(2, 0, 0)
+		};
+
+		ProductCatalog.Constraints.Report(Products(Widgets(defined))).Violations.Should().BeEmpty();
+	}
+
+	[Test]
+	public void ProductCatalog_Projections_FollowTheComparerOfTheProducts()
+	{
+		var catalog = new ProductCatalog
+		{
+			Products = new Dictionary<string, Product> { ["widgets"] = Widgets(Stack) }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
+		};
+
+		catalog.Products.ContainsKey("WIDGETS").Should().BeTrue();
+		catalog.PublicReferenceProducts.ContainsKey("WIDGETS").Should().BeTrue();
+		catalog.GetDisplayName("WIDGETS").Should().Be("Widgets");
+		catalog.GetDisplayName("WIDGETS".AsSpan()).Should().Be("Widgets");
+		catalog.TryGetProductName("WIDGETS", out _).Should().BeTrue();
+	}
+
 	[Test]
 	public void ProductCatalog_ProductThatIsNotPublicReference_MayHaveNoVersioning() =>
 		ProductCatalog.Constraints.Report(Products(Widgets(VersioningSystem.None, publicReference: false))).Violations.Should().BeEmpty();

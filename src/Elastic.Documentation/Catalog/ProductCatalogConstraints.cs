@@ -14,7 +14,7 @@ public static partial class ProductCatalogConstraints
 	public static readonly Constraint<ProductCatalog> PublicReferenceProductHasVersioning = Constraints<ProductCatalog>.Each(
 		ProductsOf,
 		p => p.Features is not { PublicReference: true } ||
-			(p.VersioningSystem is not null && p.VersioningSystem.Id != VersioningSystemId.None),
+			(p.VersioningSystem is not null && !ReferenceEquals(p.VersioningSystem, VersioningSystem.None)),
 		p => $"Product '{p.Id}' has invalid or missing versioning while 'public-reference' is enabled."
 	).Describe("G81: A public-reference product has a versioning system.");
 

@@ -14,7 +14,7 @@ namespace Elastic.Documentation.Configuration.Loading;
 /// <summary>
 /// Loads the <see cref="GlobalCatalog"/> aggregate: <c>versions.yml</c>, then <c>products.yml</c> (which resolves each
 /// product's versioning system), then <c>legacy-url-mappings.yml</c> (which resolves each mapping's product).
-/// The only place these files are read. A file that cannot be read becomes an error finding carrying the message the parser
+/// The only place these files are read. A file that cannot be parsed or mapped becomes an error finding carrying the message the parser
 /// throws, so a caller that requires the catalog fails with the same message as before.
 /// </summary>
 public static class CatalogLoader

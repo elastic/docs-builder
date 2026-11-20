@@ -36,14 +36,14 @@ public sealed partial record ProductCatalog : IProductNameLookup, IHaveConstrain
 	/// </summary>
 	[IgnoreEquality]
 	public FrozenDictionary<string, Product> PublicReferenceProducts =>
-		field ??= Products.Where(p => p.Value.Features.PublicReference).ToFrozenDictionary();
+		field ??= Products.Where(p => p.Value.Features.PublicReference).ToFrozenDictionary(Products.Comparer);
 
 	/// <summary>
 	/// Product id to display name mappings for fast lookups: a projection of <see cref="Products"/>, computed once.
 	/// </summary>
 	[IgnoreEquality]
 	public FrozenDictionary<string, string> ProductDisplayNames =>
-		field ??= Products.ToFrozenDictionary(p => p.Key, p => p.Value.DisplayName);
+		field ??= Products.ToFrozenDictionary(p => p.Key, p => p.Value.DisplayName, Products.Comparer);
 
 	private FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>>? _displayNameLookup;
 
