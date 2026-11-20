@@ -1,43 +1,17 @@
-@using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<ApiIndexGroupModel>
+@* One endpoint group on the product landing page: its name, how many endpoints its page lists, and what it is for, which the sidebar does not say. *@
 @{
 	var heading = Model.Group.Heading;
+	var count = Model.Group.Items.Count;
 }
-<section class="api-index-group">
-	@if (heading is not null)
-	{
-		<h3 class="api-index-group-title">
-			@if (heading.Url is not null)
-			{
-				<a href="@heading.Url" @(new HtmlString(Model.HxAttributes))>@heading.Title</a>
-			}
-			else
-			{
-				@heading.Title
-			}
-			<span class="api-index-count">@Model.Group.Items.Count</span>
-		</h3>
-	}
-	@* Every row stays in the page: the browser's find-in-page only matches what is rendered. *@
-	<ul class="api-index-list">
-		@foreach (var row in Model.Group.Items)
+@if (heading is { Url: { } url })
+{
+	<a class="api-index-tile" href="@url" @(new HtmlString(Model.HxAttributes))>
+		<span class="api-index-tile-title">@heading.Title</span>
+		<span class="api-index-tile-count">@count @(count == 1 ? "endpoint" : "endpoints")</span>
+		@if (heading.Summary is { } summary)
 		{
-			<li>
-				<a class="api-index-item" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
-					@if (row.Endpoint is { Rows.Count: > 0 } endpoint)
-					{
-						@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(endpoint.Rows[0].Methods))
-						<span class="api-index-item-text">
-							<span class="api-index-item-title">@row.Title</span>
-							<code class="api-index-item-path">@endpoint.Rows[0].Route</code>
-						</span>
-					}
-					else
-					{
-						<span class="api-index-item-title">@row.Title</span>
-					}
-				</a>
-			</li>
+			<span class="api-index-tile-summary">@summary</span>
 		}
-	</ul>
-</section>
+	</a>
+}

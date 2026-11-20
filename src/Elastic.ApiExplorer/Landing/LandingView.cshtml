@@ -12,6 +12,7 @@
 		if (name != ApiPageSections.Rail)
 			return;
 		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "rail")))
+		@await RenderPartialAsync(_ApiToc.Create(Model.TocItems))
 	}
 }
 @{
@@ -39,17 +40,22 @@
 			@remainder
 		</div>
 	}
-	<div class="api-overview">
-		<div class="api-index">
-			@foreach (var group in Model.IndexSections)
-			{
-				if (group.Heading is { Kind: OverviewRowKind.ClassificationHeading } classification)
+	@if (Model.IndexSections.Count > 0)
+	{
+		<h2 id="@LandingViewModel.EndpointsAnchor">Endpoints</h2>
+		@* The groups only: each group page lists its operations, and search finds any of them. *@
+		<div class="api-overview">
+			<div class="api-index">
+				@foreach (var group in Model.IndexSections)
 				{
-					<h2 class="api-index-heading">@classification.Title</h2>
-					continue;
+					if (group.Heading is { Kind: OverviewRowKind.ClassificationHeading } classification)
+					{
+						<h3 class="api-index-heading">@classification.Title</h3>
+						continue;
+					}
+					@(await RenderPartialAsync<_ApiIndexGroup, ApiIndexGroupModel>(new ApiIndexGroupModel(group, apiHxAttrs)))
 				}
-				@(await RenderPartialAsync<_ApiIndexGroup, ApiIndexGroupModel>(new ApiIndexGroupModel(group, apiHxAttrs)))
-			}
+			</div>
 		</div>
-	</div>
+	}
 </section>

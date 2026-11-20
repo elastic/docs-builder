@@ -639,7 +639,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-group-list");
 		html.Should().Contain("class=\"api-group-row\"");
 		html.Should().Contain("class=\"api-overview-title\"");
-		html.Should().Contain("api-url-row");
+		html.Should().Contain("class=\"api-group-route\"");
 		html.Should().NotContain("<table");
 		html.Should().NotContain("api-url-list-item-landing");
 	}
@@ -711,14 +711,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Product_OverviewRows_ListEveryEndpointInTheGroupedIndex()
+	public async Task Product_Landing_ListsGroupsNotOperations()
 	{
 		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
 
-		html.Should().Contain("api-index-group");
-		html.Should().Contain("api-index-item");
+		html.Should().Contain("class=\"api-index-tile\" href=\"/api/fixture/group/");
+		html.Should().NotContain("api-index-item");
 		html.Should().NotContain("api-group-row");
-		html.Should().NotContain("<table");
 	}
 
 	[Test]

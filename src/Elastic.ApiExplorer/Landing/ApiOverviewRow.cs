@@ -43,6 +43,9 @@ public record ApiOverviewRow
 
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
+
+	/// <summary>A plain-text excerpt of a tag's description: what the product landing page says about a group, which the sidebar cannot.</summary>
+	public string? Summary { get; init; }
 }
 
 /// <summary>A heading row and the item rows under it. <see cref="Heading"/> is null for items that come before any heading.</summary>
@@ -146,7 +149,13 @@ public static class ApiOverviewBuilder
 					AddProductRows(classification, rows, versionsConfig, designSystem);
 					break;
 				case TagNavigationItem tag:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.TagHeading,
+						Title = tag.NavigationTitle,
+						Url = tag.Url,
+						Summary = ApiSeoDescription.Excerpt(tag.Index.Model.Description)
+					});
 					AddProductRows(tag, rows, versionsConfig, designSystem);
 					break;
 				case OperationNavigationItem operation:

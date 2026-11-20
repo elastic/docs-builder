@@ -29,8 +29,12 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>The sections the grouped index shows.</summary>
 	public IReadOnlyList<ApiOverviewSection> IndexSections => field ??= ApiOverviewBuilder.WithoutGuidePages(OverviewSections);
 
-	private ApiMarkdown.HtmlSplit DescriptionParts =>
-		field ??= ApiMarkdown.SplitAtFirstHeading(RenderMarkdown(ApiInfo.Description).Value ?? "");
+	/// <summary>The anchors the page itself owns, so a description heading never takes them.</summary>
+	public const string EndpointsAnchor = "endpoints";
+
+	private RenderedIntro Intro => field ??= RenderIntro();
+
+	private ApiMarkdown.HtmlSplit DescriptionParts => field ??= ApiMarkdown.SplitAtFirstHeading(Intro.Html.Value ?? "");
 
 	/// <summary>The description up to its first heading; the facts sit right after it on narrow screens.</summary>
 	public HtmlString DescriptionLead => new(DescriptionParts.Lead);
@@ -48,4 +52,23 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
 
 	protected override string? LayoutPageDescription => RenderContext.LandingDescription;
+
+	/// <summary>On this page, in page order: the description's headings, then the endpoint groups.</summary>
+	protected override IReadOnlyList<TocItem> GetTocItems()
+	{
+		TocItem[] endpoints = IndexSections.Count > 0 ? [new TocItem("Endpoints", EndpointsAnchor, 2)] : [];
+		return [.. Intro.Headings.Where(static heading => heading.Level <= 3), .. endpoints];
+	}
+
+	private RenderedIntro RenderIntro()
+	{
+		var (html, headings) = ApiMarkdown.RenderWithHeadings(
+			RenderContext,
+			ApiInfo.Description,
+			new HashSet<string>([EndpointsAnchor], StringComparer.Ordinal)
+		);
+		return new RenderedIntro(html, headings);
+	}
+
+	private sealed record RenderedIntro(HtmlString Html, IReadOnlyList<TocItem> Headings);
 }
