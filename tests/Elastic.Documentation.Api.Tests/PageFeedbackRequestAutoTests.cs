@@ -78,7 +78,9 @@ public class PageFeedbackRequestAutoTests
 			pool[pick % pool.Length]
 		];
 		return new PageFeedbackRequest(url, title, reaction, reasons, version, comment);
-	}).Where(r => PageFeedbackRequest.Constraints.Validate(r).Count == 0);
+	}).Where(
+		PageFeedbackRequestConstraintsTests.OldCheck
+	); // selected by the old hand-written check, so a rule that rejects a legal request fails the axes instead of shrinking the data
 
 	private static readonly Gen<PageFeedbackRequest> Hostile = Gen.OneOf(
 		GenAuto.Of<PageFeedbackRequest>(AutoMode.Mixed),

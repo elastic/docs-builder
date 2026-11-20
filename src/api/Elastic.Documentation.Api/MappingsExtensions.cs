@@ -408,7 +408,7 @@ public static class MappingsExtension
 			.Produces(StatusCodes.Status204NoContent)
 			.ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status503ServiceUnavailable);
 
-	// the rules answer with a bare 400: naming the broken field is a separate change
+	// the rules answer with a generic invalid-arguments problem (400): naming the broken field is a separate change
 	private static bool IsValidPageFeedback(PageFeedbackRequest request) =>
 		!request.Check("page-feedback").Findings.Any(d => d.Severity == Severity.Error);
 

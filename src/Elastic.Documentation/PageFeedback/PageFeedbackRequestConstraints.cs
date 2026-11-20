@@ -7,7 +7,7 @@ using Nullean.Entities;
 namespace Elastic.Documentation.PageFeedback;
 
 /// <summary>
-/// What a page feedback request must say to be stored. The endpoint answers a request that breaks one with a bare 400.
+/// What a page feedback request must say to be stored. The endpoint answers a request that breaks one with a generic invalid-arguments problem (400) that does not name the broken field.
 /// </summary>
 [Constraints<PageFeedbackRequest>]
 public static partial class PageFeedbackRequestConstraints

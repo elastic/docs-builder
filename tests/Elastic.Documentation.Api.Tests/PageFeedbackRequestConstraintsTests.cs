@@ -79,7 +79,7 @@ public class PageFeedbackRequestConstraintsTests
 	}
 
 	// the check the endpoint had before it was a set of rules: kept as the specification the rules are held to
-	private static bool OldCheck(PageFeedbackRequest request) =>
+	internal static bool OldCheck(PageFeedbackRequest request) =>
 		!string.IsNullOrWhiteSpace(request.PageUrl)
 			&& request.PageUrl.Length <= 2048
 			&& request.PageUrl.StartsWith('/')
