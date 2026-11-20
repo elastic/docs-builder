@@ -822,6 +822,66 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task Generate_EachTree_RendersTheVersionNoticeOfItsPageType()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		string Notice(params string[] segments)
+		{
+			var html = context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "index.html"]));
+			var notice = Regex.Match(
+				html,
+				"<p class=\"api-version-notice.*?</p>",
+				RegexOptions.Singleline,
+				RegexTimeouts.MatchTimeout
+			).Value;
+			return notice.Length == 0
+				? "none"
+				: Regex.Replace(notice, @"\s+", " ", RegexOptions.None, RegexTimeouts.MatchTimeout).Replace(
+					"> <",
+					"><",
+					StringComparison.Ordinal
+				);
+		}
+
+		string[] ping = ["operation", "operation-ping"];
+		var notices = string.Join(
+			"\n",
+			$"versionless: {Notice(ping)}",
+			$"v9: {Notice(["v9", .. ping])}",
+			$"v8: {Notice(["v8", .. ping])}",
+			$"next: {Notice(["next", .. ping])}",
+			$"versionless landing: {Notice()}",
+			$"v8 landing: {Notice("v8")}",
+			$"next landing: {Notice("next")}"
+		);
+
+		notices.Should().MatchInlineSnapshot(
+			"""
+			versionless: none
+			v9: none
+			v8: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><a href="/api/elasticsearch/operation/operation-ping">View the latest version (v9)<span aria-hidden="true"> &rarr;</span></a></p>
+			next: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch/operation/operation-ping">View the latest version (v9)<span aria-hidden="true"> &rarr;</span></a></p>
+			versionless landing: none
+			v8 landing: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><a href="/api/elasticsearch">View the latest version (v9)<span aria-hidden="true"> &rarr;</span></a></p>
+			next landing: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch">View the latest version (v9)<span aria-hidden="true"> &rarr;</span></a></p>
+			"""
+		);
+	}
+
+	[Test]
 	public async Task Generate_SupplementalFileForTheNewestMajor_IsReportedOnceForBothCopies()
 	{
 		var collector = new RecordingDiagnosticsCollector();

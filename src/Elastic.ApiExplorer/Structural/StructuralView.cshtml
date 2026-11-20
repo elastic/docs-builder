@@ -17,6 +17,10 @@
 	<div class="api-page-heading">
 		<h1>@Model.Page.Title</h1>
 	</div>
+	@if (Model.VersionNotice is { } versionNotice)
+	{
+		@await RenderPartialAsync(_VersionNotice.Create(versionNotice))
+	}
 </header>
 <section id="elastic-docs-v3">
 	@if (Model.IntroHtml is not null)

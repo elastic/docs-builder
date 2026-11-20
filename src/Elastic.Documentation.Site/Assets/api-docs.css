@@ -171,6 +171,37 @@
 	min-width: 0;
 }
 
+/* The version line under the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. */
+.api-version-notice {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 8px;
+	margin: 0;
+	font-size: 14px;
+	line-height: 20px;
+	@apply text-grey-80;
+}
+
+.api-landing-heading + .api-version-notice,
+.api-group .api-page-heading + .api-version-notice,
+#schema-definition > .api-page-heading + .api-version-notice {
+	margin-top: 12px;
+}
+
+.api-version-notice a {
+	@apply text-blue-elastic underline;
+	text-underline-offset: 2px;
+}
+
+.api-version-notice--unreleased {
+	@apply text-yellow-110;
+}
+
+.api-version-notice .applicable-info.api-badge--warning {
+	@apply text-yellow-110 border-yellow-40 bg-yellow-10;
+}
+
 /* Docs reading measure (--max-text-width): group-page intros and the product landing text. */
 .docs-measure {
 	max-width: var(--max-text-width);

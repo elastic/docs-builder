@@ -25,6 +25,10 @@
 		}
 		<h1>@Model.Heading</h1>
 	</div>
+	@if (Model.VersionNotice is { } versionNotice)
+	{
+		@await RenderPartialAsync(_VersionNotice.Create(versionNotice))
+	}
 	<div class="docs-measure">
 		<p>@Model.DescriptionLead</p>
 	</div>

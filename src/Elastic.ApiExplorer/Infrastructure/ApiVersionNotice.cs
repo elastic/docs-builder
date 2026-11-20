@@ -14,6 +14,9 @@ public sealed record OlderMajorNotice(string Version, string LatestLabel, string
 
 public sealed record UnreleasedNotice(string LatestLabel, string LatestUrl) : ApiVersionNotice(LatestLabel, LatestUrl);
 
+/// <param name="DesignSystem">True when the design system look is on, so the pill takes that look's badge markup.</param>
+public sealed record ApiVersionNoticeModel(ApiVersionNotice Notice, bool DesignSystem);
+
 public static class ApiVersionNotices
 {
 	/// <summary>

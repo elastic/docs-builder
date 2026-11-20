@@ -20,4 +20,4 @@ public sealed record TitleBadgesModel(
 }
 
 /// <summary>One text badge of that row. <paramref name="Href"/> makes it a link.</summary>
-public sealed record TitleBadgeModel(string Text, bool DesignSystem, string? Href = null, bool Danger = false);
+public sealed record TitleBadgeModel(string Text, bool DesignSystem, string? Href = null, bool Danger = false, bool Warning = false);

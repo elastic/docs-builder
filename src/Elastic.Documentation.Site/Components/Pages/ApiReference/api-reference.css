@@ -1933,6 +1933,38 @@ a.type-linked:hover {
 	display: inline;
 }
 
+/* The version line under the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. */
+.api-version-notice {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-1) var(--space-2);
+	margin: 0;
+	font-size: var(--text-sm);
+	color: var(--color-text-muted);
+}
+
+.api-landing-heading + .api-version-notice,
+.api-group .api-page-heading + .api-version-notice,
+#schema-definition > .api-page-heading + .api-version-notice {
+	margin-top: var(--space-3);
+}
+
+.api-version-notice a {
+	color: var(--color-accent);
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+}
+
+.api-version-notice--unreleased {
+	color: var(--color-warning);
+}
+
+.api-version-notice .applies-badge.api-badge--warning {
+	border-color: var(--color-warning);
+	color: var(--color-warning);
+}
+
 /* Auth and Deprecated reuse the availability badge's classes, so only what differs is set here: the red tone and the link. */
 .api-title-badges .applies-badge.api-badge--danger {
 	border-color: var(--color-danger);
