@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Infrastructure;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Site.Icons;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -52,7 +51,7 @@ internal sealed record ApiCatalogEntryGroup(string? Title, bool Grouped, ApiCata
 
 public enum ApiCatalogCardKind
 {
-	/// <summary>The full-size card, with the deployment pills.</summary>
+	/// <summary>The full-size card.</summary>
 	Standard,
 
 	/// <summary>The larger card for the core APIs.</summary>

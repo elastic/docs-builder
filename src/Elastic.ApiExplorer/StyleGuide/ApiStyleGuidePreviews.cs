@@ -9,7 +9,6 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
@@ -86,7 +85,6 @@ public static class ApiStyleGuidePreviews
 	)
 	{
 		// The grouping, the featured cards and the icons follow the keys of the real catalog, so these are its names with made-up descriptions.
-
 		static ApiCatalogEntry Entry(string key, string title, string product) =>
 			new(
 				key,

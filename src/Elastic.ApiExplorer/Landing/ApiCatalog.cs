@@ -23,7 +23,7 @@ public class ApiCatalog : IApiGroupingModel
 {
 	public const string PageTitle = "Elastic APIs";
 
-	/// <summary>The line under the title. It also tells a reader what the deployment tags on the cards refer to.</summary>
+	/// <summary>The line under the title.</summary>
 	public const string PageLede =
 		"Reference documentation for the Elastic REST APIs, for self-managed, Elastic Cloud and Serverless deployments.";
 

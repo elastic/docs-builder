@@ -12,7 +12,7 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiCatalogCardTests
 {
 	private static ApiCatalogItem Item(string key = "elasticsearch") =>
-		new(key, "Elasticsearch API", "/docs/api/elasticsearch", "<svg></svg>", "Elasticsearch provides REST APIs.", null);
+		new(key, "Elasticsearch API", "/docs/api/elasticsearch", "<svg></svg>", "Elasticsearch provides REST APIs.");
 
 	private static async Task<string> Render(
 		ApiCatalogItem item,
