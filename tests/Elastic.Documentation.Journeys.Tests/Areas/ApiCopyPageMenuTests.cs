@@ -11,7 +11,8 @@ using Nullean.Snapshots;
 namespace Elastic.Documentation.Journeys.Tests.Areas;
 
 /// <summary>
-/// The Copy page button ends the breadcrumb row, or wraps under the breadcrumbs when the two do not fit on one line.
+/// The Copy page button ends the breadcrumb row. It stays there from 1024px up, and below that wraps under the
+/// breadcrumbs when the two do not fit on one line.
 /// Its menu is a popover placed by floating.ts, so where it opens, and whether it stays inside the row rather than over
 /// the sidebar, only real layout can tell. The journey DSL cannot assert a box is inside another, hence this test.
 /// </summary>
@@ -139,16 +140,16 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 	}
 
 	[Test]
-	public async Task CopyPage_NeverMakesTheBreadcrumbTrailWrap()
+	public async Task CopyPage_StaysAtTheRightOfTheRowOnDesktopAndWrapsUnderTheTrailBelow()
 	{
 		var lines = new List<string>();
 		await WithPageAsync(async page =>
 		{
-			// When the trail and Copy page do not fit on one line, Copy page wraps under the trail rather than the trail
-			// wrapping to keep it beside: the trail has as many lines with Copy page as without it. And it is beside the
-			// trail where the article column is wide enough (900px, 1680px) and under it where it is not (375px, 1280px,
-			// where the rail narrows the column), so it is not always one or the other.
-			foreach (var width in new[] { 375, 900, 1280, 1680 })
+			// Below 1024px, when the trail and Copy page do not fit on one line, Copy page wraps under the trail rather
+			// than the trail wrapping to keep it beside: the trail has as many lines with Copy page as without it. From
+			// 1024px up the row does not wrap. Copy page stays beside the trail at the right end of the row, and the trail
+			// wraps its own crumbs to make room (1024px is the narrowest the article column gets beside the sidebar and rail).
+			foreach (var width in new[] { 375, 900, 1024, 1280, 1680 })
 			{
 				await page.SetViewportAsync(width, 900, 1).ConfigureAwait(false);
 				await Task.Delay(500).ConfigureAwait(false);
@@ -160,18 +161,21 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 						const withCopy = trailLines();
 						// Beside the trail when the button starts on the trail's last line, under it when it starts below.
 						const trail = [...document.querySelectorAll('#breadcrumbs li')].map(li => li.getBoundingClientRect());
-						const beside = copy.getBoundingClientRect().top < Math.max(...trail.map(r => r.bottom));
+						const button = copy.getBoundingClientRect();
+						const beside = button.top < Math.max(...trail.map(r => r.bottom));
+						const atTheRight = Math.abs(button.right - document.querySelector('.api-page-toolbar').getBoundingClientRect().right) <= 1;
+						const overlapsTheTrail = trail.some(r => r.right > button.left && r.top < button.bottom && r.bottom > button.top);
 						copy.style.display = 'none';
 						const without = trailLines();
 						copy.style.display = '';
-						return { same: withCopy === without, beside };
+						return { same: withCopy === without, beside, atTheRight, overlapsTheTrail };
 					})()
 					"""
 				).ConfigureAwait(false);
 				lines.Add(
 					string.Create(
 						CultureInfo.InvariantCulture,
-						$"{width}px: Copy page beside the trail {state.GetProperty("beside").GetBoolean()}, trail wraps the same with and without it {state.GetProperty("same").GetBoolean()}"
+						$"{width}px: Copy page beside the trail {state.GetProperty("beside").GetBoolean()}, at the right end of the row {state.GetProperty("atTheRight").GetBoolean()}, over the trail {state.GetProperty("overlapsTheTrail").GetBoolean()}, trail wraps the same with and without it {state.GetProperty("same").GetBoolean()}"
 					)
 				);
 			}
@@ -182,10 +186,50 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			375px: Copy page beside the trail False, trail wraps the same with and without it True
-			900px: Copy page beside the trail True, trail wraps the same with and without it True
-			1280px: Copy page beside the trail False, trail wraps the same with and without it True
-			1680px: Copy page beside the trail True, trail wraps the same with and without it True
+			375px: Copy page beside the trail False, at the right end of the row False, over the trail False, trail wraps the same with and without it True
+			900px: Copy page beside the trail True, at the right end of the row True, over the trail False, trail wraps the same with and without it True
+			1024px: Copy page beside the trail True, at the right end of the row True, over the trail False, trail wraps the same with and without it False
+			1280px: Copy page beside the trail True, at the right end of the row True, over the trail False, trail wraps the same with and without it False
+			1680px: Copy page beside the trail True, at the right end of the row True, over the trail False, trail wraps the same with and without it True
+			"""
+			);
+	}
+
+	[Test]
+	public async Task CopyPage_KeepsALongCrumbOffTheButtonOnDesktop()
+	{
+		var lines = new List<string>();
+		await WithPageAsync(async page =>
+		{
+			// A crumb is a flex item whose minimum width is its longest word. Without overflow-wrap a word wider than the
+			// trail runs under Copy page, so the last crumb gets one that no trail on 1024px can hold.
+			foreach (var width in new[] { 1024, 1280 })
+			{
+				await page.SetViewportAsync(width, 900, 1).ConfigureAwait(false);
+				await Task.Delay(500).ConfigureAwait(false);
+				var clear = await page.EvaluateAsync(
+					"""
+					(() => {
+						const crumbs = [...document.querySelectorAll('#breadcrumbs li')];
+						crumbs[crumbs.length - 1].querySelector('span, a').textContent = 'Supercalifragilisticexpialidocious_operations_collection_name';
+						const button = document.querySelector('.api-page-toolbar .api-page-actions').getBoundingClientRect();
+						return crumbs.every(li => li.getBoundingClientRect().right <= button.left);
+					})()
+					"""
+				).ConfigureAwait(false);
+				lines.Add(
+					string.Create(CultureInfo.InvariantCulture, $"{width}px: every crumb ends before Copy page {clear.GetBoolean()}")
+				);
+			}
+		}).ConfigureAwait(false);
+
+		_ = string
+			.Join('\n', lines)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			1024px: every crumb ends before Copy page True
+			1280px: every crumb ends before Copy page True
 			"""
 			);
 	}
