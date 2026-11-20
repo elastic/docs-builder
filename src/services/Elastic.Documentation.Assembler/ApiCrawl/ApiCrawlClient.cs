@@ -17,7 +17,7 @@ public sealed record FetchedText(int Status, string Body, string? Error = null)
 
 /// <summary>
 /// Fetches pages without following redirects, so each hop is counted, and reads only the <c>&lt;head&gt;</c> of a page.
-/// A 5xx answer or a timeout is retried once.
+/// A 5xx answer or a timeout is retried once. Reading a body has its own deadline: the client timeout stops at the headers.
 /// </summary>
 public sealed class ApiCrawlClient : IDisposable
 {
@@ -32,10 +32,12 @@ public sealed class ApiCrawlClient : IDisposable
 
 	private readonly HttpClient _httpClient;
 	private readonly Uri _site;
+	private readonly TimeSpan _bodyTimeout;
 
-	public ApiCrawlClient(Uri site, HttpMessageHandler? handler = null)
+	public ApiCrawlClient(Uri site, HttpMessageHandler? handler = null, TimeSpan? bodyTimeout = null)
 	{
 		_site = site;
+		_bodyTimeout = bodyTimeout ?? FetchTimeout;
 		var ownHandler = handler
 			?? new SocketsHttpHandler
 			{
@@ -58,10 +60,11 @@ public sealed class ApiCrawlClient : IDisposable
 		try
 		{
 			using var response = await SendAsync(uri, ctx).ConfigureAwait(false);
-			var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+			using var deadline = BodyDeadline(ctx);
+			var body = await response.Content.ReadAsStringAsync(deadline.Token).ConfigureAwait(false);
 			return new FetchedText((int)response.StatusCode, body.TrimStart('﻿'));
 		}
-		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested)
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException && !ctx.IsCancellationRequested)
 		{
 			return new FetchedText(0, string.Empty, ex.Message);
 		}
@@ -88,14 +91,22 @@ public sealed class ApiCrawlClient : IDisposable
 				if (status != 200)
 					return new ObservedPage(path, status, hops, null, null);
 
-				var head = ApiPageHead.Parse(await ReadHeadAsync(response, ctx).ConfigureAwait(false));
+				using var deadline = BodyDeadline(ctx);
+				var head = ApiPageHead.Parse(await ReadHeadAsync(response, deadline.Token).ConfigureAwait(false));
 				return new ObservedPage(path, status, hops, head.Canonical, head.Robots);
 			}
 		}
-		catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException && !ctx.IsCancellationRequested)
+		catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException && !ctx.IsCancellationRequested)
 		{
 			return new ObservedPage(path, 0, hops, null, null, ex.Message);
 		}
+	}
+
+	private CancellationTokenSource BodyDeadline(Cancel ctx)
+	{
+		var deadline = CancellationTokenSource.CreateLinkedTokenSource(ctx);
+		deadline.CancelAfter(_bodyTimeout);
+		return deadline;
 	}
 
 	private string OnSite(Uri uri) =>
