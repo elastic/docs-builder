@@ -28,13 +28,15 @@ public sealed record LegacyUrlMappingCatalogInProductCatalog(
 
 /// <summary>Every rule that spans the <see cref="ProductCatalog"/> and the <see cref="VersioningSystemCatalog"/> it refers to.</summary>
 /// <remarks>The loader's map step fails on the same condition first, so a catalog read from files never reports it twice; the rule guards a catalog built by hand.</remarks>
+// A catalog built by hand may hold a null where the types forbid one (a missing catalog, product or mapping); a loaded catalog never does, so
+// the null guards below change no finding.
 [Constraints<ProductCatalogInVersioningSystemCatalog>]
 public static partial class ProductCatalogInVersioningSystemCatalogConstraints
 {
 	public static readonly Constraint<ProductCatalogInVersioningSystemCatalog> ProductVersioningSystemDefined = Constraints<ProductCatalogInVersioningSystemCatalog>.References(
-		p => p.Products.Products.Values.Where(product => product.VersioningSystem is { } vs && vs.Id != VersioningSystemId.None),
+		p => p.Products?.Products?.Values.Where(product => product?.VersioningSystem is { } vs && vs.Id != VersioningSystemId.None) ?? [],
 		product => Enumerable.Repeat(product.VersioningSystem!.Id, 1),
-		p => p.VersioningSystems.VersioningSystems.Keys,
+		p => p.VersioningSystems?.VersioningSystems?.Keys ?? [],
 		describe: (product, id) =>
 			$"Product '{product.Id}' uses versioning system '{id.ToStringFast(true)}', which is not defined in versions.yml."
 	).Describe("G80: A product's versioning system is defined in versions.yml.");
@@ -46,9 +48,9 @@ public static partial class ProductCatalogInVersioningSystemCatalogConstraints
 public static partial class LegacyUrlMappingCatalogInProductCatalogConstraints
 {
 	public static readonly Constraint<LegacyUrlMappingCatalogInProductCatalog> LegacyMappingProductDefined = Constraints<LegacyUrlMappingCatalogInProductCatalog>.References(
-		p => p.LegacyUrlMappings.Mappings,
+		p => p.LegacyUrlMappings?.Mappings?.Where(m => m?.Product is not null) ?? [],
 		m => Enumerable.Repeat(m.Product.Id, 1),
-		p => p.Products.Products.Keys,
+		p => p.Products?.Products?.Keys ?? [],
 		describe: (m, id) => $"Legacy url mapping '{m.BaseUrl}' refers to product '{id}', which is not defined in products.yml."
 	).Describe("G93: A legacy url mapping's product is defined in products.yml.");
 }

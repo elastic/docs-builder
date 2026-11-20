@@ -12,22 +12,26 @@ namespace Elastic.Documentation.Catalog;
 public static partial class RelatedLearningConstraints
 {
 	public static readonly Constraint<RelatedLearningCatalog> LinkHasTitle = Constraints<RelatedLearningCatalog>.Each(
-		m => m.Links.Values,
+		LinksOf,
 		l => !string.IsNullOrWhiteSpace(l.Title),
 		l => $"related-learning.yml link '{l.Id}' is missing required 'title'."
 	).Describe("Every related-learning link has a title.");
 
 	public static readonly Constraint<RelatedLearningCatalog> LinkHasUrl = Constraints<RelatedLearningCatalog>.Each(
-		m => m.Links.Values,
+		LinksOf,
 		l => string.IsNullOrWhiteSpace(l.Title) || !string.IsNullOrWhiteSpace(l.Url),
 		l => $"related-learning.yml link '{l.Id}' is missing required 'url'."
 	).Describe("Every related-learning link has a url.");
 
 	public static readonly Constraint<RelatedLearningCatalog> LinkUrlAbsoluteHttp = Constraints<RelatedLearningCatalog>.Each(
-		m => m.Links.Values,
+		LinksOf,
 		l => string.IsNullOrWhiteSpace(l.Title) || string.IsNullOrWhiteSpace(l.Url) || IsAbsoluteHttpUrl(l.Url),
 		l => $"related-learning.yml link '{l.Id}' has invalid url '{l.Url}'. Every url must be an absolute http or https URL."
 	).Describe("Every related-learning url is an absolute http or https URL.");
+
+	// A catalog built by hand may hold a null where the types forbid one; a loaded catalog never does, so this changes no finding.
+	private static IEnumerable<RelatedLearningLink> LinksOf(RelatedLearningCatalog catalog) =>
+		catalog.Links?.Values.Where(l => l is not null) ?? [];
 
 	private static bool IsAbsoluteHttpUrl(string url) =>
 		Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
