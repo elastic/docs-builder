@@ -41,6 +41,23 @@ public class PageTitleTests()
 	}
 
 	[Test]
+	public async Task GenerateAll_TitleMatchesSiteNameIgnoringCase_KeepsPageCasing()
+	{
+		var html = await Generate(
+			BuildType.Assembler,
+			"""
+			---
+			navigation_title: query dsl
+			---
+
+			# Query DSL
+			"""
+		);
+
+		html.Should().Contain("<title>Query DSL</title>");
+	}
+
+	[Test]
 	public async Task GenerateAll_BlankMetaTitle_UsesH1()
 	{
 		var html = await Generate(
