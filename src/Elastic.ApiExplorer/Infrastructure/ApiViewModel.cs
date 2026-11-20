@@ -124,7 +124,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			NavigationActiveUrl = CurrentNavigationItem.Url,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
 			AllowIndexing = BuildContext.AllowIndexing,
+			Robots = ApiPageTypes.Robots(RenderContext.PageType, BuildContext.AllowIndexing),
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
+			CanonicalUrl = CanonicalUrlOverride(),
 			GoogleTagManager = BuildContext.GoogleTagManager,
 			Optimizely = BuildContext.Optimizely,
 			Features = BuildContext.Configuration.Features,
@@ -160,6 +162,12 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			GitHubRef = BuildContext.Git.GitHubRef
 		};
 	}
+
+	/// <summary>Set only for a page that names another page as canonical; every other page keeps the layout's default.</summary>
+	private string? CanonicalUrlOverride() =>
+		RenderContext.PageType == ApiPageType.NewestMajorCopy && BuildContext.CanonicalBaseUrl is not null
+			? RenderContext.CanonicalUrl(CurrentNavigationItem.Url)
+			: null;
 
 	private ApiPageActionsModel? BuildPageActions(string markdownUrl, ApiSpecDownload? spec) =>
 		ShowPageActions || spec is not null ? new ApiPageActionsModel(ShowPageActions ? markdownUrl : null, spec) : null;

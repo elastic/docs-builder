@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Floating;
 using Elastic.ApiExplorer.Infrastructure;
@@ -741,6 +742,86 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public async Task Generate_EachTree_RendersTheCanonicalAndRobotsOfItsPageType(bool allowIndexing)
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			collector,
+			stack,
+			ProductsFor(product),
+			outputRoot,
+			GitForElasticsearch(),
+			allowIndexing: allowIndexing
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		static string Attribute(string html, string prefix) =>
+			Regex.Match(html, Regex.Escape(prefix) + "\"([^\"]*)\"", RegexOptions.None, RegexTimeouts.MatchTimeout).Groups[1].Value;
+
+		string Head(params string[] segments)
+		{
+			var html = context
+				.WriteFileSystem
+				.File
+				.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "operation", "operation-ping", "index.html"]));
+			return $"canonical={Attribute(html, "<link rel=\"canonical\" href=")} robots={Attribute(html, "<meta name=\"robots\" content=")}";
+		}
+
+		// the Markdown export names the same canonical as the HTML page, so the numbered copy never names itself
+		string MarkdownUrl(params string[] segments) =>
+			context.WriteFileSystem.File.ReadAllLines(Path.Join([
+				outputRoot,
+				"api",
+				"elasticsearch",
+				.. segments,
+				"operation",
+				"operation-ping.md"
+			])).First(static l => l.StartsWith("url: ", StringComparison.Ordinal))["url: ".Length..];
+
+		var heads =
+			$"versionless: {Head()}\nv9: {Head("v9")}\nv8: {Head("v8")}\nnext: {Head("next")}\nmarkdown v9: {MarkdownUrl("v9")}\nmarkdown versionless: {MarkdownUrl()}";
+		if (allowIndexing)
+		{
+			heads.Should().MatchInlineSnapshot(
+				"""
+				versionless: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=index, follow
+				v9: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=index, follow
+				v8: canonical=https://www.elastic.co/api/elasticsearch/v8/operation/operation-ping robots=index, follow
+				next: canonical=https://www.elastic.co/api/elasticsearch/next/operation/operation-ping robots=noindex
+				markdown v9: https://www.elastic.co/api/elasticsearch/operation/operation-ping
+				markdown versionless: https://www.elastic.co/api/elasticsearch/operation/operation-ping
+				"""
+			);
+		}
+		else
+		{
+			// the build's own noindex wins on every page, and the canonical still follows the page type, as on staging and edge
+			heads.Should().MatchInlineSnapshot(
+				"""
+				versionless: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=noindex, nofollow
+				v9: canonical=https://www.elastic.co/api/elasticsearch/operation/operation-ping robots=noindex, nofollow
+				v8: canonical=https://www.elastic.co/api/elasticsearch/v8/operation/operation-ping robots=noindex, nofollow
+				next: canonical=https://www.elastic.co/api/elasticsearch/next/operation/operation-ping robots=noindex, nofollow
+				markdown v9: https://www.elastic.co/api/elasticsearch/operation/operation-ping
+				markdown versionless: https://www.elastic.co/api/elasticsearch/operation/operation-ping
+				"""
+			);
+		}
+	}
+
+	[Test]
 	public async Task Generate_SupplementalFileForTheNewestMajor_IsReportedOnceForBothCopies()
 	{
 		var collector = new RecordingDiagnosticsCollector();
@@ -903,7 +984,8 @@ public class OpenApiGeneratorMultiVersionTests
 		ProductsConfiguration productsConfiguration,
 		string outputRoot,
 		GitCheckoutInformation git,
-		(string File, string Heading)? child = null
+		(string File, string Heading)? child = null,
+		bool allowIndexing = false
 	)
 	{
 		var repoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-multi-version-test-{Guid.NewGuid():N}");
@@ -935,7 +1017,8 @@ public class OpenApiGeneratorMultiVersionTests
 				new DocumentationScopeOptions { ConfigurationFile = configPath, Output = outputRoot, Git = git, Inner = fs }
 			),
 			configurationContext
-		);
+		)
+		{ AllowIndexing = allowIndexing, CanonicalBaseUrl = new Uri("https://www.elastic.co") };
 	}
 
 	private static OpenApiGenerator CreateGenerator(
