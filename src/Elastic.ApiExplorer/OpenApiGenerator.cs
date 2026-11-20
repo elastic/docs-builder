@@ -412,7 +412,8 @@ public class OpenApiGenerator(
 			ctx
 		).ConfigureAwait(false);
 
-		var versionsToRender = versionless ? versions.Where(v => v.Moniker == "main").ToArray() : WithoutReservedMonikers(apiKey, versions);
+		var declaredVersions = WithoutReservedMonikers(apiKey, versions);
+		var versionsToRender = versionless ? declaredVersions.Where(v => v.Moniker == "main").ToArray() : declaredVersions;
 
 		if (versionsToRender.Length == 0)
 			return ResolvedProductDocuments.Empty(apiKey);

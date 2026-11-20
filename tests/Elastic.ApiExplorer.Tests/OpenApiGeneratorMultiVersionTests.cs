@@ -159,6 +159,49 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task ResolveDocumentsForProduct_VersionlessProductDeclaringNext_ReportsTheError()
+	{
+		var collector = new RecordingDiagnosticsCollector();
+		var versionless = TestHelpers.CreateVersionlessConfiguration();
+		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
+		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(/*lang=json,strict*/
+					"""
+					{
+						"elastic/serverless-api-specification": {
+							"elastic-cloud-serverless.yml": {
+								"main": { "version": "main" },
+								"next": { "version": "next" }
+							}
+						}
+					}
+					"""
+				)
+				: SpecResponse(request)
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var generator = CreateGenerator(context, versionIndexClient, CreateVersionedReader(("main", SpecDocument("Serverless main"))));
+
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"cloud-serverless",
+			ApiConfig(product, specFileName: "elastic-cloud-serverless.yml", repository: "elastic/serverless-api-specification"),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		resolved.Documents.Select(d => d.Version.Moniker).Should().Equal("main");
+		collector
+			.Diagnostics
+			.Where(d => d.Message.StartsWith("API 'cloud-serverless'", StringComparison.Ordinal))
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  API 'cloud-serverless': the version index declares a version named 'next', which is the URL segment of the unreleased 'main' spec. Rename the version; it is not rendered."
+			);
+	}
+
+	[Test]
 	public async Task CatalogEntry_MultiMajorIndex_OpensTheVersionlessUrlTitledByTheNewestMajor()
 	{
 		var collector = new DiagnosticsCollector([]);
