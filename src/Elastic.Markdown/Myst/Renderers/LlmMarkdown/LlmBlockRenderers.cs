@@ -214,11 +214,9 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		if (!string.IsNullOrEmpty(obj.Language))
 			renderer.Write(obj.Language);
 		renderer.WriteLine();
-		var lastNonEmptyIndex = GetLastNonEmptyLineIndex(obj);
-		for (var i = 0; i <= lastNonEmptyIndex; i++)
+		foreach (var line in obj.TextLines())
 		{
-			var line = obj.Lines.Lines[i];
-			renderer.Write(line.ToString());
+			renderer.Write(line);
 			renderer.WriteLine();
 		}
 
@@ -285,14 +283,6 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 
 		renderer.WriteLine("</contributors>");
 		renderer.EnsureLine();
-	}
-
-	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
-	{
-		var lastNonEmptyIndex = obj.Lines.Lines.Length - 1;
-		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
-			lastNonEmptyIndex--;
-		return lastNonEmptyIndex;
 	}
 }
 

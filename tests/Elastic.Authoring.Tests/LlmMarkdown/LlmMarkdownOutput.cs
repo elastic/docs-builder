@@ -79,6 +79,38 @@ public class EnhancedCodeBlocks : DocumentTest
 		);
 }
 
+public class ConsoleCodeBlocks : DocumentTest
+{
+	protected override string Document =>
+		"""
+		```console
+		PUT /books
+		POST /books/_doc
+		{
+		  "name": "Snow Crash" <1>
+		}
+		GET /books/_search
+		```
+
+		1. The book name
+		""";
+
+	[Test, DisplayName("keeps the request lines")]
+	public async Task KeepsTheRequestLines() =>
+		await Docs.ConvertsToNewLlm(
+			"""
+			```json
+			PUT /books
+			POST /books/_doc
+			{
+			  "name": "Snow Crash" <1>
+			}
+			GET /books/_search
+			```
+			"""
+		);
+}
+
 public class Lists : DocumentTest
 {
 	protected override string Document =>
