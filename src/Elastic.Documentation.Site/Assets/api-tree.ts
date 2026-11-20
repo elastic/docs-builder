@@ -1,23 +1,49 @@
+import { config } from './config'
+
 export interface ApiTree {
     product: string
-    /** `8` for `/v8/`, `main` for `/main/`, `null` on the unversioned path. */
+    /** `8` for `/v8/`, `null` on the unversioned path and on `/next/`, which the search index leaves out. */
     tree: string | null
 }
 
-const apiTreePath = /\/api\/doc\/([^/]+)(?:\/(?:v(\d+)|(main)))?(?:\/|$)/
+const apiTreePath = /^\/api\/([^/]+)(?:\/(?:v(\d+)|(next)))?(?:\/|$)/
 
-export function parseApiTree(path: string): ApiTree | null {
-    const match = apiTreePath.exec(path)
+function matchApiTree(path: string, root: string): RegExpExecArray | null {
+    if (!path.startsWith(`${root}/`)) return null
+    return apiTreePath.exec(path.slice(root.length))
+}
+
+/** Reads an API page path under the site `root`, so a docs page with an `api` folder of its own never matches. */
+export function parseApiTree(
+    path: string,
+    root = config.rootPath.replace(/\/$/, '')
+): ApiTree | null {
+    const match = matchApiTree(path, root)
     if (!match) return null
-    return { product: match[1], tree: match[2] ?? match[3] ?? null }
+    // The unreleased `/next/` tree is not indexed, so a reader there searches the default tree.
+    return { product: match[1], tree: match[2] ?? null }
+}
+
+/** The product and URL root of an API path, such as `es/`, `es/v9` or `es/next`. `null` outside an API product. */
+export function apiTreeRoot(
+    path: string,
+    root = config.rootPath.replace(/\/$/, '')
+): string | null {
+    const match = matchApiTree(path, root)
+    if (!match) return null
+    const segment = match[2] ? `v${match[2]}` : (match[3] ?? '')
+    return `${match[1]}/${segment}`
 }
 
 /**
  * The API page a search comes from: its key on any page of one API, which lifts that API's hits, plus the tree inside a
  * version tree, which also scopes them. Markdown pages and the catalog send nothing, so those requests stay unchanged.
  */
-export function apiPageSearchParams(path: string): Record<string, string> {
-    const parsed = parseApiTree(path)
+export function apiPageSearchParams(
+    path: string,
+    root?: string
+): Record<string, string> {
+    const parsed = parseApiTree(path, root)
     if (!parsed) return {}
     if (!parsed.tree) return { api_key: parsed.product }
     return { api_key: parsed.product, api_tree: parsed.tree }

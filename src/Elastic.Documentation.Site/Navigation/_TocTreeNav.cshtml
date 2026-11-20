@@ -31,6 +31,15 @@
 			</div>
 		</li>
 	}
+	else if (item.Kind == NavigationRenderNodeKind.Group)
+	{
+		<li class="nav-group">
+			<span id="@item.Id-label" class="nav-group-label">@item.NavigationTitle</span>
+			<ul class="nav-group-items" aria-labelledby="@item.Id-label">
+				@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
+			</ul>
+		</li>
+	}
 	else if (item.Kind == NavigationRenderNodeKind.Heading)
 	{
 		<li class="nav-folder">
@@ -42,7 +51,7 @@
 						type="checkbox"
 						class="hidden"
 						tabindex="-1"
-						aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
+						aria-hidden="true">
 					<label for="@item.Id" class="sidebar-link nav-folder-link nav-v2-link">
 						<span class="nav-v2-nav-text">@item.NavigationTitle</span>
 						@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
@@ -59,7 +68,7 @@
 					</span>
 				}
 			</div>
-			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
+			<div class="nav-subtree-clip">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
 				</ul>
@@ -77,7 +86,7 @@
 						type="checkbox"
 						class="hidden"
 						tabindex="-1"
-						aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
+						aria-hidden="true">
 				}
 				<a href="@item.Url" class="sidebar-link nav-folder-link nav-v2-link">
 					<span class="nav-v2-nav-text">@item.NavigationTitle</span>
@@ -91,7 +100,7 @@
 					}
 				</a>
 			</div>
-			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
+			<div class="nav-subtree-clip">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
 				</ul>

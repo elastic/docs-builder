@@ -33,137 +33,6 @@ data:
   "result": {
     "tools": [
       {
-        "name": "find_docs_inconsistencies",
-        "description": "…",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "topic": {
-              "description": "…",
-              "type": "string"
-            },
-            "focusArea": {
-              "description": "…",
-              "type": [
-                "string",
-                "null"
-              ],
-              "default": null
-            }
-          },
-          "required": [
-            "topic"
-          ]
-        },
-        "annotations": {
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false,
-          "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
-        }
-      },
-      {
-        "name": "check_docs_coherence",
-        "description": "…",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "topic": {
-              "description": "…",
-              "type": "string"
-            },
-            "limit": {
-              "description": "…",
-              "type": "integer",
-              "default": 20
-            }
-          },
-          "required": [
-            "topic"
-          ]
-        },
-        "annotations": {
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false,
-          "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
-        }
-      },
-      {
-        "name": "find_related_docs",
-        "description": "…",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "topic": {
-              "description": "…",
-              "type": "string"
-            },
-            "limit": {
-              "description": "…",
-              "type": "integer",
-              "default": 10
-            },
-            "productFilter": {
-              "description": "…",
-              "type": [
-                "string",
-                "null"
-              ],
-              "default": null
-            }
-          },
-          "required": [
-            "topic"
-          ]
-        },
-        "annotations": {
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false,
-          "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
-        }
-      },
-      {
-        "name": "get_document_by_url",
-        "description": "…",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "url": {
-              "description": "…",
-              "type": "string"
-            },
-            "includeBody": {
-              "description": "…",
-              "type": "boolean",
-              "default": false
-            }
-          },
-          "required": [
-            "url"
-          ]
-        },
-        "annotations": {
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false,
-          "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
-        }
-      },
-      {
         "name": "search_docs",
         "description": "…",
         "inputSchema": {
@@ -209,9 +78,68 @@ data:
           "idempotentHint": true,
           "openWorldHint": false,
           "readOnlyHint": true
+        }
+      },
+      {
+        "name": "find_related_docs",
+        "description": "…",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "…",
+              "type": "string"
+            },
+            "limit": {
+              "description": "…",
+              "type": "integer",
+              "default": 10
+            },
+            "productFilter": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "topic"
+          ]
         },
-        "execution": {
-          "taskSupport": "optional"
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "get_document_by_url",
+        "description": "…",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "…",
+              "type": "string"
+            },
+            "includeBody": {
+              "description": "…",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "url"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
         }
       },
       {
@@ -234,9 +162,207 @@ data:
           "idempotentHint": true,
           "openWorldHint": false,
           "readOnlyHint": true
+        }
+      },
+      {
+        "name": "search_api_operations",
+        "description": "…",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "description": "…",
+              "type": "string"
+            },
+            "api": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "version": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "includeDeprecated": {
+              "description": "…",
+              "type": "boolean",
+              "default": false
+            },
+            "pageNumber": {
+              "description": "…",
+              "type": "integer",
+              "default": 1
+            },
+            "pageSize": {
+              "description": "…",
+              "type": "integer",
+              "default": 10
+            }
+          },
+          "required": [
+            "query"
+          ]
         },
-        "execution": {
-          "taskSupport": "optional"
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "get_api_operation",
+        "description": "…",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "api": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "operationId": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "endpoint": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "version": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "includeBody": {
+              "description": "…",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "list_api_operations",
+        "description": "…",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "api": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "version": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "group": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          }
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "check_docs_coherence",
+        "description": "…",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "…",
+              "type": "string"
+            },
+            "limit": {
+              "description": "…",
+              "type": "integer",
+              "default": 20
+            }
+          },
+          "required": [
+            "topic"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "find_docs_inconsistencies",
+        "description": "…",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "…",
+              "type": "string"
+            },
+            "focusArea": {
+              "description": "…",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "topic"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
         }
       }
     ]

@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
+using Elastic.Documentation;
 using Nullean.Snapshots.Html;
 using RazorSlices;
 
@@ -171,7 +172,7 @@ public partial class OperationExamplesPanelRenderingTests
 		{
 			card.Should().Contain("<p class=\"api-code-carousel-card-note\">");
 			card.Should().Contain(">Generated from the API spec</span>");
-			card.Should().Contain("data-tippy-content=\"This sample was generated from the API spec, not written by hand.");
+			card.Should().Contain("data-tooltip=\"This sample was generated from the API spec, not written by hand.");
 			// Inside the code area, so the strip height measured from the body includes it.
 			card
 				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
@@ -358,21 +359,24 @@ public partial class OperationExamplesPanelRenderingTests
 		html.Should().Contain("<span class=\"api-rail-label\">Response</span>");
 	}
 
-	[GeneratedRegex("data-code-card")]
+	[GeneratedRegex("data-code-card", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodeCardRegex();
 
-	[GeneratedRegex("data-code-actions")]
+	[GeneratedRegex("data-code-actions", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodeActionsRegex();
 
-	[GeneratedRegex("data-status=\"200\"")]
+	[GeneratedRegex("data-status=\"200\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex Status200Regex();
 
-	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline)]
+	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
 	private static partial Regex CarouselCardRegex();
 
-	[GeneratedRegex("data-tippy-content=\"Unauthorized\"")]
+	[GeneratedRegex("data-tooltip=\"Unauthorized\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex UnauthorizedTooltipRegex();
 
-	[GeneratedRegex("data-status=\"404\"[^>]*data-tippy-content=\"\"")]
+	[GeneratedRegex("data-status=\"404\"[^>]*data-tooltip=\"\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex EmptyTooltipOn404Regex();
 }

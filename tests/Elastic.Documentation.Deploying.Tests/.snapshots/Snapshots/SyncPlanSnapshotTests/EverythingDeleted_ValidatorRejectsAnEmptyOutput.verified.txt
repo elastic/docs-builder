@@ -1,0 +1,22 @@
+{
+  "deletion_threshold_default": null,
+  "exclude_patterns": [],
+  "remote_listing_completed": true,
+  "total_source_files": 0,
+  "total_remote_files": 2,
+  "total_sync_requests": 2,
+  "delete": [
+    {
+      "destination_path": "docs/a.html"
+    },
+    {
+      "destination_path": "docs/b.html"
+    }
+  ],
+  "add": [],
+  "update": [],
+  "skip": [],
+  "retain": []
+}
+--- validation: valid=False ratio=1 threshold=0.2
+--- diagnostics

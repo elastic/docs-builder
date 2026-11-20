@@ -79,6 +79,7 @@ else
 		Downloads = hasSpecDownload
 			? new LinkMenuModel
 			{
+				Id = "spec-download-menu",
 				Label = "Download source",
 				Current = "Download source",
 				Items = [new("JSON", specJsonUrl!, Download: true), new("YAML", specYamlUrl!, Download: true)]

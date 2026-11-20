@@ -20,7 +20,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 {
 	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageSchemaId = null)
 	{
-		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
+		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/fixture" };
 		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageSchemaId);
 	}
 
@@ -77,7 +77,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		aggs.Children.Kind.Should().Be(ChildKind.None, "the dictionary value type has its own page");
 		aggs.TypeLink.Should().NotBeNull();
 		aggs.TypeLink!.TypeName.Should().Be("Aggregation");
-		aggs.TypeLink.Url.Should().Be("/api/doc/fixture/types/_types-aggregations-aggregationcontainer");
+		aggs.TypeLink.Url.Should().Be("/api/fixture/types/_types-aggregations-aggregationcontainer");
 		aggs.Type.Spans.Should().Contain(s => s.Text == "Aggregation" && s.CssClass == "type-linked" && s.Href == aggs.TypeLink.Url);
 		aggs.Type.Spans.Where(s => s.Text is "map" or "{}").Should().OnlyContain(s => string.IsNullOrEmpty(s.Href));
 	}
@@ -697,7 +697,12 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Text
 			.RegularExpressions
 			.Regex
-			.Match(html, $"id=\"{property.AnchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(Show|Hide) \\d+ propert");
+			.Match(
+				html,
+				$"id=\"{property.AnchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(Show|Hide) \\d+ propert",
+				System.Text.RegularExpressions.RegexOptions.None,
+				Elastic.Documentation.RegexTimeouts.MatchTimeout
+			);
 		match.Success.Should().BeTrue($"property {property.AnchorId} renders an expand control");
 		match.Groups[2].Value.Should().Be(expanded ? "true" : "false");
 		var count = property.NestedCount;

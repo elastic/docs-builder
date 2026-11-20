@@ -204,7 +204,7 @@ internal static class OperationCommonMark
 			return;
 
 		var single = page.Responses.Count == 1;
-		ApiCommonMark.Heading(markdown, 2, single ? "Response" : "Responses");
+		ApiCommonMark.Heading(markdown, 2, "Responses");
 		foreach (var response in page.Responses)
 		{
 			if (!single)

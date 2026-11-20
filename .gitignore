@@ -412,4 +412,4 @@ FodyWeavers.xsd
 mise.local.toml
 
 # Generated from the F# build targets by `mise install` (see mise.toml)
-.make/
+.runna/

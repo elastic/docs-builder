@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Documentation.Journeys.Tests.Targets;
 
@@ -37,6 +38,6 @@ public static partial class BodyScrubbers
 	/// </summary>
 	public static string WithoutProse(string transcript) => ProseLine().Replace(transcript, "${prefix}\"…\"${suffix}");
 
-	[GeneratedRegex("""(?<prefix>^[> ]* *"(?:description|instructions)": )".*"(?<suffix>,?)$""", RegexOptions.Multiline)]
+	[GeneratedRegex("""(?<prefix>^[> ]* *"(?:description|instructions)": )".*"(?<suffix>,?)$""", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ProseLine();
 }

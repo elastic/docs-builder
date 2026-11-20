@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml rules.create: cannot have both 'exclude' and 'include'. Use one or the other."
+  ]
+}

@@ -4,7 +4,11 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 
-	// The Base URL and examples sit in the right rail, under Copy page.
+	// The design-system stylesheet has no styles for the section links yet, so the flagged page leaves them out.
+	private bool ShowSectionLinks =>
+		!Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && Model.SectionLinks is { Count: > 1 };
+
+	// The Base URL and examples sit in the right rail.
 	// Below 1024px the rail drops under the whole article, so the Base URL also sits in the header (hidden on wide screens).
 	protected override async Task ExecuteSectionAsync(string name)
 	{
@@ -28,9 +32,11 @@
 	var endpoint = pageModel.Endpoint;
 }
 
-<header class="api-page-intro">
+@* A reserved id: a supplemental section titled Overview gets "overview", which this must not take. *@
+<header class="api-page-intro" id="api-operation-overview">
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
+		@await RenderPartialAsync(_VersionNotice.Create(Model))
 	</div>
 	@if (Model.Servers.Count > 0)
 	{
@@ -53,9 +59,13 @@
 			</li>
 		}
 	</ul>
-	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
+	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, Model.Operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref, Model.VersionNotice as OlderMajorNotice)))
 </header>
-<section id="elastic-api-v3">
+<section id="elastic-api-v3" class="@(ShowSectionLinks ? "api-has-toolbar" : null)">
+	@if (ShowSectionLinks)
+	{
+		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(Model.SectionLinks))
+	}
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
 	{
 		<div class="api-operation-description" id="description">
@@ -77,16 +87,12 @@
 			@pageModel.ExternalDocs.LinkText
 		</a>
 	}
+	@if (Model.Authorization.Privileges.Count > 0)
+	{
+		@(await RenderPartialAsync<_RequiredPrivileges, AuthorizationSectionModel>(Model.Authorization))
+	}
 	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
-	@* The design-system stylesheet has no styles for the bar yet, so the flagged page leaves it out. *@
-	@if (!Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && Model.SectionLinks is { Count: > 1 } sectionLinks)
-	{
-		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(sectionLinks))
-	}
-	else
-	{
-		@(await RenderPartialAsync(_ExpandAllControl.Create(true)))
-	}
+	@(await RenderPartialAsync(_ExpandAllControl.Create(true)))
 	@foreach (var section in pageModel.ParameterSections)
 	{
 		@(await RenderPartialAsync<_ParameterListSection, ParameterListSection>(section))

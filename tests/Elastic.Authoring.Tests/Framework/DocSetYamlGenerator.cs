@@ -184,7 +184,7 @@ public static class DocSetYamlGenerator
 		}
 
 		var docsTestsRoot = Path.Join(repoRoot, "docs-tests");
-		var testingPages = new[] { "5th-page", "second-page", "third-page", "first-page" }.Select(
+		var testingPages = new List<string> { "5th-page", "second-page", "third-page", "first-page" }.Select(
 			file => ($"testing/redirects/{file}.md", File.ReadAllText(Path.Join(docsTestsRoot, $"redirects/{file}.md")))
 		).ToArray();
 

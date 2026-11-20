@@ -1,0 +1,101 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "2025-06-02",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "/docs/releases/full.yaml",
+        "description": "Intro line\nSecond line\n",
+        "releaseDate": "2025-06-02",
+        "gitRef": "abc1234",
+        "hideFeatures": [
+          "flag-a",
+          "flag-b"
+        ],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-06-02",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Hidden thing"
+        ],
+        "entries": [
+          "Feature: Hidden thing prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "2025-06-02",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "full.yaml",
+        "description": "Intro line\nSecond line\n",
+        "releaseDate": "2025-06-02",
+        "gitRef": "abc1234",
+        "hideFeatures": [
+          "flag-a",
+          "flag-b"
+        ],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-06-02",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Hidden thing"
+        ],
+        "entries": [
+          "Feature: Hidden thing prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "2025-06-02",
+        "repo": "cloud-serverless",
+        "owner": "elastic",
+        "filePath": "/docs/releases/full.yaml",
+        "description": "Intro line\nSecond line\n",
+        "releaseDate": "2025-06-02",
+        "gitRef": "abc1234",
+        "hideFeatures": [
+          "flag-a",
+          "flag-b"
+        ],
+        "products": [
+          {
+            "ProductId": "cloud-serverless",
+            "Target": "2025-06-02",
+            "Lifecycle": null,
+            "Repo": null,
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "Hidden thing"
+        ],
+        "entries": [
+          "Feature: Hidden thing prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

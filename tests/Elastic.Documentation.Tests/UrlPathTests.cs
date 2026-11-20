@@ -10,8 +10,8 @@ namespace Elastic.Documentation.Tests;
 public class UrlPathTests
 {
 	[Test]
-	[Arguments("/docs/api/doc/elasticsearch", "https://www.elastic.co/docs/api/doc/elasticsearch")]
-	[Arguments("docs/api/doc/elasticsearch", "https://www.elastic.co/docs/api/doc/elasticsearch")]
+	[Arguments("/docs/api/elasticsearch", "https://www.elastic.co/docs/api/elasticsearch")]
+	[Arguments("docs/api/elasticsearch", "https://www.elastic.co/docs/api/elasticsearch")]
 	public void MakeAbsolute_RelativeUrl_UsesCanonicalBase(string url, string expected) =>
 		UrlPath.MakeAbsolute(new Uri("https://www.elastic.co"), url).Should().Be(expected);
 

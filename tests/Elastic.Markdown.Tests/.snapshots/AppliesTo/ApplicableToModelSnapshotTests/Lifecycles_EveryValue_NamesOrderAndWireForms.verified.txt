@@ -1,0 +1,11 @@
+TechnicalPreview     text: preview 9.1+       short: Preview       display: Preview              order: 2 wire: preview
+Experimental         text: experimental 9.1+  short: Experimental  display: Experimental         order: 3 wire: experimental
+Beta                 text: beta 9.1+          short: Beta          display: Beta                 order: 1 wire: beta
+GenerallyAvailable   text: ga 9.1+            short: GA            display: Generally available  order: 0 wire: ga
+Deprecated           text: deprecated 9.1+    short: Deprecated    display: Deprecated           order: 5 wire: deprecated
+Removed              text: removed 9.1+       short: Removed       display: Removed              order: 6 wire: removed
+Unavailable          text: unavailable 9.1+   short: Unavailable   display: Unavailable          order: 7 wire: unavailable
+Discontinued         text: discontinued 9.1+  short: Discontinued  display: Discontinued         order: 9 wire: discontinued
+Planned              text: planned 9.1+       short: Planned       display: Planned              order: 4 wire: planned
+Development          text: dev 9.1+           short: Development   display: Development          order: 8 wire: development
+undefined value: |999

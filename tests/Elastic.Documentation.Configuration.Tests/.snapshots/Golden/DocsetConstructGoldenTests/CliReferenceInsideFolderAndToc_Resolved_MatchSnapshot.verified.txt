@@ -1,0 +1,88 @@
+diagnostics:
+warning /docs/docset.yml CLI supplemental docs folder not found: tool-docs
+error /docs/docset.yml CLI schema file not found: sub/other.json
+toc:
+FolderRef  tools
+  IndexFileRef  tools/index.md
+  CliReferenceRef  tools/tool-docs
+IsolatedTableOfContentsRef  nested
+  CliReferenceRef  nested/nested/schema (container-relative: nested/schema)
+model:
+model <DocumentationSetFile>:
+  Project: "constructs"
+  TableOfContents:
+    - <FolderRef>:
+      PathRelativeToDocumentationSet: "tools"
+      PathRelativeToContainer: "tools"
+      Children:
+        - <IndexFileRef>:
+          PathRelativeToDocumentationSet: "tools/index.md"
+          PathRelativeToContainer: "tools/index.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <CliReferenceRef>:
+          SchemaPath: "tools/tool.json"
+          SupplementalFolder: "tool-docs"
+          Title: null
+          NavigationTitle: null
+          PathRelativeToDocumentationSet: "tools/tool-docs"
+          PathRelativeToContainer: "tools/tool-docs"
+          Context: "/docs/docset.yml"
+          Children: []
+          AppliesTo: null
+      Context: "/docs/docset.yml"
+      Sort: null
+      Exclude: null
+      DefaultCta: null
+    - <IsolatedTableOfContentsRef>:
+      PathRelativeToDocumentationSet: "nested"
+      PathRelativeToContainer: "nested"
+      Children:
+        - <CliReferenceRef>:
+          SchemaPath: "nested/schema.json"
+          SupplementalFolder: null
+          Title: null
+          NavigationTitle: null
+          PathRelativeToDocumentationSet: "nested/nested/schema"
+          PathRelativeToContainer: "nested/schema"
+          Context: "/docs/nested/toc.yml"
+          Children:
+            - <FileRef>:
+              PathRelativeToDocumentationSet: "nested/nested/schema/page.md"
+              PathRelativeToContainer: "nested/schema/page.md"
+              Hidden: False
+              Children: []
+              Context: "/docs/nested/toc.yml"
+              DefaultCta: null
+          AppliesTo: null
+      Context: "/docs/docset.yml"
+      Island: False
+      DefaultCta: null
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta: {}
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}

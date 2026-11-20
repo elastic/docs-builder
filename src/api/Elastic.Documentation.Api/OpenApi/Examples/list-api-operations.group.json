@@ -1,0 +1,27 @@
+{
+  "totalHits": 1,
+  "results": [
+    {
+      "operation": {
+        "api": "elasticsearch",
+        "title": "Get the cluster health",
+        "url": "/docs/api/elasticsearch/operation/operation-health-report",
+        "description": "Get a report with the health status of an Elasticsearch cluster.\nThe report contains a list of indicators that compose Elasticsearch functionality.\n\nEach ind…",
+        "method": "GET",
+        "path": "/_health_report/{feature}",
+        "operationId": "health-report",
+        "group": "Cluster - Health",
+        "deprecated": false,
+        "endpoints": [
+          "GET /_health_report/{feature}",
+          "GET /_health_report"
+        ]
+      },
+      "score": null,
+      "matchedFields": null,
+      "versions": null,
+      "fields": null,
+      "body": null
+    }
+  ]
+}

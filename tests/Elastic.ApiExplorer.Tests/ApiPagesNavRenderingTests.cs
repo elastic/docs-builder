@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 using RazorSlices;
 
@@ -25,12 +26,12 @@ public partial class ApiPagesNavRenderingTests
 	public async Task Render_Isolated_HostsProductAndVersionAheadOfTheTree()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/v9/",
-			"/api/doc/elasticsearch/v9.md",
+			"/api/elasticsearch/v9/",
+			"/api/elasticsearch/v9.md",
 			apiContext: CreateApiContext(versions: [
-				new("main", "/api/doc/elasticsearch/", Selected: false),
-				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
-				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
+				new("main", "/api/elasticsearch/", Selected: false),
+				new("v9", "/api/elasticsearch/v9/", Selected: true),
+				new("v8", "/api/elasticsearch/v8/", Selected: false),
 			])
 		);
 
@@ -44,7 +45,7 @@ public partial class ApiPagesNavRenderingTests
 	[Test]
 	public async Task Render_Isolated_MarksOnlyCurrentProductSelected()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", apiContext: CreateApiContext());
+		var model = CreateLayoutModel("/api/elasticsearch/", "/api/elasticsearch.md", apiContext: CreateApiContext());
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
@@ -55,11 +56,11 @@ public partial class ApiPagesNavRenderingTests
 	public async Task Render_Assembler_ShowsTheApiIdentityAboveTheFilter()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			apiContext: CreateApiContext(versions: [
-				new("main", "/api/doc/elasticsearch/", Selected: true),
-				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
+				new("main", "/api/elasticsearch/", Selected: true),
+				new("v8", "/api/elasticsearch/v8/", Selected: false),
 			]),
 			buildType: BuildType.Assembler
 		);
@@ -73,8 +74,8 @@ public partial class ApiPagesNavRenderingTests
 	public async Task Render_PreservesTheNavAcrossHtmxSwapsWhenPreviewEnabled()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
 		);
 
@@ -86,7 +87,7 @@ public partial class ApiPagesNavRenderingTests
 	[Test]
 	public async Task Render_ShowsTheEndpointFilterOnAssemblerBuilds()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Assembler);
+		var model = CreateLayoutModel("/api/elasticsearch/", "/api/elasticsearch.md", buildType: BuildType.Assembler);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
@@ -97,8 +98,8 @@ public partial class ApiPagesNavRenderingTests
 	public async Task Render_ShowsTheEndpointFilterWhenNavigationPreviewIsOn()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }),
 			buildType: BuildType.Assembler
 		);
@@ -111,7 +112,7 @@ public partial class ApiPagesNavRenderingTests
 	[Test]
 	public async Task Render_OmitsTheEndpointFilterOnIsolatedBuilds()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Isolated);
+		var model = CreateLayoutModel("/api/elasticsearch/", "/api/elasticsearch.md", buildType: BuildType.Isolated);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
@@ -121,19 +122,19 @@ public partial class ApiPagesNavRenderingTests
 	[Test]
 	public void DirectOperationUrl_ExpandsEveryAncestorAndMarksTheOperationCurrent()
 	{
-		const string operationUrl = "/api/doc/elasticsearch/operation/operation-synonyms-put-synonym";
+		const string operationUrl = "/api/elasticsearch/operation/operation-synonyms-put-synonym";
 		const string html =
 			"""
 			<ul id="nav-tree-es">
 				<li class="nav-folder">
 					<div class="peer nav-folder-peer">
 						<input id="other-group" type="checkbox" class="hidden">
-						<a href="/api/doc/elasticsearch/group/other" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Other</span></a>
+						<a href="/api/elasticsearch/group/other" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Other</span></a>
 					</div>
 					<div class="nav-subtree-clip">
 						<ul class="nav-subtree">
 							<li class="flex group/li">
-								<a href="/api/doc/elasticsearch/operation/operation-other" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Other op</span></a>
+								<a href="/api/elasticsearch/operation/operation-other" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Other op</span></a>
 							</li>
 						</ul>
 					</div>
@@ -148,12 +149,12 @@ public partial class ApiPagesNavRenderingTests
 							<li class="nav-folder">
 								<div class="peer nav-folder-peer">
 									<input id="synonyms" type="checkbox" class="hidden">
-									<a href="/api/doc/elasticsearch/group/synonyms" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Synonyms</span></a>
+									<a href="/api/elasticsearch/group/synonyms" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Synonyms</span></a>
 								</div>
 								<div class="nav-subtree-clip">
 									<ul class="nav-subtree">
 										<li class="flex group/li">
-											<a href="/api/doc/elasticsearch/operation/operation-synonyms-put-synonym" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Create or update a synonym set</span></a>
+											<a href="/api/elasticsearch/operation/operation-synonyms-put-synonym" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Create or update a synonym set</span></a>
 										</li>
 									</ul>
 								</div>
@@ -167,7 +168,7 @@ public partial class ApiPagesNavRenderingTests
 		var marked = NavigationCurrentMarker.Apply(html, operationUrl);
 
 		marked.Should().Contain(
-			"href=\"/api/doc/elasticsearch/operation/operation-synonyms-put-synonym\" class=\"sidebar-link nav-link nav-v2-link current\""
+			"href=\"/api/elasticsearch/operation/operation-synonyms-put-synonym\" class=\"sidebar-link nav-link nav-v2-link current\""
 		);
 		marked.Should().Contain("id=\"search-apis\" type=\"checkbox\" class=\"hidden\" checked");
 		marked.Should().Contain("id=\"synonyms\" type=\"checkbox\" class=\"hidden\" checked");
@@ -180,8 +181,8 @@ public partial class ApiPagesNavRenderingTests
 	public async Task Render_OmitsTheEndpointFilterWhenAirGapped()
 	{
 		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
 			features: new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }),
 			buildType: BuildType.Assembler
 		);
@@ -205,8 +206,8 @@ public partial class ApiPagesNavRenderingTests
 				Kind = NavigationRenderNodeKind.Leaf,
 				IsTopLevel = false,
 				NavigationTitle = title,
-				Url = "/api/doc/elasticsearch/operation/example",
-				HttpMethod = method
+				Url = "/api/elasticsearch/operation/example",
+				HttpMethods = [method]
 			}
 		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
@@ -230,8 +231,8 @@ public partial class ApiPagesNavRenderingTests
 				Kind = NavigationRenderNodeKind.Leaf,
 				IsTopLevel = false,
 				NavigationTitle = "Get a document source",
-				Url = "/api/doc/elasticsearch/operation/operation-get-source",
-				HttpMethod = "get",
+				Url = "/api/elasticsearch/operation/operation-get-source",
+				HttpMethods = ["get"],
 				Deprecated = true
 			}
 		];
@@ -253,8 +254,8 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
-	[Arguments("/api/doc/kibana/group/endpoint-dashboards#get-started", true)]
-	[Arguments("/api/doc/kibana/group/endpoint-dashboards", false)]
+	[Arguments("/api/kibana/group/endpoint-dashboards#get-started", true)]
+	[Arguments("/api/kibana/group/endpoint-dashboards", false)]
 	public async Task Render_InPageLeaf_OptsOutOfHtmxBoost(string url, bool optsOut)
 	{
 		NavigationRenderNode[] nodes =
@@ -287,7 +288,7 @@ public partial class ApiPagesNavRenderingTests
 		return html[start..(end + 4)];
 	}
 
-	private static ApiLayoutViewModel CreateLayoutModel(
+	internal static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
 		ApiIdentity? apiContext = null,
@@ -305,6 +306,7 @@ public partial class ApiPagesNavRenderingTests
 			Previous = null,
 			Next = null,
 			NavigationHtml = "<nav>tree</nav>",
+			BetaBanner = ApiBetaBanner.For(null, navigationUrl),
 			UrlPathPrefix = string.Empty,
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,
@@ -328,14 +330,14 @@ public partial class ApiPagesNavRenderingTests
 				new(
 					Title: null,
 					[
-						new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true, IconSvg: null),
-						new("Kibana", "/api/doc/kibana/", Selected: false, IconSvg: null)
+						new("Elasticsearch", "/api/elasticsearch/", Selected: true, IconSvg: null),
+						new("Kibana", "/api/kibana/", Selected: false, IconSvg: null)
 					]
 				)
 			],
 			HubUrl: "/api/",
 			versions ?? [],
-			new ApiSpecDownload("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml")
+			new ApiSpecDownload("/api/elasticsearch.json", "/api/elasticsearch.yaml")
 		);
 
 	private static int CountOccurrences(string html, string value)
@@ -349,5 +351,32 @@ public partial class ApiPagesNavRenderingTests
 		}
 
 		return count;
+	}
+
+	[Test]
+	public async Task Render_MultiMethodOperationRow_JoinsEveryMethodIntoOneChipDominantFirst()
+	{
+		var html = await _TocTreeNav.Create([
+			new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Search",
+				Url = "/api/elasticsearch/operation/search",
+				HttpMethods = ["post", "get"]
+			}
+		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		OperationLink(html)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			<a href="/api/elasticsearch/operation/search" class="sidebar-link nav-link nav-v2-link">
+							<span class="nav-v2-nav-text">Search</span>
+							<span class="nav-v2-api-method-group"><span class="nav-v2-api-method nav-v2-api-method-post">POST</span><span class="nav-v2-api-method nav-v2-api-method-get">GET</span></span>
+
+						</a>
+			"""
+			);
 	}
 }

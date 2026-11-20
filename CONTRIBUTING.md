@@ -30,7 +30,7 @@ The everyday tasks:
 | `mise run site:build`, `site:test`, `site:lint`, `site:fmt`, `site:check` | The frontend scripts in `src/Elastic.Documentation.Site` |
 | `mise run schema` | Regenerate `docs/cli-schema.json` |
 
-`./build.sh` and `./dev.sh` still work. Most mise tasks are generated from the targets of the build project (`./build.sh --help`), so `./build.sh test` and `mise run test` are the same command; `mise install` regenerates them into `.make/`, which is gitignored.
+`./build.sh` and `./dev.sh` still work. Most mise tasks are generated from the targets of the build project (`./build.sh --help`), so `./build.sh test` and `mise run test` are the same command; `mise install` regenerates them into `.runna/`, which is gitignored.
 
 ### Docker, without local installs (`./dev.sh`)
 

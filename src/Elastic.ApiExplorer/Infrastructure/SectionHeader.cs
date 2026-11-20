@@ -27,9 +27,6 @@ public enum SummaryStyle
 	/// <summary>Alternatives, as when a body is a union: <c>A | B</c>.</summary>
 	Variants,
 
-	/// <summary>Names that are all needed together, such as required privileges: <c>a + b</c>, as the credentials of one requirement are.</summary>
-	All,
-
 	/// <summary>Names that are neither an object's fields nor alternatives, such as parameters or the fields of a form: <c>a, b</c>.</summary>
 	List
 }
@@ -48,6 +45,7 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 		[
 			"paths",
+			"api-operation-overview",
 			"required-privileges",
 			"authentication",
 			"description",

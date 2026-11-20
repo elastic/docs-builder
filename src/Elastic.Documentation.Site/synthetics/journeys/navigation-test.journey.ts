@@ -29,7 +29,7 @@ journey('navigation test', ({ page, params }) => {
             timeout: 60000,
             waitUntil: 'domcontentloaded',
         })
-        await expect(page).toHaveTitle(/Elastic Docs \| Elastic Docs/)
+        await expect(page).toHaveTitle(/^Elastic Docs( \| Elastic Docs)?$/)
         await page.evaluate(() => {
             window['__synthNoReload'] = true
         })

@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml 'block' is no longer supported. Rename to 'rules'. See changelog.example.yml."
+  ]
+}

@@ -4,6 +4,7 @@
 
 using System.IO.Compression;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.FileProviders;
 
@@ -41,7 +42,7 @@ public static partial class StyleGuideExport
 	}
 
 	// A file name as it appears in the text of a page, script or stylesheet.
-	[GeneratedRegex(@"[A-Za-z0-9_.@-]+\.(?:js|css|woff2?|ttf|png|svg|jpe?g|webp|gif|avif)")]
+	[GeneratedRegex(@"[A-Za-z0-9_.@-]+\.(?:js|css|woff2?|ttf|png|svg|jpe?g|webp|gif|avif)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AssetName();
 
 	/// <summary>The files a set of pages needs: the entry points and whatever the pages, scripts and stylesheets refer to, followed to the end.</summary>
@@ -117,8 +118,10 @@ public static partial class StyleGuideExport
 		{
 			foreach (var entry in StyleGuidePreviewCatalog.Entries)
 			{
-				if (await previewRenderer(entry.Id) is { } preview)
-					pages.Add(($"preview/{entry.Id}.html", preview.Replace("/_static/", $"../{StaticFolder}/", StringComparison.Ordinal)));
+				if (await previewRenderer(entry.Id) is not { } preview)
+					continue;
+				var relinked = RelinkPreviews(preview.Replace("/_static/", $"../{StaticFolder}/", StringComparison.Ordinal));
+				pages.Add(($"preview/{entry.Id}.html", relinked));
 			}
 		}
 
@@ -141,6 +144,14 @@ public static partial class StyleGuideExport
 
 	private static string RedirectTo(string target) =>
 		$"<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={target}\"><title>Style guide</title></head><body><a href=\"{target}\">Open the style guide</a></body></html>\n";
+
+	/// <summary>Points links from one preview to another at the sibling file in the archive, since previews sit together in <c>preview/</c>.</summary>
+	public static string RelinkPreviews(string html)
+	{
+		foreach (var entry in StyleGuidePreviewCatalog.Entries)
+			html = html.Replace($"\"{StyleGuidePreviewCatalog.Route}/{entry.Id}\"", $"\"{entry.Id}.html\"", StringComparison.Ordinal);
+		return html;
+	}
 
 	/// <summary>Points links between guide pages at the exported files instead of the dev-server routes.</summary>
 	public static string RelinkPages(string html)

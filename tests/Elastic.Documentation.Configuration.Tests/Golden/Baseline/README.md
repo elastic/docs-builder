@@ -1,0 +1,3 @@
+Frozen copies of `config/*.yml` taken from `main` on 2026-11-16, so the golden snapshots in `Golden/` do not change when `config/` does (version bumps, new products). Repositories marked `private: true` in `assembler.yml` are renamed to `private-repo-N` here, in every file that names them, and the comments that mention them are dropped. Refresh a copy deliberately, together with its snapshots.
+
+`Baseline/docs` is a frozen copy of this repository's own `docs/` docset, taken on 2026-11-16: `_docset.yml`, `_redirects.yml` and the `toc.yml` files as they were, and `files.txt`, the list of every other file in `docs/` at that time (the tests give each an empty page).

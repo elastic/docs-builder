@@ -32,8 +32,7 @@
 	<nav id="secondary-nav">
 		@if (topNav is not null)
 		{
-			@* navigation-preview: desktop section-driven top nav.
-			   secondary-nav-dropdown.css lets an open dropdown escape the overflow clipping. *@
+			@* navigation-preview: desktop section-driven top nav. *@
 			<div class="secondary-nav-bar secondary-nav-bar--desktop">
 				<div class="secondary-nav-scroll-container">
 				<a href="@docsHomeUrl"
@@ -45,39 +44,7 @@
 						var isActive = item.IsActive(currentSectionId);
 						var itemClass = isActive ? "secondary-nav-item secondary-nav-item--active" : "secondary-nav-item";
 						var iconId = IconId(item.Title);
-						if (item is TopNavDropdownItem dropdown)
-						{
-							<li class="@itemClass">
-								<details class="secondary-nav-dropdown">
-									<summary class="secondary-nav-item__hit">
-										<span class="secondary-nav-item__content secondary-nav-item__content--dropdown">
-											@if (iconId is not null)
-											{
-												@NavIcon(iconId)
-											}
-											<span>@dropdown.Title</span>
-											@NavIcon("chevron-down", "secondary-nav-icon--sm secondary-nav-dropdown-chevron")
-										</span>
-									</summary>
-									<div class="secondary-nav-dropdown-menu" aria-label="@dropdown.Title">
-										@foreach (var group in dropdown.Groups)
-										{
-											if (group.Label is not null)
-											{
-												<div class="secondary-nav-dropdown-group-label">@group.Label</div>
-											}
-											foreach (var link in group.Links)
-											{
-												<a class="secondary-nav-dropdown-link"
-												   href="@link.Url"
-												   preload="mousedown">@link.Title</a>
-											}
-										}
-									</div>
-								</details>
-							</li>
-						}
-						else if (item is TopNavLinkItem link)
+						if (item is TopNavLinkItem link)
 						{
 							var sectionIdsAttr = link.SectionIds is { Count: > 0 }
 								? string.Join(" ", link.SectionIds)

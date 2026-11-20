@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
@@ -12,7 +13,7 @@ namespace Elastic.Markdown.Helpers;
 
 internal static partial class InterpolationRegex
 {
-	[GeneratedRegex(@"\{\{[^\r\n}]+?\}\}", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"\{\{[^\r\n}]+?\}\}", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds, "en-US")]
 	public static partial Regex MatchSubstitutions();
 }
 

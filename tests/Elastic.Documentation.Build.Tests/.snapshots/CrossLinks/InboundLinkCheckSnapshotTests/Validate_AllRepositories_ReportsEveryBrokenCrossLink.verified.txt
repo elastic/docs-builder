@@ -1,0 +1,7 @@
+passed: false
+error alpha 'page.md' has no anchor named: '#unknown-anchor'.
+error https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/beta/main/links.json 'elastic/alpha' links to unknown file: 'missing.md' in the 'beta' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/beta/main/links.json
+error https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/gamma/main/links.json 'elastic/alpha' links to unknown file: 'missing.md' in the 'gamma' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/gamma/main/links.json
+error alpha 'unknown-repo' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml
+error https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/alpha/main/links.json 'elastic/beta' links to unknown file: 'missing.md' in the 'alpha' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/alpha/main/links.json
+error https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/gamma/main/links.json 'elastic/beta' links to unknown file: 'missing-too.md' in the 'gamma' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/gamma/main/links.json

@@ -9,7 +9,7 @@
 		<h3 class="api-index-group-title">
 			@if (heading.Url is not null)
 			{
-				<a href="@heading.Url" @(new HtmlString(Model.HxAttributes))>@heading.Title</a>
+				<a href="@heading.Url" @(new HtmlString(Model.HxAttributes))>@if (heading.Deprecated){<s class="api-deprecated-title">@heading.Title</s><span class="sr-only">Deprecated</span>}else{@heading.Title}</a>
 			}
 			else
 			{
@@ -23,12 +23,12 @@
 		@foreach (var row in Model.Group.Items)
 		{
 			<li>
-				<a class="api-index-item" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
+				<a class="api-index-item@(row.Deprecated ? " api-index-item--deprecated" : "")" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
 					@if (row.Endpoint is { Rows.Count: > 0 } endpoint)
 					{
-						@(await RenderPartialAsync<_HttpMethodBadge, string>(endpoint.Rows[0].Method))
+						@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(endpoint.Rows[0].Methods))
 						<span class="api-index-item-text">
-							<span class="api-index-item-title">@row.Title</span>
+							<span class="api-index-item-title">@if (row.Deprecated){<s class="api-deprecated-title">@row.Title</s><span class="sr-only">Deprecated</span>}else{@row.Title}</span>
 							<code class="api-index-item-path">@endpoint.Rows[0].Route</code>
 						</span>
 					}

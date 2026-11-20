@@ -3,11 +3,19 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Search.ApiReference;
 
 namespace Elastic.Documentation.Mcp.Remote.Responses;
 
 // Common error response
 public sealed record ErrorResponse(string Error, List<string>? Details = null);
+
+public static class ResponseBody
+{
+	/// <summary>The note a response carries when it leaves out a body the caller can still ask for.</summary>
+	public static string? Note(int bodyLength, bool includeBody) =>
+		!includeBody && bodyLength > 0 ? "The body is omitted by default. Call this tool again with includeBody=true to read it." : null;
+}
 
 // SemanticSearch response
 public sealed record SemanticSearchResponse
@@ -181,4 +189,15 @@ public sealed record AiEnrichmentStatusDto
 [JsonSerializable(typeof(ProductDto))]
 [JsonSerializable(typeof(DocumentStructureResponse))]
 [JsonSerializable(typeof(AiEnrichmentStatusDto))]
+[JsonSerializable(typeof(ApiOperationSearchResponse))]
+[JsonSerializable(typeof(ApiOperationResponse))]
+[JsonSerializable(typeof(ApiListResponse))]
+[JsonSerializable(typeof(ApiOperationCollectionResponse))]
+[JsonSerializable(typeof(ApiOperationListResponse))]
+[JsonSerializable(typeof(ApiOperationGroupDto))]
+[JsonSerializable(typeof(ApiOperationListItemDto))]
+[JsonSerializable(typeof(ApiOperationHit))]
+[JsonSerializable(typeof(ApiOperationSummary))]
+[JsonSerializable(typeof(ApiField))]
+[JsonSerializable(typeof(ApiSummary))]
 public sealed partial class McpJsonContext : JsonSerializerContext;

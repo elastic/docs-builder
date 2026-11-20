@@ -1,0 +1,24 @@
+empty
+    text: 
+    id: (none)
+    equal to itself: True
+two
+    text: ecctl=ga 1.0+, : not null } => curator=deprecated, 
+    id: cloud-control-ecctl
+    equal to itself: True
+three
+    text: ecctl=ga, : not null } => apm-agent-java=beta 1.0+, : not null } => edot-java=preview, 
+    id: cloud-control-ecctl
+    equal to itself: True
+apm agent and edot of the same platform
+    text: apm-agent-ios=ga, : not null } => edot-ios=ga, 
+    id: edot-ios
+    equal to itself: True
+last in declaration order
+    text: edot-cf-gcp=ga, : not null } => edot-collector=ga, 
+    id: edot-cf-gcp
+    equal to itself: True
+multi lifecycle
+    text: ecctl=ga 2.0+, beta 1.0-1.9, 
+    id: cloud-control-ecctl
+    equal to itself: True

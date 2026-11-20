@@ -48,9 +48,6 @@ public record ApiOverviewRow
 /// <summary>A heading row and the item rows under it. <see cref="Heading"/> is null for items that come before any heading.</summary>
 public record ApiOverviewSection(ApiOverviewRow? Heading, IReadOnlyList<ApiOverviewRow> Items);
 
-/// <summary>The product landing page: topic pages to read, and the sections the grouped index shows.</summary>
-public record ApiOverviewIndex(IReadOnlyList<ApiOverviewRow> Topics, IReadOnlyList<ApiOverviewSection> Groups);
-
 /// <summary>Flattens the navigation tree into overview rows so the landing views only iterate and print.</summary>
 public static class ApiOverviewBuilder
 {
@@ -95,12 +92,11 @@ public static class ApiOverviewBuilder
 	}
 
 	/// <summary>
-	/// Splits the pages that come before the first group (Authentication, Servers) from the grouped endpoints.
-	/// They are topics to read, not endpoints to browse.
+	/// The grouped endpoints, without the guide pages that come before the first group. Those are pages to read, which the
+	/// sidebar already lists, not endpoints to browse.
 	/// </summary>
-	public static ApiOverviewIndex SplitTopics(IReadOnlyList<ApiOverviewSection> sections)
+	public static IReadOnlyList<ApiOverviewSection> WithoutGuidePages(IReadOnlyList<ApiOverviewSection> sections)
 	{
-		var topics = new List<ApiOverviewRow>();
 		var groups = new List<ApiOverviewSection>();
 		foreach (var section in sections)
 		{
@@ -109,12 +105,11 @@ public static class ApiOverviewBuilder
 				groups.Add(section);
 				continue;
 			}
-			topics.AddRange(section.Items.Where(static r => r.Kind == OverviewRowKind.MarkdownPage));
 			var rest = section.Items.Where(static r => r.Kind != OverviewRowKind.MarkdownPage).ToList();
 			if (rest.Count > 0)
 				groups.Add(section with { Items = rest });
 		}
-		return new ApiOverviewIndex(topics, groups);
+		return groups;
 	}
 
 	private static bool IsHeading(ApiOverviewRow row) =>
@@ -151,7 +146,13 @@ public static class ApiOverviewBuilder
 					AddProductRows(classification, rows, versionsConfig, designSystem);
 					break;
 				case TagNavigationItem tag:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.TagHeading,
+						Title = tag.NavigationTitle,
+						Url = tag.Url,
+						Deprecated = tag.Deprecated
+					});
 					AddProductRows(tag, rows, versionsConfig, designSystem);
 					break;
 				case OperationNavigationItem operation:
@@ -174,9 +175,9 @@ public static class ApiOverviewBuilder
 						SchemaId = schemaItem.Model.SchemaId
 					});
 					break;
-				// The landing page lists topics in its own block, so the Topics heading adds no row.
-				case TopicsNavigationItem topics:
-					AddProductRows(topics, rows, versionsConfig, designSystem);
+				// Operations only labels the endpoint groups, so it adds no row of its own.
+				case OperationsNavigationItem:
+					AddProductRows(navigationItem, rows, versionsConfig, designSystem);
 					break;
 				case TopicNavigationItem or SimpleMarkdownNavigationItem or StructuralNavigationItem:
 					rows.Add(new ApiOverviewRow
@@ -186,7 +187,6 @@ public static class ApiOverviewBuilder
 						Url = navigationItem.Url
 					});
 					break;
-				case ISidebarSeparatorNavigationItem:
 				case IntroHeadingNavigationItem:
 					break;
 				default:

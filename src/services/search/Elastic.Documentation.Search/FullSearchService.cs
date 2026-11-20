@@ -22,6 +22,9 @@ public partial class FullSearchService(
 	ILogger<FullSearchService> logger
 ) : IFullSearchService, IDisposable
 {
+	/// <summary>The largest page any caller gets; the site asks for at most 50.</summary>
+	public const int MaxPageSize = 50;
+
 	public async Task<FullSearchResponse> SearchAsync(FullSearchRequest request, Cancel ctx = default)
 	{
 		SearchResponse<DocumentationDocument> resp;
@@ -31,8 +34,8 @@ public partial class FullSearchService(
 				new SearchRequest
 				{
 					Query = request.Query,
-					PageNumber = request.PageNumber,
-					PageSize = request.PageSize,
+					PageNumber = Math.Max(1, request.PageNumber),
+					PageSize = Math.Clamp(request.PageSize, 1, MaxPageSize),
 					TypeFilter = request.TypeFilter ?? [],
 					SectionFilter = request.SectionFilter ?? [],
 					ProductFilter = request.ProductFilter ?? [],
@@ -49,14 +52,11 @@ public partial class FullSearchService(
 				ctx
 			);
 		}
-		catch (TransportException ex) when (IsTransient(ex))
+		catch (TransportException ex) when (SearchUnavailableException.IsTransient(ex))
 		{
 			// Surface transient ES backend failures (timeout, overload, 429/503) as a typed exception
 			// so callers (e.g. MCP tools) can signal "retry in a few seconds" to their clients.
-			throw new SearchUnavailableException(
-				$"Search backend is temporarily unavailable ({ex.FailureReason}). Transient — retry in a few seconds.",
-				ex
-			);
+			throw SearchUnavailableException.Transient(ex.FailureReason, ex);
 		}
 
 		var response = new FullSearchResponse
@@ -80,12 +80,6 @@ public partial class FullSearchService(
 
 		return response;
 	}
-
-	// True for transport failures that are inherently transient: request timeout, retry exhaustion
-	// on a single-node pool, or server-side overload (HTTP 429 / 503).
-	private static bool IsTransient(TransportException ex) =>
-		ex.FailureReason is PipelineFailure.MaxTimeoutReached or PipelineFailure.MaxRetriesReached
-			|| (ex.FailureReason is PipelineFailure.BadResponse && ex.ApiCallDetails?.HttpStatusCode is 429 or 503);
 
 	[LoggerMessage(Level = LogLevel.Information, Message = "Full search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}' (semantic: {IsSemantic}): {Urls}")]
 	private static partial void LogFullSearchResults(

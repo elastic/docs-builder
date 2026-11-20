@@ -36,6 +36,25 @@ Reason set version 2 presents these positive reasons in display order:
 and `reason_set_version`. They pass `surface="api"` so labels and descriptions
 talk about the spec and examples instead of a product how-to.
 
+## Feedback from the API beta banner
+
+Every API page shows a beta banner. Where page feedback runs, its "let us know"
+link opens the same feedback widget in a dialog, so a reader reports a problem
+without leaving the page. The dialog holds a second instance of the widget with
+`surface="api"`. It sends the same request, to the same index and with the same
+reasons, as the widget at the bottom of the page, and the page URL identifies the
+page. Feedback from the dialog therefore has no marker that tells it apart.
+
+Page feedback runs when the `PAGE_FEEDBACK` flag is on, the site is not
+air-gapped, and the build type has the feedback API behind it
+(`GlobalLayoutViewModel.ShowPageFeedback`). Anywhere else, and in a browser
+without script or `<dialog>`, the link goes to the docs-content issue form with
+the page URL filled in. A click with a modifier key opens that form in a new tab.
+
+The banner sits outside `#main-container`, which boosted navigation swaps. After
+each swap `api-beta-banner.ts` replaces, inserts or removes the banner to match
+the new page, so the dialog always reports the page the reader is on.
+
 ## Provision the index
 
 `PageFeedbackMapping` defines the mapping with `Elastic.Mapping` attributes.
@@ -60,7 +79,7 @@ server can run without Elasticsearch. They prevent startup in `staging`, `edge`,
 and `prod`.
 
 Runtime credentials require permission to manage component and index templates,
-create the environment's index, and write and delete its documents.
+create the environment's index, and write its documents.
 
 Template updates do not modify existing indices. For a mapping change, increment
 the schema version in the index name, deploy the new template, and migrate any

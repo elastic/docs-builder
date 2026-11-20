@@ -11,15 +11,8 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiCatalogCardTests
 {
-	private static ApiCatalogItem Item(string key = "elasticsearch", params string[] pills) =>
-		new(
-			key,
-			"Elasticsearch API",
-			"/docs/api/doc/elasticsearch",
-			"<svg></svg>",
-			"Elasticsearch provides REST APIs.",
-			[.. pills.Select(p => new ApiCatalogDeployment(p, p))]
-		);
+	private static ApiCatalogItem Item(string key = "elasticsearch") =>
+		new(key, "Elasticsearch API", "/docs/api/elasticsearch", "<svg></svg>", "Elasticsearch provides REST APIs.");
 
 	private static async Task<string> Render(
 		ApiCatalogItem item,
@@ -38,7 +31,7 @@ public class ApiCatalogCardTests
 	[Arguments(ApiCatalogCardKind.Compact)]
 	public async Task Render_Card_IsOneLinkThatWrapsTheWholeCardAndNothingElseIsALink(ApiCatalogCardKind kind)
 	{
-		var html = await Render(Item(pills: ["Self-managed", "Serverless"]), kind);
+		var html = await Render(Item(), kind);
 
 		html.Split("<a ").Length.Should().Be(2, "there is exactly one link in a card");
 		html.Split("</a>").Length.Should().Be(2);
@@ -50,32 +43,13 @@ public class ApiCatalogCardTests
 			.IndexOf("</a>", StringComparison.Ordinal)
 			.Should()
 			.BeGreaterThan(html.IndexOf("Elasticsearch provides REST APIs.", StringComparison.Ordinal), "so is the description");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch\"");
+		html.Should().Contain("href=\"/docs/api/elasticsearch\"");
 	}
 
 	[Test]
-	public async Task Render_RegularCard_ShowsTheDeploymentPills()
+	public async Task Render_FeaturedCard_IsParentOnlyWithAVariant()
 	{
-		var html = await Render(Item(pills: ["Self-managed", "Serverless"]));
-
-		html.Should().MatchHtmlSnapshot();
-	}
-
-	[Test]
-	[Arguments(ApiCatalogCardKind.Featured)]
-	[Arguments(ApiCatalogCardKind.Compact)]
-	public async Task Render_FeaturedOrCompactCard_LeavesOutTheDeploymentPills(ApiCatalogCardKind kind)
-	{
-		var html = await Render(Item(pills: ["Self-managed", "Serverless"]), kind);
-
-		html.Should().NotContain("api-catalog-tag");
-		html.Should().Contain("Elasticsearch provides REST APIs.");
-	}
-
-	[Test]
-	public async Task Render_FeaturedCard_HasNoPillsAndIsParentOnlyWithAVariant()
-	{
-		var html = await Render(Item(pills: ["Self-managed", "Serverless"]), ApiCatalogCardKind.Featured, hasVariant: true);
+		var html = await Render(Item(), ApiCatalogCardKind.Featured, hasVariant: true);
 
 		html.Should().MatchHtmlSnapshot();
 	}

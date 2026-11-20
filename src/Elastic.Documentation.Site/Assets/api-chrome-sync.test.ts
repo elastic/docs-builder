@@ -2,54 +2,71 @@ import {
     syncApiVersionSwitcher,
     syncIsolatedHeaderTitle,
 } from './api-chrome-sync'
+import htmx from 'htmx.org'
 
 const picker = (hrefs: string[]) =>
     `<div id="api-version-switcher">${hrefs
         .map((href) => `<a href="${href}">link</a>`)
         .join('')}</div>`
 
+const hrefs = () =>
+    [...document.querySelectorAll('#api-version-switcher a')].map((a) =>
+        a.getAttribute('href')
+    )
+
+// htmx reads a boosted link's href once, when it processes the link. Rewriting the attribute leaves the link
+// requesting the page it first pointed at, so the synced picker has to be a new element that htmx processes.
+// htmx is mocked in this suite (jsdom cannot run it), so the click itself is covered by the browser journey.
 describe('api version switcher sync', () => {
     beforeEach(() => {
-        document.body.innerHTML = picker(['/api/doc/es', '/api/doc/es/v8'])
+        vi.mocked(htmx.process).mockClear()
+        document.body.innerHTML = picker(['/api/es', '/api/es/v8'])
     })
 
-    it('takes the links of the page that was swapped in', () => {
+    it('replaces the picker with the one of the page that was swapped in and has htmx process it', () => {
+        const before = document.getElementById('api-version-switcher')
+        // A detached picker would miss the `hx-boost` it inherits from `<body>`, so htmx must see it in the live page.
+        let processedInLivePage = false
+        vi.mocked(htmx.process).mockImplementationOnce((element) => {
+            processedInLivePage =
+                element instanceof Element && document.contains(element)
+        })
+
         const changed = syncApiVersionSwitcher(
             `<html><body>${picker([
-                '/api/doc/es/operation/operation-ping',
-                '/api/doc/es/v8/operation/operation-ping',
+                '/api/es/operation/operation-ping',
+                '/api/es/v8/operation/operation-ping',
             ])}</body></html>`
         )
 
+        const after = document.getElementById('api-version-switcher')
         expect(changed).toBe(true)
-        expect(
-            [...document.querySelectorAll('a')].map((a) =>
-                a.getAttribute('href')
-            )
-        ).toEqual([
-            '/api/doc/es/operation/operation-ping',
-            '/api/doc/es/v8/operation/operation-ping',
+        expect(hrefs()).toEqual([
+            '/api/es/operation/operation-ping',
+            '/api/es/v8/operation/operation-ping',
         ])
+        expect(after).not.toBe(before)
+        expect(htmx.process).toHaveBeenCalledExactlyOnceWith(after)
+        expect(processedInLivePage).toBe(true)
     })
 
-    it('leaves the links alone when the response has no picker', () => {
+    it('leaves the picker alone when the response has no picker', () => {
+        const before = document.getElementById('api-version-switcher')
+
         const changed = syncApiVersionSwitcher('<html><body></body></html>')
 
         expect(changed).toBe(false)
-        expect(document.querySelectorAll('a')[1].getAttribute('href')).toBe(
-            '/api/doc/es/v8'
-        )
+        expect(document.getElementById('api-version-switcher')).toBe(before)
+        expect(htmx.process).not.toHaveBeenCalled()
     })
 
-    it('leaves the links alone when the picker has a different number of versions', () => {
+    it('takes the picker of the response when it lists a different number of versions', () => {
         const changed = syncApiVersionSwitcher(
-            `<html><body>${picker(['/api/doc/es'])}</body></html>`
+            `<html><body>${picker(['/api/es/operation/operation-ping'])}</body></html>`
         )
 
-        expect(changed).toBe(false)
-        expect(document.querySelectorAll('a')[1].getAttribute('href')).toBe(
-            '/api/doc/es/v8'
-        )
+        expect(changed).toBe(true)
+        expect(hrefs()).toEqual(['/api/es/operation/operation-ping'])
     })
 })
 

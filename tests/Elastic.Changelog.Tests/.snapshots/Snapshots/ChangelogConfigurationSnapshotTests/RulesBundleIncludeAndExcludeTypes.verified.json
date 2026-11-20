@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml rules.bundle: cannot have both 'exclude_types' and 'include_types'. Use one or the other."
+  ]
+}

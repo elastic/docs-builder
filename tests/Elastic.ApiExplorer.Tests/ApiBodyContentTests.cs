@@ -92,7 +92,7 @@ public class ApiBodyContentTests
 		variants.Variants[0].DescriptionMarkdown.Should().Be("A cat.", "only the first paragraph is shown");
 		variants.Variants[1].DescriptionMarkdown.Should().BeNull();
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteVariants(markdown, variants, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteVariants(markdown, variants, "/api/fixture");
 		markdown.ToString().Should().StartWith("Any of:").And.Contain("- `lives` (integer) — required");
 		ApiBodyContent.BuildUnionVariants(plain, new PropertyTreeScope { Prefix = "req" }, analyzer, builder).Should().BeNull();
 	}
@@ -263,7 +263,7 @@ public class ApiBodyContentTests
 		pet.Children.Variants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		pet.Union.Should().BeNull();
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([pet]), "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([pet]), "/api/fixture");
 		markdown.ToString().Should().Contain("`kind`").And.Contain("One of:").And.Contain("`lives`").And.Contain("`barks`");
 	}
 
@@ -574,7 +574,7 @@ public class ApiBodyContentTests
 		array!.Label.Should().Be("An array; each item is one of:");
 		array.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/fixture");
 		markdown.ToString().Should().StartWith("An array; each item is one of:");
 
 		var (_, single, _, _) = ApiBodyContent.Build(

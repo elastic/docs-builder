@@ -13,8 +13,7 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 {
-	private static ApiCatalogEntry Entry(string key, string title, params string[] categories) =>
-		new(key, title, $"/api/doc/{key}/") { CatalogCategories = categories };
+	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/{key}/");
 
 	private async Task<string> RenderAsync(params ApiCatalogEntry[] entries)
 	{
@@ -34,22 +33,22 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 
 	private static int Count(string html, string value) => html.Split(value).Length - 1;
 
-	private static int PositionOf(string html, string key) => html.IndexOf($"href=\"/api/doc/{key}/\"", StringComparison.Ordinal);
+	private static int PositionOf(string html, string key) => html.IndexOf($"href=\"/api/{key}/\"", StringComparison.Ordinal);
 
 	[Test]
 	public async Task Render_Catalog_PlacesEachServerlessCardRightAfterItsParentExactlyOnce()
 	{
 		var html = await RenderAsync(
 			Entry("logstash", "Logstash APIs"),
-			Entry("kibana-serverless", "Kibana Serverless APIs", "serverless"),
+			Entry("kibana-serverless", "Kibana Serverless APIs"),
 			Entry("elasticsearch", "Elasticsearch API"),
 			Entry("kibana", "Kibana APIs"),
-			Entry("elasticsearch-serverless", "Elasticsearch Serverless API", "serverless")
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API")
 		);
 
 		var keys = new[] { "elasticsearch", "elasticsearch-serverless", "kibana", "kibana-serverless", "logstash" };
 		foreach (var key in keys)
-			Count(html, $"href=\"/api/doc/{key}/\"").Should().Be(1, $"{key} renders once");
+			Count(html, $"href=\"/api/{key}/\"").Should().Be(1, $"{key} renders once");
 
 		var positions = keys.Select(k => PositionOf(html, k)).ToArray();
 		positions.Should().BeInAscendingOrder("each tag-on follows its parent, so the order holds when the cards stack");
@@ -62,11 +61,11 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 			Entry("elasticsearch", "Elasticsearch API"),
 			Entry("kibana", "Kibana APIs"),
 			Entry("logstash", "Logstash APIs"),
-			Entry("elasticsearch-serverless", "Elasticsearch Serverless API", "serverless"),
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API"),
 			Entry("cloud", "Elastic Cloud API")
 		);
 
-		Count(html, "href=\"/api/doc/cloud/\"").Should().Be(1);
+		Count(html, "href=\"/api/cloud/\"").Should().Be(1);
 		Count(html, "api-catalog-card-attached").Should().Be(1, "only the Elasticsearch tag-on is attached");
 		PositionOf(html, "elasticsearch-serverless").Should().BeLessThan(PositionOf(html, "kibana"));
 	}

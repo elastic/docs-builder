@@ -1,0 +1,37 @@
+/*
+ * Popovers placed by floating.ts. Floating UI sets left and top; the browser's own [popover] placement
+ * (centred in the viewport) is reset here. Each menu's CSS reads --floating-anchor-width and
+ * --floating-available-height to size itself.
+ */
+[data-floating] {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+}
+
+/* Hidden until floating.ts has placed it, so it never flashes at the wrong spot. */
+[data-floating]:not([data-placed]) {
+	visibility: hidden;
+}
+
+/* Fades in once placed. */
+[data-floating] {
+	transition: opacity 0.15s ease;
+}
+@starting-style {
+	[data-floating]:popover-open {
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-floating] {
+		transition: none;
+	}
+}
+
+/* Without the Popover API a [popover] would render as a plain block, always open. Hide it; the page's other controls stay. */
+@supports not selector(:popover-open) {
+	[popover] {
+		display: none;
+	}
+}

@@ -1,0 +1,350 @@
+model <SearchConfiguration>:
+  Synonyms:
+    -:
+      - ".net"
+      - "c#"
+      - "csharp"
+      - "dotnet"
+      - "net"
+    -:
+      - "agg"
+      - "aggs => aggregations"
+    -:
+      - "apm"
+      - "application performance monitoring"
+    -:
+      - "aws"
+      - "amazon"
+    -:
+      - "ccr"
+      - "cross-cluster replication"
+      - "cross cluster replication"
+    -:
+      - "ccs"
+      - "cross cluster search"
+      - "cross-cluster search"
+      - "spaghetti"
+    -:
+      - "cps"
+      - "cross project search"
+      - "cross-project search"
+    -:
+      - "data-stream"
+      - "data stream"
+      - "datastream => data-streams"
+    -:
+      - "data-streams"
+      - "data streams"
+      - "datastreams"
+    -:
+      - "ecctl"
+      - "elastic cloud control"
+    -:
+      - "ece"
+      - "elastic cloud enterprise"
+    -:
+      - "ech"
+      - "elastic cloud hosted"
+      - "ess"
+    -:
+      - "eck"
+      - "elastic cloud on kubernetes"
+    -:
+      - "ecs"
+      - "elastic common schema"
+    -:
+      - "edot"
+      - "elastic distribution of opentelemetry"
+      - "elastic opentelemetry"
+      - "elastic otel"
+    -:
+      - "edot collector"
+      - "edot-collector"
+      - "elastic distribution of opentelemetry collector"
+    -:
+      - "edot cf"
+      - "edot cloud forwarder"
+      - "elastic distribution of opentelemetry cloud forwarder"
+      - "elastic cloud forwarder"
+    -:
+      - "edr"
+      - "endpoint detection response"
+    -:
+      - "eis"
+      - "elastic inference service"
+    -:
+      - "eks"
+      - "elastic kubernetes service"
+    -:
+      - "elastic distributions of opentelemetry"
+      - "edot"
+    -:
+      - "elastic learned sparse encoder"
+      - "elser"
+    -:
+      - "elasticsearch service"
+      - "elastic cloud"
+    -:
+      - "elv2"
+      - "elastic license v2"
+    -:
+      - "es"
+      - "elasticsearch"
+    -:
+      - "esaas"
+      - "elastic stack as a service"
+    -:
+      - "esql"
+      - "es|ql => esql"
+    -:
+      - "gcp"
+      - "google cloud platform"
+    -:
+      - "ilm"
+      - "index lifecycle management"
+    -:
+      - "javascript"
+      - "js"
+      - "node"
+      - "nodejs"
+      - "node.js"
+    -:
+      - "k8s"
+      - "kubernetes"
+    -:
+      - "knn"
+      - "k-nearest neighbors"
+    -:
+      - "kpi"
+      - "key performance indicator"
+    -:
+      - "kql"
+      - "kibana query language"
+    -:
+      - "logsdb"
+      - "logs datastream"
+      - "logs data stream"
+    -:
+      - "machine-learning"
+      - "machine learning"
+      - "ml => machine learning"
+    -:
+      - "motlp"
+      - "managed otlp"
+    -:
+      - "opentelemetry"
+      - "otel"
+    -:
+      - "querydsl"
+      - "query dsl"
+      - "query dsl"
+    -:
+      - "rag"
+      - "retrieval augmented generation"
+    -:
+      - "s3"
+      - "aws s3"
+      - "amazon s3"
+    -:
+      - "sso"
+      - "single sign-on"
+    -:
+      - "traffic filter"
+      - "network security"
+    -:
+      - "tsvb"
+      - "time series visual builder"
+  SynonymBiDirectional:
+    .net:
+      - "c#"
+      - "csharp"
+      - "dotnet"
+      - "net"
+    c#:
+      - ".net"
+      - "csharp"
+      - "dotnet"
+      - "net"
+    csharp:
+      - ".net"
+      - "c#"
+      - "dotnet"
+      - "net"
+    dotnet:
+      - ".net"
+      - "c#"
+      - "csharp"
+      - "net"
+    net:
+      - ".net"
+      - "c#"
+      - "csharp"
+      - "dotnet"
+    agg:
+      - "aggs => aggregations"
+    apm:
+      - "application performance monitoring"
+    aws:
+      - "amazon"
+    amazon:
+      - "aws"
+    ccr:
+      - "cross-cluster replication"
+      - "cross cluster replication"
+    ccs:
+      - "cross cluster search"
+      - "cross-cluster search"
+      - "spaghetti"
+    spaghetti:
+      - "ccs"
+      - "cross cluster search"
+      - "cross-cluster search"
+    cps:
+      - "cross project search"
+      - "cross-project search"
+    data-stream:
+      - "data stream"
+      - "datastream => data-streams"
+    data-streams:
+      - "data streams"
+      - "datastreams"
+    datastreams:
+      - "data-streams"
+      - "data streams"
+    ecctl:
+      - "elastic cloud control"
+    ece:
+      - "elastic cloud enterprise"
+    ech:
+      - "elastic cloud hosted"
+      - "ess"
+    ess:
+      - "ech"
+      - "elastic cloud hosted"
+    eck:
+      - "elastic cloud on kubernetes"
+    ecs:
+      - "elastic common schema"
+    edot:
+      - "elastic distribution of opentelemetry"
+      - "elastic opentelemetry"
+      - "elastic otel"
+    edot-collector:
+      - "edot collector"
+      - "elastic distribution of opentelemetry collector"
+    edr:
+      - "endpoint detection response"
+    eis:
+      - "elastic inference service"
+    eks:
+      - "elastic kubernetes service"
+    elser:
+      - "elastic learned sparse encoder"
+    elv2:
+      - "elastic license v2"
+    es:
+      - "elasticsearch"
+    elasticsearch:
+      - "es"
+    esaas:
+      - "elastic stack as a service"
+    esql:
+      - "es|ql => esql"
+    gcp:
+      - "google cloud platform"
+    ilm:
+      - "index lifecycle management"
+    javascript:
+      - "js"
+      - "node"
+      - "nodejs"
+      - "node.js"
+    js:
+      - "javascript"
+      - "node"
+      - "nodejs"
+      - "node.js"
+    node:
+      - "javascript"
+      - "js"
+      - "nodejs"
+      - "node.js"
+    nodejs:
+      - "javascript"
+      - "js"
+      - "node"
+      - "node.js"
+    node.js:
+      - "javascript"
+      - "js"
+      - "node"
+      - "nodejs"
+    k8s:
+      - "kubernetes"
+    kubernetes:
+      - "k8s"
+    knn:
+      - "k-nearest neighbors"
+    kpi:
+      - "key performance indicator"
+    kql:
+      - "kibana query language"
+    logsdb:
+      - "logs datastream"
+      - "logs data stream"
+    machine-learning:
+      - "machine learning"
+      - "ml => machine learning"
+    motlp:
+      - "managed otlp"
+    opentelemetry:
+      - "otel"
+    otel:
+      - "opentelemetry"
+    querydsl:
+      - "query dsl"
+    rag:
+      - "retrieval augmented generation"
+    s3:
+      - "aws s3"
+      - "amazon s3"
+    sso:
+      - "single sign-on"
+    tsvb:
+      - "time series visual builder"
+  Rules:
+    - <QueryRule>:
+      RuleId: "pin-data-streams"
+      Type: Pinned
+      Criteria:
+        - <QueryRuleCriteria>:
+          Type: Exact
+          Metadata: "query_string"
+          Values:
+            - "data stream"
+            - "data-stream"
+            - "data-streams"
+            - "datastream"
+            - "datastreams"
+      Actions <QueryRuleActions>:
+        Ids:
+          - "/docs/manage-data/data-store/data-streams"
+    - <QueryRule>:
+      RuleId: "pin-logstash"
+      Type: Pinned
+      Criteria:
+        - <QueryRuleCriteria>:
+          Type: Exact
+          Metadata: "query_string"
+          Values:
+            - "logstash"
+      Actions <QueryRuleActions>:
+        Ids:
+          - "/docs/reference/logstash"
+  DiminishTerms:
+    - "plugin"
+    - "client"
+    - "integration"
+    - "curator"
+    - "hadoop"
+    - "glossary"

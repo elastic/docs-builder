@@ -13,7 +13,6 @@ function system(contrastMore: boolean, reducedMotion: boolean) {
 
 const control = `
 <div class="theme-switch">
-  <input class="theme-switch__open" type="checkbox">
   <input type="radio" name="t" value="light" data-pref="theme">
   <input type="radio" name="t" value="black" data-pref="theme">
   <input type="radio" name="t" value="system" data-pref="theme">
@@ -75,20 +74,5 @@ describe('preferences', () => {
         radios('black', 'theme').dispatchEvent(new Event('change'))
 
         expect(document.documentElement.dataset.theme).toBe('black')
-    })
-
-    it('closes the menu on Escape and on a click outside', () => {
-        initPreferences()
-        const open = document.querySelector<HTMLInputElement>(
-            '.theme-switch__open'
-        )!
-
-        open.checked = true
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-        expect(open.checked).toBe(false)
-
-        open.checked = true
-        document.body.click()
-        expect(open.checked).toBe(false)
     })
 })

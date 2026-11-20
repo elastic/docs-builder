@@ -1,0 +1,10 @@
+{
+  "key": "elasticsearch",
+  "title": "Elasticsearch API",
+  "url": "/docs/api/elasticsearch",
+  "description": "Elasticsearch provides REST APIs that are used by the UI components and can be called directly to configure and access Elasticsearch features.",
+  "versions": [
+    "main",
+    "9"
+  ]
+}

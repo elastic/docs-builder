@@ -1,0 +1,231 @@
+environments:
+  prod:
+    uri: https://www.elastic.co
+    path_prefix: docs
+    content_source: current
+    allow_indexing: true
+    google_tag_manager:
+      enabled: true
+      id: x
+    optimizely:
+      enabled: false
+      id: x
+    waf_integration_url: https://example.invalid/x.js
+  staging:
+    uri: https://staging-website.elastic.co
+    path_prefix: docs
+    content_source: next
+    google_tag_manager:
+      enabled: true
+      id: x
+      auth: x
+      preview: x
+      cookies_win: x
+    feature_flags:
+      WEBSITE_SEARCH: true
+      ASSEMBLER_API_EXPLORER: true
+      NAVIGATION_PREVIEW: false
+      PAGE_FEEDBACK: true
+    website_search_url: https://example.invalid/x.js
+    waf_integration_url: https://example.invalid/x.js
+  edge:
+    uri: https://docs-edge.elastic.dev
+    path_prefix: docs
+    content_source: edge
+    google_tag_manager:
+      enabled: false
+    feature_flags:
+      ASSEMBLER_API_EXPLORER: true
+      PAGE_FEEDBACK: true
+      NAVIGATION_PREVIEW: false
+    waf_integration_url: https://example.invalid/x.js
+  demo:
+    uri: https://docs-demo.elastic.dev
+    path_prefix: docs
+    content_source: edge
+    google_tag_manager:
+      enabled: false
+    feature_flags:
+      ASSEMBLER_API_EXPLORER: true
+      PAGE_FEEDBACK: true
+      NAVIGATION_PREVIEW: true
+    waf_integration_url: https://example.invalid/x.js
+  local:
+    uri: http://localhost:4000
+    content_source: current
+    path_prefix: docs
+    feature_flags:
+      WEBSITE_SEARCH: true
+  dev:
+    uri: http://localhost:4000
+    content_source: current
+    path_prefix: docs
+    feature_flags:
+      WEBSITE_SEARCH: true
+      NAVIGATION_PREVIEW: false
+      PAGE_FEEDBACK: true
+    website_search_url: https://example.invalid/x.js
+  preview:
+    uri: https://docs-v3-preview.elastic.dev
+    path_prefix: ${ASSEMBLER_PREVIEW_PATH_PREFIX}
+    content_source: current
+    google_tag_manager:
+      enabled: false
+    feature_flags:
+      ASSEMBLER_API_EXPLORER: true
+      PAGE_FEEDBACK: true
+  air-gapped:
+    uri: http://localhost:8080
+    path_prefix: docs
+    content_source: current
+    allow_indexing: false
+    feature_flags:
+      AIR_GAPPED: true
+      ASSEMBLER_API_EXPLORER: true
+
+shared_configuration:
+  stack: &stack
+    current: 9.0
+    next: 9.1
+    edge: main
+
+  master: &master
+    current: master
+    next: master
+    edge: master
+
+narrative:
+  checkout_strategy: full
+
+references:
+
+  apm-server:
+  apm-agent-android:
+  apm-agent-dotnet:
+  apm-agent-go:
+  apm-agent-ios:
+  apm-agent-java:
+  apm-agent-nodejs:
+  apm-agent-php:
+  apm-agent-python:
+  apm-agent-ruby:
+  apm-agent-rum-js:
+  apm-aws-lambda:
+  apm-k8s-attacher:
+  ecs:
+    current: 9.0
+    next: main
+  ecs-dotnet:
+  ecs-logging-go-logrus:
+  ecs-logging-go-zap:
+  ecs-logging-go-zerolog:
+  ecs-logging-java:
+  ecs-logging-nodejs:
+  ecs-logging-php:
+  ecs-logging-python:
+  ecs-logging-ruby:
+  ecs-logging:
+  private-repo-1:
+    private: true
+  private-repo-2:
+    private: true
+  elastic-agent:
+  elastic-otel-dotnet:
+  elastic-otel-java:
+  elastic-otel-node:
+  elastic-otel-php:
+  elastic-otel-python:
+  elastic-otel-react-native:
+  elastic-otel-rum-js:
+  elastic-serverless-forwarder:
+  fleet-server:
+  private-repo-3:
+    private: true
+  integrations:
+  private-repo-4:
+    private: true
+  opentelemetry:
+
+  beats: *stack
+  logstash: *stack
+
+  cloud-on-k8s:
+  private-repo-5:
+    current: master
+    next: master
+    edge: master
+    private: true
+
+  cli:
+  curator: *master
+  ecctl: *master
+
+  elasticsearch:
+
+  kibana:
+
+  private-repo-6:
+    private: true
+    skip: true
+  private-repo-7:
+    private: true
+    skip: true
+  private-repo-8:
+    private: true
+    skip: true
+  private-repo-9:
+    private: true
+    skip: true
+  private-repo-10:
+    private: true
+    skip: true
+  roadmap:
+    private: false
+    skip: true
+  private-repo-11:
+    private: true
+    skip: true
+  private-repo-12:
+    private: true
+    skip: true
+  private-repo-13:
+    private: true
+    skip: true
+  private-repo-14:
+    private: true
+    skip: true
+
+  eland:
+  elasticsearch-dsl-js:
+  elasticsearch-hadoop:
+  elasticsearch-java:
+  elasticsearch-js:
+  elasticsearch-net:
+  elasticsearch-php:
+  elasticsearch-py:
+  elasticsearch-rs:
+  elasticsearch-ruby:
+  go-elasticsearch:
+  search-ui:
+
+  detection-rules:
+    checkout_strategy: full
+
+  private-repo-15:
+    private: true
+    sparse_paths: ["generated/docs"]
+
+  docs-builder:
+    current: 9.0
+    next: main
+    skip: true
+    sparse_paths: ["docs", "config"]
+  private-repo-16:
+    private: true
+    skip: true
+  private-repo-17:
+    private: true
+    skip: true
+  private-repo-18:
+    private: true
+    skip: true

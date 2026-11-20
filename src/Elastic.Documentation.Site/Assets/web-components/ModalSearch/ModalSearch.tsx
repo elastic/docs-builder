@@ -1,5 +1,6 @@
 import { config } from '../../config'
 import '../../eui-icons-cache'
+import { closeOpenZoomDialogs } from '../../image-modal'
 import { lockPageScroll } from '../../scroll-lock'
 import { ElasticAiAssistantButton } from '../AskAi/ElasticAiAssistantButton'
 import { InfoBanner } from '../AskAi/InfoBanner'
@@ -380,6 +381,8 @@ export const ModalSearch = ({
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault()
+                // This search renders in the page, under the top layer an open zoom dialog sits in.
+                closeOpenZoomDialogs()
                 trackOpened('keyboard_shortcut')
                 openModal()
             }

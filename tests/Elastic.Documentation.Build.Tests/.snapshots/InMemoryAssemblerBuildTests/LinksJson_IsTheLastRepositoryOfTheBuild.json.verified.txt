@@ -1,0 +1,29 @@
+{
+  "origin": {
+    "branch": "main",
+    "remote": "elastic/kibana",
+    "ref": "0000000000000000000000000000000000000000",
+    "name": "kibana",
+    "github_ref": null
+  },
+  "url_path_prefix": "/docs",
+  "links": {
+    "dashboards.md": {
+      "anchors": [
+        "dashboard-basics"
+      ]
+    },
+    "experimental.md": {
+      "hidden": true
+    },
+    "index.md": {}
+  },
+  "cross_links": [
+    "docs-content://get-started/concepts.md",
+    "docs-content://get-started/install.md",
+    "elasticsearch://search-apis.md",
+    "elasticsearch://search-apis.md#search-basics",
+    "kibana://dashboards.md#dashboard-basics"
+  ],
+  "redirects": null
+}

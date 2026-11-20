@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation.Tests.Isolation;
@@ -106,6 +107,44 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	}
 
 	[Test]
+	public async Task BuildMeta_AssemblerLandingPage_NamesTheDocsBuilderVersionWithoutTheCommit()
+	{
+		var html = await RenderHead(new FeatureFlags([]), BuildType.Assembler);
+
+		var match = Regex.Match(html, "<meta name=\"docs:build\" content=\"([^\"]*)\">", RegexOptions.None, RegexTimeouts.MatchTimeout);
+		match.Success.Should().BeTrue();
+		match
+			.Groups[1]
+			.Value
+			.Should()
+			.NotBeEmpty()
+			.And
+			.NotContain("+")
+			.And
+			.Be(Elastic.Documentation.Configuration.BuildContext.Version.Split('+')[0]);
+	}
+
+	[Test]
+	[Arguments("/docs/reference/")]
+	[Arguments("/docs/get-started")]
+	public async Task BuildMeta_AnyOtherAssemblerPage_HasNone(string pageUrl)
+	{
+		var html = await RenderHead(new FeatureFlags([]), BuildType.Assembler, pageUrl);
+
+		html.Should().NotContain("docs:build\"");
+	}
+
+	[Test]
+	[Arguments(BuildType.Isolated)]
+	[Arguments(BuildType.Codex)]
+	public async Task BuildMeta_OtherBuildTypes_HaveNoneEvenOnTheLandingPage(BuildType buildType)
+	{
+		var html = await RenderHead(new FeatureFlags([]), buildType);
+
+		html.Should().NotContain("name=\"docs:build\"");
+	}
+
+	[Test]
 	[Arguments(BuildType.Isolated, "isolated")]
 	[Arguments(BuildType.Assembler, "assembler")]
 	[Arguments(BuildType.Codex, "codex")]
@@ -170,16 +209,21 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	}
 
 	private static string StateMeta(string html) =>
-		string.Join('\n', Regex.Matches(html, @"<meta name=""docs:(features|build-type)""[^>]*>").Select(m => m.Value));
+		string.Join(
+			'\n',
+			Regex.Matches(html, @"<meta name=""docs:(features|build-type)""[^>]*>", RegexOptions.None, RegexTimeouts.MatchTimeout).Select(
+				m => m.Value
+			)
+		);
 
 	// Vite writes an entry bundle as <name>-[hash].js and the head references it by that name, so match the name with or without a hash.
 	private static int EntryIndex(string html, string name)
 	{
-		var match = Regex.Match(html, $@"/{name}(-[\w-]+)?\.js");
+		var match = Regex.Match(html, $@"/{name}(-[\w-]+)?\.js", RegexOptions.None, RegexTimeouts.MatchTimeout);
 		return match.Success ? match.Index : -1;
 	}
 
-	private async Task<string> RenderHead(FeatureFlags features, BuildType buildType)
+	private async Task<string> RenderHead(FeatureFlags features, BuildType buildType, string pageUrl = "/docs/")
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -189,7 +233,7 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 		{
 			DocSetName = "test",
 			Description = "",
-			CurrentNavigationItem = new StubNavigationItem("/docs/"),
+			CurrentNavigationItem = new StubNavigationItem(pageUrl),
 			Previous = null,
 			Next = null,
 			NavigationHtml = "",

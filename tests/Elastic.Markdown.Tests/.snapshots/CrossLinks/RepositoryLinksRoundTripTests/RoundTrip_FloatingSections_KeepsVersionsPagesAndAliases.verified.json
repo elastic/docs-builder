@@ -1,0 +1,65 @@
+{
+  "origin": {
+    "branch": "main",
+    "remote": "https://github.com/example-org/example-repo",
+    "ref": "0123456789abcdef0123456789abcdef01234567",
+    "name": "unavailable",
+    "github_ref": null
+  },
+  "url_path_prefix": "/elastic/example-repo/tree/main",
+  "links": {
+    "index.md": {
+      "anchors": []
+    }
+  },
+  "cross_links": [],
+  "redirects": null,
+  "floating": {
+    "api/example-api": {
+      "versions": [
+        {
+          "name": "8",
+          "root": "api/example-api/v8",
+          "hidden": true
+        },
+        {
+          "name": "main",
+          "root": "api/example-api",
+          "mirror_root": "api/example-api/v9",
+          "current": true
+        },
+        {
+          "name": "plain",
+          "root": "api/example-api/plain"
+        }
+      ],
+      "pages": {
+        "": 7,
+        "operation/operation-search": 3,
+        "operation/operation-new": 2,
+        "tag/other": 4
+      },
+      "aliases": {
+        "8": {
+          "operation/operation-search": [
+            "operation/operation-search-1",
+            "operation/operation-search-2"
+          ]
+        },
+        "main": {}
+      }
+    },
+    "api/no-aliases": {
+      "versions": [
+        {
+          "name": "main",
+          "root": "api/no-aliases",
+          "current": true
+        }
+      ],
+      "pages": {
+        "": 1
+      }
+    }
+  }
+}

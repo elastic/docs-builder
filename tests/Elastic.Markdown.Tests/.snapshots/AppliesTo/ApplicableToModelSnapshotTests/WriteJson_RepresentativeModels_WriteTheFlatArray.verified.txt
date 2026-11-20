@@ -1,0 +1,33 @@
+empty
+    []
+    
+All
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"self","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"eck","lifecycle":"ga","version":"all"},{"type":"deployment","sub_type":"ess","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"},{"type":"product","sub_type":"product","lifecycle":"ga","version":"all"}]
+    stack: all, deployment: self=all, ece=all, eck=all, ess=all, serverless: elasticsearch=all, observability=all, security=all, vectordb=all, product: all
+Default
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"observability","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"security","lifecycle":"ga","version":"all"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga","version":"all"}]
+    stack: ga 9.0+, , serverless: elasticsearch=all, observability=all, security=all, vectordb=all
+stack only
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+    stack: ga 9.0+, 
+stack with two lifecycles
+    [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.0-9.1"}]
+    stack: ga 9.2+, beta 9.0-9.1, 
+deployment partial
+    [{"type":"deployment","sub_type":"ece","lifecycle":"beta","version":"3.0\u002B"}]
+    deployment: ece=beta 3.0+, 
+serverless partial
+    [{"type":"serverless","sub_type":"security","lifecycle":"preview"}]
+    serverless: security=preview, 
+product simple
+    [{"type":"product","sub_type":"product","lifecycle":"deprecated","version":"2.0\u002B"}]
+    product: deprecated 2.0+, 
+product specific
+    [{"type":"product","sub_type":"curator","lifecycle":"removed"},{"type":"product","sub_type":"edot-java","lifecycle":"ga","version":"1.0\u002B"}]
+    products: curator=removed, : not null } => edot-java=ga 1.0+, 
+version null
+    [{"type":"stack","sub_type":"stack","lifecycle":"beta"}]
+    stack: beta, 
+empty collection
+    []
+    stack: 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Runtime.CompilerServices;
+using Elastic.Documentation;
 using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests;
@@ -27,7 +28,17 @@ internal static class SnapshotSetup
 	// with the platform's line ending, so on Windows the same entry has other bytes and another checksum. The value is replaced; what a
 	// checksum must be is checked where a test computes the expected one itself.
 	private static string Checksums(string text) =>
-		System.Text.RegularExpressions.Regex.Replace(text, "(?<=checksum: )[0-9a-f]{40}", "{sha1}");
+		System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Replace(
+				text,
+				"(?<=checksum: )[0-9a-f]{40}",
+				"{sha1}",
+				System.Text.RegularExpressions.RegexOptions.None,
+				RegexTimeouts.MatchTimeout
+			);
 
 	// A bundle is stamped with the day it was created. Only that day is replaced, so a release-date a test sets on purpose stays visible.
 	private static string Today(string text)

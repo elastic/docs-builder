@@ -37,11 +37,11 @@ public sealed record McpServerProfile(
 		"docs",
 		"",
 		"Elastic documentation",
-		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.",
+		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; the API tools search and read those by endpoint, operation id or field.",
 		[
 			"References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."
 		],
-		[McpFeatureModules.Search, McpFeatureModules.Documents, McpFeatureModules.Coherence]
+		[McpFeatureModules.Search, McpFeatureModules.Documents, McpFeatureModules.Api, McpFeatureModules.Coherence]
 	);
 
 	public static McpServerProfile Internal { get; } = new(

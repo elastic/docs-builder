@@ -12,7 +12,7 @@ import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
 import { initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
-import { flashTooltip, initTooltips } from './tooltip'
+import { flashTooltip } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -303,7 +303,8 @@ function playFlashWhenSettled(el: HTMLElement): void {
  * heading keeps the browser's plain jump, and anything else pulses as a whole.
  */
 function flashTarget(target: HTMLElement): void {
-    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    // A heading needs no pointing out, and neither does the page intro: reaching it is going back to the top.
+    if (target.matches('h1, h2, h3, h4, h5, h6, .api-page-intro')) return
     const name = target.matches('dt')
         ? target.querySelector<HTMLElement>(':scope > code')
         : null
@@ -382,6 +383,31 @@ function initGlobalClickHandlers(): void {
         // #elastic-docs-v3 holds the topic, structural and Markdown pages, such as the shared Authentication section.
         const apiSection = target.closest<HTMLElement>(API_ROOTS)
         if (!apiSection) return
+
+        const backToTop = target.closest<HTMLElement>('[data-api-back-to-top]')
+        if (backToTop) {
+            // A modified click on the Overview link opens it elsewhere, as any link does.
+            if (
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey
+            )
+                return
+            e.preventDefault()
+            // The address follows, so a reload or a shared link opens at the top rather than the section left behind.
+            // Pushed before scrolling: the entry left behind keeps the reader's place, which an instant scroll (reduced
+            // motion) would otherwise have reset to the top, so Back returns to that section.
+            const hash = backToTop.getAttribute('href')
+            if (hash?.startsWith('#') && window.location.hash !== hash)
+                history.pushState(null, '', hash)
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+            })
+            return
+        }
 
         // Before the generic .expand-toggle branch, which would toggle the enclosing property instead
         const enumValuesToggle = target.closest<HTMLButtonElement>(
@@ -697,10 +723,8 @@ export function initApiPageActions(): void {
 
         event.preventDefault()
         const root = trigger.closest('.api-page-actions')
-        const dropdown = root?.querySelector<HTMLDetailsElement>(
-            '.api-page-actions-dropdown'
-        )
-        if (dropdown) dropdown.open = false
+        const menu = trigger.closest<HTMLElement>('[popover]')
+        if (menu?.matches(':popover-open')) menu.hidePopover()
         void copyPageMarkdown(trigger.dataset.copyPage, root).catch((error) => {
             console.error(error)
         })
@@ -760,7 +784,6 @@ export function initExamplesRailSteadying(): void {
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
-    initTooltips()
     initApiEndpointCopy()
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()

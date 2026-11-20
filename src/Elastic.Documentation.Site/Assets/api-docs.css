@@ -102,10 +102,6 @@
 	padding-top: 2px;
 }
 
-.api-url-row > .api-url .api-url-also-method {
-	margin-top: 4px;
-}
-
 /* The first route is the one to read; the alternates below it are compact and muted. */
 .api-page-intro .api-url-listing > li:first-child .api-url {
 	padding: 4px 12px 4px 4px;
@@ -129,12 +125,6 @@
 	height: 20px;
 	padding: 0 5px;
 	font-size: 11px;
-}
-
-.api-page-intro .api-url-listing > li + li .api-url-also-method {
-	margin-top: 3px;
-	font-size: 10px;
-	line-height: 14px;
 }
 
 .api-page-intro .api-url-listing > li + li .api-url .api-url-path {
@@ -170,8 +160,9 @@
 
 .api-page-heading {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 16px;
+	gap: 4px 16px;
 	min-width: 0;
 	overflow: visible;
 }
@@ -181,29 +172,96 @@
 	min-width: 0;
 }
 
+/* The version line under the title of an older major or the unreleased tree: a pill and a link to the newest major, not a banner. It takes its own row of the title row. */
+.api-version-notice {
+	flex: 1 0 100%;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 8px;
+	margin: 0;
+	font-size: 14px;
+	line-height: 20px;
+	@apply text-grey-80;
+}
+
+.api-version-notice a {
+	@apply text-blue-elastic inline-flex items-center gap-1 underline;
+	text-underline-offset: 2px;
+}
+
+.api-version-notice__arrow {
+	width: 1.25em;
+	height: 1.25em;
+	flex: none;
+}
+
+.api-version-notice--unreleased {
+	@apply text-yellow-110;
+}
+
+.api-version-notice .applicable-info.api-badge--warning {
+	@apply text-yellow-110 border-yellow-40 bg-yellow-10;
+}
+
 /* Docs reading measure (--max-text-width): group-page intros and the product landing text. */
 .docs-measure {
 	max-width: var(--max-text-width);
 }
 
+/*
+ * The breadcrumbs, with Copy page at the right end of the same row. Below 1024px, when both do not fit on one line,
+ * Copy page wraps onto its own line under the breadcrumbs, at their left edge, as on a phone. Lined up on the last line
+ * of text, so the button sits level with the breadcrumbs on one line and under them when wrapped. From 1024px up the
+ * row does not wrap (see the media block below).
+ */
 .api-page-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: last baseline;
+	gap: 12px 16px;
 	min-width: 0;
 	margin-bottom: calc(
 		var(--spacing) * 6
 	); /* docs h1 mt-6; API headings set margin: 0 */
 }
 
+/* The trail is as wide as it needs (not the list's own full width). Flex line-breaking goes by that size, so Copy page
+   wraps onto the next line before the trail shrinks; the trail wraps only when it is too wide on a line of its own. */
+.api-page-toolbar #breadcrumbs {
+	flex: 1 1 auto;
+	width: auto;
+}
+
+.api-page-toolbar .api-page-actions {
+	margin-left: 0;
+}
+
 /* Beside the sidebar the breadcrumb row is centred on the first line of the API selector's name.
-   Its own 24px top padding and the page's pt-6 would put it about 22px lower. */
+   Its own 24px top padding and the page's pt-6 would put it about 22px lower.
+   On desktop Copy page stays at the top right and never wraps: the trail shrinks and wraps its own crumbs beside it. */
 @media (width >= 1024px) {
 	.api-page-main .api-page-toolbar {
 		margin-top: calc(var(--spacing) * -2.5);
+		flex-wrap: nowrap;
+		align-items: first baseline;
 	}
 
 	.api-page-main .api-page-toolbar #breadcrumbs {
 		box-sizing: border-box;
+		flex: 1 1 0;
+		min-width: 0;
 		min-height: 36px;
 		padding-top: 0;
+	}
+
+	/* A flex item's minimum width is its longest word, so min-width: 0 on the trail alone lets a long label run under Copy page. */
+	.api-page-main .api-page-toolbar #breadcrumbs li {
+		overflow-wrap: anywhere;
+	}
+
+	.api-page-main .api-page-toolbar .api-page-actions {
+		margin-left: auto;
 	}
 }
 
@@ -257,21 +315,6 @@
 	padding: 0;
 	border-left: 1px solid #cad3e2;
 	border-radius: 0 7px 7px 0;
-	list-style: none;
-}
-
-/* No Copy page beside it, so the summary is the whole control. */
-.api-page-actions-chevron--labeled {
-	width: auto;
-	gap: 8px;
-	padding: 0 12px;
-	border-left: 0;
-	border-radius: 7px;
-	white-space: nowrap;
-}
-
-.api-page-actions-chevron::-webkit-details-marker {
-	display: none;
 }
 
 .api-page-actions-button:hover,
@@ -302,28 +345,18 @@
 	height: 12px;
 }
 
-.api-page-actions details.api-page-actions-dropdown,
-.api-page-actions details.nav-select-dropdown {
-	position: relative;
-	display: flex;
-	width: auto;
-	overflow: visible;
-}
-
-.api-page-actions-dropdown[open] .api-page-actions-chevron-icon,
-.api-page-actions-dropdown.is-open .api-page-actions-chevron-icon {
+.api-page-actions-chevron[aria-expanded='true'] .api-page-actions-chevron-icon {
 	transform: rotate(180deg);
 }
 
+/* A popover placed beside the chevron by floating.ts (floating.css). */
 .api-page-actions-menu {
 	box-sizing: border-box;
-	position: absolute;
-	top: calc(100% + 6px);
-	right: 0;
-	z-index: 40;
 	width: max-content;
 	min-width: 196px;
-	margin: 0;
+	max-width: calc(100vw - 16px);
+	max-height: var(--floating-available-height, none);
+	overflow-y: auto;
 	padding: 8px;
 	background: #fff;
 	border: 0;
@@ -382,7 +415,8 @@
 .api-pages-nav-toggle {
 	display: inline-flex;
 	align-items: center;
-	margin: calc(var(--spacing) * 6) 0 12px; /* replaces .api-page-main pt-6 above the mobile toggle */
+	/* The main column's own 24px top padding is above it already, so only a little more. */
+	margin: calc(var(--spacing) * 2) 0 12px;
 	padding: 0;
 	border: 0;
 	background: none;
@@ -429,6 +463,7 @@
 }
 
 .api-group .api-page-heading > h1 {
+	flex: 0 1 auto;
 	font-size: 24px;
 	line-height: 32px;
 }
@@ -648,6 +683,11 @@
 	min-width: 72px;
 	height: 20px;
 	font-size: 11px;
+}
+
+/* A joined chip is as wide as its methods; each part must not also claim a whole chip width. */
+.api-index-item .api-method-group .api-method {
+	min-width: 0;
 }
 
 .api-index-item-title {
@@ -870,17 +910,128 @@
 	color: var(--color-grey-100);
 }
 
-/* A separator that leads the tree has no intro pages above it; the sidebar chrome already ends in a rule. */
-.api-sidebar-chrome + div > ul > li[role='separator']:first-child {
-	display: none;
+/*
+ * An operation that accepts several methods: one pill, the dominant method on the left. The chips join on a slanted
+ * edge, each keeps its outline on its outer edges, and the pill owns the corner radius.
+ */
+.api-method-group,
+.nav-v2-api-method-group {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: flex-start;
+	align-self: flex-start;
+}
+
+.api-method-group {
+	border-radius: 8px;
+}
+
+.nav-v2-api-method-group {
+	border-radius: 4px;
+}
+
+.api-method-group > .api-method,
+.nav-v2-api-method-group > .nav-v2-api-method {
+	--method-slant: 0.5em;
+	border-width: 1px 0;
+	border-radius: 0;
+}
+
+.api-method-group > .api-method:first-child,
+.nav-v2-api-method-group > .nav-v2-api-method:first-child {
+	border-left-width: 1px;
+	border-top-left-radius: inherit;
+	border-bottom-left-radius: inherit;
+}
+
+.api-method-group > .api-method:last-child,
+.nav-v2-api-method-group > .nav-v2-api-method:last-child {
+	border-right-width: 1px;
+	border-top-right-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
+.api-method-group > .api-method:not(:last-child),
+.nav-v2-api-method-group > .nav-v2-api-method:not(:last-child) {
+	clip-path: polygon(
+		0 0,
+		100% 0,
+		calc(100% - var(--method-slant)) 100%,
+		0 100%
+	);
+}
+
+.api-method-group > .api-method:not(:first-child),
+.nav-v2-api-method-group > .nav-v2-api-method:not(:first-child) {
+	margin-left: calc(2px - var(--method-slant));
+	clip-path: polygon(var(--method-slant) 0, 100% 0, 100% 100%, 0 100%);
+}
+
+/* Room either side of the seam, so the labels do not crowd the slant. */
+.api-method-group > .api-method:not(:last-child) > :last-child {
+	margin-right: 0.35em;
+}
+
+.api-method-group > .api-method:not(:first-child) > :first-child {
+	margin-left: 0.35em;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:not(:last-child) {
+	padding-right: calc(4px + 0.35em);
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:not(:first-child) {
+	padding-left: calc(4px + 0.35em);
+}
+
+/* The dominant method keeps its colour; the others recede to the old "also" look: no fill, dashed grey outline, muted text. */
+.api-method-group > .api-method:not(:first-child),
+#pages-nav
+	a.sidebar-link
+	.nav-v2-api-method-group
+	> .nav-v2-api-method:not(:first-child) {
+	border-style: dashed;
+	border-color: var(--color-grey-40, #98a2b3);
+	background-color: transparent;
+	color: var(--color-grey-100);
+}
+
+.api-method-group > .api-method:not(:first-child) {
+	font-weight: 400;
+}
+
+#pages-nav .nav-v2-api-method-group {
+	margin-top: 2px;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method {
+	margin-top: 0;
+	border-width: 1px 0;
+	border-radius: 0;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:first-child {
+	border-left-width: 1px;
+	border-top-left-radius: inherit;
+	border-bottom-left-radius: inherit;
+}
+
+#pages-nav .nav-v2-api-method-group > .nav-v2-api-method:last-child {
+	border-right-width: 1px;
+	border-top-right-radius: inherit;
+	border-bottom-right-radius: inherit;
 }
 
 /* Legacy rows reserve 32px on the right; a row with a chip needs less. */
-#pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
+#pages-nav
+	li:has(
+		> a.sidebar-link > :is(.nav-v2-api-method, .nav-v2-api-method-group)
+	) {
 	padding-right: 8px;
 }
 
-#pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
+#pages-nav
+	a.sidebar-link:has(> :is(.nav-v2-api-method, .nav-v2-api-method-group)) {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
@@ -1012,13 +1163,18 @@
 	border-color: var(--color-grey-100);
 }
 
-#pages-nav a.nav-link--deprecated > span:first-child {
+/* Every row that links to a deprecated operation looks the same; the operation page itself only shows the badge. */
+/* API titles strike their own <s>, so a row's hover underline adds to the strike instead of replacing it. */
+#pages-nav a.nav-link--deprecated > span:first-child,
+.api-deprecated-title {
 	text-decoration: line-through;
 	opacity: 0.7;
 }
 
 /* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
-#pages-nav a.nav-link--deprecated .nav-v2-api-method {
+#pages-nav a.nav-link--deprecated .nav-v2-api-method,
+.api-group-row--deprecated .api-method,
+.api-index-item--deprecated .api-method {
 	filter: saturate(0.4);
 }
 
@@ -1350,18 +1506,6 @@ button.response-status-toggle:focus {
 	@apply font-mono font-semibold;
 }
 
-/* The JSON path tooltip on a property name (data-tippy-theme="mono"); tippy mounts it outside the list. */
-/* Tippy sets max-width inline (350px), so the wider cap needs !important. */
-.tippy-box[data-theme~='mono'] {
-	max-width: min(90vw, 48rem) !important;
-}
-
-.tippy-box[data-theme~='mono'] .tippy-content {
-	@apply font-mono;
-	white-space: normal;
-	overflow-wrap: anywhere;
-}
-
 /* Property list — Figma APIs 10079:2948 (Query Parameters / properties) */
 .property-list {
 	margin-top: 0;
@@ -1534,8 +1678,7 @@ button.response-status-toggle:focus {
 
 #path-params-list > .property-list > .property-item,
 #query-params-list > .property-list > .property-item,
-#header-params-list > .property-list > .property-item,
-.prerequisite-item {
+#header-params-list > .property-list > .property-item {
 	border-bottom: 1px solid #e3e8f2;
 	padding-bottom: 16px;
 }
@@ -1601,8 +1744,7 @@ button.response-status-toggle:focus {
 
 #path-params-list > .property-list > .property-item:last-child,
 #query-params-list > .property-list > .property-item:last-child,
-#header-params-list > .property-list > .property-item:last-child,
-.api-param-section-body > .api-privileges > .prerequisite-item:last-child {
+#header-params-list > .property-list > .property-item:last-child {
 	padding-bottom: 0;
 	border-bottom: 0;
 }
@@ -1687,13 +1829,9 @@ button.response-status-toggle:focus {
 	--api-param-sep: ', ';
 }
 
-/* The punctuation says what the names are: { a, b } fields of a JSON object, A | B alternatives, A + B needed together, a, b anything else. */
+/* The punctuation says what the names are: { a, b } fields of a JSON object, A | B alternatives, a, b anything else. */
 .api-param-summary.is-variants {
 	--api-param-sep: ' | ';
-}
-
-.api-param-summary.is-all {
-	--api-param-sep: ' + ';
 }
 
 /* A body with no named fields has an empty summary, which would leave the button without a text baseline and sit it above the title. */
@@ -2312,37 +2450,6 @@ a.docs-reference-btn::after {
 	margin-top: calc(var(--spacing) * 2);
 }
 
-/* The label is the quiet part and the privilege name the important one, so the name carries the code look. */
-.api-privileges dt {
-	padding-top: 8px;
-	font-size: 14px;
-}
-
-.api-privileges .privilege-label {
-	color: #516381;
-	font-weight: 400;
-}
-
-.api-privileges .api-type-badge {
-	padding: 0 6px;
-	font-family: var(
-		--font-mono,
-		ui-monospace,
-		SFMono-Regular,
-		Menlo,
-		monospace
-	);
-	font-size: 13px;
-	line-height: 20px;
-	color: #0b2f6b;
-}
-
-.api-privileges .privilege-join {
-	margin: 0 6px;
-	color: #516381;
-	font-size: 12px;
-}
-
 /* Union variant item - type label without tree connectors */
 .union-variant-item {
 	padding: calc(var(--spacing) * 1) 0;
@@ -2637,7 +2744,6 @@ a.docs-reference-btn::after {
 	--api-code-muted: var(--code-muted);
 	--api-code-accent: var(--color-blue-elastic-50);
 	--api-code-scroll: var(--code-border);
-	--api-code-scroll-hover: var(--color-grey-100);
 	overflow: visible;
 	position: relative;
 	margin-bottom: 24px;
@@ -2646,35 +2752,6 @@ a.docs-reference-btn::after {
 	border: 1px solid var(--api-code-border);
 	border-radius: var(--api-code-radius);
 	box-shadow: none;
-}
-
-/* Thin scrollbar thumb on the dark surface. */
-.api-code-card .api-code-sample-body,
-.api-code-card .example-block-body {
-	scrollbar-width: thin;
-	scrollbar-color: var(--api-code-scroll) transparent;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar,
-.api-code-card .example-block-body::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-track,
-.api-code-card .example-block-body::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
-.api-code-card .example-block-body::-webkit-scrollbar-thumb {
-	background-color: var(--api-code-scroll);
-	border-radius: 9999px;
-}
-
-.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
-.api-code-card .example-block-body::-webkit-scrollbar-thumb:hover {
-	background-color: var(--api-code-scroll-hover);
 }
 
 .example-block {
@@ -2806,12 +2883,11 @@ button.example-response-tab:focus-visible {
 }
 
 @media (min-width: 768px) {
-	/* The column gap and the right padding match (32px each), so the content has the same
-	   space beside the nav as beside the window edge. Every API page has the same two
-	   columns (.api-page-grid), so the content keeps its left edge and width when you
-	   move between pages. */
+	/* The column gap is 42px and the right padding 32px, so the content sits a little further
+	   from the nav than from the window edge. Every API page has the same two columns
+	   (.api-page-grid), so the content keeps its left edge and width when you move between pages. */
 	.api-page-shell > .grid {
-		column-gap: 32px;
+		column-gap: 42px;
 		padding-right: 32px;
 	}
 
@@ -2850,22 +2926,7 @@ button.example-response-tab:focus-visible {
 	padding-bottom: 48px;
 }
 
-/* Stacked layout (below 1024px): Copy page gets its own row above the breadcrumbs. */
-.api-page-rail > .api-page-actions {
-	order: -1;
-	justify-self: end;
-	margin: 24px 0 -12px;
-}
-
-/* Below 768px the menu button shares that row. The main column starts with 24px padding and the
-   button's 24px margin, so the 32px split button centres on the button's 24px height. */
-@media (max-width: 767px) {
-	.api-page-rail > .api-page-actions {
-		margin: 44px 0 -76px;
-	}
-}
-
-.api-page-rail > :not(.api-page-actions) {
+.api-page-rail > * {
 	min-width: 0;
 	margin-bottom: 24px;
 }
@@ -2970,6 +3031,11 @@ button.example-response-tab:focus-visible {
 		display: none;
 	}
 
+	/* 16px between the article's text and the column divider. */
+	.api-page-main {
+		padding-right: 16px;
+	}
+
 	.api-page-grid {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 44%);
 		grid-template-rows: auto auto;
@@ -2981,7 +3047,8 @@ button.example-response-tab:focus-visible {
 		grid-row: 2;
 	}
 
-	/* Copy page's 32px button centres on the same line as the breadcrumb and the API selector's name. */
+	/* The rail's first line of text sits on the breadcrumb's line: the Base URL label where the page has one, otherwise
+	   the Examples label. The breadcrumb text runs 24px down from the column's top. */
 	.api-page-rail {
 		grid-column: 2;
 		grid-row: 1;
@@ -2990,7 +3057,7 @@ button.example-response-tab:focus-visible {
 		align-items: stretch;
 		gap: 16px;
 		min-width: 0;
-		padding-top: 16px;
+		padding-top: 24px;
 		padding-bottom: 48px;
 		/* Stays in view while the sections scroll and never scrolls itself. api-examples-balance.ts reads this
 		   max-height to share the room left under the chips and captions between the request and the response
@@ -3002,7 +3069,7 @@ button.example-response-tab:focus-visible {
 		box-sizing: border-box;
 	}
 
-	.api-page-rail > :not(.api-page-actions) {
+	.api-page-rail > * {
 		flex: 0 0 auto;
 	}
 
@@ -3011,15 +3078,12 @@ button.example-response-tab:focus-visible {
 		flex: 0 1 auto;
 		min-height: 0;
 		overflow-y: auto;
+		scrollbar-gutter: stable;
+		/* Overlay scrollbars do not reserve a gutter, so keep them clear of the cards too. */
+		padding-inline-end: 12px;
 	}
 
-	.api-page-rail > .api-page-actions {
-		order: 0;
-		align-self: flex-start;
-		margin: 0;
-	}
-
-	.api-page-rail > :not(.api-page-actions) {
+	.api-page-rail > * {
 		margin-bottom: 0;
 	}
 
@@ -3066,6 +3130,21 @@ button.example-response-tab:focus-visible {
 	}
 }
 
+/* From 1024px the rail sits beside the article, but its resizable divider only starts at 1280px: until then a plain line
+   in the divider's colour separates them, at the article column's edge, 16px after its text and 24px before the rail. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+	.api-page-main {
+		border-right: 1px solid var(--color-grey-20, #e5e9f0);
+	}
+
+	/* The section links' rule stops at that line, as it stops at the divider on wider screens. On the left it meets the
+	   sidebar across the 42px nav gap. */
+	.api-section-links {
+		--api-column-bleed-left: 42px;
+		--api-column-bleed-right: 16px;
+	}
+}
+
 /* Wide enough for the capped block: the reference at the docs text width, the examples
    rail at a fixed width, more air between them. */
 @media (min-width: 1280px) {
@@ -3078,11 +3157,31 @@ button.example-response-tab:focus-visible {
 		);
 	}
 
-	/* Three real columns up to a 1920px window: the reference takes whatever the sidebar and the rail leave. Past that the
+	/* 24px between the article's text and each divider. */
+	.api-page-shell > .grid {
+		column-gap: 40px;
+	}
+
+	.api-page-main {
+		padding-right: 24px;
+	}
+
+	/* The divider sits 16px before the rail, so 8px inside it completes the 24px gutter. */
+	.api-page-rail {
+		padding-left: 8px;
+	}
+
+	/* Three real columns up to a 1920px window, minus the sidebar, 40px nav gap and 32px outer padding. Past that the
 	   reference and the rail keep the width they have at 1920px and sit centred beside the sidebar. */
 	#api-content-grid {
 		--api-column-gap: 32px;
-		max-width: calc(1920px - var(--max-sidebar-width) - 64px);
+		max-width: calc(1920px - var(--max-sidebar-width) - 72px);
+	}
+
+	/* Past 1920px the centring adds (window - 1920px) / 2 between the sidebar and the column, whatever the sidebar's
+	   width, so the section links' rule reaches over it too. 100cqi is the shell's width, without the scrollbar. */
+	.api-section-links {
+		--api-column-bleed-left: calc(40px + max(0px, (100cqi - 1920px) / 2));
 	}
 
 	.api-page-grid {
@@ -3436,18 +3535,6 @@ navigation-search[variant='hero'] {
 	}
 }
 
-/* Deployment tag: the applies_to pill look, standalone. It sits inside the card link, so it keeps the link's pointer. */
-.api-catalog .api-catalog-tag {
-	padding: 1px 8px;
-	border: 1px solid var(--color-grey-20);
-	border-radius: 9999px;
-	background-color: #fff;
-	color: var(--color-subdued, #516381);
-	font-size: 12px;
-	line-height: 16px;
-	white-space: nowrap;
-}
-
 .api-landing-heading {
 	display: flex;
 	align-items: center;
@@ -3503,21 +3590,6 @@ html:has(.api-page-shell) {
 	}
 }
 
-/* Merged endpoint rows: dominant method, "also GET", optional segments dashed. */
-.api-url-also-method {
-	flex-shrink: 0;
-	padding: 0 6px;
-	border: 1px dashed var(--color-grey-40, #98a2b3);
-	border-radius: 999px;
-	color: #516381;
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 11px;
-	font-weight: 500;
-	line-height: 16px;
-	white-space: nowrap;
-	cursor: help;
-}
-
 .api-url-path {
 	min-width: 0;
 }
@@ -3567,15 +3639,23 @@ html:has(.api-page-shell) {
 }
 
 /* Examples rail: example chips over a carousel of language cards. */
-/* Small dimmed label so the chips below read as a list of examples. */
-.api-examples-heading {
-	margin: 0 0 8px;
-	color: var(--color-grey-90, #6b7a90);
-	font-size: 12px;
-	font-weight: 600;
-	letter-spacing: 0.06em;
+/*
+ * The rail's labels (Examples above the chips, Request and Response above the cards) use the same small caps as the
+ * group labels of the navigation and the API switcher. The rail qualifies the heading so the article's paragraph
+ * spacing does not add a top margin.
+ */
+.api-page-rail .api-examples-heading,
+.api-rail-label {
+	color: #637290;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.04em;
 	line-height: 16px;
 	text-transform: uppercase;
+}
+
+.api-page-rail .api-examples-heading {
+	margin: 0 0 8px;
 }
 
 .api-example-chips-row {
@@ -3674,12 +3754,12 @@ html:has(.api-page-shell) {
 	fill: currentColor;
 }
 
-/* Positioned from the "more" button in api-examples-carousel.ts; the popover UA styles centre it otherwise. */
+/* A popover placed under the "more" button, or the row's search box, by floating.ts (floating.css). */
 .api-example-menu {
 	box-sizing: border-box;
 	width: max-content;
 	max-width: min(320px, calc(100vw - 16px));
-	max-height: min(320px, 50vh);
+	max-height: min(320px, 50vh, var(--floating-available-height, 100vh));
 	margin: 0;
 	padding: 4px;
 	overflow: auto;
@@ -3814,12 +3894,6 @@ html:has(.api-page-shell) {
 .api-rail-label {
 	flex-shrink: 0;
 	margin-right: 6px;
-	color: var(--color-grey-90, #6b7a90);
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.06em;
-	line-height: 16px;
-	text-transform: uppercase;
 }
 
 .api-rail-response {
@@ -3978,6 +4052,27 @@ html:has(.api-page-shell) {
 	text-align: right;
 	user-select: none;
 	-webkit-user-select: none;
+}
+
+/* In a response the note sits in .example-media-body, and a sticky box cannot leave its parent: the media body
+   spans the full code width so the note can stay put, and everything in it that is not code (the note, a caption,
+   a media header with its copy button) keeps to the visible width and to the left. The panel is the container
+   because, as a block inside the scroll body, it is exactly the visible width; 100cqi of the scroll body itself
+   would include its vertical scrollbar. */
+#api-examples-panel .example-response-panel {
+	container-type: inline-size;
+}
+
+#api-examples-panel .example-media-body {
+	width: max-content;
+	min-width: 100%;
+
+	> :not(.notranslate) {
+		position: sticky;
+		left: 0;
+		box-sizing: border-box;
+		width: 100cqi;
+	}
 }
 
 /* The short line carries the full explanation in a tooltip; the dotted underline says there is one. */
@@ -4181,10 +4276,12 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
-/* 100 characters of code; the dialog fits around it (gutter and padding add themselves) and longer lines scroll sideways. */
+/* At least 100 characters of code; the dialog fits around it (gutter and padding add themselves), grows with a longer
+   line up to the window and scrolls past that. A minimum, not a width: a fixed width would end .code-lines at 100ch,
+   and the sticky line numbers could not follow a longer line. */
 .api-code-preview-body .highlight pre code {
 	box-sizing: content-box;
-	width: 100ch;
+	min-width: 100ch;
 }
 
 @media (max-width: 1023px) {
@@ -4303,45 +4400,232 @@ html:has(.api-page-shell) {
 	}
 }
 
-/* Quick links to the sections of an endpoint: one bar that stays under the header while the sections scroll. */
+/*
+ * What the caller needs before using the operation, as a quiet group between the description and the parameters:
+ * a muted label, then one row per kind of privilege with its names as small tags.
+ */
+.api-requirements {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 24px 0 8px;
+}
+
+/* An h2, so id-qualified like the other section headings, and reset to a label. */
+#elastic-api-v3 .api-requirements-title {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: #637290;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 20px;
+}
+
+/* One row per kind of privilege: its label beside its tags. The rows share two columns, so every tag starts at the same
+   left edge whatever the labels are. A long name wraps inside its tag, at an underscore. */
+.api-privileges {
+	display: grid;
+	grid-template-columns: max-content minmax(0, 1fr);
+	gap: 6px 12px;
+	align-items: start;
+	margin: 0;
+}
+
+.api-privileges-row {
+	display: contents;
+}
+
+.api-privileges-label {
+	color: var(--color-subdued, #516381);
+	font-size: 13px;
+	line-height: 22px;
+}
+
+/* A row with no label, or a note, takes both columns. */
+.api-privileges-row > .api-privileges-values:first-child,
+.api-privileges-note {
+	grid-column: 1 / -1;
+}
+
+.api-privileges-values {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	margin: 0;
+}
+
+.api-privilege {
+	padding: 0 6px;
+	background: var(--color-grey-10, #f5f7fb);
+	border: 1px solid var(--color-grey-20, #e5e9f0);
+	border-radius: 4px;
+	color: #1d2a3e;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 12px;
+	line-height: 20px;
+	overflow-wrap: anywhere;
+}
+
+.api-privileges .privilege-join {
+	color: var(--color-subdued, #516381);
+	font-size: 12px;
+}
+
+.api-privileges-note {
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+}
+
+.api-privileges-note p {
+	margin: 0;
+}
+
+/*
+ * The section links: one row above the description, ruled below from edge to edge of the article column, that stays
+ * under the header as the reader scrolls. Plain text links, not tabs: the section in view is only blue.
+ * Beside the rail the column's edges sit 40px past its text on both sides (the nav gap on the left, the column's
+ * padding and half the gap to the rail on the right), so the row reaches out that far and pads its content back in.
+ * Past a 1920px window the left edge also takes in the space the centred content leaves beside the sidebar.
+ */
 .api-section-links {
 	position: sticky;
 	top: var(--offset-top, 0px);
 	z-index: 5;
 	display: flex;
 	flex-wrap: nowrap;
-	gap: 24px;
-	margin: 24px 0 0;
-	overflow-x: auto;
+	align-items: center;
+	gap: 8px;
+	height: 44px;
+	margin: 20px calc(-1 * var(--api-column-bleed-right, 40px)) 24px
+		calc(-1 * var(--api-column-bleed-left, 40px));
+	padding: 0 var(--api-column-bleed-right, 40px) 0
+		var(--api-column-bleed-left, 40px);
 	background: #fff;
-	border-bottom: 1px solid #e3e8f2;
+	border-bottom: 1px solid var(--color-grey-20, #e5e9f0);
 }
 
+.api-section-links-track {
+	display: flex;
+	flex: 0 1 auto;
+	gap: 4px;
+	min-width: 0;
+	/* The first label starts at the text edge. */
+	margin-left: -10px;
+	/* A thin scrollbar, not none: where the links do not fit, it shows there are more. The track fills the row's
+	   height, so a scrollbar that takes space (not an overlay one) comes out of the row, not below its rule. */
+	align-self: stretch;
+	overflow: auto hidden;
+	scrollbar-width: thin;
+}
+
+/* As tall as the track, less any scrollbar in it. */
 .api-section-links a {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	height: 48px;
-	border-bottom: 2px solid transparent;
-	color: #516381;
-	font-weight: 600;
+	padding: 0 10px;
+	color: #69778f;
+	font-size: 13px;
+	font-weight: 500;
 	text-decoration: none;
 	white-space: nowrap;
+	transition: color 150ms ease;
 }
 
 .api-section-links a:hover {
 	color: #1d2a3e;
 }
 
-.api-section-links a[aria-current] {
-	border-bottom-color: #0b64dd;
-	color: #111c2c;
+/* The section in view reads like the current page in the sidebar and the current API in the switcher: blue, semibold. */
+.api-section-links a[aria-current],
+.api-section-links a[aria-current]:hover {
+	color: var(--color-blue-elastic, #0b64dd);
+	font-weight: 600;
+}
+
+.api-section-links a:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -6px;
+	border-radius: 6px;
+}
+
+/* An action beside the links, not a place: as quiet as they are, so blue keeps meaning the section in view. */
+.api-section-links .api-expand-toggle {
+	color: #69778f;
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.api-section-links .api-expand-toggle:hover {
+	color: #1d2a3e;
+	text-decoration: none;
+}
+
+/*
+ * Expand all only means something among the collapsible sections, which are every link in the row but Overview: until
+ * the scroll-spy marks one of them current, the reader is still above them, where the page's own Expand all sits.
+ * Hidden, not removed, so the row does not shift when it shows.
+ */
+.api-section-links:not(
+		:has([aria-current]:not([href='#api-operation-overview']))
+	)
+	.api-expand-toggle {
+	visibility: hidden;
+}
+
+/* Without the rail beside it the column runs to 32px from the window's right edge, and starts 42px past the sidebar. */
+@media (min-width: 768px) and (max-width: 1023px) {
+	.api-section-links {
+		--api-column-bleed-left: 42px;
+		--api-column-bleed-right: 32px;
+	}
+}
+
+@media (max-width: 767px) {
+	.api-section-links {
+		--api-column-bleed-left: 16px;
+		--api-column-bleed-right: 16px;
+	}
+}
+
+/*
+ * Below 1280px the article column is too narrow for the links and Expand all on one row (at 1024px the links need 342px
+ * and the row has about 280px beside the button), so the row leaves Expand all to the page's own one above the sections.
+ */
+@media (max-width: 1279px) {
+	.api-section-links .api-expand-toggle {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-section-links a {
+		transition: none;
+	}
 }
 
 /* A section reached from the bar stops below the bar instead of under it. */
 #elastic-api-v3 .api-param-section-header,
-#elastic-api-v3 .responses-header {
-	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
+#elastic-api-v3 .responses-header,
+#elastic-api-v3 #required-privileges {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 52px);
+}
+
+/* A supplemental section is a plain h2.section-header. A single-section operation can have them too but renders no
+   row, so only a page with the row clears it; the others keep the site's usual margin. */
+#elastic-api-v3.api-has-toolbar h2.section-header {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 52px);
+}
+
+/*
+ * On a page with the section bar, a property or response header reached from a link stops below it. The global scroll
+ * margin only clears the header, and the bar sits right under it and is 44px tall, so 60px leaves a 16px gap. Both
+ * kinds are a dt with an id, one in a property row and one in a header row. Other pages keep the global margin.
+ */
+#elastic-api-v3.api-has-toolbar dt[id] {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 60px);
 }
 
 /* Expand all / Collapse all: in the section-links bar, pushed to its right edge, or alone on a row where there is no bar. */
@@ -4383,7 +4667,15 @@ html:has(.api-page-shell) {
 }
 
 @media (min-width: 1280px) {
+	/* The section links read the shell's width (100cqi) to reach the sidebar past a 1920px window. Only from 1280px:
+	   older browsers make a container the containing block of fixed boxes, such as the mobile nav drawer. The
+	   NavigationPreview layout (.layout) has its own geometry. */
+	.api-page-shell:not(.layout) {
+		container-type: inline-size;
+	}
+
 	.api-column-handle {
+		--api-column-line-width: 1px;
 		display: block;
 		position: absolute;
 		top: 0;
@@ -4399,78 +4691,105 @@ html:has(.api-page-shell) {
 		display: none;
 	}
 
+	.api-column-handle:hover,
+	.api-column-handle[data-dragging] {
+		--api-column-line-width: 2px;
+	}
+
+	/* The line and the strip that covers it under the dots start on the same whole pixel. A centred 1px line lands on a half pixel,
+	   which the line and the background snap differently, so a grey sliver shows beside the strip. */
 	.api-column-handle::after {
 		content: '';
 		position: absolute;
 		top: 0;
 		bottom: 0;
-		left: 50%;
-		width: 2px;
-		transform: translateX(-50%);
+		left: 5px;
+		width: var(--api-column-line-width);
+		background: var(--color-grey-20);
 		transition: background-color 100ms;
 	}
 
 	.api-column-handle:hover::after,
-	.api-column-handle:focus-visible::after,
 	.api-column-handle[data-dragging]::after {
-		background: var(--color-blue-elastic);
+		background: var(--color-grey-60);
 	}
 
 	.api-column-handle:focus-visible {
 		outline: none;
 	}
 
-	/* The sidebar handle's box starts 3px inside the sidebar, so most of it stays off the scrollbar. The sidebar's own border is 1px wide
-	   and ends on the edge, so its centre is half a pixel inside it. The line and the bar are odd widths drawn on that pixel, so they
-	   overhang the border by the same amount on both sides. The bar takes its position from a whole-pixel margin, because a half-pixel
-	   offset is snapped in layout and then smeared across a seventh column. */
+	.api-column-handle:focus-visible::before {
+		outline: 2px solid var(--color-blue-elastic);
+		outline-offset: 4px;
+	}
+
+	/* Keep the sidebar's resize target mostly clear of its scrollbar, with the line centred on its existing border. */
 	.api-column-handle[data-api-column-handle='nav']::after {
-		width: 3px;
-		transform: translateX(calc(-50% - 3.5px));
+		transform: translateX(-3px);
 	}
 
+	/* No room for a ring that clears the dots inside the target, so keyboard focus turns the divider blue and 2px wide instead. */
+	.api-column-handle[data-api-column-handle='nav']:focus-visible {
+		--api-column-line-width: 2px;
+		--api-column-strip: var(--color-blue-elastic);
+	}
+
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::after {
+		background: var(--color-blue-elastic);
+	}
+
+	.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
+		outline: none;
+	}
+
+	/* Forced colors override the blue divider, so keep an inset ring there; it covers part of the dots. The grip stays inside the
+	   resize target so the ring stays off the scrollbar. */
+	@media (forced-colors: active) {
+		.api-column-handle[data-api-column-handle='nav']:focus-visible::before {
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
+			transform: none;
+		}
+	}
+
+	/* The grip moves with the line, so its dots and strip are centred on the border. It takes no pointer events, so the dots over the
+	   scrollbar leave it usable. */
 	.api-column-handle[data-api-column-handle='nav']::before {
-		width: 5px;
-		margin-inline: 0;
-		border-radius: 2px;
-		transition:
-			background-color 100ms,
-			width 100ms,
-			margin-left 100ms,
-			border-radius 100ms;
+		transform: translateX(-3px);
 	}
 
-	.api-column-handle[data-api-column-handle='nav']:hover::before,
-	.api-column-handle[data-api-column-handle='nav']:focus-visible::before,
-	.api-column-handle[data-api-column-handle='nav'][data-dragging]::before {
-		width: 7px;
-		margin-left: -1px;
-		border-radius: 3px;
-	}
-
-	/* The grab bar sits at the middle of the window, so it stays in reach however far the page is scrolled. */
+	/* Only the strip over the divider is opaque; the rest of the grip leaves the scrollbar visible and interactive. */
 	.api-column-handle::before {
 		content: '';
 		display: block;
 		position: sticky;
-		top: calc(50vh - 20px);
-		width: 4px;
-		height: 40px;
+		top: calc(50vh - 9px);
+		width: 12px;
+		height: 18px;
 		margin-inline: auto;
-		border-radius: 2px;
-		background: #b6c0d1;
-		transition:
-			background-color 100ms,
-			width 100ms,
-			border-radius 100ms;
+		z-index: 1;
+		color: var(--color-grey-80);
+		background-image:
+			radial-gradient(circle, currentColor 1.25px, transparent 1.5px),
+			linear-gradient(
+				var(--api-column-strip, var(--color-white)),
+				var(--api-column-strip, var(--color-white))
+			);
+		background-size:
+			6px 6px,
+			var(--api-column-line-width) 100%;
+		background-position:
+			0 0,
+			5px 50%;
+		background-repeat: repeat, no-repeat;
+		pointer-events: none;
+		transition: color 100ms;
 	}
 
 	.api-column-handle:hover::before,
 	.api-column-handle:focus-visible::before,
 	.api-column-handle[data-dragging]::before {
-		width: 6px;
-		border-radius: 3px;
-		background: var(--color-blue-elastic);
+		color: var(--color-grey-100);
 	}
 }
 
@@ -4484,4 +4803,111 @@ body[data-api-column-dragging] {
 .api-page-shell .api-operation-description > :is(p, ul, ol, .admonition),
 .api-page-shell .property-list dd > :is(p, ul, ol, .admonition) {
 	max-width: 48rem;
+}
+
+/* Notice above every API page (_ApiBetaBanner). One short sentence that wraps on narrow screens. */
+.api-beta-banner {
+	align-self: stretch;
+	padding: 6px 16px;
+	border-bottom: 1px solid var(--color-blue-elastic-30, #a6c9f7);
+	background: var(--color-blue-elastic-10, #e8f1ff);
+	color: var(--color-ink-dark, #1d2a3e);
+	font-size: 14px;
+	line-height: 20px;
+	text-align: center;
+}
+
+.api-beta-banner__message {
+	margin: 0;
+}
+
+.api-beta-banner__link {
+	color: var(--color-blue-elastic-100, #1750ba);
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+/* The dialog the banner link opens. It sits inside the banner, so it takes back the text the banner centres. */
+.api-beta-feedback {
+	width: min(32rem, calc(100vw - 24px));
+	max-height: calc(100vh - 48px);
+	margin: auto;
+	padding: 0;
+	border: 1px solid var(--color-grey-20, #d3dae6);
+	border-radius: 6px;
+	background: var(--color-white, #fff);
+	color: var(--color-ink-dark, #1d2a3e);
+	font-size: 16px;
+	line-height: 24px;
+	text-align: start;
+	box-shadow: 0 12px 32px rgb(16 28 63 / 24%);
+}
+
+.api-beta-feedback[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.api-beta-feedback::backdrop {
+	background: rgb(16 28 63 / 50%);
+}
+
+.api-beta-feedback__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	border-bottom: 1px solid var(--color-grey-20, #d3dae6);
+}
+
+.api-beta-feedback__title {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.api-beta-feedback__header form {
+	margin: 0;
+}
+
+.api-beta-feedback__close {
+	display: inline-flex;
+	padding: 4px;
+	border: 0;
+	background: transparent;
+	color: var(--color-subdued, #516381);
+	cursor: pointer;
+}
+
+.api-beta-feedback__close:hover {
+	color: var(--color-ink-dark, #1d2a3e);
+}
+
+.api-beta-feedback__content {
+	padding: 20px;
+	overflow-y: auto;
+}
+
+.api-beta-feedback__intro {
+	margin: 0 0 16px;
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+/* The widget is the page's feedback widget, which has its own top rule and space above it. */
+.api-beta-feedback page-feedback {
+	margin-top: 0;
+	border-top: 0;
+	padding-top: 0;
+}
+
+/* In an API sidebar, the rows above the first group (Overview, Authentication, guides) sit as close as the rows
+   inside a group (.nav-group-items > li in styles.css), so only a group label gets the larger gap. The class is set
+   only on trees that open with an Overview row, so docs sidebars keep their spacing. */
+.nav-tree--overview-row
+	> li:not(.nav-folder, .nav-group)
+	+ li:not(.nav-folder, .nav-group) {
+	margin-top: 16px;
 }

@@ -15,6 +15,9 @@ public sealed record DeploymentInfoModel
 	private const string BranchPrefix = "refs/heads/";
 	private const string TagPrefix = "refs/tags/";
 
+	/// <summary>The id of the panel popover. Unique per control on the page.</summary>
+	public string Id { get; init; } = "deployment-info";
+
 	public required string Branch { get; init; }
 	public string? Commit { get; init; }
 	public string? Repository { get; init; }

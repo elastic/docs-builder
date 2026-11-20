@@ -126,7 +126,7 @@ public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 	/// Runs once per test class, right after the documentation set is created and before its directory tree is resolved.
 	/// Use it to configure the set. Do not touch the set from a test or from <see cref="InitializeAsync"/>: it is shared.
 	/// </summary>
-	protected virtual void ConfigureDocumentationSet(DocumentationSet set) { }
+	protected virtual void ConfigureDocumentationSet(DocumentationSet documentationSet) { }
 
 	/// <summary>
 	/// Runs once per test class, after the document is parsed and rendered.

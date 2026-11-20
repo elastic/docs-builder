@@ -119,6 +119,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 		var hasClassifications = classifications.Count > 1;
+		// Tag groups (x-tagGroups) already label the operations, so only a flat list of tags gets the Operations heading.
+		var operationsNavigation = hasClassifications ? null : new OperationsNavigationItem(rootNavigation);
 		foreach (var classification in classifications)
 		{
 			if (hasClassifications)
@@ -144,55 +146,42 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					apiUrlSuffix,
 					classification,
 					rootNavigation,
-					rootNavigation,
+					operationsNavigation ?? (IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>)rootNavigation,
 					takenMonikers,
 					topLevelNavigationItems
 				);
 		}
 		var typesNavigation = CreateTypesNavigation(apiUrlSuffix, openApiDocument, rootNavigation);
 
-		var finalNavigationItems = new List<INavigationItem>();
-		var (topicsNavigation, listsAuthentication) = _topics.Create(
+		var (topicItems, listsAuthentication) = _topics.Create(
 			apiUrlSuffix,
 			openApiDocument,
 			ApiTopicsNavigationBuilder.ChildFiles(apiConfig, versionMajor),
 			rootNavigation
 		);
-		if (topicsNavigation.NavigationItems.Count > 0)
-			finalNavigationItems.Add(topicsNavigation);
+		// The guide pages come first, then the endpoint groups. The sidebar puts the Overview row above them.
+		var finalNavigationItems = new List<INavigationItem>(topicItems);
 
-		// The Topics heading lists the Authentication page itself, unless a children: page stands for it. The generated page then stays hidden for old links.
+		// The guide pages list the Authentication page themselves, unless a children: page stands for it. The generated page then stays hidden for old links.
 		finalNavigationItems.AddRange(
 			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
 				item => !(listsAuthentication && item.Model.Kind == ApiStructuralKind.Authentication)
 			)
 		);
 
+		if (operationsNavigation is not null && topLevelNavigationItems.Count > 0)
+			operationsNavigation.NavigationItems = topLevelNavigationItems;
+
 		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
-			? topLevelNavigationItems
+			? operationsNavigation is null ? topLevelNavigationItems : [operationsNavigation]
 			: rootNavigation.NavigationItems.Count > 0 ? rootNavigation.NavigationItems.ToArray() : [];
-		AddSection(finalNavigationItems, endpointItems, rootNavigation);
-		// Types are reference material, not endpoints, so a divider sets them apart as it does the topics.
-		AddSection(finalNavigationItems, typesNavigation is null ? [] : [typesNavigation], rootNavigation);
+		finalNavigationItems.AddRange(endpointItems);
+		if (typesNavigation is not null)
+			finalNavigationItems.Add(typesNavigation);
 
 		rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
-	}
-
-	/// <summary>Adds one block of the sidebar, with a divider from whatever comes before it. An empty block adds nothing.</summary>
-	private static void AddSection(
-		List<INavigationItem> navigationItems,
-		IReadOnlyList<INavigationItem> section,
-		LandingNavigationItem rootNavigation
-	)
-	{
-		if (section.Count == 0)
-			return;
-
-		if (navigationItems.Count > 0)
-			navigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
-		navigationItems.AddRange(section);
 	}
 
 	private void CreateTagNavigationItems(
@@ -269,8 +258,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				}
 			}
 		}
-		// Spec order looks arbitrary in a long group; readers scan by the route and method each row shows.
-		return [.. operationItems.InListOrder(static item => item.Endpoint.Rows[0])];
+		// Spec order looks arbitrary in a long group; readers scan by the route and method each row shows, current operations first.
+		return [.. operationItems.InListOrder(static item => item.Endpoint.Rows[0], static item => item.Model.Deprecated)];
 	}
 
 	/// <summary>

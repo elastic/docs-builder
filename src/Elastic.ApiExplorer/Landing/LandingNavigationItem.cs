@@ -60,7 +60,7 @@ public class ApiLanding : IApiGroupingModel
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
-public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>
+public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>, ISidebarOverviewRowNavigationItem
 {
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
@@ -82,8 +82,11 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 
 	public string Url => Index.Url;
 
-	/// <summary>True for a version tree that is not the current one, so the sitemap and first-level walks skip it.</summary>
+	/// <summary>True for a version tree that is not the current one, so navigation and first-level walks skip it.</summary>
 	public bool Hidden { get; set; }
+
+	/// <summary>Whether the sitemap lists the pages of this tree. The page type of the tree decides it, not <see cref="Hidden"/>.</summary>
+	public bool InSitemap { get; set; } = true;
 
 	public Uri Identifier { get; } = new Uri("todo://");
 
@@ -153,7 +156,7 @@ public class ClassificationNavigationItem(
 	classification,
 	rootNavigation,
 	parent
-), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem
+), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem, ISidebarOverviewRowNavigationItem
 {
 	public LandingNavigationItem Landing => rootNavigation;
 
@@ -167,7 +170,10 @@ public class ClassificationNavigationItem(
 	public override string NavigationTitle { get; } = classification.Name;
 
 	/// <inheritdoc />
-	public override string Id { get; } = ShortId.Create(classification.Name);
+	/// <remarks>
+	/// The prefix sits outside the hash: tag ids are eight hex characters, so no tag name can produce a group's toggle id.
+	/// </remarks>
+	public override string Id { get; } = $"group-{ShortId.Create(classification.Name)}";
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;
@@ -184,9 +190,25 @@ public class TagNavigationItem(
 	string apiUrlSuffix,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent)
+) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent), IDeprecatableNavigationItem
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
+
+	/// <summary>True when the group has operations and every one is deprecated; one current operation keeps the group current.</summary>
+	public bool Deprecated
+	{
+		get
+		{
+			var any = false;
+			foreach (var operation in NavigationItems.OfType<OperationNavigationItem>())
+			{
+				if (!operation.Model.Deprecated)
+					return false;
+				any = true;
+			}
+			return any;
+		}
+	}
 
 	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
 	{

@@ -33,6 +33,15 @@
 			</div>
 		</li>
 	}
+	else if (item.Kind == NavigationRenderNodeKind.Group)
+	{
+		<li class="nav-group mt-7">
+			<span id="@item.Id-label" class="nav-group-label">@item.NavigationTitle</span>
+			<ul class="nav-group-items" aria-labelledby="@item.Id-label">
+				@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
+			</ul>
+		</li>
+	}
 	else if (item.Kind == NavigationRenderNodeKind.Heading)
 	{
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
@@ -51,11 +60,11 @@
 							id="@item.Id"
 							type="checkbox"
 							class="hidden"
-							aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
+							aria-hidden="true">
 					</label>
 				}
 			</div>
-			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
+			<div class="nav-subtree-clip">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
 				</ul>
@@ -66,8 +75,9 @@
 	{
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
+				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")@(item.Deprecated ? " nav-link--deprecated" : "")">
 					<span>@item.NavigationTitle</span>
+					@if (item.Deprecated) { <span class="sr-only">Deprecated</span> }
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 					@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 				</a>
@@ -81,11 +91,11 @@
 							id="@item.Id"
 							type="checkbox"
 							class="hidden"
-							aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
+							aria-hidden="true">
 					</label>
 				}
 			</div>
-			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
+			<div class="nav-subtree-clip">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
 				</ul>

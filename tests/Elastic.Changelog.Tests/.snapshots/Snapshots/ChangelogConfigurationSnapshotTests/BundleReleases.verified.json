@@ -1,0 +1,101 @@
+{
+  "configuration": {
+    "Pivot": null,
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": null,
+    "LabelToProducts": null,
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": {
+      "Directory": null,
+      "OutputDirectory": null,
+      "UseLocalChangelogs": false,
+      "Description": null,
+      "Repo": null,
+      "Owner": null,
+      "Branch": null,
+      "LinkAllowRepos": null,
+      "ReleaseDates": null,
+      "Backports": null,
+      "Profiles": {
+        "es": {
+          "Product": "elasticsearch",
+          "Products": null,
+          "Output": null,
+          "OutputDirectory": null,
+          "OutputProducts": null,
+          "Description": null,
+          "Repo": null,
+          "Owner": null,
+          "Branch": null,
+          "HideFeatures": null,
+          "ReleaseDates": null,
+          "Source": null
+        },
+        "serverless": {
+          "Product": "cloud-serverless",
+          "Products": null,
+          "Output": null,
+          "OutputDirectory": null,
+          "OutputProducts": null,
+          "Description": null,
+          "Repo": null,
+          "Owner": null,
+          "Branch": null,
+          "HideFeatures": null,
+          "ReleaseDates": null,
+          "Source": null
+        }
+      },
+      "Releases": {
+        "Github": {
+          "v9.*": "es"
+        },
+        "Products": {
+          "cloud-serverless": "serverless"
+        }
+      }
+    },
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

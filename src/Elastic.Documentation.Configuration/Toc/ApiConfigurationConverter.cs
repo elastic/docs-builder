@@ -32,9 +32,7 @@ internal static class ApiConfigurationShapeGuidance
 		+ "      repository: <org/repo> # optional; only needed if the spec is published from a\n"
 		+ "                              # different repo than the current checkout\n"
 		+ "      children:          # optional\n"
-		+ "        - file: getting-started.md\n"
-		+ "      catalog:           # optional; deployment tags on the API catalog\n"
-		+ "        categories: [self, ece, ess, serverless]";
+		+ "        - file: getting-started.md";
 }
 
 public class ApiProductSequenceConverter(ApiProductEntryConverter entryConverter) : YamlConverter<ApiProductSequence>
@@ -68,8 +66,7 @@ public class ApiProductSequenceConverter(ApiProductEntryConverter entryConverter
 
 public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 {
-	private static readonly string[] KnownEntryKeys = ["spec", "product", "repository", "children", "catalog"];
-	private static readonly string[] KnownCatalogKeys = ["categories"];
+	private static readonly string[] KnownEntryKeys = ["spec", "product", "repository", "children"];
 	private static readonly string[] KnownChildKeys = ["file"];
 
 	public override ApiProductEntry Read(YamlReader reader)
@@ -121,9 +118,6 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 				case "children":
 					entry.Children = ReadChildren(reader);
 					break;
-				case "catalog":
-					entry.Catalog = ReadCatalog(reader);
-					break;
 				case "file":
 					throw new YamlException(
 						reader.SourceName,
@@ -158,55 +152,6 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 			column = null;
 			reader.Skip();
 		}
-	}
-
-	private static ApiCatalogSettings? ReadCatalog(YamlReader reader)
-	{
-		if (reader.TokenType != YamlTokenType.StartMapping)
-		{
-			reader.Skip();
-			return null;
-		}
-
-		var start = reader.Start;
-		_ = reader.Read();
-		// SharpYaml's Mark.Line/Column are 0-based; +1 to match the 1-based convention.
-		var catalog = new ApiCatalogSettings { Line = start.Line + 1, Column = start.Column + 1 };
-		while (reader.TokenType != YamlTokenType.EndMapping)
-		{
-			var key = reader.GetScalarValue();
-			_ = reader.Read();
-			if (key == "categories")
-				catalog.Categories = ReadStringSequence(reader);
-			else
-				reader.SkipOrReportUnmapped(typeof(ApiCatalogSettings), KnownCatalogKeys, key, catalog);
-		}
-		_ = reader.Read();
-		return catalog;
-	}
-
-	private static List<string> ReadStringSequence(YamlReader reader)
-	{
-		var values = new List<string>();
-		if (reader.TokenType != YamlTokenType.StartSequence)
-		{
-			reader.Skip();
-			return values;
-		}
-
-		_ = reader.Read();
-		while (reader.TokenType != YamlTokenType.EndSequence)
-		{
-			if (reader.TokenType == YamlTokenType.Scalar)
-			{
-				values.Add(reader.ScalarValue ?? string.Empty);
-				_ = reader.Read();
-			}
-			else
-				reader.Skip();
-		}
-		_ = reader.Read();
-		return values;
 	}
 
 	private static List<ApiEntryChild> ReadChildren(YamlReader reader)

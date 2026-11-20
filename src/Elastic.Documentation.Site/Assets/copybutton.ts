@@ -99,18 +99,12 @@ const codeCellId = (index: number, prefix: string) => `${prefix}${index}`
 const timeoutIcon = 1500
 const timeoutSuccessClass = 1500
 
-const temporarilyChangeTooltip = (el, oldText, newText) => {
+const temporarilyChangeTooltip = (el: HTMLElement, newText: string) => {
     el.classList.add('success')
     // Remove success a little bit sooner than we change the tooltip
     // So that we can use CSS to hide the copybutton first
     setTimeout(() => el.classList.remove('success'), timeoutSuccessClass)
-    // Card header buttons carry a tippy tooltip, the others the CSS one
-    if (el.hasAttribute('data-tippy-content')) {
-        flashTooltip(el, newText, timeoutIcon)
-        return
-    }
-    el.setAttribute('data-tooltip', newText)
-    setTimeout(() => el.setAttribute('data-tooltip', oldText), timeoutIcon)
+    flashTooltip(el, newText, timeoutIcon)
 }
 
 // Changes the copy button icon for two seconds, then changes it back
@@ -145,19 +139,8 @@ const addCopyButtonToCodeCells = (
         const headerActions = codeCell
             .closest('[data-code-card]')
             ?.querySelector('[data-code-actions]')
-        if (headerActions) {
-            clipboardButton.className = 'copybtn'
-            clipboardButton.setAttribute(
-                'data-tippy-content',
-                messages[locale]['copy']
-            )
-        } else {
-            clipboardButton.className = 'copybtn o-tooltip--left'
-            clipboardButton.setAttribute(
-                'data-tooltip',
-                messages[locale]['copy']
-            )
-        }
+        clipboardButton.className = 'copybtn'
+        clipboardButton.setAttribute('data-tooltip', messages[locale]['copy'])
         clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
         const headerIcon = headerActions ? iconCopyEui : iconCopy
         clipboardButton.innerHTML = headerIcon
@@ -167,7 +150,6 @@ const addCopyButtonToCodeCells = (
                 await navigator.clipboard.writeText(text)
                 temporarilyChangeTooltip(
                     clipboardButton,
-                    messages[locale]['copy'],
                     messages[locale]['copy_success']
                 )
                 temporarilyChangeIcon(

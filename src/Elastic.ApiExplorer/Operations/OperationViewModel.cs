@@ -26,24 +26,16 @@ public record AuthorizationSectionModel(
 	IReadOnlyList<PrivilegeRow> Privileges,
 	Func<string?, HtmlString> RenderMarkdown,
 	bool AuthenticationOptional = false
-)
-{
-	/// <summary>Every privilege, one name each, for the heading's summary.</summary>
-	public IReadOnlyList<string> PrivilegeNames => [.. Privileges.SelectMany(static r => r.Values)];
+);
 
-	/// <summary>Alternatives read <c>a | b</c> and privileges needed together <c>a + b</c>, as with the credentials.</summary>
-	public SummaryStyle PrivilegeStyle =>
-		Privileges.Any(static r => r.Join == "or")
-			? SummaryStyle.Variants
-			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
-}
-
-/// <summary>One quick link of the bar above an operation's sections.</summary>
+/// <summary>One link of the section bar above an operation's description.</summary>
 public record SectionLink(string Label, string Anchor);
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiOperation Operation { get; init; }
+
+	public override bool VersionNoticeInBadges => true;
 
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
@@ -56,22 +48,19 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			Page.AuthBadge?.Kind == AuthBadgeKind.Optional
 		);
 
-	/// <summary>
-	/// The sections under the quick links bar, in page order. Required privileges is not one of them: it comes before the bar.
-	/// </summary>
-	public IReadOnlyList<SectionLink> SectionLinks
+	/// <summary>The sections the section bar links to, in page order, after Overview.</summary>
+	public IReadOnlyList<SectionLink> SectionLinks => field ??= BuildSectionLinks();
+
+	private List<SectionLink> BuildSectionLinks()
 	{
-		get
-		{
-			var links = new List<SectionLink>(
-				Page.ParameterSections.Select(static s => new SectionLink(ParameterLabel(s.Location), s.Header.Anchor))
-			);
-			if (Operation.Operation.RequestBody is not null)
-				links.Add(new SectionLink("Body", "request-body"));
-			if (Page.Responses.Count > 0)
-				links.Add(new SectionLink("Responses", "responses"));
-			return links;
-		}
+		var links = new List<SectionLink>(
+			Page.ParameterSections.Select(static s => new SectionLink(ParameterLabel(s.Location), s.Header.Anchor))
+		);
+		if (Operation.Operation.RequestBody is not null)
+			links.Add(new SectionLink("Body", "request-body"));
+		if (Page.Responses.Count > 0)
+			links.Add(new SectionLink("Responses", "responses"));
+		return links;
 	}
 
 	private static string ParameterLabel(ParameterLocation location) =>
@@ -115,7 +104,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			tocItems.Add(new TocItem("Request body", "request-body", 2));
 
 		if (operation.Responses is { Count: > 0 })
-			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
+			tocItems.Add(new TocItem("Responses", "responses", 2));
 
 		return tocItems;
 	}

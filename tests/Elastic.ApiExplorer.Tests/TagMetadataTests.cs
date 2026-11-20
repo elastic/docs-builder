@@ -17,6 +17,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.OpenApi;
 using Nullean.Snapshots.Html;
 
@@ -188,7 +189,7 @@ public class TagMetadataTests
 	private static TagNavigationItem? FindTagNavigationItem(LandingNavigationItem navigation, string tagName)
 	{
 		// Navigate through the structure to find the tag
-		// Structure can be: root -> [classification] -> tag or root -> tag directly
+		// Structure can be: root -> classification -> tag or root -> Operations -> tag
 
 		// Check direct children first
 		foreach (var item in navigation.NavigationItems)
@@ -196,12 +197,12 @@ public class TagMetadataTests
 			if (item is TagNavigationItem tagItem && IsTagForName(tagItem, tagName))
 				return tagItem;
 
-			// Check children of classification items
-			if (item is ClassificationNavigationItem classificationItem)
+			// Check children of classification items and of the Operations group
+			if (item is ClassificationNavigationItem or OperationsNavigationItem)
 			{
-				foreach (var classificationChild in classificationItem.NavigationItems)
+				foreach (var child in ((INodeNavigationItem<INavigationModel, INavigationItem>)item).NavigationItems)
 				{
-					if (classificationChild is TagNavigationItem nestedTagItem && IsTagForName(nestedTagItem, tagName))
+					if (child is TagNavigationItem nestedTagItem && IsTagForName(nestedTagItem, tagName))
 						return nestedTagItem;
 				}
 			}
@@ -274,7 +275,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "Charlie", "Fruit Store"
-		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var tagItems = navigation.Tags().ToList();
 		tagItems.Should().HaveCount(3);
 
 		// Verify sorted order
@@ -330,7 +331,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted case-insensitively: "Alpha Service", "beta Service"
-		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var tagItems = navigation.Tags().ToList();
 		tagItems.Should().HaveCount(2);
 
 		tagItems[0].NavigationTitle.Should().Be("Alpha Service", "Should sort case-insensitively");
@@ -395,7 +396,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted alphabetically by canonical name: "Alpha", "Mike", "Zebra"
-		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var tagItems = navigation.Tags().ToList();
 		tagItems.Should().HaveCount(3);
 
 		tagItems[0].NavigationTitle.Should().Be("Alpha", "Should sort by canonical name");
@@ -491,7 +492,7 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		navigation.NavigationItems.OfType<ClassificationNavigationItem>().Should().BeEmpty();
-		navigation.NavigationItems.OfType<TagNavigationItem>().Should().HaveCount(2);
+		navigation.Tags().Should().HaveCount(2);
 	}
 
 	[Test]
@@ -556,7 +557,7 @@ public class TagMetadataTests
 		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		var items = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		var items = navigation.Tags().ToList();
 		items.Should().HaveCount(1);
 		var tag = items[0].Index.Model.Should().BeOfType<ApiTag>().Subject;
 		tag.Name.Should().Be("only");
@@ -583,6 +584,101 @@ public class TagMetadataTests
 	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected) => ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
 
 	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task Sidebar_ApiTree_StartsWithTheOverviewRowAndHasNoDivider(bool withTagGroups)
+	{
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
+			[new("search"), new("indices")]
+		)
+		{ TagGroups = withTagGroups ? [new("Search", ["search"]), new("Cluster", ["indices"])] : [] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+
+		var model = NavigationRenderModel.Create(
+			navigation,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false
+		);
+
+		// The Overview row sits in line with the first pages, so there is no separate root row and no automatic rule under it.
+		model.RootIndex.Should().BeNull();
+		model.HasOverviewRow.Should().BeTrue("the API row spacing rule applies only to trees that open with an Overview row");
+		model
+			.Tree[0]
+			.Should()
+			.Match<NavigationRenderNode>(
+				n => n.Kind == NavigationRenderNodeKind.Leaf && n.NavigationTitle == "Overview" && n.Url == navigation.Url
+			);
+		model.Tree.Should().NotContain(n => n.Kind == NavigationRenderNodeKind.Separator);
+	}
+
+	[Test]
+	[Arguments("search")]
+	[Arguments("api-tag-groupsearch")]
+	public async Task Sidebar_TagGroupSharingATagName_GetsItsOwnToggleId(string tagName)
+	{
+		// The group is named "search"; the tag either shares that name or prepends a prefix the group id could have hashed.
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", [tagName]), new("/indices", "indices-op", ["indices"])],
+			[new(tagName), new("indices")]
+		)
+		{ TagGroups = [new("search", [tagName]), new("indices", ["indices"])] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+		var group = navigation.NavigationItems.OfType<ClassificationNavigationItem>().First();
+
+		var model = NavigationRenderModel.Create(
+			group,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: false
+		);
+
+		// The tag's chevron must open the tag, not collapse the group around it.
+		var heading = model.Tree[1];
+		heading.NavigationItems.Should().ContainSingle().Which.Id.Should().NotBe(heading.Id);
+	}
+
+	[Test]
+	public async Task Sidebar_TagGroupTree_StartsWithAnOverviewRowToTheApiLanding()
+	{
+		var spec = new MinimalSpec(
+			[new("/search", "search-op", ["search"]), new("/indices", "indices-op", ["indices"])],
+			[new("search"), new("indices")]
+		)
+		{ TagGroups = [new("Search", ["search"]), new("Cluster", ["indices"])] };
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(spec.ToJson());
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+		// Tag and operation pages of one x-tagGroups group render that group's tree as their sidebar.
+		var group = navigation.NavigationItems.OfType<ClassificationNavigationItem>().First();
+
+		var model = NavigationRenderModel.Create(
+			group,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: false
+		);
+
+		model
+			.Tree[0]
+			.Should()
+			.Match<NavigationRenderNode>(
+				n => n.Kind == NavigationRenderNodeKind.Leaf && n.NavigationTitle == "Overview" && n.Url == navigation.Url
+			);
+		// The group keeps its name, as the heading it is in the full API sidebar.
+		model
+			.Tree[1]
+			.Should()
+			.Match<NavigationRenderNode>(n => n.Kind == NavigationRenderNodeKind.Heading && n.NavigationTitle == group.NavigationTitle);
+	}
+
+	[Test]
 	public async Task Tag_Url_Uses_Group_Segment()
 	{
 		var openApiJson = new MinimalSpec([new("/a", "a1", ["alpha"]), new("/b", "b1", ["beta"])], [new("alpha"), new("beta")])
@@ -597,7 +693,7 @@ public class TagMetadataTests
 
 		var alpha = FindTagNavigationItem(navigation, "alpha");
 		alpha.Should().NotBeNull();
-		alpha.Url.Should().EndWith("/api/doc/es/group/endpoint-alpha");
+		alpha.Url.Should().EndWith("/api/es/group/endpoint-alpha");
 
 		alpha.Index.Model.Should().BeOfType<ApiTag>().Which.TagUrlSegment.Should().Be("endpoint-alpha");
 	}
@@ -615,15 +711,9 @@ public class TagMetadataTests
 		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
-		var operation = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<OperationNavigationItem>()
-			.Single();
+		var operation = navigation.Tags().Single().NavigationItems.OfType<OperationNavigationItem>().Single();
 
-		operation.Url.Should().Be("/api/doc/elasticsearch/operation/operation-search-op");
+		operation.Url.Should().Be("/api/elasticsearch/operation/operation-search-op");
 	}
 
 	[Test]
@@ -716,7 +806,7 @@ public class TagMetadataTests
 			.Should()
 			.Equal(typeof(IntroHeadingNavigationItem), typeof(IntroHeadingNavigationItem), typeof(OperationNavigationItem));
 
-		var html = await RenderTagAsync(tag);
+		var html = await TestHelpers.RenderTagAsync(tag);
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
@@ -798,7 +888,7 @@ public class TagMetadataTests
 		tag.Should().NotBeNull();
 		tag.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<OperationNavigationItem>();
 
-		var html = await RenderTagAsync(tag);
+		var html = await TestHelpers.RenderTagAsync(tag);
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
@@ -815,29 +905,9 @@ public class TagMetadataTests
 		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("kibana", document);
 
-		var html = await RenderIndexAsync(navigation.Index, navigation);
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation);
 		// Every endpoint stays in the page so the browser's find-in-page matches it. Authentication and Servers are
 		// topics, so they sit above the index, not in a group.
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
-	}
-
-	private static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
-
-	private static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
-	{
-		var collector = new DiagnosticsCollector([]);
-		var context = TestHelpers.CreateBuildContext(collector);
-		var renderContext = new ApiRenderContext(
-			context,
-			new OpenApiDocument(),
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
-
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
 	}
 }

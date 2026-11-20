@@ -9,7 +9,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 
 public static class ApiHubSwitcher
 {
-	/// <summary>The catalog's groups, so the menu and the landing page sort the APIs into the same bands. Each row opens the API's latest numbered version when it has one.</summary>
+	/// <summary>The catalog's groups, so the menu and the landing page sort the APIs into the same bands.</summary>
 	public static IReadOnlyList<ApiIdentityProductGroup> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey)
 	{
 		if (entries.Count == 0 || currentApiKey is null)
@@ -25,7 +25,7 @@ public static class ApiHubSwitcher
 							.OrderBy(e => ApiCatalogOrder.Rank(e.Key))
 							.ThenBy(e => e.Title, StringComparer.OrdinalIgnoreCase)
 							.ThenBy(e => e.Key, StringComparer.Ordinal)
-							.Select(e => new ApiIdentityProduct(e.Title, e.OpenUrl, e.Key == currentApiKey, e.IconSvg))
+							.Select(e => new ApiIdentityProduct(e.Title, e.Url, e.Key == currentApiKey, e.IconSvg))
 					]
 				)
 			)

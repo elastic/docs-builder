@@ -1,0 +1,102 @@
+yaml: stack:
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ~
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ''
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: all
+
+yaml: stack: ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: [ga, beta]
+json: []
+text: 
+
+yaml:
+  | stack:
+  |   - ga 9.0
+json: []
+text: 
+
+yaml:
+  | stack:
+  |   ga: 9.0
+json: []
+text: 
+
+yaml: stack: 9.0
+json: []
+text: 
+
+yaml: stack: 9
+json: []
+text: 
+
+yaml: stack: true
+json: []
+text: 
+
+yaml: stack: 1.5
+json: []
+text: 
+
+yaml: stack: {}
+json: []
+text: 
+
+yaml: STACK: ga
+json: []
+text: 
+  hint: Unknown key 'STACK' in applies_to. Did you mean 'stack'?
+
+yaml: Stack: ga
+json: []
+text: 
+  hint: Unknown key 'Stack' in applies_to. Did you mean 'stack'?
+
+yaml: stack : ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: 'stack': ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: "stack": ga 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml:
+  | stack: ga 9.0
+  | stack: beta 9.1
+throws YamlException: (Lin: 1, Col: 7, Chr: 21) - (Lin: 1, Col: 15, Chr: 29): Duplicate mapping key 'stack'.
+
+yaml: stack: ga 9.0 # comment
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: 'ga 9.0'
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: "ga 9.0"
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml:
+  | stack: >-
+  |   ga 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml:
+  | stack: |
+  |   ga 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 

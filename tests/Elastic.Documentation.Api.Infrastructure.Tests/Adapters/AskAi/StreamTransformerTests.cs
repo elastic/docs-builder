@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Api.Adapters.AskAi;
 using Elastic.Documentation.Api.AskAi;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,7 +46,10 @@ internal static class StreamTransformerTestHelpers
 
 	/// <summary>Replaces what changes per run: generated conversation ids and millisecond timestamps taken from the clock.</summary>
 	public static SnapshotOptions Scrub() =>
-		new SnapshotOptions().Scrub(Scrubbers.Guids).Scrub(new Regex(@"""timestamp"":\d{13}"), "\"timestamp\":{now}");
+		new SnapshotOptions().Scrub(Scrubbers.Guids).Scrub(
+			new Regex(@"""timestamp"":\d{13}", RegexOptions.None, RegexTimeouts.MatchTimeout),
+			"\"timestamp\":{now}"
+		);
 }
 
 public class AgentBuilderStreamTransformerTests
@@ -89,7 +93,7 @@ public class AgentBuilderStreamTransformerTests
 
 			""";
 
-		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData), writable: false);
 
 		// Act - No generated ID (Agent Builder handles IDs in stream)
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
@@ -137,7 +141,7 @@ public class AgentBuilderStreamTransformerTests
 
 			""";
 
-		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData), writable: false);
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
@@ -167,7 +171,7 @@ public class AgentBuilderStreamTransformerTests
 
 			""";
 
-		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData), writable: false);
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
@@ -218,7 +222,7 @@ public class LlmGatewayStreamTransformerTests
 
 			""";
 
-		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData), writable: false);
 
 		// Act - Simulate new conversation to get ConversationStart event
 		var testConversationId = Guid.NewGuid().ToString();
@@ -267,7 +271,7 @@ public class LlmGatewayStreamTransformerTests
 
 			""";
 
-		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData), writable: false);
 
 		// Act - Simulate new conversation
 		var testConversationId = Guid.NewGuid().ToString();
@@ -299,7 +303,7 @@ public class LlmGatewayStreamTransformerTests
 
 			""";
 
-		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData), writable: false);
 
 		// Act - Simulate new conversation
 		var testConversationId = Guid.NewGuid().ToString();
@@ -362,12 +366,14 @@ public class StreamTransformerCommonBehaviorTests
 	[MethodDataSource(nameof(StreamTransformerTestCases))]
 	public async Task NewConversationEmitsConversationStart(string transformerName, IStreamTransformer transformer, string sseData)
 	{
-		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData), writable: false);
 		var testConversationId = Guid.NewGuid().ToString();
 
 		var outputStream = await transformer.TransformAsync(inputStream, Guid.Parse(testConversationId), null, CancellationToken.None);
 		var output = await StreamTransformerTestHelpers.ReadSseAsync(outputStream);
 
-		output.Should().MatchSnapshot(name: transformerName, options: StreamTransformerTestHelpers.Scrub());
+		var options = StreamTransformerTestHelpers.Scrub();
+		options.NameReplacesArguments = true;
+		output.Should().MatchSnapshot(name: transformerName, options: options);
 	}
 }

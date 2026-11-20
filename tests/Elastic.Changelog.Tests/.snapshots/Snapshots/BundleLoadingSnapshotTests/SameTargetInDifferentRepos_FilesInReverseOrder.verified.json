@@ -1,0 +1,143 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "example-repo-b",
+        "owner": "elastic",
+        "filePath": "/docs/releases/b-elasticsearch-9.3.0.yaml",
+        "description": "Second description",
+        "releaseDate": "2025-01-03",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo-b",
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From b"
+        ],
+        "entries": [
+          "Feature: From b prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "example-repo-a",
+        "owner": "elastic",
+        "filePath": "/docs/releases/a-kibana-9.3.0.yaml",
+        "description": "First description",
+        "releaseDate": "2025-01-02",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "kibana",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo-a",
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From a"
+        ],
+        "entries": [
+          "Feature: From a prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "example-repo-b",
+        "owner": "elastic",
+        "filePath": "b-elasticsearch-9.3.0.yaml",
+        "description": "Second description",
+        "releaseDate": "2025-01-03",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo-b",
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From b"
+        ],
+        "entries": [
+          "Feature: From b prs=[] subtype="
+        ]
+      },
+      {
+        "version": "9.3.0",
+        "repo": "example-repo-a",
+        "owner": "elastic",
+        "filePath": "a-kibana-9.3.0.yaml",
+        "description": "First description",
+        "releaseDate": "2025-01-02",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "kibana",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo-a",
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From a"
+        ],
+        "entries": [
+          "Feature: From a prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.3.0",
+        "repo": "example-repo-a+example-repo-b",
+        "owner": "elastic",
+        "filePath": "/docs/releases/b-elasticsearch-9.3.0.yaml",
+        "description": "Second description\n\nFirst description",
+        "releaseDate": "2025-01-03",
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [
+          {
+            "ProductId": "elasticsearch",
+            "Target": "9.3.0",
+            "Lifecycle": null,
+            "Repo": "example-repo-b",
+            "Owner": null
+          }
+        ],
+        "rawEntryFiles": [
+          "From b"
+        ],
+        "entries": [
+          "Feature: From b prs=[] subtype=",
+          "Feature: From a prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

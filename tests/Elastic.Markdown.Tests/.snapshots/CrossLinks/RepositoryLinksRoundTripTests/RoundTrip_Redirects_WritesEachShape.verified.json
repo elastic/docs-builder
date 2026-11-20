@@ -1,0 +1,81 @@
+{
+  "origin": {
+    "branch": "main",
+    "remote": "https://github.com/example-org/example-repo",
+    "ref": "0123456789abcdef0123456789abcdef01234567",
+    "name": "unavailable",
+    "github_ref": null
+  },
+  "url_path_prefix": "/elastic/example-repo/tree/main",
+  "links": {
+    "index.md": {
+      "anchors": []
+    },
+    "new.md": {
+      "anchors": []
+    }
+  },
+  "cross_links": [],
+  "redirects": {
+    "to-only.md": {
+      "to": "new.md"
+    },
+    "to-with-anchors.md": {
+      "anchors": {
+        "old": "new",
+        "dropped": null
+      },
+      "to": "new.md"
+    },
+    "catch-all.md": {
+      "anchors": {
+        "!": "!"
+      },
+      "to": "new.md"
+    },
+    "empty-anchors.md": {
+      "anchors": {},
+      "to": "new.md"
+    },
+    "many.md": {
+      "many": [
+        {
+          "anchors": {
+            "a": "a"
+          },
+          "to": "a.md"
+        },
+        {
+          "to": "b.md"
+        },
+        {
+          "anchors": {
+            "c": null
+          }
+        }
+      ],
+      "to": "new.md"
+    },
+    "many-only.md": {
+      "many": [
+        {
+          "anchors": {
+            "!": "!"
+          },
+          "to": "a.md"
+        }
+      ]
+    },
+    "empty-many.md": {
+      "many": [],
+      "to": "new.md"
+    },
+    "empty-to.md": {
+      "to": ""
+    },
+    "null-to.md": {},
+    "cross-repo.md": {
+      "to": "other-repo://page.md"
+    }
+  }
+}

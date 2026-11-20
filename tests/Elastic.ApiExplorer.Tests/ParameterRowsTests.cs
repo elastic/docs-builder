@@ -66,7 +66,11 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	public void Write_HeaderParameters_HaveTheirOwnSection()
 	{
 		var context = RenderContext(DocsGet);
-		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+		var markdown = OperationCommonMark.Write(
+			DocsGet.Model,
+			OperationPageModel.Create(DocsGet.Model, context),
+			context
+		).ReplaceLineEndings("\n");
 
 		markdown.Should().Contain(
 			"""
@@ -97,7 +101,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		var required = page.QueryParameters with { Items = [page.QueryParameters.Items[0] with { IsRequired = true }] };
 		var markdown = new System.Text.StringBuilder();
 
-		ApiPropertyMarkdown.WriteList(markdown, required, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, required, "/api/fixture");
 
 		page
 			.ParameterSections
@@ -150,7 +154,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		html.Should().MatchHtmlSnapshot();
 		RequiredStatusRegex().Matches(html).Should().ContainSingle("only the parameter every route needs reads required");
 		var markdown = new System.Text.StringBuilder();
-		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
+		ApiPropertyMarkdown.WriteList(markdown, list, "/api/fixture");
 		markdown
 			.ToString()
 			.Should()
@@ -216,7 +220,11 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	public void Write_PathParameters_SitBeforeTheDescriptionOneLevelDeeper()
 	{
 		var context = RenderContext(DocsGet);
-		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+		var markdown = OperationCommonMark.Write(
+			DocsGet.Model,
+			OperationPageModel.Create(DocsGet.Model, context),
+			context
+		).ReplaceLineEndings("\n");
 
 		markdown.Should().MatchRegex("#### Path parameters\\s+- `index` \\(.*\\) — required");
 		markdown
@@ -243,7 +251,11 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	public void Write_ReferencedMapParameter_ListsMapValues()
 	{
 		var context = RenderContext(DocsGet);
-		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+		var markdown = OperationCommonMark.Write(
+			DocsGet.Model,
+			OperationPageModel.Create(DocsGet.Model, context),
+			context
+		).ReplaceLineEndings("\n");
 
 		markdown.Should().Contain(
 			"""
@@ -334,6 +346,9 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		return fs.File.ReadAllText("/out.html");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("required type-status")]
+	[System.Text.RegularExpressions.GeneratedRegex("required type-status", System.Text.RegularExpressions.RegexOptions.None, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex RequiredStatusRegex();
 }

@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Text.Json;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
-using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
@@ -26,27 +23,24 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("check_{resource}_coherence"), Description("Checks how coherently a topic is covered across all {docs}. "
 		+ "Use when reviewing documentation quality, auditing coverage of a feature or concept, "
 		+ "or checking whether a topic is documented consistently across products and sections.")]
-	public async Task<string> CheckCoherence(
+	public Task<string> CheckCoherence(
 		[Description("Topic or concept to check coherence for")] string topic,
 		[Description("Maximum number of documents to analyze (default: 20)")] int limit = 20,
 		CancellationToken cancellationToken = default
-	)
-	{
-		var toolName = McpToolTelemetry.ResolveToolName("check_{resource}_coherence");
-		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(
-			activity,
-			new Dictionary<string, object?> { ["topic"] = topic, ["limit"] = limit }
-		);
-		McpToolTelemetry.LogStart(logger, toolName, payload);
-		var duration = Stopwatch.StartNew();
-		var outcome = "failure";
-
-		try
+	) =>
+		McpToolRunner.RunAsync(logger, "check_{resource}_coherence", new Dictionary<string, object?>
 		{
-			limit = Math.Clamp(limit, 5, 50);
-
-			var request = new FullSearchRequest { Query = topic, PageNumber = 1, PageSize = limit, IncludeHighlighting = false };
+			["topic"] = topic,
+			["limit"] = limit
+		}, async () =>
+		{
+			var request = new FullSearchRequest
+			{
+				Query = topic,
+				PageNumber = 1,
+				PageSize = Math.Clamp(limit, 5, 50),
+				IncludeHighlighting = false
+			};
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
 
@@ -90,29 +84,8 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 					)
 					.ToList()
 			};
-
-			McpToolTelemetry.MarkSuccess(activity);
-			outcome = "success";
-			return JsonSerializer.Serialize(response, McpJsonContext.Default.CoherenceCheckResponse);
-		}
-		catch (OperationCanceledException)
-		{
-			McpToolTelemetry.MarkCancelled(activity);
-			outcome = "cancelled";
-			throw;
-		}
-		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
-		{
-			McpToolTelemetry.MarkFailure(activity, ex);
-			logger.LogError(ex, "CheckCoherence failed for topic '{Topic}'", topic);
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
-		}
-		finally
-		{
-			duration.Stop();
-			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
-		}
-	}
+			return ToolSucceeded.Serialize(response, McpJsonContext.Default.CoherenceCheckResponse);
+		});
 
 	/// <summary>
 	/// Finds potential inconsistencies in documentation for a given topic.
@@ -120,23 +93,16 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("find_{resource}_inconsistencies"), Description("Finds potential inconsistencies across {docs} pages covering the same topic. "
 		+ "Use when auditing docs quality, verifying that instructions don't contradict each other, "
 		+ "or checking for overlapping content within a product area.")]
-	public async Task<string> FindInconsistencies(
+	public Task<string> FindInconsistencies(
 		[Description("Topic or concept to check for inconsistencies")] string topic,
 		[Description("Specific area to focus on (e.g., 'installation', 'configuration')")] string? focusArea = null,
 		CancellationToken cancellationToken = default
-	)
-	{
-		var toolName = McpToolTelemetry.ResolveToolName("find_{resource}_inconsistencies");
-		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(
-			activity,
-			new Dictionary<string, object?> { ["topic"] = topic, ["focusArea"] = focusArea }
-		);
-		McpToolTelemetry.LogStart(logger, toolName, payload);
-		var duration = Stopwatch.StartNew();
-		var outcome = "failure";
-
-		try
+	) =>
+		McpToolRunner.RunAsync(logger, "find_{resource}_inconsistencies", new Dictionary<string, object?>
+		{
+			["topic"] = topic,
+			["focusArea"] = focusArea
+		}, async () =>
 		{
 			var query = focusArea != null ? $"{topic} {focusArea}" : topic;
 
@@ -202,29 +168,8 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 				PotentialInconsistencies = potentialOverlaps.Take(10).ToList(),
 				ProductBreakdown = byProduct.ToDictionary(g => g.Key, g => g.Value.Count)
 			};
-
-			McpToolTelemetry.MarkSuccess(activity);
-			outcome = "success";
-			return JsonSerializer.Serialize(response, McpJsonContext.Default.InconsistenciesResponse);
-		}
-		catch (OperationCanceledException)
-		{
-			McpToolTelemetry.MarkCancelled(activity);
-			outcome = "cancelled";
-			throw;
-		}
-		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
-		{
-			McpToolTelemetry.MarkFailure(activity, ex);
-			logger.LogError(ex, "FindInconsistencies failed for topic '{Topic}' with focus area '{FocusArea}'", topic, focusArea);
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
-		}
-		finally
-		{
-			duration.Stop();
-			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
-		}
-	}
+			return ToolSucceeded.Serialize(response, McpJsonContext.Default.InconsistenciesResponse);
+		});
 
 	private static double CalculateCoverageScore(int totalDocs, int sectionCount, int productCount)
 	{

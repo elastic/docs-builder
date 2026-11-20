@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Elastic.Documentation;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -107,6 +108,6 @@ public partial class FieldDirectionTests
 		return BuilderFor(document).BuildPropertyList(document.Components!.Schemas![schemaName], scope)!.Items;
 	}
 
-	[GeneratedRegex("\\bid=\"([^\"]*)\"")]
+	[GeneratedRegex("\\bid=\"([^\"]*)\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ElementIdRegex();
 }

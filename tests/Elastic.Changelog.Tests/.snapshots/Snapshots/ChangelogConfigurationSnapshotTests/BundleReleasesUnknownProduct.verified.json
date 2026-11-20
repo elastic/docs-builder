@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml bundle.releases.products key 'example-missing-product' is not in products.yml. Available products: cloud-hosted, cloud-serverless, elasticsearch, kibana, security"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml Type 'feature' has subtypes defined, but subtypes are only allowed for 'breaking-change' type."
+  ]
+}

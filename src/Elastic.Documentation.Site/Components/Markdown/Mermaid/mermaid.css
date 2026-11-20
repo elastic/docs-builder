@@ -78,25 +78,26 @@
 }
 
 .mermaid-modal {
-	position: fixed;
-	inset: 0;
-	z-index: var(--z-modal);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: color-mix(in oklab, var(--color-emphasis) 60%, transparent);
-}
-
-.mermaid-modal-content {
-	position: relative;
-	display: flex;
-	flex-direction: column;
 	width: 95vw;
 	height: 95vh;
+	max-width: none;
+	max-height: none;
+	margin: auto;
+	padding: 0;
 	overflow: hidden;
+	border: 0;
 	border-radius: var(--radius-lg);
 	background: var(--color-surface);
 	box-shadow: var(--shadow-overlay);
+}
+
+.mermaid-modal[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.mermaid-modal::backdrop {
+	background: color-mix(in oklab, var(--color-emphasis) 60%, transparent);
 }
 
 .mermaid-modal-close {

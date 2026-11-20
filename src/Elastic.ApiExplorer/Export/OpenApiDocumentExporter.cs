@@ -28,10 +28,10 @@ namespace Elastic.ApiExplorer.Export;
 /// </summary>
 public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
 {
-	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationListIntroRegex();
 
-	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase)]
+	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>
@@ -52,8 +52,11 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				if (!seenKeys.Add(api.Key))
 					continue;
 
-				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker))!;
-				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToIndexedDocuments), defaultTree))
+				var defaultTree = api.First().Routes.DefaultMoniker!;
+				var apiTrees = api.ToArray();
+				var pages = await Task.WhenAll(apiTrees.Select(t => generator.PageContentsAsync(t, ctx))).ConfigureAwait(false);
+				var renderings = apiTrees.SelectMany((t, i) => DatedByPage(t, ConvertToIndexedDocuments(t), pages[i]));
+				foreach (var doc in ApiTreeCollapse.Collapse(renderings, defaultTree))
 					yield return doc;
 			}
 		}
@@ -64,13 +67,59 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 		[ConvertToLandingDocument(tree), .. ConvertToDocuments(tree)];
 
 	/// <summary>
+	/// Dates the documents of one tree by the pages they stand for. A search document of a page takes the page's content hash,
+	/// and every other page gets a hidden sitemap-only document, so each page in the sitemap has one document with a content date.
+	/// </summary>
+	internal static IEnumerable<DocumentationDocument> DatedByPage(
+		IndexedTree tree,
+		IEnumerable<DocumentationDocument> searchDocuments,
+		IReadOnlyList<ApiPageContent> pages
+	)
+	{
+		var uncovered = pages.ToDictionary(static p => p.Url, StringComparer.Ordinal);
+		foreach (var doc in searchDocuments)
+		{
+			if (uncovered.Remove(doc.Path, out var page))
+				doc.ContentBodyHash = page.ContentHash;
+			yield return doc;
+		}
+
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
+		foreach (var page in uncovered.Values)
+		{
+			yield return new DocumentationDocument
+			{
+				ContentType = "api",
+				Path = page.Url,
+				Title = page.Title,
+				SearchTitle = page.Title,
+				Body = "",
+				Headings = [],
+				Links = [],
+				Hidden = true,
+				ContentBodyHash = page.ContentHash,
+				Api = new ApiOperationMetadata
+				{
+					Key = tree.ApiKey,
+					Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
+					Endpoints = [],
+					Method = "",
+					Path = "",
+					OperationId = "",
+					SitemapOnly = true
+				}
+			};
+		}
+	}
+
+	/// <summary>
 	/// Converts one version tree of an API to one document per operation, with URLs into that tree. The API key builds
 	/// URLs and labels; the product id drives product metadata.
 	/// </summary>
 	public IEnumerable<DocumentationDocument> ConvertToDocuments(IndexedTree tree)
 	{
-		var (product, productId, moniker, openApiDocument) = tree;
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(product, moniker));
+		var (product, productId, moniker, openApiDocument) = (tree.ApiKey, tree.ProductId, tree.Moniker, tree.Document);
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
 		var tagMetadata = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
@@ -180,7 +229,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Deprecated = apiOperation.Deprecated,
 					Words = ApiSearchWords.Of(operationId, path.Key),
 					Group = groupParent?.Title ?? "",
-					IdWords = ApiSearchWords.OfOperationId(operationId).Length
+					IdWords = ApiSearchWords.OfOperationId(operationId).Length,
+					TitleFingerprint = title
 				};
 
 				yield return new DocumentationDocument
@@ -209,7 +259,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// </summary>
 	public DocumentationDocument ConvertToLandingDocument(IndexedTree tree)
 	{
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(tree.ApiKey, tree.Moniker));
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
 		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
 		// The title the landing page renders as its heading, so a reader who types the name on the page finds it.
 		var label = tree.Document.Info?.Title is { Length: > 0 } specTitle ? specTitle.Trim() : ProductApiLabel(tree.ApiKey);

@@ -1,0 +1,13 @@
+{
+  "deletion_threshold_default": null,
+  "exclude_patterns": [],
+  "remote_listing_completed": false,
+  "total_source_files": 0,
+  "total_remote_files": 0,
+  "total_sync_requests": 0,
+  "delete": [],
+  "add": [],
+  "update": [],
+  "skip": [],
+  "retain": []
+}

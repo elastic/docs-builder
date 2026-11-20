@@ -21,8 +21,6 @@ public class CheckoutsFileSystem : ScopedFileSystem, ICheckoutsFileSystem
 {
 	private static readonly FileSystem Physical = new();
 
-	private readonly IFileSystem _inner;
-
 	public CheckoutsFileSystem(
 		IDirectoryInfo root,
 		IDirectoryInfo? output = null,
@@ -30,8 +28,8 @@ public class CheckoutsFileSystem : ScopedFileSystem, ICheckoutsFileSystem
 		IEnumerable<string>? extraRoots = null
 	) : base(inner ?? Physical, BuildReadOptions(root, extraRoots))
 	{
-		_inner = inner ?? Physical;
-		Write = new DocumentationWriteFileSystem(root, output, _inner);
+		InnerFileSystem = inner ?? Physical;
+		Write = new DocumentationWriteFileSystem(root, output, InnerFileSystem);
 	}
 
 	/// <summary>
@@ -39,6 +37,9 @@ public class CheckoutsFileSystem : ScopedFileSystem, ICheckoutsFileSystem
 	/// instance directly — a slot that wants a read scope should say so, symmetrically with <c>.Write</c>.
 	/// </summary>
 	public CheckoutsFileSystem Read => this;
+
+	/// <summary>The unscoped file system this scope wraps: the physical one unless a test supplied another.</summary>
+	public IFileSystem InnerFileSystem { get; }
 
 	/// <summary>Write scope for this checkout tree.</summary>
 	public DocumentationWriteFileSystem Write { get; }

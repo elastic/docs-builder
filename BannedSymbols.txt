@@ -1,0 +1,9 @@
+T:Nullean.Entities.Constraints`1;Declare a rule in a *Constraints class in Elastic.Documentation, not in loader, service or tooling code
+T:Nullean.Entities.Relation;Declare a rule in a *Constraints class in Elastic.Documentation, not in loader, service or tooling code
+T:Nullean.Entities.Tree;Declare a rule in a *Constraints class in Elastic.Documentation, not in loader, service or tooling code
+T:Nullean.Entities.ConstraintSet;Rule sets are composed in Elastic.Documentation; a type has one static T.Constraints
+M:Nullean.Entities.ConstraintSet`1.Report(`0,System.TimeProvider);Check through a Loader (Loader.For) or a record operation (T.Constraints.Apply), never by hand: a second check is a second report
+M:Nullean.Entities.ConstraintSet`1.Validate(`0,System.TimeProvider);Check through a Loader (Loader.For) or a record operation (T.Constraints.Apply), never by hand: a second check is a second report
+M:Nullean.Entities.ConstraintSet`1.Validated(`0,System.TimeProvider);Check through a Loader (Loader.For) or a record operation (T.Constraints.Apply), never by hand: a second check is a second report
+M:Nullean.Entities.ConstraintSet`1.Ensure(`0,System.TimeProvider);Check through a Loader (Loader.For) or a record operation (T.Constraints.Apply), never by hand: a second check is a second report
+M:Nullean.Entities.ConstraintSet`1.Check(`0,`0,System.TimeProvider);Check through a Loader (Loader.For) or a record operation (T.Constraints.Apply), never by hand: a second check is a second report

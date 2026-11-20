@@ -1,0 +1,68 @@
+{
+  "fromFolder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.9.9",
+        "repo": "elastic",
+        "owner": "elastic",
+        "filePath": "/docs/releases/9.9.9.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [],
+        "rawEntryFiles": [
+          "No products"
+        ],
+        "entries": [
+          "Feature: No products prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "fromContentInGivenOrder": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.9.9",
+        "repo": "elastic",
+        "owner": "elastic",
+        "filePath": "9.9.9.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [],
+        "rawEntryFiles": [
+          "No products"
+        ],
+        "entries": [
+          "Feature: No products prs=[] subtype="
+        ]
+      }
+    ]
+  },
+  "mergedByTarget": {
+    "warnings": [],
+    "bundles": [
+      {
+        "version": "9.9.9",
+        "repo": "elastic",
+        "owner": "elastic",
+        "filePath": "/docs/releases/9.9.9.yaml",
+        "description": null,
+        "releaseDate": null,
+        "gitRef": null,
+        "hideFeatures": [],
+        "products": [],
+        "rawEntryFiles": [
+          "No products"
+        ],
+        "entries": [
+          "Feature: No products prs=[] subtype="
+        ]
+      }
+    ]
+  }
+}

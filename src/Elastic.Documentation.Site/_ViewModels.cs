@@ -144,6 +144,16 @@ public record GlobalLayoutViewModel
 	/// </summary>
 	public string? NavigationActiveUrl { get; init; }
 
+	/// <summary>
+	/// The docs-builder version that rendered this page, without the <c>+sha</c> suffix, on the landing page of an assembler build;
+	/// otherwise <c>null</c>. A deploy monitor waits for it to show that the deploy is live and its cache cleared. Only the landing page
+	/// carries it: a value in every page would change every page's bytes on each version, and the S3 sync would upload them all.
+	/// </summary>
+	public string? DeployedBuild =>
+		BuildType == BuildType.Assembler && CurrentNavigationItem.Url.TrimEnd('/') == (UrlPathPrefix ?? string.Empty).TrimEnd('/')
+			? BuildContext.Version.Split('+')[0]
+			: null;
+
 	// Header properties for isolated mode
 	public string? HeaderTitle { get; init; }
 	public string? HeaderVersion { get; init; }
@@ -153,8 +163,16 @@ public record GlobalLayoutViewModel
 	public string? GitHubDocsUrl { get; init; }
 	/// <summary>Full ref from GitHub Actions (e.g. refs/pull/123/merge). Set when built in a pull request workflow.</summary>
 	public string? GitHubRef { get; init; }
-	public string? CanonicalUrl =>
-		CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
+	/// <summary>The canonical URL. A page whose canonical is not itself, such as an API page that repeats another, sets it.</summary>
+	public string? CanonicalUrl
+	{
+		get =>
+			field ?? (CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null);
+		init;
+	}
+
+	/// <summary>The robots meta value. A page that is indexable only in part, such as an unreleased API page, sets it.</summary>
+	public string Robots { get => field ?? (AllowIndexing ? "index, follow" : "noindex, nofollow"); init; }
 
 	public required FeatureFlags Features { get; init; }
 	// TODO move to @inject
@@ -172,6 +190,19 @@ public record GlobalLayoutViewModel
 	public string FaviconStaticPath => Static(EnvironmentFavicon.FileName(BuildType, EnvironmentName));
 
 	public string PageFeedbackSurface { get; init; } = "docs";
+
+	/// <summary>Page feedback runs when its flag is on, the site is not air-gapped and the build type has the feedback API behind it.</summary>
+	public bool ShowPageFeedback
+	{
+		get
+		{
+			var supportedBuildType = BuildType is BuildType.Assembler or BuildType.Codex;
+#if DEBUG
+			supportedBuildType |= BuildType is BuildType.Isolated;
+#endif
+			return Features.PageFeedbackEnabled && !Features.AirGappedEnabled && supportedBuildType;
+		}
+	}
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 

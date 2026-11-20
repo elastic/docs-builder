@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Nullean.Snapshots;
@@ -26,7 +27,19 @@ internal static partial class SnapshotScrubbing
 		// a test folder in the temp directory is usually named after a fresh Guid; that name is not part of what is verified
 		SnapshotDefaults.AddScrubber(Under(Path.GetTempPath(), "{temp}", RandomName()));
 		SnapshotDefaults.AddScrubber(ContentHash);
+		SnapshotDefaults.AddScrubber(text => PrivateRepositoryNames.Value?.Invoke(text) ?? text);
 	}
+
+	// per test (async flow), so one test's names do not rename another test's output and the numbering does not depend on test order
+	private static readonly AsyncLocal<Func<string, string>?> PrivateRepositoryNames = new();
+
+	/// <summary>
+	/// For the rest of the calling test, writes the given repository names as <c>private-repo_1</c>, <c>private-repo_2</c>, ... in
+	/// every snapshot, numbered by first appearance. Pass the names a loaded configuration marks <c>private</c>, so a
+	/// snapshot never records one, however the input named it. Names already written as a placeholder are left alone.
+	/// </summary>
+	internal static void AddPrivateRepositories(IEnumerable<string> names) =>
+		PrivateRepositoryNames.Value = PrivateRepositoryScrubbing.Scrub(names);
 
 	/// <summary>
 	/// Replaces <paramref name="root"/> with <paramref name="token"/> and writes the path that follows it with
@@ -39,7 +52,11 @@ internal static partial class SnapshotScrubbing
 		var forward = root.Replace('\\', '/');
 		var withoutDrive = DriveLetter().Replace(forward, string.Empty);
 		var roots = new[] { root, forward, withoutDrive }.Where(r => r.Length > 1).Distinct().Select(Regex.Escape);
-		var pattern = new Regex($"(?:{string.Join('|', roots)})(?<rest>[^\\s\"'<>:*?|]*)", RegexOptions.Compiled);
+		var pattern = new Regex(
+			$"(?:{string.Join('|', roots)})(?<rest>[^\\s\"'<>:*?|]*)",
+			RegexOptions.Compiled,
+			RegexTimeouts.MatchTimeout
+		);
 		return text => pattern.Replace(text, m =>
 		{
 			var rest = m.Groups["rest"].Value.Replace('\\', '/');
@@ -47,11 +64,11 @@ internal static partial class SnapshotScrubbing
 		});
 	}
 
-	[GeneratedRegex("^[A-Za-z]:")]
+	[GeneratedRegex("^[A-Za-z]:", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex DriveLetter();
 
 	/// <summary>A run of 32 hex digits: a <c>Guid.ToString("N")</c> used as a folder name.</summary>
-	[GeneratedRegex("[0-9a-fA-F]{32}")]
+	[GeneratedRegex("[0-9a-fA-F]{32}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex RandomName();
 
 	/// <summary>
@@ -60,7 +77,7 @@ internal static partial class SnapshotScrubbing
 	/// </summary>
 	internal static string ContentHash(string text) => AssetHash().Replace(text, "{hash}");
 
-	[GeneratedRegex("(?<=\\?v=)[0-9a-f]{16}")]
+	[GeneratedRegex("(?<=\\?v=)[0-9a-f]{16}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AssetHash();
 
 	private static string? FindSolutionRoot()

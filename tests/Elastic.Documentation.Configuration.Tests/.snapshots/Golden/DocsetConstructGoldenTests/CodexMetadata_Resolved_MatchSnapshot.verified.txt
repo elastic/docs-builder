@@ -1,0 +1,41 @@
+diagnostics:
+toc:
+IndexFileRef  index.md
+model:
+model <DocumentationSetFile>:
+  Project: "codex-member"
+  TableOfContents:
+    - <IndexFileRef>:
+      PathRelativeToDocumentationSet: "index.md"
+      PathRelativeToContainer: "index.md"
+      Hidden: False
+      Children: []
+      Context: "/docs/docset.yml"
+      DefaultCta: null
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex <CodexDocSetMetadata>:
+    Group: "platform"
+  Branding: null
+  Storybook: null
+  Cta: {}
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}

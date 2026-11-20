@@ -104,7 +104,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
 
       - name: Generated tasks are listed
         run: |
@@ -133,7 +133,7 @@ jobs:
 
       # The nullean/curb action always runs the moving `edge` image, so call the release image by digest instead.
       - name: Lint
-        uses: docker://ghcr.io/nullean/curb@sha256:fd955b3a58d7ba79f5d03f425166d137ef333dea6226a651b23f894dfac8e370 # 0.9.0
+        uses: docker://ghcr.io/nullean/curb@sha256:c390ed126d0b8aa39a1085317e91f59b96a1b1ae1ef05605238192995376ef1e # 0.15.1
         with:
           args: check .
 
