@@ -187,6 +187,36 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task CatalogEntry_NewestMajorFailsToLoad_LinksToATreeThatRendered()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			missingVersionsAreUnreadable: true,
+			("main", SpecDocument("Elasticsearch main")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var apiConfig = ApiConfig(product);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
+
+		entry.Should().NotBeNull();
+		entry!
+			.Url
+			.Should()
+			.Be("/api/elasticsearch/next", "nothing renders at /api/elasticsearch, so the card opens the first tree that did");
+	}
+
+	[Test]
 	public async Task CatalogEntry_VersionlessProduct_KeepsTheUnversionedUrl()
 	{
 		var collector = new DiagnosticsCollector([]);

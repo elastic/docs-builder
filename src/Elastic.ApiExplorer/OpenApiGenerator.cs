@@ -385,7 +385,8 @@ public class OpenApiGenerator(
 
 		var canonical = CanonicalDocument(resolved);
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
-		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix);
+		// The versionless URL when the default version rendered, else the tree that did, so the card never links to a page nothing wrote.
+		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, resolved.Routes.Suffix(canonical.Version.Moniker));
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
 		{
 			CatalogCategories = apiConfig.CatalogCategories
