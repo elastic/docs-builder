@@ -12,6 +12,8 @@ public class ApiLegacyRedirectsTests
 	[Test]
 	// A page the edge redirects to another page.
 	[Arguments("/docs/api/doc/elasticsearch/servers", "/docs/api/elasticsearch")]
+	// A bump.sh topic page that a children: page replaces.
+	[Arguments("/docs/api/doc/kibana/v9/topic/topic-kibana-spaces", "/docs/api/kibana/v9/spaces")]
 	// A renamed root keeps the rest of the path.
 	[Arguments("/docs/api/doc/serverless/operation/operation-x", "/docs/api/kibana-serverless/operation/operation-x")]
 	// Any other legacy path is the same page without /doc.
