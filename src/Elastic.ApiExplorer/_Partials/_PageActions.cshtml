@@ -1,14 +1,6 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiPageActionsModel>
-@* Copy page with a menu of the page's Markdown and the spec download. A page with no Markdown export gets the download alone.
+@* Copy page with a menu of the page's Markdown and the spec download.
    The menu is a popover (top layer), placed beside the chevron by floating.ts. *@
-@if (Model.MarkdownUrl is null)
-{
-	if (Model.Spec is not null)
-	{
-		@await RenderPartialAsync(_SpecDownloadActions.Create(Model.Spec))
-	}
-	return;
-}
 <div class="api-page-actions" role="group" aria-label="Page actions">
 	<div class="api-page-actions-split">
 		<button type="button" class="api-page-actions-button" data-copy-page="@Model.MarkdownUrl">

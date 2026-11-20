@@ -961,7 +961,8 @@ public class OpenApiGenerator(
 	)
 	{
 		var markdown = await page.RenderCommonMarkAsync(renderContext, pageModel, ctx).ConfigureAwait(false);
-		if (string.IsNullOrEmpty(markdown))
+		// An empty authored page still gets its export, which its Copy page links to.
+		if (markdown is null)
 			return;
 
 		markdown = ApiMarkdownFrontMatter.Wrap(markdown, current, renderContext, page);

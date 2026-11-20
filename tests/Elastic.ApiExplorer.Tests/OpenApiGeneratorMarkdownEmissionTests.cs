@@ -166,6 +166,25 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Generate_EmptyAuthoredPage_StillWritesTheExportItsCopyPageLinksTo()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-empty-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot, emptyPage: "empty-guide.md");
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "empty-guide.md")).Should().BeTrue();
+	}
+
+	[Test]
 	public async Task Generate_CollapsedOperations_RedirectFormerUrls()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-redirect-{Guid.NewGuid():N}");
@@ -207,7 +226,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		}
 		""";
 
-	private static BuildContext CreateGenerateContext(string outputRoot)
+	private static BuildContext CreateGenerateContext(string outputRoot, string? emptyPage = null)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -223,6 +242,11 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
+		if (emptyPage is not null)
+		{
+			docsetYaml += $"\n      children:\n        - file: {emptyPage}\n";
+			fs.AddFile(Path.Join(repoRoot, "docs", "api", "elasticsearch", emptyPage), new MockFileData(string.Empty));
+		}
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
 		var products = new ProductsConfiguration
 		{

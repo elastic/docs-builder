@@ -317,16 +317,6 @@
 	border-radius: 0 7px 7px 0;
 }
 
-/* No Copy page beside it, so the button is the whole control. */
-.api-page-actions-chevron--labeled {
-	width: auto;
-	gap: 8px;
-	padding: 0 12px;
-	border-left: 0;
-	border-radius: 7px;
-	white-space: nowrap;
-}
-
 .api-page-actions-button:hover,
 .api-page-actions-chevron:hover {
 	background: #f6f9fc;
@@ -357,16 +347,6 @@
 
 .api-page-actions-chevron[aria-expanded='true'] .api-page-actions-chevron-icon {
 	transform: rotate(180deg);
-}
-
-/* Without the Popover API (floating.css hides the menu) the download-only page has nothing else on it, so its links show inline in place of the button. */
-@supports not selector(:popover-open) {
-	.api-page-actions--download-only .api-page-actions-split {
-		display: none;
-	}
-	.api-page-actions--download-only .api-page-actions-menu {
-		display: block;
-	}
 }
 
 /* A popover placed beside the chevron by floating.ts (floating.css). */
