@@ -33,6 +33,8 @@ namespace Elastic.Documentation.Build.Tests;
 /// The default tests serve a small version index and spec from memory. The live variant fetches the real
 /// index and the Elasticsearch spec from CloudFront and renders every version, so it only runs when asked for.
 /// </summary>
+// The API steps read the assembler-api-explorer flag, whose FEATURE_* variable the feature flag tests set process-wide
+[NotInParallel(nameof(FeatureFlagsTests))]
 public class AssemblerOpenApiBuildStepIntegrationTests
 {
 	private static void InitializeGitCheckout(IFileSystem fileSystem, string checkoutRoot)
