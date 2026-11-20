@@ -190,29 +190,11 @@ public class AssemblerBuildService(
 			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
 
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
-			// Production sitemap with correct content_last_updated dates is generated via
-			// `assembler sitemap` after ES indexing, which overwrites this file.
+			// `assembler sitemap` after ES indexing rewrites the narrative pages with content_last_updated dates
+			// and keeps the API pages listed here.
 			var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(n => n.Url).Distinct();
 			var now = DateTimeOffset.UtcNow;
-			var entries = urls.ToDictionary(u => u, _ => now);
-
-			if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
-				collector.EmitGlobalWarning(
-					$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
-						"Consider implementing sitemap index files."
-				);
-
-			var sitemapResult = SitemapBuilder.Generate(
-				entries,
-				assembleContext.WriteFileSystem,
-				assembleContext.OutputWithPathPrefixDirectory
-			);
-
-			if (sitemapResult.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
-				collector.EmitGlobalWarning(
-					$"Sitemap file size is {sitemapResult.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
-						"Consider implementing sitemap index files."
-				);
+			_ = SitemapBuilder.Generate(urls.ToDictionary(u => u, _ => now), SitemapOutput.For(assembleContext), collector);
 		}
 
 		if (exporters.Contains(Exporter.LLMText))

@@ -82,8 +82,11 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 
 	public string Url => Index.Url;
 
-	/// <summary>True for a version tree that is not the current one, so the sitemap and first-level walks skip it.</summary>
+	/// <summary>True for a version tree that is not the current one, so navigation and first-level walks skip it.</summary>
 	public bool Hidden { get; set; }
+
+	/// <summary>Whether the sitemap lists the pages of this tree. The page type of the tree decides it, not <see cref="Hidden"/>.</summary>
+	public bool InSitemap { get; set; } = true;
 
 	public Uri Identifier { get; } = new Uri("todo://");
 

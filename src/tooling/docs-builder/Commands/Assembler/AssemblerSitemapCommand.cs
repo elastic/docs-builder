@@ -31,6 +31,12 @@ internal sealed class AssemblerSitemapCommand(
 	/// Run this command after <c>assembler index</c> to overwrite it with precise last-modified dates
 	/// sourced from the search index.
 	/// </para>
+	/// <para>
+	/// <c>sitemap.xml</c> is a sitemap index over <c>sitemap-docs.xml</c> and, where the API Explorer is enabled,
+	/// <c>sitemap-api.xml</c>. This command rewrites the narrative pages and keeps the API pages that
+	/// <c>assembler build</c> listed, so run it in the same output folder as the build. Upload every
+	/// <c>sitemap*.xml</c> file.
+	/// </para>
 	/// </remarks>
 	/// <param name="environment">Named deployment target; used to resolve the correct Elasticsearch index.</param>
 	[CommandName("sitemap")]
