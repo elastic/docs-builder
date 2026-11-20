@@ -111,8 +111,8 @@ public class FloatingLinkTests
 	[Arguments("9", "api/elasticsearch/v9/operation/operation-search", "api/doc/elasticsearch/v9/operation/operation-search")]
 	[Arguments("8", "api/elasticsearch/v8/operation/operation-search", "api/doc/elasticsearch/v8/operation/operation-search")]
 	[Arguments("main", "api/elasticsearch/next/operation/operation-search", "api/doc/elasticsearch/operation/operation-search")]
-	[Arguments("", "api/elasticsearch/operation/operation-search", "api/doc/elasticsearch/operation/operation-search")]
-	public void TryResolveNumberedPage_NamedVersion_KeepsItsNumberedPathAndMainReachesTheLegacyRoot(
+	[Arguments("", "api/elasticsearch/v9/operation/operation-search", "api/doc/elasticsearch/v9/operation/operation-search")]
+	public void TryResolveNumberedPage_AnyVersion_KeepsItsNumberedPathAndMainReachesTheLegacyRoot(
 		string version,
 		string numbered,
 		string legacy
@@ -137,7 +137,7 @@ public class FloatingLinkTests
 	[Test]
 	[Arguments("elasticsearch://api/elasticsearch/9/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search")]
 	[Arguments("elasticsearch://api/elasticsearch/main/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search")]
-	[Arguments("elasticsearch://api/elasticsearch/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search")]
+	[Arguments("elasticsearch://api/elasticsearch/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search")]
 	public void CrossLink_OnTheLegacyHost_LandsWhereBumpShServesTheVersion(string crossLink, string expected)
 	{
 		var (resolved, url, error) = Resolve(crossLink, Versioned);
