@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.Documentation.Links;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -14,6 +15,13 @@ public class ApiUrlBuilderTests
 	[Arguments("", "elasticsearch/v9", "/api/elasticsearch/v9")]
 	public void ProductRoot_UsesVersionAwareSuffix(string urlPathPrefix, string apiUrlSuffix, string expected) =>
 		ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix).Should().Be(expected);
+
+	[Test]
+	public void NextSegment_IsTheSegmentTheLegacyHostMapsBackToTheApiRoot() =>
+		ApiLegacyRedirects
+			.ToLegacy($"api/elasticsearch/{ApiUrlBuilder.NextSegment}/operation/x")
+			.Should()
+			.Be("api/doc/elasticsearch/operation/x");
 
 	[Test]
 	[Arguments("", "cloud-connect", "/api/cloud-connect/authentication")]

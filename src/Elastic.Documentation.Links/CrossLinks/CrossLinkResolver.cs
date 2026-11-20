@@ -186,10 +186,14 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		(string SectionKey, FloatingLinkSection Section, string? Version, string Page) match
 	)
 	{
-		if (!match.Section.TryResolvePage(match.Version, match.Page, out var sitePath))
+		var legacy = uriResolver.LegacyApiUrls;
+		var resolved = legacy
+			? match.Section.TryResolveNumberedPage(match.Version, match.Page, out var sitePath)
+			: match.Section.TryResolvePage(match.Version, match.Page, out sitePath);
+		if (!resolved)
 			return new LinkFloatingPageNotFound(match.Page, match.SectionKey, match.Version);
 
-		if (uriResolver.LegacyApiUrls)
+		if (legacy)
 			sitePath = ApiLegacyRedirects.ToLegacy(sitePath);
 		return new LinkResolved(uriResolver.ResolveSitePath(crossLinkUri, sitePath + crossLinkUri.Fragment));
 	}

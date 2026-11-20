@@ -60,6 +60,9 @@ public class ApiLinkMatcherTests
 	[Arguments("/api/kibana", "/api/kibana", "/api/doc/kibana")]
 	[Arguments("api/", "api/", "api/")]
 	[Arguments("guide/api/kibana", "guide/api/kibana", "guide/api/kibana")]
+	[Arguments("api/kibana/next", "api/kibana/next", "api/doc/kibana")]
+	[Arguments("/docs/api/kibana/next/operation/x", "/docs/api/kibana/next/operation/x", "/docs/api/doc/kibana/operation/x")]
+	[Arguments("api/kibana/nextgen/operation/x", "api/kibana/nextgen/operation/x", "api/doc/kibana/nextgen/operation/x")]
 	public void ToCanonicalAndToLegacy_SitePath_SwapOnlyTheApiPrefix(string sitePath, string canonical, string legacy)
 	{
 		ApiLegacyRedirects.ToCanonical(sitePath).Should().Be(canonical);

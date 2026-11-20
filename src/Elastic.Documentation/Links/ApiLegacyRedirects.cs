@@ -99,12 +99,31 @@ public static class ApiLegacyRedirects
 		return at < 0 ? sitePath : string.Concat(sitePath.AsSpan(0, at + ApiSegment.Length), sitePath.AsSpan(at + LegacySegment.Length));
 	}
 
-	/// <summary>The legacy form of an API site path, for links to a host that still proxies bump.sh.</summary>
+	/// <summary>
+	/// The legacy form of an API site path, for links to a host that still proxies bump.sh. bump.sh serves the unreleased
+	/// build at the root of the API, so <c>api/{key}/next</c> becomes <c>api/doc/{key}</c>.
+	/// </summary>
 	public static string ToLegacy(string sitePath)
 	{
 		var canonical = ToCanonical(sitePath);
 		var at = ApiSegmentIndex(canonical, ApiSegment);
-		return at < 0 ? canonical : canonical.Insert(at + ApiSegment.Length, LegacySegment[ApiSegment.Length..]);
+		if (at < 0)
+			return canonical;
+
+		var keyStart = at + ApiSegment.Length;
+		return WithoutUnreleasedSegment(canonical, keyStart).Insert(keyStart, LegacySegment[ApiSegment.Length..]);
+	}
+
+	/// <summary>Drops the segment after the API key that the API Explorer gives the unreleased build. Keep it equal to <c>ApiUrlBuilder.NextSegment</c>.</summary>
+	private static string WithoutUnreleasedSegment(string canonical, int keyStart)
+	{
+		const string next = "/next";
+		var keyEnd = canonical.IndexOf('/', keyStart);
+		if (keyEnd < 0 || !canonical.AsSpan(keyEnd).StartsWith(next, StringComparison.Ordinal))
+			return canonical;
+
+		var end = keyEnd + next.Length;
+		return end == canonical.Length || canonical[end] == '/' ? canonical.Remove(keyEnd, next.Length) : canonical;
 	}
 
 	// The segment starts the path or follows /docs/, and something after it names an API.

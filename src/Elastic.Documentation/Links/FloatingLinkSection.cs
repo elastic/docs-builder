@@ -127,7 +127,18 @@ public record FloatingLinkSection
 	/// when <paramref name="version"/> is <c>null</c>, and returns its path from the site root.
 	/// A path that is not a page of that version, directly or through an alias, does not resolve.
 	/// </summary>
-	public bool TryResolvePage(string? version, string page, out string sitePath)
+	public bool TryResolvePage(string? version, string page, out string sitePath) =>
+		TryResolvePage(version, page, mirrorOfNamedVersion: false, out sitePath);
+
+	/// <summary>
+	/// Like <see cref="TryResolvePage(string?, string, out string)"/>, for a host that serves the numbered URLs of the
+	/// versions: a version that is named in the link resolves under its mirror root when it has one, so a link to the
+	/// newest major keeps its <c>/vN</c> path. A link that names no version still resolves under the root of the current version.
+	/// </summary>
+	public bool TryResolveNumberedPage(string? version, string page, out string sitePath) =>
+		TryResolvePage(version, page, mirrorOfNamedVersion: true, out sitePath);
+
+	private bool TryResolvePage(string? version, string page, bool mirrorOfNamedVersion, out string sitePath)
 	{
 		sitePath = string.Empty;
 		var bit = version is null ? CurrentBit : VersionBits.GetValueOrDefault(version, -1);
@@ -147,7 +158,7 @@ public record FloatingLinkSection
 			page = canonical;
 		}
 
-		var root = Versions[bit].Root;
+		var root = mirrorOfNamedVersion && version is not null ? Versions[bit].MirrorRoot ?? Versions[bit].Root : Versions[bit].Root;
 		sitePath = page.Length == 0 ? root : $"{root}/{page}";
 		return true;
 	}
