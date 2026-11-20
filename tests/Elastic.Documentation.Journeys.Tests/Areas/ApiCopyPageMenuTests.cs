@@ -195,6 +195,45 @@ public class ApiCopyPageMenuTests(JourneyTarget target)
 			);
 	}
 
+	[Test]
+	public async Task CopyPage_KeepsALongCrumbOffTheButtonOnDesktop()
+	{
+		var lines = new List<string>();
+		await WithPageAsync(async page =>
+		{
+			// A crumb is a flex item whose minimum width is its longest word. Without overflow-wrap a word wider than the
+			// trail runs under Copy page, so the last crumb gets one that no trail on 1024px can hold.
+			foreach (var width in new[] { 1024, 1280 })
+			{
+				await page.SetViewportAsync(width, 900, 1).ConfigureAwait(false);
+				await Task.Delay(500).ConfigureAwait(false);
+				var clear = await page.EvaluateAsync(
+					"""
+					(() => {
+						const crumbs = [...document.querySelectorAll('#breadcrumbs li')];
+						crumbs[crumbs.length - 1].querySelector('span, a').textContent = 'Supercalifragilisticexpialidocious_operations_collection_name';
+						const button = document.querySelector('.api-page-toolbar .api-page-actions').getBoundingClientRect();
+						return crumbs.every(li => li.getBoundingClientRect().right <= button.left);
+					})()
+					"""
+				).ConfigureAwait(false);
+				lines.Add(
+					string.Create(CultureInfo.InvariantCulture, $"{width}px: every crumb ends before Copy page {clear.GetBoolean()}")
+				);
+			}
+		}).ConfigureAwait(false);
+
+		_ = string
+			.Join('\n', lines)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			1024px: every crumb ends before Copy page True
+			1280px: every crumb ends before Copy page True
+			"""
+			);
+	}
+
 	private async Task WithPageAsync(Func<Page, Task> body)
 	{
 		if (target.Name != "isolated")

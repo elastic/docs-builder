@@ -222,6 +222,11 @@
 		padding-top: 0;
 	}
 
+	/* A flex item's minimum width is its longest word, so min-width: 0 on the trail alone lets a long label run under Copy page. */
+	.api-page-main .api-page-toolbar #breadcrumbs li {
+		overflow-wrap: anywhere;
+	}
+
 	.api-page-main .api-page-toolbar .api-page-actions {
 		margin-left: auto;
 	}
