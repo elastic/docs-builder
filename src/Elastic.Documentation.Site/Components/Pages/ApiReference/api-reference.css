@@ -251,9 +251,12 @@
 }
 
 /* A Console-like ledger: the method in its own column so the verbs line up, then the title, then the route. The column fits a joined chip (POST | GET). */
+/* Wide enough for a joined two-method chip (POST | GET) in either root font size. A row with more methods grows its column to fit them,
+   so a long chip never runs into the title; the common rows stay aligned. */
 .api-group-row {
+	--api-group-method-column: minmax(8.75rem, max-content);
 	display: grid;
-	grid-template-columns: 8.25rem minmax(0, 1fr) 16px;
+	grid-template-columns: var(--api-group-method-column) minmax(0, 1fr) 16px;
 	grid-template-areas:
 		'method title chevron'
 		'. routes chevron';
@@ -522,7 +525,9 @@
 	}
 
 	.api-group-row {
-		grid-template-columns: 8.25rem minmax(12rem, 1fr) minmax(0, 1.6fr) 16px;
+		grid-template-columns:
+			var(--api-group-method-column) minmax(12rem, 1fr)
+			minmax(0, 1.6fr) 16px;
 		grid-template-areas: 'method title routes chevron';
 	}
 }
