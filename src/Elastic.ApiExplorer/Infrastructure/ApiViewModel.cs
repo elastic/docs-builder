@@ -74,7 +74,8 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		field ??= ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
 
 	/// <summary>The line under the title of an older or unreleased version, or null on the newest major.</summary>
-	public ApiVersionNotice? VersionNotice => ApiVersionNotices.For(RenderContext.PageType, PageVersions);
+	public ApiVersionNotice? VersionNotice =>
+		ApiVersionNotices.For(RenderContext.PageType, RenderContext.Moniker, RenderContext.DefaultMoniker, PageVersions);
 
 	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
 

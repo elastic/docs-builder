@@ -57,6 +57,12 @@ public record ApiRenderContext(
 	/// <summary>What the tree being rendered is for search engines. The catalog and other previews count as versionless.</summary>
 	public ApiPageType PageType { get; init; } = ApiPageType.Versionless;
 
+	/// <summary>The version of the tree being rendered: <c>main</c> or a numeric major. Null on the catalog and other previews.</summary>
+	public string? Moniker { get; init; }
+
+	/// <summary>The newest version the API declares, whether or not its tree rendered. The versionless URL belongs to it.</summary>
+	public string? DefaultMoniker { get; init; }
+
 	/// <summary>The root of the versionless tree, set on the numbered copy of the newest major so its pages name the versionless pages as canonical.</summary>
 	public string? VersionlessRootUrl { get; init; }
 

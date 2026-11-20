@@ -179,6 +179,8 @@ public static class ApiStyleGuidePreviews
 			SiteTopNav = PreviewNavigation.TopNav,
 			VersionSwitcherItems = versions,
 			PageType = pageType,
+			Moniker = selected,
+			DefaultMoniker = "9",
 			CurrentApiKey = "lorem"
 		};
 
