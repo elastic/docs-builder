@@ -40,7 +40,7 @@ public sealed class ApiUrlModel
 	/// <summary>Every page in <c>links.json</c>, under its root and its mirror root, plus the API hub.</summary>
 	public IReadOnlyList<ExpectedApiPage> Pages { get; }
 
-	/// <param name="prefix">The path the docs live under, with a leading slash and no trailing one, such as <c>/docs</c>.</param>
+	/// <param name="prefix">The path the docs live under, with a leading slash and no trailing one, such as <c>/docs</c>, or empty for a site served at its root.</param>
 	public static ApiUrlModel Create(RepositoryLinks links, string prefix = "/docs")
 	{
 		var hub = new ApiTree(string.Empty, $"{prefix}/api", $"{prefix}/api", ApiPageType.Versionless);

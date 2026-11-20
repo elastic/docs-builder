@@ -27,6 +27,12 @@ public sealed record ApiCrawlOptions(Uri Site, string SitePrefix, string? LinksJ
 	public int RedirectStatus { get; init; } = 302;
 	public int RedirectSample { get; init; } = 50;
 	public int Concurrency { get; init; } = 16;
+
+	/// <summary>
+	/// <see cref="SitePrefix"/> as a path to put before <c>/api</c>: <c>/docs</c>, or empty for a site served at its root, so no
+	/// path starts with <c>//</c>, which a URI reads as a host.
+	/// </summary>
+	public string PathPrefix => SitePrefix.Trim('/') is { Length: > 0 } trimmed ? "/" + trimmed : string.Empty;
 }
 
 /// <summary>
@@ -54,7 +60,7 @@ public sealed class ApiCrawlService(
 	public async Task<bool> CrawlAsync(IDiagnosticsCollector collector, ApiCrawlOptions options, Cancel ctx)
 	{
 		using var client = new ApiCrawlClient(options.Site, handler);
-		var prefix = "/" + options.SitePrefix.Trim('/');
+		var prefix = options.PathPrefix;
 		var indexPath = $"{prefix}/{SitemapBuilder.IndexFileName}";
 		var apiPath = $"{prefix}/{SitemapBuilder.ApiFileName}";
 
