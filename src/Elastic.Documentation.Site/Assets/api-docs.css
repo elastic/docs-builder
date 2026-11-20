@@ -4551,15 +4551,6 @@ html:has(.api-page-shell) {
 	opacity: 1;
 }
 
-/* Pinned, the bar is a layer the page scrolls under: a soft shadow below it says so. In the page it has its rule only. */
-.api-section-links {
-	transition: box-shadow 120ms ease;
-}
-
-.api-section-links[data-pinned] {
-	box-shadow: 0 6px 12px -6px rgb(17 28 44 / 0.16);
-}
-
 .api-section-links-title a {
 	min-width: 0;
 	overflow: hidden;
@@ -4674,7 +4665,6 @@ html:has(.api-page-shell) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.api-section-links,
 	.api-section-links-track a,
 	.api-section-links-title {
 		transition: none;
