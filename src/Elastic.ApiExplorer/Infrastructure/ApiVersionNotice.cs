@@ -25,7 +25,8 @@ public static class ApiVersionNotices
 {
 	/// <summary>
 	/// The notice of a page, or null when the page is the newest major, its numbered copy, or has no version.
-	/// <paramref name="latestMoniker"/> is the newest major the API declares. A tree that failed to load has no switcher item,
+	/// <paramref name="latestMoniker"/> is the version the API serves at the versionless URL. Only a numeric major counts as a released
+	/// version to link to, so an API with no numeric major has no link. A tree that failed to load has no switcher item,
 	/// so the notice keeps the page's own version and drops the link, and never names an older major as the latest.
 	/// <paramref name="pageItems"/> are the switcher items already pointed at the current page by <see cref="ApiVersionSwitcher.ForPage"/>.
 	/// </summary>
@@ -39,7 +40,9 @@ public static class ApiVersionNotices
 		if (type is ApiPageType.Versionless or ApiPageType.NewestMajorCopy || moniker is null)
 			return null;
 
-		var item = pageItems.FirstOrDefault(i => i.Moniker == latestMoniker);
+		var item = latestMoniker is not null && ApiVersions.TryParseMajor(latestMoniker) is not null
+			? pageItems.FirstOrDefault(i => i.Moniker == latestMoniker)
+			: null;
 		var latest = item is null ? null : new LatestVersionLink(item.ShortLabel ?? item.Label, item.Url);
 		return type switch
 		{

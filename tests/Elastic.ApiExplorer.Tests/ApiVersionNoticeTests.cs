@@ -83,7 +83,8 @@ public class ApiVersionNoticeTests
 			"\n",
 			$"v9 failed, v8: {Notice(["main", "8"], "8", "elasticsearch/v8", ApiPageType.OlderMajor, "/api/elasticsearch/v8/operation/operation-ping", declared)}",
 			$"v9 failed, next: {Notice(["main", "8"], "main", "elasticsearch/next", ApiPageType.Unreleased, "/api/elasticsearch/next/operation/operation-ping", declared)}",
-			$"only v8 rendered: {Notice(["8"], "8", "elasticsearch/v8", ApiPageType.OlderMajor, "/api/elasticsearch/v8/operation/operation-ping", declared)}"
+			$"only v8 rendered: {Notice(["8"], "8", "elasticsearch/v8", ApiPageType.OlderMajor, "/api/elasticsearch/v8/operation/operation-ping", declared)}",
+			$"no released major: {Notice(["main", "beta"], "beta", "elasticsearch/vbeta", ApiPageType.OlderMajor, "/api/elasticsearch/vbeta/operation/operation-ping")}"
 		);
 
 		notices.Should().MatchInlineSnapshot(
@@ -91,6 +92,7 @@ public class ApiVersionNoticeTests
 			v9 failed, v8: OlderMajorNotice { Latest = , Version = 8 }
 			v9 failed, next: UnreleasedNotice { Latest =  }
 			only v8 rendered: OlderMajorNotice { Latest = , Version = 8 }
+			no released major: OlderMajorNotice { Latest = , Version = beta }
 			"""
 		);
 	}
