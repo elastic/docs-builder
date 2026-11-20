@@ -4,6 +4,7 @@
 import { initApiDocs } from '../api-docs'
 import { initAppliesSwitch } from '../applies-switch'
 import { initCopyButton } from '../copybutton'
+import { initFloating } from '../floating'
 import { initHighlight, preloadHighlight } from '../hljs'
 import { initMath } from '../math'
 import { initMermaid } from '../mermaid'
@@ -17,6 +18,7 @@ import { bindModalEscape } from '../runtime/modal-escape'
 import { initTelemetry } from '../runtime/telemetry'
 import { initSmoothScroll } from '../smooth-scroll'
 import { initTable } from '../table'
+import { initTooltips } from '../tooltip'
 import { initCodeLines } from './code-lines'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -62,4 +64,6 @@ document.addEventListener('htmx:load', function () {
 bindCtaClicks()
 initPrivacyConsent()
 bindModalEscape()
+initFloating()
+initTooltips()
 bindHtmxHooks()

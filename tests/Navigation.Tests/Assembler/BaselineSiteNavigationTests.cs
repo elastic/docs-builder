@@ -84,8 +84,8 @@ public class BaselineSiteNavigationTests
 				[
 					"  SectionNavigation  /docs/api  \"APIs\" [island]",
 					"    index: SectionIndexLeaf  /docs/api  \"APIs\"",
-					"    DemoRoot  /api/doc/demo  \"Demo API\" [island]",
-					"      index: DemoLandingLeaf  /api/doc/demo  \"Demo API\""
+					"    DemoRoot  /api/demo  \"Demo API\" [island]",
+					"      index: DemoLandingLeaf  /api/demo  \"Demo API\""
 				],
 				o => o.WithStrictOrdering()
 			);

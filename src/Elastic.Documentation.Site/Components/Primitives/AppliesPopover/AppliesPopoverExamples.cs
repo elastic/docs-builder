@@ -25,7 +25,7 @@ public static class AppliesPopoverExamples
 
 	public static ComponentSection Popovers { get; } = new(
 		"Applies to with details",
-		"The real applies-to badge. With details it opens a panel from a native details element, so it works without JavaScript and without ids; without details it is a static badge.",
+		"The real applies-to badge. With details its button opens a panel in a popover beside it; without script the panel shows while the button has focus. Without details it is a static badge.",
 		"applies-popover",
 		[
 			ComponentExample.Of(

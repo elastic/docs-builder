@@ -52,7 +52,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				if (!seenKeys.Add(api.Key))
 					continue;
 
-				var defaultTree = ApiVersions.DefaultTree(api.Select(static t => t.Moniker))!;
+				var defaultTree = api.First().Routes.DefaultMoniker!;
 				foreach (var doc in ApiTreeCollapse.Collapse(api.SelectMany(ConvertToIndexedDocuments), defaultTree))
 					yield return doc;
 			}
@@ -69,8 +69,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// </summary>
 	public IEnumerable<DocumentationDocument> ConvertToDocuments(IndexedTree tree)
 	{
-		var (product, productId, moniker, openApiDocument) = tree;
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(product, moniker));
+		var (product, productId, moniker, openApiDocument) = (tree.ApiKey, tree.ProductId, tree.Moniker, tree.Document);
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
 		var tagMetadata = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
@@ -210,7 +210,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// </summary>
 	public DocumentationDocument ConvertToLandingDocument(IndexedTree tree)
 	{
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(tree.ApiKey, tree.Moniker));
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
 		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
 		// The title the landing page renders as its heading, so a reader who types the name on the page finds it.
 		var label = tree.Document.Info?.Title is { Length: > 0 } specTitle ? specTitle.Trim() : ProductApiLabel(tree.ApiKey);

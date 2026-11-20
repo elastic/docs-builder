@@ -56,7 +56,7 @@ internal static class ApiMarkdownFrontMatter
 		return new(
 			title,
 			ResolveDescription(page, context, body),
-			CanonicalUrl(context, current),
+			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
 			page is ApiLanding ? CollectFacts(context) : null
 		);
@@ -128,9 +128,6 @@ internal static class ApiMarkdownFrontMatter
 	// Mirrors OkfMarkdownExporter.YamlScalar; Elastic.ApiExplorer cannot reference Elastic.Markdown.
 	private static string YamlScalar(string value) =>
 		$"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t")}\"";
-
-	private static string CanonicalUrl(ApiRenderContext context, INavigationItem current) =>
-		UrlPath.MakeAbsolute(context.BuildContext.CanonicalBaseUrl, current.Url.TrimEnd('/'))?.TrimEnd('/') ?? current.Url.TrimEnd('/');
 
 	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body)
 	{

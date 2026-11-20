@@ -17,9 +17,11 @@
 		<tr><td>Buttons</td><td>One <code>.btn</code> base. The boards defined it three times with small differences.</td></tr>
 		<tr><td>Focus ring</td><td>One token, <code>--color-focus-ring</code>: blue on light surfaces, teal on dark. The boards disagreed.</td></tr>
 		<tr><td>Motion</td><td>One easing for the interface. Springs are limited to selection indicators. Reduced motion keeps small colour, focus and fade feedback and drops large movement and flashing.</td></tr>
-		<tr><td>Native elements</td><td>Menus, drawers, tabs, search, lightboxes and the fullscreen table use <code>details</code>, radios, checkboxes and <code>dialog</code>. Script only adds what those cannot do.</td></tr>
+		<tr><td>Native elements</td><td>Drawers, tabs, search, lightboxes and the fullscreen table use <code>details</code>, radios, checkboxes and <code>dialog</code>. Script only adds what those cannot do.</td></tr>
+		<tr><td>Menus</td><td>Every menu and popover is one pattern: a <code>button popovertarget</code> and a <code>[popover]</code> panel. The browser opens it in the top layer, so no ancestor clips it, and closes it on Escape and a click outside. <code>floating.ts</code> places it beside its button, flipping and shifting it to stay on screen. <code>data-placement</code> picks the side, <code>data-anchor</code> another anchor, and <code>data-hover</code> also opens it on mouse hover. Choosing a link closes it, and so does a page swap.</td></tr>
 		<tr><td>Breakpoints</td><td>The boards used six widths between 760 and 1180. Everything uses three: 1100 (the rail drops above the content), 860 (the tree becomes a drawer, as the Responsive board shows) and 760 (grids become one column), plus container queries where a component answers to its own space. A test fails on any other width.</td></tr>
 		<tr><td>Archive page</td><td>The animated easter egg that flashed the screen was dropped, because flashing colour conflicts with the motion policy.</td></tr>
+		<tr><td>Tooltips</td><td>One tooltip for the whole site: any element with <code>data-tooltip</code> shows it on hover, keyboard focus and a touch hold. It is a manual popover placed by the same Floating UI code as the menus, so it shows above an open dialog and never closes an open menu. <code>data-tooltip-delay="slow"</code> waits longer for lists the mouse crosses, and <code>data-tooltip-theme="mono"</code> is for JSON paths. Without the Popover API, tooltips do not show.</td></tr>
 		</tbody>
 	</table>
 </section>
@@ -55,7 +57,7 @@
 		<tr><td>elastic.co masthead (assembler)</td><td>The company header above the docs bar is fetched from elastic.co and keeps its own light styling, also in dark mode.</td></tr>
 		<tr><td>Cookie and consent banner</td><td>Comes from a third-party script and keeps its own look.</td></tr>
 		<tr><td>Print styles</td><td>Only the table controls are hidden when printing.</td></tr>
-		<tr><td>Older browsers</td><td>The bundle targets Chrome and Edge 111, Firefox 113 and Safari 16.2. Colour roles don't use <code>light-dark()</code>. <code>:has()</code>, container queries and popovers enhance the page where they exist and fall back to a simpler layout elsewhere.</td></tr>
+		<tr><td>Older browsers</td><td>The bundle targets Chrome and Edge 111, Firefox 113 and Safari 16.2. Colour roles don't use <code>light-dark()</code>. <code>:has()</code> and container queries enhance the page where they exist and fall back to a simpler layout elsewhere. Menus need the Popover API (Safari 17): without it a menu stays closed, the link menu shows its links inline and the applies-to panel shows while its badge has focus.</td></tr>
 		</tbody>
 	</table>
 </section>

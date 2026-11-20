@@ -12,31 +12,30 @@ using Nullean.Snapshots;
 namespace Elastic.Documentation.Journeys.Tests.Areas;
 
 /// <summary>
-/// An operation page opens with a strip of its sections, and a toolbar with the same links takes over once the strip has
-/// scrolled away. The toolbar hangs from a zero-height sticky wrapper under the strip, so whether it shows, and where it
-/// sits, only real layout can tell: a unit test that supplies the offsets would pass even if the wrapper lost
-/// <c>position: sticky</c>. The Cloud Connect spec renders in under a second.
+/// An operation page has a row of links to its sections above the description, and the row stays under the page header
+/// as the reader scrolls. Whether it sticks, and where, only real layout can tell: a unit test that supplies the offsets
+/// would pass even if the row lost <c>position: sticky</c>. The Cloud Connect spec renders in under a second.
 /// </summary>
 [ClassDataSource<JourneyTarget>(Shared = SharedType.PerTestSession)]
 [NotInParallel]
 public class ApiSectionToolbarTests(JourneyTarget target)
 {
-	private const string Operation = "api/doc/cloud-connect/operation/operation-patchcluster";
-	private static readonly int[] int32Array = new[] { 200, 60, 40 };
+	private const string Operation = "api/cloud-connect/operation/operation-patchcluster";
+	private static readonly int[] int32Array = new[] { 200, 60, 20 };
 
 	[Test]
-	public async Task ScrollingPastTheStrip_ShowsTheToolbarAtOnceAndKeepsItPinned()
+	public async Task ScrollingThePage_PinsTheSectionLinksUnderTheHeader()
 	{
 		var report = string.Empty;
 		await WithPageAsync(string.Empty, async page =>
 		{
 			var lines = new List<string> { $"at rest: {await DescribeAsync(page).ConfigureAwait(false)}" };
 
-			// The strip's bottom edge, in pixels below the top of the window: the header is about 48px, so 60 is still behind it.
+			// Where the row's top would be without sticking, in pixels below the top of the window. It pins at the header's bottom edge.
 			foreach (var edge in int32Array)
 			{
-				await ScrollStripBottomToAsync(page, edge).ConfigureAwait(false);
-				lines.Add($"strip bottom at {edge}px: {await DescribeAsync(page).ConfigureAwait(false)}");
+				await ScrollBarTopToAsync(page, edge).ConfigureAwait(false);
+				lines.Add($"row top at {edge}px: {await DescribeAsync(page).ConfigureAwait(false)}");
 			}
 
 			_ = await page.EvaluateAsync("document.getElementById('responses').scrollIntoView(); true").ConfigureAwait(false);
@@ -46,24 +45,22 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 
 		_ = report.Should().MatchInlineSnapshot(
 			"""
-			at rest: strip on screen True, toolbar visible False, at the pinned offset False, current section none
-			strip bottom at 200px: strip on screen True, toolbar visible False, at the pinned offset False, current section none
-			strip bottom at 60px: strip on screen True, toolbar visible False, at the pinned offset False, current section none
-			strip bottom at 40px: strip on screen False, toolbar visible True, at the pinned offset True, current section none
-			at the last section: strip on screen False, toolbar visible True, at the pinned offset True, current section Responses
+			at rest: visible True, pinned False, current section Overview
+			row top at 200px: visible True, pinned False, current section Overview
+			row top at 60px: visible True, pinned True, current section Overview
+			row top at 20px: visible True, pinned True, current section Overview
+			at the last section: visible True, pinned True, current section Responses
 			"""
 		);
 	}
 
 	[Test]
-	public async Task OpeningASectionFragment_ShowsTheToolbarWithThatSectionCurrent()
+	public async Task OpeningASectionFragment_PinsTheSectionLinksWithThatSectionCurrent()
 	{
 		var report = string.Empty;
 		await WithPageAsync("#responses", async page => report = await DescribeAsync(page).ConfigureAwait(false)).ConfigureAwait(false);
 
-		_ = report.Should().MatchInlineSnapshot(
-			"strip on screen False, toolbar visible True, at the pinned offset True, current section Responses"
-		);
+		_ = report.Should().MatchInlineSnapshot("visible True, pinned True, current section Responses");
 	}
 
 	[Test]
@@ -122,23 +119,188 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 		);
 	}
 
-	// The toolbar's state after a scroll settles: the transition takes 150ms and the scroll handler runs on a frame.
+	[Test]
+	public async Task PageShorterThanTheWindow_OpensWithOverviewCurrentAndExpandAllHidden()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			// A window far taller than the page. The layout still overflows it (the site header, the banner and the footer
+			// surround a min-height of the window), so the page is never "at its bottom" at the top and the scroll-spy does
+			// not jump to the last section.
+			await page.SetViewportAsync(1280, 6000, 1).ConfigureAwait(false);
+			await Task.Delay(800).ConfigureAwait(false);
+
+			var state = await page.EvaluateAsync(
+				"""
+				(() => {
+					const bar = document.querySelector('.api-section-links');
+					return {
+						current: [...bar.querySelectorAll('[aria-current]')].map(a => a.textContent.trim()).join(',') || 'none',
+						expandAll: getComputedStyle(bar.querySelector('.api-expand-toggle')).visibility,
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"current section {state.GetProperty("current").GetString()}, row Expand all {state.GetProperty("expandAll").GetString()}"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot("current section Overview, row Expand all hidden");
+	}
+
+	[Test]
+	public async Task OpeningASupplementalHeadingFragment_StopsItBelowTheRow()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			// The Cloud Connect spec has no supplemental sections, so add one as the page renders it: a plain
+			// h2.section-header after the operation's own sections, with room below it to scroll to its margin.
+			_ = await page.EvaluateAsync(
+				"""
+				(() => {
+					const section = document.getElementById('elastic-api-v3');
+					const heading = document.createElement('h2');
+					heading.className = 'section-header';
+					heading.id = 'supplemental-guide';
+					heading.innerHTML = '<a class="headerlink" href="#supplemental-guide">Guide</a>';
+					const room = document.createElement('div');
+					room.style.minHeight = '1500px';
+					section.append(heading, room);
+					return true;
+				})()
+				"""
+			).ConfigureAwait(false);
+			_ = await page.EvaluateAsync("location.hash = 'supplemental-guide'; true").ConfigureAwait(false);
+			await Task.Delay(800).ConfigureAwait(false);
+
+			var state = await page.EvaluateAsync(
+				"""
+				(() => {
+					const heading = document.getElementById('supplemental-guide');
+					const bar = document.querySelector('.api-section-links').getBoundingClientRect();
+					const top = heading.getBoundingClientRect().top;
+					const state = {
+						rowOnScreen: bar.bottom > 0 && bar.top < innerHeight,
+						clearOfRow: top >= bar.bottom,
+						atItsScrollMargin: Math.abs(top - parseFloat(getComputedStyle(heading).scrollMarginTop)) < 2,
+					};
+					// Without the class the page has no row, as a single-section operation with supplemental sections does, and
+					// the heading keeps the margin every element has.
+					document.getElementById('elastic-api-v3').classList.remove('api-has-toolbar');
+					state.globalWithoutRow = getComputedStyle(heading).scrollMarginTop === getComputedStyle(document.body).scrollMarginTop;
+					return state;
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"row on screen {state.GetProperty("rowOnScreen").GetBoolean()}, heading clear of the row {state.GetProperty("clearOfRow").GetBoolean()}, " +
+					$"heading at its scroll margin {state.GetProperty("atItsScrollMargin").GetBoolean()}, " +
+					$"global margin without the row {state.GetProperty("globalWithoutRow").GetBoolean()}"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"row on screen True, heading clear of the row True, heading at its scroll margin True, global margin without the row True"
+		);
+	}
+
+	[Test]
+	public async Task LinksThatDoNotFit_ScrollInsideTheRowAndTheLastOneIsReachable()
+	{
+		var report = string.Empty;
+		await WithPageAsync(string.Empty, async page =>
+		{
+			// Too narrow for the links, so the track has to scroll sideways.
+			await page.SetViewportAsync(260, 700, 1).ConfigureAwait(false);
+			await Task.Delay(500).ConfigureAwait(false);
+
+			var before = await page.EvaluateAsync(
+				"""
+				(() => {
+					const track = document.querySelector('.api-section-links-track');
+					// A scrollbar that takes layout room, as on a system without overlay scrollbars. Headless Chrome may draw
+					// none, so where it does not, reserve the same room with padding: the track must stay inside the row either way.
+					if (track.offsetHeight - track.clientHeight === 0) track.style.paddingBottom = '12px';
+					track.scrollIntoView({ block: 'center' });
+					const t = track.getBoundingClientRect();
+					return {
+						overflows: track.scrollWidth > track.clientWidth + 1,
+						scrollLeft: track.scrollLeft,
+						centerX: t.left + t.width / 2,
+						centerY: t.top + t.height / 2,
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+
+			// A sideways wheel over the links, as a trackpad swipe or shift+wheel sends it: a track a reader cannot scroll this
+			// way would pass a test that sets scrollLeft from a script.
+			await page.SendAsync("Input.dispatchMouseEvent", writer =>
+			{
+				writer.WriteString("type", "mouseWheel");
+				writer.WriteNumber("x", before.GetProperty("centerX").GetDouble());
+				writer.WriteNumber("y", before.GetProperty("centerY").GetDouble());
+				writer.WriteNumber("deltaX", 600);
+				writer.WriteNumber("deltaY", 0);
+			}).ConfigureAwait(false);
+			await Task.Delay(500).ConfigureAwait(false);
+
+			var after = await page.EvaluateAsync(
+				"""
+				(() => {
+					const bar = document.querySelector('.api-section-links');
+					const track = bar.querySelector('.api-section-links-track');
+					const links = [...track.querySelectorAll('a')];
+					const last = links[links.length - 1];
+					const row = bar.getBoundingClientRect();
+					const rowBottom = row.bottom - parseFloat(getComputedStyle(bar).borderBottomWidth);
+					const t = track.getBoundingClientRect();
+					const l = last.getBoundingClientRect();
+					// The visible area above the scrollbar: clientHeight leaves out a real scrollbar, and the padding stands in
+					// for one where the browser draws none, so it comes off too.
+					const visibleBottom = t.top + track.clientHeight - parseFloat(getComputedStyle(track).paddingBottom);
+					return {
+						scrollLeft: track.scrollLeft,
+						lastLabel: last.textContent.trim(),
+						lastReachable: l.left >= t.left - 1 && l.right <= t.right + 1,
+						trackInsideRow: t.top >= row.top - 1 && t.bottom <= rowBottom + 1,
+						linksAboveScrollbar: links.every(a => a.getBoundingClientRect().bottom <= visibleBottom + 1),
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"links overflow {before.GetProperty("overflows").GetBoolean()}, wheel scrolled the track {after.GetProperty("scrollLeft").GetDouble() > before.GetProperty("scrollLeft").GetDouble()}, " +
+					$"last link {after.GetProperty("lastLabel").GetString()} reachable {after.GetProperty("lastReachable").GetBoolean()}, " +
+					$"track inside the row {after.GetProperty("trackInsideRow").GetBoolean()}, links above the scrollbar {after.GetProperty("linksAboveScrollbar").GetBoolean()}"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot(
+			"links overflow True, wheel scrolled the track True, last link Responses reachable True, track inside the row True, links above the scrollbar True"
+		);
+	}
+
+	// The row's state after a scroll settles: the scroll-spy runs on a frame.
 	private static async Task<string> DescribeAsync(Page page)
 	{
-		await Task.Delay(500).ConfigureAwait(false);
+		await Task.Delay(300).ConfigureAwait(false);
 		var state = await page.EvaluateAsync(
 			"""
 			(() => {
-				const pin = document.querySelector('[data-section-pin]');
-				const toolbar = document.querySelector('.api-section-links');
-				const strip = document.querySelector('.api-section-strip').getBoundingClientRect();
-				const visible = getComputedStyle(toolbar).visibility === 'visible';
-				const pinnedAt = parseFloat(getComputedStyle(pin).top);
+				const bar = document.querySelector('.api-section-links');
+				const pinnedAt = parseFloat(getComputedStyle(bar).top);
+				const rect = bar.getBoundingClientRect();
 				return {
-					stripOnScreen: strip.bottom > pinnedAt,
-					toolbarVisible: visible,
-					toolbarAtPinnedOffset: visible && Math.abs(toolbar.getBoundingClientRect().top - pinnedAt) < 1,
-					current: [...toolbar.querySelectorAll('[aria-current]')].map(a => a.textContent.trim()).join(',') || 'none',
+					visible: getComputedStyle(bar).visibility === 'visible' && rect.bottom > 0 && rect.top < innerHeight,
+					pinned: Math.abs(rect.top - pinnedAt) < 1,
+					current: [...bar.querySelectorAll('[aria-current]')].map(a => a.textContent.trim()).join(',') || 'none',
 				};
 			})()
 			"""
@@ -146,16 +308,16 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 
 		return string.Create(
 			CultureInfo.InvariantCulture,
-			$"strip on screen {state.GetProperty("stripOnScreen").GetBoolean()}, toolbar visible {state.GetProperty("toolbarVisible").GetBoolean()}, " +
-				$"at the pinned offset {state.GetProperty("toolbarAtPinnedOffset").GetBoolean()}, current section {state.GetProperty("current").GetString()}"
+			$"visible {state.GetProperty("visible").GetBoolean()}, pinned {state.GetProperty("pinned").GetBoolean()}, current section {state.GetProperty("current").GetString()}"
 		);
 	}
 
-	private static async Task ScrollStripBottomToAsync(Page page, int edge) =>
+	// Scrolls so the row's own place in the page, the top of its section plus its top margin, sits at the given edge.
+	private static async Task ScrollBarTopToAsync(Page page, int edge) =>
 		_ = await page.EvaluateAsync(
 			string.Create(
 				CultureInfo.InvariantCulture,
-				$"window.scrollBy(0, document.querySelector('.api-section-strip').getBoundingClientRect().bottom - {edge}); true"
+				$"(() => {{ const bar = document.querySelector('.api-section-links'); const at = document.getElementById('elastic-api-v3').getBoundingClientRect().top + parseFloat(getComputedStyle(bar).marginTop); window.scrollBy(0, at - {edge}); return true; }})()"
 			)
 		).ConfigureAwait(false);
 

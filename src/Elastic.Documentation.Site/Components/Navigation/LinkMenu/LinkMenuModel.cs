@@ -8,6 +8,9 @@ public sealed record LinkMenuItem(string Title, string Url, bool Active = false,
 
 public sealed record LinkMenuModel
 {
+	/// <summary>The id of the menu popover. Unique per menu on the page.</summary>
+	public required string Id { get; init; }
+
 	/// <summary>Names the menu for assistive technology, for example "Version" or "Section".</summary>
 	public required string Label { get; init; }
 

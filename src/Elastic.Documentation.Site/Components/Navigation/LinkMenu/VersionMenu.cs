@@ -38,6 +38,7 @@ public static class VersionMenu
 
 			return new LinkMenuModel
 			{
+				Id = "version-menu",
 				Label = "Version",
 				Current = currentVersion,
 				Items = items,

@@ -1,7 +1,7 @@
 import { syncDocsBar } from './docs-bar'
 
 const bar = (current: string) =>
-    `<nav id="docs-bar"><a href="/a" ${current === 'a' ? 'aria-current="page"' : ''}>A</a><a href="/b" ${current === 'b' ? 'aria-current="page"' : ''}>B</a><details data-menu></details></nav>`
+    `<nav id="docs-bar"><a href="/a" ${current === 'a' ? 'aria-current="page"' : ''}>A</a><a href="/b" ${current === 'b' ? 'aria-current="page"' : ''}>B</a></nav>`
 
 describe('docs bar sync', () => {
     beforeEach(() => {
@@ -20,14 +20,6 @@ describe('docs bar sync', () => {
         expect(document.querySelectorAll('#docs-bar')).toHaveLength(1)
     })
 
-    it('binds the menus of the new bar', () => {
-        syncDocsBar(`<html><body>${bar('b')}</body></html>`)
-
-        expect(
-            document.querySelector('details')?.hasAttribute('data-menu-bound')
-        ).toBe(true)
-    })
-
     it('binds the theme switch of the new bar so its choices apply', () => {
         const withSwitch = `<nav id="docs-bar"><div class="theme-switch"><input type="radio" name="theme" data-pref="theme" value="dark"><input type="radio" name="theme" data-pref="theme" value="light"></div></nav>`
         document.documentElement.removeAttribute('data-theme')
@@ -41,19 +33,6 @@ describe('docs bar sync', () => {
         dark.dispatchEvent(new Event('change'))
 
         expect(document.documentElement.dataset.theme).toBe('dark')
-    })
-
-    it('binds the popovers of the new bar so its menu is shown in the top layer', () => {
-        HTMLElement.prototype.showPopover = function () {}
-        HTMLElement.prototype.hidePopover = function () {}
-        const withMenu = `<nav id="docs-bar"><details data-menu data-popover><summary>Products</summary><div data-popover-panel>Menu</div></details></nav>`
-        syncDocsBar(`<html><body>${withMenu}</body></html>`)
-
-        expect(
-            document
-                .querySelector('[data-popover-panel]')
-                ?.getAttribute('popover')
-        ).toBe('manual')
     })
 
     it('leaves the bar alone when the response has none', () => {

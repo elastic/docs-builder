@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
 using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
@@ -107,8 +109,15 @@ public static class TestHelpers
 	public static OpenApiDocumentExporter CurrentStackExporter() =>
 		new(CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 5, patch: 6));
 
-	/// <summary>One Elasticsearch version tree of <paramref name="spec"/>, for the exporter.</summary>
-	public static IndexedTree EsTree(string moniker, OpenApiDocument spec) => new("elasticsearch", "elasticsearch", moniker, spec);
+	/// <summary>Routes of an Elasticsearch API with <c>main</c>, <c>9</c> and <c>8</c>: 9 at the versionless URL, main at <c>next</c>.</summary>
+	public static ApiVersionRoutes EsRoutes { get; } = ApiVersionRoutes.For("elasticsearch", ["main", "9", "8"]);
+
+	/// <summary>One Elasticsearch version tree of <paramref name="spec"/>, for the exporter, routed as <see cref="EsRoutes"/>.</summary>
+	public static IndexedTree EsTree(string moniker, OpenApiDocument spec) => new(EsRoutes, "elasticsearch", moniker, spec);
+
+	/// <summary>The only tree of an API, served at <c>/api/{apiKey}</c>.</summary>
+	public static IndexedTree Tree(string apiKey, string productId, string moniker, OpenApiDocument spec) =>
+		new(ApiVersionRoutes.For(apiKey, [moniker]), productId, moniker, spec);
 
 	public static VersionsConfiguration CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
 		new()
@@ -146,4 +155,25 @@ public static class TestHelpers
 
 	public static Product CreateProduct(string id, VersioningSystem versioningSystem, string? displayName = null) =>
 		new() { Id = id, DisplayName = displayName ?? id, VersioningSystem = versioningSystem };
+}
+
+/// <summary>
+/// Keeps every diagnostic in memory and writes it synchronously, so a test can snapshot what a build reported. Page trees
+/// render in parallel, so writes go to a concurrent queue.
+/// </summary>
+public sealed class RecordingDiagnosticsCollector() : DiagnosticsCollector([])
+{
+	private readonly ConcurrentQueue<Diagnostic> _diagnostics = new();
+
+	public IReadOnlyList<Diagnostic> Diagnostics => [.. _diagnostics];
+
+	public override void Write(Diagnostic diagnostic)
+	{
+		IncrementSeverityCount(diagnostic);
+		_diagnostics.Enqueue(diagnostic);
+	}
+
+	public override DiagnosticsCollector StartAsync(Cancel ctx) => this;
+
+	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
 }

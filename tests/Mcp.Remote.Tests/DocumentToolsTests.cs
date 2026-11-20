@@ -63,7 +63,7 @@ public class DocumentToolsTests
 	{
 		var gateway = new StubDocumentGateway(new DocumentResult
 		{
-			Url = "/docs/api/doc/logstash/operation/operation-nodestats",
+			Url = "/docs/api/logstash/operation/operation-nodestats",
 			Title = "Get node statistics",
 			Type = "api",
 			Api = new DocumentApi
@@ -78,7 +78,7 @@ public class DocumentToolsTests
 		var tools = new DocumentTools(gateway, NullLogger<DocumentTools>.Instance);
 
 		var json = await tools.GetDocumentByUrl(
-			"/docs/api/doc/logstash/operation/operation-nodestats",
+			"/docs/api/logstash/operation/operation-nodestats",
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 

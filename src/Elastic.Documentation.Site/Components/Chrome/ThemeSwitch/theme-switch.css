@@ -1,9 +1,7 @@
 .theme-switch {
-	position: relative;
 	display: inline-block;
 }
 
-.theme-switch__open,
 .theme-menu__option input {
 	position: absolute;
 	width: 1px;
@@ -35,8 +33,11 @@
 	display: grid;
 	width: 2.125rem;
 	height: 1.875rem;
+	padding: 0;
 	place-items: center;
+	border: 0;
 	border-radius: 7px;
+	background: none;
 	color: var(--color-text-muted);
 	cursor: pointer;
 	transition:
@@ -67,7 +68,7 @@
 	.theme-group__opt[data-v='dark'],
 .theme-switch:has(input[data-v='black']:checked)
 	.theme-group__opt[data-v='dark'],
-.theme-switch:has(.theme-switch__open:checked) .theme-group__opt--cog {
+.theme-group__opt--cog[aria-expanded='true'] {
 	background: linear-gradient(
 		180deg,
 		var(--color-action),
@@ -80,17 +81,16 @@
 	color: var(--color-on-action);
 }
 
-.theme-switch:has(input:focus-visible) .theme-group {
+.theme-group__opt--cog:focus-visible {
 	outline: 3px solid var(--color-focus-ring);
 	outline-offset: 2px;
 }
 
+/* A popover placed under the cog by floating.ts. */
 .theme-menu {
-	position: absolute;
-	z-index: var(--z-overlay);
-	top: calc(100% + 10px);
-	right: 0;
 	width: 18rem;
+	max-height: var(--floating-available-height, none);
+	overflow-y: auto;
 	padding: 6px;
 	border: var(--border-width) solid var(--color-border);
 	border-radius: 10px;
@@ -98,34 +98,7 @@
 	box-shadow:
 		0 12px 28px color-mix(in oklab, var(--color-heading) 14%, transparent),
 		4px 4px 0 var(--color-border);
-	opacity: 0;
-	visibility: hidden;
-	transition:
-		opacity var(--duration-fast) var(--ease-standard),
-		visibility 0s var(--duration-base);
-}
-
-.theme-switch--left .theme-menu {
-	right: auto;
-	left: 0;
-}
-
-.theme-switch__open:checked ~ .theme-menu {
-	opacity: 1;
-	visibility: visible;
-	transition-delay: 0s;
-}
-
-:root[data-motion='full'] .theme-menu {
-	translate: 0 -4px;
-	transition:
-		opacity var(--duration-fast) var(--ease-standard),
-		translate var(--duration-base) var(--ease-standard),
-		visibility 0s var(--duration-base);
-}
-
-:root[data-motion='full'] .theme-switch__open:checked ~ .theme-menu {
-	translate: 0 0;
+	color: var(--color-text);
 }
 
 .theme-menu__group {

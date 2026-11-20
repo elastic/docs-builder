@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Floating;
 
 /// <summary>
 /// Offers one section for each API that a docset declares in its <c>api:</c> block. The key of a section is the one the
-/// API's URL uses: <c>/api/doc/{key}/</c>.
+/// API's URL uses: <c>/api/{key}/</c>.
 /// </summary>
 /// <remarks>
 /// The provider is created before the <see cref="OpenApiGenerator"/> exists, because the docset needs the provider
@@ -62,7 +62,7 @@ internal sealed class ApiFloatingSection(
 
 	public string Key => urlKey;
 
-	public string UrlRoot => $"api/doc/{urlKey}";
+	public string UrlRoot => $"api/{urlKey}";
 
 	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
 		_root = new ApiFloatingRoot(
@@ -100,47 +100,52 @@ internal sealed class ApiFloatingSection(
 			return;
 		}
 
-		// No main document means no page at the unversioned URL, so the root links nowhere.
+		// The versions that rendered keep their link metadata, so cross-links that name them resolve even when the root is hidden.
+		_trees = trees;
+
+		// No tree at the unversioned URL means the root links nowhere.
 		// The generator has already reported why a spec could not be loaded.
-		if (!trees.Resolved.Documents.Any(d => d.Version.Moniker == "main"))
+		if (trees.Trees.FirstOrDefault(t => t.Suffix == urlKey) is not { } versionless)
 		{
 			_root.Hidden = true;
 			return;
 		}
 
-		// Only the main tree is visible. Older versions stay reachable for links but out of the sitemap and first-level walks.
-		// The version trees keep no parent: the API pages render with these trees as their own roots.
-		for (var i = 0; i < trees.Navigations.Count; i++)
-			trees.Navigations[i].Hidden = trees.Resolved.Documents[i].Version.Moniker != "main";
+		// Only the tree at the unversioned URL is visible. The other trees stay reachable for links but out of the sitemap
+		// and first-level walks. The trees keep no parent: the API pages render with these trees as their own roots.
+		foreach (var tree in trees.Trees)
+			tree.Navigation.Hidden = tree != versionless;
 
 		// The catalog titles an API the same way, so the navigation and the API hub agree.
-		var main = trees.Resolved.Documents.First(d => d.Version.Moniker == "main");
-		_root.Title = main.Document.Info?.Title ?? _root.Title;
+		_root.Title = versionless.Version.Document.Info?.Title ?? _root.Title;
 
-		_trees = trees;
-		_root.SetNavigationItems(trees.Navigations);
+		_root.SetNavigationItems([.. trees.Trees.Select(static t => t.Navigation)]);
 	}
 
-	public FloatingLinkSection? ToLinkSection() => _trees is null ? null : ApiLinkSections.Create(urlKey, _trees);
+	public FloatingLinkSection? ToLinkSection() => _trees is null ? null : ApiLinkSections.Create(_trees);
 }
 
 internal static class ApiLinkSections
 {
-	/// <summary>The API Explorer owns its routing, so it states where each version lives. Only <c>main</c> is visible and current.</summary>
-	private static FloatingLinkVersion Version(string apiKey, string moniker) =>
+	/// <summary>
+	/// The API Explorer owns its routing, so it states where each version lives, including the numbered copy of the
+	/// default major. Only the default version is visible and current.
+	/// </summary>
+	private static FloatingLinkVersion Version(ApiVersionRoutes routes, string moniker) =>
 		new()
 		{
 			Name = moniker,
-			Root = ApiUrlBuilder.ProductRoot(null, ApiUrlBuilder.ProductSuffix(apiKey, moniker)).Trim('/'),
-			Hidden = moniker != "main",
-			Current = moniker == "main"
+			Root = ApiUrlBuilder.ProductRoot(null, routes.Suffix(moniker)).Trim('/'),
+			MirrorRoot = routes.MirrorSuffix(moniker) is { } mirror ? ApiUrlBuilder.ProductRoot(null, mirror).Trim('/') : null,
+			Hidden = moniker != routes.DefaultMoniker,
+			Current = moniker == routes.DefaultMoniker
 		};
 
 	/// <summary>
 	/// One page path once, with the versions that contain it. A collapsed operation also answers to its former
 	/// per-operation paths, which become aliases of the canonical path, kept per version.
 	/// </summary>
-	public static FloatingLinkSection Create(string apiKey, ApiProductTrees trees)
+	public static FloatingLinkSection Create(ApiProductTrees trees)
 	{
 		var monikers = trees.Resolved.Documents.Select(d => d.Version.Moniker).Take(FloatingLinkSection.MaxVersions).ToArray();
 		var pages = new Dictionary<string, ulong>(StringComparer.Ordinal);
@@ -177,7 +182,7 @@ internal static class ApiLinkSections
 
 		return new FloatingLinkSection
 		{
-			Versions = [.. monikers.Select(moniker => Version(apiKey, moniker))],
+			Versions = [.. monikers.Select(moniker => Version(trees.Resolved.Routes, moniker))],
 			Pages = pages,
 			Aliases = aliases.Count == 0 ? null : aliases
 		};

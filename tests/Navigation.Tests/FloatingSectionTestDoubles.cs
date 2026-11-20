@@ -32,7 +32,7 @@ internal sealed class DemoSection : IFloatingSection
 
 	public string Kind => "api";
 	public string Key => "demo";
-	public string UrlRoot => "api/doc/demo";
+	public string UrlRoot => "api/demo";
 
 	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
 		_root = new DemoRoot(parent) { Hidden = hidden };
@@ -52,7 +52,7 @@ internal sealed record DemoModel : INavigationModel;
 internal sealed class DemoLandingLeaf(DemoRoot root) : ILeafNavigationItem<DemoModel>
 {
 	public DemoModel Model { get; } = new();
-	public string Url => "/api/doc/demo";
+	public string Url => "/api/demo";
 	public string NavigationTitle => "Demo API";
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => root;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = root;
@@ -63,7 +63,7 @@ internal sealed class DemoLandingLeaf(DemoRoot root) : ILeafNavigationItem<DemoM
 internal sealed class DemoPage(DemoRoot root) : ILeafNavigationItem<DemoModel>
 {
 	public DemoModel Model { get; } = new();
-	public string Url => "/api/doc/demo/operation/operation-search";
+	public string Url => "/api/demo/operation/operation-search";
 	public string NavigationTitle => "Search";
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => root;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = root;

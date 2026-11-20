@@ -7,14 +7,12 @@ function pageActionsMarkup(url: string): string {
                 <button type="button" class="api-page-actions-button" data-copy-page="${url}">
                     <span class="api-page-actions-label">Copy page</span>
                 </button>
-                <details class="api-page-actions-dropdown nav-select-dropdown" open>
-                    <summary class="api-page-actions-chevron">More</summary>
-                    <div class="api-page-actions-menu">
-                        <button type="button" class="api-page-actions-option" data-copy-page="${url}">
-                            Copy page
-                        </button>
-                    </div>
-                </details>
+                <button type="button" class="api-page-actions-chevron" popovertarget="menu">More</button>
+            </div>
+            <div id="menu" class="api-page-actions-menu" popover>
+                <button type="button" class="api-page-actions-option" data-copy-page="${url}">
+                    Copy page
+                </button>
             </div>
         </div>
     `
@@ -74,18 +72,25 @@ describe('initApiPageActions', () => {
         ).toBe('Copy page')
     })
 
-    it('closes the dropdown when copying from the menu', async () => {
-        const dropdown = document.querySelector<HTMLDetailsElement>(
-            '.api-page-actions-dropdown'
-        )!
-        expect(dropdown.open).toBe(true)
+    it('closes the menu when copying from it', async () => {
+        const menu = document.getElementById('menu')!
+        // jsdom has no popover API: the menu stands open, as the browser would show it.
+        menu.hidePopover = vi.fn()
+        vi.spyOn(menu, 'matches').mockImplementation(
+            (selector) => selector === ':popover-open'
+        )
 
         document
             .querySelector<HTMLButtonElement>('.api-page-actions-option')!
             .click()
         await flushMicrotasks()
 
-        expect(dropdown.open).toBe(false)
+        expect(menu.hidePopover).toHaveBeenCalledTimes(1)
         expect(writeText).toHaveBeenCalledWith(markdown)
+        expect(
+            document
+                .querySelector('.api-page-actions-label')
+                ?.textContent?.trim()
+        ).toBe('Copied!')
     })
 })

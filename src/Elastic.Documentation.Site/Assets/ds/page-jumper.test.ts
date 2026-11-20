@@ -14,7 +14,7 @@ vi.mock('../web-components/ModalSearch/pagefind', () => ({
 const markup = `
 <form data-page-jumper>
   <input data-page-jumper-input role="combobox" aria-expanded="false">
-  <div data-page-jumper-panel hidden>
+  <div data-page-jumper-panel popover="manual">
     <div data-page-jumper-loading hidden></div>
     <p data-page-jumper-status role="status"></p>
     <ol id="pj-results" data-page-jumper-results role="listbox"></ol>
@@ -28,9 +28,35 @@ const flush = async () => {
     for (let i = 0; i < 5; i++) await Promise.resolve()
 }
 
+// jsdom has no popover API: these stand in for the browser's open state.
+const open = new Set<Element>()
+
 describe('page jumper', () => {
+    beforeAll(() => {
+        Object.assign(HTMLElement.prototype, {
+            showPopover() {},
+            togglePopover(this: Element, force: boolean) {
+                if (force) open.add(this)
+                else open.delete(this)
+            },
+        })
+    })
+
+    const panelIsOpen = () =>
+        open.has(document.querySelector('[data-page-jumper-panel]')!)
+
     beforeEach(() => {
         vi.useFakeTimers()
+        open.clear()
+        const matches = Element.prototype.matches
+        vi.spyOn(Element.prototype, 'matches').mockImplementation(function (
+            this: Element,
+            selector: string
+        ) {
+            return selector === ':popover-open'
+                ? open.has(this)
+                : matches.call(this, selector)
+        })
         document.body.innerHTML = markup
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
@@ -63,10 +89,7 @@ describe('page jumper', () => {
         vi.advanceTimersByTime(300)
         await flush()
 
-        const panel = document.querySelector<HTMLElement>(
-            '[data-page-jumper-panel]'
-        )!
-        expect(panel.hidden).toBe(false)
+        expect(panelIsOpen()).toBe(true)
         expect(document.querySelectorAll('[role="option"]')).toHaveLength(1)
         expect(
             document.querySelector('[data-page-jumper-status]')!.textContent
@@ -78,14 +101,26 @@ describe('page jumper', () => {
         vi.advanceTimersByTime(300)
         await flush()
 
+        expect(panelIsOpen()).toBe(true)
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-        expect(
-            document.querySelector<HTMLElement>('[data-page-jumper-panel]')!
-                .hidden
-        ).toBe(true)
+        expect(panelIsOpen()).toBe(false)
 
         type('')
         expect(document.querySelectorAll('[role="option"]')).toHaveLength(0)
+    })
+
+    it('closes the panel on a click outside the form, but not on one inside it', async () => {
+        type('alp')
+        vi.advanceTimersByTime(300)
+        await flush()
+
+        document
+            .querySelector('[data-page-jumper-status]')!
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(panelIsOpen()).toBe(true)
+
+        document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(panelIsOpen()).toBe(false)
     })
 
     it('does nothing for a field the script has not found', () => {

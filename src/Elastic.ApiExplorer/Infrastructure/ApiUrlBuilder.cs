@@ -16,14 +16,7 @@ public static partial class ApiUrlBuilder
 {
 	public static string ApiRoot(string? urlPathPrefix) => $"{urlPathPrefix?.TrimEnd('/')}/api";
 
-	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
-
-	/// <summary>
-	/// URL path suffix for one API product version: <c>{key}</c> for <c>main</c>,
-	/// <c>{key}/v{N}</c> for released numeric majors from the version index.
-	/// </summary>
-	public static string ProductSuffix(string apiKey, string versionMoniker) =>
-		versionMoniker == "main" ? apiKey : $"{apiKey}/v{versionMoniker}";
+	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/{apiUrlSuffix}";
 
 	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
@@ -100,6 +93,9 @@ public static partial class ApiUrlBuilder
 	public const string ServersSegment = "servers";
 	public const string TopicSegment = "topic";
 
+	/// <summary>The URL segment of the unreleased <c>main</c> spec when a released major owns the versionless URL.</summary>
+	public const string NextSegment = "next";
+
 	/// <summary>Child markdown slugs that collide with generated API Explorer paths.</summary>
 	public static readonly string[] ReservedChildSegments =
 	[
@@ -108,7 +104,8 @@ public static partial class ApiUrlBuilder
 		"operation",
 		TopicSegment,
 		AuthenticationSegment,
-		ServersSegment
+		ServersSegment,
+		NextSegment
 	];
 
 	/// <summary>URL leaf for an <c>x-topics</c> page under <c>.../topic/</c>, the same as Bump.sh: <c>Rate limiting</c> becomes <c>topic-rate-limiting</c>.</summary>

@@ -41,27 +41,21 @@ public class ApiMarkdownRequestTests
 	{
 		var apiRoot = Path.GetFullPath(Path.Join(Path.GetTempPath(), "out", "api"));
 
+		ApiMarkdownRequest.ResolveFile(apiRoot, "elasticsearch").Should().Be(Path.GetFullPath(Path.Join(apiRoot, "elasticsearch.md")));
+		ApiMarkdownRequest.ResolveFile(apiRoot, "elasticsearch.md").Should().Be(Path.GetFullPath(Path.Join(apiRoot, "elasticsearch.md")));
 		ApiMarkdownRequest
-			.ResolveFile(apiRoot, "doc/elasticsearch")
+			.ResolveFile(apiRoot, "elasticsearch/operation/operation-search")
 			.Should()
-			.Be(Path.GetFullPath(Path.Join(apiRoot, "doc", "elasticsearch.md")));
-		ApiMarkdownRequest
-			.ResolveFile(apiRoot, "doc/elasticsearch.md")
-			.Should()
-			.Be(Path.GetFullPath(Path.Join(apiRoot, "doc", "elasticsearch.md")));
-		ApiMarkdownRequest
-			.ResolveFile(apiRoot, "doc/elasticsearch/operation/operation-search")
-			.Should()
-			.Be(Path.GetFullPath(Path.Join(apiRoot, "doc", "elasticsearch", "operation", "operation-search.md")));
+			.Be(Path.GetFullPath(Path.Join(apiRoot, "elasticsearch", "operation", "operation-search.md")));
 	}
 
 	[Test]
 	public void SiblingOfDirectory_UsesParentNameMd()
 	{
-		var directory = Path.Join(Path.GetTempPath(), "out", "api", "doc", "elasticsearch");
+		var directory = Path.Join(Path.GetTempPath(), "out", "api", "elasticsearch");
 		ApiMarkdownRequest
 			.SiblingOfDirectory(directory)
 			.Should()
-			.Be(Path.GetFullPath(Path.Join(Path.GetTempPath(), "out", "api", "doc", "elasticsearch.md")));
+			.Be(Path.GetFullPath(Path.Join(Path.GetTempPath(), "out", "api", "elasticsearch.md")));
 	}
 }

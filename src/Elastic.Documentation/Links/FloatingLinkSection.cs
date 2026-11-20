@@ -19,10 +19,19 @@ public record FloatingLinkVersion
 
 	/// <summary>
 	/// The URL root of this version, relative to the site root and without slashes at either end. A page is at
-	/// this root plus <c>/</c> plus its path, and the landing page is the root itself.
+	/// this root plus <c>/</c> plus its path, and the landing page is the root itself. An index published before the
+	/// API Explorer dropped <c>/doc</c> holds <c>api/doc/{key}</c>, which reads as <c>api/{key}</c>.
 	/// </summary>
 	[JsonPropertyName("root")]
-	public required string Root { get; init; }
+	public required string Root { get; init => field = ApiLegacyRedirects.ToCanonical(value); }
+
+	/// <summary>
+	/// A second URL root that serves the same pages as <see cref="Root"/>, such as <c>api/{key}/v9</c> for the version
+	/// that also owns <c>api/{key}</c>. Links resolve to <see cref="Root"/>; a page under this root still exists.
+	/// </summary>
+	[JsonPropertyName("mirror_root")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? MirrorRoot { get; init; }
 
 	/// <summary>The version exists for links but not in the sitemap or first-level walks.</summary>
 	[JsonPropertyName("hidden")]
@@ -82,6 +91,16 @@ public record FloatingLinkSection
 	private FrozenDictionary<string, int> VersionBits =>
 		field ??= Versions.Take(MaxVersions).Select((version, bit) => (version.Name, bit)).ToFrozenDictionary(v => v.Name, v => v.bit);
 
+	/// <summary>Every root and mirror root with the name of its version, longest first.</summary>
+	[JsonIgnore]
+	private (string Name, string Root)[] RootsLongestFirst =>
+		field ??=
+		[
+			.. Versions.SelectMany(
+				v => new[] { v.Root, v.MirrorRoot }.OfType<string>().Select(root => (v.Name, Root: root))
+			).OrderByDescending(r => r.Root.Length)
+		];
+
 	[JsonIgnore]
 	private int CurrentBit => CurrentBitCache ??= Array.FindIndex(Versions, v => v.Current);
 
@@ -108,7 +127,18 @@ public record FloatingLinkSection
 	/// when <paramref name="version"/> is <c>null</c>, and returns its path from the site root.
 	/// A path that is not a page of that version, directly or through an alias, does not resolve.
 	/// </summary>
-	public bool TryResolvePage(string? version, string page, out string sitePath)
+	public bool TryResolvePage(string? version, string page, out string sitePath) =>
+		TryResolvePage(version, page, numbered: false, out sitePath);
+
+	/// <summary>
+	/// Like <see cref="TryResolvePage(string?, string, out string)"/>, for a host that serves the numbered URLs of the
+	/// versions: the version resolves under its mirror root when it has one, so a link to the newest major, named or
+	/// current, keeps its <c>/vN</c> path and lands on the version it was checked against.
+	/// </summary>
+	public bool TryResolveNumberedPage(string? version, string page, out string sitePath) =>
+		TryResolvePage(version, page, numbered: true, out sitePath);
+
+	private bool TryResolvePage(string? version, string page, bool numbered, out string sitePath)
 	{
 		sitePath = string.Empty;
 		var bit = version is null ? CurrentBit : VersionBits.GetValueOrDefault(version, -1);
@@ -128,29 +158,29 @@ public record FloatingLinkSection
 			page = canonical;
 		}
 
-		var root = Versions[bit].Root;
+		var root = numbered ? Versions[bit].MirrorRoot ?? Versions[bit].Root : Versions[bit].Root;
 		sitePath = page.Length == 0 ? root : $"{root}/{page}";
 		return true;
 	}
 
 	/// <summary>
 	/// Whether <paramref name="sitePath"/>, a path from the site root without slashes at either end, is a page of any
-	/// version of this section, directly or through an alias. It matches the longest version root first, so the
-	/// page of a versioned tree is never read as a page of the current version.
+	/// version of this section, directly or through an alias, under its root or its mirror root. It matches the longest
+	/// root first, so the page of a versioned tree is never read as a page of the current version.
 	/// </summary>
 	public bool ContainsSitePath(string sitePath)
 	{
-		foreach (var version in Versions.OrderByDescending(v => v.Root.Length))
+		foreach (var (name, root) in RootsLongestFirst)
 		{
 			string page;
-			if (sitePath.Equals(version.Root, StringComparison.Ordinal))
+			if (sitePath.Equals(root, StringComparison.Ordinal))
 				page = string.Empty;
-			else if (sitePath.StartsWith(version.Root + "/", StringComparison.Ordinal))
-				page = sitePath[(version.Root.Length + 1)..];
+			else if (sitePath.StartsWith(root + "/", StringComparison.Ordinal))
+				page = sitePath[(root.Length + 1)..];
 			else
 				continue;
 
-			if (TryResolvePage(version.Name, page, out _))
+			if (TryResolvePage(name, page, out _))
 				return true;
 		}
 

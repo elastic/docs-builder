@@ -86,12 +86,26 @@
 
 /* Fullscreen modal */
 .mermaid-modal {
-	position: fixed;
-	inset: 0;
-	z-index: 9999;
+	width: 95vw;
+	height: 95vh;
+	max-width: none;
+	max-height: none;
+	margin: auto;
+	padding: 0;
+	border: 0;
+	background-color: #ffffff;
+	border-radius: 0.75rem;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	overflow: hidden;
+	animation: mermaid-fade-in 0.2s ease;
+}
+
+.mermaid-modal[open] {
 	display: flex;
-	align-items: center;
-	justify-content: center;
+	flex-direction: column;
+}
+
+.mermaid-modal::backdrop {
 	background-color: rgba(0, 0, 0, 0.5);
 	animation: mermaid-fade-in 0.2s ease;
 }
@@ -103,18 +117,6 @@
 	to {
 		opacity: 1;
 	}
-}
-
-.mermaid-modal-content {
-	position: relative;
-	width: 95vw;
-	height: 95vh;
-	background-color: #ffffff;
-	border-radius: 0.75rem;
-	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
 }
 
 .mermaid-modal-close {

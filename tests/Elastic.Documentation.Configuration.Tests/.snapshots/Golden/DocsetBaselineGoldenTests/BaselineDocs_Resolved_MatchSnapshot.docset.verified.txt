@@ -61,13 +61,6 @@ model <DocumentationSetFile>:
           Product: "elasticsearch"
           Repository: "elastic/elasticsearch-specification"
           Children: []
-          Catalog <ApiCatalogSettings>:
-            Categories:
-              - "self"
-              - "ece"
-              - "ess"
-            Line: 56
-            Column: 9
           Line: 52
           Column: 7
           ProductLine: 53
@@ -84,13 +77,6 @@ model <DocumentationSetFile>:
         Product: "elasticsearch"
         Repository: "elastic/elasticsearch-specification"
         Children: []
-        Catalog <ApiCatalogSettings>:
-          Categories:
-            - "self"
-            - "ece"
-            - "ess"
-          Line: 56
-          Column: 9
         Line: 52
         Column: 7
         ProductLine: 53
@@ -108,18 +94,13 @@ model <DocumentationSetFile>:
           Product: "serverless-elasticsearch"
           Repository: "elastic/elasticsearch-specification"
           Children: []
-          Catalog <ApiCatalogSettings>:
-            Categories:
-              - "serverless"
-            Line: 65
-            Column: 9
-          Line: 61
+          Line: 56
           Column: 7
-          ProductLine: 62
+          ProductLine: 57
           ProductColumn: 16
-          SpecLine: 61
+          SpecLine: 56
           SpecColumn: 13
-          RepositoryLine: 63
+          RepositoryLine: 58
           RepositoryColumn: 19
           HasSpec: True
           HasProduct: True
@@ -129,18 +110,13 @@ model <DocumentationSetFile>:
         Product: "serverless-elasticsearch"
         Repository: "elastic/elasticsearch-specification"
         Children: []
-        Catalog <ApiCatalogSettings>:
-          Categories:
-            - "serverless"
-          Line: 65
-          Column: 9
-        Line: 61
+        Line: 56
         Column: 7
-        ProductLine: 62
+        ProductLine: 57
         ProductColumn: 16
-        SpecLine: 61
+        SpecLine: 56
         SpecColumn: 13
-        RepositoryLine: 63
+        RepositoryLine: 58
         RepositoryColumn: 19
         HasSpec: True
         HasProduct: True
@@ -153,20 +129,13 @@ model <DocumentationSetFile>:
           Children:
             - <ApiEntryChild>:
               File: "kibana-api-overview.md"
-          Catalog <ApiCatalogSettings>:
-            Categories:
-              - "self"
-              - "ece"
-              - "ess"
-            Line: 74
-            Column: 9
-          Line: 68
+          Line: 60
           Column: 7
-          ProductLine: 69
+          ProductLine: 61
           ProductColumn: 16
-          SpecLine: 68
+          SpecLine: 60
           SpecColumn: 13
-          RepositoryLine: 70
+          RepositoryLine: 62
           RepositoryColumn: 19
           HasSpec: True
           HasProduct: True
@@ -178,20 +147,13 @@ model <DocumentationSetFile>:
         Children:
           - <ApiEntryChild>:
             File: "kibana-api-overview.md"
-        Catalog <ApiCatalogSettings>:
-          Categories:
-            - "self"
-            - "ece"
-            - "ess"
-          Line: 74
-          Column: 9
-        Line: 68
+        Line: 60
         Column: 7
-        ProductLine: 69
+        ProductLine: 61
         ProductColumn: 16
-        SpecLine: 68
+        SpecLine: 60
         SpecColumn: 13
-        RepositoryLine: 70
+        RepositoryLine: 62
         RepositoryColumn: 19
         HasSpec: True
         HasProduct: True
@@ -202,18 +164,13 @@ model <DocumentationSetFile>:
           Product: "kibana"
           Repository: "elastic/kibana"
           Children: []
-          Catalog <ApiCatalogSettings>:
-            Categories:
-              - "serverless"
-            Line: 83
-            Column: 9
-          Line: 79
+          Line: 66
           Column: 7
-          ProductLine: 80
+          ProductLine: 67
           ProductColumn: 16
-          SpecLine: 79
+          SpecLine: 66
           SpecColumn: 13
-          RepositoryLine: 81
+          RepositoryLine: 68
           RepositoryColumn: 19
           HasSpec: True
           HasProduct: True
@@ -223,18 +180,13 @@ model <DocumentationSetFile>:
         Product: "kibana"
         Repository: "elastic/kibana"
         Children: []
-        Catalog <ApiCatalogSettings>:
-          Categories:
-            - "serverless"
-          Line: 83
-          Column: 9
-        Line: 79
+        Line: 66
         Column: 7
-        ProductLine: 80
+        ProductLine: 67
         ProductColumn: 16
-        SpecLine: 79
+        SpecLine: 66
         SpecColumn: 13
-        RepositoryLine: 81
+        RepositoryLine: 68
         RepositoryColumn: 19
         HasSpec: True
         HasProduct: True
@@ -245,7 +197,138 @@ model <DocumentationSetFile>:
           Product: "cloud-hosted"
           Repository: "elastic/private-repo-2"
           Children: []
-          Catalog: null
+          Line: 70
+          Column: 7
+          ProductLine: 71
+          ProductColumn: 16
+          SpecLine: 70
+          SpecColumn: 13
+          RepositoryLine: 72
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud.json"
+        Product: "cloud-hosted"
+        Repository: "elastic/private-repo-2"
+        Children: []
+        Line: 70
+        Column: 7
+        ProductLine: 71
+        ProductColumn: 16
+        SpecLine: 70
+        SpecColumn: 13
+        RepositoryLine: 72
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-enterprise <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "cloud-enterprise.json"
+          Product: "cloud-enterprise"
+          Repository: "elastic/private-repo-2"
+          Children: []
+          Line: 74
+          Column: 7
+          ProductLine: 75
+          ProductColumn: 16
+          SpecLine: 74
+          SpecColumn: 13
+          RepositoryLine: 76
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud-enterprise.json"
+        Product: "cloud-enterprise"
+        Repository: "elastic/private-repo-2"
+        Children: []
+        Line: 74
+        Column: 7
+        ProductLine: 75
+        ProductColumn: 16
+        SpecLine: 74
+        SpecColumn: 13
+        RepositoryLine: 76
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-billing <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "cloud-billing.yaml"
+          Product: "ess"
+          Repository: "elastic/private-repo-2"
+          Children: []
+          Line: 78
+          Column: 7
+          ProductLine: 79
+          ProductColumn: 16
+          SpecLine: 78
+          SpecColumn: 13
+          RepositoryLine: 80
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud-billing.yaml"
+        Product: "ess"
+        Repository: "elastic/private-repo-2"
+        Children: []
+        Line: 78
+        Column: 7
+        ProductLine: 79
+        ProductColumn: 16
+        SpecLine: 78
+        SpecColumn: 13
+        RepositoryLine: 80
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-connect <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "cloud-connect.yml"
+          Product: "ess"
+          Repository: "elastic/cloud-connected-api"
+          Children: []
+          Line: 82
+          Column: 7
+          ProductLine: 83
+          ProductColumn: 16
+          SpecLine: 82
+          SpecColumn: 13
+          RepositoryLine: 84
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud-connect.yml"
+        Product: "ess"
+        Repository: "elastic/cloud-connected-api"
+        Children: []
+        Line: 82
+        Column: 7
+        ProductLine: 83
+        ProductColumn: 16
+        SpecLine: 82
+        SpecColumn: 13
+        RepositoryLine: 84
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-serverless <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "elastic-cloud-serverless.yml"
+          Product: "cloud-serverless"
+          Repository: "elastic/serverless-api-specification"
+          Children: []
           Line: 86
           Column: 7
           ProductLine: 87
@@ -258,11 +341,10 @@ model <DocumentationSetFile>:
           HasProduct: True
       IsValid: True
       SingleEntry <ApiProductEntry>:
-        Spec: "cloud.json"
-        Product: "cloud-hosted"
-        Repository: "elastic/private-repo-2"
+        Spec: "elastic-cloud-serverless.yml"
+        Product: "cloud-serverless"
+        Repository: "elastic/serverless-api-specification"
         Children: []
-        Catalog: null
         Line: 86
         Column: 7
         ProductLine: 87
@@ -273,14 +355,13 @@ model <DocumentationSetFile>:
         RepositoryColumn: 19
         HasSpec: True
         HasProduct: True
-    docs-builder-cloud-enterprise <ApiProductSequence>:
+    docs-builder-logstash <ApiProductSequence>:
       Entries:
         - <ApiProductEntry>:
-          Spec: "cloud-enterprise.json"
-          Product: "cloud-enterprise"
-          Repository: "elastic/private-repo-2"
+          Spec: "logstash.yaml"
+          Product: "logstash"
+          Repository: "elastic/logstash"
           Children: []
-          Catalog: null
           Line: 90
           Column: 7
           ProductLine: 91
@@ -293,11 +374,10 @@ model <DocumentationSetFile>:
           HasProduct: True
       IsValid: True
       SingleEntry <ApiProductEntry>:
-        Spec: "cloud-enterprise.json"
-        Product: "cloud-enterprise"
-        Repository: "elastic/private-repo-2"
+        Spec: "logstash.yaml"
+        Product: "logstash"
+        Repository: "elastic/logstash"
         Children: []
-        Catalog: null
         Line: 90
         Column: 7
         ProductLine: 91
@@ -305,170 +385,6 @@ model <DocumentationSetFile>:
         SpecLine: 90
         SpecColumn: 13
         RepositoryLine: 92
-        RepositoryColumn: 19
-        HasSpec: True
-        HasProduct: True
-    docs-builder-cloud-billing <ApiProductSequence>:
-      Entries:
-        - <ApiProductEntry>:
-          Spec: "cloud-billing.yaml"
-          Product: "ess"
-          Repository: "elastic/private-repo-2"
-          Children: []
-          Catalog <ApiCatalogSettings>:
-            Categories:
-              - "ess"
-            Line: 98
-            Column: 9
-          Line: 94
-          Column: 7
-          ProductLine: 95
-          ProductColumn: 16
-          SpecLine: 94
-          SpecColumn: 13
-          RepositoryLine: 96
-          RepositoryColumn: 19
-          HasSpec: True
-          HasProduct: True
-      IsValid: True
-      SingleEntry <ApiProductEntry>:
-        Spec: "cloud-billing.yaml"
-        Product: "ess"
-        Repository: "elastic/private-repo-2"
-        Children: []
-        Catalog <ApiCatalogSettings>:
-          Categories:
-            - "ess"
-          Line: 98
-          Column: 9
-        Line: 94
-        Column: 7
-        ProductLine: 95
-        ProductColumn: 16
-        SpecLine: 94
-        SpecColumn: 13
-        RepositoryLine: 96
-        RepositoryColumn: 19
-        HasSpec: True
-        HasProduct: True
-    docs-builder-cloud-connect <ApiProductSequence>:
-      Entries:
-        - <ApiProductEntry>:
-          Spec: "cloud-connect.yml"
-          Product: "ess"
-          Repository: "elastic/cloud-connected-api"
-          Children: []
-          Catalog: null
-          Line: 101
-          Column: 7
-          ProductLine: 102
-          ProductColumn: 16
-          SpecLine: 101
-          SpecColumn: 13
-          RepositoryLine: 103
-          RepositoryColumn: 19
-          HasSpec: True
-          HasProduct: True
-      IsValid: True
-      SingleEntry <ApiProductEntry>:
-        Spec: "cloud-connect.yml"
-        Product: "ess"
-        Repository: "elastic/cloud-connected-api"
-        Children: []
-        Catalog: null
-        Line: 101
-        Column: 7
-        ProductLine: 102
-        ProductColumn: 16
-        SpecLine: 101
-        SpecColumn: 13
-        RepositoryLine: 103
-        RepositoryColumn: 19
-        HasSpec: True
-        HasProduct: True
-    docs-builder-cloud-serverless <ApiProductSequence>:
-      Entries:
-        - <ApiProductEntry>:
-          Spec: "elastic-cloud-serverless.yml"
-          Product: "cloud-serverless"
-          Repository: "elastic/serverless-api-specification"
-          Children: []
-          Catalog <ApiCatalogSettings>:
-            Categories:
-              - "serverless"
-            Line: 109
-            Column: 9
-          Line: 105
-          Column: 7
-          ProductLine: 106
-          ProductColumn: 16
-          SpecLine: 105
-          SpecColumn: 13
-          RepositoryLine: 107
-          RepositoryColumn: 19
-          HasSpec: True
-          HasProduct: True
-      IsValid: True
-      SingleEntry <ApiProductEntry>:
-        Spec: "elastic-cloud-serverless.yml"
-        Product: "cloud-serverless"
-        Repository: "elastic/serverless-api-specification"
-        Children: []
-        Catalog <ApiCatalogSettings>:
-          Categories:
-            - "serverless"
-          Line: 109
-          Column: 9
-        Line: 105
-        Column: 7
-        ProductLine: 106
-        ProductColumn: 16
-        SpecLine: 105
-        SpecColumn: 13
-        RepositoryLine: 107
-        RepositoryColumn: 19
-        HasSpec: True
-        HasProduct: True
-    docs-builder-logstash <ApiProductSequence>:
-      Entries:
-        - <ApiProductEntry>:
-          Spec: "logstash.yaml"
-          Product: "logstash"
-          Repository: "elastic/logstash"
-          Children: []
-          Catalog <ApiCatalogSettings>:
-            Categories:
-              - "self"
-            Line: 116
-            Column: 9
-          Line: 112
-          Column: 7
-          ProductLine: 113
-          ProductColumn: 16
-          SpecLine: 112
-          SpecColumn: 13
-          RepositoryLine: 114
-          RepositoryColumn: 19
-          HasSpec: True
-          HasProduct: True
-      IsValid: True
-      SingleEntry <ApiProductEntry>:
-        Spec: "logstash.yaml"
-        Product: "logstash"
-        Repository: "elastic/logstash"
-        Children: []
-        Catalog <ApiCatalogSettings>:
-          Categories:
-            - "self"
-          Line: 116
-          Column: 9
-        Line: 112
-        Column: 7
-        ProductLine: 113
-        ProductColumn: 16
-        SpecLine: 112
-        SpecColumn: 13
-        RepositoryLine: 114
         RepositoryColumn: 19
         HasSpec: True
         HasProduct: True

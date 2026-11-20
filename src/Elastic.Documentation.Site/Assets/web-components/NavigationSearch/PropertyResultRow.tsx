@@ -1,4 +1,3 @@
-import { SLOW_TOOLTIP_DELAY } from '../../tooltip'
 import { JumpToIndicator } from './JumpToIndicator'
 import {
     GO_TO_LABELS,
@@ -201,9 +200,9 @@ export const PropertyResultRow = ({
                 <span className="property-path-line">
                     <code
                         className="property-path"
-                        data-tippy-content={property.path}
-                        data-tippy-delay={SLOW_TOOLTIP_DELAY}
-                        data-tippy-theme="mono"
+                        data-tooltip={property.path}
+                        data-tooltip-delay="slow"
+                        data-tooltip-theme="mono"
                     >
                         <bdi>
                             {highlight(property.path.slice(0, leafOffset))}
@@ -219,16 +218,16 @@ export const PropertyResultRow = ({
                 <span className="property-detail-line">
                     <code
                         className="property-type"
-                        data-tippy-content={property.type}
-                        data-tippy-delay={SLOW_TOOLTIP_DELAY}
-                        data-tippy-theme="mono"
+                        data-tooltip={property.type}
+                        data-tooltip-delay="slow"
+                        data-tooltip-theme="mono"
                     >
                         {property.type}
                     </code>
                     <span
                         className="property-description"
-                        data-tippy-content={property.description || undefined}
-                        data-tippy-delay={SLOW_TOOLTIP_DELAY}
+                        data-tooltip={property.description || undefined}
+                        data-tooltip-delay="slow"
                     >
                         {property.description}
                     </span>

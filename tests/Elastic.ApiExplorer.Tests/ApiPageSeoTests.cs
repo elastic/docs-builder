@@ -78,7 +78,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 			)
 			{
 				NavigationHtml = string.Empty,
-				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				CurrentNavigation = new LandingNavigationItem($"/api/elasticsearch/{version}/").Index,
 				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 			},
 			version
@@ -87,7 +87,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		viewModel.Heading.Should().Be(expected);
 		LandingCommonMark
-			.Product(document.Info, [], "/api/doc/elasticsearch", ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems))
+			.Product(document.Info, [], "/api/elasticsearch", ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems))
 			.Should()
 			.StartWith($"# {expected}");
 	}
@@ -109,7 +109,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 			)
 			{
 				NavigationHtml = string.Empty,
-				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				CurrentNavigation = new LandingNavigationItem($"/api/elasticsearch/{version}/").Index,
 				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 			},
 			version
@@ -142,10 +142,10 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		{
 			Product = new Product { Id = "elasticsearch", DisplayName = displayName },
 			VersionSwitcherItems = ApiVersionSwitcher.Build(
-				"/api/doc",
-				"elasticsearch",
+				"/api",
+				TestHelpers.EsRoutes,
 				["main", "9", "8"],
-				version == "latest" ? "main" : version.TrimStart('v')
+				TestHelpers.EsRoutes.Suffix(version == "latest" ? "main" : version.TrimStart('v'))
 			)
 		};
 

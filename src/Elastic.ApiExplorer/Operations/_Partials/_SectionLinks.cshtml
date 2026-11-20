@@ -1,49 +1,14 @@
-@using Elastic.ApiExplorer.Infrastructure
 @using Elastic.ApiExplorer.Operations
-@inherits RazorSlice<Elastic.ApiExplorer.Operations.SectionStripModel>
-@* The strip says what each section holds and stays in the page. The capsule is the same links. Its wrapper sits right under the strip, so the capsule shows the moment the strip has scrolled away; the scroll-spy of ds/toc.ts marks the section in view in it. *@
-@{
-	var hasRequires = Model.Authorization.Privileges.Count > 0;
-}
-<div class="api-section-strip@(hasRequires ? " api-section-strip--requires" : "")" role="group" aria-label="Sections of this endpoint">
-	@if (hasRequires)
-	{
-		<div class="api-section-requires" id="required-privileges">
-			<h2 class="api-section-requires-title">Requires</h2>
-			@(await RenderPartialAsync<_PrivilegeRows, AuthorizationSectionModel>(Model.Authorization))
-			@if (Model.Authorization.Privileges.Any(static row => row.Values.Count > 0))
-			{
-				<span class="api-section-cell-caption">privileges</span>
-			}
-		</div>
-	}
-	@foreach (var link in Model.Links)
-	{
-		<a class="api-section-cell" href="#@link.Anchor">
-			<span class="api-section-cell-label">@link.Label</span>
-			@if (link.Stat is { } stat)
-			{
-				if (stat.Value is not null)
-				{
-					<span class="api-section-cell-value">@stat.Value</span>
-				}
-				<span class="api-section-cell-caption">@HtmlBreaks.After(stat.Caption, '/')</span>
-			}
-		</a>
-	}
-</div>
-<div class="api-section-pin" data-section-pin>
-	@* The arrow is the first thing the pointer crosses on its way to the links, so its tooltip waits: the same slow delay as SLOW_TOOLTIP_DELAY in tooltip.ts. *@
-	<nav class="api-section-links" aria-label="Sections of this endpoint" data-toc data-toc-sticky>
-		<button type="button" class="api-back-to-top" aria-label="Back to top" data-tippy-content="Back to top" data-tippy-delay="[500, 0]" data-api-back-to-top>
-			<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h10M8 13.5v-8M4.5 9 8 5.5 11.5 9" /></svg>
-		</button>
-		<div class="api-section-links-track">
-			@foreach (var link in Model.Links)
-			{
-				<a href="#@link.Anchor" data-toc-link>@link.Label</a>
-			}
-		</div>
-		@(await RenderPartialAsync(_ExpandAllControl.Create(false)))
-	</nav>
-</div>
+@inherits RazorSlice<IReadOnlyList<Elastic.ApiExplorer.Operations.SectionLink>>
+@* The section links are one row above the description that stays under the header as the reader scrolls; the scroll-spy of ds/toc.ts marks the part of the page in view. Overview is the title, badges and description, and doubles as the way back to the top. *@
+<nav class="api-section-links" aria-label="On this page" data-toc data-toc-sticky>
+	<div class="api-section-links-track">
+		@* Back to the top through the page's back-to-top handler: smooth, and without the highlight a section gets on arrival. *@
+		<a href="#api-operation-overview" data-toc-link data-api-back-to-top>Overview</a>
+		@foreach (var link in Model)
+		{
+			<a href="#@link.Anchor" data-toc-link>@link.Label</a>
+		}
+	</div>
+	@(await RenderPartialAsync(_ExpandAllControl.Create(false)))
+</nav>

@@ -49,7 +49,7 @@ public static class TypePages
 	public static bool Links(string? schemaId, string? currentPageSchemaId) =>
 		TryGet(schemaId, out _) && !string.Equals(schemaId, currentPageSchemaId, StringComparison.Ordinal);
 
-	/// <summary>The page of a type under an API root (<c>/api/doc/elasticsearch</c>), as <c>SchemaNavigationItem</c> builds it.</summary>
+	/// <summary>The page of a type under an API root (<c>/api/elasticsearch</c>), as <c>SchemaNavigationItem</c> builds it.</summary>
 	public static string Url(string apiRootUrl, string schemaId) =>
 		$"{apiRootUrl.TrimEnd('/')}/types/{ApiUrlBuilder.SchemaMoniker(schemaId)}";
 }

@@ -12,6 +12,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -20,11 +21,12 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
+/// <param name="Moniker">The version this entry links to: <c>main</c> or a numeric major.</param>
 /// <param name="PageNames">
 /// Every name of every page this version renders, relative to <paramref name="Url"/> (<c>""</c> is the landing page).
 /// Each name maps to all names of that page, canonical first, because a collapsed operation also answers to its former paths.
 /// </param>
-public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected, string? ShortLabel = null)
+public sealed record ApiVersionSwitcherItem(string Moniker, string Label, string Url, bool Selected, string? ShortLabel = null)
 {
 	public IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames
 	{
@@ -51,6 +53,25 @@ public record ApiRenderContext(
 	public IReadOnlyList<ApiCatalogEntry> CatalogEntries { get; init; } = [];
 
 	public string? CurrentApiKey { get; init; }
+
+	/// <summary>What the tree being rendered is for search engines. The catalog and other previews count as versionless.</summary>
+	public ApiPageType PageType { get; init; } = ApiPageType.Versionless;
+
+	/// <summary>The version of the tree being rendered: <c>main</c> or a numeric major. Null on the catalog and other previews.</summary>
+	public string? Moniker { get; init; }
+
+	/// <summary>The newest version the API declares, whether or not its tree rendered. The versionless URL belongs to it.</summary>
+	public string? DefaultMoniker { get; init; }
+
+	/// <summary>The root of the versionless tree, set on the numbered copy of the newest major so its pages name the versionless pages as canonical.</summary>
+	public string? VersionlessRootUrl { get; init; }
+
+	/// <summary>The absolute canonical URL of <paramref name="pageUrl"/>, or its path when the build has no canonical base URL.</summary>
+	public string CanonicalUrl(string pageUrl)
+	{
+		var path = ApiPageTypes.CanonicalPath(PageType, pageUrl, CurrentNavigation.NavigationRoot.Url, VersionlessRootUrl).TrimEnd('/');
+		return UrlPath.MakeAbsolute(BuildContext.CanonicalBaseUrl, path)?.TrimEnd('/') ?? path;
+	}
 
 	/// <summary>Product bound to this API key, or <see langword="null"/> on the combined catalog.</summary>
 	public Product? Product { get; init; }

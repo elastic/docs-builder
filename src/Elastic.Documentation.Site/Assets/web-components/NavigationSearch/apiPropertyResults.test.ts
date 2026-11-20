@@ -14,12 +14,12 @@ const property = (path: string, location: 'query' | 'request') => ({
     description: 'Count hits',
     anchor: `${location}-${path}`,
     location,
-    url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
+    url: `/docs/api/elasticsearch/operation/operation-search#${location}-${path}`,
 })
 
 const search: SearchResultItem = {
     type: 'api',
-    url: '/docs/api/doc/elasticsearch/operation/operation-search',
+    url: '/docs/api/elasticsearch/operation/operation-search',
     title: 'Search',
     description: 'Run a search',
     score: 5,

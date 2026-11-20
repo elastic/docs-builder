@@ -49,15 +49,9 @@ public sealed record NavigationDropdownItem(string NavigationTitle, string Url, 
 /// <summary>A single back-link in the island sidebar's breadcrumb trail.</summary>
 public sealed record IslandBackLink(string Title, string Url);
 
-/// <summary>One choice in a sidebar/rail <c>nav-select</c> (version switcher, examples, …).</summary>
+/// <summary>One choice in a version switcher.</summary>
 /// <summary><see cref="ShortLabel"/> is the label where the option stands alone, such as a trigger, when <see cref="Label"/> carries a hint for the list.</summary>
 public sealed record NavigationSelectOption(string Label, string Value, bool Selected, string? ShortLabel = null);
-
-/// <summary>Resolved data for <c>_NavSelect.cshtml</c>.</summary>
-public sealed record NavigationSelectModel(string Id, string AriaLabel, IReadOnlyList<NavigationSelectOption> Options, bool UseLinks = true)
-{
-	public NavigationSelectOption Current => Options.FirstOrDefault(static o => o.Selected) ?? Options[0];
-}
 
 /// <summary>
 /// Everything <c>_TocTree.cshtml</c> renders, resolved from the domain navigation up front.
