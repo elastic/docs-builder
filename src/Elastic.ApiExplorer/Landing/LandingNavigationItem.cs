@@ -190,9 +190,25 @@ public class TagNavigationItem(
 	string apiUrlSuffix,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent)
+) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent), IDeprecatableNavigationItem
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
+
+	/// <summary>True when the group has operations and every one is deprecated; one current operation keeps the group current.</summary>
+	public bool Deprecated
+	{
+		get
+		{
+			var any = false;
+			foreach (var operation in NavigationItems.OfType<OperationNavigationItem>())
+			{
+				if (!operation.Model.Deprecated)
+					return false;
+				any = true;
+			}
+			return any;
+		}
+	}
 
 	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
 	{
