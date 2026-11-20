@@ -4,7 +4,6 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Operations;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -20,16 +19,6 @@ public class MarkdownPageViewModel(ApiRenderContext context) : ApiViewModel(cont
 	public required HtmlString BodyHtml { get; init; }
 
 	public string? DescriptionMarkdown { get; init; }
-
-	/// <summary>Set on the page that stands for the Authentication topic: the authentication sections follow its Markdown.</summary>
-	public IReadOnlyList<AuthRequirement> AuthenticationRequirements { get; init; } = [];
-
-	public bool AuthenticationOptional { get; init; }
-
-	public AuthenticationSectionModel? Authentication =>
-		AuthenticationRequirements.Count == 0
-			? null
-			: new AuthenticationSectionModel(AuthenticationRequirements, AuthenticationOptional, markdown => RenderMarkdown(markdown));
 
 	/// <inheritdoc />
 	protected override string? LayoutPageTitle => string.IsNullOrWhiteSpace(MetaTitle) ? PageTitle : MetaTitle;

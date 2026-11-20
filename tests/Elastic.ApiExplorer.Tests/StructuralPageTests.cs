@@ -2,16 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
 using Nullean.Snapshots;
-using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -138,11 +137,11 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 
 			## Api key
 
+			Send the encoded key with the ApiKey prefix.
+
 			```http
 			Authorization: <value>
 			```
-
-			Send the encoded key with the ApiKey prefix.
 
 			## Basic
 
@@ -160,32 +159,48 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task AuthenticationPage_RendersEachAlternativeUnderItsOwnHeading()
+	public void AuthenticationPage_GivesEachAlternativeAHeadingWithItsBumpShAnchor()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await item.Model.RenderAsync(stream, RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
+		var page = StructuralViewModel.Create(item.Model, RenderContext(item));
 
-		fs.File.ReadAllText("/out.html").Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#elastic-docs-v3"));
+		// The page renders this Markdown with its prose, so the headings are docs headings with these anchors.
+		OperationCommonMark
+			.AuthenticationSections(page.Requirements, page.AuthenticationOptional, anchors: true)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				## Api key [doc-authentication-api-key]
+
+				Send the encoded key with the ApiKey prefix.
+
+				```http
+				Authorization: <value>
+				```
+
+				## Basic [doc-authentication-basic-auth]
+
+				```http
+				Authorization: Basic <credentials>
+				```
+
+				## Bearer [doc-authentication-bearer-auth]
+
+				```http
+				Authorization: Bearer <token>
+				```
+				"""
+			);
 	}
 
 	[Test]
-	public void AuthenticationPage_ListsEachAlternativeInTheRail()
-	{
-		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
-
-		var toc = StructuralViewModel.Create(item.Model, RenderContext(item)).TocItems;
-
-		string
-			.Join("\n", toc.Select(static t => $"{t.Level} {t.Heading} #{t.Slug}"))
-			.Should()
-			.MatchInlineSnapshot("""
-			2 Api key #apikey
-			2 Basic #basicauth
-			2 Bearer #bearerauth
-			""");
-	}
+	[Arguments("apiKeyAuth", "doc-authentication-api-key-auth")]
+	[Arguments("apiKey", "doc-authentication-api-key")]
+	[Arguments("basicAuth", "doc-authentication-basic-auth")]
+	[Arguments("es_api_key", "doc-authentication-es-api-key")]
+	[Arguments("OAuth2", "doc-authentication-oauth2")]
+	public void AuthenticationAnchor_SchemeId_MatchesBumpSh(string schemeId, string expected) =>
+		ApiUrlBuilder.AuthenticationAnchor([schemeId]).Should().Be(expected);
 
 	[Test]
 	public async Task ServersPage_WritesCommonMarkFromServers()

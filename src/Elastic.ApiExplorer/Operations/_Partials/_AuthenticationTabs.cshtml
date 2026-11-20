@@ -1,3 +1,4 @@
+@using Elastic.ApiExplorer.Infrastructure
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthenticationSectionModel>
 @{
@@ -9,7 +10,8 @@
 	{
 		<p>Authentication is optional.</p>
 	}
-	@* Each requirement is an alternative, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable. *@
+	@* Each requirement is an alternative, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable.
+	   The schemes inside one requirement are sent together, so they share a panel. *@
 	<div class="@(useTabs ? "api-tabs api-authentication-tabs" : null)">
 		@for (var i = 0; i < requirements.Count; i++)
 		{
@@ -21,7 +23,30 @@
 				<label class="tabs-label" for="@tabId">@requirement.Label</label>
 			}
 			<div class="@(useTabs ? "tabs-content " : "")api-authorization-panel">
-				@(await RenderPartialAsync<_AuthenticationPanel, AuthenticationPanelModel>(new AuthenticationPanelModel(requirement, Model.RenderMarkdown)))
+				@if (requirement.Schemes.Count > 1)
+				{
+					<p>Send all of these together.</p>
+				}
+				@foreach (var scheme in requirement.Schemes)
+				{
+					@if (requirement.Schemes.Count > 1)
+					{
+						<h3>@scheme.Label</h3>
+					}
+					@if (!string.IsNullOrEmpty(scheme.CredentialExample))
+					{
+						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
+					}
+					@if (scheme.DescriptionMarkdown is not null)
+					{
+						@Model.RenderMarkdown(scheme.DescriptionMarkdown)
+					}
+					@* OAuth 2.0 and OpenID Connect have no credential example, and a description is optional. The open section must still name the scheme. *@
+					@if (string.IsNullOrEmpty(scheme.CredentialExample) && scheme.DescriptionMarkdown is null && requirement.Schemes.Count == 1)
+					{
+						<p>Uses @scheme.Label authentication.</p>
+					}
+				}
 			</div>
 		}
 	</div>

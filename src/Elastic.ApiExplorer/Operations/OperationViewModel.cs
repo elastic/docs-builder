@@ -19,9 +19,6 @@ public record AuthenticationSectionModel(
 	Func<string?, HtmlString> RenderMarkdown
 );
 
-/// <summary>The credentials of one alternative: a tab panel on endpoints, a section under its heading on the Authentication page.</summary>
-public record AuthenticationPanelModel(AuthRequirement Requirement, Func<string?, HtmlString> RenderMarkdown);
-
 /// <summary>Required privileges and credentials for the Required privileges and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
 public record AuthorizationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,

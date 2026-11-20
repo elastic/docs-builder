@@ -13,9 +13,6 @@ public record AuthScheme(string Id, string Label, string? CredentialExample, str
 public record AuthRequirement(IReadOnlyList<AuthScheme> Schemes)
 {
 	public string Label => string.Join(" + ", Schemes.Select(static s => s.Label));
-
-	/// <summary>The heading anchor on the Authentication page: the scheme ids, so a link to one alternative stays stable.</summary>
-	public string Slug => string.Join("-", Schemes.Select(static s => s.Id)).ToLowerInvariant();
 }
 
 /// <summary>Where an endpoint's <c>auth</c> badge points: the Authentication page, the endpoint's own section, or nowhere.</summary>

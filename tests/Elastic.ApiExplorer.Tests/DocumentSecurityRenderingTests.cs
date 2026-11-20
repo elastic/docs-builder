@@ -113,11 +113,11 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 
 			## Api key
 
+			Send the encoded key with the ApiKey prefix.
+
 			```http
 			Authorization: <value>
 			```
-
-			Send the encoded key with the ApiKey prefix.
 
 			## Basic
 

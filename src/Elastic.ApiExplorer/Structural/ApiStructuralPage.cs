@@ -104,28 +104,24 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiStructuralPage Page { get; init; }
-	public required IReadOnlyList<AuthRequirement> Requirements { get; init; }
 	public required IReadOnlyList<ApiServerDisplay> Servers { get; init; }
 	public required string EmptyMessage { get; init; }
+	public IReadOnlyList<AuthRequirement> Requirements { get; init; } = [];
 	public bool AuthenticationOptional { get; init; }
-	public HtmlString? IntroHtml { get; init; }
-	public IReadOnlyList<TocItem> IntroHeadings { get; init; } = [];
+
+	/// <summary>The Authentication page's topic prose, then a section for each alternative.</summary>
+	public HtmlString? BodyHtml { get; init; }
+	public IReadOnlyList<TocItem> BodyHeadings { get; init; } = [];
 
 	/// <summary>The empty message only shows when the page has nothing else to say.</summary>
-	public bool ShowEmptyMessage =>
-		IntroHtml is null && (Page.Kind == ApiStructuralKind.Authentication ? Requirements.Count == 0 : Servers.Count == 0);
-
-	public AuthenticationSectionModel Authentication => new(Requirements, AuthenticationOptional, markdown => RenderMarkdown(markdown));
+	public bool ShowEmptyMessage => Page.Kind == ApiStructuralKind.Authentication ? BodyHtml is null : Servers.Count == 0;
 
 	protected override string? LayoutPageTitle => Page.Title;
 
 	/// <summary>Only the authentication page written as a topic has a sentence of its own; no copy is made up for the rest.</summary>
 	protected override string? LayoutPageDescription => Page.Intro;
 
-	protected override IReadOnlyList<TocItem> GetTocItems() =>
-		Page.Kind == ApiStructuralKind.Authentication
-			? [.. IntroHeadings, .. Requirements.Select(static requirement => new TocItem(requirement.Label, requirement.Slug, 2))]
-			: [];
+	protected override IReadOnlyList<TocItem> GetTocItems() => BodyHeadings;
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
 	{
@@ -134,41 +130,27 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 			return new StructuralViewModel(context)
 			{
 				Page = page,
-				Requirements = [],
 				Servers = ReadServers(context.Model),
 				EmptyMessage = "This API does not declare servers."
 			};
 		}
 
 		var requirements = ReadRequirements(context.Model);
-		var (introHtml, introHeadings) = RenderIntro(page.Intro, requirements, context);
+		var optional = OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security);
+		// The sections render with the topic prose, so their headings are docs headings: anchored, linkable and listed in On this page.
+		var sections = OperationCommonMark.AuthenticationSections(requirements, optional, anchors: true);
+		var body = string.Join("\n\n", new[] { page.Intro, sections }.Where(static part => !string.IsNullOrWhiteSpace(part)));
+		var (html, headings) = string.IsNullOrWhiteSpace(body) ? (null, []) : ApiMarkdown.RenderWithHeadings(context, body);
 		return new StructuralViewModel(context)
 		{
 			Page = page,
-			Requirements = requirements,
-			AuthenticationOptional = OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
 			Servers = [],
 			EmptyMessage = "This API does not declare authentication schemes.",
-			IntroHtml = introHtml,
-			IntroHeadings = introHeadings
+			Requirements = requirements,
+			AuthenticationOptional = optional,
+			BodyHtml = html,
+			BodyHeadings = headings
 		};
-	}
-
-	// Requirement headings own their anchors, so an intro heading with the same slug gets none.
-	private static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderIntro(
-		string? intro,
-		IReadOnlyList<AuthRequirement> requirements,
-		ApiRenderContext context
-	)
-	{
-		if (string.IsNullOrWhiteSpace(intro))
-			return (null, []);
-
-		return ApiMarkdown.RenderWithHeadings(
-			context,
-			intro,
-			requirements.Select(static requirement => requirement.Slug).ToHashSet(StringComparer.Ordinal)
-		);
 	}
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
@@ -208,7 +190,11 @@ internal static class StructuralCommonMark
 			return;
 		}
 
-		OperationCommonMark.WriteAuthenticationSections(markdown, page.Requirements, page.AuthenticationOptional, apiBaseUrl);
+		ApiCommonMark.Prepared(
+			markdown,
+			OperationCommonMark.AuthenticationSections(page.Requirements, page.AuthenticationOptional, anchors: false),
+			apiBaseUrl
+		);
 	}
 
 	private static void WriteServers(StringBuilder markdown, StructuralViewModel page)

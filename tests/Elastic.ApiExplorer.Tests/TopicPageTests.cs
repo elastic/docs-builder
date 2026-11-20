@@ -248,7 +248,8 @@ public partial class TopicPageTests
 		// The title sits in the same header as on an operation page, which sets its size and the space above it.
 		topic.Should().Contain("<header class=\"api-page-intro\">");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
-		authentication.Should().Contain("Use an API key.").And.Contain("<h2 id=\"apikey\">Api key</h2>");
+		// The test renderer passes Markdown through, so the section heading shows with its anchor as written.
+		authentication.Should().Contain("Use an API key.").And.Contain("## Api key [doc-authentication-api-key]");
 		// Each alternative is a section of its own, not a tab, and there is no collapsible Authentication heading.
 		authentication.Should().NotContain("tabs-label").And.NotContain("api-param-section-toggle");
 		// The sidebar opens with an Overview row and the guide pages, with no group label above them, then the Operations label.
