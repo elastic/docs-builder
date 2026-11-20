@@ -190,6 +190,20 @@ describe('responses accordion and examples rail sync', () => {
             expect(expanded(el)).toBe(false)
         expect(expandAll().textContent).toBe('Expand all')
     })
+
+    it('Collapse all also folds fields left open inside a closed response', () => {
+        document.body.innerHTML = syncMarkup(['200', '400'])
+        toggle('400').click()
+        expandAll().click()
+        toggle('200').click()
+        expect(expanded(field('400'))).toBe(true)
+
+        expandAll().click() // Expand all: opens 200's fields
+        expandAll().click() // Collapse all
+
+        expect(expanded(panel('200'))).toBe(false)
+        expect(expanded(field('400'))).toBe(false)
+    })
 })
 
 describe('response status row', () => {
