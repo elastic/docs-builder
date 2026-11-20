@@ -158,11 +158,12 @@ public static class ApiStyleGuidePreviews
 			"api-operation-next" => (ApiPageType.Unreleased, "main"),
 			_ => (ApiPageType.Versionless, "9")
 		};
+		// Each version links to the preview of the same operation in that version, because the lorem API is not served.
 		ApiVersionSwitcherItem[] versions =
 		[
-			new("main", "Next (unreleased)", "/api/lorem/next/", selected == "main", "Next"),
-			new("9", "v9 (latest)", "/api/lorem/", selected == "9", "v9"),
-			new("8", "v8", "/api/lorem/v8/", selected == "8", "v8")
+			new("main", "Next (unreleased)", $"{StyleGuidePreviewCatalog.Route}/api-operation-next", selected == "main", "Next"),
+			new("9", "v9 (latest)", $"{StyleGuidePreviewCatalog.Route}/api-operation", selected == "9", "v9"),
+			new("8", "v8", $"{StyleGuidePreviewCatalog.Route}/api-operation-older-major", selected == "8", "v8")
 		];
 		var renderer = new IsolatedBuildNavigationHtmlWriter(
 			context,

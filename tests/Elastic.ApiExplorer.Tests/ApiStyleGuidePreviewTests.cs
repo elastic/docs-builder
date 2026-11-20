@@ -79,7 +79,17 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	{
 		var html = await RenderAsync("api-operation");
 
-		html.Should().Contain("/api/lorem/v8/");
+		html.Should().Contain("/style-guide/preview/api-operation-older-major");
+	}
+
+	[Test]
+	[Arguments("api-operation-older-major")]
+	[Arguments("api-operation-next")]
+	public async Task VersionNoticePreview_LinksToTheLatestVersionPreview(string id)
+	{
+		var html = await RenderAsync(id);
+
+		html.Should().Contain("<a href=\"/style-guide/preview/api-operation\">View the latest version (v9)");
 	}
 
 	[Test]
