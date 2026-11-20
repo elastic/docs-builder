@@ -100,6 +100,9 @@ internal sealed class ApiFloatingSection(
 			return;
 		}
 
+		// The versions that rendered keep their link metadata, so cross-links that name them resolve even when the root is hidden.
+		_trees = trees;
+
 		// No tree at the unversioned URL means the root links nowhere.
 		// The generator has already reported why a spec could not be loaded.
 		if (trees.Trees.FirstOrDefault(t => t.Suffix == urlKey) is not { } versionless)
@@ -116,7 +119,6 @@ internal sealed class ApiFloatingSection(
 		// The catalog titles an API the same way, so the navigation and the API hub agree.
 		_root.Title = versionless.Version.Document.Info?.Title ?? _root.Title;
 
-		_trees = trees;
 		_root.SetNavigationItems([.. trees.Trees.Select(static t => t.Navigation)]);
 	}
 

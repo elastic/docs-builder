@@ -537,6 +537,19 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		trees.Trees.Select(t => t.Suffix).Should().BeEquivalentTo(["elasticsearch/next", "elasticsearch/v8"]);
 		root.Hidden.Should().BeTrue("the declared newest major did not load, so nothing renders at the unversioned URL");
+
+		var links = section.ToLinkSection()!;
+		links
+			.Versions
+			.Select(v => (v.Name, v.Root, v.Current))
+			.Should()
+			.BeEquivalentTo(
+				[("main", "api/elasticsearch/next", false), ("8", "api/elasticsearch/v8", false)],
+				"the versions that rendered stay linkable, and none is current"
+			);
+		links.TryResolvePage("8", "operation/operation-ping", out var path).Should().BeTrue();
+		path.Should().Be("api/elasticsearch/v8/operation/operation-ping");
+		links.TryResolvePage(null, "operation/operation-ping", out _).Should().BeFalse("no version owns the unversioned URL");
 	}
 
 	[Test]
