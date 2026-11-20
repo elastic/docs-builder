@@ -12,6 +12,8 @@
 			{
 				Id = "api-version-menu",
 				Label = "API version",
+				// The menu rows can carry a hint such as "(unreleased)"; the trigger names just the version.
+				Current = (apiContext.Versions.FirstOrDefault(static v => v.Selected) is { } selected) ? selected.ShortLabel ?? selected.Label : null,
 				Items = [.. apiContext.Versions.Select(item => new LinkMenuItem(item.Label, item.Value, item.Selected))]
 			}))
 		</div>
