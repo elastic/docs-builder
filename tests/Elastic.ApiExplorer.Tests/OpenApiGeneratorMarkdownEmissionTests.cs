@@ -114,7 +114,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(
-				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search", "index.html"),
+				Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-search", "index.html"),
 				TestContext.Current!.Execution.CancellationToken
 			);
 
