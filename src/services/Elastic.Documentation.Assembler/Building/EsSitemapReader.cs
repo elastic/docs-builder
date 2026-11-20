@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Assembler.Building;
 
 public record SitemapEntry(string Url, DateTimeOffset LastUpdated);
 
-/// <summary>Reads all url + content_last_updated pairs from the ES semantic index using search_after with PIT.</summary>
+/// <summary>Reads the url + content_last_updated pairs of the narrative pages in the ES semantic index using search_after with PIT.</summary>
 public class EsSitemapReader(DistributedTransport transport, ILogger logger, string indexName)
 {
 	private const int PageSize = 1000;
@@ -139,7 +139,11 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 			{
 				["bool"] = new JsonObject
 				{
-					["must_not"] = new JsonArray(new JsonObject { ["term"] = new JsonObject { ["hidden"] = true } })
+					// API pages come from the API sitemap of the build: the index holds operations, not pages
+					["must_not"] = new JsonArray(
+						new JsonObject { ["term"] = new JsonObject { ["hidden"] = true } },
+						new JsonObject { ["term"] = new JsonObject { ["content_type"] = "api" } }
+					)
 				}
 			},
 			["pit"] = new JsonObject { ["id"] = pitId, ["keep_alive"] = PitKeepAlive },

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Diagnostics;
@@ -126,4 +127,11 @@ public class SitemapTests
 		fileSystem.File.ReadAllText("/output/docs/sitemap-api.xml").Should().Be(apiSitemap);
 		fileSystem.File.ReadAllText("/output/docs/sitemap.xml").Should().Contain("sitemap-api.xml");
 	}
+
+	[Test]
+	public void EsSearchBody_LeavesOutHiddenPagesAndApiDocuments() =>
+		JsonNode.Parse(EsSitemapReader.BuildSearchBody("pit", null))!["query"]!
+			.ToJsonString()
+			.Should()
+			.MatchInlineSnapshot("{\"bool\":{\"must_not\":[{\"term\":{\"hidden\":true}},{\"term\":{\"content_type\":\"api\"}}]}}");
 }

@@ -56,14 +56,10 @@ public class AssemblerSitemapService(
 		_logger.LogInformation("Querying index {Index} for sitemap entries", indexName);
 
 		var reader = new EsSitemapReader(transport, _logger, indexName);
-		// API pages keep the file `assembler build` wrote from their page types: the index holds operations, not pages.
-		var output = SitemapOutput.For(assembleContext);
+		// API pages keep the file `assembler build` wrote from their page types; the reader returns narrative pages only.
 		var entries = new Dictionary<string, DateTimeOffset>();
 		await foreach (var entry in reader.ReadAllAsync(ctx))
-		{
-			if (!output.IsApiUrl(entry.Url))
-				entries[entry.Url] = entry.LastUpdated;
-		}
+			entries[entry.Url] = entry.LastUpdated;
 
 		_logger.LogInformation("Fetched {Count} narrative sitemap entries from ES", entries.Count);
 
@@ -73,7 +69,7 @@ public class AssemblerSitemapService(
 			return false;
 		}
 
-		var files = SitemapBuilder.Generate(entries, output, collector);
+		var files = SitemapBuilder.Generate(entries, SitemapOutput.For(assembleContext), collector);
 		foreach (var file in files)
 			_logger.LogInformation("Sitemap file {File}: {Count} URLs", file.Name, file.EntryCount);
 
