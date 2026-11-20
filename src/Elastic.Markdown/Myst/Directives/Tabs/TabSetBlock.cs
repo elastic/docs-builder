@@ -11,8 +11,20 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context) : D
 {
 	public override string Directive => "tab-set";
 
+	/// <summary>
+	/// Group keys that render as a dropdown rather than a horizontal tab strip by default.
+	/// These are the groups that routinely carry more options than fit on one row.
+	/// </summary>
+	private static readonly HashSet<string> DropdownGroups = new(["languages"], StringComparer.OrdinalIgnoreCase);
+
 	public int Index { get; set; }
 	public string? GetGroupKey() => Prop("group");
+
+	/// <summary>
+	/// Renders the tab strip as a &lt;select&gt;. Defaults to true for <see cref="DropdownGroups"/>,
+	/// and can be forced either way per tab-set with `:dropdown: true|false`.
+	/// </summary>
+	public bool RenderAsDropdown() => TryPropBool("dropdown") ?? DropdownGroups.Contains(GetGroupKey() ?? string.Empty);
 
 	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
 
