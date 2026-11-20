@@ -55,9 +55,9 @@ public sealed record VersionIndex(IReadOnlyList<VersionIndexRepository> Reposito
 {
 	public static ConstraintSet<VersionIndex> Constraints => VersionIndexConstraints.All;
 
-	public bool Equals(VersionIndex? other) => other is not null && Repositories.SequenceEqual(other.Repositories);
+	public bool Equals(VersionIndex? other) => other is not null && (Repositories ?? []).SequenceEqual(other.Repositories ?? []);
 
-	public override int GetHashCode() => Repositories.Count;
+	public override int GetHashCode() => Repositories?.Count ?? 0;
 
 	public bool TryGetRepository(string name, out VersionIndexRepository repository)
 	{
@@ -67,7 +67,7 @@ public sealed record VersionIndex(IReadOnlyList<VersionIndexRepository> Reposito
 
 	/// <summary>Every moniker with the repository and spec file it sits under, in written order. Nulls the index wrote are skipped.</summary>
 	public IEnumerable<(string Repository, string File, VersionMoniker Moniker)> AllMonikers() =>
-		Repositories.SelectMany(
+		(Repositories ?? []).SelectMany(
 			r => (r.Specs ?? []).SelectMany(s => (s.Monikers ?? []).OfType<VersionMoniker>().Select(m => (r.Name, s.File, m)))
 		);
 }
