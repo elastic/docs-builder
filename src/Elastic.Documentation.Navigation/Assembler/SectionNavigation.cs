@@ -44,6 +44,9 @@ public class SectionNavigation(string title) : IRootNavigationItem<IDocumentatio
 	/// <inheritdoc />
 	public bool Hidden => false;
 
+	/// <summary>A floating hub is listed only while one of its sections is: with none rendered, the build writes no hub page.</summary>
+	public bool InSitemap => !IsFloatingHub || NavigationItems.Any(i => i.InSitemap);
+
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
 

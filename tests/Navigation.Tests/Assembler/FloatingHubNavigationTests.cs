@@ -136,7 +136,9 @@ public class FloatingHubNavigationTests
 			.SelectMany(SitemapNavigationHelper.Flatten)
 			.Select(i => i.Url)
 			.Should()
-			.NotContain("/api/demo/operation/operation-search", "a hidden root takes its pages out of the sitemap");
+			.NotContain("/api/demo/operation/operation-search", "a hidden root takes its pages out of the sitemap")
+			.And
+			.NotContain("/docs/api", "a hub without a rendered section has no page");
 	}
 
 	[Test]
