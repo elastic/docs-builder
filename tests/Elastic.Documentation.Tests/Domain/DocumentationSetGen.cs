@@ -42,26 +42,33 @@ internal static class DocumentationSetGen
 
 	// ---- the files a documentation set resolves against
 
+	// MockFileSystem on Windows needs a drive on every absolute path
+	private static readonly string Root = OperatingSystem.IsWindows() ? "C:" : "";
+
 	public static readonly MockFileSystem FileSystem = new(
 		new Dictionary<string, MockFileData>
 		{
-			["/docs/docset.yml"] = new("project: p"),
-			["/docs/logo.svg"] = new("<svg/>"),
-			["/docs/icon.ico"] = new("ico"),
-			["/docs/img/a.png"] = new("png"),
-			["/docs/spec.json"] = new("{}"),
-			["/docs/sub/spec.json"] = new("{}"),
-			["/docs/api/es/a.md"] = new("# a"),
-			["/docs/api/es/op-1.md"] = new("# op"),
-			["/docs/api/es/sub/b.md"] = new("# b"),
-			["/docs/api/es/sub/op-2.md"] = new("# op"),
-			["/outside.svg"] = new("<svg/>")
+			[Root + "/docs/docset.yml"] = new("project: p"),
+			[Root + "/docs/logo.svg"] = new("<svg/>"),
+			[Root + "/docs/icon.ico"] = new("ico"),
+			[Root + "/docs/img/a.png"] = new("png"),
+			[Root + "/docs/spec.json"] = new("{}"),
+			[Root + "/docs/sub/spec.json"] = new("{}"),
+			[Root + "/docs/api/es/a.md"] = new("# a"),
+			[Root + "/docs/api/es/op-1.md"] = new("# op"),
+			[Root + "/docs/api/es/sub/b.md"] = new("# b"),
+			[Root + "/docs/api/es/sub/op-2.md"] = new("# op"),
+			[Root + "/outside.svg"] = new("<svg/>")
 		},
-		new MockFileSystemOptions { CurrentDirectory = "/docs" }
+		new MockFileSystemOptions { CurrentDirectory = Root + "/docs" }
 	);
 
 	public static DocumentationSetDefinition Base =>
-		new() { SourceFile = FileSystem.FileInfo.New("/docs/docset.yml"), SourceDirectory = FileSystem.DirectoryInfo.New("/docs") };
+		new()
+		{
+			SourceFile = FileSystem.FileInfo.New(Root + "/docs/docset.yml"),
+			SourceDirectory = FileSystem.DirectoryInfo.New(Root + "/docs")
+		};
 
 	// ---- the catalog
 
