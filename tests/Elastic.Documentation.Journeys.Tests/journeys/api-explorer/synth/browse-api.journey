@@ -35,12 +35,13 @@ feature navigation-preview
 end
 
 # Open an operation of that version: its page shows the method and the route under "Paths". Waiting for a link of the
-# new version also waits for the page swap to finish.
-expect attached "#elastic-docs-v3 a[href*='/docs/api/elasticsearch/v8/operation/']"
+# new version also waits for the page swap to finish. The operation exists in both majors, so the version switch below
+# has a page to land on.
+expect attached "#elastic-docs-v3 a[href$='/docs/api/elasticsearch/v8/operation/operation-async-search-status']"
 wait --load networkidle
 wait 1500
-click "#elastic-docs-v3 a[href*='/docs/api/elasticsearch/v8/operation/']"
-wait --url **/docs/api/elasticsearch/v8/operation/**
+click "#elastic-docs-v3 a[href$='/docs/api/elasticsearch/v8/operation/operation-async-search-status']"
+wait --url **/docs/api/elasticsearch/v8/operation/operation-async-search-status
 expect text ".api-url-listing .api-method-label" "^(GET|PUT|POST|DELETE|HEAD|PATCH)$" --regex
 expect text ".api-url-listing .api-url-path" "^/" --regex
 
@@ -48,11 +49,11 @@ expect text ".api-url-listing .api-url-path" "^/" --regex
 # the operation: the picker must link to this operation's page in the other version, not to that version's landing page.
 feature !navigation-preview
   click "#api-hub-switcher button"
-  click "#api-version-switcher a[href*='/docs/api/elasticsearch/operation/']"
+  click "#api-version-switcher a[href$='/docs/api/elasticsearch/operation/operation-async-search-status']"
 end
 feature navigation-preview
   click "#api-version-switcher button"
-  click "#api-version-switcher a[href*='/docs/api/elasticsearch/operation/']"
+  click "#api-version-switcher a[href$='/docs/api/elasticsearch/operation/operation-async-search-status']"
 end
-wait --url **/docs/api/elasticsearch/operation/**
-expect url **/docs/api/elasticsearch/operation/**
+wait --url **/docs/api/elasticsearch/operation/operation-async-search-status
+expect url **/docs/api/elasticsearch/operation/operation-async-search-status
