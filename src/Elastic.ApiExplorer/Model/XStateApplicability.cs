@@ -32,9 +32,7 @@ public static partial class XStateApplicability
 			return null;
 
 		var diagnostics = new List<(Severity, string)>();
-		return AppliesCollection.TryParse(syntax, diagnostics, out var stack) && stack is not null
-			? new ApplicableTo { Stack = stack }
-			: null;
+		return AppliesCollection.TryParse(syntax, diagnostics, out var stack) && stack is not null ? ApplicableTo.ForStack(stack) : null;
 	}
 
 	/// <summary>

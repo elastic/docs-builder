@@ -11,10 +11,17 @@ using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
+/// <summary>The applicability entries of one <c>applies_to</c> key, ordered.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// </remarks>
 public record AppliesCollection : IReadOnlyCollection<Applicability>
 {
 	private readonly Applicability[] _items;
-	public AppliesCollection(Applicability[] items) => _items = items;
+	internal AppliesCollection(Applicability[] items) => _items = items;
+
+	/// <summary>The collection of <paramref name="items"/>, in the order given.</summary>
+	public static AppliesCollection Of(IEnumerable<Applicability> items) => new([.. items]);
 
 	// <lifecycle> [version]
 	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, out AppliesCollection? availability)
@@ -162,10 +169,15 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public int Count => _items.Length;
 }
 
+/// <summary>One lifecycle and version of an <c>applies_to</c> entry, for example <c>ga 9.1</c>.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record Applicability : IComparable<Applicability>, IComparable
 {
-	public ProductLifecycle Lifecycle { get; init; }
-	public VersionSpec? Version { get; init; }
+	public ProductLifecycle Lifecycle { get; internal init; }
+	public VersionSpec? Version { get; internal init; }
 
 	[YamlIgnore]
 	public static Applicability GenerallyAvailable { get; } = new()
