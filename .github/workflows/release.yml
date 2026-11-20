@@ -2,11 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: Release version, such as 1.80.0. Empty uses the version release-drafter calculates.
-        required: false
-        type: string
 
 permissions: {}
 
@@ -35,18 +30,63 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           commitish: ${{ github.sha }}
-          version: ${{ inputs.version }}
+      # A failed run removes its own tag and assets (`cleanup-failed-release`). If that did not run, a
+      # re-dispatch still starts clean: it moves a tag that no published release uses, and clears the
+      # draft's assets before the upload jobs attach new ones.
       - name: Create tag
         uses: actions/github-script@v9
+        env:
+          TAG_NAME: ${{ steps.release-drafter.outputs.tag_name }}
         with:
-          script: | # zizmor: ignore[template-injection] tag_name from release-drafter on main
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/${{ steps.release-drafter.outputs.tag_name }}',
-              sha: context.sha
-            })
-  
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = process.env.TAG_NAME;
+
+            let existing = null;
+            try {
+              existing = (await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` })).data;
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+
+            if (!existing) {
+              await github.rest.git.createRef({ owner, repo, ref: `refs/tags/${tag}`, sha: context.sha });
+              return;
+            }
+            if (existing.object.sha === context.sha) return;
+
+            // `getReleaseByTag` finds published releases only, never drafts.
+            let published = false;
+            try {
+              await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              published = true;
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+            if (published) {
+              core.setFailed(`Tag ${tag} belongs to a published release at ${existing.object.sha}.`);
+              return;
+            }
+            await github.rest.git.updateRef({ owner, repo, ref: `tags/${tag}`, sha: context.sha, force: true });
+
+      - name: Clear assets left on the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        # language=bash
+        run: |
+          set -euo pipefail
+          is_draft=$(gh release view "$TAG_NAME" --repo "$REPO" --json isDraft --jq .isDraft)
+          if [ "$is_draft" != "true" ]; then
+            echo "::error::Release ${TAG_NAME} is not a draft."
+            exit 1
+          fi
+          gh release view "$TAG_NAME" --repo "$REPO" --json assets --jq '.assets[].name' | while read -r name; do
+            echo "Deleting stale asset ${name}"
+            gh release delete-asset "$TAG_NAME" "$name" --repo "$REPO" --yes
+          done
+
   containers:
     needs: 
       - release-drafter
@@ -203,7 +243,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+        run: gh release upload --clobber --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
 
   deploy-link-index-updater-lambda-prod:
     environment: 
@@ -244,7 +284,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+        run: gh release upload --clobber --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
 
   deploy-changelog-scrubber-lambda-prod:
     environment:
@@ -294,7 +334,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}" changelog-scrubber-allowlist.json
+        run: gh release upload --clobber --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}" changelog-scrubber-allowlist.json
 
   release:
     needs: 
@@ -341,7 +381,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
         run: |
-          gh release upload "$TAG_NAME" .artifacts/publish/docs-builder/release/*.zip .artifacts/publish/docs-journeys/release/*.zip
+          gh release upload --clobber "$TAG_NAME" .artifacts/publish/docs-builder/release/*.zip .artifacts/publish/docs-journeys/release/*.zip
         shell: bash
 
   publish-release:
@@ -446,6 +486,60 @@ jobs:
           config: docs/changelog.yml
           bundle-path: ${{ needs.create-release-notes-bundle.outputs.bundle-path }}
 
+  # A release that fails or is cancelled leaves a tag and attached assets that the next dispatch would
+  # trip over. Remove both from a draft and keep the draft: release-drafter reuses it and its notes.
+  # A published release is never touched. Dispatch the workflow again to recover; "Re-run failed jobs"
+  # needs the tag this job removes.
+  cleanup-failed-release:
+    needs:
+      - release-drafter
+      - containers
+      - build-link-index-lambda
+      - build-changelog-scrubber-lambda
+      - build-openapi-index-lambda
+      - package-openapi-index-updater-lambda
+      - deploy-link-index-updater-lambda-prod
+      - deploy-changelog-scrubber-lambda-prod
+      - release
+      - publish-release
+    if: >-
+      always() && needs.release-drafter.outputs.tag_name != ''
+      && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Remove the release assets and the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        # language=bash
+        run: |
+          set -euo pipefail
+          # Only an absent release or tag counts as nothing to clean; any other failure fails the job.
+          # The list includes drafts. `releases/tags/<tag>` does not.
+          state=$(gh api --paginate "repos/${REPO}/releases" --jq '.[] | select(.tag_name == env.TAG_NAME) | .draft')
+          if [ -z "$state" ]; then
+            echo "Release ${TAG_NAME} does not exist; nothing to clean."
+            exit 0
+          fi
+          if [ "$state" != "true" ]; then
+            echo "Release ${TAG_NAME} is published; leaving it and its tag alone."
+            exit 0
+          fi
+          gh release view "$TAG_NAME" --repo "$REPO" --json assets --jq '.assets[].name' | while read -r name; do
+            echo "Deleting asset ${name}"
+            gh release delete-asset "$TAG_NAME" "$name" --repo "$REPO" --yes
+          done
+          tag_ref=$(gh api "repos/${REPO}/git/matching-refs/tags/${TAG_NAME}" --jq '.[] | select(.ref == "refs/tags/" + env.TAG_NAME) | .ref')
+          if [ -n "$tag_ref" ]; then
+            gh api -X DELETE "repos/${REPO}/git/refs/tags/${TAG_NAME}"
+            echo "Deleted tag ${TAG_NAME}"
+          else
+            echo "Tag ${TAG_NAME} does not exist."
+          fi
+
   notify-failure:
     needs:
       - release-drafter
@@ -461,6 +555,7 @@ jobs:
       - notify-docs-internal-workflows
       - create-release-notes-bundle
       - publish-release-notes-bundle
+      - cleanup-failed-release
     if: always() && contains(needs.*.result, 'failure')
     runs-on: ubuntu-slim
     permissions:
