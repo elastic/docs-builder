@@ -28,10 +28,7 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	public required string MarkdownUrl { get; init; }
 
-	/// <summary>Intro/outro markdown pages have no Markdown export, so they have no Copy page.</summary>
-	public bool ShowPageActions { get; init; } = true;
-
-	/// <summary>The Copy page menu, the spec download alone on a page with no Markdown export, or null when the page has neither.</summary>
+	/// <summary>The Copy page menu, with the spec download when the page belongs to an API.</summary>
 	public ApiPageActionsModel? PageActions { get; init; }
 
 	/// <summary>The design-system rail's page actions. The assembler's docs bar already carries the spec download.</summary>
@@ -81,8 +78,6 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public virtual bool VersionNoticeInBadges => false;
 
 	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
-
-	protected virtual bool ShowPageActions => true;
 
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
@@ -160,8 +155,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			ShowSecondaryNav = false,
 			ApiContext = apiContext,
 			MarkdownUrl = markdownUrl,
-			ShowPageActions = ShowPageActions,
-			PageActions = BuildPageActions(markdownUrl, apiContext?.Spec),
+			PageActions = new ApiPageActionsModel(markdownUrl, apiContext?.Spec),
 			DesignSystemPageActions = BuildDesignSystemPageActions(markdownUrl, apiContext?.Spec),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
@@ -180,9 +174,6 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			? RenderContext.CanonicalUrl(CurrentNavigationItem.Url)
 			: null;
 
-	private ApiPageActionsModel? BuildPageActions(string markdownUrl, ApiSpecDownload? spec) =>
-		ShowPageActions || spec is not null ? new ApiPageActionsModel(ShowPageActions ? markdownUrl : null, spec) : null;
-
 	/// <summary>The API name followed by the selected version, when the API has more than one.</summary>
 	private string SpecCrumbName(string docTitle)
 	{
@@ -190,7 +181,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		return selected?.ShortLabel is { Length: > 0 } version ? $"{docTitle} {version}" : docTitle;
 	}
 
-	private PageActionsModel? BuildDesignSystemPageActions(string markdownUrl, ApiSpecDownload? spec)
+	private PageActionsModel BuildDesignSystemPageActions(string markdownUrl, ApiSpecDownload? spec)
 	{
 		var downloads = spec is not null && BuildContext.BuildType != BuildType.Assembler
 			? new PageActionDownload[]
@@ -199,10 +190,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 				new("Download OpenAPI spec (YAML)", spec.YamlUrl)
 			}
 			: [];
-		if (!ShowPageActions && downloads.Length == 0)
-			return null;
-
-		return new PageActionsModel { MarkdownUrl = ShowPageActions ? markdownUrl : null, Downloads = downloads };
+		return new PageActionsModel { MarkdownUrl = markdownUrl, Downloads = downloads };
 	}
 
 	private ApiIdentity BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)

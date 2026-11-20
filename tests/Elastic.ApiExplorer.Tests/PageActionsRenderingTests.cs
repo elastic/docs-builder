@@ -46,17 +46,6 @@ public class PageActionsRenderingTests
 	}
 
 	[Test]
-	public async Task Render_WithoutMarkdown_OffersTheDownloadsAlone()
-	{
-		var spec = new ApiSpecDownload("/api/elasticsearch.json", "/api/elasticsearch.yaml");
-		var html = await _PageActions.Create(new ApiPageActionsModel(null, spec)).RenderAsync(
-			cancellationToken: TestContext.Current!.Execution.CancellationToken
-		);
-
-		html.Should().MatchHtmlSnapshot();
-	}
-
-	[Test]
 	public async Task DesignSystemRail_ListsTheDownloadsAsDownloadLinks()
 	{
 		var model = new DesignSystemPageActions.PageActionsModel

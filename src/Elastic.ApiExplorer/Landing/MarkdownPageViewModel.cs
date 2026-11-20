@@ -42,6 +42,4 @@ public class MarkdownPageViewModel(ApiRenderContext context) : ApiViewModel(cont
 	protected override string BreadcrumbCurrentTitle => PageTitle;
 
 	protected override string? LayoutPageDescription => DescriptionMarkdown;
-
-	protected override bool ShowPageActions => false;
 }
