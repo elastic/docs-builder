@@ -4489,15 +4489,22 @@ html:has(.api-page-shell) {
  * Beside the rail the column's edges sit 40px past its text on both sides (the nav gap on the left, the column's
  * padding and half the gap to the rail on the right), so the row reaches out that far and pads its content back in.
  * Past a 1920px window the left edge also takes in the space the centred content leaves beside the sidebar.
+ * Where the bar pins, which the scroll margins below clear: under the header, and lower by the title row it shows
+ * above itself once pinned, when it has one.
  */
-/* The row the bar shows above itself once it pins; the bar pins that much lower, so the row fits under the header. */
 #elastic-api-v3 {
+	--api-section-links-top: calc(
+		var(--offset-top, 0px) + var(--api-section-links-title-height, 0px)
+	);
+}
+
+#elastic-api-v3:has(.api-section-links-title) {
 	--api-section-links-title-height: 36px;
 }
 
 .api-section-links {
 	position: sticky;
-	top: calc(var(--offset-top, 0px) + var(--api-section-links-title-height));
+	top: var(--api-section-links-top);
 	z-index: 5;
 	display: flex;
 	flex-wrap: nowrap;
@@ -4514,7 +4521,7 @@ html:has(.api-page-shell) {
 
 /*
  * Which operation this is, like the title bar a pull request pins on GitHub: its method and title on a row over the
- * page, just above the links, shown once the bar has pinned (api-docs.ts sets data-pinned). Until then the row is
+ * page, just above the links, shown once the bar has pinned (ds/toc.ts sets data-pinned). Until then the row is
  * hidden, and as it sits over the page, it takes no room in it and nothing moves when it shows.
  */
 .api-section-links-title {
@@ -4542,24 +4549,32 @@ html:has(.api-page-shell) {
 	opacity: 1;
 }
 
-.api-section-links .api-section-links-title a {
-	display: block;
+/* Pinned, the bar is a layer the page scrolls under: a soft shadow below it says so. In the page it has its rule only. */
+.api-section-links {
+	transition: box-shadow 120ms ease;
+}
+
+.api-section-links[data-pinned] {
+	box-shadow: 0 6px 12px -6px rgb(17 28 44 / 0.16);
+}
+
+.api-section-links-title a {
 	min-width: 0;
-	padding: 0;
 	overflow: hidden;
 	color: var(--color-ink-navy, #111c2c);
 	font-size: 15px;
 	font-weight: 600;
+	text-decoration: none;
 	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.api-section-links .api-section-links-title a:hover {
+.api-section-links-title a:hover {
 	color: var(--color-blue-elastic, #0b64dd);
 }
 
 /* A chip of several methods aligns itself to the top of its row elsewhere; here it sits on the links like the title. */
-.api-section-links-title > :not(a) {
-	flex: none;
+.api-section-links-title .api-method-group {
 	align-self: auto;
 }
 
@@ -4578,7 +4593,7 @@ html:has(.api-page-shell) {
 }
 
 /* As tall as the track, less any scrollbar in it. */
-.api-section-links a {
+.api-section-links-track a {
 	display: flex;
 	align-items: center;
 	padding: 0 10px;
@@ -4590,18 +4605,18 @@ html:has(.api-page-shell) {
 	transition: color 150ms ease;
 }
 
-.api-section-links a:hover {
+.api-section-links-track a:hover {
 	color: #1d2a3e;
 }
 
 /* The section in view reads like the current page in the sidebar and the current API in the switcher: blue, semibold. */
-.api-section-links a[aria-current],
-.api-section-links a[aria-current]:hover {
+.api-section-links-track a[aria-current],
+.api-section-links-track a[aria-current]:hover {
 	color: var(--color-blue-elastic, #0b64dd);
 	font-weight: 600;
 }
 
-.api-section-links a:focus-visible {
+.api-section-links-track a:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: -6px;
 	border-radius: 6px;
@@ -4657,7 +4672,8 @@ html:has(.api-page-shell) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.api-section-links a,
+	.api-section-links,
+	.api-section-links-track a,
 	.api-section-links-title {
 		transition: none;
 	}
@@ -4667,17 +4683,13 @@ html:has(.api-page-shell) {
 #elastic-api-v3 .api-param-section-header,
 #elastic-api-v3 .responses-header,
 #elastic-api-v3 #required-privileges {
-	scroll-margin-top: calc(
-		var(--offset-top, 0px) + var(--api-section-links-title-height) + 52px
-	);
+	scroll-margin-top: calc(var(--api-section-links-top) + 52px);
 }
 
 /* A supplemental section is a plain h2.section-header. A single-section operation can have them too but renders no
    row, so only a page with the row clears it; the others keep the site's usual margin. */
 #elastic-api-v3.api-has-toolbar h2.section-header {
-	scroll-margin-top: calc(
-		var(--offset-top, 0px) + var(--api-section-links-title-height) + 52px
-	);
+	scroll-margin-top: calc(var(--api-section-links-top) + 52px);
 }
 
 /*
@@ -4686,9 +4698,7 @@ html:has(.api-page-shell) {
  * kinds are a dt with an id, one in a property row and one in a header row. Other pages keep the global margin.
  */
 #elastic-api-v3.api-has-toolbar dt[id] {
-	scroll-margin-top: calc(
-		var(--offset-top, 0px) + var(--api-section-links-title-height) + 60px
-	);
+	scroll-margin-top: calc(var(--api-section-links-top) + 60px);
 }
 
 /* Expand all / Collapse all: in the section-links bar, pushed to its right edge, or alone on a row where there is no bar. */

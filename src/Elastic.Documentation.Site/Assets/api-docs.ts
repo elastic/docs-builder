@@ -321,7 +321,7 @@ function onHashChange(): void {
 /**
  * Initialize API docs for OperationView pages
  */
-let operationScrollBound = false
+let examplesScrollBound = false
 
 /** Shows the "jump to examples" button while the examples are still below the fold. */
 function updateExamplesButtonVisibility(): void {
@@ -335,40 +335,22 @@ function updateExamplesButtonVisibility(): void {
     examplesBtn.classList.toggle('visible', belowFold)
 }
 
-/** Marks the section bar pinned while it sits at its sticky top, so it shows the operation's title above it. */
-function updateSectionLinksPinned(): void {
-    const bar = document.querySelector<HTMLElement>('.api-section-links')
-    if (!bar) return
-    const pinnedTop = parseFloat(getComputedStyle(bar).top)
-    bar.toggleAttribute(
-        'data-pinned',
-        bar.getBoundingClientRect().top <= pinnedTop + 1
-    )
-}
-
-function updateOnScroll(): void {
-    updateExamplesButtonVisibility()
-    updateSectionLinksPinned()
-}
-
 function initOperationView(): void {
     initToc()
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
-    if (!operationScrollBound) {
-        operationScrollBound = true
+    if (!examplesScrollBound) {
+        examplesScrollBound = true
         let ticking = false
-        const schedule = () => {
+        window.addEventListener('scroll', () => {
             if (ticking) return
             ticking = true
             window.requestAnimationFrame(() => {
-                updateOnScroll()
+                updateExamplesButtonVisibility()
                 ticking = false
             })
-        }
-        window.addEventListener('scroll', schedule, { passive: true })
-        window.addEventListener('resize', schedule)
+        })
     }
-    updateOnScroll()
+    updateExamplesButtonVisibility()
 }
 
 // Track if global handlers have been initialized

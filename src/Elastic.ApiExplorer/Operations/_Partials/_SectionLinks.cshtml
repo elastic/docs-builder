@@ -6,10 +6,7 @@
 	@if (!string.IsNullOrWhiteSpace(Model.Title))
 	{
 		<div class="api-section-links-title">
-			@if (Model.Methods.Count > 0)
-			{
-				@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(Model.Methods))
-			}
+			@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(Model.Methods))
 			<a href="#api-operation-overview" data-api-back-to-top>@Model.Title</a>
 		</div>
 	}
