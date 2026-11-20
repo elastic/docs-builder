@@ -1400,6 +1400,127 @@
           "path": [
             "assembler"
           ],
+          "name": "crawl-check",
+          "summary": "Crawl every API Explorer URL on a deployed site and compare each answer with the API page-type table.",
+          "notes": "The API URLs come from the floating sections of a published links.json, plus every URL in\nsitemap-api.xml. Each page must answer 200 without a redirect, name the canonical URL and robots value its page\ntype gives it, and be in the sitemap only when its type belongs there. The sitemap index must list\nsitemap-api.xml. A sample of old /docs/api/doc/ URLs must redirect once to their current page.\n\n\n\nEach difference is an error and a summary per page type is printed. The command exits 1 on any difference.\nStaging is behind Google sign-in, so crawl edge or prod.",
+          "usage": "docs-builder assembler crawl-check [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "environment",
+              "type": "string",
+              "required": false,
+              "summary": "The environment in config/assembler.yml to crawl. Its uri and path_prefix give the site and its allow_indexing the expected robots value.",
+              "defaultValue": "edge"
+            },
+            {
+              "role": "flag",
+              "name": "base-url",
+              "type": "string",
+              "required": false,
+              "summary": "Crawl this scheme and host instead of the environment's uri, for example http://localhost:4000.",
+              "validations": [
+                {
+                  "kind": "url"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "links-json",
+              "type": "string",
+              "required": false,
+              "summary": "The path or URL of the links.json that lists the API pages. Defaults to docs-content main in the link index."
+            },
+            {
+              "role": "flag",
+              "name": "redirect-status",
+              "type": "integer",
+              "required": false,
+              "summary": "The status an old /docs/api/doc/ URL must redirect with.",
+              "defaultValue": "302",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "300",
+                  "max": "399"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "redirect-sample",
+              "type": "integer",
+              "required": false,
+              "summary": "How many API pages to check through their old /docs/api/doc/ URL, on top of the redirect table and every tree root.",
+              "defaultValue": "50",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "0",
+                  "max": "10000"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "concurrency",
+              "type": "integer",
+              "required": false,
+              "summary": "How many requests to run at once.",
+              "defaultValue": "16",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "256"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "assembler"
+          ],
           "name": "index",
           "summary": "Index the assembled documentation into Elasticsearch.",
           "notes": "Runs an assembler build with only the Elasticsearch exporter enabled, then streams documents\nto the cluster. The index name is derived from the environment name.\n\n\nRun after assembler build or use instead of it when indexing is the only goal.",
