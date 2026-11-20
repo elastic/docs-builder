@@ -4485,7 +4485,7 @@ html:has(.api-page-shell) {
 
 /*
  * The section links: one row above the description, ruled below from edge to edge of the article column, that stays
- * under the header as the reader scrolls. Plain text links, not tabs: the section in view is only blue.
+ * under the header as the reader scrolls. The section in view reads like an active tab: blue, underlined on the rule.
  * Beside the rail the column's edges sit 40px past its text on both sides (the nav gap on the left, the column's
  * padding and half the gap to the rail on the right), so the row reaches out that far and pads its content back in.
  * Past a 1920px window the left edge also takes in the space the centred content leaves beside the sidebar.
@@ -4607,6 +4607,8 @@ html:has(.api-page-shell) {
 .api-section-links-track a[aria-current]:hover {
 	color: var(--color-blue-elastic, #0b64dd);
 	font-weight: 600;
+	/* Underlined like the active item of the secondary nav: square, the item's full width, just above the rule. */
+	box-shadow: inset 0 -2px 0 var(--color-blue-elastic, #0b64dd);
 }
 
 .api-section-links-track a:focus-visible {
