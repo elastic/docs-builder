@@ -172,6 +172,15 @@ describe('responses accordion and examples rail sync', () => {
         expect(expandAll().textContent).toBe('Collapse all')
     })
 
+    it('offers Expand all again when a rail tab opens a response with folded fields', () => {
+        document.body.innerHTML = syncMarkup(['200', '400'])
+        expandAll().click()
+        tab('400').click()
+
+        expect(expanded(panel('400'))).toBe(true)
+        expect(expandAll().textContent).toBe('Expand all')
+    })
+
     it('Collapse all closes the open response and its fields', () => {
         document.body.innerHTML = syncMarkup(['200', '400'])
         expandAll().click()

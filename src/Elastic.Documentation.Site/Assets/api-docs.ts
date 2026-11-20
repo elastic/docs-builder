@@ -158,7 +158,9 @@ function openMainResponse(status: string): void {
     const panel = document.querySelector<HTMLElement>(
         `[data-api-responses] .response-panel:not(.response-panel--static)[data-status="${status}"]`
     )
-    if (panel) setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
+    if (!panel) return
+    setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
+    syncExpandAll()
 }
 
 /**
