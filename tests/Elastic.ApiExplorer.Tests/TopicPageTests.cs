@@ -132,18 +132,14 @@ public partial class TopicPageTests
 	}
 
 	[Test]
-	[Arguments("overview.md", 1)]
-	[Arguments("spaces.md", 0)]
-	public async Task CreateNavigation_ChildTitledOverview_WarnsThatItRepeatsTheOverviewRow(string fileName, int warnings)
+	[Arguments("overview.md", "# Guide\n\nHow it works.\n", 1)]
+	[Arguments("spaces.md", "# Guide\n\nHow it works.\n", 0)]
+	[Arguments("overview.md", "---\nnavigation_title: Getting started\n---\n\n# Guide\n", 0)]
+	public async Task CreateNavigation_ChildTitledOverview_WarnsThatItRepeatsTheOverviewRow(string fileName, string markdown, int warnings)
 	{
 		var collector = new DiagnosticsCollector([]);
 
-		_ = await NavigationWithChild(
-			Spec(topics: null),
-			fileName,
-			"# Guide\n\nHow it works.\n",
-			TestHelpers.CreateBuildContext(collector)
-		);
+		_ = await NavigationWithChild(Spec(topics: null), fileName, markdown, TestHelpers.CreateBuildContext(collector));
 
 		collector.Warnings.Should().Be(warnings);
 	}

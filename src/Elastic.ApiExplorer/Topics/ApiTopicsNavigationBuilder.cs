@@ -203,7 +203,7 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			context.EmitWarning(
 				markdownFile,
-				$"The API sidebar already opens with an '{NavigationRenderModel.OverviewTitle}' row that leads to the API landing page, so this children: page shows as a second '{title}' row. Give the page a title that names what it covers."
+				$"The API sidebar already opens with an '{NavigationRenderModel.OverviewTitle}' row that leads to the API landing page, so this children: page shows as a second '{title}' row. Set navigation_title in its front matter to a label that names what it covers; the page URL stays the same."
 			);
 		}
 		return new SimpleMarkdownNavigationItem(url, title, markdownFile, landing) { Parent = landing };
