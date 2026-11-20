@@ -43,3 +43,16 @@ click "#elastic-docs-v3 a[href*='/docs/api/elasticsearch/v8/operation/']"
 wait --url **/docs/api/elasticsearch/v8/operation/**
 expect text ".api-url-listing .api-method-label" "^(GET|PUT|POST|DELETE|HEAD|PATCH)$" --regex
 expect text ".api-url-listing .api-url-path" "^/" --regex
+
+# The operation was reached by a link click, which swaps only the page content. Switching version from there keeps
+# the operation: the picker must link to this operation's page in the other version, not to that version's landing page.
+feature !navigation-preview
+  click "#api-hub-switcher button"
+  click "#api-version-switcher a[href*='/docs/api/elasticsearch/operation/']"
+end
+feature navigation-preview
+  click "#api-version-switcher button"
+  click "#api-version-switcher a[href*='/docs/api/elasticsearch/operation/']"
+end
+wait --url **/docs/api/elasticsearch/operation/**
+expect url **/docs/api/elasticsearch/operation/**
