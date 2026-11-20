@@ -213,6 +213,18 @@ public class SitemapTests
 			});
 	}
 
+	// only AssemblerBuildService decides to clean the output; `assembler sitemap` needs the API sitemap `assembler build` left there
+	[Test]
+	public async Task Build_IntoAnEarlierBuildsOutput_KeepsItsApiSitemapListedInTheIndex()
+	{
+		var (fileSystem, earlier) = Output();
+		_ = SitemapBuilder.Generate(Entries, earlier, new DiagnosticsCollector([]));
+
+		var site = await InMemoryAssemblerSite.BuildAsync(CancellationToken.None, fileSystem: fileSystem);
+
+		site.Read("sitemap.xml").Should().Contain("<loc>https://www.elastic.co/docs/sitemap-api.xml</loc>");
+	}
+
 	[Test]
 	public void Generate_OnAPreviewHost_PointsTheIndexAtTheFilesOnThatHost_AndKeepsCanonicalPageUrls()
 	{

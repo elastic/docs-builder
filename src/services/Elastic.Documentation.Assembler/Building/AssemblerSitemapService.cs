@@ -75,7 +75,12 @@ public class AssemblerSitemapService(
 		}
 
 		// API pages are the ones `assembler build` listed; the index dates them.
-		var api = ApiSitemapDates.Resolve(SitemapBuilder.ReadApiPages(output), documents, output.ApiRoot);
+		var buildPages = SitemapBuilder.ReadApiPages(output);
+		if (buildPages.Count == 0 && documents.Any(d => d.ApiTreeRoots.Count > 0))
+			collector.EmitGlobalWarning(
+				$"{indexName} has API documents, but {output.Folder.FullName} has no sitemap-api.xml from `assembler build`, so sitemap.xml will not list the API pages"
+			);
+		var api = ApiSitemapDates.Resolve(buildPages, documents, output.ApiRoot);
 		if (api.Missing.Count > 0)
 			collector.EmitGlobalWarning(
 				$"{api.Missing.Count} API sitemap pages have no document in {indexName}, so they keep the build date: {string.Join(", ", api.Missing.Take(10))}"
