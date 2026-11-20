@@ -224,6 +224,7 @@ For versioned products, {{dbuild}} renders every resolved version from the index
 | `main` | `/api/<key>/next/` | Unreleased spec |
 
 The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.
+Search indexes the default version at `/api/<key>/` and older majors at `/api/<key>/vN/`, not `main` at `/next/` or the `/v9/` copy of the newest major. Search from a `/next/` page is the normal search with a lift for that API's default-version results. It does not filter by version, and operations that exist only in older majors stay hidden.
 An API whose index lists no numeric major keeps `main` at `/api/<key>/` and has no `/next/`.
 The default comes from the versions the index declares. If the newest major fails to load, nothing
 renders at `/api/<key>/`, and no older major takes its place.

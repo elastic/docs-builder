@@ -277,9 +277,9 @@ describe('querySearch scope', () => {
         )
     })
 
-    it('sends the main tree on a next path', async () => {
+    it('sends the api key alone on a next path, which is not indexed', async () => {
         expect(await urlOn('/docs/api/elasticsearch/next/group/x')).toBe(
-            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=main'
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch'
         )
     })
 
