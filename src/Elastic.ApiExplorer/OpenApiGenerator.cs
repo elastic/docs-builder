@@ -284,8 +284,11 @@ public class OpenApiGenerator(
 		}
 		return result.Append(markdown, start, markdown.Length - start).ToString();
 
+		// Sentence punctuation ends a bare autolink, as the Markdown renderer reads it.
 		static bool EndsAt(string text, int index) =>
-			index == text.Length || text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']' || char.IsWhiteSpace(text[index]);
+			index == text.Length
+				|| text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']' or '.' or ',' or ';' or ':' or '!'
+				|| char.IsWhiteSpace(text[index]);
 
 		// `/v8` or `/next` right after the root names another version tree of the API.
 		static bool StartsVersionSegment(string text, int index)
