@@ -816,7 +816,8 @@ public class OpenApiGenerator(
 
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
-		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
+		// Rendered in memory so the indentation can be dropped before the page reaches disk.
+		await using var stream = new MemoryFileSystemStream(outputFile.FullName);
 
 		// Build the expensive page model once and pass it to both render paths so that
 		// OperationPageModel.Create / SchemaPageModel.Create / StructuralViewModel.Create
@@ -832,6 +833,8 @@ public class OpenApiGenerator(
 			await page.RenderAsync(stream, renderContext, ctx);
 		}
 
+		var html = HtmlWhitespace.Collapse(stream.ReadAsUtf8());
+		await _writeFileSystem.File.WriteAllTextAsync(outputFile.FullName, html, ctx).ConfigureAwait(false);
 		return outputFile;
 
 		IFileInfo OutputFile(INavigationItem currentNavigation)
