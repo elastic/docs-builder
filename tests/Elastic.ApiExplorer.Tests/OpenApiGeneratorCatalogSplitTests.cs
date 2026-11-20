@@ -168,6 +168,40 @@ public class OpenApiGeneratorCatalogSplitTests
 		versionIndexClient.RootIndexFetchError.Should().NotBeNull();
 	}
 
+	[Test]
+	public async Task ResolveIndexedTrees_VersionNamedNext_FailsTheExport()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(MainAndNextIndex)
+				: SpecResponse()
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(SpecDocument("Elasticsearch main"))
+		);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+
+		var export = () => generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
+
+		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
+			"The API search export stops: API 'elasticsearch': version 'next' is declared in the version index but could not be loaded."
+		);
+	}
+
+	/*lang=json,strict*/
+	private const string MainAndNextIndex =
+		"""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"main":{"version":"main"},"next":{"version":"next"}}}}""";
+
 	/*lang=json,strict*/
 	private const string MainAnd8Index =
 		"""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"main":{"version":"main"},"8":{"version":"8.19"}}}}""";

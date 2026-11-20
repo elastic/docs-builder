@@ -412,11 +412,11 @@ public class OpenApiGenerator(
 			ctx
 		).ConfigureAwait(false);
 
-		var declaredVersions = WithoutReservedMonikers(apiKey, versions);
+		var (declaredVersions, reserved) = WithoutReservedMonikers(apiKey, versions);
 		var versionsToRender = versionless ? declaredVersions.Where(v => v.Moniker == "main").ToArray() : declaredVersions;
 
 		if (versionsToRender.Length == 0)
-			return ResolvedProductDocuments.Empty(apiKey);
+			return ResolvedProductDocuments.Empty(apiKey) with { UnresolvedMonikers = reserved };
 
 		var declared = versionsToRender.Select(static v => v.Moniker).ToArray();
 		var routes = ApiVersionRoutes.For(apiKey, declared);
@@ -430,16 +430,22 @@ public class OpenApiGenerator(
 			.Zip(documents, static (version, document) => document is null ? null : new VersionedOpenApiDocument(version, document))
 			.OfType<VersionedOpenApiDocument>()
 			.ToList();
-		var unresolved = versionsToRender.Zip(documents).Where(static x => x.Second is null).Select(static x => x.First.Moniker).ToArray();
+		// A reserved version is left out of the render, but it is still declared: a search export that skipped it would delete its documents.
+		var unresolved = reserved.Concat(
+			versionsToRender.Zip(documents).Where(static x => x.Second is null).Select(static x => x.First.Moniker)
+		).ToArray();
 
 		return ToResolvedProductDocuments(routes, results, unmatchedBaseFiles) with { UnresolvedMonikers = unresolved };
 	}
 
 	/// <summary>
-	/// <c>next</c> is the URL of <c>main</c>, so a version with that name would read as the unreleased spec. It is reported
-	/// and left out.
+	/// <c>next</c> is the URL of <c>main</c>, so a version with that name would read as the unreleased spec. It is reported,
+	/// left out of the render, and returned by name so the search export can stop on it.
 	/// </summary>
-	private ResolvedApiVersion[] WithoutReservedMonikers(string apiKey, IReadOnlyList<ResolvedApiVersion> versions)
+	private (ResolvedApiVersion[] Kept, string[] Reserved) WithoutReservedMonikers(
+		string apiKey,
+		IReadOnlyList<ResolvedApiVersion> versions
+	)
 	{
 		var reserved = versions.Where(
 			static v => v.Moniker.Equals(ApiUrlBuilder.NextSegment, StringComparison.OrdinalIgnoreCase)
@@ -451,7 +457,7 @@ public class OpenApiGenerator(
 			);
 		}
 
-		return [.. versions.Except(reserved)];
+		return ([.. versions.Except(reserved)], [.. reserved.Select(static v => v.Moniker)]);
 	}
 
 	private async Task<ResolvedProductDocuments> ResolveLocalMainOnly(string apiKey, IFileInfo localFile)
