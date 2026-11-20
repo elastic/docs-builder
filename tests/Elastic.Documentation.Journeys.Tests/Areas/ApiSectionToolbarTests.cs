@@ -64,6 +64,46 @@ public class ApiSectionToolbarTests(JourneyTarget target)
 	}
 
 	[Test]
+	public async Task ForcedColors_TheCurrentSectionKeepsAnUnderline()
+	{
+		var report = string.Empty;
+		await WithPageAsync("#responses", async page =>
+		{
+			// Forced colors drop box-shadow, which draws the underline otherwise, so the current section needs a border there.
+			await page.SendAsync("Emulation.setEmulatedMedia", writer =>
+			{
+				writer.WriteStartArray("features");
+				writer.WriteStartObject();
+				writer.WriteString("name", "forced-colors");
+				writer.WriteString("value", "active");
+				writer.WriteEndObject();
+				writer.WriteEndArray();
+			}).ConfigureAwait(false);
+			await Task.Delay(300).ConfigureAwait(false);
+
+			var state = await page.EvaluateAsync(
+				"""
+				(() => {
+					const current = document.querySelector('.api-section-links-track a[aria-current]');
+					const style = getComputedStyle(current);
+					return {
+						forced: matchMedia('(forced-colors: active)').matches,
+						label: current.textContent.trim(),
+						border: style.borderBottomStyle !== 'none' ? parseFloat(style.borderBottomWidth) : 0,
+					};
+				})()
+				"""
+			).ConfigureAwait(false);
+			report = string.Create(
+				CultureInfo.InvariantCulture,
+				$"forced colors {state.GetProperty("forced").GetBoolean()}, current section {state.GetProperty("label").GetString()}, bottom border {state.GetProperty("border").GetDouble()}px"
+			);
+		}).ConfigureAwait(false);
+
+		_ = report.Should().MatchInlineSnapshot("forced colors True, current section Responses, bottom border 2px");
+	}
+
+	[Test]
 	public async Task OpeningAPropertyFragment_StopsItBelowTheToolbar()
 	{
 		var report = string.Empty;
