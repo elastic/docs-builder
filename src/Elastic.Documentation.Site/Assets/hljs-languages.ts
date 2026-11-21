@@ -1,3 +1,4 @@
+import { withHttpFileSupport } from './hljs-http'
 import esql from '@elastic/highlightjs-esql'
 import type { LanguageFn } from 'highlight.js'
 import asciidoc from 'highlight.js/lib/languages/asciidoc'
@@ -65,7 +66,7 @@ export const languages: Record<string, LanguageFn> = {
     graphql: toLanguageFn(graphql),
     groovy: toLanguageFn(groovy),
     handlebars: toLanguageFn(handlebars),
-    http: toLanguageFn(http),
+    http: withHttpFileSupport(toLanguageFn(http)),
     ini: toLanguageFn(ini),
     java: toLanguageFn(java),
     javascript: toLanguageFn(javascript),

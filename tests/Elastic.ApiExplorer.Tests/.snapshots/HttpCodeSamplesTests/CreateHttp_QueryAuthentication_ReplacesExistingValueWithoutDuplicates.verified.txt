@@ -1,0 +1,2 @@
+###
+GET {{API_URL}}/?size=2&key={{API_KEY}}

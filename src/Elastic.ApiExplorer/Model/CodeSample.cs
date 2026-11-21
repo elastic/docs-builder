@@ -44,6 +44,8 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 
 	public bool IsCurl => Language.Equals("curl", StringComparison.OrdinalIgnoreCase);
 
+	public bool IsHttp => Language.Equals("HTTP", StringComparison.OrdinalIgnoreCase);
+
 	/// <summary>The client or tool that runs this sample, e.g. <c>Elasticsearch Java Client</c>. Empty when unknown.</summary>
 	public string ClientLabel => ByName.TryGetValue(Language, out var known) ? known.Client ?? "" : "";
 
@@ -91,6 +93,7 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 		("JavaScript", "Elasticsearch JavaScript Client", "language-javascript", "javascript"),
 		("Python", "Elasticsearch Python Client", "language-python", "python"),
 		("curl", "Shell", "language-curl", null),
+		("HTTP", "HTTP client", "language-http", null),
 		("Java", "Elasticsearch Java Client", "language-java", "java"),
 		("C#", "Elasticsearch .NET Client", "language-csharp", "dotnet"),
 		("PHP", "Elasticsearch PHP Client", "language-php", "php"),

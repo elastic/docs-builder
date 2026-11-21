@@ -1,0 +1,4 @@
+###
+GET https://example.test/api/things/a%2Fb?pretty=true&size={{QUERY_SIZE}}
+kbn-xsrf: true
+X-Trace: {{HEADER_X_TRACE}}

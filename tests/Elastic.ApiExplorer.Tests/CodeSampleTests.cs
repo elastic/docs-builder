@@ -12,6 +12,21 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class CodeSampleTests
 {
+	[Test]
+	public void CodeSamples_HttpSample_NormalizesLanguageAndKeepsSource()
+	{
+		var operation = CreateOperationWithCodeSamples(new JsonArray(new JsonObject
+		{
+			["lang"] = "http",
+			["source"] = "GET https://example.test/\n"
+		}));
+
+		var sample = OpenApiExtensionReader.ParseCodeSamples(operation).Should().ContainSingle().Which;
+
+		sample.Language.Should().Be("HTTP");
+		sample.Source.Should().Be("GET https://example.test/\n");
+		sample.HighlightClass.Should().Be("language-http");
+	}
 	private static OpenApiOperation CreateOperationWithCodeSamples(JsonArray samplesArray)
 	{
 		var operation = new OpenApiOperation();

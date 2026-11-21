@@ -145,17 +145,24 @@ public partial record OperationPageModel
 		var parameters = apiOperation.Parameters;
 		var requestSchema = requestContentEntry?.Value?.Schema;
 		var target = GeneratedCodeSamples.SampleTargetFor(context.Product?.Id);
+		var sampleInput = new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
+		{
+			Parameters = parameters,
+			Servers = servers,
+			HostVariable = target.HostVariable
+		};
 		if (codeSamples.Count == 0)
 		{
 			// Built around the first example's body, so the samples attach to that example and carry its request.
-			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
+			var example = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue));
 			// Without an example the body comes from the schema, so the sample of an operation that takes one is not a bare request.
-			body ??= RequestBodyExample.Build(analyzer, requestContentEntry?.Key, requestSchema);
-			codeSamples = SyntheticCodeSamples.Create(new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
+			var body = example?.JsonValue ?? RequestBodyExample.Build(analyzer, requestContentEntry?.Key, requestSchema);
+			// The same request every other generated sample of the page sends for that example.
+			var (method, route) = GeneratedCodeSamples.RequestOf(example?.RequestLine, endpoint);
+			codeSamples = SyntheticCodeSamples.Create(sampleInput with
 			{
-				Parameters = parameters,
-				Servers = servers,
-				HostVariable = target.HostVariable,
+				Method = new HttpMethod(method),
+				Route = route,
 				Body = body,
 				Security = OpenApiAuthSchemeResolver.CurlSchemes(operation, document),
 				ConsolePrefix = target.ConsolePrefix
@@ -176,6 +183,10 @@ public partial record OperationPageModel
 			),
 			context.Product?.Id
 		);
+		scenarios =
+		[
+			.. HttpCodeSamples.Fill(scenarios, sampleInput, endpoint, analyzer, OpenApiAuthSchemeResolver.HttpSchemes(operation, document))
+		];
 		ExternalDocLink? externalDocs = null;
 		if (operation.ExternalDocs?.Url is not null)
 		{

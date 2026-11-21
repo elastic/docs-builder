@@ -7,13 +7,78 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Site.FileProviders;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 {
+	[Test]
+	[Arguments("elasticsearch", "ELASTICSEARCH_URL")]
+	[Arguments("serverless-elasticsearch", "ELASTICSEARCH_URL")]
+	[Arguments("kibana", "KIBANA_URL")]
+	[Arguments("logstash", "LOGSTASH_URL")]
+	[Arguments("cloud-enterprise", "API_URL")]
+	public void Create_WithoutServers_PassesTheProductsHostVariableToHttpExamples(string productId, string expected)
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First();
+		var context = fixture.RenderContextFor(nav) with
+		{
+			Model = new OpenApiDocument(),
+			Product = new Product { Id = productId, DisplayName = productId }
+		};
+		var operation = new ApiOperation(HttpMethod.Get, new OpenApiOperation(), "/_cat", new OpenApiPathItem(), "Help");
+
+		var page = OperationPageModel.Create(operation, context);
+
+		page.Scenarios.Single().CodeSamples.Single(static s => s.IsHttp).Source.Should().Be("###\nGET {{" + expected + "}}/_cat\n");
+	}
+
+	[Test]
+	public void Create_SeveralRoutesWithoutSpecSamples_SendsOneRequestFromEveryGeneratedCard()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First();
+		var context = fixture.RenderContextFor(nav) with
+		{
+			Model = new OpenApiDocument(),
+			Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" }
+		};
+		var operation = new OpenApiOperation
+		{
+			Description =
+				"**All methods and paths for this operation:**\n\n<div>\n  <span class=\"operation-verb post\">POST</span>\n  <span class=\"operation-path\">/_search</span>\n</div>\n<div>\n  <span class=\"operation-verb post\">POST</span>\n  <span class=\"operation-path\">/{index}/_search</span>\n</div>\n\n",
+			RequestBody = new OpenApiRequestBody
+			{
+				Content = new Dictionary<string, IOpenApiMediaType>
+				{
+					["application/json"] = new OpenApiMediaType
+					{
+						Examples = new Dictionary<string, IOpenApiExample>
+						{
+							["match"] = new OpenApiExample { Value = new System.Text.Json.Nodes.JsonObject { ["size"] = 1 } }
+						}
+					}
+				}
+			}
+		};
+
+		var page = OperationPageModel.Create(
+			new ApiOperation(HttpMethod.Post, operation, "/{index}/_search", new OpenApiPathItem(), "Search"),
+			context
+		);
+
+		page
+			.Scenarios
+			.Single()
+			.CodeSamples
+			.Select(static s => s.Source.Split('\n')[s.IsHttp ? 1 : 0])
+			.Should()
+			.Equal("POST /_search", "curl -X POST \"${ELASTICSEARCH_URL}/_search\" \\", "POST {{ELASTICSEARCH_URL}}/_search");
+	}
+
 	[Test]
 	public async Task Render_Operation_PutsBaseUrlInTheRailAboveTheExamples()
 	{

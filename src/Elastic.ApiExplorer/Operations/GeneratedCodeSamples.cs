@@ -17,6 +17,8 @@ public sealed record SampleTarget(string? ConsolePrefix, string HostVariable);
 
 public static partial class GeneratedCodeSamples
 {
+	private const string KibanaConsolePrefix = "kbn:";
+
 	/// <summary>
 	/// What a product's generated samples address: what Console puts before the route (empty for Elasticsearch, <c>kbn:</c> for
 	/// Kibana, null where Console can't call the API), and the host variable the product's own curl samples use for a spec
@@ -26,7 +28,7 @@ public static partial class GeneratedCodeSamples
 	{
 		null => new SampleTarget("", "${API_URL}"),
 		"elasticsearch" or "serverless-elasticsearch" => new SampleTarget("", "${ELASTICSEARCH_URL}"),
-		"kibana" => new SampleTarget("kbn:", "${KIBANA_URL}"),
+		"kibana" => new SampleTarget(KibanaConsolePrefix, "${KIBANA_URL}"),
 		"logstash" => new SampleTarget(null, "${LOGSTASH_URL}"),
 		_ => new SampleTarget(null, "${API_URL}")
 	};
@@ -42,7 +44,6 @@ public static partial class GeneratedCodeSamples
 		var console = specSamples.FirstOrDefault(static s => s.IsConsole);
 		var curl = specSamples.FirstOrDefault(static s => s.IsCurl);
 		var prefix = console is not null ? ConsolePrefix(console.Source) : productConsolePrefix;
-		var fallbackMethod = endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant();
 
 		return [
 			.. scenarios.Select(scenario =>
@@ -50,8 +51,7 @@ public static partial class GeneratedCodeSamples
 				if (scenario.CodeSamples.Count > 0 || string.IsNullOrWhiteSpace(scenario.RequestJson))
 					return scenario;
 
-				var (method, path) = scenario.RequestLine is { } line ? line : (fallbackMethod, endpoint.ShortestRoute);
-				method = SampleMethods.Dominant(method, path, endpoint) ?? method;
+				var (method, path) = RequestOf(scenario, endpoint);
 				var samples = new List<CodeSample>();
 				if (prefix is not null)
 				{
@@ -73,6 +73,63 @@ public static partial class GeneratedCodeSamples
 		];
 	}
 
+	/// <summary>
+	/// The request every sample of a scenario sends: the line its description names, else the line its authored Console
+	/// sample opens with, else the endpoint's shortest route. The method is the dominant one for that path.
+	/// </summary>
+	internal static (string Method, string Path) RequestOf(ExampleScenario scenario, OperationEndpoint endpoint) =>
+		RequestOf(scenario.RequestLine ?? AuthoredConsoleLine(scenario), endpoint);
+
+	/// <summary>The request a sample sends for a named line, else the endpoint's shortest route; the method is the dominant one for the path.</summary>
+	internal static (string Method, string Path) RequestOf((string Method, string Path)? line, OperationEndpoint endpoint)
+	{
+		var (method, path) = line
+			?? (endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant(), endpoint.ShortestRoute);
+		return (SampleMethods.Dominant(method, path, endpoint) ?? method, path);
+	}
+
+	/// <summary>
+	/// The request line of a Console sample the spec wrote, without a <c>kbn:</c> prefix. A sample with several requests,
+	/// such as one that creates an index before it searches, names the request whose body is the example's; null when none is.
+	/// A generated Console sample already follows <see cref="RequestOf"/>.
+	/// </summary>
+	private static (string Method, string Path)? AuthoredConsoleLine(ExampleScenario scenario)
+	{
+		var console = scenario.CodeSamples.FirstOrDefault(static c => c.IsConsole && !c.Generated);
+		if (console is null)
+			return null;
+		var requests = ConsoleRequests(console.Source);
+		var request = requests.Length == 1
+			? requests[0]
+			: requests.FirstOrDefault(
+				r => scenario.RequestJson is { } body && OperationPageModel.Compact(r.Body) == OperationPageModel.Compact(body)
+			);
+		if (request is null)
+			return null;
+		// Each request carries its own target, so the prefix is read from the request that was picked, not the first one.
+		var path = request.Path.StartsWith(KibanaConsolePrefix, StringComparison.OrdinalIgnoreCase)
+			? request.Path[KibanaConsolePrefix.Length..]
+			: request.Path;
+		return (request.Method, path.StartsWith('/') ? path : "/" + path);
+	}
+
+	private sealed record ConsoleRequest(string Method, string Path, string Body);
+
+	/// <summary>Every request of a Console sample: each line that opens with a method and a path, and the body under it.</summary>
+	private static ConsoleRequest[] ConsoleRequests(string source)
+	{
+		var starts = ConsoleRequestStart().Matches(source);
+		return [
+			.. starts.Select(
+				(match, i) => new ConsoleRequest(
+					match.Groups[1].Value,
+					match.Groups[2].Value,
+					source[(match.Index + match.Length)..(i + 1 < starts.Count ? starts[i + 1].Index : source.Length)]
+				)
+			)
+		];
+	}
+
 	/// <summary><c>Run `GET /my-index/_search?from=40` to …</c> in an example description names its request.</summary>
 	public static (string Method, string Path)? ParseRequestLine(string? description)
 	{
@@ -89,14 +146,13 @@ public static partial class GeneratedCodeSamples
 		return ((match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value), consoleSource[(match.Index + match.Length)..]);
 	}
 
-	/// <summary>The target prefix Console samples put before the route, e.g. <c>kbn:</c> for Kibana. Empty for Elasticsearch.</summary>
-	private static string ConsolePrefix(string? consoleSource)
-	{
-		if (SplitConsole(consoleSource) is not { Line.Path: var target })
-			return "";
-		var colon = target.IndexOf(':');
-		return colon < 0 ? "" : target[..(colon + 1)];
-	}
+	/// <summary>
+	/// The target prefix Console samples put before the route: <c>kbn:</c> for Kibana, else empty. Any other colon belongs to
+	/// the request, as in <c>remote:my-index/_search</c> or <c>?q=user.id:kimchy</c>.
+	/// </summary>
+	private static string ConsolePrefix(string? consoleSource) =>
+		SplitConsole(consoleSource) is { Line.Path: var target }
+			&& target.StartsWith(KibanaConsolePrefix, StringComparison.OrdinalIgnoreCase) ? KibanaConsolePrefix : "";
 
 	/// <summary>Reuses the spec's curl sample (host, auth headers) with this example's method, path, and body.</summary>
 	private static string? Curl(string? curlSource, string method, string path, string body)
@@ -137,6 +193,11 @@ public static partial class GeneratedCodeSamples
 	[GeneratedRegex(@"^\s*(GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase
 		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ConsoleRequestLine();
+
+	// Uppercase only: a body line never starts with an uppercase method and a path, the Console highlighter's own rule.
+	[GeneratedRegex(@"^[ \t]*(GET|POST|PUT|PATCH|DELETE|HEAD)[ \t]+(\S+)", RegexOptions.Multiline
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex ConsoleRequestStart();
 
 	[GeneratedRegex(@"-d\s+'(?:[^']|'\\'')*'", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CurlBody();
