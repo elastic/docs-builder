@@ -168,6 +168,12 @@ public class DocumentationSet : INavigationTraversable
 		}
 	}
 
+	// The assembler resolves redirects against the full link index, so declared cross_links only matter for isolated and codex builds
+	private bool IsUndeclaredCrossLink(Uri uri) =>
+		Context.BuildType is not BuildType.Assembler
+			&& uri.Scheme is not ("http" or "https")
+			&& !Configuration.CrossLinkRepositories.Contains(uri.Scheme, StringComparer.Ordinal);
+
 	private void ValidateRedirectsExists()
 	{
 		if (Configuration.Redirects is null || Configuration.Redirects.Count == 0)
@@ -176,13 +182,15 @@ public class DocumentationSet : INavigationTraversable
 		{
 			if (redirect.Value.To is not null)
 				ValidateExists(redirect.Key, redirect.Value.To, redirect.Value.Anchors);
-			else if (redirect.Value.Many is not null)
+
+			if (redirect.Value.Many is null)
+				continue;
+			// anchors of many targets are only validated when there is no default target, as before
+			var manyAnchorsValidated = redirect.Value.To is null;
+			foreach (var r in redirect.Value.Many)
 			{
-				foreach (var r in redirect.Value.Many)
-				{
-					if (r.To is not null)
-						ValidateExists(redirect.Key, r.To, r.Anchors);
-				}
+				if (r.To is not null)
+					ValidateExists(redirect.Key, r.To, manyAnchorsValidated ? r.Anchors : null);
 			}
 		}
 
@@ -190,8 +198,13 @@ public class DocumentationSet : INavigationTraversable
 		{
 			if (to.Contains("://"))
 			{
-				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
+				if (!Uri.TryCreate(to, UriKind.Absolute, out var toUri))
 					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+				else if (IsUndeclaredCrossLink(toUri))
+					Context.EmitError(
+						Configuration.RedirectsSource ?? Configuration.SourceFile,
+						$"Redirect {from} points to {to} but '{toUri.Scheme}' is not listed under 'cross_links' in docset.yml"
+					);
 				else if (ApiLinkCheck.GetHint(CrossLinkResolver, to, Context.UrlPathPrefix, Configuration.SuppressDiagnostics) is { } hint)
 					Context.Collector.EmitHint((Configuration.RedirectsSource ?? Configuration.SourceFile).FullName, hint);
 
