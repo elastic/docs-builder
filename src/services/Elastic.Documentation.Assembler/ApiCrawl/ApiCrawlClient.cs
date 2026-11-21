@@ -1,0 +1,166 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Net;
+using System.Text;
+
+namespace Elastic.Documentation.Assembler.ApiCrawl;
+
+/// <summary>A text document the crawl reads whole, such as a sitemap or <c>links.json</c>. <see cref="Status"/> is 0 when no response came back.</summary>
+public sealed record FetchedText(int Status, string Body, string? Error = null)
+{
+	public bool IsOk => Status == 200;
+
+	public string Describe() => Error is { } error ? $"error ({error})" : $"HTTP {Status}";
+}
+
+/// <summary>
+/// Fetches pages without following redirects, so each hop is counted, and reads only the <c>&lt;head&gt;</c> of a page.
+/// A 5xx answer or a timeout before the headers arrive is retried once. Reading a body has its own deadline, because the client
+/// timeout stops at the headers, and a body that misses it is recorded as an error without a retry.
+/// </summary>
+public sealed class ApiCrawlClient : IDisposable
+{
+	private const int MaxHops = 5;
+	private const int MaxHeadChars = 512 * 1024;
+	private const string HeadEnd = "</head>";
+
+	// The edge WAF answers 403 to a request without a User-Agent.
+	private const string UserAgent = "docs-builder-crawl-check";
+
+	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(30);
+
+	private readonly HttpClient _httpClient;
+	private readonly Uri _site;
+	private readonly TimeSpan _bodyTimeout;
+
+	public ApiCrawlClient(Uri site, HttpMessageHandler? handler = null, TimeSpan? bodyTimeout = null)
+	{
+		_site = site;
+		_bodyTimeout = bodyTimeout ?? FetchTimeout;
+		var ownHandler = handler
+			?? new SocketsHttpHandler
+			{
+				AllowAutoRedirect = false,
+				AutomaticDecompression = DecompressionMethods.All,
+				PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+			};
+		// Over HTTP/2 a response disposed after its head resets the stream instead of draining the rest of the body.
+		// RequestVersionOrLower negotiates HTTP/2 over TLS and keeps HTTP/1.1 for a plain-HTTP base URL.
+		_httpClient = new HttpClient(ownHandler, disposeHandler: handler is null)
+		{
+			Timeout = FetchTimeout,
+			DefaultRequestVersion = HttpVersion.Version20,
+			DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+		};
+	}
+
+	public async Task<FetchedText> GetTextAsync(Uri uri, Cancel ctx)
+	{
+		try
+		{
+			using var response = await SendAsync(uri, ctx).ConfigureAwait(false);
+			using var deadline = BodyDeadline(ctx);
+			var body = await response.Content.ReadAsStringAsync(deadline.Token).ConfigureAwait(false);
+			return new FetchedText((int)response.StatusCode, body.TrimStart('﻿'));
+		}
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException && !ctx.IsCancellationRequested)
+		{
+			return new FetchedText(0, string.Empty, ex.Message);
+		}
+	}
+
+	/// <summary>Requests <paramref name="path"/> on the site and follows up to five redirects by hand.</summary>
+	public async Task<ObservedPage> ObserveAsync(string path, Cancel ctx)
+	{
+		var hops = new List<RedirectHop>();
+		var uri = new Uri(_site, path);
+		try
+		{
+			while (true)
+			{
+				using var response = await SendAsync(uri, ctx).ConfigureAwait(false);
+				var status = (int)response.StatusCode;
+				if (status is >= 300 and < 400 && response.Headers.Location is { } location && hops.Count < MaxHops)
+				{
+					uri = new Uri(uri, location);
+					hops.Add(new RedirectHop(status, OnSite(uri)));
+					continue;
+				}
+
+				if (status != 200)
+					return new ObservedPage(path, status, hops, null, null);
+
+				using var deadline = BodyDeadline(ctx);
+				var head = ApiPageHead.Parse(await ReadHeadAsync(response, deadline.Token).ConfigureAwait(false));
+				return new ObservedPage(path, status, hops, head.Canonical, head.Robots);
+			}
+		}
+		catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException && !ctx.IsCancellationRequested)
+		{
+			return new ObservedPage(path, 0, hops, null, null, ex.Message);
+		}
+	}
+
+	private CancellationTokenSource BodyDeadline(Cancel ctx)
+	{
+		var deadline = CancellationTokenSource.CreateLinkedTokenSource(ctx);
+		deadline.CancelAfter(_bodyTimeout);
+		return deadline;
+	}
+
+	private string OnSite(Uri uri) =>
+		Uri.Compare(uri, _site, UriComponents.SchemeAndServer, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) == 0
+			? uri.PathAndQuery
+			: uri.AbsoluteUri;
+
+	private async Task<HttpResponseMessage> SendAsync(Uri uri, Cancel ctx)
+	{
+		try
+		{
+			var response = await GetAsync(uri, ctx).ConfigureAwait(false);
+			if ((int)response.StatusCode < 500)
+				return response;
+			response.Dispose();
+		}
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested) { }
+
+		return await GetAsync(uri, ctx).ConfigureAwait(false);
+	}
+
+	private Task<HttpResponseMessage> GetAsync(Uri uri, Cancel ctx)
+	{
+		// A request built by hand does not pick up the client's default version.
+		var request = new HttpRequestMessage(HttpMethod.Get, uri)
+		{
+			Version = _httpClient.DefaultRequestVersion,
+			VersionPolicy = _httpClient.DefaultVersionPolicy
+		};
+		_ = request.Headers.UserAgent.TryParseAdd(UserAgent);
+		return _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+	}
+
+	private static async Task<string> ReadHeadAsync(HttpResponseMessage response, Cancel ctx)
+	{
+		var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
+		await using (stream.ConfigureAwait(false))
+		{
+			using var reader = new StreamReader(stream, Encoding.UTF8);
+			var head = new StringBuilder();
+			var buffer = new char[16 * 1024];
+			int read;
+			while (head.Length < MaxHeadChars && (read = await reader.ReadAsync(buffer, ctx).ConfigureAwait(false)) > 0)
+			{
+				_ = head.Append(buffer, 0, read);
+				var tail = head.ToString(Math.Max(0, head.Length - read - HeadEnd.Length), Math.Min(head.Length, read + HeadEnd.Length));
+				if (tail.Contains(HeadEnd, StringComparison.OrdinalIgnoreCase))
+					break;
+			}
+
+			return head.ToString();
+		}
+	}
+
+	public void Dispose() => _httpClient.Dispose();
+}
