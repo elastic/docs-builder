@@ -10,6 +10,7 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentPrompt;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
@@ -162,6 +163,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case TableDirectiveBlock tableDirectiveBlock:
 				WriteTableDirective(renderer, tableDirectiveBlock);
 				return;
+			case AgentPromptBlock agentPromptBlock:
+				WriteAgentPrompt(renderer, agentPromptBlock);
+				break;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
 				return;
@@ -486,6 +490,21 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			StreamingDescription = block.StreamingDescription,
 			LongRunning = block.LongRunning,
 			LongRunningDescription = block.LongRunningDescription,
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteAgentPrompt(HtmlRenderer renderer, AgentPromptBlock block)
+	{
+		if (string.IsNullOrEmpty(block.Prompt))
+			return;
+
+		var slice = AgentPromptView.Create(new AgentPromptViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Description = block.Description,
+			Prompt = block.Prompt
 		});
 		RenderRazorSlice(slice, renderer);
 	}
