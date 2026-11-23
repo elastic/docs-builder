@@ -12,7 +12,7 @@ function isInView(element: Element): boolean {
 }
 
 // A heading's slug can hold a literal percent sign ("100% coverage"), which decodeURIComponent rejects. The raw text is the id then.
-function fragmentId(hash: string): string {
+export function fragmentId(hash: string): string {
     const raw = hash.slice(1)
     try {
         return decodeURIComponent(raw)
@@ -21,9 +21,10 @@ function fragmentId(hash: string): string {
     }
 }
 
-export function initToc(scope: ParentNode = document) {
+// `selector` narrows which outlines to bind: the production bundle owns only the operation page's section links.
+export function initToc(scope: ParentNode = document, selector = '[data-toc]') {
     scope
-        .querySelectorAll<HTMLElement>('[data-toc]:not([data-toc-bound])')
+        .querySelectorAll<HTMLElement>(`${selector}:not([data-toc-bound])`)
         .forEach((toc) => {
             toc.dataset.tocBound = ''
             const links = Array.from(

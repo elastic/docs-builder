@@ -1,22 +1,18 @@
-@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiTocModel>
+@inherits RazorSlice<IReadOnlyList<Elastic.Documentation.TocItem>>
 @* "On this page" in the right rail of landing, schema, topic and structural pages, with the same markup and size as the docs pages' list
-   (Elastic.Markdown/Layout/_TableOfContents.cshtml). Where the rail sits under the article (below 1024px, or 1100px in the design system look) a jump list is no use, so each stylesheet hides it there. In the design system look, data-toc and data-toc-link let its scroll spy mark the current heading; the production look has its own, which a second one would fight. *@
-@{
-	var tocAttribute = new HtmlString(Model.DesignSystem ? "data-toc" : string.Empty);
-	var linkAttribute = new HtmlString(Model.DesignSystem ? "data-toc-link" : string.Empty);
-}
-@if (Model.Items.Count > 0)
+   (Elastic.Markdown/Layout/_TableOfContents.cshtml). Where the rail sits under the article (below 1024px, or 1100px in the design system look) a jump list is no use, so each stylesheet hides it there. data-toc and data-toc-link let the design system look's scroll spy mark the current heading; the production bundle binds only the operation page's section links. *@
+@if (Model.Count > 0)
 {
-	<nav id="toc-nav" class="api-rail-toc" aria-label="On this page" @tocAttribute>
+	<nav id="toc-nav" class="api-rail-toc" aria-label="On this page" data-toc>
 		<div class="font-sans">
 			<div class="font-bold mb-2">On this page</div>
 			<div class="relative toc-progress-container font-body">
 				<div class="toc-progress-indicator absolute top-0 h-0 w-[1px] bg-blue-elastic transition-all duration-200 ease-out"></div>
 				<ul class="block w-full">
-					@foreach (var item in Model.Items)
+					@foreach (var item in Model)
 					{
 						<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic!">
-							<a class="sidebar-link inline-block my-1.5 @(item.Level == 3 ? "ml-4" : string.Empty)" href="#@item.Slug" @linkAttribute>@item.Heading</a>
+							<a class="sidebar-link inline-block my-1.5 @(item.Level == 3 ? "ml-4" : string.Empty)" href="#@item.Slug" data-toc-link>@item.Heading</a>
 						</li>
 					}
 				</ul>

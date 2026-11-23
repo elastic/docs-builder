@@ -10,7 +10,7 @@ import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
-import { initToc } from './ds/toc'
+import { fragmentId, initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
 import { flashTooltip } from './tooltip'
 
@@ -229,12 +229,7 @@ export function revealHiddenAncestors(target: HTMLElement): boolean {
 }
 
 function hashTarget(): HTMLElement | null {
-    let id = window.location.hash.slice(1)
-    try {
-        id = decodeURIComponent(id)
-    } catch {
-        // A malformed escape is looked up as written
-    }
+    const id = fragmentId(window.location.hash)
     return id ? document.getElementById(id) : null
 }
 
@@ -338,7 +333,8 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
-    initToc()
+    // Only the section links are this bundle's: the production On this page list has its own scroll spy (toc-nav.ts).
+    initToc(document, '.api-section-links[data-toc]')
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true

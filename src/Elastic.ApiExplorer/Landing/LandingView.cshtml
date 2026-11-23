@@ -11,7 +11,7 @@
 		if (name != ApiPageSections.Rail)
 			return;
 		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "rail")))
-		@await RenderPartialAsync(_ApiToc.Create(Model.Toc))
+		@await RenderPartialAsync(_ApiToc.Create(Model.TocItems))
 	}
 }
 @{

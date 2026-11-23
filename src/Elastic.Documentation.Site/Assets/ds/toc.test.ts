@@ -263,4 +263,22 @@ describe('initToc', () => {
                 .hasAttribute('aria-current')
         ).toBe(false)
     })
+
+    it('binds only the outlines the selector names', () => {
+        document.body.innerHTML = `
+        <nav class="mine" data-toc><a data-toc-link href="#one">One</a></nav>
+        <nav class="other" data-toc><a data-toc-link href="#one">One</a></nav>
+        <h2 id="one">One</h2>`
+        document.getElementById('one')!.getBoundingClientRect = () =>
+            ({ top: -300 }) as DOMRect
+
+        initToc(document, '.mine[data-toc]')
+
+        expect(
+            document.querySelector('.mine a')!.getAttribute('aria-current')
+        ).toBe('location')
+        expect(
+            document.querySelector('.other a')!.hasAttribute('aria-current')
+        ).toBe(false)
+    })
 })
