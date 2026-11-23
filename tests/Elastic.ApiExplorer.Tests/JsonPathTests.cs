@@ -81,6 +81,17 @@ public class JsonPathTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_MapValue_TooltipReadsTheKeyAsTheJsonPathWildcard()
+	{
+		var list = await BuildAsync("");
+
+		var key = list.Items.Single(p => p.Name == "aggs").Children.Dictionary!;
+
+		key.TooltipPath.Should().Be("aggs.*");
+		key.Properties.Items.Single().TooltipPath.Should().Be("aggs.*.terms");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_MapValue_PermalinkReadsTheKeyAsWords()
 	{
 		var list = await BuildAsync("");

@@ -126,6 +126,9 @@ public record DictionaryChildDisplay
 
 	/// <summary>The JSON path of the map's values, such as <c>aggs.&lt;string&gt;</c>; null where paths are not shown.</summary>
 	public string? JsonPath { get; init; }
+
+	/// <summary>The hover tooltip of the key row: the JSON path, with <c>*</c> for the map's key.</summary>
+	public string? TooltipPath => JsonPath is { } path ? ApiProperty.ShownPath(path) : null;
 	public string ChildrenId => NestedRowsId.Of(KeyAnchorId);
 	public required int Depth { get; init; }
 	public required bool IsCollapsible { get; init; }
@@ -200,25 +203,35 @@ public record ApiProperty
 	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(AnchorId);
 
-	/// <summary>The hover tooltip: the JSON path, except on a top-level field, where it would only repeat the name.</summary>
-	public string? TooltipPath => JsonPath is { } path && path != Name ? path : null;
+	/// <summary>
+	/// The hover tooltip: the JSON path, except on a top-level field, where it would only repeat the name. A map's key reads <c>*</c>,
+	/// the JSONPath wildcard, in place of the <c>&lt;string&gt;</c> marker.
+	/// </summary>
+	public string? TooltipPath => JsonPath is { } path && path != Name ? ShownPath(path) : null;
 
 	/// <summary>
 	/// What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.
-	/// A map's key reads as <see cref="MapKeyKind"/> in place of the <c>&lt;string&gt;</c> marker. Only a whole segment counts, so a field
-	/// whose name merely contains the marker keeps its name.
+	/// A map's key reads as <see cref="MapKeyKind"/> in place of the <c>&lt;string&gt;</c> marker.
 	/// </summary>
-	public string PermalinkLabel =>
-		JsonPath is { Length: > 0 } path ? string.Join('.', path.Split('.').Select(SpokenSegment)) : IsMapKey ? MapKeyKind : Name;
+	public string PermalinkLabel => JsonPath is { Length: > 0 } path ? WithMapKeysAs(path, MapKeyKind) : IsMapKey ? MapKeyKind : Name;
 
-	/// <summary>A path segment as announced: a map key, with any <c>[]</c> after it, reads as <see cref="MapKeyKind"/>.</summary>
-	private static string SpokenSegment(string segment)
+	/// <summary>A JSON path as the page shows it: a map's key reads <c>*</c>, the JSONPath wildcard.</summary>
+	public static string ShownPath(string path) => WithMapKeysAs(path, "*");
+
+	/// <summary>
+	/// <paramref name="path"/> with each map-key segment, and any <c>[]</c> after it, reading <paramref name="key"/>. Only a whole
+	/// segment counts, so a field whose name merely contains the marker keeps its name.
+	/// </summary>
+	private static string WithMapKeysAs(string path, string key) =>
+		string.Join('.', path.Split('.').Select(segment => MapKeyOr(segment, key)));
+
+	private static string MapKeyOr(string segment, string key)
 	{
 		if (!segment.StartsWith(ApiPropertyPath.MapKeyMarker, StringComparison.Ordinal))
 			return segment;
 
 		var rest = segment[ApiPropertyPath.MapKeyMarker.Length..];
-		return rest.Replace(ApiPropertyPath.ItemsMarker, "", StringComparison.Ordinal).Length == 0 ? MapKeyKind + rest : segment;
+		return rest.Replace(ApiPropertyPath.ItemsMarker, "", StringComparison.Ordinal).Length == 0 ? key + rest : segment;
 	}
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
