@@ -31,7 +31,7 @@ public static class FeedbackReasons
 		new("accurate", "Accurate", "The page is correct about how the product works."),
 		new("helpfulExamples", "Helpful examples", "The examples helped me complete my task."),
 		new("easyToFind", "Easy to find", "I found the information I was looking for quickly."),
-		new("anotherReason", "Another reason")
+		new("anotherReason", "Another reason", "Something else helped. Tell us more below.")
 	];
 
 	private static readonly FeedbackReason[] ApiPositive =
@@ -41,7 +41,7 @@ public static class FeedbackReasons
 		new("accurate", "Accurate", "The reference is correct about how the API works."),
 		new("helpfulExamples", "Helpful examples", "The request or response examples helped."),
 		new("easyToFind", "Easy to find", "I found the endpoint or schema I needed quickly."),
-		new("anotherReason", "Another reason")
+		new("anotherReason", "Another reason", "Something else helped. Tell us more below.")
 	];
 
 	private static readonly FeedbackReason[] DocsNegative =
@@ -51,7 +51,7 @@ public static class FeedbackReasons
 		new("inaccurate", "Technically incorrect", "The page is wrong about how the product works."),
 		new("codeSampleErrors", "Code sample errors", "One or more code samples are incorrect."),
 		new("missingInformation", "Couldn't find what I needed", "Missing important information."),
-		new("anotherReason", "Another reason")
+		new("anotherReason", "Another reason", "Something else went wrong. Tell us more below.")
 	];
 
 	private static readonly FeedbackReason[] ApiNegative =
@@ -61,7 +61,7 @@ public static class FeedbackReasons
 		new("inaccurate", "Technically incorrect", "The reference is wrong about how the API works."),
 		new("codeSampleErrors", "Example errors", "A request or response example is wrong."),
 		new("missingInformation", "Couldn't find what I needed", "Missing a parameter, field, status, or auth detail."),
-		new("anotherReason", "Another reason")
+		new("anotherReason", "Another reason", "Something else went wrong. Tell us more below.")
 	];
 }
 

@@ -87,7 +87,11 @@ const POSITIVE_REASONS: ReasonOption[] = [
         label: 'Easy to find',
         description: 'I found the information I was looking for quickly.',
     },
-    { value: 'anotherReason', label: 'Another reason' },
+    {
+        value: 'anotherReason',
+        label: 'Another reason',
+        description: 'Something else helped. Tell us more below.',
+    },
 ]
 
 const NEGATIVE_REASONS: ReasonOption[] = [
@@ -116,7 +120,11 @@ const NEGATIVE_REASONS: ReasonOption[] = [
         label: "Couldn't find what I needed",
         description: 'Missing important information.',
     },
-    { value: 'anotherReason', label: 'Another reason' },
+    {
+        value: 'anotherReason',
+        label: 'Another reason',
+        description: 'Something else went wrong. Tell us more below.',
+    },
 ]
 
 const reasonsFor = (surface: Surface, options: ReasonOption[]) =>
