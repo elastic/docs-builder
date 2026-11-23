@@ -1243,6 +1243,7 @@
 }
 
 .response-panel {
+	--response-body-bg: #f5f7fb;
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
@@ -1310,11 +1311,15 @@ button.response-status-toggle:focus {
 
 .response-summary {
 	cursor: pointer;
+}
+
+.response-panel {
 	transition: background-color 0.12s ease;
 }
 
-.response-summary:hover {
-	background-color: #ecf1f9;
+/* Hovering the header greys the whole response, in the colour of its open body. */
+.response-panel:has(> .response-summary:hover) {
+	background-color: var(--response-body-bg);
 }
 
 .response-status-chip {
@@ -1390,10 +1395,10 @@ button.response-status-toggle:focus {
 	margin: 8px 12px 12px;
 	padding: 4px 12px 8px;
 	border-radius: 8px;
-	background-color: #f5f7fb;
+	background-color: var(--response-body-bg);
 
 	/* The toggle's label cuts the box line, so it must match this background. */
-	--expand-toggle-bg: #f5f7fb;
+	--expand-toggle-bg: var(--response-body-bg);
 }
 
 .response-panel-body > .property-list > :first-child > dt {
@@ -4472,26 +4477,90 @@ html:has(.api-page-shell) {
 
 /*
  * The section links: one row above the description, ruled below from edge to edge of the article column, that stays
- * under the header as the reader scrolls. Plain text links, not tabs: the section in view is only blue.
+ * under the header as the reader scrolls. The section in view reads like an active tab: blue, underlined on the rule.
  * Beside the rail the column's edges sit 40px past its text on both sides (the nav gap on the left, the column's
  * padding and half the gap to the rail on the right), so the row reaches out that far and pads its content back in.
  * Past a 1920px window the left edge also takes in the space the centred content leaves beside the sidebar.
+ * Where the bar pins, which the scroll margins below clear: under the header, and lower by the title row it shows
+ * above itself once pinned, when it has one.
  */
+#elastic-api-v3 {
+	--api-section-links-top: calc(
+		var(--offset-top, 0px) + var(--api-section-links-title-height, 0px)
+	);
+}
+
+#elastic-api-v3:has(.api-section-links-title) {
+	--api-section-links-title-height: 42px;
+}
+
 .api-section-links {
 	position: sticky;
-	top: var(--offset-top, 0px);
+	top: var(--api-section-links-top);
 	z-index: 5;
 	display: flex;
 	flex-wrap: nowrap;
 	align-items: center;
 	gap: 8px;
 	height: 44px;
-	margin: 20px calc(-1 * var(--api-column-bleed-right, 40px)) 24px
+	/* In the page, as much space above as the title row takes once pinned, so the bar sits the same under what is above it. */
+	margin: max(20px, var(--api-section-links-title-height, 0px))
+		calc(-1 * var(--api-column-bleed-right, 40px)) 24px
 		calc(-1 * var(--api-column-bleed-left, 40px));
 	padding: 0 var(--api-column-bleed-right, 40px) 0
 		var(--api-column-bleed-left, 40px);
 	background: #fff;
 	border-bottom: 1px solid var(--color-grey-20, #e5e9f0);
+}
+
+/*
+ * Which operation this is, like the title bar a pull request pins on GitHub: its method and title on a row over the
+ * page, just above the links, shown once the bar has pinned (ds/toc.ts sets data-pinned). Until then the row is
+ * hidden, and as it sits over the page, it takes no room in it and nothing moves when it shows.
+ */
+.api-section-links-title {
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	right: 0;
+	display: flex;
+	/* On the links, not centred in its own row: closer to the links than to the header, so the two read as one block. */
+	align-items: flex-end;
+	gap: 8px;
+	height: var(--api-section-links-title-height);
+	padding: 0 var(--api-column-bleed-right, 40px) 0
+		var(--api-column-bleed-left, 40px);
+	background: #fff;
+	visibility: hidden;
+	opacity: 0;
+	transition:
+		opacity 120ms ease,
+		visibility 120ms;
+}
+
+.api-section-links[data-pinned] .api-section-links-title {
+	visibility: visible;
+	opacity: 1;
+}
+
+.api-section-links-title a {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--color-ink-navy, #111c2c);
+	font-size: 15px;
+	font-weight: 600;
+	text-decoration: none;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-section-links-title a:hover {
+	color: var(--color-blue-elastic, #0b64dd);
+}
+
+/* A chip of several methods aligns itself to the top of its row elsewhere; here it sits on the links like the title. */
+.api-section-links-title .api-method-group {
+	align-self: auto;
 }
 
 .api-section-links-track {
@@ -4509,7 +4578,7 @@ html:has(.api-page-shell) {
 }
 
 /* As tall as the track, less any scrollbar in it. */
-.api-section-links a {
+.api-section-links-track a {
 	display: flex;
 	align-items: center;
 	padding: 0 10px;
@@ -4521,18 +4590,27 @@ html:has(.api-page-shell) {
 	transition: color 150ms ease;
 }
 
-.api-section-links a:hover {
+.api-section-links-track a:hover {
 	color: #1d2a3e;
 }
 
 /* The section in view reads like the current page in the sidebar and the current API in the switcher: blue, semibold. */
-.api-section-links a[aria-current],
-.api-section-links a[aria-current]:hover {
+.api-section-links-track a[aria-current],
+.api-section-links-track a[aria-current]:hover {
 	color: var(--color-blue-elastic, #0b64dd);
 	font-weight: 600;
+	/* Underlined like the active item of the secondary nav: square, the item's full width, just above the rule. */
+	box-shadow: inset 0 -2px 0 var(--color-blue-elastic, #0b64dd);
 }
 
-.api-section-links a:focus-visible {
+/* Forced colours drop box shadows, so the underline is a border there, in the system colour for a selected item. */
+@media (forced-colors: active) {
+	.api-section-links-track a[aria-current] {
+		border-bottom: 2px solid Highlight;
+	}
+}
+
+.api-section-links-track a:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: -6px;
 	border-radius: 6px;
@@ -4588,7 +4666,8 @@ html:has(.api-page-shell) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.api-section-links a {
+	.api-section-links-track a,
+	.api-section-links-title {
 		transition: none;
 	}
 }
@@ -4597,13 +4676,13 @@ html:has(.api-page-shell) {
 #elastic-api-v3 .api-param-section-header,
 #elastic-api-v3 .responses-header,
 #elastic-api-v3 #required-privileges {
-	scroll-margin-top: calc(var(--offset-top, 0px) + 52px);
+	scroll-margin-top: calc(var(--api-section-links-top) + 52px);
 }
 
 /* A supplemental section is a plain h2.section-header. A single-section operation can have them too but renders no
    row, so only a page with the row clears it; the others keep the site's usual margin. */
 #elastic-api-v3.api-has-toolbar h2.section-header {
-	scroll-margin-top: calc(var(--offset-top, 0px) + 52px);
+	scroll-margin-top: calc(var(--api-section-links-top) + 52px);
 }
 
 /*
@@ -4612,7 +4691,7 @@ html:has(.api-page-shell) {
  * kinds are a dt with an id, one in a property row and one in a header row. Other pages keep the global margin.
  */
 #elastic-api-v3.api-has-toolbar dt[id] {
-	scroll-margin-top: calc(var(--offset-top, 0px) + 60px);
+	scroll-margin-top: calc(var(--api-section-links-top) + 60px);
 }
 
 /* Expand all / Collapse all: in the section-links bar, pushed to its right edge, or alone on a row where there is no bar. */

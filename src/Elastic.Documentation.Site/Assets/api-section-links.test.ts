@@ -66,6 +66,24 @@ describe('section links', () => {
         expect(document.querySelectorAll('[aria-current]')).toHaveLength(0)
     })
 
+    it.each([
+        ['below where it pins', 300, false],
+        ['at where it pins', 84, true],
+    ])(
+        'shows the operation title above the bar once the bar is %s',
+        (_, barTop, pinned) => {
+            mountBar()
+            const bar =
+                document.querySelector<HTMLElement>('.api-section-links')!
+            bar.style.top = '84px'
+            // jsdom has no layout: the bar is either still in the page or at its sticky top
+            bar.getBoundingClientRect = () => ({ top: barTop }) as DOMRect
+            initApiDocs()
+
+            expect(bar.hasAttribute('data-pinned')).toBe(pinned)
+        }
+    )
+
     it('scrolls to the top of the page from the Overview link of the bar', () => {
         mountBar()
         const scrollTo = vi.fn()

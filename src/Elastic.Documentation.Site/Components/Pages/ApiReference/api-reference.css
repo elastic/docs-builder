@@ -1050,10 +1050,14 @@ button.response-status-toggle:focus {
 
 .response-summary {
 	cursor: pointer;
+}
+
+.response-panel {
 	transition: background-color 0.12s ease;
 }
 
-.response-summary:hover {
+/* Hovering the header greys the whole response, in the colour of its open body. */
+.response-panel:has(> .response-summary:hover) {
 	background-color: var(--color-surface-sunken);
 }
 
