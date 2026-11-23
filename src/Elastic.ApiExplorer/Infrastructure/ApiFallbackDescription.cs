@@ -30,9 +30,20 @@ internal static class ApiFallbackDescription
 		IReadOnlyList<ApiOverviewRow>? tagRows = null
 	) => Sentence(page, context, navigationTitle, tagRows) is { } text ? Cap(text) : null;
 
-	/// <summary>Cuts at or before <see cref="ApiSeoDescription.MaxLength"/> characters, ellipsis included, so a long route or URL cannot push a description past the limit.</summary>
-	private static string Cap(string text) =>
-		text.Length <= ApiSeoDescription.MaxLength ? text : string.Concat(text.AsSpan(0, ApiSeoDescription.MaxLength - 3).TrimEnd(), "...");
+	/// <summary>
+	/// Cuts at or before <see cref="ApiSeoDescription.MaxLength"/> characters, ellipsis included, so a long route or URL cannot push
+	/// a description past the limit. A cut never leaves half of a surrogate pair, which would encode as a replacement character.
+	/// </summary>
+	private static string Cap(string text)
+	{
+		if (text.Length <= ApiSeoDescription.MaxLength)
+			return text;
+
+		var end = ApiSeoDescription.MaxLength - 3;
+		if (char.IsHighSurrogate(text[end - 1]))
+			end--;
+		return string.Concat(text.AsSpan(0, end).TrimEnd(), "...");
+	}
 
 	private static string? Sentence(
 		IApiModel page,
