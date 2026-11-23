@@ -63,8 +63,6 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 				string.IsNullOrWhiteSpace(Tag.ExternalDocs.Description) ? "Documentation" : Tag.ExternalDocs.Description
 			);
 
-	public bool Deprecated => RenderContext.CurrentNavigation is TagNavigationItem { Deprecated: true };
-
 	/// <inheritdoc />
 	protected override string? LayoutPageTitle => Tag.DisplayName;
 

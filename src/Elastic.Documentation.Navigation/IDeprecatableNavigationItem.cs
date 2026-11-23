@@ -4,7 +4,7 @@
 
 namespace Elastic.Documentation.Navigation;
 
-/// <summary>A navigation item the sidebar strikes through when it is deprecated.</summary>
+/// <summary>A navigation item that can be deprecated. The sidebar names it for screen readers but does not restyle it.</summary>
 public interface IDeprecatableNavigationItem : INavigationItem
 {
 	bool Deprecated { get; }

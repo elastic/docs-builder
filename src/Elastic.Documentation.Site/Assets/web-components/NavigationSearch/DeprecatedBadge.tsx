@@ -1,10 +1,6 @@
 import { useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 
-/** Struck through and dimmed, the same treatment as a deprecated sidebar row; applied to the title's text span. */
-export const deprecatedTitleText =
-    '& > span:first-child { text-decoration: line-through; opacity: 0.7; }'
-
 /** The operation page's Deprecated badge, sized to sit on a result title line. */
 export const DeprecatedBadge = () => {
     const { euiTheme } = useEuiTheme()

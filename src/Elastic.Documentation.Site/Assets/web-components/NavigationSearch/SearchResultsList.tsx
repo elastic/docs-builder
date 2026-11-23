@@ -1,5 +1,5 @@
 import { config } from '../../config'
-import { DeprecatedBadge, deprecatedTitleText } from './DeprecatedBadge'
+import { DeprecatedBadge } from './DeprecatedBadge'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { RouteLine } from './RouteLine'
@@ -336,12 +336,6 @@ const SearchResultRow = ({
                         }
                     }
                 }
-
-                ${
-                    result.deprecated
-                        ? `.route-line .api-method { filter: saturate(0.4); }`
-                        : ''
-                }
             `}
         >
             {result.landing && (
@@ -547,8 +541,6 @@ const Title = ({
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
-
-                ${deprecated ? deprecatedTitleText : ''}
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />

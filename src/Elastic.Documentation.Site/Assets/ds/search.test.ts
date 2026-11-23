@@ -159,12 +159,10 @@ describe('search dialog', () => {
         expect(items[0].querySelector('a')!.getAttribute('href')).toBe(
             '/docs/a'
         )
-        expect(items[0].hasAttribute('data-deprecated')).toBe(false)
         expect(
             items[0].querySelector<HTMLElement>('[data-search-deprecated]')!
                 .hidden
         ).toBe(true)
-        expect(items[1].hasAttribute('data-deprecated')).toBe(true)
         expect(
             items[1].querySelector<HTMLElement>('[data-search-deprecated]')!
                 .hidden

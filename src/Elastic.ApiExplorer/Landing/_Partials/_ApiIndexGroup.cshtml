@@ -3,7 +3,7 @@
 <li>
 	<a class="api-group-row api-index-row" href="@Model.Heading.Url" @(new HtmlString(Model.HxAttributes))>
 		<span class="api-group-heading">
-			<span class="api-overview-title">@if (Model.Heading.Deprecated){<s class="api-deprecated-title">@Model.Heading.Title</s><span class="sr-only">Deprecated</span>}else{@Model.Heading.Title}</span>
+			<span class="api-overview-title">@Model.Heading.Title</span>
 			<span class="api-index-row-count">@Model.EndpointsLabel</span>
 		</span>
 		@if (Model.Heading.Summary is { } summary)
