@@ -191,6 +191,52 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task AuthenticationFragments_DescriptionWithAnUnclosedFence_StaysInItsOwnFragment()
+	{
+		// Each fragment renders on its own, so the fence cannot swallow the credential or the next alternative's heading.
+		var document = await TestSpecs.LoadValidSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "security": [{ "apiKeyAuth": [] }, { "basicAuth": [] }],
+			  "components": { "securitySchemes": {
+			    "apiKeyAuth": { "type": "apiKey", "in": "header", "name": "Authorization", "description": "Send the key:\n\n```\ncurl -H ..." },
+			    "basicAuth": { "type": "http", "scheme": "basic" }
+			  } }
+			}
+			"""
+		);
+
+		string
+			.Join("<<< next fragment >>>\n", OperationCommonMark.AuthenticationFragments(document))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			## Api key [doc-authentication-api-key-auth]
+
+			<<< next fragment >>>
+			Send the key:
+
+			```
+			curl -H ...
+
+			<<< next fragment >>>
+			```http
+			Authorization: ApiKey <api-key>
+			```
+
+			## Basic [doc-authentication-basic-auth]
+
+			```http
+			Authorization: Basic <credentials>
+			```
+			"""
+			);
+	}
+
+	[Test]
 	[Arguments("apiKeyAuth", "doc-authentication-api-key-auth")]
 	[Arguments("apiKey", "doc-authentication-api-key")]
 	[Arguments("basicAuth", "doc-authentication-basic-auth")]
