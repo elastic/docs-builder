@@ -110,7 +110,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-dotnet@v6.0.0
+      - uses: actions/setup-dotnet@v6.1.0
         if: ${{ inputs.run }}
         with:
           global-json-file: global.json
