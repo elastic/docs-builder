@@ -34,13 +34,16 @@ feature navigation-preview
   expect attr "#api-version-switcher button" aria-label "API version: v8"
 end
 
-# Open an operation of that version: its page shows the method and the route under "Paths". Waiting for a link of the
-# new version also waits for the page swap to finish. The operation exists in both majors, so the version switch below
-# has a page to land on.
-expect attached "#elastic-docs-v3 a[href$='/docs/api/elasticsearch/v8/operation/operation-async-search-status']"
+# Open an operation of that version through its group: the landing page lists the groups, the group page its operations.
+# The operation page shows the method and the route under "Paths". Waiting for a link of the new version also waits for
+# the page swap to finish. The operation exists in both majors, so the version switch below has a page to land on.
+expect attached "#elastic-docs-v3 a[href$='/docs/api/elasticsearch/v8/group/endpoint-search']"
 wait --load networkidle
 wait 1500
-click "#elastic-docs-v3 a[href$='/docs/api/elasticsearch/v8/operation/operation-async-search-status']"
+click "#elastic-docs-v3 a[href$='/docs/api/elasticsearch/v8/group/endpoint-search']"
+wait --url **/docs/api/elasticsearch/v8/group/endpoint-search
+expect attached "a.api-group-row[href$='/docs/api/elasticsearch/v8/operation/operation-async-search-status']"
+click "a.api-group-row[href$='/docs/api/elasticsearch/v8/operation/operation-async-search-status']"
 wait --url **/docs/api/elasticsearch/v8/operation/operation-async-search-status
 expect text ".api-url-listing .api-method-label" "^(GET|PUT|POST|DELETE|HEAD|PATCH)$" --regex
 expect text ".api-url-listing .api-url-path" "^/" --regex

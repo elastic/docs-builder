@@ -16,21 +16,19 @@ namespace Elastic.ApiExplorer.Landing;
 
 public class ApiLanding : IApiGroupingModel
 {
-	public object? CreatePageModel(ApiRenderContext context) =>
+	public object? CreatePageModel(ApiRenderContext context) => OverviewRows(context);
+
+	private static IReadOnlyList<ApiOverviewRow> OverviewRows(ApiRenderContext context) =>
 		ApiOverviewBuilder.Build(
 			context.CurrentNavigation.NavigationRoot,
 			context.BuildContext.VersionsConfiguration,
-			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			context.BuildContext.Configuration.Features.NavigationPreviewEnabled,
+			tag => ApiMarkdownFrontMatter.TagSummary(tag, context)
 		);
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.Build(
-				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
-			);
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? OverviewRows(context);
 		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -41,12 +39,7 @@ public class ApiLanding : IApiGroupingModel
 
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.Build(
-				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
-			);
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? OverviewRows(context);
 		return Task.FromResult<string?>(
 			LandingCommonMark.Product(
 				context.Model.Info,

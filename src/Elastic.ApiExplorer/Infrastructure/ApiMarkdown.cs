@@ -82,22 +82,20 @@ public static partial class ApiMarkdown
 	}
 
 	/// <summary>
-	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
-	/// so an intro heading with the same slug is left out rather than linking to the post section.
+	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor, and so does
+	/// each of <paramref name="reserved"/> (what the page itself owns), so an intro heading with such a slug is left out rather
+	/// than linking to them.
 	/// </summary>
 	internal static IReadOnlyList<TocItem> ReadIntroHeadings(
 		IMarkdownStringRenderer renderer,
 		string? markdown,
 		string apiBaseUrl,
-		IReadOnlyList<ApiSupplementalSection> postSections
+		IReadOnlyList<ApiSupplementalSection> postSections,
+		IReadOnlySet<string> reserved
 	)
 	{
-		var headings = ReadHeadings(renderer, markdown, apiBaseUrl);
-		if (postSections.Count == 0)
-			return headings;
-
-		var postAnchors = ApiPostSection.Anchors(postSections).ToHashSet(StringComparer.Ordinal);
-		return [.. headings.Where(heading => !postAnchors.Contains(heading.Slug))];
+		var pageAnchors = ApiPostSection.Anchors(postSections, reserved).Concat(reserved).ToHashSet(StringComparer.Ordinal);
+		return [.. ReadHeadings(renderer, markdown, apiBaseUrl).Where(heading => !pageAnchors.Contains(heading.Slug))];
 	}
 
 	/// <summary>

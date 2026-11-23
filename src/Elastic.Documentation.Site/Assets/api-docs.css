@@ -429,26 +429,6 @@
 	}
 }
 
-.api-overview {
-	.api-url-listing {
-		margin: 0;
-		padding: 0;
-	}
-	.api-url-list-item {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-	.api-url-list-item + .api-url-list-item {
-		margin-top: 8px;
-	}
-	.api-url-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-}
-
 /* The rows switch to a two-column layout by container width. The product landing page has no .api-group,
    so the overview is a container too. */
 .api-group,
@@ -468,19 +448,35 @@
 	line-height: 32px;
 }
 
+/* The group's intro is the page's lead: a step up from body text, a step quieter in color. */
 .api-group .api-tag-description {
-	margin-top: 8px;
-	font-size: 16px;
-	line-height: 24px;
+	margin-top: 12px;
+	color: var(--color-ink-light, #535966);
+	font-size: 17px;
+	line-height: 28px;
 }
 
+.api-group-count {
+	margin: 0 0 8px;
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+/* The list reset both pages share; each page then frames it its own way (a ledger on the group page, cards on the landing). */
 .api-group-list {
 	display: flex;
 	flex-direction: column;
-	margin: 12px 0 0;
+	margin: 0;
 	padding: 0;
-	border-top: 1px solid var(--color-grey-20);
 	list-style: none;
+}
+
+/* One frame around the whole ledger, dividers between rows: never a box per row. */
+.api-group .api-group-list {
+	overflow: hidden;
+	border: 1px solid var(--color-grey-20);
+	border-radius: 8px;
 }
 
 /* Docs list styles indent every ul. This list is the page body, not a bullet list. */
@@ -491,23 +487,30 @@
 .api-group-list > li {
 	margin: 0;
 	padding: 0;
-	border-bottom: 1px solid var(--color-grey-20);
 	list-style: none;
 }
 
+.api-group .api-group-list > li + li {
+	border-top: 1px solid var(--color-grey-20);
+}
+
+/* A Console-like ledger: the method in its own column so the verbs line up, then the title, then the route. The column is wide
+   enough for a joined two-method chip (POST | GET) in either root font size, and a row with more methods grows it, so a long
+   chip never runs into the title while the common rows stay aligned. */
 .api-group-row {
+	--api-group-method-column: minmax(8.75rem, max-content);
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-columns: var(--api-group-method-column) minmax(0, 1fr) 16px;
 	grid-template-areas:
-		'title chevron'
-		'routes chevron';
+		'method title chevron'
+		'. routes chevron';
 	column-gap: 12px;
-	row-gap: 8px;
+	row-gap: 4px;
 	align-items: center;
 	box-sizing: border-box;
 	min-height: 44px;
 	margin: 0;
-	padding: 12px 8px;
+	padding: 12px 16px;
 	-webkit-tap-highlight-color: rgb(11 100 221 / 16%);
 }
 
@@ -557,18 +560,35 @@
 	align-items: center;
 }
 
+/* Badges that wrap onto a second line keep a gap above it, as the title keeps one above the first line. */
 .api-group-heading .api-title-badges {
 	display: inline-flex;
 	flex-wrap: wrap;
 	align-items: center;
+	row-gap: 4px;
 }
 
 .api-group-row .api-overview-title {
 	color: inherit;
-	font-size: 16px;
-	font-weight: 600;
+	font-size: 15px;
+	font-weight: 500;
 	line-height: 24px;
 	text-decoration: none;
+}
+
+.api-group-method {
+	grid-area: method;
+	display: flex;
+}
+
+.api-group-method .api-method {
+	min-width: 72px;
+	height: 20px;
+	font-size: 11px;
+}
+
+.api-group-method .api-method-group .api-method {
+	min-width: 0;
 }
 
 .api-group-routes {
@@ -576,23 +596,18 @@
 	min-width: 0;
 }
 
-.api-group-row .api-url-row {
-	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	align-items: center;
-	column-gap: 8px;
-}
-
-.api-group-row .api-url {
-	margin-left: 0;
-	min-width: 0;
-	color: var(--color-subdued, #516381);
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 24px;
+/* Overview routes: plain monospace text that wraps at a segment boundary. */
+#markdown-content .api-group-route,
+.api-group-route {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-ink-dark, #1c1e23);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 13.5px;
+	font-variant-numeric: tabular-nums;
+	line-height: 20px;
+	overflow-wrap: anywhere;
 }
 
 .api-group-chevron {
@@ -604,142 +619,75 @@
 	transform: rotate(-90deg);
 }
 
-/* Product landing: the groups as a flat index. Columns follow the container, not the viewport, so the index
-   reads the same beside the sidebar and in a narrow window. Classification headings span every column. */
-.api-index {
-	column-gap: 40px;
-}
-
+/* Product landing: each endpoint group is a row of the group page's list. The endpoint count follows the name the way
+   badges follow an operation title, then comes what the group is for, which the sidebar does not say. */
 .api-index .api-index-heading {
-	column-span: all;
-	margin: 32px 0 8px;
-	font-size: 20px;
-	line-height: 28px;
-}
-
-.api-index-group {
-	break-inside: avoid;
-	margin: 0 0 32px;
-}
-
-.api-index .api-index-group-title {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 12px;
-	margin: 0;
-	padding: 0 0 8px;
-	border-bottom: 1px solid var(--color-grey-20);
+	margin: 24px 0 8px;
 	font-size: 16px;
-	font-weight: 600;
 	line-height: 24px;
+	color: var(--color-ink-dark, #1c1e23);
+	font-weight: 600;
 }
 
-.api-index-group-title a {
-	color: inherit;
-	text-decoration: none;
+.api-group-row.api-index-row {
+	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-rows: auto 1fr;
+	grid-template-areas:
+		'title chevron'
+		'summary chevron';
+	align-items: start;
 }
 
-.api-index-group-title a:hover,
-.api-index-group-title a:focus-visible {
-	color: var(--color-blue-elastic, #0b64dd);
-	text-decoration: underline;
-	text-underline-offset: 2px;
+/* A cell beside a taller one grows: the text stays at the top, and only the chevron centers on the cell. */
+.api-index-row .api-group-chevron {
+	align-self: center;
 }
 
-.api-index-count {
+.api-index-row-count {
 	color: var(--color-subdued, #516381);
-	font-size: 14px;
-	font-weight: 400;
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	line-height: 24px;
+	white-space: nowrap;
 }
 
-#markdown-content .api-index-list {
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.api-index-list > li {
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-#markdown-content a.api-index-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	min-height: 36px;
-	padding: 6px 4px;
-	border-bottom: 1px solid var(--color-grey-10);
-	color: inherit;
+.api-index-row-summary {
+	display: -webkit-box;
+	grid-area: summary;
+	overflow: hidden;
+	color: var(--color-subdued, #516381);
 	font-size: 14px;
 	line-height: 20px;
-	text-decoration: none;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
 }
 
-/* One chip width, so the titles line up whatever the method. */
-.api-index-item .api-method {
-	min-width: 72px;
-	height: 20px;
-	font-size: 11px;
+/* Landing groups are separate cards, not rows of one frame: a gap between them, a border and radius on each. They sit two to
+   a line where they fit, and the two cards of a line share its height. */
+.api-index .api-group-list {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
 }
 
-/* A joined chip is as wide as its methods; each part must not also claim a whole chip width. */
-.api-index-item .api-method-group .api-method {
-	min-width: 0;
-}
-
-.api-index-item-title {
-	min-width: 0;
-	overflow-wrap: anywhere;
-}
-
-/* The path sits under the title, so a familiar endpoint is easy to spot. The chip stays centered on the two lines. */
-.api-index-item-text {
+.api-index .api-group-list > li {
 	display: flex;
-	flex-direction: column;
-	min-width: 0;
+	overflow: hidden;
+	border: 1px solid var(--color-grey-20);
+	border-radius: 8px;
 }
 
-#markdown-content .api-index-item-path {
-	padding: 0;
-	border: 0;
-	background: none;
-	color: var(--color-subdued, #516381);
-	font-family: var(--font-mono, ui-monospace, monospace);
-	font-size: 12px;
-	line-height: 16px;
-	overflow-wrap: anywhere;
+.api-index .api-group-list > li:hover {
+	border-color: var(--color-grey-80, #767d89);
 }
 
-#markdown-content a.api-index-item:hover,
-#markdown-content a.api-index-item:focus-visible {
-	background: var(--color-grey-10);
+.api-index .api-group-list > li > a {
+	flex: 1;
 }
 
-#markdown-content a.api-index-item:hover .api-index-item-title,
-#markdown-content a.api-index-item:focus-visible .api-index-item-title {
-	color: var(--color-blue-elastic, #0b64dd);
-	text-decoration: underline;
-	text-underline-offset: 2px;
-}
-
-#markdown-content a.api-index-item:focus-visible,
-.api-index-group-title a:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: -2px;
-}
-
-@container api-group (min-width: 44rem) {
-	.api-index {
-		column-count: 2;
-	}
-}
-
-@container api-group (min-width: 84rem) {
-	.api-index {
-		column-count: 3;
+@container api-group (min-width: 36rem) {
+	.api-index .api-group-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
 
@@ -797,6 +745,17 @@
 	}
 }
 
+/* On a phone the method column would squeeze the title: stack method, title and route instead. */
+@container api-group (max-width: 28rem) {
+	.api-group-row {
+		grid-template-columns: minmax(0, 1fr) 16px;
+		grid-template-areas:
+			'method chevron'
+			'title chevron'
+			'routes chevron';
+	}
+}
+
 @container api-group (min-width: 40rem) {
 	.api-group .api-page-heading > h1 {
 		font-size: 30px;
@@ -804,8 +763,23 @@
 	}
 
 	.api-group-row {
-		grid-template-columns: minmax(12rem, 0.9fr) minmax(0, 1.5fr) 16px;
-		grid-template-areas: 'title routes chevron';
+		grid-template-columns:
+			var(--api-group-method-column) minmax(12rem, 1fr)
+			minmax(0, 1.6fr) 16px;
+		grid-template-areas: 'method title routes chevron';
+	}
+}
+
+/* A joined chip is about 58px per method, and the row also needs its title (12rem), the chevron and some route. With four or more
+   methods a container under 860px leaves too little, so such a row stacks as it does on a phone; a wide ledger keeps its rows
+   side by side and aligned. */
+@container api-group (max-width: 860px) {
+	.api-group-row:has(.api-method-group > :nth-child(4)) {
+		grid-template-columns: minmax(0, 1fr) 16px;
+		grid-template-areas:
+			'method chevron'
+			'title chevron'
+			'routes chevron';
 	}
 }
 
@@ -1173,8 +1147,7 @@
 
 /* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
 #pages-nav a.nav-link--deprecated .nav-v2-api-method,
-.api-group-row--deprecated .api-method,
-.api-index-item--deprecated .api-method {
+.api-group-row--deprecated .api-method {
 	filter: saturate(0.4);
 }
 
@@ -3546,8 +3519,11 @@ navigation-search[variant='hero'] {
 	column-gap: 14px;
 }
 
-/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group), so they step down from it instead of matching it. */
+/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group), so they step down from it instead of matching it.
+   Each page's own Endpoints heading takes the same size, so the page reads as one outline. */
 .api-landing .docs-measure h2,
+.api-landing > h2,
+.api-group > h2,
 .api-group .api-tag-description h2 {
 	margin-top: 32px;
 	font-size: var(--text-2xl);
@@ -3569,8 +3545,9 @@ navigation-search[variant='hero'] {
 	}
 }
 
-/* The index starts after the intro with the same 32px that separates its groups. */
-.api-landing .api-overview {
+/* Both pages put their list under an Endpoints heading: the same space after it, and the count caption starts the list. */
+.api-landing .api-overview,
+.api-group .api-overview {
 	margin-top: 32px;
 }
 
@@ -4989,4 +4966,24 @@ body[data-api-column-dragging] {
 	> li:not(.nav-folder, .nav-group)
 	+ li:not(.nav-folder, .nav-group) {
 	margin-top: 16px;
+}
+
+/* On this page shows only where the rail sits beside the content, from the same 1024px as the docs list. */
+@media (max-width: 1023px) {
+	.api-rail-toc {
+		display: none;
+	}
+}
+
+/* The API rail is not inside the docs .sidebar, so its On this page links take the docs sidebar link style here (styles.css .sidebar .sidebar-link). */
+.api-rail-toc .sidebar-link {
+	color: var(--color-ink-light, #535966);
+	font-size: 14px;
+	line-height: 1.2em;
+	text-wrap: pretty;
+	word-break: break-word;
+}
+
+.api-rail-toc .sidebar-link:hover {
+	color: #000;
 }

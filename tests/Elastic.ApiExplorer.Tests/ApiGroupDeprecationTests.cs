@@ -82,13 +82,13 @@ public class ApiGroupDeprecationTests
 	}
 
 	[Test]
-	public async Task Render_ProductLanding_StrikesRetiredGroupAndDeprecatedRows()
+	public async Task Render_ProductLanding_StrikesRetiredGroup()
 	{
 		var navigation = await NavigationAsync();
 
 		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation);
 
-		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-index-group"));
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-index"));
 	}
 
 	[Test]
