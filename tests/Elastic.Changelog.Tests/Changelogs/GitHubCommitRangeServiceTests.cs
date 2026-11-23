@@ -305,86 +305,174 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
 	}
 
-	private static readonly CommitRangeArguments ColdArgs = new() { Owner = Owner, Repo = Repo, StartRef = Sha(0), EndRef = Sha(120) };
+	private const int ColdRangeCommits = 250;
 
-	private static HttpResponseMessage Unprocessable() =>
-		new(HttpStatusCode.UnprocessableEntity)
-		{
-			Content = new StringContent("""{"message":"Server Error: Sorry, this diff is taking too long to generate."}""")
-		};
-
-	private static string CommitList(IEnumerable<int> newestFirst) =>
-		"[" + string.Join(",", newestFirst.Select(i => $$"""{ "sha": "{{Sha(i)}}" }""")) + "]";
-
-	/// <summary>A cold range: the whole compare answers 422 until GitHub has compared the stages before it.</summary>
-	private (GitHubCommitRangeService Service, List<string> Requests) ColdRangeService(Func<HttpRequestMessage, bool> wholeRangeIsCold)
+	private static readonly CommitRangeArguments ColdArgs = new()
 	{
-		var sha1 = Sha(1);
-		var requests = new List<string>();
-		var handler = new StubHandler(req =>
+		Owner = Owner,
+		Repo = Repo,
+		StartRef = Sha(0),
+		EndRef = Sha(ColdRangeCommits)
+	};
+
+	private static HttpResponseMessage Unprocessable(string message = "Server Error: Sorry, this diff is taking too long to generate.") =>
+		new(HttpStatusCode.UnprocessableEntity) { Content = new StringContent($$"""{"message":"{{message}}"}""") };
+
+	/// <summary>
+	/// A repository whose history is <see cref="Sha"/>(0) to <see cref="Sha"/>(250), newest first, listed 100 commits to a page like GitHub does.
+	/// The range from <see cref="Sha"/>(0) is cold: the whole of it answers 422 while <paramref name="wholeRangeIsCold"/> says so, and so do
+	/// the stages while <paramref name="stagesAreCold"/> says so.
+	/// </summary>
+	private sealed class ColdRange(Func<bool>? wholeRangeIsCold = null, Func<bool>? stagesAreCold = null)
+	{
+		public List<string> Requests { get; } = [];
+		public List<TimeSpan> Delays { get; } = [];
+		public string ListFailure { get; set; } = string.Empty;
+		public string ColdMessage { get; set; } = "Server Error: Sorry, this diff is taking too long to generate.";
+
+		public GitHubCommitRangeService Service()
 		{
-			requests.Add(req.RequestUri!.PathAndQuery);
-			if (req.RequestUri.AbsolutePath == "/graphql")
+			var sha1 = Sha(1);
+			var handler = new StubHandler(req =>
 			{
-				var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-				return Json(IsDetailsQuery(body) ? DefaultDetails(body) : GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]));
-			}
+				Requests.Add(req.RequestUri!.PathAndQuery);
+				var path = req.RequestUri.AbsolutePath;
+				if (path == "/graphql")
+				{
+					var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+					return Json(IsDetailsQuery(body) ? DefaultDetails(body) : GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]));
+				}
 
-			if (req.RequestUri.AbsolutePath.EndsWith("/commits", StringComparison.Ordinal))
-				return Json(CommitList(Enumerable.Range(0, 121).Reverse()));
+				if (path.EndsWith("/commits", StringComparison.Ordinal))
+					return ListFailure.Length > 0 ? throw new HttpRequestException(ListFailure) : Json(CommitPage(req));
 
-			if (req.RequestUri.AbsolutePath.EndsWith($"...{Sha(120)}", StringComparison.Ordinal) && wholeRangeIsCold(req))
-				return Unprocessable();
+				if (path.Contains("/commits/", StringComparison.Ordinal))
+					return path.EndsWith("/v1.0", StringComparison.Ordinal) || path.EndsWith(Sha(0), StringComparison.Ordinal)
+						? Json($$"""{ "sha": "{{Sha(0)}}" }""")
+						: new HttpResponseMessage(HttpStatusCode.NotFound);
 
-			return Json(CompareJson(1, [sha1]));
-		});
-		return (new GitHubCommitRangeService(
-			new TestLoggerFactory(),
-			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
-		), requests);
+				var isWhole = path.EndsWith($"...{Sha(ColdRangeCommits)}", StringComparison.Ordinal);
+				if (isWhole ? wholeRangeIsCold?.Invoke() ?? false : stagesAreCold?.Invoke() ?? false)
+					return Unprocessable(ColdMessage);
+
+				return Json(CompareJson(1, [sha1]));
+			});
+			return new GitHubCommitRangeService(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token", (delay, _) =>
+			{
+				Delays.Add(delay);
+				return Task.CompletedTask;
+			}));
+		}
+
+		public IEnumerable<string> Compared =>
+			Requests.Where(r => r.Contains("/compare/", StringComparison.Ordinal)).Select(
+				r => r[(r.IndexOf("...", StringComparison.Ordinal) + 3)..r.IndexOf('?', StringComparison.Ordinal)]
+			);
+
+		public int Listed => Requests.Count(r => r.Contains("/commits?", StringComparison.Ordinal));
+
+		private static string CommitPage(HttpRequestMessage req)
+		{
+			var query = HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			var perPage = int.Parse(query["per_page"]!, CultureInfo.InvariantCulture);
+			var page = int.Parse(query["page"]!, CultureInfo.InvariantCulture);
+			var shas = Enumerable.Range(0, ColdRangeCommits + 1).Reverse().Skip((page - 1) * perPage).Take(perPage);
+			return "[" + string.Join(",", shas.Select(i => $$"""{ "sha": "{{Sha(i)}}" }""")) + "]";
+		}
 	}
+
+	private static readonly string[] ColdStages = [Sha(50), Sha(100), Sha(150), Sha(200)];
 
 	[Test]
 	public async Task ResolvePullRequests_ColdCompareAnswers422_IsComparedInStagesAndResolves()
 	{
 		var whole = 0;
-		var (service, requests) = ColdRangeService(_ => ++whole == 1);
+		var range = new ColdRange(() => ++whole == 1);
 
-		var result = await service.ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
+		var result = await range.Service().ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
-		requests
-			.Where(r => r.Contains("/compare/", StringComparison.Ordinal))
-			.Select(r => r[(r.IndexOf("...", StringComparison.Ordinal) + 3)..r.IndexOf('?', StringComparison.Ordinal)])
-			.Should()
-			.Equal(Sha(120), Sha(50), Sha(100), Sha(120));
+		range.Compared.Should().Equal([Sha(ColdRangeCommits), .. ColdStages, Sha(ColdRangeCommits)]);
+		range.Listed.Should().Be(3, "the start is on the third page of the history of the end");
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ColdCompareWithATagAsTheStart_IsComparedInStages()
+	{
+		var whole = 0;
+		var range = new ColdRange(() => ++whole == 1);
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "v1.0", EndRef = Sha(ColdRangeCommits) };
+
+		_ = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		range.Compared.Should().Equal([Sha(ColdRangeCommits), .. ColdStages, Sha(ColdRangeCommits)]);
+		range.Requests.Should().Contain(r => r.Contains("/commits/v1.0", StringComparison.Ordinal));
 	}
 
 	[Test]
 	public async Task ResolvePullRequests_ColdCompareStaysUnprocessable_IsAnErrorAfterOneRetryOfTheWholeRange()
 	{
-		var (service, requests) = ColdRangeService(_ => true);
+		var range = new ColdRange(() => true);
 
-		var result = await service.ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
+		var result = await range.Service().ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeNull();
 		Collector.Errors.Should().Be(1);
-		requests.Count(r => r.Contains($"...{Sha(120)}", StringComparison.Ordinal)).Should().Be(2);
+		range.Compared.Count(sha => sha == Sha(ColdRangeCommits)).Should().Be(2);
 	}
 
 	[Test]
 	public async Task ResolvePullRequests_ColdCompareWithAStartOutsideTheEnd_RetriesWithoutStages()
 	{
 		var whole = 0;
-		var (service, requests) = ColdRangeService(_ => ++whole == 1);
-		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "deadbeef", EndRef = Sha(120) };
+		var range = new ColdRange(() => ++whole == 1);
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "deadbeef", EndRef = Sha(ColdRangeCommits) };
 
-		_ = await service.ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+		_ = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
 
-		requests.Count(r => r.Contains("/compare/", StringComparison.Ordinal)).Should().Be(2);
-		requests.Count(r => r.Contains("/commits?", StringComparison.Ordinal)).Should().Be(10);
+		range.Compared.Should().Equal(Sha(ColdRangeCommits), Sha(ColdRangeCommits));
+		range.Listed.Should().Be(4, "three pages of history, then the empty page that ends it");
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_UnprocessableForAnotherReason_IsNotComparedInStages()
+	{
+		var range = new ColdRange(() => true) { ColdMessage = "Validation Failed" };
+
+		var result = await range.Service().ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Errors.Should().Be(1);
+		range.Compared.Should().Equal(Sha(ColdRangeCommits));
+		range.Listed.Should().Be(0);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_AStageNeverGetsReady_WaitsBetweenAttemptsButNotAfterTheLast()
+	{
+		var whole = 0;
+		var range = new ColdRange(() => ++whole == 1, () => true);
+
+		var result = await range.Service().ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull("the whole range is asked for again whatever the stages did");
+		range.Delays.Should().HaveCount(ColdStages.Length * 2);
+		range.Compared.Count(sha => sha == Sha(50)).Should().Be(3);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ListingTheStagesFails_StillAsksForTheWholeRangeAgain()
+	{
+		var whole = 0;
+		var range = new ColdRange(() => ++whole == 1) { ListFailure = "connection reset" };
+
+		var result = await range.Service().ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		range.Compared.Should().Equal(Sha(ColdRangeCommits), Sha(ColdRangeCommits));
 	}
 
 	[Test]

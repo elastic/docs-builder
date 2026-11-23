@@ -189,11 +189,42 @@ public sealed partial class GitHubCommitRangeService(
 		}
 	}
 
+	/// <summary>Whether GitHub answered 422 because it has not computed the range yet, and not for another reason such as a bad ref.</summary>
+	private static async Task<bool> IsColdRangeAsync(HttpResponseMessage response, Cancel ctx)
+	{
+		if (response.StatusCode != HttpStatusCode.UnprocessableEntity)
+			return false;
+
+		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		return body.Contains("taking too long", StringComparison.OrdinalIgnoreCase)
+			|| body.Contains("not_available", StringComparison.Ordinal);
+	}
+
 	/// <summary>
 	/// Asks GitHub to compare the start with every <see cref="WarmUpStageSize"/>th commit of the range, oldest first, so that
 	/// the comparison of the whole range builds on stages it has computed. Best effort: a stage that fails is skipped, and the
 	/// caller asks for the whole range again either way.
 	/// </summary>
+	private async Task WarmUpBestEffortAsync(CommitRangeArguments args, Cancel ctx)
+	{
+		try
+		{
+			await WarmUpCompareAsync(args, ctx).ConfigureAwait(false);
+		}
+		catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested)
+		{
+			// A connection failure or a timeout of the auxiliary requests must not skip the request for the whole range.
+			_logger.LogWarning(
+				e,
+				"Comparing {Start}...{End} for {Owner}/{Repo} in stages failed.",
+				args.StartRef,
+				args.EndRef,
+				args.Owner,
+				args.Repo
+			);
+		}
+	}
+
 	private async Task WarmUpCompareAsync(CommitRangeArguments args, Cancel ctx)
 	{
 		var stages = await ListWarmUpStagesAsync(args, ctx).ConfigureAwait(false);
@@ -224,6 +255,7 @@ public sealed partial class GitHubCommitRangeService(
 	/// <summary>The commits to compare the start with, oldest first. Empty when the start is not among the newest commits of the end.</summary>
 	private async Task<IReadOnlyList<string>> ListWarmUpStagesAsync(CommitRangeArguments args, Cancel ctx)
 	{
+		var startSha = await ResolveCommitShaAsync(args, args.StartRef, ctx).ConfigureAwait(false);
 		var newestFirst = new List<string>();
 		for (var page = 1; page <= MaxWarmUpPages; page++)
 		{
@@ -238,7 +270,7 @@ public sealed partial class GitHubCommitRangeService(
 			if (shas.Count == 0)
 				return [];
 
-			var start = shas.FindIndex(sha => sha.StartsWith(args.StartRef, StringComparison.OrdinalIgnoreCase));
+			var start = shas.FindIndex(sha => sha.StartsWith(startSha, StringComparison.OrdinalIgnoreCase));
 			if (start >= 0)
 			{
 				newestFirst.AddRange(shas.Take(start));
@@ -251,6 +283,26 @@ public sealed partial class GitHubCommitRangeService(
 		}
 
 		return [];
+	}
+
+	/// <summary>The commit a ref names. A tag or a branch, which release workflows pass, never matches the sha in a commit listing. Falls back to the ref itself.</summary>
+	private async Task<string> ResolveCommitShaAsync(CommitRangeArguments args, string gitRef, Cancel ctx)
+	{
+		var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/commits/{Uri.EscapeDataString(gitRef)}";
+		using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+		if (!response.IsSuccessStatusCode)
+			return gitRef;
+
+		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		try
+		{
+			using var doc = JsonDocument.Parse(json);
+			return doc.RootElement.TryGetProperty("sha", out var sha) && sha.GetString() is { Length: > 0 } resolved ? resolved : gitRef;
+		}
+		catch (JsonException)
+		{
+			return gitRef;
+		}
 	}
 
 	private static List<string> ReadCommitShas(string json)
@@ -279,11 +331,12 @@ public sealed partial class GitHubCommitRangeService(
 		for (var attempt = 1; attempt <= MaxWarmUpStageAttempts; attempt++)
 		{
 			using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
-			if (response.StatusCode != HttpStatusCode.UnprocessableEntity)
+			if (!await IsColdRangeAsync(response, ctx).ConfigureAwait(false))
 				return;
 
 			_logger.LogDebug("Stage {Stage} was not ready (attempt {Attempt})", stageSha, attempt);
-			await _transport.DelayAsync(TimeSpan.FromSeconds(5 * attempt), ctx).ConfigureAwait(false);
+			if (attempt < MaxWarmUpStageAttempts)
+				await _transport.DelayAsync(TimeSpan.FromSeconds(5 * attempt), ctx).ConfigureAwait(false);
 		}
 	}
 
@@ -300,12 +353,12 @@ public sealed partial class GitHubCommitRangeService(
 		_logger.LogDebug("Fetching compare page {Page}: {Url}", page, url);
 
 		var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
-		if (page == 1 && response.StatusCode == HttpStatusCode.UnprocessableEntity)
+		if (page == 1 && await IsColdRangeAsync(response, ctx).ConfigureAwait(false))
 		{
 			// GitHub answers 422 "taking too long to generate" for a range of a large repository it has not computed yet,
 			// and answers the same request when it has. Computing the range in stages makes the last step cheap.
 			response.Dispose();
-			await WarmUpCompareAsync(args, ctx).ConfigureAwait(false);
+			await WarmUpBestEffortAsync(args, ctx).ConfigureAwait(false);
 			response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
 		}
 
