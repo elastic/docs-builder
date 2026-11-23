@@ -61,8 +61,6 @@
 		// Without featured cards the cards of a group sit three across, so a description has room to read as a sentence.
 		var otherColumns = group.Featured.Count > 0 ? featuredColumns : "min-[1024px]:grid-cols-2 lg:grid-cols-3";
 		var unattached = group.Unattached.ToList();
-		// Everything in a group that is not featured is compact. Only the APIs that no group covers keep the full-size card.
-		var otherKind = group.Grouped ? ApiCatalogCardKind.Compact : ApiCatalogCardKind.Standard;
 		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
 			@if (group.Title is not null)
 			{
@@ -80,17 +78,17 @@
 						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: hasVariant, Column: f + 1, HeadingLevel: cardHeadingLevel)))
 						if (hasVariant)
 						{
-							@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(variant, otherKind, Column: f + 1, HeadingLevel: cardHeadingLevel)))
+							@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(variant, ApiCatalogCardKind.Compact, Column: f + 1, HeadingLevel: cardHeadingLevel)))
 						}
 					}
 				</ul>
 			}
 			@if (unattached.Count > 0)
 			{
-				<ul class="m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
+				<ul class="m-0 grid list-none grid-cols-1 gap-6 p-0 @otherColumns">
 					@foreach (var item in unattached)
 					{
-						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, HeadingLevel: cardHeadingLevel)))
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Standard, HeadingLevel: cardHeadingLevel)))
 					}
 				</ul>
 			}

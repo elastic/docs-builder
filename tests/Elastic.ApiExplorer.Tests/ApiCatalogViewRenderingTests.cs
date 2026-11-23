@@ -55,6 +55,21 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Render_Catalog_OrchestrationCardsUseTheFullSizeCard()
+	{
+		var html = await RenderAsync(
+			Entry("elasticsearch", "Elasticsearch API"),
+			Entry("kibana", "Kibana APIs"),
+			Entry("logstash", "Logstash APIs"),
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API"),
+			Entry("cloud", "Elastic Cloud API"),
+			Entry("cloud-enterprise", "Elastic Cloud Enterprise API")
+		);
+
+		Count(html, "api-catalog-card-compact").Should().Be(1, "only the Serverless tag-on is compact");
+	}
+
+	[Test]
 	public async Task Render_Catalog_KeepsOrphanedAndUnrelatedCardsVisible()
 	{
 		var html = await RenderAsync(
