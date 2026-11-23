@@ -81,7 +81,7 @@ yaml:
   | serverless: ga
 json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
 text: stack: ga 9.0+, , serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
-  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml:
   | stack: nonsense

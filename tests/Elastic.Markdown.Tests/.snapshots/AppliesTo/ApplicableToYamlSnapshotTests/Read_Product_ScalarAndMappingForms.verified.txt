@@ -76,7 +76,7 @@ yaml:
   | ecctl: beta
 json: [{"type":"product","sub_type":"product","lifecycle":"ga"},{"type":"product","sub_type":"ecctl","lifecycle":"beta"}]
 text: product: ga, , products: ecctl=beta, 
-  hint: Unknown key 'ecctl' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'ecctl' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml:
   | product:
@@ -84,7 +84,7 @@ yaml:
   | ecctl: beta
 json: [{"type":"product","sub_type":"ecctl","lifecycle":"beta"}]
 text: products: ecctl=beta, 
-  hint: Unknown key 'ecctl' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'ecctl' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml:
   | product:
@@ -92,4 +92,4 @@ yaml:
   | curator: beta
 json: [{"type":"product","sub_type":"curator","lifecycle":"beta"}]
 text: products: curator=beta, 
-  hint: Unknown key 'curator' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'curator' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
