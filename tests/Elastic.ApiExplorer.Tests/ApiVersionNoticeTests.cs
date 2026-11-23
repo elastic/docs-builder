@@ -63,9 +63,9 @@ public class ApiVersionNoticeTests
 			"""
 			versionless: none
 			v9 copy: none
-			v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping }, Version = 8 }
-			v8 only in v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8 }
-			v8 landing: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8 }
+			v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping }, Version = 8, Release = , Label = 8 }
+			v8 only in v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8, Release = , Label = 8 }
+			v8 landing: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8, Release = , Label = 8 }
 			next: UnreleasedNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping } }
 			next only in main: UnreleasedNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch } }
 			next with main and 9: UnreleasedNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping } }
@@ -73,6 +73,29 @@ public class ApiVersionNoticeTests
 			no moniker: none
 			"""
 		);
+	}
+
+	[Test]
+	public void For_OlderMajorWithRelease_BadgeNamesTheMinor()
+	{
+		var routes = ApiVersionRoutes.For("elasticsearch", ["main", "9", "8"]);
+		var releases = new Dictionary<string, string> { ["9"] = "9.6", ["8"] = "8.19" };
+		var items = ApiVersionSwitcher.Build("", routes, ["main", "9", "8"], "elasticsearch/v8", releases: releases);
+
+		var notice = ApiVersionNotices.For(ApiPageType.OlderMajor, "8", routes.DefaultMoniker, items);
+
+		notice.Should().BeOfType<OlderMajorNotice>().Which.Label.Should().Be("8.19");
+	}
+
+	[Test]
+	public void For_OlderMajorWithoutRelease_BadgeNamesTheMajor()
+	{
+		var routes = ApiVersionRoutes.For("elasticsearch", ["main", "9", "8"]);
+		var items = ApiVersionSwitcher.Build("", routes, ["main", "9", "8"], "elasticsearch/v8");
+
+		var notice = ApiVersionNotices.For(ApiPageType.OlderMajor, "8", routes.DefaultMoniker, items);
+
+		notice.Should().BeOfType<OlderMajorNotice>().Which.Label.Should().Be("8");
 	}
 
 	[Test]
@@ -89,10 +112,10 @@ public class ApiVersionNoticeTests
 
 		notices.Should().MatchInlineSnapshot(
 			"""
-			v9 failed, v8: OlderMajorNotice { Latest = , Version = 8 }
+			v9 failed, v8: OlderMajorNotice { Latest = , Version = 8, Release = , Label = 8 }
 			v9 failed, next: UnreleasedNotice { Latest =  }
-			only v8 rendered: OlderMajorNotice { Latest = , Version = 8 }
-			no released major: OlderMajorNotice { Latest = , Version = beta }
+			only v8 rendered: OlderMajorNotice { Latest = , Version = 8, Release = , Label = 8 }
+			no released major: OlderMajorNotice { Latest = , Version = beta, Release = , Label = beta }
 			"""
 		);
 	}

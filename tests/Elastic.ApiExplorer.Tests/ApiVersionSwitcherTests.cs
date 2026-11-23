@@ -63,6 +63,16 @@ public class ApiVersionSwitcherTests
 		items.Single(i => i.Selected).Url.Should().Be("/api/elasticsearch");
 	}
 
+	[Test]
+	public void Build_WithReleases_CarriesTheMinorOnTheMatchingVersionsOnly()
+	{
+		var releases = new Dictionary<string, string> { ["9"] = "9.6", ["8"] = "8.19" };
+
+		var items = ApiVersionSwitcher.Build("", Es, ["main", "9", "8"], "elasticsearch/v8", releases: releases);
+
+		items.Select(i => $"{i.Moniker}={i.Release ?? "none"}").Should().Equal("main=none", "9=9.6", "8=8.19");
+	}
+
 	private static IReadOnlyDictionary<string, IReadOnlyList<string>> Pages(params string[][] pages) =>
 		pages.SelectMany(names => names.Select(name => (name, names))).ToDictionary(x => x.name, IReadOnlyList<string> (x) => x.names);
 

@@ -17,7 +17,12 @@ public sealed record VersionNoticeLinkModel(LatestVersionLink Latest, bool Desig
 public closed record ApiVersionNotice(LatestVersionLink? Latest);
 
 /// <param name="Version">The major the page belongs to, such as <c>8</c>.</param>
-public sealed record OlderMajorNotice(string Version, LatestVersionLink? Latest) : ApiVersionNotice(Latest);
+/// <param name="Release">The minor release the major renders from, such as <c>8.19</c>, or null when the version index names none.</param>
+public sealed record OlderMajorNotice(string Version, LatestVersionLink? Latest, string? Release = null) : ApiVersionNotice(Latest)
+{
+	/// <summary>What the badge names: the minor release when known, else the major.</summary>
+	public string Label => Release ?? Version;
+}
 
 public sealed record UnreleasedNotice(LatestVersionLink? Latest) : ApiVersionNotice(Latest);
 
@@ -46,7 +51,7 @@ public static class ApiVersionNotices
 		var latest = item is null ? null : new LatestVersionLink(item.ShortLabel ?? item.Label, item.Url);
 		return type switch
 		{
-			ApiPageType.OlderMajor => new OlderMajorNotice(moniker, latest),
+			ApiPageType.OlderMajor => new OlderMajorNotice(moniker, latest, pageItems.FirstOrDefault(i => i.Moniker == moniker)?.Release),
 			ApiPageType.Unreleased => new UnreleasedNotice(latest),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 		};

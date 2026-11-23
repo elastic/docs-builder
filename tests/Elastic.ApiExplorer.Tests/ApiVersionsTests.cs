@@ -20,4 +20,17 @@ public class ApiVersionsTests
 
 	[Test]
 	public void DefaultTree_NoTrees_ReturnsNull() => ApiVersions.DefaultTree([]).Should().BeNull();
+
+	[Test]
+	[Arguments("9.6", "9.6")]
+	[Arguments("8.19", "8.19")]
+	[Arguments("main", null)]
+	[Arguments("master", null)]
+	[Arguments("9", null)]
+	[Arguments("9.6.1", null)]
+	[Arguments("9.x", null)]
+	[Arguments("", null)]
+	[Arguments(null, null)]
+	public void ReleaseOf_Branch_NamesOnlyAMajorMinorRelease(string? branch, string? expected) =>
+		ApiVersions.ReleaseOf(branch).Should().Be(expected);
 }

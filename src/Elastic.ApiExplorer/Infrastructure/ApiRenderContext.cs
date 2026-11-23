@@ -22,12 +22,15 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <param name="Moniker">The version this entry links to: <c>main</c> or a numeric major.</param>
+/// <param name="Release">The minor release the version renders from, such as <c>9.6</c>. Null for <c>main</c> and when the index names no minor.</param>
 /// <param name="PageNames">
 /// Every name of every page this version renders, relative to <paramref name="Url"/> (<c>""</c> is the landing page).
 /// Each name maps to all names of that page, canonical first, because a collapsed operation also answers to its former paths.
 /// </param>
 public sealed record ApiVersionSwitcherItem(string Moniker, string Label, string Url, bool Selected, string? ShortLabel = null)
 {
+	public string? Release { get; init; }
+
 	public IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames
 	{
 		get;

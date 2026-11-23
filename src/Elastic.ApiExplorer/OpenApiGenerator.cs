@@ -377,6 +377,11 @@ public class OpenApiGenerator(
 			return null;
 
 		var monikers = resolved.Documents.Select(v => v.Version.Moniker).ToArray();
+		var releases = resolved
+			.Documents
+			.Select(v => (v.Version.Moniker, Release: ApiVersions.ReleaseOf(v.Version.Version)))
+			.Where(static v => v.Release is not null)
+			.ToDictionary(static v => v.Moniker, static v => v.Release!);
 
 		// Each tree gets an independent ApiRenderContext, navigation tree and navigation HTML
 		// writer, so there is no shared mutable state between concurrent trees. The outer loop in
@@ -386,7 +391,14 @@ public class OpenApiGenerator(
 		await Parallel.ForEachAsync(trees.Trees, ctx, async (tree, token) =>
 		{
 			var moniker = tree.Moniker;
-			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, resolved.Routes, monikers, tree.Suffix, trees.PageNames);
+			var switcherItems = ApiVersionSwitcher.Build(
+				context.UrlPathPrefix,
+				resolved.Routes,
+				monikers,
+				tree.Suffix,
+				trees.PageNames,
+				releases
+			);
 			await GenerateApiProduct(
 				new(
 					tree.Version.Document,
