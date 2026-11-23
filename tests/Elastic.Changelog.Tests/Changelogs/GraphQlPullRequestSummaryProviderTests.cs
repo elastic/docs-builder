@@ -20,7 +20,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// </summary>
 public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBase()
 {
-	[GeneratedRegex(@" p(?<n>\d+): pullRequest")]
+	[GeneratedRegex(@" p(?<n>\d+): pullRequest", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AliasRegex();
 
 	private sealed partial class FakeGitHub
@@ -76,7 +76,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 			return $$"""{ "pageInfo": {{pageInfo}}, "nodes": [{{string.Join(",", page.Select(l => $$"""{ "name": {{JsonSerializer.Serialize(l)}} }"""))}}] }""";
 		}
 
-		[GeneratedRegex(@"p: pullRequest\(number: (\d+)\) \{ labels\(first: 100, after: ""(\d+)""")]
+		[GeneratedRegex(@"p: pullRequest\(number: (\d+)\) \{ labels\(first: 100, after: ""(\d+)""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 		private static partial Regex LabelPageRegex();
 	}
 
@@ -87,11 +87,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 				new StubHandler(req =>
 				{
 					var query =
-						JsonDocument
-							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
-							.RootElement
-							.GetProperty("query")
-							.GetString()!;
+						JsonElement.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).GetProperty("query").GetString()!;
 					return new HttpResponseMessage(HttpStatusCode.OK)
 					{
 						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")
@@ -274,11 +270,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 				new StubHandler(req =>
 				{
 					var query =
-						JsonDocument
-							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
-							.RootElement
-							.GetProperty("query")
-							.GetString()!;
+						JsonElement.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).GetProperty("query").GetString()!;
 					return new HttpResponseMessage(HttpStatusCode.OK)
 					{
 						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")

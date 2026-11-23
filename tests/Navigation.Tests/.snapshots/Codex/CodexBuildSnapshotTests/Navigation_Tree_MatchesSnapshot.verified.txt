@@ -1,0 +1,10 @@
+CodexNavigation  /docs  "Test Codex"
+  index: CodexIndexLeaf  /docs  "Test Codex"
+  GroupLinkLeaf  /docs/g/observability  "Observability" [wrong parent]
+  GroupLinkLeaf  /docs/g/security  "Security" [wrong parent]
+  DocumentationSetNavigation  /docs/r/standalone  "standalone" [wrong parent]
+    index: FileNavigationLeaf  /docs/r/standalone  "standalone"
+    FolderNavigation  /docs/r/standalone/guide  "standalone guide"
+      index: FileNavigationLeaf  /docs/r/standalone/guide  "standalone guide"
+      FileNavigationLeaf  /docs/r/standalone/guide/setup  "standalone setup"
+    FileNavigationLeaf  /docs/r/standalone/draft  "Draft" [hidden]

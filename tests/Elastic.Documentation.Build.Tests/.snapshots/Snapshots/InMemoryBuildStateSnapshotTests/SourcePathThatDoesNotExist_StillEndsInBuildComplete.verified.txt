@@ -1,0 +1,6 @@
+before: status=Idle errors=0 warnings=0 hints=0 stored=0
+state event: state errors=0 warnings=0 hints=0 status=idle diagnostics=[]
+event: build_start
+event: build_complete errors=0 warnings=0 hints=0
+after: status=Complete errors=0 warnings=0 hints=0 stored=0
+state event: state errors=0 warnings=0 hints=0 status=complete diagnostics=[]

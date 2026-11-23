@@ -4,13 +4,12 @@
 
 namespace Elastic.Documentation.Site.Components.Primitives.Tooltip;
 
-/// <summary>A short explanation shown on hover and keyboard focus, wired with aria-describedby. It needs no script.</summary>
+/// <summary>A word with a short explanation, shown by the shared tooltip (Assets/tooltip.ts) on hover, keyboard focus and a touch hold.</summary>
 public sealed record TooltipModel
 {
-	public required string Id { get; init; }
 	public required string Label { get; init; }
 	public required string Text { get; init; }
 
-	/// <summary>Shows the tooltip as if the trigger were hovered, for the style guide.</summary>
+	/// <summary>Draws the tooltip open above the trigger, for the style guide.</summary>
 	public bool Open { get; init; }
 }

@@ -1,0 +1,46 @@
+{
+  "deletion_threshold_default": null,
+  "exclude_patterns": [],
+  "remote_listing_completed": true,
+  "total_source_files": 2,
+  "total_remote_files": 14,
+  "total_sync_requests": 5,
+  "delete": [
+    {
+      "destination_path": "docs/_static/chunk-Search-00000000.js"
+    },
+    {
+      "destination_path": "docs/_static/chunk-Search-00000001.js"
+    },
+    {
+      "destination_path": "docs/_static/styles.css"
+    }
+  ],
+  "add": [
+    {
+      "local_path": "{output}/docs/_static/chunk-Search-current0.js",
+      "destination_path": "docs/_static/chunk-Search-current0.js"
+    },
+    {
+      "local_path": "{output}/docs/index.html",
+      "destination_path": "docs/index.html"
+    }
+  ],
+  "update": [],
+  "skip": [],
+  "retain": [
+    "docs/_static/chunk-Search-00000002.js",
+    "docs/_static/chunk-Search-00000003.js",
+    "docs/_static/chunk-Search-00000004.js",
+    "docs/_static/chunk-Search-00000005.js",
+    "docs/_static/chunk-Search-00000006.js",
+    "docs/_static/chunk-Search-00000007.js",
+    "docs/_static/chunk-Search-00000008.js",
+    "docs/_static/chunk-Search-00000009.js",
+    "docs/_static/chunk-Search-00000010.js",
+    "docs/_static/chunk-Search-00000011.js",
+    "docs/_static/main-aaaaaaaa.js"
+  ]
+}
+--- validation: valid=True ratio=0.2143 threshold=0.8
+--- diagnostics

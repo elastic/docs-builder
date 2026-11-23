@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -92,13 +93,13 @@ public static partial class ApiAdmonitions
 		_ => "note"
 	};
 
-	[GeneratedRegex(@"^\s{0,3}>\s*(?<kind>info|warn|warning|note|tip|important|caution)\s*$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^\s{0,3}>\s*(?<kind>info|warn|warning|note|tip|important|caution)\s*$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex QuoteTypePattern();
 
-	[GeneratedRegex(@"^\s{0,3}>\s?(?<text>.*)$")]
+	[GeneratedRegex(@"^\s{0,3}>\s?(?<text>.*)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex QuoteLinePattern();
 
 	// "NOTE: text", "Warning: text", "**Note:** text", "**IMPORTANT**: text"; the colon sits inside or after the bold.
-	[GeneratedRegex(@"^(?<bold>\*\*)?(?<kind>note|important|warning|tip|deprecated)(?(bold)(?::\*\*|\*\*:)|:)\s*(?<text>.*)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^(?<bold>\*\*)?(?<kind>note|important|warning|tip|deprecated)(?(bold)(?::\*\*|\*\*:)|:)\s*(?<text>.*)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LabelPattern();
 }

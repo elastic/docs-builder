@@ -23,6 +23,7 @@ public static class SharedMappingConfig
 	public const string HierarchyAnalyzer = "hierarchy_analyzer";
 	public const string SynonymsFixedAnalyzer = "synonyms_fixed_analyzer";
 	public const string SynonymsAnalyzer = "synonyms_analyzer";
+	public const string TitleFingerprintAnalyzer = "title_fingerprint_analyzer";
 	public const string ContentTagsAnalyzer = "content_tags_analyzer";
 
 	private static MappingsBuilder<T> AddCommonTitleMappings<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase =>

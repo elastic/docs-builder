@@ -8,6 +8,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Image;
 using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -42,6 +43,36 @@ public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 		Block!.Found.Should().BeTrue();
 		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
+}
+
+[InheritsTests]
+public class ImageAltWithQuoteTests() : DirectiveTest<ImageBlock>("""
+:::{image} img/observability.png
+:alt: Say "hi"
+:::
+""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/observability.png", "");
+
+	[Test]
+	public void QuoteInAltStaysInsideTheAttributes() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-D9161EE2">
+			<img loading="lazy" title="Say &quot;hi&quot;" alt="Say &quot;hi&quot;" src="/img/observability.png" style="">
+		</a>
+		<dialog id="modal-D9161EE2" class="modal" aria-label="Say &quot;hi&quot;">
+			<div class="modal-content">
+				<form method="dialog" class="modal-close">
+					<button type="submit" class="close-button" aria-label="Close">×</button>
+				</form>
+				<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
+					<img loading="lazy" title="Say &quot;hi&quot;" alt="Say &quot;hi&quot;" src="/img/observability.png">
+				</a>
+			</div>
+		</dialog>
+		"""
+		);
 }
 
 [InheritsTests]

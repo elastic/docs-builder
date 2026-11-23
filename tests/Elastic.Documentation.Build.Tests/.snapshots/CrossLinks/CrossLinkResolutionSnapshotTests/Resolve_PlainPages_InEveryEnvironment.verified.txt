@@ -1,0 +1,96 @@
+example-repo://index.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+  publish                 resolved https://docs.example.test/
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/
+  publish-api-explorer    resolved https://docs.example.test/docs/
+example-repo://get-started/index.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+  publish                 resolved https://docs.example.test/docs/start-here
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/start-here
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/start-here
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/start-here
+example-repo://get-started
+  isolated                LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-relative          LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed        LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed-slash  LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-api-explorer    LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://get-started/
+  isolated                LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-relative          LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed        LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed-slash  LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-api-explorer    LinkNotInIndex: 'get-started' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://guide/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/guide/page
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/guide/page
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/guide/page
+example-repo://guide/page
+  isolated                LinkNotInIndex: 'guide/page' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-absolute          LinkNotInIndex: 'guide/page' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  codex-relative          LinkNotInIndex: 'guide/page' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'guide/page' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed        LinkNotInIndex: 'guide/page' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-prefixed-slash  LinkNotInIndex: 'guide/page' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish-api-explorer    LinkNotInIndex: 'guide/page' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://guide/nested/deep.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/nested/deep
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/nested/deep
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/nested/deep
+  publish                 resolved https://docs.example.test/docs/nested-section/deep
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/nested-section/deep
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/nested-section/deep
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/nested-section/deep
+example-repo://guide/no-anchors.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/no-anchors
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/no-anchors
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/no-anchors
+  publish                 resolved https://docs.example.test/docs/guide/no-anchors
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/guide/no-anchors
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/guide/no-anchors
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/guide/no-anchors
+other-repo://index.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/
+  publish                 resolved https://docs.example.test/
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/
+  publish-api-explorer    resolved https://docs.example.test/docs/
+other-repo://target/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page
+  publish                 resolved https://docs.example.test/docs/other/target/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/other/target/page
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/other/target/page
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/other/target/page
+other-repo://target/index.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target
+  publish                 resolved https://docs.example.test/docs/other/target
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/other/target
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/other/target
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/other/target
+codex-repo://target/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/codex-repo/tree/main/target/page
+  codex-absolute          resolved https://codex.elastic.dev/r/codex-repo/target/page
+  codex-relative          resolved (relative) /r/codex-repo/target/page
+  publish                 resolved https://docs.example.test/target/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/target/page
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/target/page
+  publish-api-explorer    resolved https://docs.example.test/docs/target/page

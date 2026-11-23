@@ -1,0 +1,150 @@
+IndexFileRef  index.md
+FileRef  release-notes.md
+FileRef  404.md [hidden]
+FileRef  developer-notes.md [hidden]
+FolderRef  getting-started
+  IndexFileRef  getting-started/index.md
+  FileRef  getting-started/installation.md
+  FileRef  getting-started/serve.md
+  FileRef  getting-started/writing-content.md
+  FileRef  getting-started/pages-and-links.md
+  FileRef  getting-started/publish.md
+FolderRef  syntax
+  IndexFileRef  syntax/index.md
+  FileRef  syntax/quick-ref.md
+  FileRef  syntax/directives.md
+  FileRef  syntax/headings.md
+  FileRef  syntax/admonitions.md
+  FileRef  syntax/agent-skill.md
+  FileRef  syntax/applies.md
+  FileRef  syntax/applies-switch.md
+  FileRef  syntax/automated_settings.md
+  FileRef  syntax/buttons.md
+  FileRef  syntax/card-group.md
+  FileRef  syntax/changelog.md
+  FileRef  syntax/code.md
+  FileRef  syntax/comments.md
+  FileRef  syntax/contributors.md
+  FileRef  syntax/csv-include.md
+  FileRef  syntax/dropdowns.md
+  FileRef  syntax/definition-lists.md
+  FileRef  syntax/explore.md
+  FileRef  syntax/file_inclusion.md
+  FileRef  syntax/footnotes.md
+  FileRef  syntax/frontmatter.md
+  FileRef  syntax/get-started.md
+  FileRef  syntax/hero.md
+  FileRef  syntax/hub-pages.md
+  FileRef  syntax/icons.md
+  FileRef  syntax/images.md
+  FileRef  syntax/videos.md
+  FileRef  syntax/kbd.md
+  FileRef  syntax/link-card.md
+  FileRef  syntax/math.md
+  FileRef  syntax/on-this-page.md
+  FileRef  syntax/vector-sizing-calculator.md
+  FileRef  syntax/diagrams.md
+  FileRef  syntax/lists.md
+  FileRef  syntax/task-lists.md
+  FileRef  syntax/line_breaks.md
+  FileRef  syntax/storybook.md
+  FileRef  syntax/links.md
+  FileRef  syntax/list-sub-pages.md
+  FileRef  syntax/page-card.md
+  FileRef  syntax/related-learning.md
+  FileRef  syntax/stepper.md
+  FileRef  syntax/substitutions.md
+  FileRef  syntax/version-variables.md
+  FileRef  syntax/sundries.md
+  FileRef  syntax/tables.md
+  FileRef  syntax/tabs.md
+  FileRef  syntax/titles.md
+  FileRef  syntax/whats-new.md
+FolderRef  examples
+  IndexFileRef  examples/index.md
+  FolderRef  examples/products
+    FileRef  examples/products/docs-builder.md
+FolderRef  documentation
+  IndexFileRef  documentation/index.md
+  FileRef  documentation/distributed-builds.md
+  FileRef  documentation/cross-links.md
+  FolderRef  documentation/isolated
+    IndexFileRef  documentation/isolated/index.md
+    FolderRef  documentation/isolated/configure
+      IndexFileRef  documentation/isolated/configure/index.md
+    FileRef  documentation/isolated/navigation.md
+    FileRef  documentation/isolated/urls.md
+    FileRef  documentation/isolated/cta.md
+    FileRef  documentation/isolated/extensions.md
+    FileRef  documentation/isolated/how-to/cumulative-docs/index.md [hidden]
+    FileRef  documentation/isolated/how-to/cumulative-docs/guidelines.md [hidden]
+    FileRef  documentation/isolated/how-to/cumulative-docs/badge-placement.md [hidden]
+    FileRef  documentation/isolated/how-to/cumulative-docs/example-scenarios.md [hidden]
+    FileRef  documentation/isolated/how-to/cumulative-docs/reference.md [hidden]
+    FolderRef  documentation/isolated/how-to
+      FileRef  documentation/isolated/how-to/move.md
+      FileRef  documentation/isolated/how-to/locally.md [hidden]
+      FileRef  documentation/isolated/how-to/on-the-web.md [hidden]
+  FolderRef  documentation/assembler
+    IndexFileRef  documentation/assembler/index.md
+    FolderRef  documentation/assembler/configure
+      IndexFileRef  documentation/assembler/configure/index.md
+    FileRef  documentation/assembler/navigation.md
+    FileRef  documentation/assembler/urls.md
+    FileRef  documentation/assembler/environments.md
+    FileRef  documentation/assembler/add-repo.md
+    FileRef  documentation/assembler/infrastructure.md
+  FolderRef  documentation/codex
+    IndexFileRef  documentation/codex/index.md
+    FolderRef  documentation/codex/configure
+      IndexFileRef  documentation/codex/configure/index.md
+    FileRef  documentation/codex/navigation.md
+    FileRef  documentation/codex/urls.md
+    FileRef  documentation/codex/infrastructure.md
+  FolderRef  documentation/catalog
+    IndexFileRef  documentation/catalog/index.md
+    FileRef  documentation/catalog/products.md
+    FileRef  documentation/catalog/related-learning.md
+    FileRef  documentation/catalog/versions.md
+    FileRef  documentation/catalog/synonyms.md
+    FileRef  documentation/catalog/legacy-url-mappings.md
+  FileRef  documentation/redirects.md
+FolderRef  data
+  IndexFileRef  data/index.md
+  FolderRef  data/mcp
+    IndexFileRef  data/mcp/index.md
+  FileRef  data/api.md
+  FolderRef  data/openapi
+    IndexFileRef  data/openapi/index.md
+    FileRef  data/openapi/api-explorer.md
+    FileRef  data/openapi/supplemental.md
+  FolderRef  data/cli-schema
+    IndexFileRef  data/cli-schema/index.md
+    FileRef  data/cli-schema/supplemental.md
+  FolderRef  data/exporters
+    IndexFileRef  data/exporters/index.md
+    FileRef  data/exporters/elasticsearch.md
+    FileRef  data/exporters/llm.md
+    FileRef  data/exporters/okf.md
+    FileRef  data/exporters/plain-text.md
+  FolderRef  data/release-notes
+    IndexFileRef  data/release-notes/index.md
+    FileRef  data/release-notes/bundle.md
+    FileRef  data/release-notes/configure-ref.md
+FolderRef  integrations
+  IndexFileRef  integrations/index.md
+  FileRef  integrations/docs-actions.md
+  FileRef  integrations/elastic-cli.md
+CliReferenceRef  cli
+IsolatedTableOfContentsRef  development
+  IndexFileRef  development/index.md (container-relative: index.md)
+  FileRef  development/navigation.md (container-relative: navigation.md)
+  FileRef  development/ingest.md (container-relative: ingest.md)
+  FileRef  development/essc.md (container-relative: essc.md)
+  FileRef  development/changelog-bundle-registry.md (container-relative: changelog-bundle-registry.md)
+  FileRef  development/page-feedback.md (container-relative: page-feedback.md)
+  FileRef  development/code-blocks.md (container-relative: code-blocks.md)
+  FileRef  development/design-system.md (container-relative: design-system.md)
+  FileRef  development/journeys.md (container-relative: journeys.md)
+  IsolatedTableOfContentsRef  development/link-validation (container-relative: link-validation)
+    IndexFileRef  development/link-validation/index.md (container-relative: index.md)

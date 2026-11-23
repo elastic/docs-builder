@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation.Tests.Isolation;
@@ -166,10 +167,10 @@ public partial class SocialImageHeadTests : DocumentationSetNavigationTestBase
 	private static string ImageMeta(string html) =>
 		string.Join('\n', ImageMetaRegex().Matches(html).Select(m => ContentHashRegex().Replace(m.Value, "?v=HASH")));
 
-	[GeneratedRegex(@"<meta (property=""og:image""|name=""twitter:image"")[^>]*>")]
+	[GeneratedRegex(@"<meta (property=""og:image""|name=""twitter:image"")[^>]*>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ImageMetaRegex();
 
-	[GeneratedRegex(@"\?v=[^""]*")]
+	[GeneratedRegex(@"\?v=[^""]*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ContentHashRegex();
 
 	private async Task<string> RenderHead(HeadOptions options)

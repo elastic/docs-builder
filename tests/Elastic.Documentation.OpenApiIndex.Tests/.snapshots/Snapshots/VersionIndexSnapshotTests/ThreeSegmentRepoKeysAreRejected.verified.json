@@ -1,0 +1,7 @@
+{
+  "index": {},
+  "invalidKeys": [
+    "elastic/9.1/openapi.json",
+    "a/b/c/d/openapi.json"
+  ]
+}

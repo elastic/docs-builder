@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.AllowlistIdentity;
 
@@ -29,10 +30,10 @@ public sealed partial record ScrubberAllowlistIdentity
 	/// <summary>The schema version this reader understands.</summary>
 	public const int CurrentSchemaVersion = 1;
 
-	[GeneratedRegex("^sha256:[0-9a-f]{64}$")]
+	[GeneratedRegex("^sha256:[0-9a-f]{64}$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex Sha256Format();
 
-	[GeneratedRegex("^[0-9a-f]{40}$")]
+	[GeneratedRegex("^[0-9a-f]{40}$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CommitFormat();
 
 	/// <summary>Version of this document's shape; readers reject versions they don't understand.</summary>

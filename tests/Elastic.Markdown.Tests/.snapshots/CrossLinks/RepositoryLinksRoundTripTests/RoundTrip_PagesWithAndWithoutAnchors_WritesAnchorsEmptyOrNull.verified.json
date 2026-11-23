@@ -1,0 +1,37 @@
+{
+  "origin": {
+    "branch": "main",
+    "remote": "https://github.com/example-org/example-repo",
+    "ref": "0123456789abcdef0123456789abcdef01234567",
+    "name": "unavailable",
+    "github_ref": null
+  },
+  "url_path_prefix": "/elastic/example-repo/tree/main",
+  "links": {
+    "index.md": {
+      "anchors": []
+    },
+    "empty-anchors.md": {
+      "anchors": []
+    },
+    "null-anchors.md": {},
+    "some-anchors.md": {
+      "anchors": [
+        "intro",
+        "Mixed-Case",
+        "intro"
+      ]
+    },
+    "hidden.md": {
+      "anchors": [],
+      "hidden": true
+    },
+    "hidden-false.md": {
+      "anchors": [
+        "a"
+      ]
+    }
+  },
+  "cross_links": [],
+  "redirects": null
+}

@@ -210,7 +210,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		sections.HubPath.Should().Be("api");
 		sections.GetSections().Select(s => s.Key).Should().Equal("elasticsearch", "kibana");
 		sections.GetSections().Should().BeSameAs(sections.GetSections(), "the navigation and the build step must share the same sections");
-		sections.GetSections().Single(s => s.Key == "kibana").CreateRoot(null).Url.Should().EndWith("api/doc/kibana");
+		sections.GetSections().Single(s => s.Key == "kibana").CreateRoot(null).Url.Should().EndWith("api/kibana");
 		sections
 			.GetSections()
 			.Should()

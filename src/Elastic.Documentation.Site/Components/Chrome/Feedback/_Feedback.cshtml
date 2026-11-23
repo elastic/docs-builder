@@ -18,7 +18,8 @@
 			</button>
 		</div>
 	</div>
-	<form class="feedback__form" data-feedback-form hidden>
+	@* The script sends the feedback. Boosted, the form would also GET the page with the reasons in its query string and swap it in. *@
+	<form class="feedback__form" data-feedback-form hx-boost="false" hidden>
 		@foreach (var (reaction, legend, reasons) in new[]
 		{
 			("thumbsUp", "What did you like?", FeedbackReasons.Positive(Model.Surface)),

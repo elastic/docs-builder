@@ -1,0 +1,22 @@
+{
+  "origin": {
+    "branch": "main",
+    "remote": "https://github.com/example-org/example-repo",
+    "ref": "0123456789abcdef0123456789abcdef01234567",
+    "name": "unavailable",
+    "github_ref": null
+  },
+  "url_path_prefix": "/elastic/example-repo/tree/main",
+  "links": {
+    "index.md": {
+      "anchors": []
+    }
+  },
+  "cross_links": [
+    "other-repo://b.md",
+    "other-repo://a.md",
+    "other-repo://a.md",
+    "third-repo://x/index.md#anchor"
+  ],
+  "redirects": null
+}

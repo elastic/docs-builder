@@ -41,6 +41,12 @@ public interface INavigationItem
 	bool ExcludeFromIndexing => Hidden;
 
 	/// <summary>
+	/// Whether the sitemap lists this item, and for a node, walks into it. Defaults to the opposite of <see cref="Hidden"/>.
+	/// An API version tree overrides it: older majors are hidden from navigation but listed in the sitemap.
+	/// </summary>
+	bool InSitemap => !Hidden;
+
+	/// <summary>
 	/// When <c>true</c>, this node roots an island: the parent nav renders it as a <c>≫</c> stub
 	/// and its subtree renders only inside a dedicated island sidebar.
 	/// Combined with <see cref="NavigationItemExtensions.RendersAsIsland"/> (which also checks

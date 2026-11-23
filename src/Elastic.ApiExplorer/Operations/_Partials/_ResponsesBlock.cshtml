@@ -2,7 +2,6 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.ResponsesBlockModel>
 @{
 	var responses = Model.Responses;
-	var title = responses.Count == 1 ? "Response" : "Responses";
 	// The response that opens is the one the examples rail starts on: the first by its status order, not the spec's.
 	var firstOpen = responses
 		.Where(static r => r.HasDetails)
@@ -12,7 +11,7 @@
 }
 <div class="responses-block" data-api-responses>
 	<h2 class="section-header responses-header" id="responses" data-section="responses">
-		<a class="headerlink responses-title" href="#responses">@title</a>
+		<a class="headerlink responses-title" href="#responses">Responses</a>
 	</h2>
 	<div class="responses-list">
 		@foreach (var response in responses)
@@ -38,7 +37,7 @@
 				</div>
 				continue;
 			}
-			<div class="response-panel @(open ? "expanded" : "collapsed")" data-status="@response.StatusCode">
+			<div class="response-panel @(open ? "expanded" : "collapsed")" data-status="@response.StatusCode" data-api-response-default="@(open ? "true" : "false")">
 				<div class="response-summary">
 					<button
 						type="button"
@@ -67,7 +66,7 @@
 									<div class="header-item">
 										<dt id="header-@response.StatusCode-@header.Name">
 											<a class="property-anchor" href="#header-@response.StatusCode-@header.Name" aria-label="Link to @header.Name">
-												<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+												<span class="property-anchor-icon" data-tooltip="Copy link" aria-hidden="true"></span>
 											</a>
 											<code>@header.Name</code>
 											@if (header.Type != null)

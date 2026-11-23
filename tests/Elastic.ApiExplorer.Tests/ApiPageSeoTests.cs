@@ -78,7 +78,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 			)
 			{
 				NavigationHtml = string.Empty,
-				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				CurrentNavigation = new LandingNavigationItem($"/api/elasticsearch/{version}/").Index,
 				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 			},
 			version
@@ -87,7 +87,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		viewModel.Heading.Should().Be(expected);
 		LandingCommonMark
-			.Product(document.Info, [], "/api/doc/elasticsearch", ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems))
+			.Product(document.Info, [], "/api/elasticsearch", ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems))
 			.Should()
 			.StartWith($"# {expected}");
 	}
@@ -109,7 +109,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 			)
 			{
 				NavigationHtml = string.Empty,
-				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				CurrentNavigation = new LandingNavigationItem($"/api/elasticsearch/{version}/").Index,
 				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 			},
 			version
@@ -142,10 +142,10 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		{
 			Product = new Product { Id = "elasticsearch", DisplayName = displayName },
 			VersionSwitcherItems = ApiVersionSwitcher.Build(
-				"/api/doc",
-				"elasticsearch",
+				"/api",
+				TestHelpers.EsRoutes,
 				["main", "9", "8"],
-				version == "latest" ? "main" : version.TrimStart('v')
+				TestHelpers.EsRoutes.Suffix(version == "latest" ? "main" : version.TrimStart('v'))
 			)
 		};
 
@@ -155,6 +155,25 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		var excerpt = ApiSeoDescription.Excerpt("See the [search](https://example.com/search) docs for *queries* and **filters**.");
 
 		excerpt.Should().Be("See the search docs for queries and filters.");
+	}
+
+	[Test]
+	public void Excerpt_SkipsHtmlComments()
+	{
+		var excerpt = ApiSeoDescription.Excerpt("<!-- Keep this in sync with the spec. -->\n\nThe real *intro*.\n\nMore.");
+
+		excerpt.Should().Be("The real intro.");
+		ApiSeoDescription.Excerpt("<!-- only a note -->").Should().BeNull();
+	}
+
+	[Test]
+	public void Excerpt_KeepsAnHtmlCommentShownAsCode()
+	{
+		ApiSeoDescription.Excerpt("Use `<!-- marker -->` to mark a block.").Should().Be("Use <!-- marker --> to mark a block.");
+		ApiSeoDescription.Excerpt("<!-- note -->\n\nUse `<!-- marker -->` here.").Should().Be("Use <!-- marker --> here.");
+		ApiSeoDescription.Excerpt("```html\n<!-- marker -->\n```\n\nMore.").Should().Contain("<!-- marker -->");
+		// Escaped backticks are literal text, so the comment between them is a real comment and is hidden on the page.
+		ApiSeoDescription.Excerpt("Intro \\`<!-- hidden -->\\` end.").Should().NotContain("<!--");
 	}
 
 	[Test]

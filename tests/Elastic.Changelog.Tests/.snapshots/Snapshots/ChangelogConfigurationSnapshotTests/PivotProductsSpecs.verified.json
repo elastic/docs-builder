@@ -1,0 +1,69 @@
+{
+  "configuration": {
+    "Pivot": {
+      "Types": null,
+      "Subtypes": null,
+      "Areas": null,
+      "Products": {
+        "elasticsearch": ":stack/elasticsearch",
+        "kibana 9.2.0": ":stack/kibana",
+        "cloud-serverless 2025-06 ga": ":example/serverless",
+        "cloud_hosted": ":example/hosted"
+      },
+      "Features": null,
+      "Highlight": null
+    },
+    "RequiredPivots": "None",
+    "Types": [
+      "invalid",
+      "feature",
+      "enhancement",
+      "security",
+      "bug-fix",
+      "breaking-change",
+      "deprecation",
+      "known-issue",
+      "docs",
+      "regression",
+      "other"
+    ],
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Areas": null,
+    "Products": null,
+    "LabelToType": null,
+    "LabelToAreas": null,
+    "LabelToProducts": {
+      ":stack/elasticsearch": "elasticsearch",
+      ":stack/kibana": "kibana 9.2.0",
+      ":example/serverless": "cloud-serverless 2025-06 ga",
+      ":example/hosted": "cloud_hosted"
+    },
+    "LabelToFeatures": null,
+    "Rules": null,
+    "Extract": {
+      "ReleaseNotes": true,
+      "Issues": true,
+      "StripTitlePrefix": false
+    },
+    "ProductsConfiguration": null,
+    "Filename": "Pr",
+    "Bundle": null,
+    "HighlightLabels": null
+  },
+  "diagnostics": []
+}

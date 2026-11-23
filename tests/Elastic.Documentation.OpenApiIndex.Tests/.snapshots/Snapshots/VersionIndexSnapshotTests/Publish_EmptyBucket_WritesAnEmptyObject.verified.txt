@@ -1,0 +1,5 @@
+list continuation tokens: [null]
+invalid keys: []
+puts: 1
+  bucket=example-specs key=index.json contentType=application/json ifMatch=null ifNoneMatch=*
+  body={}

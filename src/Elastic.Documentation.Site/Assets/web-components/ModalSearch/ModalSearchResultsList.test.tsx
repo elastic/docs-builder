@@ -5,7 +5,7 @@ import { modalSearchStore } from './modalSearch.store'
 vi.mock('./useModalSearchQuery', () => {
     const operation = {
         type: 'api',
-        url: '/docs/api/doc/elasticsearch/operation/operation-rollup-put-job',
+        url: '/docs/api/elasticsearch/operation/operation-rollup-put-job',
         title: 'Create a rollup job',
         description: 'Creates a rollup job',
         score: 1,
@@ -20,7 +20,7 @@ vi.mock('./useModalSearchQuery', () => {
                     { ...operation, deprecated: true },
                     {
                         ...operation,
-                        url: '/docs/api/doc/elasticsearch/operation/operation-search',
+                        url: '/docs/api/elasticsearch/operation/operation-search',
                         title: 'Search',
                     },
                 ],

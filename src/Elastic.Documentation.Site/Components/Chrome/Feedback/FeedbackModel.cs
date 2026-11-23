@@ -75,6 +75,9 @@ public sealed record FeedbackModel
 
 	public FeedbackSurface Surface { get; init; } = FeedbackSurface.Docs;
 
+	/// <summary>Names a widget that sits beside another of the same surface, such as the one in a dialog. Defaults to the surface.</summary>
+	public string? Id { get; init; }
+
 	/// <summary>Prefix for element ids, so two widgets on one page (as in the style guide) never share one.</summary>
-	public string IdPrefix => $"feedback-{Surface.ToString().ToLowerInvariant()}";
+	public string IdPrefix => $"feedback-{Id ?? Surface.ToString().ToLowerInvariant()}";
 }

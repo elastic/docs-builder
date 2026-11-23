@@ -1,5 +1,6 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @using Elastic.Documentation
+@using Elastic.Documentation.Extensions
 @using FontPreloader = Elastic.Documentation.Site.FileProviders.FontPreloader
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
@@ -84,7 +85,7 @@
 		</script>
 	}
 	@await RenderPartialAsync(_Favicon.Create(Model))
-	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
+	<meta name="robots" content="@Model.Robots">
 	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0, "historyCacheSize": 0, "refreshOnHistoryMiss": true}'>
 	@if (!string.IsNullOrEmpty(Model.NavigationActiveUrl))
 	{
@@ -92,8 +93,12 @@
 	}
 	<meta name="docs:current-section" content="@(Model.CurrentNavigationItem.NavigationRoot?.Id ?? "")">
 	@* The state of the build, for browser journeys and monitors: which flags are on and what kind of build this is. *@
-	<meta name="docs:features" content="@string.Join(' ', Model.Features.EnabledKeys())">
+	<meta name="docs:features" content="@Model.Features.EnabledKeys().JoinOrNull(' ')">
 	<meta name="docs:build-type" content="@Model.FrontendConfig.BuildType">
+	@if (Model.DeployedBuild is { } deployedBuild)
+	{
+		<meta name="docs:build" content="@deployedBuild">
+	}
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
 	@if (!string.IsNullOrEmpty(Model.Description))

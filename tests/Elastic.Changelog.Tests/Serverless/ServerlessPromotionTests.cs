@@ -40,6 +40,14 @@ public class ServerlessPromotionTests
 		ServerlessPromotion.IsFinalSlicePromotion(message, Ds5).Should().Be(expected);
 
 	[Test]
+	[Arguments("cloud-cloud-hosted-2026-11-16.yaml", "D3124C7DDA836280F00D8C4B1259F7A2B96EC765", "cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml")]
+	[Arguments("cloud-cloud-hosted-2026-11-16.yaml", "d3124c7dda83", "cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml")]
+	[Arguments("cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml", "d3124c7dda83", "cloud-cloud-hosted-2026-11-16-d3124c7dda83.yaml")]
+	[Arguments("kibana-cloud-serverless-2026-11-12.yml", "5b129b1ba7c8", "kibana-cloud-serverless-2026-11-12-5b129b1ba7c8.yml")]
+	public void WithShortRef_MakesTheNameUniquePerPromotion(string fileName, string serviceVersion, string expected) =>
+		ServerlessPromotion.WithShortRef(fileName, serviceVersion).Should().Be(expected);
+
+	[Test]
 	[Arguments("7dd981dcd7d3", "7dd981dcd7d3", true)]
 	[Arguments("7dd981dcd7d3", "7DD981DCD7D3AAAAAAAAAAAAAAAAAAAAAAAAAAAA", true)]
 	[Arguments("7dd981dcd7d3", "03c0df903631", false)]
@@ -277,4 +285,94 @@ public class ServerlessPromotionTests
 		capped.ScannedCommits.Should().Be(3);
 		exhausted.Status.Should().Be(HistoryWalkStatus.NotFound);
 	}
+
+	// ── Preview: staging and HEAD against production ─────────────────────
+
+	private const string PreviewVersionsYaml =
+		"""
+		services:
+		  kibana:
+		    versions:
+		      dev: "79b12352006d"
+		      production-canary-ds-1: "0c0f8abbf51d"
+		      production-noncanary-ds-5: "6ee008fd791e"
+		      staging-ds-1: "0c0f8abbf51d"
+		      staging-ds-10: "bbbbbbbbbbbb"
+		""";
+
+	private const string BranchHead = "ffffffffffffffffffffffffffffffffffffffff";
+
+	[Test]
+	public void PlanPreview_PlansStagingAndHeadFromTheFinalSliceVersion() =>
+		ServerlessPromotion
+			.PlanPreview(PreviewVersionsYaml, ServerlessPromotion.Services["kibana"], BranchHead)
+			.Should()
+			.Equal(
+				new ServerlessPreviewTarget("staging", "6ee008fd791e", "0c0f8abbf51d"),
+				new ServerlessPreviewTarget("head", "6ee008fd791e", BranchHead)
+			);
+
+	[Test]
+	public void PlanPreview_StagingEqualToProduction_LeavesStagingOut() =>
+		ServerlessPromotion
+			.PlanPreview(
+				PreviewVersionsYaml.Replace("staging-ds-1: \"0c0f8abbf51d\"", "staging-ds-1: \"6ee008fd791e\""),
+				ServerlessPromotion.Services["kibana"],
+				BranchHead
+			)
+			.Select(t => t.Label)
+			.Should()
+			.Equal("head");
+
+	[Test]
+	public void PlanPreview_HeadEqualToProductionIgnoringCaseAndLength_LeavesHeadOut() =>
+		ServerlessPromotion
+			.PlanPreview(PreviewVersionsYaml, ServerlessPromotion.Services["kibana"], "6EE008FD791EAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+			.Select(t => t.Label)
+			.Should()
+			.Equal("staging");
+
+	[Test]
+	public void PlanPreview_NoFinalSliceVersion_PlansNothing() =>
+		ServerlessPromotion.PlanPreview("services: {}", ServerlessPromotion.Services["kibana"], BranchHead).Should().BeEmpty();
+
+	[Test]
+	public void PlanPreview_UsesTheStagingSliceOfTheService() =>
+		ServerlessPromotion
+			.PlanPreview(AdminconsoleVersionsYaml, ServerlessPromotion.Services["frontend-adminconsole"], BranchHead)
+			.Should()
+			.Equal(
+				new ServerlessPreviewTarget("staging", "d3124c7dda83", "2d4c3217bf7c"),
+				new ServerlessPreviewTarget("head", "d3124c7dda83", BranchHead)
+			);
+
+	[Test]
+	[Arguments("kibana", "cloud-serverless", "staging-ds-1")]
+	[Arguments("elasticsearch", "cloud-serverless", "staging-ds-1")]
+	[Arguments("frontend-adminconsole", "cloud-hosted", "staging-sds-1")]
+	public void Services_NameTheProductAndTheStagingSliceOfTheirPreview(string service, string product, string stagingSlice)
+	{
+		var svc = ServerlessPromotion.Services[service];
+		svc.Product.Should().Be(product);
+		svc.StagingSlice.Should().Be(stagingSlice);
+	}
+
+	[Test]
+	public void PreviewBundleFileNames_NameEveryRepositoryOfTheServiceAndOnlyThose() =>
+		ServerlessPromotion
+			.PreviewBundleFileNames(ServerlessPromotion.Services["elasticsearch"])
+			.Should()
+			.Equal(
+				"elasticsearch-serverless-cloud-serverless-staging.yaml",
+				"elasticsearch-serverless-cloud-serverless-head.yaml",
+				"elasticsearch-cloud-serverless-staging.yaml",
+				"elasticsearch-cloud-serverless-head.yaml"
+			);
+
+	[Test]
+	public void PreviewBundleFileNames_LeaveTheBundlesOfAServiceThatSharesTheProductFolder() =>
+		ServerlessPromotion
+			.PreviewBundleFileNames(ServerlessPromotion.Services["kibana"])
+			.Should()
+			.Equal("kibana-cloud-serverless-staging.yaml", "kibana-cloud-serverless-head.yaml");
 }

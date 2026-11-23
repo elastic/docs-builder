@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -70,7 +71,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First();
 
 		nav.NavigationRoot.Should().BeOfType<ClassificationNavigationItem>();
-		LandingNavigationItem.Of(nav.NavigationRoot)!.AuthenticationUrl.Should().Be("/api/doc/fixture/authentication");
+		LandingNavigationItem.Of(nav.NavigationRoot)!.AuthenticationUrl.Should().Be("/api/fixture/authentication");
 	}
 
 	[Test]
@@ -83,12 +84,20 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	}
 
 	[Test]
-	public void CreateNavigation_DocumentSecurity_ListsTheAuthenticationPageUnderTopicsAndPointsTheBadgeAtIt()
+	public void CreateNavigation_DocumentSecurity_ListsTheAuthenticationPageAsAGuidePageAndPointsTheBadgeAtIt()
 	{
-		var topics = fixture.Walk().OfType<TopicsNavigationItem>().Single();
-
-		topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Which.Hidden.Should().BeFalse();
-		fixture.Navigation.AuthenticationUrl.Should().Be("/api/doc/fixture/authentication");
+		ApiExplorerFixture
+			.GuidePages(fixture.Navigation)
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.BeOfType<StructuralNavigationItem>()
+			.Which
+			.Hidden
+			.Should()
+			.BeFalse();
+		fixture.Navigation.AuthenticationUrl.Should().Be("/api/fixture/authentication");
 	}
 
 	[Test]
@@ -98,8 +107,25 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 
 		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
-		markdown.Should().Contain("- Api key: `Authorization: <value>`").And.Contain("- Basic: `Authorization: Basic <credentials>`");
-		markdown.Should().NotContain("Bearer");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Authentication
+
+			## Api key
+
+			Send the encoded key with the ApiKey prefix.
+
+			```http
+			Authorization: ApiKey <api-key>
+			```
+
+			## Basic
+
+			```http
+			Authorization: Basic <credentials>
+			```
+			"""
+		);
 	}
 
 	private async Task<string> RenderOperationAsync(string operationId)

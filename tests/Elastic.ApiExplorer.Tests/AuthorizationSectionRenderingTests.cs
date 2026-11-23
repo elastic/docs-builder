@@ -72,26 +72,34 @@ public class AuthorizationSectionRenderingTests
 	}
 
 	[Test]
-	public async Task Render_PrivilegesNeededTogether_AreSummarisedAsSeparateNamesJoinedWithPlus()
+	public async Task Render_ClusterAndIndexPrivileges_ShowAsLabelledRowsWithoutTheRepeatedWord()
 	{
-		var html = await RenderPrivileges(new PrivilegeRow("Privileges", ["integrations-all", "fleet-agent-policies-all"], "and"));
+		var html = await RenderPrivileges(
+			new PrivilegeRow("Cluster privileges", ["monitor"]),
+			new PrivilegeRow("Index privileges", ["read", "view_index_metadata"])
+		);
 
 		html.Should().MatchHtmlSnapshot();
-		html.Should().NotContain("id=\"required-privileges-list\" hidden", "the body has no hidden attribute, so it shows on load");
 	}
 
 	[Test]
-	public async Task Render_PrivilegeAlternatives_AreSummarisedAsVariants()
+	public async Task Render_PrivilegeAlternatives_AreJoinedWithOrAndNeedNoLabel()
 	{
 		var html = await RenderPrivileges(new PrivilegeRow("Privileges", ["read", "manage"], "or"));
 
-		html.Should().Contain("api-param-summary is-variants");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"read\"></code>");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"manage\"></code>");
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Render_RowWithoutPrivilegeNames_ShowsItsTextAsANote()
+	{
+		var html = await RenderPrivileges(new PrivilegeRow("Needs the `manage` role on the space", []));
+
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	private static async Task<string> RenderPrivileges(params PrivilegeRow[] rows) =>
-		await _AuthorizationSection.Create(
+		await _RequiredPrivileges.Create(
 			new AuthorizationSectionModel([], rows, static markdown => new HtmlString($"<p>{markdown}</p>"))
 		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 

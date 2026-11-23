@@ -505,7 +505,20 @@
           "type": "rank_feature",
           "positive_score_impact": false
         },
+        "title_fingerprint": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          },
+          "analyzer": "title_fingerprint_analyzer"
+        },
         "landing": {
+          "type": "boolean"
+        },
+        "sitemap_only": {
           "type": "boolean"
         },
         "deprecated": {

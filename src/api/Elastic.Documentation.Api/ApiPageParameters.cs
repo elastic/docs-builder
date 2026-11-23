@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Search.Contract;
 
 namespace Elastic.Documentation.Api;
@@ -10,10 +11,10 @@ namespace Elastic.Documentation.Api;
 /// <summary>The <c>api_key</c> and <c>api_tree</c> query parameters that name the API page a navigation search comes from.</summary>
 internal static partial class ApiPageParameters
 {
-	[GeneratedRegex(@"^[a-z0-9-]+\z", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^[a-z0-9-]+\z", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ApiKeyPattern();
 
-	[GeneratedRegex(@"^(main|[0-9]{1,3})\z", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^(main|[0-9]{1,3})\z", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ApiTreePattern();
 
 	/// <summary>

@@ -1,0 +1,52 @@
+diagnostics:
+model <ConfigurationFile>:
+  SourceFile: <path /docs/docset.yml>
+  Project: "branded"
+  CrossLinkRepositories: []
+  Registry: Public
+  CrossLinkEntries: []
+  ReleaseNotesProducts: []
+  MaxTocDepth: 2
+  Extensions <EnabledExtensions>:
+    IsDetectionRulesEnabled: False
+    Enabled: []
+  Redirects: null
+  RedirectsSource: <path /docs/redirects.yml>
+  Products: []
+  Features <FeatureFlags>:
+    PrimaryNavEnabled: False
+    DisableGitHubEditLink: False
+    StagingElasticNavEnabled: False
+    WebsiteSearchEnabled: False
+    WebsiteSearchScriptUrl: null
+    WafIntegrationUrl: null
+    AirGappedEnabled: False
+    DiagnosticsPanelEnabled: False
+    AssemblerApiExplorerEnabled: False
+    GuideNavEnabled: False
+    NavigationPreviewEnabled: False
+    PageFeedbackEnabled: False
+  ScopeDirectory: <path /docs>
+  StorybookRegistry: null
+  StorybookRegistryFallback: null
+  ApiConfigurations: null
+  SuppressDiagnostics: []
+  Branding <BrandingConfiguration>:
+    Icon: "images/icon.svg"
+    HeaderBg: "#112233"
+    OgImage: "images/og.png"
+    Favicon: "images/favicon.ico"
+    AppleTouchIcon: "images/touch.png"
+    Copyright: "Example Inc."
+  Ctas:
+    trial <Cta>:
+      Name: "trial"
+      Label: "Get started free"
+      Url: "https://cloud.elastic.co/registration?page=docs&placement=docs-siderail"
+      Benefits:
+        - "14-day free trial"
+        - "All features included"
+        - "No setup required"
+  DevelopmentDocs: False
+substitutions:
+generated substitutions (version.* and product.* keys): 0

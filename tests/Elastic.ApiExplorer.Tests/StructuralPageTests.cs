@@ -2,10 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
+using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
@@ -32,11 +35,11 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			.ContainSingle(item => item.Model.Kind == ApiStructuralKind.Servers)
 			.Subject;
 
-		authentication.Url.Should().Be("/api/doc/fixture/authentication");
-		authentication.Hidden.Should().BeFalse("the Topics heading lists it");
+		authentication.Url.Should().Be("/api/fixture/authentication");
+		authentication.Hidden.Should().BeFalse("the sidebar lists it with the guide pages");
 		servers.Hidden.Should().BeTrue("the page stays for old links but is not listed in the nav");
 		authentication.NavigationTitle.Should().Be("Authentication");
-		servers.Url.Should().Be("/api/doc/fixture/servers");
+		servers.Url.Should().Be("/api/fixture/servers");
 		servers.NavigationTitle.Should().Be("Servers");
 	}
 
@@ -45,8 +48,8 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	{
 		var rows = ApiOverviewBuilder.Build(fixture.Navigation, fixture.Context.VersionsConfiguration);
 
-		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/servers");
-		rows.Select(row => row.Url).Should().Contain("/api/doc/fixture/authentication");
+		rows.Select(row => row.Url).Should().NotContain("/api/fixture/servers");
+		rows.Select(row => row.Url).Should().Contain("/api/fixture/authentication");
 	}
 
 	[Test]
@@ -98,7 +101,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 
 	private static IReadOnlyList<StructuralNavigationItem> CreateItems(OpenApiDocument document)
 	{
-		var root = new LandingNavigationItem("/api/doc/fixture");
+		var root = new LandingNavigationItem("/api/fixture");
 		return StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
 	}
 
@@ -110,7 +113,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		var schemes = requirements.SelectMany(requirement => requirement.Schemes).ToArray();
 		var apiKey = schemes.Should().ContainSingle(scheme => scheme.Id == "apiKey").Subject;
 		apiKey.Label.Should().Be("Api key");
-		apiKey.CredentialExample.Should().Be("Authorization: <value>");
+		apiKey.CredentialExample.Should().Be("Authorization: ApiKey <api-key>");
 		schemes.Select(scheme => scheme.Id).Should().Contain(["apiKey", "basicAuth", "bearerAuth"]);
 	}
 
@@ -134,13 +137,102 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			"""
 			# Authentication
 
-			- Api key: `Authorization: <value>`
-			  Send the encoded key with the ApiKey prefix.
-			- Basic: `Authorization: Basic <credentials>`
-			- Bearer: `Authorization: Bearer <token>`
+			## Api key
+
+			Send the encoded key with the ApiKey prefix.
+
+			```http
+			Authorization: ApiKey <api-key>
+			```
+
+			## Basic
+
+			```http
+			Authorization: Basic <credentials>
+			```
+
+			## Bearer
+
+			```http
+			Authorization: Bearer <token>
+			```
 			"""
 		);
 	}
+
+	[Test]
+	public void AuthenticationPage_ListsEachAlternativeInTheRailByItsBumpShAnchor()
+	{
+		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
+
+		var page = StructuralViewModel.Create(item.Model, RenderContext(item));
+
+		string
+			.Join("\n", page.TocItems.Select(static t => $"{t.Level} {t.Heading} #{t.Slug}"))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			2 Api key #doc-authentication-api-key
+			2 Basic #doc-authentication-basic-auth
+			2 Bearer #doc-authentication-bearer-auth
+			"""
+			);
+	}
+
+	[Test]
+	public async Task AuthenticationFragments_DescriptionWithAnUnclosedFence_StaysInItsOwnFragment()
+	{
+		// Each fragment renders on its own, so the fence cannot swallow the credential or the next alternative's heading.
+		var document = await TestSpecs.LoadValidSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "security": [{ "apiKeyAuth": [] }, { "basicAuth": [] }],
+			  "components": { "securitySchemes": {
+			    "apiKeyAuth": { "type": "apiKey", "in": "header", "name": "Authorization", "description": "Send the key:\n\n```\ncurl -H ..." },
+			    "basicAuth": { "type": "http", "scheme": "basic" }
+			  } }
+			}
+			"""
+		);
+
+		string
+			.Join("<<< next fragment >>>\n", OperationCommonMark.AuthenticationFragments(document, anchors: true))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			## Api key [doc-authentication-api-key-auth]
+
+			<<< next fragment >>>
+			Send the key:
+
+			```
+			curl -H ...
+
+			<<< next fragment >>>
+			```http
+			Authorization: ApiKey <api-key>
+			```
+
+			## Basic [doc-authentication-basic-auth]
+
+			```http
+			Authorization: Basic <credentials>
+			```
+			"""
+			);
+	}
+
+	[Test]
+	[Arguments("apiKeyAuth", "doc-authentication-api-key-auth")]
+	[Arguments("apiKey", "doc-authentication-api-key")]
+	[Arguments("basicAuth", "doc-authentication-basic-auth")]
+	[Arguments("es_api_key", "doc-authentication-es-api-key")]
+	[Arguments("OAuth2", "doc-authentication-oauth2")]
+	public void AuthenticationAnchor_SchemeId_MatchesBumpSh(string schemeId, string expected) =>
+		ApiUrlBuilder.AuthenticationAnchor([schemeId]).Should().Be(expected);
 
 	[Test]
 	public async Task ServersPage_WritesCommonMarkFromServers()

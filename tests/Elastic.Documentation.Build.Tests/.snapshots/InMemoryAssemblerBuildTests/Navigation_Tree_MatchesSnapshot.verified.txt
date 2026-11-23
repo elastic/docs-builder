@@ -1,0 +1,20 @@
+SiteNavigation  /docs  "Docs"
+  index: FileNavigationLeaf  /docs  "Welcome"
+  FileNavigationLeaf  /docs/internal  "Internal notes" [hidden] [wrong parent]
+  TableOfContentsNavigation  /docs/get-started  "Get started" [island]
+    index: FileNavigationLeaf  /docs/get-started  "Get started"
+    FileNavigationLeaf  /docs/get-started/install  "Install"
+    FileNavigationLeaf  /docs/get-started/concepts  "Concepts"
+  DocumentationSetNavigation  /docs/reference/elasticsearch  "Elasticsearch reference" [island]
+    index: FileNavigationLeaf  /docs/reference/elasticsearch  "Elasticsearch reference"
+    FileNavigationLeaf  /docs/reference/elasticsearch/search-apis  "Search APIs"
+    FolderNavigation  /docs/reference/elasticsearch/query-dsl  "Query DSL"
+      index: FileNavigationLeaf  /docs/reference/elasticsearch/query-dsl  "Query DSL"
+      FileNavigationLeaf  /docs/reference/elasticsearch/query-dsl/term-queries  "Term queries"
+  DocumentationSetNavigation  /docs/reference/kibana  "Kibana" [island]
+    index: FileNavigationLeaf  /docs/reference/kibana  "Kibana"
+    FileNavigationLeaf  /docs/reference/kibana/dashboards  "Dashboards"
+    FileNavigationLeaf  /docs/reference/kibana/experimental  "Experimental" [hidden]
+  DocumentationSetNavigation  /docs/reference/apm/agents/java  "Java agent" [island]
+    index: FileNavigationLeaf  /docs/reference/apm/agents/java  "Java agent"
+    FileNavigationLeaf  /docs/reference/apm/agents/java/setup  "Setup"

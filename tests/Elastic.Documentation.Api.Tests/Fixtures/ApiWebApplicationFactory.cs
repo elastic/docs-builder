@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 using Elastic.Documentation.Api;
-using Elastic.Documentation.Api.Aws;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.ServiceDefaults;
 using FakeItEasy;
@@ -100,10 +100,14 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 				_ = logging.AddInMemoryExporter(ExportedLogRecords);
 			});
 
-			// Mock IParameterProvider to avoid AWS dependencies in all tests
-			var mockParameterProvider = A.Fake<IParameterProvider>();
-			A.CallTo(() => mockParameterProvider.GetParam(A<string>._, A<bool>._, A<Cancel>._)).Returns(Task.FromResult("mock-value"));
-			_ = services.AddSingleton(mockParameterProvider);
+			// The API publishes with Native AOT, where its JSON options have no reflection fallback.
+			// Drop the fallback here too, so a type missing from ApiJsonContext fails a test instead of production.
+			_ = services.PostConfigure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+			{
+				var reflection = options.SerializerOptions.TypeInfoResolverChain.OfType<DefaultJsonTypeInfoResolver>().ToList();
+				foreach (var resolver in reflection)
+					_ = options.SerializerOptions.TypeInfoResolverChain.Remove(resolver);
+			});
 
 			// Apply test-specific service replacements (if any)
 			_configureServices?.Invoke(services);

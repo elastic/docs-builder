@@ -1,4 +1,4 @@
-import { parseApiTree } from './api-tree'
+import { apiTreeRoot } from './api-tree'
 
 /**
  * Boosted navigation swaps only `#main-container`, and the header sits outside it. Docs pages
@@ -6,11 +6,9 @@ import { parseApiTree } from './api-tree'
  * identity selector lives in the sidebar inside `#main-container`, so a move between API products or versions does not.
  */
 
-/** The API product in an API path, `null` for the catalog, and `undefined` for any other path. */
-function apiProduct(path: string, root: string): string | null | undefined {
+function isApiPath(path: string, root: string): boolean {
     const api = `${root}/api`
-    if (path !== api && !path.startsWith(`${api}/`)) return undefined
-    return path.slice(api.length).match(/^\/doc\/([^/]+)/)?.[1] ?? null
+    return path === api || path.startsWith(`${api}/`)
 }
 
 export function changesPageChrome(
@@ -18,19 +16,8 @@ export function changesPageChrome(
     currentPath: string,
     root: string
 ): boolean {
-    const target = apiProduct(targetPath, root)
-    const current = apiProduct(currentPath, root)
     // A docs page and an API page: the header would stay as the previous page had it.
-    return (target === undefined) !== (current === undefined)
-}
-
-/** The product and version of an API path, such as `es`, `es/v9` or `es/main`. `null` outside an API product. */
-function apiTree(path: string): string | null {
-    const parsed = parseApiTree(path)
-    if (!parsed) return null
-    const { product, tree } = parsed
-    const segment = tree === null || tree === 'main' ? (tree ?? '') : `v${tree}`
-    return `${product}/${segment}`
+    return isApiPath(targetPath, root) !== isApiPath(currentPath, root)
 }
 
 /**
@@ -41,7 +28,7 @@ export function changesApiTree(
     targetPath: string,
     currentPath: string
 ): boolean {
-    const target = apiTree(targetPath)
-    const current = apiTree(currentPath)
+    const target = apiTreeRoot(targetPath)
+    const current = apiTreeRoot(currentPath)
     return target !== null && current !== null && target !== current
 }

@@ -7,7 +7,8 @@
 set viewport 1280 800
 open ./
 wait --load networkidle
-expect title "Elastic Docs | Elastic Docs"
+# The home page title changes from "Elastic Docs | Elastic Docs" to "Elastic Docs" when the site is rebuilt, so check its first link instead.
+expect visible find role link --name "Elastic Fundamentals"
 
 # Home page card to a guide page: an htmx swap, not a reload.
 find role link click --name "Elastic Fundamentals"

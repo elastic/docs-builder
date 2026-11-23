@@ -1,0 +1,33 @@
+{
+  "results": [
+    {
+      "properties": [],
+      "routes": [],
+      "deprecated": false,
+      "landing": false,
+      "apiKey": null,
+      "product": "elasticsearch",
+      "type": "docs",
+      "url": "/docs/troubleshoot/elasticsearch/red-yellow-cluster-status",
+      "title": "Red or yellow <mark>cluster</mark> <mark>health</mark> status",
+      "description": "and cleanup activities until the <mark>cluster</mark> returns to green <mark>health</mark> status. In many cases, your <mark>cluster</mark> will recover to g…",
+      "parents": [
+        {
+          "title": "Docs",
+          "url": "/docs"
+        }
+      ],
+      "score": 4.7976103
+    }
+  ],
+  "totalResults": 314,
+  "pageNumber": 1,
+  "pageSize": 20,
+  "aggregations": {
+    "type": {
+      "docs": 306,
+      "api": 8
+    }
+  },
+  "pageCount": 16
+}

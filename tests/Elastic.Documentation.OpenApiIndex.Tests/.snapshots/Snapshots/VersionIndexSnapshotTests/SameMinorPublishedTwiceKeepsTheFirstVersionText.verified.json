@@ -1,0 +1,29 @@
+{
+  "index": {
+    "elastic/a": {
+      "openapi.json": {
+        "9": {
+          "version": "9.05"
+        }
+      }
+    },
+    "elastic/b": {
+      "openapi.json": {
+        "9": {
+          "version": "9.5"
+        }
+      }
+    },
+    "elastic/c": {
+      "openapi.json": {
+        "09": {
+          "version": "09.1"
+        },
+        "9": {
+          "version": "9.1"
+        }
+      }
+    }
+  },
+  "invalidKeys": []
+}

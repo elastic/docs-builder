@@ -5,11 +5,14 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.Changelog.Scrubbing;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Versions;
+using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -89,9 +92,9 @@ public class UnifiedReleaseNotesTests : IDisposable
 			ExpectedVersions = expectedVersions
 		};
 
-	private UnifiedReleaseNotesBuildService Service()
+	private UnifiedReleaseNotesBuildService Service(params Product[] extraProducts)
 	{
-		var products = Products.ToDictionary(p => p.Id).ToFrozenDictionary();
+		var products = Products.Concat(extraProducts).ToDictionary(p => p.Id).ToFrozenDictionary();
 		var productsConfiguration = new ProductsConfiguration
 		{
 			Products = products,
@@ -137,6 +140,123 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		files.Keys.Should().NotContain(k => k.Contains("auditbeat") || k.Contains("curator"));
 	}
+
+	private static readonly Product Serverless = CreateProduct("cloud-serverless", "Elastic Cloud Serverless", ReleaseNotesPath.OnRelease);
+
+	private static IReadOnlyDictionary<string, string> GeneratePreviewFiles() =>
+		UnifiedReleaseNotesDocset.Generate([
+			new ProductVersions(Products[0], ["9.6.0"]),
+			new ProductVersions(Serverless, ["staging", "head"])
+		]);
+
+	[Test]
+	public void SelectProducts_AdditionalProductIds_JoinTheDraProductsInIdOrder() =>
+		UnifiedReleaseNotesDocset
+			.SelectProducts([.. Products, Serverless], ["cloud-serverless", "curator"])
+			.Select(p => p.Id)
+			.Should()
+			.Equal("cloud-serverless", "curator", "elasticsearch", "kibana");
+
+	[Test]
+	public void SelectProducts_AdditionalProductIdOfAnUnknownProduct_IsIgnored() =>
+		UnifiedReleaseNotesDocset.SelectProducts(Products, ["nope"]).Select(p => p.Id).Should().Equal("elasticsearch", "kibana");
+
+	[Test]
+	public void Generate_PreviewLabels_AreTitledAsTheEnvironmentTheyName()
+	{
+		var files = GeneratePreviewFiles();
+
+		files["cloud-serverless/index.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Elastic Cloud Serverless
+			---
+
+			# Elastic Cloud Serverless release notes
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			## Versions
+
+			- [Staging](staging.md)
+			- [HEAD](head.md)
+			"""
+			);
+		files["cloud-serverless/staging.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Staging
+			---
+
+			# Elastic Cloud Serverless Staging
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: staging
+			:highlights:
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/head/known-issues.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Known issues
+			---
+
+			# Elastic Cloud Serverless HEAD known issues
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: head
+			:type: known-issue
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/toc.yml"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			toc:
+			  - file: index.md
+			  - file: staging.md
+			    children:
+			      - file: staging/known-issues.md
+			      - file: staging/breaking-changes.md
+			      - file: staging/deprecations.md
+			  - file: head.md
+			    children:
+			      - file: head/known-issues.md
+			      - file: head/breaking-changes.md
+			      - file: head/deprecations.md
+			"""
+			);
+	}
+
+	[Test]
+	public void Generate_RootIndex_NamesServerlessOnlyWhenAServerlessProductIsOnTheSite()
+	{
+		GeneratePreviewFiles()["index.md"].Should().Contain("Elastic Cloud Serverless and Elastic Cloud Hosted");
+		GenerateFiles()["index.md"].Should().NotContain("Serverless");
+	}
+
+	[Test]
+	public void Generate_VersionsKeepTheirOwnTitles() => GenerateFiles()["kibana/9.6.0.md"].Should().Contain("# Kibana 9.6.0");
 
 	[Test]
 	public void Generate_Docset_DeclaresTheTocWithProductsInOrder()
@@ -252,6 +372,125 @@ public class UnifiedReleaseNotesTests : IDisposable
 			.NotContain("Elasticsearch unified change");
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "auditbeat")).Should().BeFalse();
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "release-notes")).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task Build_AdditionalProductWithLabelBundles_MergesTheServicesOfALabelAndKeepsTheLabelsApart()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		_ = WriteBundle(
+			"cloud-serverless",
+			"elasticsearch-serverless-cloud-serverless-staging.yaml",
+			"staging",
+			"Elasticsearch staging change"
+		);
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-head.yaml", "head", "Kibana head change");
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { AdditionalProductIds = ["cloud-serverless"] };
+
+		var succeeded = await Service(Serverless).Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(0);
+		var site = _fileSystem.Path.Join(_temp.FullName, "site");
+		var staging = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "staging", "index.html"));
+		staging.Should().Contain("Kibana staging change").And.Contain("Elasticsearch staging change").And.NotContain("Kibana head change");
+		var head = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "head", "index.html"));
+		head.Should().Contain("Kibana head change").And.NotContain("staging change");
+		var index = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "index.html"));
+		index.IndexOf("Staging", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("HEAD", StringComparison.Ordinal));
+		_fileSystem.File.Exists(_fileSystem.Path.Join(site, "kibana", "9.5.0", "index.html")).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task Build_AdditionalProductBundlesWithoutOptingIn_AreLeftOutOfTheSite()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service(Serverless).Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "cloud-serverless")).Should().BeFalse();
+	}
+
+	private const string PrivateReference = "https://github.com/elastic/private-repo/pull/12";
+	private const string PublicReference = "https://github.com/elastic/kibana/pull/99";
+
+	// The renderer shows the description of an entry only for a bundle with a private repository in it, which is what the
+	// Elastic Cloud Hosted preview has. edot-cloud-forwarder-aws is private in assembler.yml.
+	private string WriteBundleWithReferences() =>
+		WriteFile(
+			"kibana",
+			"kibana-kibana-9.5.0.yaml",
+			$$"""
+			products:
+			- product: kibana
+			  target: 9.5.0
+			  repo: edot-cloud-forwarder-aws
+			  owner: elastic
+			entries:
+			- title: Entry with references
+			  type: enhancement
+			  description: Follows {{PrivateReference}} and {{PublicReference}}.
+			  products:
+			  - product: kibana
+			    target: 9.5.0
+			  prs:
+			  - "{{PrivateReference}}"
+			  - "{{PublicReference}}"
+			"""
+		);
+
+	private static async Task<string> ScrubLikePublication(string product, string fileName, string content, Cancel ctx) =>
+		(await new ChangelogContentScrubber(new TestLoggerFactory(), ["elastic/kibana"]).ScrubAsync(
+			$"{ChangelogKeys.BundlePrefix}{product}/{fileName}",
+			content,
+			ctx
+		)).Content;
+
+	[Test]
+	public async Task Build_WithAScrubber_RemovesReferencesToRepositoriesThatAreNotAllowed()
+	{
+		_ = WriteBundleWithReferences();
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { ScrubBundle = (p, f, c, ctx) => ScrubLikePublication(p, f, c, ctx) };
+
+		var succeeded = await Service().Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		var html = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "kibana", "9.5.0", "index.html"));
+		html.Should().Contain("Entry with references").And.Contain("kibana/pull/99").And.NotContain("private-repo");
+		html.Should().Contain("Follows", "the description renders as a highlight, so its text is scrubbed in place and not hidden");
+	}
+
+	[Test]
+	public async Task Build_WithoutAScrubber_KeepsTheReferencesAsWritten()
+	{
+		_ = WriteBundleWithReferences();
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		var html = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "kibana", "9.5.0", "index.html"));
+		html.Should().Contain("private-repo").And.Contain("Follows");
+	}
+
+	[Test]
+	public async Task Build_WhenTheScrubberFails_FailsInsteadOfPublishingTheBundleAsItIs()
+	{
+		_ = WriteBundleWithReferences();
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { ScrubBundle = (_, _, _, _) => throw new InvalidOperationException("cannot scrub") };
+
+		var act = async () => await Service().Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		await act.Should().ThrowAsync<InvalidOperationException>();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "kibana")).Should().BeFalse();
 	}
 
 	[Test]

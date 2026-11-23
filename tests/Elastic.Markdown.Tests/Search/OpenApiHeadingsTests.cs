@@ -15,7 +15,7 @@ public class OpenApiHeadingsTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Path = "/docs/api/doc/elasticsearch/operation/operation-ccr-follow",
+			Path = "/docs/api/elasticsearch/operation/operation-ccr-follow",
 			Title = "Create a follower",
 			SearchTitle = "Create a follower - Elasticsearch API - ccr-follow",
 			Headings = ["ccr"]

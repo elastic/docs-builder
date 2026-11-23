@@ -1,0 +1,34 @@
+## unknown-top-level-key
+  | redirects:
+  |   'old.md': 'new.md'
+  | redirect_rules: {}
+{"old.md":{"to":"new.md"}}
+error /docs/redirects.yml:3 Unknown key 'redirect_rules'. Valid keys: redirects.
+
+## misspelled-top-level-key
+  | redirect:
+  |   'old.md': 'new.md'
+(null)
+error /docs/redirects.yml:1 Unknown key 'redirect'. Did you mean 'redirects'?
+
+## unknown-key-in-an-entry
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     anchor: { 'a': 'b' }
+{"old.md":{"to":"new.md"}}
+error /docs/redirects.yml:4 Unknown key 'anchor' in $.redirects['old.md']. Did you mean 'anchors'?
+
+## misspelled-to
+  | redirects:
+  |   'old.md':
+  |     too: 'new.md'
+{}
+error /docs/redirects.yml:3 Unknown key 'too' in $.redirects['old.md']. Did you mean 'to'?
+
+## only-unknown-keys-in-an-entry
+  | redirects:
+  |   'old.md':
+  |     foo: bar
+{}
+error /docs/redirects.yml:3 Unknown key 'foo' in $.redirects['old.md']. Valid keys: anchors, many, to.

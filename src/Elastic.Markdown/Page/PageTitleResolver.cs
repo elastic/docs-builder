@@ -6,7 +6,10 @@ namespace Elastic.Markdown.Page;
 
 internal static class PageTitleResolver
 {
-	/// <summary>The HTML title: the <c>meta_title</c> override when set, otherwise the page title, followed by the site name.</summary>
-	public static string Resolve(string title, string? overrideTitle, string siteName) =>
-		$"{(string.IsNullOrWhiteSpace(overrideTitle) ? title : overrideTitle)} | {siteName}";
+	/// <summary>The HTML title: the <c>meta_title</c> override when set, otherwise the page title, followed by the site name unless they are the same.</summary>
+	public static string Resolve(string title, string? overrideTitle, string siteName)
+	{
+		var pageTitle = string.IsNullOrWhiteSpace(overrideTitle) ? title : overrideTitle;
+		return string.Equals(pageTitle, siteName, StringComparison.OrdinalIgnoreCase) ? pageTitle : $"{pageTitle} | {siteName}";
+	}
 }

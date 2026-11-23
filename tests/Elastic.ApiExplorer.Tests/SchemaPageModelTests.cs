@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -67,7 +68,13 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 
 		var html = fs.File.ReadAllText("/out.html");
 
-		System.Text.RegularExpressions.Regex.Matches(html, "data-api-expand-all").Count.Should().Be(1);
+		System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Count(html, "data-api-expand-all", System.Text.RegularExpressions.RegexOptions.None, RegexTimeouts.MatchTimeout)
+			.Should()
+			.Be(1);
 		html
 			.IndexOf("data-api-expand-all", StringComparison.Ordinal)
 			.Should()

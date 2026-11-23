@@ -38,6 +38,7 @@ public static class DocsBarExamples
 					],
 					Versions = new LinkMenuModel
 					{
+						Id = "example-bar-version-menu",
 						Label = "Version",
 						Items = [new("9.0+ (Current)", "#", true), new("8.19", "#")],
 						Footer = new("All versions", "#")

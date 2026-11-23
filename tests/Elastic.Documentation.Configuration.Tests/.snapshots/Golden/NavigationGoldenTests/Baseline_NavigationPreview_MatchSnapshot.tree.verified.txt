@@ -1,0 +1,156 @@
+phantom  elasticsearch://reference
+phantom  docs-content://release-notes
+phantom  docs-content://release-notes/elasticsearch-clients
+phantom  docs-content://release-notes/apm-agents
+phantom  docs-content://
+phantom  docs-content://products
+phantom  private-repo-2://release-notes
+phantom  private-repo-1://cloud
+phantom  elastic-agent://reference/otel-collector
+section  "Guides"
+  toc  docs-content://get-started/  path_prefix=""
+  toc  docs-content://solutions/  path_prefix=""
+  toc  docs-content://manage-data/  path_prefix=""
+  toc  docs-content://explore-analyze/  path_prefix=""
+  toc  docs-content://deploy-manage/  path_prefix=""
+  toc  docs-content://cloud-account/  path_prefix="" navigation_title="Manage your Cloud account"
+  toc  docs-content://extend/  path_prefix=""
+    toc  kibana://extend/  path_prefix="extend/kibana"
+    toc  logstash://extend/  path_prefix="extend/logstash"
+    toc  beats://extend/  path_prefix="extend/beats"
+    toc  elasticsearch://extend/  path_prefix="extend/elasticsearch"
+    toc  integrations://extend/  path_prefix="extend/integrations"
+  toc  docs-content://contribute-docs/  path_prefix=""
+section  "APIs" external=/api/
+section  "Products" dropdown="Elasticsearch" solutions/search/elasticsearch dropdown="Observability" solutions/observability dropdown="Security" solutions/security dropdown="Elastic Cloud" deploy-manage/deploy/elastic-cloud
+section  "Reference"
+  toc  docs-content://reference/  path_prefix="reference"
+    toc  elasticsearch://reference/elasticsearch  path_prefix="reference/elasticsearch" [island]
+      toc  elasticsearch://reference/query-languages  path_prefix="reference/query-languages" [island]
+      toc  elasticsearch://reference/text-analysis  path_prefix="reference/text-analysis"
+      toc  elasticsearch://reference/aggregations  path_prefix="reference/aggregations"
+      toc  elasticsearch://reference/ingest-processor  path_prefix="reference/ingest-processor"
+      toc  curator://reference/  path_prefix="reference/elasticsearch/curator" [island]
+      toc  docs-content://reference/elasticsearch-clients  path_prefix="reference/elasticsearch-clients" [island]
+        toc  eland://reference/  path_prefix="reference/elasticsearch/clients/eland" [island]
+        toc  go-elasticsearch://reference/  path_prefix="reference/elasticsearch/clients/go" [island]
+        toc  elasticsearch-java://reference/  path_prefix="reference/elasticsearch/clients/java" [island]
+        toc  elasticsearch-js://reference/  path_prefix="reference/elasticsearch/clients/javascript" [island]
+        toc  elasticsearch-dsl-js://reference/  path_prefix="reference/elasticsearch/clients/javascript-dsl" [island]
+        toc  elasticsearch-net://reference/  path_prefix="reference/elasticsearch/clients/dotnet" [island]
+        toc  elasticsearch-php://reference/  path_prefix="reference/elasticsearch/clients/php" [island]
+        toc  elasticsearch-py://reference/  path_prefix="reference/elasticsearch/clients/python" [island]
+        toc  elasticsearch-ruby://reference/  path_prefix="reference/elasticsearch/clients/ruby" [island]
+        toc  elasticsearch-rs://reference/  path_prefix="reference/elasticsearch/clients/rust" [island]
+        toc  elasticsearch://reference/community-contributed  path_prefix="reference/elasticsearch/clients/community"
+      toc  elasticsearch://reference/elasticsearch-plugins  path_prefix="reference/elasticsearch/plugins" [island]
+      toc  elasticsearch://reference/scripting-languages  path_prefix="reference/scripting-languages" [island]
+    toc  kibana://reference/  path_prefix="reference/kibana" [island]
+    toc  private-repo-2://reference/  path_prefix="reference/cloud" [island]
+      toc  cloud-on-k8s://reference/  path_prefix="reference/cloud-on-k8s" [island]
+      toc  ecctl://reference/  path_prefix="reference/ecctl" [island]
+    toc  docs-content://reference/security  path_prefix="reference/security" [island]
+      toc  detection-rules:///  path_prefix="reference/security/prebuilt-rules" [island]
+    toc  docs-content://reference/observability  path_prefix="reference/observability" [island]
+    toc  docs-content://reference/ingestion-tools  path_prefix="reference/ingestion-tools" [island]
+      toc  docs-content://reference/apm  path_prefix="reference/apm" [island]
+        toc  apm-k8s-attacher://reference/  path_prefix="reference/apm/k8s-attacher" [island]
+        toc  apm-aws-lambda://reference/  path_prefix="reference/apm/aws-lambda" [island]
+        toc  docs-content://reference/apm-agents  path_prefix="reference/apm-agents" [island]
+          toc  apm-agent-dotnet://reference/  path_prefix="reference/apm/agents/dotnet" [island]
+          toc  apm-agent-go://reference/  path_prefix="reference/apm/agents/go" [island]
+          toc  apm-agent-java://reference/  path_prefix="reference/apm/agents/java" [island]
+          toc  apm-agent-nodejs://reference/  path_prefix="reference/apm/agents/nodejs" [island]
+          toc  apm-agent-php://reference/  path_prefix="reference/apm/agents/php" [island]
+          toc  apm-agent-python://reference/  path_prefix="reference/apm/agents/python" [island]
+          toc  apm-agent-ruby://reference/  path_prefix="reference/apm/agents/ruby" [island]
+          toc  apm-agent-rum-js://reference/  path_prefix="reference/apm/agents/rum-js" [island]
+      toc  beats://reference/  path_prefix="reference/beats" [island]
+      toc  elasticsearch://reference/search-connectors  path_prefix="reference/search-connectors" [island]
+      toc  opentelemetry://reference/  path_prefix="reference/opentelemetry" [island]
+        toc  opentelemetry://reference/edot-cloud-forwarder  path_prefix="reference/opentelemetry/edot-cloud-forwarder" [island]
+          toc  private-repo-6://reference/edot-cf-aws  path_prefix="reference/opentelemetry/edot-cloud-forwarder/aws"
+          toc  private-repo-7://reference/edot-cf-azure  path_prefix="reference/opentelemetry/edot-cloud-forwarder/azure"
+          toc  opentelemetry://reference/edot-cloud-forwarder/gcp  path_prefix="reference/opentelemetry/edot-cloud-forwarder/gcp"
+        toc  elastic-agent://reference/edot-collector  path_prefix="reference/edot-collector" [island]
+        toc  apm-agent-android://reference/edot-android  path_prefix="reference/opentelemetry/edot-sdks/android" [island]
+        toc  elastic-otel-dotnet://reference/edot-dotnet  path_prefix="reference/opentelemetry/edot-sdks/dotnet" [island]
+        toc  apm-agent-ios://reference/edot-ios  path_prefix="reference/opentelemetry/edot-sdks/ios" [island]
+        toc  elastic-otel-react-native://reference/edot-react-native  path_prefix="reference/opentelemetry/edot-sdks/react-native" [island]
+        toc  elastic-otel-java://reference/edot-java  path_prefix="reference/opentelemetry/edot-sdks/java" [island]
+        toc  elastic-otel-node://reference/edot-node  path_prefix="reference/opentelemetry/edot-sdks/node" [island]
+        toc  elastic-otel-php://reference/edot-php  path_prefix="reference/opentelemetry/edot-sdks/php" [island]
+        toc  elastic-otel-python://reference/edot-python  path_prefix="reference/opentelemetry/edot-sdks/python" [island]
+        toc  elastic-otel-rum-js://reference/edot-browser  path_prefix="reference/opentelemetry/edot-sdks/browser" [island]
+      toc  docs-content://reference/managed-inputs  path_prefix="reference/managed-inputs"
+      toc  docs-content://reference/managed-integrations  path_prefix="reference/managed-integrations"
+      toc  private-repo-8://reference/  path_prefix="reference/integrations" [island]
+      toc  elastic-serverless-forwarder://reference/  path_prefix="reference/aws-forwarder" [island]
+      toc  elasticsearch-hadoop://reference/  path_prefix="reference/elasticsearch-hadoop" [island]
+      toc  docs-content://reference/fleet  path_prefix="reference/fleet" [island]
+      toc  logstash://reference/  path_prefix="reference/logstash" [island]
+      toc  private-repo-10://lsr/  path_prefix="reference/logstash/plugins" [island]
+      toc  private-repo-10://vpr/  path_prefix="reference/logstash/versioned-plugins" [island]
+    toc  ecs://reference/  path_prefix="reference/ecs" [island]
+      toc  ecs-logging://reference/  path_prefix="reference/ecs/logging" [island]
+        toc  ecs-dotnet://reference/  path_prefix="reference/ecs/logging/dotnet" [island]
+        toc  ecs-logging-go-logrus://reference/  path_prefix="reference/ecs/logging/go-logrus" [island]
+        toc  ecs-logging-go-zap://reference/  path_prefix="reference/ecs/logging/go-zap" [island]
+        toc  ecs-logging-go-zerolog://reference/  path_prefix="reference/ecs/logging/go-zerolog" [island]
+        toc  ecs-logging-java://reference/  path_prefix="reference/ecs/logging/java" [island]
+        toc  ecs-logging-nodejs://reference/  path_prefix="reference/ecs/logging/nodejs" [island]
+        toc  ecs-logging-php://reference/  path_prefix="reference/ecs/logging/php" [island]
+        toc  ecs-logging-python://reference/  path_prefix="reference/ecs/logging/python" [island]
+        toc  ecs-logging-ruby://reference/  path_prefix="reference/ecs/logging/ruby" [island]
+    toc  cli:///  path_prefix="reference/elastic-cli"
+    toc  docs-content://reference/machine-learning  path_prefix="reference/machine-learning" [island]
+    toc  docs-content://reference/private-repo-1  path_prefix="reference/private-repo-1" [island]
+      toc  private-repo-1://elasticsearch/  path_prefix="reference/private-repo-1/elasticsearch" [island] navigation_title="Elasticsearch"
+      toc  private-repo-1://rules/  path_prefix="reference/private-repo-1/rules" [island] navigation_title="Rule ids"
+    toc  search-ui://reference/  path_prefix="reference/search-ui" [island]
+    toc  docs-content://reference/glossary  path_prefix="reference/glossary"
+section  "Troubleshoot"
+  toc  docs-content://troubleshoot/  path_prefix=""
+section  "Release notes"
+  toc  docs-content://release-notes/intro  path_prefix="release-notes"
+    toc  elasticsearch://release-notes/  path_prefix="release-notes/elasticsearch"
+      toc  elasticsearch-java://release-notes/  path_prefix="release-notes/elasticsearch/clients/java"
+      toc  elasticsearch-js://release-notes/  path_prefix="release-notes/elasticsearch/clients/javascript"
+      toc  elasticsearch-net://release-notes/  path_prefix="release-notes/elasticsearch/clients/dotnet"
+      toc  elasticsearch-php://release-notes/  path_prefix="release-notes/elasticsearch/clients/php"
+      toc  elasticsearch-py://release-notes/  path_prefix="release-notes/elasticsearch/clients/python"
+      toc  elasticsearch-ruby://release-notes/  path_prefix="release-notes/elasticsearch/clients/ruby"
+      toc  elasticsearch-hadoop://release-notes/  path_prefix="release-notes/elasticsearch-hadoop"
+    toc  kibana://release-notes/  path_prefix="release-notes/kibana"
+    toc  elastic-agent://release-notes/  path_prefix="release-notes/elastic-agent"
+    toc  fleet-server://release-notes/  path_prefix="release-notes/fleet-server"
+    toc  logstash://release-notes/  path_prefix="release-notes/logstash"
+    toc  beats://release-notes/  path_prefix="release-notes/beats"
+    toc  docs-content://release-notes/elastic-cloud-serverless  path_prefix="release-notes/cloud-serverless"
+    toc  private-repo-2://release-notes/cloud-hosted  path_prefix="release-notes/cloud-hosted"
+    toc  private-repo-2://release-notes/cloud-enterprise  path_prefix="release-notes/cloud-enterprise"
+    toc  cloud-on-k8s://release-notes/  path_prefix="release-notes/cloud-on-k8s"
+    toc  docs-content://release-notes/elastic-observability  path_prefix="release-notes/observability"
+      toc  apm-agent-android://release-notes/  path_prefix="release-notes/edot/sdks/android"
+      toc  private-repo-6://release-notes/  path_prefix="release-notes/edot/cloud-forwarder/aws"
+      toc  apm-agent-ios://release-notes/  path_prefix="release-notes/edot/sdks/ios"
+      toc  elastic-otel-react-native://release-notes/  path_prefix="release-notes/edot/sdks/react-native"
+      toc  elastic-otel-java://release-notes/  path_prefix="release-notes/edot/sdks/java"
+      toc  elastic-otel-dotnet://release-notes/  path_prefix="release-notes/edot/sdks/dotnet"
+      toc  elastic-otel-node://release-notes/  path_prefix="release-notes/edot/sdks/node"
+      toc  elastic-otel-python://release-notes/  path_prefix="release-notes/edot/sdks/python"
+      toc  elastic-otel-php://release-notes/  path_prefix="release-notes/edot/sdks/php"
+      toc  elastic-otel-rum-js://release-notes/  path_prefix="release-notes/edot/sdks/rum"
+      toc  apm-server://release-notes/  path_prefix="release-notes/apm"
+      toc  apm-agent-dotnet://release-notes/  path_prefix="release-notes/apm/agents/dotnet"
+      toc  apm-agent-go://release-notes/  path_prefix="release-notes/apm/agents/go"
+      toc  apm-agent-java://release-notes/  path_prefix="release-notes/apm/agents/java"
+      toc  apm-agent-nodejs://release-notes/  path_prefix="release-notes/apm/agents/nodejs"
+      toc  apm-agent-php://release-notes/  path_prefix="release-notes/apm/agents/php"
+      toc  apm-agent-python://release-notes/  path_prefix="release-notes/apm/agents/python"
+      toc  apm-agent-ruby://release-notes/  path_prefix="release-notes/apm/agents/ruby"
+      toc  apm-agent-rum-js://release-notes/  path_prefix="release-notes/apm/agents/rum-js"
+      toc  apm-aws-lambda://release-notes/  path_prefix="release-notes/apm/aws-lambda"
+    toc  docs-content://release-notes/elastic-security  path_prefix="release-notes/security"
+    toc  ecs://release-notes/  path_prefix="release-notes/ecs"
+    toc  ecctl://release-notes/  path_prefix="release-notes/ecctl"

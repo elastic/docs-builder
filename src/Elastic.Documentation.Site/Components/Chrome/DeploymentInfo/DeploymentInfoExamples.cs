@@ -16,6 +16,7 @@ public static class DeploymentInfoExamples
 				_DeploymentInfo.Create,
 				new DeploymentInfoModel
 				{
+					Id = "example-deployment-pr",
 					Branch = "feature/design",
 					Commit = "45954b6",
 					Repository = "elastic/docs-builder",
@@ -25,9 +26,20 @@ public static class DeploymentInfoExamples
 			ComponentExample.Of(
 				"Branch",
 				_DeploymentInfo.Create,
-				new DeploymentInfoModel { Branch = "main", Commit = "45954b6", Repository = "nullean/argh", GitHubRef = "refs/heads/main" }
+				new DeploymentInfoModel
+				{
+					Id = "example-deployment-branch",
+					Branch = "main",
+					Commit = "45954b6",
+					Repository = "nullean/argh",
+					GitHubRef = "refs/heads/main"
+				}
 			),
-			ComponentExample.Of("Local build", _DeploymentInfo.Create, new DeploymentInfoModel { Branch = "main", Commit = "45954b6" })
+			ComponentExample.Of(
+				"Local build",
+				_DeploymentInfo.Create,
+				new DeploymentInfoModel { Id = "example-deployment-local", Branch = "main", Commit = "45954b6" }
+			)
 		]
 	);
 }

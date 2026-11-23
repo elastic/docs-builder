@@ -1,0 +1,176 @@
+yaml: stack: ga 9
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: ga 9.0+
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: ga 9.0.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: ga 9.0.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: ga 9.0.1+
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: ga 9.0.4!
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0.4!\u002B"}]
+text: stack: ga 9.0.4!+, 
+
+yaml: stack: ga 9.0.0!
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0.0!\u002B"}]
+text: stack: ga 9.0.0!+, 
+
+yaml: stack: ga =9.2
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"=9.2"}]
+text: stack: ga =9.2, 
+
+yaml: stack: ga =9.2.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"=9.2"}]
+text: stack: ga =9.2, 
+
+yaml: stack: ga =9.2.1!
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"=9.2.1!"}]
+text: stack: ga =9.2.1!, 
+
+yaml: stack: ga 9.0-9.2
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0-9.2"}]
+text: stack: ga 9.0-9.2, 
+
+yaml: stack: ga 9.0.1-9.2.3
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0-9.2"}]
+text: stack: ga 9.0-9.2, 
+
+yaml: stack: ga 9.0-9.2.3!
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0-9.2.3!"}]
+text: stack: ga 9.0-9.2.3!, 
+
+yaml: stack: ga 9.0!-9.2
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0.0!-9.2"}]
+text: stack: ga 9.0.0!-9.2, 
+
+yaml: stack: ga 9.2-9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.2-9.0"}]
+text: stack: ga 9.2-9.0, 
+  hint: Key 'stack': Invalid range(s) where first version is greater than last version: GenerallyAvailable (9.2-9.0).
+
+yaml: stack: ga 9.0-9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0-9.0"}]
+text: stack: ga 9.0-9.0, 
+
+yaml: stack: ga 8.19
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"8.19\u002B"}]
+text: stack: ga 8.19+, 
+
+yaml: stack: ga 7.17.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"7.17\u002B"}]
+text: stack: ga 7.17+, 
+
+yaml: stack: ga 10.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"10.0\u002B"}]
+text: stack: ga 10.0+, 
+
+yaml: stack: ga 100.200
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"100.200\u002B"}]
+text: stack: ga 100.200+, 
+
+yaml: stack: ga 0.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"0.0\u002B"}]
+text: stack: ga 0.0+, 
+
+yaml: stack: ga x
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.x
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.0.x
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga abc
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9..0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga .9
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga +9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga ==9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga =
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.0++
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.0 9.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: ga 9.0-
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga -9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga v9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 09.00
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.0-beta
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.0.0-rc1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"}]
+text: stack: ga 9.0+, 
+
+yaml: stack: ga ~9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga >=9.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: stack: ga 9.0,
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"all"}]
+text: stack: ga 9.0+, all, 
+
+yaml: stack: ga 99999999999.0
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 

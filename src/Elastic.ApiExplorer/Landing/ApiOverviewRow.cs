@@ -38,31 +38,35 @@ public record ApiOverviewRow
 
 	public bool Deprecated { get; init; }
 
+	/// <summary>The first route of an operation row, the one an overview shows; null for any other row.</summary>
+	public EndpointRow? PrimaryRoute => Endpoint is { Rows.Count: > 0 } endpoint ? endpoint.Rows[0] : null;
+
 	/// <summary>True when the design system look is on, which picks the markup of the row's badges.</summary>
 	public bool DesignSystem { get; init; }
 
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
+
+	/// <summary>A plain-text excerpt of a tag's description: what the product landing page says about a group, which the sidebar cannot.</summary>
+	public string? Summary { get; init; }
 }
 
 /// <summary>A heading row and the item rows under it. <see cref="Heading"/> is null for items that come before any heading.</summary>
 public record ApiOverviewSection(ApiOverviewRow? Heading, IReadOnlyList<ApiOverviewRow> Items);
 
-/// <summary>The product landing page: topic pages to read, and the sections the grouped index shows.</summary>
-public record ApiOverviewIndex(IReadOnlyList<ApiOverviewRow> Topics, IReadOnlyList<ApiOverviewSection> Groups);
-
 /// <summary>Flattens the navigation tree into overview rows so the landing views only iterate and print.</summary>
 public static class ApiOverviewBuilder
 {
-	/// <summary>Rows for the product landing page: the full navigation tree.</summary>
+	/// <summary>Rows for the product landing page: the full navigation tree. <paramref name="summarize"/> fills each group row's summary.</summary>
 	public static IReadOnlyList<ApiOverviewRow> Build(
 		INavigationItem root,
 		VersionsConfiguration? versionsConfig,
-		bool designSystem = false
+		bool designSystem = false,
+		Func<ApiTag, string?>? summarize = null
 	)
 	{
 		var rows = new List<ApiOverviewRow>();
-		AddProductRows(root, rows, versionsConfig, designSystem);
+		new Walker(versionsConfig, designSystem, summarize).AddProductRows(root, rows);
 		return rows;
 	}
 
@@ -95,12 +99,11 @@ public static class ApiOverviewBuilder
 	}
 
 	/// <summary>
-	/// Splits the pages that come before the first group (Authentication, Servers) from the grouped endpoints.
-	/// They are topics to read, not endpoints to browse.
+	/// The grouped endpoints, without the guide pages that come before the first group. Those are pages to read, which the
+	/// sidebar already lists, not endpoints to browse.
 	/// </summary>
-	public static ApiOverviewIndex SplitTopics(IReadOnlyList<ApiOverviewSection> sections)
+	public static IReadOnlyList<ApiOverviewSection> WithoutGuidePages(IReadOnlyList<ApiOverviewSection> sections)
 	{
-		var topics = new List<ApiOverviewRow>();
 		var groups = new List<ApiOverviewSection>();
 		foreach (var section in sections)
 		{
@@ -109,12 +112,11 @@ public static class ApiOverviewBuilder
 				groups.Add(section);
 				continue;
 			}
-			topics.AddRange(section.Items.Where(static r => r.Kind == OverviewRowKind.MarkdownPage));
 			var rest = section.Items.Where(static r => r.Kind != OverviewRowKind.MarkdownPage).ToList();
 			if (rest.Count > 0)
 				groups.Add(section with { Items = rest });
 		}
-		return new ApiOverviewIndex(topics, groups);
+		return groups;
 	}
 
 	private static bool IsHeading(ApiOverviewRow row) =>
@@ -128,116 +130,120 @@ public static class ApiOverviewBuilder
 	)
 	{
 		var rows = new List<ApiOverviewRow>();
-		AddTagRows(tagItem, rows, versionsConfig, designSystem);
+		new Walker(versionsConfig, designSystem, null).AddTagRows(tagItem, rows);
 		return rows;
 	}
 
-	private static void AddProductRows(
-		INavigationItem item,
-		List<ApiOverviewRow> rows,
-		VersionsConfiguration? versionsConfig,
-		bool designSystem
-	)
+	/// <summary>Walks the navigation tree into rows. <paramref name="summarize"/> gives a group row its one-line description.</summary>
+	private sealed class Walker(VersionsConfiguration? versionsConfig, bool designSystem, Func<ApiTag, string?>? summarize)
 	{
-		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
-			return;
-
-		foreach (var navigationItem in node.NavigationItems.Where(static item => !item.Hidden))
+		public void AddProductRows(INavigationItem item, List<ApiOverviewRow> rows)
 		{
-			switch (navigationItem)
+			if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
+				return;
+
+			foreach (var navigationItem in node.NavigationItems.Where(static item => !item.Hidden))
 			{
-				case ClassificationNavigationItem classification:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.ClassificationHeading, Title = classification.NavigationTitle });
-					AddProductRows(classification, rows, versionsConfig, designSystem);
-					break;
-				case TagNavigationItem tag:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
-					AddProductRows(tag, rows, versionsConfig, designSystem);
-					break;
-				case OperationNavigationItem operation:
-					rows.Add(OperationRow(operation, versionsConfig, designSystem));
-					break;
-				case TypesNavigationItem types:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = types.NavigationTitle });
-					AddProductRows(types, rows, versionsConfig, designSystem);
-					break;
-				case SchemaCategoryNavigationItem schemaCategory:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
-					AddProductRows(schemaCategory, rows, versionsConfig, designSystem);
-					break;
-				case SchemaNavigationItem schemaItem:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.Schema,
-						Title = schemaItem.NavigationTitle,
-						Url = schemaItem.Url,
-						SchemaId = schemaItem.Model.SchemaId
-					});
-					break;
-				// The landing page lists topics in its own block, so the Topics heading adds no row.
-				case TopicsNavigationItem topics:
-					AddProductRows(topics, rows, versionsConfig, designSystem);
-					break;
-				case TopicNavigationItem or SimpleMarkdownNavigationItem or StructuralNavigationItem:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.MarkdownPage,
-						Title = navigationItem.NavigationTitle,
-						Url = navigationItem.Url
-					});
-					break;
-				case ISidebarSeparatorNavigationItem:
-				case IntroHeadingNavigationItem:
-					break;
-				default:
-					throw new InvalidOperationException($"Unexpected type: {navigationItem.GetType().FullName}");
+				switch (navigationItem)
+				{
+					case ClassificationNavigationItem classification:
+						rows.Add(new ApiOverviewRow
+						{
+							Kind = OverviewRowKind.ClassificationHeading,
+							Title = classification.NavigationTitle
+						});
+						AddProductRows(classification, rows);
+						break;
+					case TagNavigationItem tag:
+						rows.Add(new ApiOverviewRow
+						{
+							Kind = OverviewRowKind.TagHeading,
+							Title = tag.NavigationTitle,
+							Url = tag.Url,
+							Summary = summarize?.Invoke(tag.Index.Model),
+							Deprecated = tag.Deprecated
+						});
+						AddProductRows(tag, rows);
+						break;
+					case OperationNavigationItem operation:
+						rows.Add(OperationRow(operation));
+						break;
+					case TypesNavigationItem types:
+						rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = types.NavigationTitle });
+						AddProductRows(types, rows);
+						break;
+					case SchemaCategoryNavigationItem schemaCategory:
+						rows.Add(new ApiOverviewRow
+						{
+							Kind = OverviewRowKind.SchemaCategoryHeading,
+							Title = schemaCategory.NavigationTitle
+						});
+						AddProductRows(schemaCategory, rows);
+						break;
+					case SchemaNavigationItem schemaItem:
+						rows.Add(new ApiOverviewRow
+						{
+							Kind = OverviewRowKind.Schema,
+							Title = schemaItem.NavigationTitle,
+							Url = schemaItem.Url,
+							SchemaId = schemaItem.Model.SchemaId
+						});
+						break;
+					// Operations only labels the endpoint groups, so it adds no row of its own.
+					case OperationsNavigationItem:
+						AddProductRows(navigationItem, rows);
+						break;
+					case TopicNavigationItem or SimpleMarkdownNavigationItem or StructuralNavigationItem:
+						rows.Add(new ApiOverviewRow
+						{
+							Kind = OverviewRowKind.MarkdownPage,
+							Title = navigationItem.NavigationTitle,
+							Url = navigationItem.Url
+						});
+						break;
+					case IntroHeadingNavigationItem:
+						break;
+					default:
+						throw new InvalidOperationException($"Unexpected type: {navigationItem.GetType().FullName}");
+				}
 			}
 		}
-	}
 
-	private static void AddTagRows(
-		INavigationItem item,
-		List<ApiOverviewRow> rows,
-		VersionsConfiguration? versionsConfig,
-		bool designSystem
-	)
-	{
-		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
-			return;
-
-		foreach (var navigationItem in node.NavigationItems)
+		public void AddTagRows(INavigationItem item, List<ApiOverviewRow> rows)
 		{
-			switch (navigationItem)
+			if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
+				return;
+
+			foreach (var navigationItem in node.NavigationItems)
 			{
-				case OperationNavigationItem operation:
-					rows.Add(OperationRow(operation, versionsConfig, designSystem));
-					break;
-				case IntroHeadingNavigationItem:
-					break;
-				default:
-					throw new InvalidOperationException($"Unexpected type on tag landing: {navigationItem.GetType().FullName}");
+				switch (navigationItem)
+				{
+					case OperationNavigationItem operation:
+						rows.Add(OperationRow(operation));
+						break;
+					case IntroHeadingNavigationItem:
+						break;
+					default:
+						throw new InvalidOperationException($"Unexpected type on tag landing: {navigationItem.GetType().FullName}");
+				}
 			}
 		}
-	}
 
-	private static ApiOverviewRow OperationRow(
-		OperationNavigationItem operation,
-		VersionsConfiguration? versionsConfig,
-		bool designSystem
-	) =>
-		new()
-		{
-			Kind = OverviewRowKind.Operation,
-			Title = operation.NavigationTitle,
-			Endpoint = operation.Endpoint,
-			Url = operation.Url,
-			Availability = AvailabilityBadge.FromOperation(
-				operation.Model.Operation,
-				versionsConfig,
-				showTooltip: false,
-				designSystem: designSystem
-			),
-			Deprecated = operation.Model.Deprecated,
-			DesignSystem = designSystem
-		};
+		private ApiOverviewRow OperationRow(OperationNavigationItem operation) =>
+			new()
+			{
+				Kind = OverviewRowKind.Operation,
+				Title = operation.NavigationTitle,
+				Endpoint = operation.Endpoint,
+				Url = operation.Url,
+				Availability = AvailabilityBadge.FromOperation(
+					operation.Model.Operation,
+					versionsConfig,
+					showTooltip: false,
+					designSystem: designSystem
+				),
+				Deprecated = operation.Model.Deprecated,
+				DesignSystem = designSystem
+			};
+	}
 }

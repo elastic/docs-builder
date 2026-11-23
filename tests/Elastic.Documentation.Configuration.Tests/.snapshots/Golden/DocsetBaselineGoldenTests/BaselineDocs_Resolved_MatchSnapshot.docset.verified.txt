@@ -1,0 +1,405 @@
+model <DocumentationSetFile>:
+  Project: "doc-builder"
+  Island: False
+  SuppressDiagnostics:
+    - AutolinkElasticCoDocs
+    - DeepLinkingVirtualFile
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: True
+  CrossLinks:
+    - "docs-content"
+    - "elasticsearch"
+  ReleaseNotes:
+    - <ReleaseNotesProductReference>:
+      Product: "docs-builder"
+  Exclude:
+    - "_*.md"
+  Extensions: []
+  Subs:
+    a-global-variable: "This was defined in docset.yml"
+    serverless-short: "Serverless"
+    ech: "Elastic Cloud Hosted"
+    serverless-full: "Elastic Cloud Serverless"
+    ecloud: "Elastic Cloud"
+    dbuild: "docs-builder"
+    kib: "Kibana"
+    es: "Elasticsearch"
+    fleet: "Fleet"
+    fleet-server: "Fleet Server"
+    ls: "Logstash"
+    stack: "Elastic Stack"
+    stack-monitor-app: "Stack Monitoring"
+    stack-security-features: "Elastic Stack security features"
+    security-features: "Elastic Stack security features"
+    package-manager: "Elastic Package Manager"
+    agent: "Elastic Agent"
+    agents: "Elastic Agents"
+    bedrock: "Amazon Bedrock"
+    gemini: "Google Gemini"
+    ibm-r: "IBM Resilient"
+    opsgenie: "Opsgenie"
+    sn-itsm: "ServiceNow ITSM"
+    sn-sir: "ServiceNow SIR"
+    sn-itom: "ServiceNow ITOM"
+    swimlane: "Swimlane"
+    webhook-cm: "Case Management webhook"
+    hosted-ems: "hosted Elastic Maps Service"
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: False
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api:
+    docs-builder-elasticsearch <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "elasticsearch.json"
+          Product: "elasticsearch"
+          Repository: "elastic/elasticsearch-specification"
+          Children: []
+          Line: 52
+          Column: 7
+          ProductLine: 53
+          ProductColumn: 16
+          SpecLine: 52
+          SpecColumn: 13
+          RepositoryLine: 54
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "elasticsearch.json"
+        Product: "elasticsearch"
+        Repository: "elastic/elasticsearch-specification"
+        Children: []
+        Line: 52
+        Column: 7
+        ProductLine: 53
+        ProductColumn: 16
+        SpecLine: 52
+        SpecColumn: 13
+        RepositoryLine: 54
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-elasticsearch-serverless <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "elasticsearch-serverless.json"
+          Product: "serverless-elasticsearch"
+          Repository: "elastic/elasticsearch-specification"
+          Children: []
+          Line: 56
+          Column: 7
+          ProductLine: 57
+          ProductColumn: 16
+          SpecLine: 56
+          SpecColumn: 13
+          RepositoryLine: 58
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "elasticsearch-serverless.json"
+        Product: "serverless-elasticsearch"
+        Repository: "elastic/elasticsearch-specification"
+        Children: []
+        Line: 56
+        Column: 7
+        ProductLine: 57
+        ProductColumn: 16
+        SpecLine: 56
+        SpecColumn: 13
+        RepositoryLine: 58
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-kibana <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "kibana.yaml"
+          Product: "kibana"
+          Repository: "elastic/kibana"
+          Children:
+            - <ApiEntryChild>:
+              File: "kibana-api-overview.md"
+          Line: 60
+          Column: 7
+          ProductLine: 61
+          ProductColumn: 16
+          SpecLine: 60
+          SpecColumn: 13
+          RepositoryLine: 62
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "kibana.yaml"
+        Product: "kibana"
+        Repository: "elastic/kibana"
+        Children:
+          - <ApiEntryChild>:
+            File: "kibana-api-overview.md"
+        Line: 60
+        Column: 7
+        ProductLine: 61
+        ProductColumn: 16
+        SpecLine: 60
+        SpecColumn: 13
+        RepositoryLine: 62
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-kibana-serverless <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "kibana-serverless.yaml"
+          Product: "kibana"
+          Repository: "elastic/kibana"
+          Children: []
+          Line: 66
+          Column: 7
+          ProductLine: 67
+          ProductColumn: 16
+          SpecLine: 66
+          SpecColumn: 13
+          RepositoryLine: 68
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "kibana-serverless.yaml"
+        Product: "kibana"
+        Repository: "elastic/kibana"
+        Children: []
+        Line: 66
+        Column: 7
+        ProductLine: 67
+        ProductColumn: 16
+        SpecLine: 66
+        SpecColumn: 13
+        RepositoryLine: 68
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "cloud.json"
+          Product: "cloud-hosted"
+          Repository: "elastic/private-repo-2"
+          Children: []
+          Line: 70
+          Column: 7
+          ProductLine: 71
+          ProductColumn: 16
+          SpecLine: 70
+          SpecColumn: 13
+          RepositoryLine: 72
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud.json"
+        Product: "cloud-hosted"
+        Repository: "elastic/private-repo-2"
+        Children: []
+        Line: 70
+        Column: 7
+        ProductLine: 71
+        ProductColumn: 16
+        SpecLine: 70
+        SpecColumn: 13
+        RepositoryLine: 72
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-enterprise <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "cloud-enterprise.json"
+          Product: "cloud-enterprise"
+          Repository: "elastic/private-repo-2"
+          Children: []
+          Line: 74
+          Column: 7
+          ProductLine: 75
+          ProductColumn: 16
+          SpecLine: 74
+          SpecColumn: 13
+          RepositoryLine: 76
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud-enterprise.json"
+        Product: "cloud-enterprise"
+        Repository: "elastic/private-repo-2"
+        Children: []
+        Line: 74
+        Column: 7
+        ProductLine: 75
+        ProductColumn: 16
+        SpecLine: 74
+        SpecColumn: 13
+        RepositoryLine: 76
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-billing <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "cloud-billing.yaml"
+          Product: "ess"
+          Repository: "elastic/private-repo-2"
+          Children: []
+          Line: 78
+          Column: 7
+          ProductLine: 79
+          ProductColumn: 16
+          SpecLine: 78
+          SpecColumn: 13
+          RepositoryLine: 80
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud-billing.yaml"
+        Product: "ess"
+        Repository: "elastic/private-repo-2"
+        Children: []
+        Line: 78
+        Column: 7
+        ProductLine: 79
+        ProductColumn: 16
+        SpecLine: 78
+        SpecColumn: 13
+        RepositoryLine: 80
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-connect <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "cloud-connect.yml"
+          Product: "ess"
+          Repository: "elastic/cloud-connected-api"
+          Children: []
+          Line: 82
+          Column: 7
+          ProductLine: 83
+          ProductColumn: 16
+          SpecLine: 82
+          SpecColumn: 13
+          RepositoryLine: 84
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "cloud-connect.yml"
+        Product: "ess"
+        Repository: "elastic/cloud-connected-api"
+        Children: []
+        Line: 82
+        Column: 7
+        ProductLine: 83
+        ProductColumn: 16
+        SpecLine: 82
+        SpecColumn: 13
+        RepositoryLine: 84
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-cloud-serverless <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "elastic-cloud-serverless.yml"
+          Product: "cloud-serverless"
+          Repository: "elastic/serverless-api-specification"
+          Children: []
+          Line: 86
+          Column: 7
+          ProductLine: 87
+          ProductColumn: 16
+          SpecLine: 86
+          SpecColumn: 13
+          RepositoryLine: 88
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "elastic-cloud-serverless.yml"
+        Product: "cloud-serverless"
+        Repository: "elastic/serverless-api-specification"
+        Children: []
+        Line: 86
+        Column: 7
+        ProductLine: 87
+        ProductColumn: 16
+        SpecLine: 86
+        SpecColumn: 13
+        RepositoryLine: 88
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+    docs-builder-logstash <ApiProductSequence>:
+      Entries:
+        - <ApiProductEntry>:
+          Spec: "logstash.yaml"
+          Product: "logstash"
+          Repository: "elastic/logstash"
+          Children: []
+          Line: 90
+          Column: 7
+          ProductLine: 91
+          ProductColumn: 16
+          SpecLine: 90
+          SpecColumn: 13
+          RepositoryLine: 92
+          RepositoryColumn: 19
+          HasSpec: True
+          HasProduct: True
+      IsValid: True
+      SingleEntry <ApiProductEntry>:
+        Spec: "logstash.yaml"
+        Product: "logstash"
+        Repository: "elastic/logstash"
+        Children: []
+        Line: 90
+        Column: 7
+        ProductLine: 91
+        ProductColumn: 16
+        SpecLine: 90
+        SpecColumn: 13
+        RepositoryLine: 92
+        RepositoryColumn: 19
+        HasSpec: True
+        HasProduct: True
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta:
+    docs-builder <CtaDefinition>:
+      Button <CtaButton>:
+        Label: "Star docs-builder on GitHub"
+        Url: "https://github.com/elastic/docs-builder"
+      Benefits:
+        - "Open source"
+        - "Built with .NET"
+        - "Contributions welcome"
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}

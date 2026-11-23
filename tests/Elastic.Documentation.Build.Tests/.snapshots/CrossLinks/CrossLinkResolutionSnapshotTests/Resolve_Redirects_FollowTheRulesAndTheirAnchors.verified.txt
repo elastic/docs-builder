@@ -1,0 +1,108 @@
+example-repo://old/simple.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page
+example-repo://old/simple.md#anything
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#anything
+  publish                 resolved https://docs.example.test/guide/page#anything
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page#anything
+example-repo://old/anchors.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page
+example-repo://old/anchors.md#a
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+  publish                 resolved https://docs.example.test/guide/page#section-one
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page#section-one
+example-repo://old/anchors.md#c
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page
+example-repo://old/anchors.md#unmapped
+  isolated                LinkRedirectAnchorUnhandled: Redirect rule for 'old/anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#unmapped'.
+  publish                 LinkRedirectAnchorUnhandled: Redirect rule for 'old/anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#unmapped'.
+  publish-prefixed        LinkRedirectAnchorUnhandled: Redirect rule for 'old/anchors.md' in 'example-repo' found, but top-level rule did not handle anchor '#unmapped'.
+example-repo://old/catch-all.md#anything
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page
+example-repo://old/empty-anchors.md#passes-through
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#passes-through
+  publish                 resolved https://docs.example.test/guide/page#passes-through
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page#passes-through
+example-repo://old/no-to.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/old/no-to
+  publish                 resolved https://docs.example.test/old/no-to
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/old/no-to
+example-repo://old/no-to.md#a
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/old/no-to#b
+  publish                 resolved https://docs.example.test/old/no-to#b
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/old/no-to#b
+example-repo://old/no-to.md#z
+  isolated                LinkRedirectAnchorUnhandled: Redirect rule for 'old/no-to.md' in 'example-repo' found, but top-level rule did not handle anchor '#z'.
+  publish                 LinkRedirectAnchorUnhandled: Redirect rule for 'old/no-to.md' in 'example-repo' found, but top-level rule did not handle anchor '#z'.
+  publish-prefixed        LinkRedirectAnchorUnhandled: Redirect rule for 'old/no-to.md' in 'example-repo' found, but top-level rule did not handle anchor '#z'.
+example-repo://old/many.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+  publish                 resolved https://docs.example.test/get-started
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/get-started
+example-repo://old/many.md#intro
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#intro
+  publish                 resolved https://docs.example.test/get-started#intro
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/get-started#intro
+example-repo://old/many.md#dropped
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+  publish                 resolved https://docs.example.test/get-started
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/get-started
+example-repo://old/many.md#section-one
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-two
+  publish                 resolved https://docs.example.test/guide/page#section-two
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page#section-two
+example-repo://old/many.md#unmapped
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#unmapped
+  publish                 resolved https://docs.example.test/get-started#unmapped
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/get-started#unmapped
+example-repo://old/many-catch-all.md#whatever
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page
+example-repo://old/many-catch-all.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+  publish                 resolved https://docs.example.test/get-started
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/get-started
+example-repo://old/many-only.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/old/many-only
+  publish                 resolved https://docs.example.test/old/many-only
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/old/many-only
+example-repo://old/many-only.md#x
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#y
+  publish                 resolved https://docs.example.test/guide/page#y
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page#y
+example-repo://old/many-only.md#unmapped
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/old/many-only#unmapped
+  publish                 resolved https://docs.example.test/old/many-only#unmapped
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/old/many-only#unmapped
+example-repo://old/many-without-to.md#x
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#x
+  publish                 resolved https://docs.example.test/get-started#x
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/get-started#x
+example-repo://old/to-index.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+  publish                 resolved https://docs.example.test/
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/
+example-repo://old/to-nested-index.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started
+  publish                 resolved https://docs.example.test/get-started
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/get-started
+example-repo://old/to-missing-page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/not-a-page
+  publish                 resolved https://docs.example.test/guide/not-a-page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/not-a-page
+example-repo://redirect-and-link.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page
+example-repo://redirect-and-link.md#anything
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#anything
+  publish                 resolved https://docs.example.test/guide/page#anything
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/guide/page#anything

@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml 'owners' in pivot.required is not a pivot that can be required. Valid values: types, areas, products."
+  ]
+}

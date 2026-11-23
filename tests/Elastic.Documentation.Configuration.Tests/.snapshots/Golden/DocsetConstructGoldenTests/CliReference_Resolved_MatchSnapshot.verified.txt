@@ -1,0 +1,84 @@
+diagnostics:
+toc:
+IndexFileRef  index.md
+CliReferenceRef  cli
+CliReferenceRef  other/schema
+model:
+model <DocumentationSetFile>:
+  Project: "constructs"
+  TableOfContents:
+    - <IndexFileRef>:
+      PathRelativeToDocumentationSet: "index.md"
+      PathRelativeToContainer: "index.md"
+      Hidden: False
+      Children: []
+      Context: "/docs/docset.yml"
+      DefaultCta: null
+    - <CliReferenceRef>:
+      SchemaPath: "cli-schema.json"
+      SupplementalFolder: "cli"
+      Title: "Tool reference"
+      NavigationTitle: "Tool"
+      PathRelativeToDocumentationSet: "cli"
+      PathRelativeToContainer: "cli"
+      Context: "/docs/docset.yml"
+      Children:
+        - <FileRef>:
+          PathRelativeToDocumentationSet: "cli/overview.md"
+          PathRelativeToContainer: "cli/overview.md"
+          Hidden: False
+          Children: []
+          Context: "/docs/docset.yml"
+          DefaultCta: null
+        - <FolderRef>:
+          PathRelativeToDocumentationSet: "cli/extra"
+          PathRelativeToContainer: "cli/extra"
+          Children:
+            - <FileRef>:
+              PathRelativeToDocumentationSet: "cli/extra/more.md"
+              PathRelativeToContainer: "cli/extra/more.md"
+              Hidden: False
+              Children: []
+              Context: "/docs/docset.yml"
+              DefaultCta: null
+          Context: "/docs/docset.yml"
+          Sort: null
+          Exclude: null
+          DefaultCta: null
+      AppliesTo: null
+    - <CliReferenceRef>:
+      SchemaPath: "other/schema.json"
+      SupplementalFolder: null
+      Title: null
+      NavigationTitle: null
+      PathRelativeToDocumentationSet: "other/schema"
+      PathRelativeToContainer: "other/schema"
+      Context: "/docs/docset.yml"
+      Children: []
+      AppliesTo: null
+  Island: False
+  SuppressDiagnostics: []
+  DefaultCta: null
+  MaxTocDepth: 2
+  DevDocs: False
+  CrossLinks: []
+  ReleaseNotes: []
+  Exclude: []
+  Extensions: []
+  Subs: {}
+  DisplayName: null
+  Description: null
+  Icon: null
+  Registry: null
+  Features <DocumentationSetFeatures>:
+    PrimaryNav: null
+    DisableGithubEditLink: null
+    GuideNav: null
+  Api: {}
+  Products: []
+  Codex: null
+  Branding: null
+  Storybook: null
+  Cta: {}
+  FolderExcludedFiles: []
+  TocDefaultCtas: {}

@@ -1,0 +1,111 @@
+yaml:
+  | - stack: ga 9.0
+  | - serverless: ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: stack: ga 9.0+, , serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+
+yaml:
+  | - stack: ga 9.0
+  | - stack: beta 9.1
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.1\u002B"}]
+text: stack: beta 9.1+, 
+
+yaml:
+  | - deployment:
+  |     ece: ga 3.0
+  | - deployment:
+  |     eck: beta 3.1
+json: [{"type":"deployment","sub_type":"ece","lifecycle":"ga","version":"3.0\u002B"},{"type":"deployment","sub_type":"eck","lifecycle":"beta","version":"3.1\u002B"}]
+text: deployment: ece=ga 3.0+, , eck=beta 3.1+, 
+
+yaml:
+  | - deployment:
+  |     ece: ga 3.0
+  | - deployment:
+  |     ece: beta 3.1
+json: [{"type":"deployment","sub_type":"ece","lifecycle":"beta","version":"3.1\u002B"}]
+text: deployment: ece=beta 3.1+, 
+
+yaml:
+  | - 'stack: ga 9.0'
+  | - 'serverless: ga'
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: stack: ga 9.0+, , serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+
+yaml:
+  | - stack: ga 9.0
+  | - 'serverless: beta'
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga","version":"9.0\u002B"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"},{"type":"serverless","sub_type":"observability","lifecycle":"beta"},{"type":"serverless","sub_type":"security","lifecycle":"beta"},{"type":"serverless","sub_type":"vectordb","lifecycle":"beta"}]
+text: stack: ga 9.0+, , serverless: elasticsearch=beta, , observability=beta, , security=beta, , vectordb=beta, 
+
+yaml:
+  | - 'stack: ga 9.0'
+  | - 'stack: beta 9.1'
+json: [{"type":"stack","sub_type":"stack","lifecycle":"beta","version":"9.1\u002B"}]
+text: stack: beta 9.1+, 
+
+yaml: - not a key value line
+result: null
+
+yaml: - 'stack:'
+result: null
+
+yaml: - 'stack: '
+result: null
+
+yaml: - ':'
+result: null
+
+yaml: - ': ga'
+result: null
+
+yaml: - 'stack ga'
+result: null
+
+yaml: - 'stack: ga 9.0: extra'
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
+text: stack: ga, 
+
+yaml: - ga
+result: null
+
+yaml: - - stack: ga 9.0
+result: null
+
+yaml: []
+result: null
+
+yaml: - {}
+result: null
+
+yaml: - ~
+result: null
+
+yaml:
+  | - stack: ga
+  | - ~
+  | - serverless: ga
+json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"},{"type":"serverless","sub_type":"elasticsearch","lifecycle":"ga"},{"type":"serverless","sub_type":"observability","lifecycle":"ga"},{"type":"serverless","sub_type":"security","lifecycle":"ga"},{"type":"serverless","sub_type":"vectordb","lifecycle":"ga"}]
+text: stack: ga, , serverless: elasticsearch=ga, , observability=ga, , security=ga, , vectordb=ga, 
+  warning: Applies list item '~' could not be parsed as 'key: value'.
+
+yaml:
+  | - serverless: ga
+  | - serverless:
+  |     elasticsearch: beta
+json: [{"type":"serverless","sub_type":"elasticsearch","lifecycle":"beta"}]
+text: serverless: elasticsearch=beta, 
+
+yaml:
+  | - product:
+  |     ecctl: ga
+  | - product:
+  |     curator: beta
+json: [{"type":"product","sub_type":"ecctl","lifecycle":"ga"},{"type":"product","sub_type":"curator","lifecycle":"beta"}]
+text: products: ecctl=ga, : not null } => curator=beta, 
+
+yaml:
+  | - 'deployment: ga'
+  | - 'deployment: beta'
+json: [{"type":"deployment","sub_type":"self","lifecycle":"beta"},{"type":"deployment","sub_type":"ece","lifecycle":"beta"},{"type":"deployment","sub_type":"eck","lifecycle":"beta"},{"type":"deployment","sub_type":"ess","lifecycle":"beta"}]
+text: deployment: self=beta, , ece=beta, , eck=beta, , ess=beta, 

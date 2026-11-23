@@ -56,7 +56,7 @@ internal static class ApiMarkdownFrontMatter
 		return new(
 			title,
 			ResolveDescription(page, context, body),
-			CanonicalUrl(context, current),
+			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
 			page is ApiLanding ? CollectFacts(context) : null
 		);
@@ -82,7 +82,7 @@ internal static class ApiMarkdownFrontMatter
 		_ = markdown.AppendLine("type: api");
 		_ = markdown.AppendLine($"title: {meta.Title}");
 		if (!string.IsNullOrWhiteSpace(meta.Description))
-			_ = markdown.AppendLine($"description: {meta.Description}");
+			_ = markdown.AppendLine($"description: {YamlScalar(meta.Description)}");
 
 		_ = markdown.AppendLine($"url: {meta.Url}");
 		_ = markdown.AppendLine($"resource: {meta.Url}");
@@ -129,17 +129,14 @@ internal static class ApiMarkdownFrontMatter
 	private static string YamlScalar(string value) =>
 		$"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t")}\"";
 
-	private static string CanonicalUrl(ApiRenderContext context, INavigationItem current) =>
-		UrlPath.MakeAbsolute(context.BuildContext.CanonicalBaseUrl, current.Url.TrimEnd('/'))?.TrimEnd('/') ?? current.Url.TrimEnd('/');
-
 	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body)
 	{
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		return page switch
 		{
 			ApiCatalog => ApiCatalog.PageDescription,
-			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.Model.Info?.Description, apiBaseUrl)),
-			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
+			ApiLanding => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
+			ApiTag tag => TagSummary(tag, context),
 			ApiOperation operation =>
 				FirstLine(
 					ApiMarkdown.Prepare(
@@ -150,6 +147,7 @@ internal static class ApiMarkdownFrontMatter
 						apiBaseUrl
 					)
 				),
+			ApiStructuralPage structural => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(structural.Intro, apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
 			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
 			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
@@ -157,7 +155,12 @@ internal static class ApiMarkdownFrontMatter
 		};
 	}
 
-	private static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
+	/// <summary>The one-line description of a group, from its supplemental description when it has one: what its meta description and its card on the product landing page say.</summary>
+	internal static string? TagSummary(ApiTag tag, ApiRenderContext context) =>
+		ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), context.CurrentNavigation.NavigationRoot.Url));
+
+	/// <summary>The description a group shows: its supplemental one when it has one, else the spec's.</summary>
+	internal static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
 		context.TagSupplemental.TryGetValue(tag.Name, out var doc) ? doc.DescriptionOr(tag.Description) : tag.Description;
 
 	private static string? OperationDescription(ApiOperation operation, ApiRenderContext context)

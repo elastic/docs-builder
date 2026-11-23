@@ -56,12 +56,17 @@ public class AssemblerSitemapService(
 		_logger.LogInformation("Querying index {Index} for sitemap entries", indexName);
 
 		var reader = new EsSitemapReader(transport, _logger, indexName);
+		var output = SitemapOutput.For(assembleContext);
+		var documents = new List<SitemapEntry>();
 		var entries = new Dictionary<string, DateTimeOffset>();
-
 		await foreach (var entry in reader.ReadAllAsync(ctx))
-			entries[entry.Url] = entry.LastUpdated;
+		{
+			documents.Add(entry);
+			if (entry.ApiTreeRoots.Count == 0 && !output.IsApiUrl(entry.Url))
+				entries[entry.Url] = entry.LastUpdated;
+		}
 
-		_logger.LogInformation("Fetched {Count} sitemap entries from ES", entries.Count);
+		_logger.LogInformation("Fetched {Count} narrative sitemap entries from ES", entries.Count);
 
 		if (entries.Count == 0)
 		{
@@ -69,19 +74,23 @@ public class AssemblerSitemapService(
 			return false;
 		}
 
-		if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
+		// API pages are the ones `assembler build` listed; the index dates them.
+		var buildPages = SitemapBuilder.ReadApiPages(output);
+		if (ApiSitemapDates.BuildSitemapMissing(buildPages, documents, AssemblerApiSections.IsEnabled(assembleContext)))
 			collector.EmitGlobalWarning(
-				$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
-					"Consider implementing sitemap index files."
+				$"{indexName} has API documents, but {output.Folder.FullName} has no sitemap-api.xml from `assembler build`, so sitemap.xml will not list the API pages"
 			);
-
-		var result = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
-
-		if (result.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
+		var api = ApiSitemapDates.Resolve(buildPages, documents, output.ApiRoot);
+		if (api.Missing.Count > 0)
 			collector.EmitGlobalWarning(
-				$"Sitemap file size is {result.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
-					"Consider implementing sitemap index files."
+				$"{api.Missing.Count} API sitemap pages have no document in {indexName}, so they keep the build date: {string.Join(", ", api.Missing.Take(10))}"
 			);
+		foreach (var (url, date) in api.Entries)
+			entries[url] = date;
+
+		var files = SitemapBuilder.Generate(entries, output, collector);
+		foreach (var file in files)
+			_logger.LogInformation("Sitemap file {File}: {Count} URLs", file.Name, file.EntryCount);
 
 		_logger.LogInformation("Sitemap written to {Path}", assembleContext.OutputWithPathPrefixDirectory.FullName);
 		return true;

@@ -1,0 +1,91 @@
+## to-and-many
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many:
+  |       - to: 'a.md'
+  |         anchors: { 'x': 'y' }
+  |       - to: 'b.md'
+  |         anchors: { '!': null }
+{"old.md":{"many":[{"anchors":{"x":"y"},"to":"a.md"},{"anchors":{"!":null},"to":"b.md"}],"to":"new.md"}}
+(no diagnostics)
+
+## many-only
+  | redirects:
+  |   'old.md':
+  |     many:
+  |       - to: 'a.md'
+  |         anchors: { 'x': 'y' }
+{"old.md":{"many":[{"anchors":{"x":"y"},"to":"a.md"}]}}
+(no diagnostics)
+
+## many-rule-without-anchors-is-dropped
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many:
+  |       - to: 'a.md'
+{"old.md":{"many":[],"to":"new.md"}}
+(no diagnostics)
+
+## many-rule-without-to-takes-the-key
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many:
+  |       - anchors: { 'x': 'y' }
+{"old.md":{"many":[{"anchors":{"x":"y"},"to":"old.md"}],"to":"new.md"}}
+(no diagnostics)
+
+## many-rule-with-empty-anchors
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many:
+  |       - to: 'a.md'
+  |         anchors: {}
+{"old.md":{"many":[{"anchors":{},"to":"a.md"}],"to":"new.md"}}
+(no diagnostics)
+
+## empty-many
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many: []
+{"old.md":{"to":"new.md"}}
+(no diagnostics)
+
+## many-only-empty
+  | redirects:
+  |   'old.md':
+  |     many: []
+{}
+(no diagnostics)
+
+## many-as-a-mapping
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many: { to: 'a.md' }
+{"old.md":{"to":"new.md"}}
+(no diagnostics)
+
+## many-with-scalar-items
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many:
+  |       - 'a.md'
+{"old.md":{"to":"new.md"}}
+(no diagnostics)
+
+## many-with-unknown-key
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     many:
+  |       - to: 'a.md'
+  |         anchors: { 'x': 'y' }
+  |         extra: 1
+{"old.md":{"many":[{"anchors":{"x":"y"},"to":"a.md"}],"to":"new.md"}}
+error /docs/redirects.yml:7 Unknown key 'extra' in $.redirects['old.md'].many. Valid keys: anchors, to.

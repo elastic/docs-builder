@@ -956,6 +956,134 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+/// <summary>
+/// A release that shipped without notes is recorded as a bundle with no entries (<c>release serverless</c> writes one, with no
+/// <c>entries</c> key at all). It stays in the ledger and does not render: no heading, no anchor, no diagnostics.
+/// </summary>
+[InheritsTests]
+public class ChangelogEmptyReleaseBundleTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogEmptyReleaseBundleTests() : base(
+			// language=markdown
+			"""
+		:::{changelog}
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+		products:
+		- product: cloud-hosted
+		  target: 2026-11-16
+		  repo: cloud
+		  owner: elastic
+		release-date: 2026-11-16
+		git_ref: d3124c7dda836280f00d8c4b1259f7a2b96ec765
+		"""
+			)
+		);
+
+	[Test]
+	public void LoadsTheBundleAndRendersNothing()
+	{
+		Block!.LoadedBundles.Should().HaveCount(1);
+		Block.LoadedBundles[0].Entries.Should().BeEmpty();
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	}
+}
+
+/// <summary>
+/// Two releases on the same day have the same target, and the site merges their bundles into one section. A release with no
+/// notes is an empty bundle beside the first one: the section renders once, unchanged.
+/// </summary>
+[InheritsTests]
+public class ChangelogEmptyReleaseBesideAReleaseTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogEmptyReleaseBesideAReleaseTests() : base(
+			// language=markdown
+			"""
+		:::{changelog}
+		:::
+		"""
+		)
+	{
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16-1111111.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: cloud-hosted
+			  target: 2026-11-16
+			  repo: cloud
+			  owner: elastic
+			release-date: 2026-11-16
+			git_ref: 1111111111111111111111111111111111111111
+			entries:
+			- title: Faster hosted search
+			  type: feature
+			  products:
+			  - product: cloud-hosted
+			    target: 2026-11-16
+			  file:
+			    name: faster.yaml
+			    checksum: faster-checksum
+			  prs:
+			  - "123456"
+			"""
+			)
+		);
+		FileSystem.AddFile(
+			"docs/changelog/bundles/cloud-cloud-hosted-2026-11-16-2222222.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: cloud-hosted
+			  target: 2026-11-16
+			  repo: cloud
+			  owner: elastic
+			release-date: 2026-11-16
+			git_ref: 2222222222222222222222222222222222222222
+			"""
+			)
+		);
+	}
+
+	[Test]
+	public void RendersTheSectionOnce()
+	{
+		Block!.LoadedBundles.Should().HaveCount(1);
+		Block.LoadedBundles[0].Entries.Should().ContainSingle().Which.Title.Should().Be("Faster hosted search");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	}
+
+	[Test]
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="november-16-2026">
+			<h2>
+				<a class="headerlink" href="#november-16-2026">November 16, 2026</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="cloud-2026-11-16-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#cloud-2026-11-16-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Faster hosted search.</li>
+		</ul>
+		"""
+		);
+}
+
 [InheritsTests]
 public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 {

@@ -11,9 +11,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Building;
 
-public record SitemapEntry(string Url, DateTimeOffset LastUpdated);
+/// <summary>
+/// A document's content date. <paramref name="ApiTreeRoots"/> are the roots of the API trees it stands for, the first one the
+/// root its URL points into, and are empty on a narrative page. <paramref name="ApiLanding"/> marks an API's landing page.
+/// </summary>
+public record SitemapEntry(string Url, DateTimeOffset LastUpdated, IReadOnlyList<string> ApiTreeRoots, bool ApiLanding = false);
 
-/// <summary>Reads all url + content_last_updated pairs from the ES semantic index using search_after with PIT.</summary>
+/// <summary>
+/// Reads the content dates of the pages in the ES semantic index using search_after with PIT: narrative pages that are not
+/// hidden, and every API document, hidden ones included, because a hidden API document stands for a page of another tree or a page only the sitemap reads.
+/// </summary>
 public class EsSitemapReader(DistributedTransport transport, ILogger logger, string indexName)
 {
 	private const int PageSize = 1000;
@@ -75,7 +82,12 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 							continue;
 						}
 
-						yield return new SitemapEntry(url, lastUpdated);
+						yield return new SitemapEntry(
+							url,
+							lastUpdated,
+							TreeRoots(source["api"]?["trees"]),
+							source["api"]?["landing"]?.GetValue<bool>() ?? false
+						);
 					}
 				}
 
@@ -90,6 +102,9 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 			await ClosePitAsync(pitId, CancellationToken.None);
 		}
 	}
+
+	private static string[] TreeRoots(JsonNode? trees) =>
+		trees is JsonArray array ? [.. array.Select(t => t?["root"]?.GetValue<string>()).OfType<string>()] : [];
 
 	private async Task<string> OpenPitAsync(Cancel ct)
 	{
@@ -134,12 +149,22 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		var body = new JsonObject
 		{
 			["size"] = PageSize,
-			["_source"] = new JsonArray("url", "content_last_updated"),
+			["_source"] = new JsonArray("url", "content_last_updated", "api.trees.root", "api.landing"),
 			["query"] = new JsonObject
 			{
 				["bool"] = new JsonObject
 				{
-					["must_not"] = new JsonArray(new JsonObject { ["term"] = new JsonObject { ["hidden"] = true } })
+					["should"] = new JsonArray(
+						new JsonObject { ["term"] = new JsonObject { ["content_type"] = "api" } },
+						new JsonObject
+						{
+							["bool"] = new JsonObject
+							{
+								["must_not"] = new JsonArray(new JsonObject { ["term"] = new JsonObject { ["hidden"] = true } })
+							}
+						}
+					),
+					["minimum_should_match"] = 1
 				}
 			},
 			["pit"] = new JsonObject { ["id"] = pitId, ["keep_alive"] = PitKeepAlive },

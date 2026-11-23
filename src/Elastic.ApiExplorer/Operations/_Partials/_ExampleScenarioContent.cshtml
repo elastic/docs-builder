@@ -56,7 +56,7 @@
 						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source, LineNumbers: true)))
 						@if (sample.Generated)
 						{
-							<p class="api-code-carousel-card-note"><span tabindex="0" data-tippy-content="This sample was generated from the API spec, not written by hand. Check placeholder values such as string or INDEX before you run it.">Generated from the API spec</span></p>
+							<p class="api-code-carousel-card-note"><span tabindex="0" data-tooltip="This sample was generated from the API spec, not written by hand. Check placeholder values such as string or INDEX before you run it.">Generated from the API spec</span></p>
 						}
 					</div>
 				</section>
@@ -67,7 +67,7 @@
 			<div class="api-code-carousel-dots" role="group" aria-label="Languages">
 				@foreach (var sample in samples)
 				{
-					<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" data-tippy-content="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
+					<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" data-tooltip="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 					</button>
 				}
@@ -130,7 +130,7 @@
 						data-status="@response.StatusCode"
 						aria-selected="@(selected ? "true" : "false")"
 						tabindex="@(selected ? "0" : "-1")"
-						data-tippy-content="@response.StatusDescription">
+						data-tooltip="@response.StatusDescription">
 						<span class="example-response-tab-label">@response.StatusCode</span>
 					</button>
 				}
@@ -167,7 +167,7 @@
 						}
 						@if (example.Generated)
 						{
-							<p class="api-code-carousel-card-note" data-generated><span tabindex="0" data-tippy-content="@ResponseBodyExample.Note">Generated from the API spec</span></p>
+							<p class="api-code-carousel-card-note" data-generated><span tabindex="0" data-tooltip="@ResponseBodyExample.Note">Generated from the API spec</span></p>
 						}
 						</div>
 					}

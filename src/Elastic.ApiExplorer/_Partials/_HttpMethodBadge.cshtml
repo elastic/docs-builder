@@ -1,15 +1,18 @@
-@inherits RazorSlice<string>
-@* Labeled HTTP method chip — Figma APIs node 10067:6424. Icons match the Nav V2 glyphs. *@
-<span class="api-method api-method-@Model">
-	<span class="api-method-icon" aria-hidden="true">
-		@if (Model == "delete")
+@inherits RazorSlice<IReadOnlyList<string>>
+@* Labeled HTTP method chip — Figma APIs node 10067:6424. Icons match the Nav V2 glyphs. Several methods join into one chip, the dominant method first. *@
+@if (Model is [var only])
+{
+	@(await RenderPartialAsync<_HttpMethodChip, string>(only))
+}
+else
+{
+	var names = Model.Select(static m => m.ToUpperInvariant()).ToArray();
+	var others = names[1..];
+	var alike = others.Length == 1 ? others[0] : string.Join(", ", others[..^1]) + " and " + others[^1];
+	<span class="api-method-group" data-tooltip="@names[0] is the main method. @alike @(others.Length == 1 ? "works" : "work") the same way: same parameters, body, and response.">
+		@foreach (var method in Model)
 		{
-			<svg width="12" height="12" viewBox="0 0 12 12"><use href="#icon-api-x"/></svg>
-		}
-		else
-		{
-			<svg width="12" height="12" viewBox="0 0 12 12"><use href="#icon-api-arrow"/></svg>
+			@(await RenderPartialAsync<_HttpMethodChip, string>(method))
 		}
 	</span>
-	<span class="api-method-label">@Model.ToUpperInvariant()</span>
-</span>
+}

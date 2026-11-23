@@ -14,6 +14,7 @@ using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Highlighting;
 using Elastic.Transport;
 using Elastic.Transport.Extensions;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Json;
 
 namespace Elastic.Documentation.Api.Tests;
@@ -24,11 +25,31 @@ public class ApiPropertySearchTests
 
 	private static string Json(Query? query) => Client.RequestResponseSerializer.SerializeToString(query);
 
+	// the cases of one [Arguments] test get a file each, named after the case: {Method}.{case}
+	private static SnapshotOptions PerCase => new() { NameReplacesArguments = true };
+
+	private static string CaseName(params string?[] parts) => string.Join('.', parts.Select(Slug));
+
+	private static string Slug(string? text)
+	{
+		var sb = new System.Text.StringBuilder();
+		foreach (var c in text ?? "none")
+		{
+			if (char.IsAsciiLetterOrDigit(c) || c == '_')
+				_ = sb.Append(c);
+			else if (sb.Length > 0 && sb[^1] != '-')
+				_ = sb.Append('-');
+		}
+		return sb.ToString().TrimEnd('-');
+	}
+
 	[Test]
 	[Arguments("track_total", null)]
 	[Arguments("knn_field search", null)]
 	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter) =>
-		Json(SearchQueryBuilder.BuildApiPropertyQuery(input, filter)).Should().MatchJsonSnapshot();
+		Json(SearchQueryBuilder.BuildApiPropertyQuery(input, filter))
+			.Should()
+			.MatchJsonSnapshot(name: CaseName(input, filter), options: PerCase);
 
 	[Test]
 	[Arguments("retriever.rrf.min_score")]
@@ -36,7 +57,7 @@ public class ApiPropertySearchTests
 	[Arguments("[].retriever.standard")]
 	[Arguments("labels.<string>.value")]
 	public void BuildApiPropertyQuery_QualifiedPath_RequiresMatchingLeafAndPathWords(string input) =>
-		Json(SearchQueryBuilder.BuildApiPropertyQuery(input, null)).Should().MatchJsonSnapshot();
+		Json(SearchQueryBuilder.BuildApiPropertyQuery(input, null)).Should().MatchJsonSnapshot(name: CaseName(input), options: PerCase);
 
 	[Test]
 	public void BuildApiPropertyQuery_MarkedSingleWord_MatchesTheBareName() =>
@@ -46,13 +67,17 @@ public class ApiPropertySearchTests
 	[Arguments(null)]
 	[Arguments("all")]
 	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter) =>
-		Json(SearchQueryBuilder.BuildApiPropertyQuery("track_total", filter)).Should().MatchJsonSnapshot();
+		Json(SearchQueryBuilder.BuildApiPropertyQuery("track_total", filter))
+			.Should()
+			.MatchJsonSnapshot(name: CaseName(filter), options: PerCase);
 
 	[Test]
 	[Arguments("track_total")]
 	[Arguments("/_search track_total")]
 	public void ApplyApiPropertyQuery_SingleReading_IsNamedAfterItsInnerHits(string input) =>
-		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null)).Should().MatchJsonSnapshot();
+		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null))
+			.Should()
+			.MatchJsonSnapshot(name: CaseName(input), options: PerCase);
 
 	[Test]
 	public void ApplyApiPropertyQuery_TwoPlainWordsDocsWide_KeepsTheEndpointRequiredForTheSurvivingReading() =>
@@ -62,7 +87,9 @@ public class ApiPropertySearchTests
 	[Arguments("GET /_search track_total")]
 	[Arguments("/_search track_total")]
 	public void ApplyApiPropertyQuery_DocsWideMarkedEndpointAndField_RequiresFieldMatchBeforeEndpointBoost(string input) =>
-		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null)).Should().MatchJsonSnapshot();
+		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null))
+			.Should()
+			.MatchJsonSnapshot(name: CaseName(input), options: PerCase);
 
 	[Test]
 	public void ApplyApiPropertyQuery_DocsWideTwoIdentifierWords_TriesBothReadingsWithUniqueInnerHitNames() =>
@@ -127,7 +154,8 @@ public class ApiPropertySearchTests
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public void Mapping_Api(bool semantic) => ApiMapping(semantic).GetRawText().Should().MatchJsonSnapshot();
+	public void Mapping_Api(bool semantic) =>
+		ApiMapping(semantic).GetRawText().Should().MatchJsonSnapshot(name: semantic ? "semantic" : "lexical", options: PerCase);
 
 	[Test]
 	public void BuildApiPropertyQuery_OnlyADot_ReturnsNull() => SearchQueryBuilder.BuildApiPropertyQuery(".", null).Should().BeNull();
@@ -232,7 +260,7 @@ public class ApiPropertySearchTests
 
 	private static Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument> ParseResponse(string json)
 	{
-		using var stream = new ReadOnlyMemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json), writable: false);
 		using var accessor = new ElasticsearchClientAccessor(
 			new DocumentationEndpoints
 			{

@@ -29,8 +29,7 @@ public class ElasticsearchFixture : IAsyncInitializer, IAsyncDisposable
 
 	public async Task InitializeAsync()
 	{
-		_container = new ContainerBuilder()
-			.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.18.0")
+		_container = new ContainerBuilder("docker.elastic.co/elasticsearch/elasticsearch:8.18.0")
 			.WithEnvironment("discovery.type", "single-node")
 			.WithEnvironment("xpack.security.enabled", "false")
 			.WithEnvironment("xpack.security.http.ssl.enabled", "false")

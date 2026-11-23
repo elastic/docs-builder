@@ -1,0 +1,12 @@
+docs/changelog/42.yaml | parsed=True number=42 | ok
+docs/changelog/42-my-feature.yaml | parsed=True number=42 | ok
+docs/changelog/42.yml | parsed=True number=42 | ok
+docs/changelog/042.yaml | parsed=True number=42 | ok
+docs/changelog/my-feature.yaml | parsed=False number=0 | Error: filename 'my-feature.yaml' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)
+docs/changelog/42my.yaml | parsed=False number=0 | Error: filename '42my.yaml' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)
+docs/changelog/.yaml | parsed=False number=0 | Error: filename '.yaml' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)
+docs/changelog/42-.yaml | parsed=True number=42 | ok
+docs/changelog/-42.yaml | parsed=False number=0 | Error: filename '-42.yaml' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)
+docs/changelog/99999999999.yaml | parsed=False number=0 | Error: filename '99999999999.yaml' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)
+docs/changelog/42.yaml.bak | parsed=False number=0 | Error: filename '42.yaml.bak' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)
+docs/changelog/42 | parsed=True number=42 | ok

@@ -12,7 +12,7 @@ import { iconCheckEui, iconCopyEui, temporarilyChangeIcon } from './copybutton'
 import { closeIcon, fullscreenIcon } from './icons'
 import { prefersReducedMotion } from './motion'
 import { lockPageScroll } from './scroll-lock'
-import { flashTooltip, initTooltips } from './tooltip'
+import { flashTooltip } from './tooltip'
 
 export { packChips } from './chip-row'
 
@@ -422,7 +422,7 @@ function iconButton(className: string, label: string, icon: string) {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = className
-    button.dataset.tippyContent = label
+    button.dataset.tooltip = label
     button.setAttribute('aria-label', label)
     button.innerHTML = icon
     return button
@@ -551,14 +551,6 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close()
     })
-    // Escape closes a modal dialog natively, unless another handler on the page prevents the keydown;
-    // the site chrome does, so close explicitly and keep the key from reaching it.
-    dialog.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') return
-        event.preventDefault()
-        event.stopPropagation()
-        dialog.close()
-    })
     const unlockScroll = lockPageScroll()
     dialog.addEventListener('close', () => {
         unlockScroll()
@@ -658,7 +650,6 @@ export function initApiExamples(root: ParentNode = document): void {
         document.addEventListener('keydown', onKeydown)
     }
     registerChipRows(exampleChips)
-    initTooltips()
 
     const link = readDeepLink()
     root.querySelectorAll<HTMLElement>('[data-api-examples]').forEach(

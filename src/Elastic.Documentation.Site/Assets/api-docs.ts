@@ -10,9 +10,9 @@ import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
-import { initToc } from './ds/toc'
+import { fragmentId, initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
-import { flashTooltip, initTooltips } from './tooltip'
+import { flashTooltip } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -158,7 +158,9 @@ function openMainResponse(status: string): void {
     const panel = document.querySelector<HTMLElement>(
         `[data-api-responses] .response-panel:not(.response-panel--static)[data-status="${status}"]`
     )
-    if (panel) setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
+    if (!panel) return
+    setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
+    syncExpandAll()
 }
 
 /**
@@ -227,12 +229,7 @@ export function revealHiddenAncestors(target: HTMLElement): boolean {
 }
 
 function hashTarget(): HTMLElement | null {
-    let id = window.location.hash.slice(1)
-    try {
-        id = decodeURIComponent(id)
-    } catch {
-        // A malformed escape is looked up as written
-    }
+    const id = fragmentId(window.location.hash)
     return id ? document.getElementById(id) : null
 }
 
@@ -303,7 +300,8 @@ function playFlashWhenSettled(el: HTMLElement): void {
  * heading keeps the browser's plain jump, and anything else pulses as a whole.
  */
 function flashTarget(target: HTMLElement): void {
-    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    // A heading needs no pointing out, and neither does the page intro: reaching it is going back to the top.
+    if (target.matches('h1, h2, h3, h4, h5, h6, .api-page-intro')) return
     const name = target.matches('dt')
         ? target.querySelector<HTMLElement>(':scope > code')
         : null
@@ -335,7 +333,8 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
-    initToc()
+    // Only the sticky section links are this bundle's: the production On this page list has its own scroll spy (toc-nav.ts).
+    initToc(document, '[data-toc][data-toc-sticky]')
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true
@@ -383,6 +382,31 @@ function initGlobalClickHandlers(): void {
         const apiSection = target.closest<HTMLElement>(API_ROOTS)
         if (!apiSection) return
 
+        const backToTop = target.closest<HTMLElement>('[data-api-back-to-top]')
+        if (backToTop) {
+            // A modified click on the Overview link opens it elsewhere, as any link does.
+            if (
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey
+            )
+                return
+            e.preventDefault()
+            // The address follows, so a reload or a shared link opens at the top rather than the section left behind.
+            // Pushed before scrolling: the entry left behind keeps the reader's place, which an instant scroll (reduced
+            // motion) would otherwise have reset to the top, so Back returns to that section.
+            const hash = backToTop.getAttribute('href')
+            if (hash?.startsWith('#') && window.location.hash !== hash)
+                history.pushState(null, '', hash)
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+            })
+            return
+        }
+
         // Before the generic .expand-toggle branch, which would toggle the enclosing property instead
         const enumValuesToggle = target.closest<HTMLButtonElement>(
             '.enum-values-toggle'
@@ -423,7 +447,7 @@ function initGlobalClickHandlers(): void {
 
         if (target.closest('[data-api-expand-all]')) {
             e.preventDefault()
-            setAllExpanded(apiSection, !isAllExpanded(apiSection))
+            setAllExpanded(apiSection, !isAllExpanded(expandable(apiSection)))
             return
         }
 
@@ -432,27 +456,43 @@ function initGlobalClickHandlers(): void {
     })
 }
 
-/**
- * The disclosures the page control drives: every one with a toggle, so rows with nothing to fold are left out.
- * Responses are an accordion that follows the examples rail, so the control leaves them to it.
- */
-function foldables(root: HTMLElement): [HTMLElement, Disclosure][] {
-    return DISCLOSURES.filter((d) => d !== RESPONSE_DISCLOSURE).flatMap((d) =>
+/** Every disclosure with a toggle, so rows with nothing to fold are left out. Collapse all folds them all. */
+function collapsible(root: HTMLElement): [HTMLElement, Disclosure][] {
+    return DISCLOSURES.flatMap((d) =>
         [...root.querySelectorAll<HTMLElement>(d.container)]
             .filter((container) => container.querySelector(d.toggle))
             .map((container): [HTMLElement, Disclosure] => [container, d])
     )
 }
 
-function isAllExpanded(root: HTMLElement): boolean {
-    return foldables(root).every(([container]) =>
+/**
+ * Responses are an accordion, so Expand all opens one response, the open one or else the one the page
+ * opened on load, with its fields, and leaves the others closed.
+ */
+function expandable(root: HTMLElement): [HTMLElement, Disclosure][] {
+    const all = collapsible(root)
+    const responses = all
+        .filter(([, d]) => d === RESPONSE_DISCLOSURE)
+        .map(([container]) => container)
+    const target =
+        responses.find((r) => r.classList.contains('expanded')) ??
+        responses.find((r) => r.dataset.apiResponseDefault === 'true')
+    return all.filter(([container]) => {
+        const response = container.closest(RESPONSE_DISCLOSURE.container)
+        return response === null || response === target
+    })
+}
+
+function isAllExpanded(disclosures: [HTMLElement, Disclosure][]): boolean {
+    return disclosures.every(([container]) =>
         container.classList.contains('expanded')
     )
 }
 
 /** Expand all and Collapse all share one button. */
 export function setAllExpanded(root: HTMLElement, expanded: boolean): void {
-    foldables(root).forEach(([container, d]) =>
+    const disclosures = expanded ? expandable(root) : collapsible(root)
+    disclosures.forEach(([container, d]) =>
         setDisclosureExpanded(container, d, expanded)
     )
     syncExpandAll()
@@ -465,12 +505,13 @@ function syncExpandAll(): void {
         .forEach((button) => {
             const root = button.closest<HTMLElement>(API_ROOTS)
             if (!root) return
-            const nothingToFold = foldables(root).length === 0
+            const disclosures = expandable(root)
+            const nothingToFold = disclosures.length === 0
             button.hidden = nothingToFold
             button
                 .closest('.api-expand-standalone')
                 ?.toggleAttribute('hidden', nothingToFold)
-            button.textContent = isAllExpanded(root)
+            button.textContent = isAllExpanded(disclosures)
                 ? 'Collapse all'
                 : 'Expand all'
         })
@@ -697,10 +738,8 @@ export function initApiPageActions(): void {
 
         event.preventDefault()
         const root = trigger.closest('.api-page-actions')
-        const dropdown = root?.querySelector<HTMLDetailsElement>(
-            '.api-page-actions-dropdown'
-        )
-        if (dropdown) dropdown.open = false
+        const menu = trigger.closest<HTMLElement>('[popover]')
+        if (menu?.matches(':popover-open')) menu.hidePopover()
         void copyPageMarkdown(trigger.dataset.copyPage, root).catch((error) => {
             console.error(error)
         })
@@ -760,7 +799,6 @@ export function initExamplesRailSteadying(): void {
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
-    initTooltips()
     initApiEndpointCopy()
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()

@@ -209,7 +209,7 @@ public class XStateApplicabilityTests
 			new PropertyDisplayOptions
 			{
 				RenderMarkdown = s => new HtmlString(s ?? ""),
-				ApiRootUrl = "/api/doc/fixture",
+				ApiRootUrl = "/api/fixture",
 				VersionsConfiguration = StackVersions()
 			}
 		);

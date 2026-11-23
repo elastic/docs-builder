@@ -1,0 +1,96 @@
+example-repo://get-started/index.md#intro
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#intro
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#intro
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#intro
+  publish                 resolved https://docs.example.test/docs/start-here/#intro
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/start-here/#intro
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/start-here/#intro
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/start-here/#intro
+example-repo://get-started/index.md#Intro
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#Intro
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#Intro
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#Intro
+  publish                 resolved https://docs.example.test/docs/start-here/#Intro
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/start-here/#Intro
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/start-here/#Intro
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/start-here/#Intro
+example-repo://get-started/index.md#INTRO
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#INTRO
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#INTRO
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#INTRO
+  publish                 resolved https://docs.example.test/docs/start-here/#INTRO
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/start-here/#INTRO
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/start-here/#INTRO
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/start-here/#INTRO
+example-repo://get-started/index.md#use-cases
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#use-cases
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#use-cases
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/get-started#use-cases
+  publish                 resolved https://docs.example.test/docs/start-here/#use-cases
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/start-here/#use-cases
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/start-here/#use-cases
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/start-here/#use-cases
+example-repo://get-started/index.md#missing
+  isolated                LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#missing'.
+  codex-absolute          LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#missing'.
+  codex-relative          LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#missing'.
+  publish                 LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#missing'.
+  publish-prefixed        LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#missing'.
+  publish-prefixed-slash  LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#missing'.
+  publish-api-explorer    LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#missing'.
+example-repo://get-started/index.md#
+  isolated                LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#'.
+  codex-absolute          LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#'.
+  codex-relative          LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#'.
+  publish                 LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#'.
+  publish-prefixed        LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#'.
+  publish-prefixed-slash  LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#'.
+  publish-api-explorer    LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#'.
+example-repo://get-started/index.md#intro#extra
+  isolated                LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#intro#extra'.
+  codex-absolute          LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#intro#extra'.
+  codex-relative          LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#intro#extra'.
+  publish                 LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#intro#extra'.
+  publish-prefixed        LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#intro#extra'.
+  publish-prefixed-slash  LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#intro#extra'.
+  publish-api-explorer    LinkAnchorNotFound: 'get-started/index.md' has no anchor named: '#intro#extra'.
+example-repo://guide/page.md#section-one
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+  publish                 resolved https://docs.example.test/docs/guide/page#section-one
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/guide/page#section-one
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/guide/page#section-one
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/guide/page#section-one
+example-repo://guide/no-anchors.md#anything
+  isolated                LinkAnchorNotFound: 'guide/no-anchors.md' has no anchor named: '#anything'.
+  codex-absolute          LinkAnchorNotFound: 'guide/no-anchors.md' has no anchor named: '#anything'.
+  codex-relative          LinkAnchorNotFound: 'guide/no-anchors.md' has no anchor named: '#anything'.
+  publish                 LinkAnchorNotFound: 'guide/no-anchors.md' has no anchor named: '#anything'.
+  publish-prefixed        LinkAnchorNotFound: 'guide/no-anchors.md' has no anchor named: '#anything'.
+  publish-prefixed-slash  LinkAnchorNotFound: 'guide/no-anchors.md' has no anchor named: '#anything'.
+  publish-api-explorer    LinkAnchorNotFound: 'guide/no-anchors.md' has no anchor named: '#anything'.
+example-repo://index.md#anything
+  isolated                LinkAnchorNotFound: 'index.md' has no anchor named: '#anything'.
+  codex-absolute          LinkAnchorNotFound: 'index.md' has no anchor named: '#anything'.
+  codex-relative          LinkAnchorNotFound: 'index.md' has no anchor named: '#anything'.
+  publish                 LinkAnchorNotFound: 'index.md' has no anchor named: '#anything'.
+  publish-prefixed        LinkAnchorNotFound: 'index.md' has no anchor named: '#anything'.
+  publish-prefixed-slash  LinkAnchorNotFound: 'index.md' has no anchor named: '#anything'.
+  publish-api-explorer    LinkAnchorNotFound: 'index.md' has no anchor named: '#anything'.
+other-repo://target/page.md#target-anchor
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#target-anchor
+  codex-absolute          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#target-anchor
+  codex-relative          resolved https://docs-v3-preview.elastic.dev/elastic/other-repo/tree/main/target/page#target-anchor
+  publish                 resolved https://docs.example.test/docs/other/target/page#target-anchor
+  publish-prefixed        resolved https://docs.example.test/docs/9.0/docs/other/target/page#target-anchor
+  publish-prefixed-slash  resolved https://docs.example.test/versioned/docs/other/target/page#target-anchor
+  publish-api-explorer    resolved https://docs.example.test/docs/docs/other/target/page#target-anchor
+other-repo://target/page.md#target-anchor-2
+  isolated                LinkAnchorNotFound: 'target/page.md' has no anchor named: '#target-anchor-2'.
+  codex-absolute          LinkAnchorNotFound: 'target/page.md' has no anchor named: '#target-anchor-2'.
+  codex-relative          LinkAnchorNotFound: 'target/page.md' has no anchor named: '#target-anchor-2'.
+  publish                 LinkAnchorNotFound: 'target/page.md' has no anchor named: '#target-anchor-2'.
+  publish-prefixed        LinkAnchorNotFound: 'target/page.md' has no anchor named: '#target-anchor-2'.
+  publish-prefixed-slash  LinkAnchorNotFound: 'target/page.md' has no anchor named: '#target-anchor-2'.
+  publish-api-explorer    LinkAnchorNotFound: 'target/page.md' has no anchor named: '#target-anchor-2'.

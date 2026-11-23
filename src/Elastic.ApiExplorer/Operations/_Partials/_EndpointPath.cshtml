@@ -1,22 +1,22 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<EndpointPathModel>
-@* One merged route: dominant method badge, "also GET" for methods that behave the same, optional segments dashed. *@
+@* One merged route: one chip listing every method that behaves the same, the dominant one first, optional segments get the same dotted cue. Each segment is one element, so one rule owns its underline. *@
 @{
 	var row = Model.Row;
 }
 <span class="api-url">
-	@(await RenderPartialAsync<_HttpMethodBadge, string>(row.Method))
-	@if (row.AlsoMethods.Count > 0)
-	{
-		var also = string.Join(", ", row.AlsoMethods.Select(static m => m.ToUpperInvariant()));
-		<span class="api-url-also-method" data-tippy-content="@also works the same way: same parameters, body, and response.">also @also</span>
-	}
+	@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(row.Methods))
 	@* Segments on the brace lines: Razor would otherwise emit the indentation and line breaks as text, which inline layout shows as a space after each optional segment. *@
-	<span class="api-url-path">@foreach (var segment in row.Segments)
+	<span class="api-url-path">@if (row.Segments.Count == 0){@("/")}@foreach (var segment in row.Segments)
 	{
 		var anchor = Model.AnchorFor(segment);
 		if (segment.Optional)
-		{<span class="api-url-optional" data-tippy-content="Optional. Leave it out to call @Model.ShortestRoute">/@if (anchor is not null){<a class="api-url-param" href="#@anchor">@segment.Text</a>}else{@segment.Text}</span>}
+		{
+			if (anchor is not null)
+			{@("/")<a class="api-url-param api-url-optional" href="#@anchor" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</a>}
+			else
+			{@("/")<span class="api-url-optional" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</span>}
+		}
 		else if (anchor is not null)
 		{@("/")<a class="api-url-param" href="#@anchor">@segment.Text</a>}
 		else

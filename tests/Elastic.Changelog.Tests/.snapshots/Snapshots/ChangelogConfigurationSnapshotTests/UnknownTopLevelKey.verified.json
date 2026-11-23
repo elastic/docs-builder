@@ -1,0 +1,6 @@
+{
+  "configuration": null,
+  "diagnostics": [
+    "error {root}/docs/changelog.yml:2 Unknown key 'example_unknown'. Valid keys: block, bundle, extract, filename, lifecycles, pivot, products, rules."
+  ]
+}

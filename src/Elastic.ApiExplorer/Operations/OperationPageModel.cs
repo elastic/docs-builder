@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
@@ -33,6 +34,7 @@ public partial record OperationPageModel
 
 	/// <summary>The parameter sections the page lists, in page order; a location with no parameters has none.</summary>
 	public IReadOnlyList<ParameterListSection> ParameterSections =>
+		field ??=
 		[
 			.. new[]
 			{
@@ -72,7 +74,7 @@ public partial record OperationPageModel
 				: SummaryStyle.List;
 
 	public IReadOnlyList<string> RequestPropertyNames =>
-		NamesOf(
+		field ??= NamesOf(
 			RequestProperties is not null
 				? RequestProperties.Items.Select(static p => p.Name)
 				: ApiBodyContent.VariantNames(RequestUnionVariants)
@@ -199,7 +201,7 @@ public partial record OperationPageModel
 			HeaderParameters = propertyTrees.Header,
 			RequestContents = propertyTrees.Request,
 			DescriptionMarkdown = privileges.Description,
-			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
+			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? [], FrozenSet<string>.Empty),
 			Responses = propertyTrees.Responses,
 			CodeSamples = codeSamples,
 			RequestExamples = requestExamples,

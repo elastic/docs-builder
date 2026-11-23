@@ -70,23 +70,6 @@ class ImageCarousel {
             indicator.addEventListener('click', () => this.goToSlide(index))
         })
 
-        // Handle image clicks for modal
-        this.slides.forEach((slide) => {
-            const imageLink = slide.querySelector('.carousel-image-reference')
-            if (imageLink) {
-                imageLink.addEventListener('click', (e) => {
-                    e.preventDefault()
-                    const modalId = imageLink.getAttribute('data-modal-id')
-                    if (modalId) {
-                        const modal = document.getElementById(modalId)
-                        if (modal) {
-                            modal.style.display = 'flex'
-                        }
-                    }
-                })
-            }
-        })
-
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (!this.isInViewport()) return

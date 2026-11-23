@@ -45,6 +45,12 @@ internal sealed class ServerlessReleaseCommand(
 	/// Elasticsearch produces two: <c>elasticsearch-serverless</c> over the serverless range, and
 	/// <c>elasticsearch</c>, a submodule of it, over the range of submodule commits pinned at the two refs.
 	/// </para>
+	/// <para>
+	/// A range with no notes (for example only dependency bumps) is not an error: it writes a bundle with no entries, so
+	/// the release stays on record, and the renderer skips it. A pull request whose metadata could not be read is still an error.
+	/// Bundle files end with the short ref of the promotion (<c>{repo}-{product}-{date}-{short ref}.yaml</c>), so a later release on the
+	/// same day, with or without notes, never has the name of an earlier one.
+	/// </para>
 	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the service repositories.</para>
 	/// </remarks>
 	/// <param name="service">Serverless service, as emitted by gpctl (for example <c>kibana</c>).</param>
@@ -98,7 +104,8 @@ internal sealed class ServerlessReleaseCommand(
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 		http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-		var startRef = await ResolvePreviousVersionAsync(http, svc, serviceVersion, ctx);
+		var bundler = new ServerlessBundler(logFactory, collector, configurationContext, http);
+		var startRef = await ResolvePreviousVersionAsync(bundler, svc, serviceVersion, ctx);
 		if (startRef is null)
 		{
 			collector.EmitError(
@@ -110,42 +117,18 @@ internal sealed class ServerlessReleaseCommand(
 		_logger.LogInformation("Commit range for {Service}: {Start}..{End}", svc.Id, startRef, serviceVersion);
 		await githubActionsService.SetOutputAsync("start_ref", startRef);
 
-		// One bundle per repository: the service repository over the serverless range, then each
-		// submodule over the range of commits the service repository pins at the two refs.
-		var bundles = new List<string>();
-		var primary = await BundleRangeAsync(http, svc.Repository, svc, startRef, serviceVersion, bundleVersion, rootOutput, dryRun, ctx);
-		if (!primary.Success)
+		var result = await bundler.BundleAsync(
+			new ServerlessBundleRequest(svc, startRef, serviceVersion, bundleVersion, rootOutput)
+			{
+				DryRun = dryRun,
+				WriteEmptyRange = true,
+				ShortRefOf = serviceVersion
+			},
+			ctx
+		);
+		if (!result.Success)
 			return 1;
-		bundles.AddRange(primary.Paths);
-
-		foreach (var submodule in svc.Submodules)
-		{
-			var startSha = await GetSubmoduleShaAsync(http, svc.Repository, startRef, submodule, ctx);
-			var endSha = await GetSubmoduleShaAsync(http, svc.Repository, serviceVersion, submodule, ctx);
-			if (startSha is null || endSha is null)
-			{
-				collector.EmitError(
-					string.Empty,
-					$"Could not read the '{submodule.Path}' submodule commit of elastic/{svc.Repository} at {startRef} or {serviceVersion}."
-				);
-				return 1;
-			}
-			if (string.Equals(startSha, endSha, StringComparison.OrdinalIgnoreCase))
-			{
-				_logger.LogInformation(
-					"{Repository} did not change between {Start} and {End}; no bundle.",
-					submodule.Repository,
-					startRef,
-					serviceVersion
-				);
-				continue;
-			}
-			_logger.LogInformation("Submodule {Repository}: {Start}..{End}", submodule.Repository, startSha, endSha);
-			var result = await BundleRangeAsync(http, submodule.Repository, svc, startSha, endSha, bundleVersion, rootOutput, dryRun, ctx);
-			if (!result.Success)
-				return 1;
-			bundles.AddRange(result.Paths);
-		}
+		var bundles = result.Paths;
 
 		if (bundles.Count > 0)
 		{
@@ -156,74 +139,8 @@ internal sealed class ServerlessReleaseCommand(
 		return 0;
 	}
 
-	private async Task<(bool Success, IReadOnlyList<string> Paths)> BundleRangeAsync(
-		HttpClient http,
-		string repository,
-		ServerlessService svc,
-		string startRef,
-		string endRef,
-		string bundleVersion,
-		DirectoryInfo rootOutput,
-		bool dryRun,
-		CancellationToken ctx
-	)
-	{
-		var changelogYaml = await GetRawAsync(http, $"repos/elastic/{repository}/contents/docs/changelog.yml?ref={endRef}", ctx);
-		if (changelogYaml is null)
-		{
-			collector.EmitError(string.Empty, $"Could not read docs/changelog.yml from elastic/{repository} at {endRef}.");
-			return (false, []);
-		}
-
-		var tempConfig = Path.Join(rootOutput.FullName, $"changelog-config-{repository}-{endRef[..Math.Min(8, endRef.Length)]}.yml");
-		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
-		try
-		{
-			var paths = new List<string>();
-			var arguments = new BundleChangelogsArguments
-			{
-				Profile = svc.Profile,
-				ProfileArgument = bundleVersion,
-				OutputDirectory = rootOutput.FullName,
-				Config = tempConfig,
-				StartGitRef = startRef,
-				EndGitRef = endRef,
-				BaseRef = svc.BaseBranch,
-				DryRun = dryRun,
-				OnBundlePathResolved = path => paths.Add(path)
-			};
-
-			_logger.LogInformation(
-				"Bundling elastic/{Repository} {Start}..{End} with profile {Profile}",
-				repository,
-				startRef,
-				endRef,
-				svc.Profile
-			);
-			var bundleService = new ChangelogBundlingService(logFactory, ChangelogFileSystem.FromWorkingDirectory(), configurationContext);
-			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
-			return (success, paths);
-		}
-		finally
-		{
-			File.Delete(tempConfig);
-		}
-	}
-
-	private async Task<string?> GetSubmoduleShaAsync(
-		HttpClient http,
-		string repository,
-		string gitRef,
-		ServerlessSubmodule submodule,
-		CancellationToken ctx
-	)
-	{
-		var tree = await GetRawAsync(http, $"repos/elastic/{repository}/git/trees/{gitRef}", ctx);
-		return tree is null ? null : ServerlessPromotion.FindSubmoduleSha(tree, submodule.Path);
-	}
-
 	private async Task<string?> ResolvePreviousVersionAsync(
-		HttpClient http,
+		ServerlessBundler github,
 		ServerlessService svc,
 		string serviceVersion,
 		CancellationToken ctx
@@ -231,8 +148,7 @@ internal sealed class ServerlessReleaseCommand(
 	{
 		async Task<IReadOnlyList<GitopsCommit>?> GetCommitsPage(int page)
 		{
-			using var json = await GetJsonAsync(
-				http,
+			using var json = await github.GetJsonAsync(
 				$"repos/{GitOpsRepository}/commits?path={svc.VersionsPath}&per_page=100&page={page}",
 				ctx
 			);
@@ -253,7 +169,7 @@ internal sealed class ServerlessReleaseCommand(
 
 		var result = await ServerlessPromotion.FindPreviousVersionAsync(
 			GetCommitsPage,
-			sha => GetRawAsync(http, $"repos/{GitOpsRepository}/contents/{svc.VersionsPath}?ref={sha}", ctx),
+			sha => github.GetRawAsync($"repos/{GitOpsRepository}/contents/{svc.VersionsPath}?ref={sha}", ctx),
 			new PreviousVersionSearch(svc.FinalSlice, serviceVersion)
 		);
 
@@ -283,30 +199,5 @@ internal sealed class ServerlessReleaseCommand(
 				);
 				return null;
 		}
-	}
-
-	private async Task<JsonDocument?> GetJsonAsync(HttpClient http, string path, CancellationToken ctx)
-	{
-		using var response = await http.GetAsync(path, ctx);
-		if (!response.IsSuccessStatusCode)
-		{
-			_logger.LogError("GET {Path} returned {Status}", path, (int)response.StatusCode);
-			return null;
-		}
-		await using var stream = await response.Content.ReadAsStreamAsync(ctx);
-		return await JsonDocument.ParseAsync(stream, cancellationToken: ctx);
-	}
-
-	private async Task<string?> GetRawAsync(HttpClient http, string path, CancellationToken ctx)
-	{
-		using var request = new HttpRequestMessage(HttpMethod.Get, path);
-		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.raw"));
-		using var response = await http.SendAsync(request, ctx);
-		if (!response.IsSuccessStatusCode)
-		{
-			_logger.LogError("GET {Path} returned {Status}", path, (int)response.StatusCode);
-			return null;
-		}
-		return await response.Content.ReadAsStringAsync(ctx);
 	}
 }

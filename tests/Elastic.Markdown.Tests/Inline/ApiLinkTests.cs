@@ -9,7 +9,7 @@ using Markdig;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-// The fake link index of TestCrossLinkResolver has one API section, kibana, with the page operation/operation-exists.
+// The fake link index of TestCrossLinkResolver has one API section, kibana, with the pages operation/operation-exists and topic/topic-kibana-spaces.
 public static class ApiLinkAssertions
 {
 	public static void HasOneApiHint(this TestDiagnosticsCollector collector, string url) =>
@@ -33,7 +33,7 @@ public static class ApiLinkAssertions
 
 public class ApiInlineLinkMissingTests() : InlineTest(
 	"""
-[Gone](https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing#responses)
+[Gone](https://www.elastic.co/docs/api/kibana/operation/operation-missing#responses)
 """
 )
 {
@@ -46,7 +46,7 @@ public class ApiInlineLinkMissingTests() : InlineTest(
 
 public class ApiInlineLinkExistsTests() : InlineTest(
 	"""
-[Here](https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists) and [there](https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-only-in-8).
+[Here](https://www.elastic.co/docs/api/kibana/operation/operation-exists) and [there](https://www.elastic.co/docs/api/kibana/v8/operation/operation-only-in-8).
 """
 )
 {
@@ -56,7 +56,7 @@ public class ApiInlineLinkExistsTests() : InlineTest(
 
 public class ApiInlineLinkVersionMissingTests() : InlineTest(
 	"""
-[Gone](https://www.elastic.co/docs/api/doc/kibana/operation/operation-only-in-8)
+[Gone](https://www.elastic.co/docs/api/kibana/operation/operation-only-in-8)
 """
 )
 {
@@ -66,7 +66,7 @@ public class ApiInlineLinkVersionMissingTests() : InlineTest(
 
 public class ApiLinkWithoutASectionTests() : InlineTest(
 	"""
-[Unknown API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search) and [guide](https://www.elastic.co/docs/solutions/search).
+[Unknown API](https://www.elastic.co/docs/api/elasticsearch/operation/operation-search) and [guide](https://www.elastic.co/docs/solutions/search).
 """
 )
 {
@@ -76,7 +76,7 @@ public class ApiLinkWithoutASectionTests() : InlineTest(
 
 public class ApiBareAutoLinkMissingTests() : InlineTest(
 	"""
-See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for details.
+See https://www.elastic.co/docs/api/kibana/operation/operation-missing for details.
 """
 )
 {
@@ -86,8 +86,8 @@ See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for d
 
 public class ApiLinksInCommentsTests() : InlineTest(
 	"""
-% https://www.elastic.co/docs/api/doc/kibana/operation/old-bare
-% [old](https://www.elastic.co/docs/api/doc/kibana/operation/old-inline)
+% https://www.elastic.co/docs/api/kibana/operation/old-bare
+% [old](https://www.elastic.co/docs/api/kibana/operation/old-inline)
 
 Text.
 """
@@ -99,14 +99,24 @@ Text.
 
 public class ApiRedirectedPageTests() : InlineTest(
 	"""
-[Old root](https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists) and [Servers](https://www.elastic.co/docs/api/doc/kibana/topic/topic-kibana-spaces).
+[Old root](https://www.elastic.co/docs/api/doc/kibana/operation/operation-exists) and [Spaces](https://www.elastic.co/docs/api/doc/kibana/topic/topic-kibana-spaces).
 """
 )
 {
 	[Test]
 	public void ChecksTheTargetOfAnEdgeRedirect() =>
-		// topic-kibana-spaces redirects to kibana-api-overview, which the fake section does not hold, so that one warns.
-		Collector.HasOneApiHint("topic-kibana-spaces");
+		// The section holds topic-kibana-spaces but not kibana-api-overview, where the edge redirects it, so only the target can miss.
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Message.Contains("topic-kibana-spaces") && d.Message.Contains("does not resolve"));
+
+	[Test]
+	public void HintsTheNewUrlOfALegacyLinkThatResolves() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Message.Contains("operation-exists") && d.Message.Contains("uses the legacy /docs/api/doc/ prefix"));
 }
 
 public class ApiLinkCheckPipelineTests

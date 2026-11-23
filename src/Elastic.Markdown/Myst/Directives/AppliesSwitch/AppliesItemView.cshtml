@@ -5,7 +5,7 @@
 	var id = $"applies-switch-item-{Model.AppliesSwitchIndex}-{Model.Index}";
 }
 
-<input class="applies-switch-input" checked="@(Model.Index == 0 ? "checked" : "")" id="@id" name="applies-switch-set-@Model.AppliesSwitchIndex" type="radio" tabindex="0">
+<input class="applies-switch-input" checked="@(Model.Index == 0 ? "checked" : null)" id="@id" name="applies-switch-set-@Model.AppliesSwitchIndex" type="radio" tabindex="0">
 <label class="applies-switch-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.AppliesSwitchGroupKey" for="@id">
 	@try
 	{

@@ -71,5 +71,5 @@ internal static class TestSpecs
 		}.ToJsonString();
 
 	public static ApiPropertyTreeBuilder BuilderFor(OpenApiDocument document) =>
-		new(document, new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" });
+		new(document, new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/fixture" });
 }

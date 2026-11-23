@@ -36,6 +36,7 @@ public static partial class FontPreloader
 		return FontUriCache;
 	}
 
-	[GeneratedRegex(@"url\([""']?([^""'\)]+?\.(woff2|ttf|otf))[""']?\)", RegexOptions.Multiline | RegexOptions.Compiled)]
+	[GeneratedRegex(@"url\([""']?([^""'\)]+?\.(woff2|ttf|otf))[""']?\)", RegexOptions.Multiline
+		| RegexOptions.Compiled, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FontUriRegex();
 }

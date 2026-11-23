@@ -9,20 +9,25 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Topics;
 
 /// <summary>
-/// Builds the Topics heading of one API product, below the landing page and before the generated OpenAPI groups: the docset's
-/// <c>children:</c> pages first, in declared order, then the spec's <c>x-topics</c> that no child covers.
+/// Builds the guide pages of one API product, listed right after the Overview row and before the generated OpenAPI groups: the
+/// docset's <c>children:</c> pages first, in declared order, then the spec's <c>x-topics</c> that no child covers.
 /// </summary>
 public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 {
+	/// <summary>Pages listed first, in this order, whether they come from a <c>children:</c> page or the spec. Add a title here to pin it.</summary>
+	private static readonly string[] PinnedTitles = ["Authentication", "Rate limiting"];
+
 	/// <summary>The docset's <c>children:</c> files for one version: unsuffixed files, and <c>.vN.md</c> files of that major.</summary>
 	public static IReadOnlyList<IFileInfo> ChildFiles(ResolvedApiConfiguration? apiConfig, int? versionMajor) =>
 		apiConfig is null
@@ -34,14 +39,14 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 			];
 
 	/// <summary>
-	/// The Topics heading, and whether it lists the generated Authentication page. When a <c>children:</c> page stands for the
-	/// Authentication topic it lists that page instead, and the generated page stays hidden so old links keep working.
+	/// The topic pages, in sidebar order, and whether they list the generated Authentication page. When a <c>children:</c> page
+	/// stands for the Authentication topic it is listed instead, and the generated page stays hidden so old links keep working.
 	/// </summary>
-	public (TopicsNavigationItem Topics, bool ListsAuthentication) Create(
+	public (IReadOnlyList<INavigationItem> Items, bool ListsAuthentication) Create(
 		string apiUrlSuffix,
 		OpenApiDocument openApiDocument,
 		IReadOnlyList<IFileInfo> children,
-		LandingNavigationItem rootNavigation
+		LandingNavigationItem landing
 	)
 	{
 		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
@@ -49,46 +54,51 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 		var coveredTopics = CoveredTopics(apiUrlSuffix, topics, children, hasSchemes: hasSchemes);
 		var remainingTopics = topics.Where(topic => !coveredTopics.ContainsKey(topic)).ToArray();
 		var authenticationChild = children.FirstOrDefault(child => IsAuthenticationChild(child, coveredTopics));
-		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
 		var childItems = CreateChildNavigationItems(
 			apiUrlSuffix,
 			children,
 			ReplacedTopicNames(apiUrlSuffix, coveredTopics, hasSchemes: hasSchemes),
-			topicsNavigation
+			landing
 		);
-		var topicItems = CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation);
+		var topicItems = CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, landing);
 		var hasAuthenticationTopic = remainingTopics.Any(static topic => topic.IsAuthentication);
 		var listsAuthentication = authenticationChild is null && (hasAuthenticationTopic || hasSchemes);
 		if (authenticationChild is null && hasSchemes && !hasAuthenticationTopic)
-		{
-			var generated = StructuralNavigationItem.ForGeneratedAuthentication(context.UrlPathPrefix, apiUrlSuffix, rootNavigation);
-			generated.Parent = topicsNavigation;
-			topicItems.Add(generated);
-		}
+			topicItems.Add(StructuralNavigationItem.ForGeneratedAuthentication(context.UrlPathPrefix, apiUrlSuffix, landing));
 
 		foreach (var item in childItems)
 			item.PinnedTitle = PinnedTitleOf(item.FileInfo, coveredTopics);
 		MarkAuthenticationChild(childItems, authenticationChild);
-		rootNavigation.AuthenticationUrl = AuthenticationPageUrl(apiUrlSuffix, childItems, listsAuthentication: listsAuthentication);
-		topicsNavigation.NavigationItems = PinnedFirst([.. childItems, .. TopicsNavigationItem.Order(topicItems)]);
-		return (topicsNavigation, listsAuthentication);
+		landing.AuthenticationUrl = AuthenticationPageUrl(apiUrlSuffix, childItems, listsAuthentication: listsAuthentication);
+		IEnumerable<INavigationItem> topicsByTitle = topicItems.OrderBy(
+			static item => item.NavigationTitle,
+			StringComparer.OrdinalIgnoreCase
+		);
+		return (PinnedFirst([.. childItems, .. topicsByTitle]), listsAuthentication);
 	}
 
 	/// <summary>
-	/// Authentication, then Rate limiting, lead the Topics heading whether they come from a <c>children:</c> page or the spec. The rest
+	/// Authentication, then Rate limiting, lead the guide pages whether they come from a <c>children:</c> page or the spec. The rest
 	/// keep their order: the <c>children:</c> pages as declared, then the spec's topics by title.
 	/// </summary>
 	private static List<INavigationItem> PinnedFirst(IReadOnlyList<INavigationItem> items) => [.. items.OrderBy(PinnedRank)];
 
+	/// <summary>The position of a pinned title in <see cref="PinnedTitles"/>, or one past the end for any other page.</summary>
+	private static int PinnedRank(string? title)
+	{
+		var rank = Array.FindIndex(PinnedTitles, pinned => string.Equals(pinned, title, StringComparison.OrdinalIgnoreCase));
+		return rank < 0 ? PinnedTitles.Length : rank;
+	}
+
 	private static int PinnedRank(INavigationItem item) =>
-		TopicsNavigationItem.PinnedRank(item is SimpleMarkdownNavigationItem { PinnedTitle: { } title } ? title : item.NavigationTitle);
+		PinnedRank(item is SimpleMarkdownNavigationItem { PinnedTitle: { } title } ? title : item.NavigationTitle);
 
 	/// <summary>The pinned title a child page stands for: its first heading, or the title of the spec topic it covers.</summary>
 	private string? PinnedTitleOf(IFileInfo child, IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics)
 	{
 		var heading = MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child).Heading;
 		var covered = coveredTopics.Where(pair => pair.Value == child).Select(static pair => pair.Key.Title);
-		return TopicsNavigationItem.PinnedTitles.FirstOrDefault(
+		return PinnedTitles.FirstOrDefault(
 			pinned => string.Equals(pinned, heading, StringComparison.OrdinalIgnoreCase) || covered.Any(
 				title => string.Equals(pinned, title, StringComparison.OrdinalIgnoreCase)
 			)
@@ -118,7 +128,7 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 	private List<INavigationItem> CreateTopicNavigationItems(
 		string apiUrlSuffix,
 		IReadOnlyList<ApiTopicPage> topics,
-		TopicsNavigationItem topicsNavigation
+		LandingNavigationItem landing
 	)
 	{
 		var items = new List<INavigationItem>(topics.Count);
@@ -141,18 +151,11 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 
 			if (topic.IsAuthentication)
 			{
-				var authentication = StructuralNavigationItem.ForAuthenticationTopic(
-					context.UrlPathPrefix,
-					apiUrlSuffix,
-					topicsNavigation.Landing,
-					topic
-				);
-				authentication.Parent = topicsNavigation;
-				items.Add(authentication);
+				items.Add(StructuralNavigationItem.ForAuthenticationTopic(context.UrlPathPrefix, apiUrlSuffix, landing, topic));
 				continue;
 			}
 
-			items.Add(new TopicNavigationItem(url, topic, topicsNavigation.Landing, topicsNavigation));
+			items.Add(new TopicNavigationItem(url, topic, landing, landing));
 		}
 
 		return items;
@@ -162,14 +165,14 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 		string apiUrlSuffix,
 		IReadOnlyList<IFileInfo> children,
 		IReadOnlyDictionary<IFileInfo, IReadOnlyList<string>> replacedTopicNames,
-		TopicsNavigationItem topicsNavigation
+		LandingNavigationItem landing
 	)
 	{
 		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var items = new List<SimpleMarkdownNavigationItem>(children.Count);
 		foreach (var child in children)
 		{
-			var item = CreateChildNavigationItem(apiUrlSuffix, child, topicsNavigation, markdownSlugs);
+			var item = CreateChildNavigationItem(apiUrlSuffix, child, landing, markdownSlugs);
 			item.ReplacedTopicUrls = replacedTopicNames.TryGetValue(child, out var names) ? names : [];
 			items.Add(item);
 		}
@@ -180,7 +183,7 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 	private SimpleMarkdownNavigationItem CreateChildNavigationItem(
 		string apiUrlSuffix,
 		IFileInfo markdownFile,
-		TopicsNavigationItem topicsNavigation,
+		LandingNavigationItem landing,
 		HashSet<string> markdownSlugs
 	)
 	{
@@ -196,7 +199,14 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 
 		var url = ApiUrlBuilder.ChildUrl(context.UrlPathPrefix, apiUrlSuffix, slug);
 		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
-		return new SimpleMarkdownNavigationItem(url, title, markdownFile, topicsNavigation.Landing) { Parent = topicsNavigation };
+		if (string.Equals(title, NavigationRenderModel.OverviewTitle, StringComparison.OrdinalIgnoreCase))
+		{
+			context.EmitWarning(
+				markdownFile,
+				$"The API sidebar already opens with an '{NavigationRenderModel.OverviewTitle}' row that leads to the API landing page, so this children: page shows as a second '{title}' row. Set navigation_title in its front matter to a label that names what it covers; the page URL stays the same."
+			);
+		}
+		return new SimpleMarkdownNavigationItem(url, title, markdownFile, landing) { Parent = landing };
 	}
 
 	/// <summary>The URLs each child takes over from the topics it replaces, for the version switcher.</summary>

@@ -1,0 +1,88 @@
+## to-only
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+{"old.md":{"to":"new.md"}}
+(no diagnostics)
+
+## to-and-anchors
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     anchors: { 'a': 'b', 'c': null }
+{"old.md":{"anchors":{"a":"b","c":null},"to":"new.md"}}
+(no diagnostics)
+
+## catch-all-anchors
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     anchors: { '!': null }
+{"old.md":{"anchors":{"!":null},"to":"new.md"}}
+(no diagnostics)
+
+## anchors-only-takes-the-key-as-target
+  | redirects:
+  |   'old.md':
+  |     anchors: { 'a': 'b' }
+{"old.md":{"anchors":{"a":"b"},"to":"old.md"}}
+(no diagnostics)
+
+## empty-anchors
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     anchors: {}
+{"old.md":{"anchors":{},"to":"new.md"}}
+(no diagnostics)
+
+## empty-mapping
+  | redirects:
+  |   'old.md': {}
+{}
+(no diagnostics)
+
+## empty-to
+  | redirects:
+  |   'old.md':
+  |     to: ''
+{}
+(no diagnostics)
+
+## null-to-with-anchors
+  | redirects:
+  |   'old.md':
+  |     to: ~
+  |     anchors: { 'a': 'b' }
+{"old.md":{"anchors":{"a":"b"},"to":"~"}}
+(no diagnostics)
+
+## anchors-as-a-list
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     anchors: [ 'a', 'b' ]
+{"old.md":{"anchors":{},"to":"new.md"}}
+warning /docs/redirects.yml 'anchors' is not a dictionary
+
+## anchors-as-a-scalar
+  | redirects:
+  |   'old.md':
+  |     to: 'new.md'
+  |     anchors: 'a'
+{"old.md":{"anchors":{},"to":"new.md"}}
+error /docs/redirects.yml:4 'a' is not a valid redirect anchor value
+
+## to-as-a-mapping
+  | redirects:
+  |   'old.md':
+  |     to: { a: b }
+{}
+error /docs/redirects.yml:3 'to' is not a string
+
+## sequence-instead-of-mapping
+  | redirects:
+  |   'old.md':
+  |     - 'new.md'
+{}
+warning /docs/redirects.yml 'old.md' is not a dictionary

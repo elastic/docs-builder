@@ -1,0 +1,32 @@
+{
+  "repositories": {
+    "example-repo": {
+      "main": {
+        "repository": "example-repo",
+        "path": "elastic/example-repo/main/links.json",
+        "branch": "main",
+        "etag": "newer-wins",
+        "ref": "unknown",
+        "updated_at": "2025-01-09T00:00:00Z"
+      },
+      "9.0": {
+        "repository": "example-repo",
+        "path": "elastic/example-repo/9.0/links.json",
+        "branch": "9.0",
+        "etag": "new-branch",
+        "ref": "unknown",
+        "updated_at": "2025-01-01T00:00:00Z"
+      }
+    },
+    "new-repo": {
+      "main": {
+        "repository": "new-repo",
+        "path": "elastic/new-repo/main/links.json",
+        "branch": "main",
+        "etag": "new-repo",
+        "ref": "unknown",
+        "updated_at": "2025-01-01T00:00:00Z"
+      }
+    }
+  }
+}

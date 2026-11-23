@@ -1,0 +1,58 @@
+example-repo://Guide/Page.md
+  isolated                LinkNotInIndex: 'guide/Page.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'guide/Page.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://guide/Mixed-Case.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/Mixed-Case
+  publish                 resolved https://docs.example.test/docs/guide/Mixed-Case
+example-repo://guide/mixed-case.md
+  isolated                LinkNotInIndex: 'guide/mixed-case.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'guide/mixed-case.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+EXAMPLE-REPO://guide/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide/page.md?query=1
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide/page.md?query=1#section-one
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page#section-one
+  publish                 resolved https://docs.example.test/docs/guide/page#section-one
+example-repo://guide/page.md/
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide//page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide/./page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide/nested/../page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide/page%2Emd
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide/some%20page.md
+  isolated                LinkNotInIndex: 'guide/some%20page.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: 'guide/some%20page.md' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo:guide/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+example-repo:///guide/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/guide/page
+example-repo://
+  isolated                LinkNotInIndex: '' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+  publish                 LinkNotInIndex: '' is not a valid link in the 'example-repo' cross link index: https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/example-repo/main/links.json
+example-repo://index.md/
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/
+  publish                 resolved https://docs.example.test/
+example-repo://user@guide/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo://guide:80/page.md
+  isolated                resolved https://docs-v3-preview.elastic.dev/elastic/example-repo/tree/main/guide/page
+  publish                 resolved https://docs.example.test/docs/guide/page
+example-repo//guide/page.md
+  not an absolute Uri
+guide/page.md
+  not an absolute Uri

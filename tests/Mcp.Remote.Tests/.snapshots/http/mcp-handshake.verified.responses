@@ -16,7 +16,7 @@ data:
       "name": "docs-mcp",
       "version": "{server-version}"
     },
-    "instructions": "Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; use sectionFilter 'api' to search only those.\n\n<triggers>\nUse the server when the user:\n- Wants to find, read, or verify Elastic documentation pages.\n- Needs to check whether a topic is already covered in Elastic documentation.\n- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.\n- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.\n</triggers>\n\n<tool_guidance>\n- Prefer search_docs over a general web search when looking up Elastic documentation content.\n- Use find_related_docs when exploring what documentation exists around a topic.\n- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.\n- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.\n</tool_guidance>"
+    "instructions": "Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later. REST API reference operations (Elasticsearch, Kibana, Elastic Cloud, Cloud Serverless, Logstash and others) are included; the API tools search and read those by endpoint, operation id or field.\n\n<triggers>\nUse the server when the user:\n- Wants to find, read, or verify Elastic documentation pages.\n- Needs to check whether a topic is already covered in Elastic documentation.\n- Asks which REST API call does something, or about an endpoint, its parameters, or its request and response fields.\n- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.\n- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.\n</triggers>\n\n<tool_guidance>\n- Prefer search_docs over a general web search when looking up Elastic documentation content.\n- Use find_related_docs when exploring what documentation exists around a topic.\n- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.\n- Use search_api_operations to find REST API operations by task, endpoint, or field name.\n- Use get_api_operation to read one operation's parameters, request body and response fields by endpoint or operation id.\n- Use list_api_operations to browse the available APIs and their operations.\n- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.\n</tool_guidance>"
   },
   "id": 1,
   "jsonrpc": "2.0"
@@ -33,17 +33,35 @@ data:
   "result": {
     "tools": [
       {
-        "name": "find_docs_inconsistencies",
-        "description": "Finds potential inconsistencies across Elastic documentation pages covering the same topic. Use when auditing docs quality, verifying that instructions don't contradict each other, or checking for overlapping content within a product area.",
+        "name": "search_docs",
+        "description": "Searches all published Elastic documentation by meaning. Use when the user asks about Elastic product features, needs to find existing docs pages, verify published content, or research what documentation exists on a topic. Returns relevant documents with AI summaries, relevance scores, and navigation context.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "topic": {
-              "description": "Topic or concept to check for inconsistencies",
+            "query": {
+              "description": "The search query - can be a question or keywords",
               "type": "string"
             },
-            "focusArea": {
-              "description": "Specific area to focus on (e.g., 'installation', 'configuration')",
+            "pageNumber": {
+              "description": "Page number (1-based, default: 1)",
+              "type": "integer",
+              "default": 1
+            },
+            "pageSize": {
+              "description": "Number of results per page (default: 10, max: 50)",
+              "type": "integer",
+              "default": 10
+            },
+            "productFilter": {
+              "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "sectionFilter": {
+              "description": "Filter by navigation section (e.g., 'reference', 'getting-started')",
               "type": [
                 "string",
                 "null"
@@ -52,7 +70,7 @@ data:
             }
           },
           "required": [
-            "topic"
+            "query"
           ]
         },
         "annotations": {
@@ -60,39 +78,6 @@ data:
           "idempotentHint": true,
           "openWorldHint": false,
           "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
-        }
-      },
-      {
-        "name": "check_docs_coherence",
-        "description": "Checks how coherently a topic is covered across all Elastic documentation. Use when reviewing documentation quality, auditing coverage of a feature or concept, or checking whether a topic is documented consistently across products and sections.",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "topic": {
-              "description": "Topic or concept to check coherence for",
-              "type": "string"
-            },
-            "limit": {
-              "description": "Maximum number of documents to analyze (default: 20)",
-              "type": "integer",
-              "default": 20
-            }
-          },
-          "required": [
-            "topic"
-          ]
-        },
-        "annotations": {
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false,
-          "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
         }
       },
       {
@@ -128,9 +113,6 @@ data:
           "idempotentHint": true,
           "openWorldHint": false,
           "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
         }
       },
       {
@@ -158,60 +140,6 @@ data:
           "idempotentHint": true,
           "openWorldHint": false,
           "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
-        }
-      },
-      {
-        "name": "search_docs",
-        "description": "Searches all published Elastic documentation by meaning. Use when the user asks about Elastic product features, needs to find existing docs pages, verify published content, or research what documentation exists on a topic. Returns relevant documents with AI summaries, relevance scores, and navigation context.",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "query": {
-              "description": "The search query - can be a question or keywords",
-              "type": "string"
-            },
-            "pageNumber": {
-              "description": "Page number (1-based, default: 1)",
-              "type": "integer",
-              "default": 1
-            },
-            "pageSize": {
-              "description": "Number of results per page (default: 10, max: 50)",
-              "type": "integer",
-              "default": 10
-            },
-            "productFilter": {
-              "description": "Filter by product ID (e.g., 'elasticsearch', 'kibana', 'logstash')",
-              "type": [
-                "string",
-                "null"
-              ],
-              "default": null
-            },
-            "sectionFilter": {
-              "description": "Filter by navigation section (e.g., 'reference', 'getting-started', or 'api' for REST API reference operations)",
-              "type": [
-                "string",
-                "null"
-              ],
-              "default": null
-            }
-          },
-          "required": [
-            "query"
-          ]
-        },
-        "annotations": {
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false,
-          "readOnlyHint": true
-        },
-        "execution": {
-          "taskSupport": "optional"
         }
       },
       {
@@ -234,9 +162,207 @@ data:
           "idempotentHint": true,
           "openWorldHint": false,
           "readOnlyHint": true
+        }
+      },
+      {
+        "name": "search_api_operations",
+        "description": "Searches the Elastic REST API reference for operations. Use when the user asks which API call does something, names an endpoint such as 'GET /_cluster/health', or names a request or response field such as 'retriever' or 'track_total_hits'. End a field name with a dot, such as 'retriever.', to list its child fields. Returns operations with method, path, operation id and the fields the query matched.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "description": "Words, an endpoint such as 'POST /{index}/_search', or a field path",
+              "type": "string"
+            },
+            "api": {
+              "description": "Limit to one API by its key, e.g. 'elasticsearch', 'kibana', 'logstash'. list_api_operations without arguments lists the keys.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "version": {
+              "description": "Version of the API: 'main' or a major such as '9'. Needs api. Default: the API's current version.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "includeDeprecated": {
+              "description": "Include deprecated operations (default: false)",
+              "type": "boolean",
+              "default": false
+            },
+            "pageNumber": {
+              "description": "Page number (1-based, default: 1)",
+              "type": "integer",
+              "default": 1
+            },
+            "pageSize": {
+              "description": "Number of results per page (default: 10, max: 50)",
+              "type": "integer",
+              "default": 10
+            }
+          },
+          "required": [
+            "query"
+          ]
         },
-        "execution": {
-          "taskSupport": "optional"
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "get_api_operation",
+        "description": "Retrieves one operation from the Elastic REST API reference. Use when you know the endpoint or the operation id and need its parameters, request body and response fields. Pass either operationId or endpoint. Returns the operation's routes, versions, every documented field, and the page body only when includeBody is true.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "api": {
+              "description": "The API key, e.g. 'elasticsearch' or 'kibana'. Recommended: without it, the same operation id or route in another API may match.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "operationId": {
+              "description": "The OpenAPI operation id, e.g. 'cluster-health'",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "endpoint": {
+              "description": "A route as you would call it, e.g. 'GET /_cluster/health', 'GET /my-index/_search' or '/{index}/_doc/{id}'",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "version": {
+              "description": "Version of the API: 'main' or a major such as '9'. Needs api. Default: the API's current version.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "includeBody": {
+              "description": "Include the page body (default: false). The fields list already covers parameters, request and response.",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "list_api_operations",
+        "description": "Lists the Elastic REST APIs, or the operations of one API. Use when the user wants to browse what an API offers, or you need an API key for the other API tools. Without api, returns every API with its key and versions. With api, returns its operations by group; a large API returns the group names only until you pass group.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "api": {
+              "description": "The API key, e.g. 'elasticsearch'. Omit to list every API.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "version": {
+              "description": "Version of the API: 'main' or a major such as '9'. Needs api. Default: the API's current version.",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            },
+            "group": {
+              "description": "Only the operations of this group, e.g. 'ES|QL' or 'cluster'",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          }
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "check_docs_coherence",
+        "description": "Checks how coherently a topic is covered across all Elastic documentation. Use when reviewing documentation quality, auditing coverage of a feature or concept, or checking whether a topic is documented consistently across products and sections.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "Topic or concept to check coherence for",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Maximum number of documents to analyze (default: 20)",
+              "type": "integer",
+              "default": 20
+            }
+          },
+          "required": [
+            "topic"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      {
+        "name": "find_docs_inconsistencies",
+        "description": "Finds potential inconsistencies across Elastic documentation pages covering the same topic. Use when auditing docs quality, verifying that instructions don't contradict each other, or checking for overlapping content within a product area.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "description": "Topic or concept to check for inconsistencies",
+              "type": "string"
+            },
+            "focusArea": {
+              "description": "Specific area to focus on (e.g., 'installation', 'configuration')",
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "topic"
+          ]
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
         }
       }
     ]
