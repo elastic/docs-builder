@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Site.ApplicabilityBadges;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
@@ -171,6 +172,9 @@ public record ApiPropertyChildren
 public record ApiProperty
 {
 	public required string Name { get; init; }
+
+	/// <summary>Whether this is the synthetic row that holds a map's value fields, not a field of the schema.</summary>
+	public bool IsMapKey => Name == ApiPropertyPath.MapKeyMarker;
 
 	/// <summary>The underlying OpenAPI schema; views read scalar values off it directly.</summary>
 	public required IOpenApiSchema Schema { get; init; }

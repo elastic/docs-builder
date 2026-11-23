@@ -1,0 +1,11 @@
+@inherits RazorSlice<string?>
+@* The row that holds a map's value fields. The model is its JSON path for the hover tooltip, or null where paths are not shown. *@
+@if (Model is { } path)
+{
+	<code data-tooltip="@path" data-tooltip-theme="mono">property name*</code>
+}
+else
+{
+	<code>property name*</code>
+}
+<span class="values-label">additional property</span>
