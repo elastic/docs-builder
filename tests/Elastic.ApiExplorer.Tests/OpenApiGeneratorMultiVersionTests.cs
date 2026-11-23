@@ -1107,6 +1107,32 @@ public partial class OpenApiGeneratorMultiVersionTests
 			description.Should().Be(pages[url], $"the Markdown of {url} carries the same description as its HTML");
 	}
 
+	[Test]
+	public async Task Generate_LandingWhoseCanonicalSpecHasNoDescription_GetsTheGeneratedSentenceInHtmlAndMarkdown()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SeoSample("Elasticsearch main", null)),
+			("9.4", SeoSample("Elasticsearch 9", null)),
+			("8.19", SeoSample("Elasticsearch 8", null))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var pages = ReadMetaDescriptions(context.WriteFileSystem, outputRoot);
+		var markdown = ReadMarkdownDescriptions(context.WriteFileSystem, outputRoot);
+		foreach (var url in new[] { "/api/elasticsearch", "/api/elasticsearch/next", "/api/elasticsearch/v8" })
+		{
+			pages[url].Should().Be("Reference documentation for the elasticsearch API.");
+			markdown[url].Should().Be(pages[url]);
+		}
+	}
+
 	/// <summary>Front matter description per page URL, read from every generated Markdown file. A page without one reads as empty.</summary>
 	private static IReadOnlyDictionary<string, string> ReadMarkdownDescriptions(IFileSystem fileSystem, string outputRoot)
 	{
