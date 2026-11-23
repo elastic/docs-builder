@@ -16,9 +16,12 @@ public static class ApiVersions
 	public static string? ReleaseOf(string? branch)
 	{
 		var parts = branch?.Split('.');
-		var isRelease = parts is [var major, var minor] && int.TryParse(major, out _) && int.TryParse(minor, out _);
+		var isRelease = parts is [var major, var minor] && IsNumber(major) && IsNumber(minor);
 		return isRelease ? branch : null;
 	}
+
+	/// <summary>Digits only, unlike <see cref="int.TryParse(string?, out int)"/>, which also accepts a sign and surrounding white space.</summary>
+	private static bool IsNumber(string part) => part.Length > 0 && part.All(char.IsAsciiDigit);
 
 	/// <summary>Sort key that puts <c>main</c> first and numeric majors after it, newest first, when sorted descending.</summary>
 	public static int Recency(string moniker) => moniker == "main" ? int.MaxValue : TryParseMajor(moniker) ?? 0;

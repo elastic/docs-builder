@@ -29,6 +29,11 @@ public class ApiVersionsTests
 	[Arguments("9", null)]
 	[Arguments("9.6.1", null)]
 	[Arguments("9.x", null)]
+	[Arguments("8.-19", null)]
+	[Arguments("+9.6", null)]
+	[Arguments(" 9.6", null)]
+	[Arguments("9.", null)]
+	[Arguments(".6", null)]
 	[Arguments("", null)]
 	[Arguments(null, null)]
 	public void ReleaseOf_Branch_NamesOnlyAMajorMinorRelease(string? branch, string? expected) =>
