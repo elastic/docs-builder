@@ -121,7 +121,7 @@ describe('bindDrawerFocus', () => {
     const shell = (toggleId = 'pages-nav-hamburger') => `
 <input type="checkbox" id="${toggleId}">
 <main><a href="/article" id="article-link">Article</a></main>
-<aside id="pages-nav"><button id="version">9.0</button><a href="/first" id="first">First</a></aside>`
+<aside id="pages-nav"><input type="search" id="filter"><button id="version">9.0</button><a href="/first" id="first">First</a></aside>`
 
     function toggle(checked: boolean) {
         const input = document.querySelector<HTMLInputElement>('input')!
@@ -142,12 +142,12 @@ describe('bindDrawerFocus', () => {
     beforeAll(bindDrawerFocus)
     beforeEach(() => viewport(true))
 
-    it('moves focus to the first control in the drawer when it opens', () => {
+    it('moves focus to the drawer itself, not to a field in it, when it opens', () => {
         document.body.innerHTML = shell()
 
         toggle(true)
 
-        expect(document.activeElement?.id).toBe('version')
+        expect(document.activeElement?.id).toBe('pages-nav')
     })
 
     it('puts focus back on the checkbox when the drawer closes with focus inside it', () => {
