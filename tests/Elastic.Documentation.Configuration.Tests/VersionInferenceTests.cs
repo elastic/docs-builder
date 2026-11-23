@@ -428,6 +428,7 @@ public class VersionInferenceTests
 	[Test, DisplayName("IsVersionless returns true for versionless products")]
 	[Arguments(VersioningSystemId.All)]
 	[Arguments(VersioningSystemId.Serverless)]
+	[Arguments(VersioningSystemId.Cloud)]
 	[Arguments(VersioningSystemId.Ech)]
 	[Arguments(VersioningSystemId.Ess)]
 	[Arguments(VersioningSystemId.ElasticsearchProject)]
@@ -488,6 +489,7 @@ public class VersionInferenceTests
 		VersioningSystemId.Ech,
 		VersioningSystemId.Ess,
 		VersioningSystemId.Serverless,
+		VersioningSystemId.Cloud,
 		VersioningSystemId.ElasticsearchProject,
 		VersioningSystemId.ObservabilityProject,
 		VersioningSystemId.SecurityProject

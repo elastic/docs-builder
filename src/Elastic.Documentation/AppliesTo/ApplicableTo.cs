@@ -48,6 +48,9 @@ public record ApplicableTo
 
 	public AppliesCollection? Product { get; set; }
 
+	/// <summary>The Elastic Cloud platform layer: console, organization, authentication, and billing.</summary>
+	public AppliesCollection? Cloud { get; set; }
+
 	public ProductApplicability? ProductApplicability { get; set; }
 
 	[JsonIgnore]
@@ -107,6 +110,9 @@ public record ApplicableTo
 			if (Serverless.VectorDatabase is not null)
 				AddEntries(entries, "serverless", "vectordb", Serverless.VectorDatabase);
 		}
+
+		if (Cloud is not null)
+			AddEntries(entries, "cloud", "cloud", Cloud);
 
 		if (Product is not null)
 			AddEntries(entries, "product", "product", Product);
@@ -178,6 +184,14 @@ public record ApplicableTo
 			if (hasContent)
 				_ = sb.Append(", ");
 			_ = sb.Append("serverless: ").Append(Serverless);
+			hasContent = true;
+		}
+
+		if (Cloud is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("cloud: ").Append(Cloud);
 			hasContent = true;
 		}
 

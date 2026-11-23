@@ -13,6 +13,9 @@ public static class ApplicabilityMappings
 	// Stack
 	public static readonly ApplicabilityDefinition Stack = new("Stack", "Elastic&nbsp;Stack", VersioningSystemId.Stack);
 
+	// Elastic Cloud platform layer
+	public static readonly ApplicabilityDefinition Cloud = new("Cloud", "Elastic&nbsp;Cloud", VersioningSystemId.Cloud);
+
 	// Serverless
 	public static readonly ApplicabilityDefinition Serverless = new(
 		"Serverless",

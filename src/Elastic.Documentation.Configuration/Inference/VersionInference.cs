@@ -104,6 +104,10 @@ public class ProductVersionInferrerService(
 				return versioning;
 		}
 
+		// Priority 5: Elastic Cloud platform layer
+		if (applicableTo.Cloud is not null)
+			return VersionsConfiguration.VersioningSystems[VersioningSystemId.Cloud];
+
 		return null;
 	}
 	private Product? ProductFromApplicability(ProductApplicability? productApplicability)

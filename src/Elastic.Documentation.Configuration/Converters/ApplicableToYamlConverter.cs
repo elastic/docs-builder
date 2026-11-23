@@ -25,6 +25,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		ApplicabilityKeys.Stack,
 		ApplicabilityKeys.Deployment,
 		ApplicabilityKeys.Serverless,
+		ApplicabilityKeys.Cloud,
 		ApplicabilityKeys.Product,
 		ApplicabilityKeys.Ece,
 		ApplicabilityKeys.Eck,
@@ -158,6 +159,9 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Stack, diagnostics, out var stackAvailability))
 			applicableTo.Stack = stackAvailability;
+
+		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Cloud, diagnostics, out var cloudAvailability))
+			applicableTo.Cloud = cloudAvailability;
 
 		AssignProduct(dictionary, applicableTo, diagnostics);
 		AssignServerless(dictionary, applicableTo, diagnostics);
@@ -399,6 +403,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		ApplicabilityKeys.Ess,
 		ApplicabilityKeys.Ech,
 		ApplicabilityKeys.Serverless,
+		ApplicabilityKeys.Cloud,
 		ApplicabilityKeys.Elasticsearch,
 		ApplicabilityKeys.Observability,
 		ApplicabilityKeys.Security,

@@ -45,6 +45,8 @@ public enum VersioningSystemId
 	Curator,
 	[Display(Name = "serverless")]
 	Serverless,
+	[Display(Name = "cloud")]
+	Cloud,
 	[Display(Name = "elasticsearch")]
 	ElasticsearchProject,
 	[Display(Name = "observability")]

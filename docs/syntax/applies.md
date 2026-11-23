@@ -386,6 +386,7 @@ applies_to:
     elasticsearch:
     observability:
     vectordb:
+  cloud:
   product:
     ecctl:
     curator:
@@ -421,11 +422,12 @@ For `{settings}` YAML, still write the version on `stack`. Do not omit it to hid
 
 `applies_to` badges are displayed in a consistent order regardless of how they appear in your source files:
 
-1. **Stack** - Elastic Stack
-2. **Serverless** - Elastic Cloud Serverless offerings
-3. **Deployment** - Deployment options (ECH, ECK, ECE, Self-managed)
-4. **ProductApplicability** - Specialized tools and agents (ECCTL, Curator, EDOT, APM Agents)
-5. **Product (generic)** - Generic product applicability
+1. **Cloud** - Elastic Cloud platform layer
+2. **Stack** - Elastic Stack
+3. **Serverless** - Elastic Cloud Serverless offerings
+4. **Deployment** - Deployment options (ECH, ECK, ECE, Self-managed)
+5. **ProductApplicability** - Specialized tools and agents (ECCTL, Curator, EDOT, APM Agents)
+6. **Product (generic)** - Generic product applicability
 
 Within the ProductApplicability category, EDOT and APM Agent items are sorted alphabetically for better scanning.
 

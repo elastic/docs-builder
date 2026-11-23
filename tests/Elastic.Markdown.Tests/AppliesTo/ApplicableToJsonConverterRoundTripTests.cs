@@ -474,4 +474,31 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.ProductApplicability.Should().NotBeNull();
 		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);
 	}
+
+	[Test]
+	public void RoundTripCloud()
+	{
+		var original = new ApplicableTo
+		{
+			Cloud = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = AllVersionsSpec.Instance }])
+		};
+
+		var json = JsonSerializer.Serialize(original, _options);
+		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
+
+		json.Should().Contain("\"type\": \"cloud\"");
+		deserialized.Should().NotBeNull();
+		deserialized.Cloud.Should().BeEquivalentTo(original.Cloud);
+		deserialized.Stack.Should().BeNull();
+		deserialized.Deployment.Should().BeNull();
+		deserialized.Serverless.Should().BeNull();
+	}
+
+	[Test]
+	public void ToAppliesToEmitsCloudEntry()
+	{
+		var entries = new ApplicableTo { Cloud = AppliesCollection.GenerallyAvailable }.ToAppliesTo();
+
+		entries.Should().ContainSingle(e => e.Type == "cloud" && e.SubType == "cloud" && e.Lifecycle == "ga");
+	}
 }
