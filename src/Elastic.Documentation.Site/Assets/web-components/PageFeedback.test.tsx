@@ -251,6 +251,26 @@ describe('PageFeedback', () => {
         ).toHaveLength(1)
     })
 
+    it('shows a visible label above the comment field', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'No, this page was not helpful',
+            })
+        )
+
+        const label = screen.getByText('Tell us more (optional)', {
+            selector: 'label',
+        })
+        expect(label).toHaveClass('page-feedback__comment-label')
+        expect(label).not.toHaveClass('sr-only')
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).not.toHaveAttribute('placeholder')
+    })
+
     it('retains the comment when switching between reactions', async () => {
         const user = userEvent.setup()
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
