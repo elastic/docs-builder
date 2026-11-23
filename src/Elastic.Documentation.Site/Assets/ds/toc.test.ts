@@ -235,4 +235,21 @@ describe('initToc', () => {
 
         history.pushState(null, '', window.location.pathname)
     })
+
+    it('survives a heading id with a literal percent sign', () => {
+        document.body.innerHTML = `
+        <nav data-toc>
+          <a data-toc-link href="#100%-coverage">Coverage</a>
+        </nav>
+        <h2 id="100%-coverage">100% coverage</h2>`
+        document.getElementById('100%-coverage')!.getBoundingClientRect = () =>
+            ({ top: -300 }) as DOMRect
+
+        expect(() => initToc()).not.toThrow()
+        expect(
+            document
+                .querySelector('[data-toc-link]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+    })
 })

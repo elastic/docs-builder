@@ -11,6 +11,16 @@ function isInView(element: Element): boolean {
     return top >= 0 && top < window.innerHeight
 }
 
+// A heading's slug can hold a literal percent sign ("100% coverage"), which decodeURIComponent rejects. The raw text is the id then.
+function fragmentId(hash: string): string {
+    const raw = hash.slice(1)
+    try {
+        return decodeURIComponent(raw)
+    } catch {
+        return raw
+    }
+}
+
 export function initToc(scope: ParentNode = document) {
     scope
         .querySelectorAll<HTMLElement>('[data-toc]:not([data-toc-bound])')
@@ -21,9 +31,7 @@ export function initToc(scope: ParentNode = document) {
             )
             const targets = links.map((link) => ({
                 link,
-                heading: document.getElementById(
-                    decodeURIComponent(link.hash.slice(1))
-                ),
+                heading: document.getElementById(fragmentId(link.hash)),
             }))
 
             const listeners = new AbortController()
