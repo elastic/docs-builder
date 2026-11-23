@@ -3530,6 +3530,14 @@ button.example-response-tab:focus-visible {
 	}
 }
 
+/* Without subgrid a cell sizes to its content, so a card without a tag-on does not stretch to the height of a
+   neighbour's card and tag-on together. */
+@supports not (grid-template-rows: subgrid) {
+	.api-catalog .api-catalog-cell {
+		align-self: start;
+	}
+}
+
 .api-catalog .api-catalog-card-attached .api-catalog-desc {
 	-webkit-line-clamp: 1;
 	line-clamp: 1;
