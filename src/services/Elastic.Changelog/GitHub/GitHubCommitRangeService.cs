@@ -257,6 +257,11 @@ public sealed partial class GitHubCommitRangeService(
 	private async Task<IReadOnlyList<string>> ListWarmUpStagesAsync(CommitRangeArguments args, Cancel ctx)
 	{
 		var startSha = await ResolveCommitShaAsync(args, args.StartRef, ctx).ConfigureAwait(false);
+
+		// A ref that is still a name, such as a tag whose lookup failed, matches no commit, so reading the history would only delay the retry.
+		if (!CommitShaRegex().IsMatch(startSha))
+			return [];
+
 		var newestFirst = new List<string>();
 		for (var page = 1; page <= MaxWarmUpPages; page++)
 		{

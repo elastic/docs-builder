@@ -307,12 +307,15 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 	private const int ColdRangeCommits = 250;
 
+	/// <summary>A sha whose first 12 characters name one commit of the history, so an abbreviated sha finds only that one.</summary>
+	private static string ColdSha(int i) => i.ToString("x8", CultureInfo.InvariantCulture) + new string('c', 32);
+
 	private static readonly CommitRangeArguments ColdArgs = new()
 	{
 		Owner = Owner,
 		Repo = Repo,
-		StartRef = Sha(0),
-		EndRef = Sha(ColdRangeCommits)
+		StartRef = ColdSha(0),
+		EndRef = ColdSha(ColdRangeCommits)
 	};
 
 	private static HttpResponseMessage Unprocessable(string message = "Server Error: Sorry, this diff is taking too long to generate.") =>
@@ -333,7 +336,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		public GitHubCommitRangeService Service()
 		{
-			var sha1 = Sha(1);
+			var sha1 = ColdSha(1);
 			var handler = new StubHandler(req =>
 			{
 				Requests.Add(req.RequestUri!.PathAndQuery);
@@ -351,11 +354,11 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 					return ResolveBody == "throw" ? throw new HttpRequestException("connection reset") : Json(ResolveBody);
 
 				if (path.Contains("/commits/", StringComparison.Ordinal))
-					return path.EndsWith("/v1.0", StringComparison.Ordinal) || path.EndsWith(Sha(0), StringComparison.Ordinal)
-						? Json($$"""{ "sha": "{{Sha(0)}}" }""")
+					return path.EndsWith("/v1.0", StringComparison.Ordinal) || path.EndsWith(ColdSha(0), StringComparison.Ordinal)
+						? Json($$"""{ "sha": "{{ColdSha(0)}}" }""")
 						: new HttpResponseMessage(HttpStatusCode.NotFound);
 
-				var isWhole = path.EndsWith($"...{Sha(commits)}", StringComparison.Ordinal);
+				var isWhole = path.EndsWith($"...{ColdSha(commits)}", StringComparison.Ordinal);
 				if (isWhole ? wholeRangeIsCold?.Invoke() ?? false : stagesAreCold?.Invoke() ?? false)
 					return Unprocessable(ColdMessage);
 
@@ -381,11 +384,11 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 			var perPage = int.Parse(query["per_page"]!, CultureInfo.InvariantCulture);
 			var page = int.Parse(query["page"]!, CultureInfo.InvariantCulture);
 			var shas = Enumerable.Range(0, commits + 1).Reverse().Skip((page - 1) * perPage).Take(perPage);
-			return "[" + string.Join(",", shas.Select(i => $$"""{ "sha": "{{Sha(i)}}" }""")) + "]";
+			return "[" + string.Join(",", shas.Select(i => $$"""{ "sha": "{{ColdSha(i)}}" }""")) + "]";
 		}
 	}
 
-	private static readonly string[] ColdStages = [Sha(50), Sha(100), Sha(150), Sha(200)];
+	private static readonly string[] ColdStages = [ColdSha(50), ColdSha(100), ColdSha(150), ColdSha(200)];
 
 	[Test]
 	public async Task ResolvePullRequests_ColdCompareAnswers422_IsComparedInStagesAndResolves()
@@ -398,7 +401,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
-		range.Compared.Should().Equal([Sha(ColdRangeCommits), .. ColdStages, Sha(ColdRangeCommits)]);
+		range.Compared.Should().Equal([ColdSha(ColdRangeCommits), .. ColdStages, ColdSha(ColdRangeCommits)]);
 		range.Listed.Should().Be(3, "the start is on the third page of the history of the end");
 	}
 
@@ -423,13 +426,38 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	{
 		var whole = 0;
 		var range = new ColdRange(() => ++whole == 1) { ResolveBody = lookup };
-		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "v1.0", EndRef = Sha(ColdRangeCommits) };
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "v1.0", EndRef = ColdSha(ColdRangeCommits) };
 
 		var result = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		range.Compared.Should().Equal(Sha(ColdRangeCommits), Sha(ColdRangeCommits));
+		range.Compared.Should().Equal(ColdSha(ColdRangeCommits), ColdSha(ColdRangeCommits));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ColdCompareWithAnAbbreviatedShaWhoseLookupFails_StillRunsTheStages()
+	{
+		var whole = 0;
+		var range = new ColdRange(() => ++whole == 1) { ResolveBody = "throw" };
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = ColdSha(0)[..12], EndRef = ColdSha(ColdRangeCommits) };
+
+		_ = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		range.Compared.Should().Equal([ColdSha(ColdRangeCommits), .. ColdStages, ColdSha(ColdRangeCommits)]);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ColdCompareWithATagWhoseLookupFails_DoesNotReadTheHistory()
+	{
+		var whole = 0;
+		var range = new ColdRange(() => ++whole == 1) { ResolveBody = "throw" };
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "v1.0", EndRef = ColdSha(ColdRangeCommits) };
+
+		_ = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		range.Listed.Should().Be(0);
+		range.Compared.Should().Equal(ColdSha(ColdRangeCommits), ColdSha(ColdRangeCommits));
 	}
 
 	[Test]
@@ -438,12 +466,12 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		const int commits = 1200;
 		var whole = 0;
 		var range = new ColdRange(() => ++whole == 1, commits: commits);
-		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = Sha(0), EndRef = Sha(commits) };
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = ColdSha(0), EndRef = ColdSha(commits) };
 
 		_ = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
 
 		range.Listed.Should().Be(10, "the history is read up to the cap and no further");
-		range.Compared.Should().Equal(Sha(commits), Sha(commits));
+		range.Compared.Should().Equal(ColdSha(commits), ColdSha(commits));
 	}
 
 	[Test]
@@ -451,11 +479,11 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	{
 		var whole = 0;
 		var range = new ColdRange(() => ++whole == 1);
-		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "v1.0", EndRef = Sha(ColdRangeCommits) };
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "v1.0", EndRef = ColdSha(ColdRangeCommits) };
 
 		_ = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
 
-		range.Compared.Should().Equal([Sha(ColdRangeCommits), .. ColdStages, Sha(ColdRangeCommits)]);
+		range.Compared.Should().Equal([ColdSha(ColdRangeCommits), .. ColdStages, ColdSha(ColdRangeCommits)]);
 		range.Requests.Should().Contain(r => r.Contains("/commits/v1.0", StringComparison.Ordinal));
 	}
 
@@ -468,7 +496,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().BeNull();
 		Collector.Errors.Should().Be(1);
-		range.Compared.Count(sha => sha == Sha(ColdRangeCommits)).Should().Be(2);
+		range.Compared.Count(sha => sha == ColdSha(ColdRangeCommits)).Should().Be(2);
 	}
 
 	[Test]
@@ -476,11 +504,11 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	{
 		var whole = 0;
 		var range = new ColdRange(() => ++whole == 1);
-		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "deadbeef", EndRef = Sha(ColdRangeCommits) };
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "deadbeef", EndRef = ColdSha(ColdRangeCommits) };
 
 		_ = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
 
-		range.Compared.Should().Equal(Sha(ColdRangeCommits), Sha(ColdRangeCommits));
+		range.Compared.Should().Equal(ColdSha(ColdRangeCommits), ColdSha(ColdRangeCommits));
 		range.Listed.Should().Be(4, "three pages of history, then the empty page that ends it");
 	}
 
@@ -493,7 +521,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().BeNull();
 		Collector.Errors.Should().Be(1);
-		range.Compared.Should().Equal(Sha(ColdRangeCommits));
+		range.Compared.Should().Equal(ColdSha(ColdRangeCommits));
 		range.Listed.Should().Be(0);
 	}
 
@@ -507,7 +535,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().NotBeNull("the whole range is asked for again whatever the stages did");
 		range.Delays.Should().HaveCount(ColdStages.Length * 2);
-		range.Compared.Count(sha => sha == Sha(50)).Should().Be(3);
+		range.Compared.Count(sha => sha == ColdSha(50)).Should().Be(3);
 	}
 
 	[Test]
@@ -520,7 +548,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		range.Compared.Should().Equal(Sha(ColdRangeCommits), Sha(ColdRangeCommits));
+		range.Compared.Should().Equal(ColdSha(ColdRangeCommits), ColdSha(ColdRangeCommits));
 	}
 
 	[Test]
