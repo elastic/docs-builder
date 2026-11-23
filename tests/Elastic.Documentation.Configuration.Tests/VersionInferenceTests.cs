@@ -365,6 +365,36 @@ public class VersionInferenceTests
 	}
 
 	[Test]
+	public void InferVersionReturnsCloudVersioningWhenOnlyCloudSet()
+	{
+		var versionsConfiguration = CreateVersionsConfiguration();
+		var productsConfiguration = CreateProductsConfiguration(versionsConfiguration);
+		var inferrer = new ProductVersionInferrerService(productsConfiguration, versionsConfiguration);
+		var applicableTo = new ApplicableTo { Cloud = AppliesCollection.GenerallyAvailable };
+
+		var result = inferrer.InferVersion(repositoryName: "unknown-repo", legacyPages: null, products: null, applicableTo: applicableTo);
+
+		result.Id.Should().Be(VersioningSystemId.Cloud);
+	}
+
+	[Test]
+	public void InferVersionPrefersDeploymentVersioningOverCloud()
+	{
+		var versionsConfiguration = CreateVersionsConfiguration();
+		var productsConfiguration = CreateProductsConfiguration(versionsConfiguration);
+		var inferrer = new ProductVersionInferrerService(productsConfiguration, versionsConfiguration);
+		var applicableTo = new ApplicableTo
+		{
+			Cloud = AppliesCollection.GenerallyAvailable,
+			Deployment = new DeploymentApplicability { Ece = AppliesCollection.GenerallyAvailable }
+		};
+
+		var result = inferrer.InferVersion(repositoryName: "unknown-repo", legacyPages: null, products: null, applicableTo: applicableTo);
+
+		result.Id.Should().Be(VersioningSystemId.Ece);
+	}
+
+	[Test]
 	public void InferVersionReturnsDeploymentVersioningForAllDeploymentTypes()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
