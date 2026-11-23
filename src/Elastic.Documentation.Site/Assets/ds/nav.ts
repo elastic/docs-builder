@@ -101,8 +101,10 @@ export function markCurrent(side: ParentNode = document) {
 // the next Tab after opening would go into the article behind the scrim. Opening moves focus to the drawer itself, not
 // to a control in it: the next Tab then reaches its first control, a search field does not raise a phone's keyboard,
 // and the tree keeps its scroll position. Closing puts focus back on the checkbox, so the keyboard keeps its place.
+// Focus has left the checkbox by then, so Escape closes the drawer from inside it.
 // Above the breakpoint of patterns/layout.css the sidebar is always open and its checkbox only sits in the tab order.
 const drawerBreakpoint = '(max-width: 860px)'
+const isDrawer = () => window.matchMedia(drawerBreakpoint).matches
 
 export function bindDrawerFocus() {
     document.addEventListener('change', ({ target: toggle }) => {
@@ -112,12 +114,19 @@ export function bindDrawerFocus() {
         )
             return
         const drawer = document.getElementById('pages-nav')
-        if (!drawer || !window.matchMedia(drawerBreakpoint).matches) return
+        if (!drawer || !isDrawer()) return
         if (toggle.checked) {
             drawer.tabIndex = -1
             drawer.focus({ preventScroll: true })
         } else if (drawer.contains(document.activeElement)) {
             toggle.focus()
         }
+    })
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || event.isComposing) return
+        const toggle = document.getElementById('pages-nav-hamburger')
+        if (toggle instanceof HTMLInputElement && toggle.checked && isDrawer())
+            // A click, as the reader would, so the change handler above puts focus back.
+            toggle.click()
     })
 }

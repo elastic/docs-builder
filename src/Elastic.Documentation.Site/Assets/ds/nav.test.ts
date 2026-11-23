@@ -189,4 +189,40 @@ describe('bindDrawerFocus', () => {
 
         expect(document.activeElement).toBe(input)
     })
+
+    describe('Escape', () => {
+        const escape = () =>
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+            )
+
+        it('closes the open drawer and puts focus back on the checkbox', () => {
+            document.body.innerHTML = shell()
+            const input = toggle(true)
+
+            escape()
+
+            expect(input.checked).toBe(false)
+            expect(document.activeElement).toBe(input)
+        })
+
+        it('does nothing when the drawer is closed', () => {
+            document.body.innerHTML = shell()
+            const input = document.querySelector<HTMLInputElement>('input')!
+
+            escape()
+
+            expect(input.checked).toBe(false)
+        })
+
+        it('does nothing above the drawer breakpoint', () => {
+            viewport(false)
+            document.body.innerHTML = shell()
+            const input = toggle(true)
+
+            escape()
+
+            expect(input.checked).toBe(true)
+        })
+    })
 })
