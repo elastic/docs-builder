@@ -264,21 +264,29 @@ describe('initToc', () => {
         ).toBe(false)
     })
 
-    it('binds only the outlines the selector names', () => {
+    it('binds only the outlines a selector names, each once', () => {
         document.body.innerHTML = `
         <nav class="mine" data-toc><a data-toc-link href="#one">One</a></nav>
         <nav class="other" data-toc><a data-toc-link href="#one">One</a></nav>
+        <nav class="third" data-toc><a data-toc-link href="#one">One</a></nav>
         <h2 id="one">One</h2>`
         document.getElementById('one')!.getBoundingClientRect = () =>
             ({ top: -300 }) as DOMRect
 
-        initToc(document, '.mine[data-toc]')
+        initToc(document, '.mine, .other')
 
-        expect(
-            document.querySelector('.mine a')!.getAttribute('aria-current')
-        ).toBe('location')
-        expect(
-            document.querySelector('.other a')!.hasAttribute('aria-current')
-        ).toBe(false)
+        const marked = (name: string) =>
+            document.querySelector(`.${name} a`)!.hasAttribute('aria-current')
+        expect([marked('mine'), marked('other'), marked('third')]).toEqual([
+            true,
+            true,
+            false,
+        ])
+
+        // A selector list is matched as a whole, so a second call finds every outline already bound.
+        const addListener = vi.spyOn(window, 'addEventListener')
+        initToc(document, '.mine, .other')
+        expect(addListener).not.toHaveBeenCalled()
+        addListener.mockRestore()
     })
 })

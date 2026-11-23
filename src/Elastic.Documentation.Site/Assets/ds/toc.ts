@@ -24,7 +24,7 @@ export function fragmentId(hash: string): string {
 // `selector` narrows which outlines to bind: the production bundle owns only the operation page's section links.
 export function initToc(scope: ParentNode = document, selector = '[data-toc]') {
     scope
-        .querySelectorAll<HTMLElement>(`${selector}:not([data-toc-bound])`)
+        .querySelectorAll<HTMLElement>(`:is(${selector}):not([data-toc-bound])`)
         .forEach((toc) => {
             toc.dataset.tocBound = ''
             const links = Array.from(
