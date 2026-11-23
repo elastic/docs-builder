@@ -3505,6 +3505,15 @@ navigation-search[variant='hero'] {
 	grid-template-rows: subgrid;
 }
 
+/* From two columns up, every cell but the last spans both rows, so a card without a tag-on still takes the row below it
+   and the next card starts a new row instead of filling the gap beside a tag-on. The last cell has nothing after it. */
+@media (min-width: 640px) {
+	.api-catalog .api-catalog-cell:not(:last-child) {
+		grid-row: span 2;
+		grid-template-rows: subgrid;
+	}
+}
+
 /* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
    its border, with a light fill and a one-line description. The negative margin cancels the 16px row gap of the list,
    plus 1px so the two cards share one border. It is in pixels because the gap is, while rem is 14px on the classic layout. */
