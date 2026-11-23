@@ -51,7 +51,7 @@ public static class ApiVersionNotices
 		var latest = item is null ? null : new LatestVersionLink(item.ShortLabel ?? item.Label, item.Url);
 		return type switch
 		{
-			ApiPageType.OlderMajor => new OlderMajorNotice(moniker, latest, pageItems.FirstOrDefault(i => i.Moniker == moniker)?.Release),
+			ApiPageType.OlderMajor => new OlderMajorNotice(moniker, latest),
 			ApiPageType.Unreleased => new UnreleasedNotice(latest),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 		};

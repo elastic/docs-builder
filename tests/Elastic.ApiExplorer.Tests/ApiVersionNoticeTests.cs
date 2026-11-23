@@ -76,27 +76,10 @@ public class ApiVersionNoticeTests
 	}
 
 	[Test]
-	public void For_OlderMajorWithRelease_BadgeNamesTheMinor()
-	{
-		var routes = ApiVersionRoutes.For("elasticsearch", ["main", "9", "8"]);
-		var releases = new Dictionary<string, string> { ["9"] = "9.6", ["8"] = "8.19" };
-		var items = ApiVersionSwitcher.Build("", routes, ["main", "9", "8"], "elasticsearch/v8", releases: releases);
-
-		var notice = ApiVersionNotices.For(ApiPageType.OlderMajor, "8", routes.DefaultMoniker, items);
-
-		notice.Should().BeOfType<OlderMajorNotice>().Which.Label.Should().Be("8.19");
-	}
-
-	[Test]
-	public void For_OlderMajorWithoutRelease_BadgeNamesTheMajor()
-	{
-		var routes = ApiVersionRoutes.For("elasticsearch", ["main", "9", "8"]);
-		var items = ApiVersionSwitcher.Build("", routes, ["main", "9", "8"], "elasticsearch/v8");
-
-		var notice = ApiVersionNotices.For(ApiPageType.OlderMajor, "8", routes.DefaultMoniker, items);
-
-		notice.Should().BeOfType<OlderMajorNotice>().Which.Label.Should().Be("8");
-	}
+	[Arguments("8", "8.19", "8.19")]
+	[Arguments("8", null, "8")]
+	public void Label_OlderMajor_NamesTheMinorWhenKnown(string version, string? release, string expected) =>
+		new OlderMajorNotice(version, null, release).Label.Should().Be(expected);
 
 	[Test]
 	public void For_NewestMajorDidNotRender_KeepsTheVersionAndDropsTheLink()

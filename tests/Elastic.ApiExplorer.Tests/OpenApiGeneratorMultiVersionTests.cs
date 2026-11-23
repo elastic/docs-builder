@@ -913,6 +913,33 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task Generate_OnlyOneTreeRenders_KeepsTheMinorReleaseWithoutASwitcher()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(missingVersionsAreUnreadable: true, ("8.19", SpecDocument("Elasticsearch 8")));
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var rendered = string.Join(
+			"\n",
+			$"v8 fact: {ReadVersionFact(context, outputRoot, ["v8"])}",
+			$"v8 landing notice: {ReadNotice(context, outputRoot, ["v8"])}"
+		);
+
+		rendered.Should().MatchInlineSnapshot(
+			"""
+			v8 fact: <dt>Version</dt><dd>8.19</dd>
+			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span></p>
+			"""
+		);
+	}
+
+	[Test]
 	public async Task Generate_NewestMajorFailsToLoad_RendersTheNoticesWithoutALatestVersionLink()
 	{
 		var collector = new DiagnosticsCollector([]);

@@ -18,8 +18,7 @@ public static class ApiVersionSwitcher
 		ApiVersionRoutes routes,
 		IReadOnlyList<string> monikers,
 		string currentSuffix,
-		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>? pageNames = null,
-		IReadOnlyDictionary<string, string>? releases = null
+		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>? pageNames = null
 	)
 	{
 		if (monikers.Count <= 1)
@@ -38,7 +37,6 @@ public static class ApiVersionSwitcher
 					ShortLabel: ShortLabelFor(v.Moniker)
 				)
 				{
-					Release = releases is not null && releases.TryGetValue(v.Moniker, out var release) ? release : null,
 					PageNames = pageNames is not null && pageNames.TryGetValue(v.Moniker, out var names)
 						? names
 						: FrozenDictionary<string, IReadOnlyList<string>>.Empty

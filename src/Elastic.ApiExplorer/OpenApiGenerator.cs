@@ -81,6 +81,7 @@ internal sealed record ApiProductGeneration(
 	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
 	string Moniker,
 	string? DefaultMoniker,
+	string? Release,
 	bool ValidateSupplemental,
 	bool EmitUnmatchedBaseFiles,
 	ApiPageType PageType,
@@ -325,6 +326,7 @@ public class OpenApiGenerator(
 				VersionSwitcherItems: [],
 				tree.Moniker,
 				trees.Resolved.Routes.DefaultMoniker,
+				ApiVersions.ReleaseOf(versionTree.Version.Version.Version),
 				ValidateSupplemental: false,
 				EmitUnmatchedBaseFiles: false,
 				versionTree.PageType,
@@ -377,11 +379,6 @@ public class OpenApiGenerator(
 			return null;
 
 		var monikers = resolved.Documents.Select(v => v.Version.Moniker).ToArray();
-		var releases = resolved
-			.Documents
-			.Select(v => (v.Version.Moniker, Release: ApiVersions.ReleaseOf(v.Version.Version)))
-			.Where(static v => v.Release is not null)
-			.ToDictionary(static v => v.Moniker, static v => v.Release!);
 
 		// Each tree gets an independent ApiRenderContext, navigation tree and navigation HTML
 		// writer, so there is no shared mutable state between concurrent trees. The outer loop in
@@ -391,14 +388,7 @@ public class OpenApiGenerator(
 		await Parallel.ForEachAsync(trees.Trees, ctx, async (tree, token) =>
 		{
 			var moniker = tree.Moniker;
-			var switcherItems = ApiVersionSwitcher.Build(
-				context.UrlPathPrefix,
-				resolved.Routes,
-				monikers,
-				tree.Suffix,
-				trees.PageNames,
-				releases
-			);
+			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, resolved.Routes, monikers, tree.Suffix, trees.PageNames);
 			await GenerateApiProduct(
 				new(
 					tree.Version.Document,
@@ -407,6 +397,7 @@ public class OpenApiGenerator(
 					switcherItems,
 					moniker,
 					resolved.Routes.DefaultMoniker,
+					ApiVersions.ReleaseOf(tree.Version.Version.Version),
 					// Both copies of the default major read the same files, so only the first copy reports on them.
 					ValidateSupplemental: !tree.IsMirror,
 					EmitUnmatchedBaseFiles: moniker == resolved.UnmatchedBaseFilesMoniker,
@@ -716,6 +707,7 @@ public class OpenApiGenerator(
 			PageType = generation.PageType,
 			Moniker = generation.Moniker,
 			DefaultMoniker = generation.DefaultMoniker,
+			Release = generation.Release,
 			VersionlessRootUrl = generation.VersionlessRootUrl,
 			OperationSupplemental = operations,
 			TagSupplemental = tags,
