@@ -19,7 +19,8 @@ internal static partial class ApiSeoDescription
 			return null;
 
 		// An HTML comment is not prose: left in, it would be the first paragraph of a description that opens with a note to authors.
-		var visible = HtmlCommentPattern().Replace(markdown, string.Empty);
+		// Code is kept as written: a comment shown in a code span or a fence is visible text on the group page.
+		var visible = HtmlCommentPattern().Replace(markdown, static match => match.Groups["code"].Success ? match.Value : string.Empty);
 		var paragraph = FirstParagraph(visible) ?? visible;
 		var plain = ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
@@ -141,7 +142,8 @@ internal static partial class ApiSeoDescription
 		return string.Concat(text.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 	}
 
-	[GeneratedRegex(@"<!--.*?-->", RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
+	[GeneratedRegex(@"(?<code>^(?<fence>```|~~~).*?^\k<fence>|`[^`\n]+`)|<!--.*?-->", RegexOptions.Singleline
+		| RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlCommentPattern();
 
 	[GeneratedRegex(@"\bpaths?\b", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]

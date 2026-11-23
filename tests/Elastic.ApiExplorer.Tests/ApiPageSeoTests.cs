@@ -167,6 +167,14 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Excerpt_KeepsAnHtmlCommentShownAsCode()
+	{
+		ApiSeoDescription.Excerpt("Use `<!-- marker -->` to mark a block.").Should().Be("Use <!-- marker --> to mark a block.");
+		ApiSeoDescription.Excerpt("<!-- note -->\n\nUse `<!-- marker -->` here.").Should().Be("Use <!-- marker --> here.");
+		ApiSeoDescription.Excerpt("```html\n<!-- marker -->\n```\n\nMore.").Should().Contain("<!-- marker -->");
+	}
+
+	[Test]
 	public void Excerpt_TruncatesOnWordBoundary()
 	{
 		var words = string.Join(' ', Enumerable.Range(0, 40).Select(i => $"word{i}"));
