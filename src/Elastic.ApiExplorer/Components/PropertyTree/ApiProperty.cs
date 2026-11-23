@@ -30,6 +30,9 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 public record RepeatedShape(string Name, string AnchorId, bool IsUnion, string? Owner = null)
 {
 	public string Label => IsUnion ? "Same options as" : "Same fields as";
+
+	/// <summary>What the link reads on the page: the name the target row shows.</summary>
+	public string DisplayName => ApiProperty.DisplayNameOf(Name);
 }
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
