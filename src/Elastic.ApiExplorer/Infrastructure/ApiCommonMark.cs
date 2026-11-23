@@ -48,7 +48,9 @@ internal static partial class ApiCommonMark
 		return length >= 3 ? line[..length] : null;
 	}
 
-	[GeneratedRegex(@"^(#{1,6}\s.*?)\s*\[[^\[\]]+\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	// The anchor is what the docs parser reads as one (HeadingAnchorParser.MatchAnchor in Elastic.Markdown, which this
+	// project does not reference), so the .md output drops exactly what the HTML turns into an id.
+	[GeneratedRegex(@"^(#{1,6}\s.*?)\s*\[[^[]+\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingAnchor();
 
 	public static void Heading(StringBuilder markdown, int level, string text)

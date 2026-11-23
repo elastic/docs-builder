@@ -88,8 +88,11 @@ public class ApiCommonMarkTests
 			```
 
 			### Arrays [arrays]
+
+			## Configure [API keys][keys]
 			""";
 
+		// The docs parser reads the trailing [keys] as the heading's anchor, so the .md output drops it as the HTML does.
 		ApiCommonMark
 			.StripHeadingAnchors(markdown)
 			.Should()
@@ -104,6 +107,8 @@ public class ApiCommonMarkTests
 			```
 
 			### Arrays
+
+			## Configure [API keys]
 			"""
 			);
 	}
