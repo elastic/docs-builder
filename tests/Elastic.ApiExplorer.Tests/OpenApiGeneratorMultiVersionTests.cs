@@ -1083,8 +1083,9 @@ public partial class OpenApiGeneratorMultiVersionTests
 		EmptyDescriptionPages(pages)
 			.Should()
 			.BeEmpty("a page with no source sentence takes a description built from what the spec declares");
-		pages["/api/elasticsearch/group/endpoint-bare"].Should().Be("Bare endpoints in the elasticsearch API: Bare.");
+		pages["/api/elasticsearch/group/endpoint-bare"].Should().Be("Bare endpoints in the elasticsearch API: Bare, Commented.");
 		pages["/api/elasticsearch/operation/operation-bare"].Should().Be("Bare: GET /bare in the elasticsearch API.");
+		pages["/api/elasticsearch/operation/operation-commented"].Should().Be("Commented: GET /commented in the elasticsearch API.");
 		pages["/api/elasticsearch/servers"].Should().Be("Server URLs for the elasticsearch API: https://example.com.");
 		pages["/api/elasticsearch/v8/authentication"].Should().Be("How to authenticate requests to the elasticsearch API: Api key.");
 		pages["/api/elasticsearch/next"]
@@ -1169,12 +1170,13 @@ public partial class OpenApiGeneratorMultiVersionTests
 		document.Paths = new OpenApiPaths
 		{
 			["/summarized"] = SeoPath("summarized", "described", "Summarize things"),
-			["/bare"] = SeoPath("bare", "bare", null)
+			["/bare"] = SeoPath("bare", "bare", null),
+			["/commented"] = SeoPath("commented", "bare", null, "<!-- note to authors -->")
 		};
 		return document;
 	}
 
-	private static OpenApiPathItem SeoPath(string operationId, string tag, string? summary) =>
+	private static OpenApiPathItem SeoPath(string operationId, string tag, string? summary, string? description = null) =>
 		new()
 		{
 			Operations = new Dictionary<HttpMethod, OpenApiOperation>
@@ -1183,6 +1185,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 				{
 					OperationId = operationId,
 					Summary = summary,
+					Description = description,
 					Tags = new HashSet<OpenApiTagReference> { new(tag) },
 					Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
 				}

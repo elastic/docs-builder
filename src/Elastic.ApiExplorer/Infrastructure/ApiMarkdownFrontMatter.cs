@@ -140,22 +140,26 @@ internal static class ApiMarkdownFrontMatter
 			ApiCatalog => ApiCatalog.PageDescription,
 			ApiLanding => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
 			ApiTag tag => TagSummary(tag, context),
-			ApiOperation operation =>
-				FirstLine(
-					ApiMarkdown.Prepare(
-						ApiSeoDescription.OperationText(
-							OperationDescription(operation, context),
-							OpenApiExtensionReader.GetSummary(operation.Operation)
-						),
-						apiBaseUrl
-					)
-				),
+			ApiOperation operation => OperationDescriptionLine(operation, context, apiBaseUrl),
 			ApiStructuralPage structural => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(structural.Intro, apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
 			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
 			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
 			_ => null
 		};
+	}
+
+	/// <summary>
+	/// The first line of the operation's own text, or null when it has none a reader would see. An HTML comment is not text:
+	/// the HTML page drops it and falls back, so the Markdown must too.
+	/// </summary>
+	private static string? OperationDescriptionLine(ApiOperation operation, ApiRenderContext context, string apiBaseUrl)
+	{
+		var text = ApiSeoDescription.OperationText(
+			OperationDescription(operation, context),
+			OpenApiExtensionReader.GetSummary(operation.Operation)
+		);
+		return FirstLine(ApiMarkdown.Prepare(text, apiBaseUrl)) is { } line && ApiSeoDescription.Excerpt(line) is not null ? line : null;
 	}
 
 	/// <summary>The one-line description of a group, from its supplemental description when it has one: what its meta description and its card on the product landing page say.</summary>
