@@ -211,10 +211,22 @@ body {
 		@apply w-full;
 	}
 
-	/* The toggle button. On folder and heading rows the label is the button; island rows keep the inner div. */
-	.nav-toggle-btn,
-	.nav-folder > .peer > label {
+	.nav-toggle-btn {
 		@apply hover:bg-grey-20 cursor-pointer rounded-sm p-1;
+	}
+
+	/* On folder and heading rows the label fills the row height, so a click below the chevron of a wrapped title still
+	   toggles; the chevron carries the button box the inner div used to. Island rows keep the div. */
+	.nav-folder > .peer > label {
+		@apply cursor-pointer;
+
+		& > .nav-chevron {
+			@apply box-content rounded-sm p-1;
+		}
+
+		&:hover > .nav-chevron {
+			@apply bg-grey-20;
+		}
 	}
 
 	.nav-chevron {
@@ -616,6 +628,6 @@ h1:has(.cli-badge-ns, .cli-badge-cmd) {
 	}
 
 	:where(.nav-folder > .peer > label) {
-		@apply mr-2 self-start;
+		@apply mr-2 flex items-start;
 	}
 }
