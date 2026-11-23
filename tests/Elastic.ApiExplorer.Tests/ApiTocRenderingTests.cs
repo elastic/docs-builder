@@ -29,6 +29,21 @@ public class ApiTocRenderingTests
 		html.Should().MatchHtmlSnapshot();
 	}
 
-	private static async Task<string> Render(IReadOnlyList<TocItem> tocItems) =>
-		await _ApiToc.Create(tocItems).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+	[Test]
+	public async Task Render_DesignSystem_CarriesTheScrollSpyHooks()
+	{
+		var items = new[] { new TocItem("Paths", "paths", 2) };
+
+		var production = await Render(items);
+		var designSystem = await Render(items, designSystem: true);
+
+		production.Should().NotContain("data-toc", "the production look has its own scroll spy");
+		designSystem.Should().Contain("<nav id=\"toc-nav\" class=\"api-rail-toc\" aria-label=\"On this page\" data-toc>");
+		designSystem.Should().Contain("href=\"#paths\" data-toc-link>");
+	}
+
+	private static async Task<string> Render(IReadOnlyList<TocItem> tocItems, bool designSystem = false) =>
+		await _ApiToc.Create(new ApiTocModel(tocItems, designSystem)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
 }

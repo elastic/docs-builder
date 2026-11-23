@@ -66,6 +66,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public IReadOnlyList<TocItem> TocItems => field ??= GetTocItems();
 
+	/// <summary>What the On this page partial renders: the items, and which look's scroll spy hooks to carry.</summary>
+	public ApiTocModel Toc => new(TocItems, BuildContext.Configuration.Features.NavigationPreviewEnabled);
+
 	/// <summary>The version switcher items, each pointed at this page when its version renders it.</summary>
 	private IReadOnlyList<ApiVersionSwitcherItem> PageVersions =>
 		field ??= ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
