@@ -158,6 +158,15 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Excerpt_SkipsHtmlComments()
+	{
+		var excerpt = ApiSeoDescription.Excerpt("<!-- Keep this in sync with the spec. -->\n\nThe real *intro*.\n\nMore.");
+
+		excerpt.Should().Be("The real intro.");
+		ApiSeoDescription.Excerpt("<!-- only a note -->").Should().BeNull();
+	}
+
+	[Test]
 	public void Excerpt_TruncatesOnWordBoundary()
 	{
 		var words = string.Join(' ', Enumerable.Range(0, 40).Select(i => $"word{i}"));

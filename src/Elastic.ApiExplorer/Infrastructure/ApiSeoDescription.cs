@@ -18,7 +18,9 @@ internal static partial class ApiSeoDescription
 		if (string.IsNullOrWhiteSpace(markdown))
 			return null;
 
-		var paragraph = FirstParagraph(markdown) ?? markdown;
+		// An HTML comment is not prose: left in, it would be the first paragraph of a description that opens with a note to authors.
+		var visible = HtmlCommentPattern().Replace(markdown, string.Empty);
+		var paragraph = FirstParagraph(visible) ?? visible;
 		var plain = ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
 	}
@@ -138,6 +140,9 @@ internal static partial class ApiSeoDescription
 			endIndex = MaxLength;
 		return string.Concat(text.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 	}
+
+	[GeneratedRegex(@"<!--.*?-->", RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex HtmlCommentPattern();
 
 	[GeneratedRegex(@"\bpaths?\b", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PathWordPattern();
