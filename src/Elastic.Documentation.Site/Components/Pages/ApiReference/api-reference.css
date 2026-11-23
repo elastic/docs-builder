@@ -532,14 +532,27 @@
 	}
 }
 
-/* A chip of four or more methods is wider than the method column can spare beside the title and the route, so such a row
-   stacks as it does on a phone, at any width. */
-.api-group-row:has(.api-method-group > :nth-child(4)) {
-	grid-template-columns: minmax(0, 1fr) 16px;
-	grid-template-areas:
-		'method chevron'
-		'title chevron'
-		'routes chevron';
+/* A joined chip is about 58px per method, and the row also needs its title (12rem), the chevron and at least 150px of route.
+   A chip of four or five methods leaves too little below a 700px container, and one of six or more below 860px, so such a
+   row stacks as it does on a phone; a wide ledger keeps its rows side by side and aligned. */
+@container api-group (max-width: 700px) {
+	.api-group-row:has(.api-method-group > :nth-child(4)) {
+		grid-template-columns: minmax(0, 1fr) 16px;
+		grid-template-areas:
+			'method chevron'
+			'title chevron'
+			'routes chevron';
+	}
+}
+
+@container api-group (max-width: 860px) {
+	.api-group-row:has(.api-method-group > :nth-child(6)) {
+		grid-template-columns: minmax(0, 1fr) 16px;
+		grid-template-areas:
+			'method chevron'
+			'title chevron'
+			'routes chevron';
+	}
 }
 
 /*
