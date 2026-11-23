@@ -25,6 +25,7 @@ public class JsonPathTests
 		      "Match": { "type": "object", "properties": { "field": { "type": "string" } } },
 		      "Bool": { "type": "object", "properties": { "must": { "type": "array", "items": { "$ref": "#/components/schemas/Match" } } } },
 		      "Agg": { "type": "object", "properties": { "terms": { "type": "string" } } },
+		      "Odd": { "type": "object", "properties": { "settings": { "type": "object", "properties": { "value<string>": { "type": "string" } } } } },
 		      "Many": { "type": "array", "items": { "$ref": "#/components/schemas/Match" } },
 		      "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
 		      "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
@@ -86,6 +87,21 @@ public class JsonPathTests
 		var terms = list.Items.Single(p => p.Name == "aggs").Children.Dictionary!.Properties.Items.Single();
 
 		terms.PermalinkLabel.Should().Be("aggs.*.terms");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_FieldNameContainingTheMarker_KeepsItsNameInThePermalink()
+	{
+		var document = await LoadSpecAsync(Spec);
+		var list =
+			BuilderFor(document).BuildPropertyList(
+				document.Components!.Schemas!["Odd"],
+				new PropertyTreeScope { Prefix = "req", JsonPath = "" }
+			)!;
+
+		var value = list.Items.Single().Children.Properties!.Items.Single();
+
+		value.PermalinkLabel.Should().Be("settings.value<string>", "only a whole <string> segment is a map key");
 	}
 
 	[Test]

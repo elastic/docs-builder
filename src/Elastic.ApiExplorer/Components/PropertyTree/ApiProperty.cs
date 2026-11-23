@@ -202,10 +202,21 @@ public record ApiProperty
 
 	/// <summary>
 	/// What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.
-	/// A map's key reads <c>*</c> in the path, as the row's own label does, so a screen reader never hears the <c>&lt;string&gt;</c> marker.
+	/// A map's key reads <c>*</c> in the path, as the row's own label does. Only a whole segment counts, so a field whose name merely
+	/// contains the <c>&lt;string&gt;</c> marker keeps its name.
 	/// </summary>
 	public string PermalinkLabel =>
-		JsonPath is { Length: > 0 } path ? path.Replace(ApiPropertyPath.MapKeyMarker, "*", StringComparison.Ordinal) : DisplayName;
+		JsonPath is { Length: > 0 } path ? string.Join('.', path.Split('.').Select(SpokenSegment)) : DisplayName;
+
+	/// <summary>A path segment as announced: a map key, with any <c>[]</c> after it, reads <c>*</c>.</summary>
+	private static string SpokenSegment(string segment)
+	{
+		if (!segment.StartsWith(ApiPropertyPath.MapKeyMarker, StringComparison.Ordinal))
+			return segment;
+
+		var rest = segment[ApiPropertyPath.MapKeyMarker.Length..];
+		return rest.Replace(ApiPropertyPath.ItemsMarker, "", StringComparison.Ordinal).Length == 0 ? "*" + rest : segment;
+	}
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
 
