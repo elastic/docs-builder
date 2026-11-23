@@ -31,6 +31,9 @@ public record AuthorizationSectionModel(
 /// <summary>One link of the section bar above an operation's description.</summary>
 public record SectionLink(string Label, string Anchor);
 
+/// <summary>The section bar: its links, and the operation's methods and title that it shows on a row above them once it pins.</summary>
+public record SectionLinksModel(string? Title, IReadOnlyList<string> Methods, IReadOnlyList<SectionLink> Links);
+
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiOperation Operation { get; init; }
