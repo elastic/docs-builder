@@ -86,6 +86,23 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
+	public async Task Layout_PutsTheNavigationAfterTheArticleWhenPreviewEnabled()
+	{
+		var model = CreateLayoutModel(
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
+			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
+		);
+
+		var html = await _Layout.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var articleClose = html.IndexOf("</article>", StringComparison.Ordinal);
+		var nav = html.IndexOf("id=\"pages-nav\"", StringComparison.Ordinal);
+		articleClose.Should().BeGreaterThan(-1);
+		nav.Should().BeGreaterThan(articleClose);
+	}
+
+	[Test]
 	public async Task Render_ShowsTheEndpointFilterOnAssemblerBuilds()
 	{
 		var model = CreateLayoutModel("/api/elasticsearch/", "/api/elasticsearch.md", buildType: BuildType.Assembler);

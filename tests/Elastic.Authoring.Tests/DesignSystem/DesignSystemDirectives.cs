@@ -341,6 +341,18 @@ public class PageShellComponents : DesignSystemDirectiveTest
 		heading.Should().BeLessThan(articleClose);
 	}
 
+	[Test, DisplayName("puts the navigation tree after the page content in the markup")]
+	public async Task NavigationFollowsTheContent()
+	{
+		var html = await Docs.IndexHtmlAsync();
+
+		var articleClose = html.IndexOf("</article>", StringComparison.Ordinal);
+		var nav = html.IndexOf("id=\"pages-nav\"", StringComparison.Ordinal);
+
+		articleClose.Should().BeGreaterThan(-1);
+		nav.Should().BeGreaterThan(articleClose);
+	}
+
 	[Test, DisplayName("styles the article with prose instead of the legacy markdown-content class")]
 	public async Task Prose()
 	{

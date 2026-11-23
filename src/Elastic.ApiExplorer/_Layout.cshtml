@@ -31,9 +31,6 @@
 		<div class="layout layout--three layout--rail-after layout--nav-flush api-page-shell">
 			<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
 			<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
-			<aside class="layout__nav" id="pages-nav">
-				@await RenderPartialAsync(_DesignSystemApiNav.Create(Model))
-			</aside>
 			<div class="layout__main" id="api-content-grid">
 				<main id="content-container" class="layout__content">
 					<label class="layout__menu-button" for="pages-nav-hamburger">
@@ -56,6 +53,10 @@
 					@await RenderSectionAsync(ApiPageSections.Rail)
 				</aside>
 			</div>
+			@* After the content on purpose, as in the docs shell: a crawler that stops early should already have the page. *@
+			<aside class="layout__nav" id="pages-nav">
+				@await RenderPartialAsync(_DesignSystemApiNav.Create(Model))
+			</aside>
 		</div>
 	</div>
 	@await RenderPartialAsync(_DesignSystemFooter.Create(Model))

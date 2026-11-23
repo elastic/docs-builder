@@ -65,4 +65,12 @@
 			</aside>
 		}
 	</div>
+	@* After the content on purpose: the tree can be megabytes and a crawler that stops early should already have the page. grid-area keeps it on the left. *@
+	<aside class="layout__nav" id="pages-nav">
+		@if (Layout.ShowVersionDropdown && Elastic.Documentation.Site.Components.Navigation.LinkMenu.VersionMenu.FromJson(Layout.VersionDropdownSerializedModel, Layout.CurrentVersion, Layout.AllVersionsUrl) is { } versions)
+		{
+			<div class="layout__version">@await RenderPartialAsync(Elastic.Documentation.Site.Components.Navigation.LinkMenu._LinkMenu.Create(versions))</div>
+		}
+		@(new HtmlString(Layout.NavigationHtml))
+	</aside>
 </div>
