@@ -234,7 +234,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public async Task CatalogEntry_NewestMajorFailsToLoad_LinksToATreeThatRendered()
+	public async Task CatalogEntry_NewestMajorFailsToLoad_LinksToTheReleasedTreeThatRendered()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -260,7 +260,30 @@ public partial class OpenApiGeneratorMultiVersionTests
 		entry!
 			.Url
 			.Should()
-			.Be("/api/elasticsearch/next", "nothing renders at /api/elasticsearch, so the card opens the first tree that did");
+			.Be("/api/elasticsearch/v8", "nothing renders at /api/elasticsearch, and the card never opens the unreleased tree");
+	}
+
+	[Test]
+	public async Task CatalogEntry_OnlyTheUnreleasedTreeLoads_HasNoCard()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(missingVersionsAreUnreadable: true, ("main", SpecDocument("Elasticsearch main")));
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var apiConfig = ApiConfig(product);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
+
+		resolved.Documents.Should().ContainSingle("the unreleased tree still renders at /next");
+		entry.Should().BeNull("a card would be the only link to the unreleased tree");
 	}
 
 	[Test]
@@ -977,10 +1000,11 @@ public partial class OpenApiGeneratorMultiVersionTests
 		var files = context.WriteFileSystem.File;
 		var shared = files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-ping", "index.html"));
 		shared.Should().Contain("href=\"/api/elasticsearch/v8/operation/operation-ping\"");
-		shared.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-ping\"");
+		shared.Should().NotContain("href=\"/api/elasticsearch/next", "a released page never links to the unreleased tree");
 		var mainOnly = files.ReadAllText(
 			Path.Join(outputRoot, "api", "elasticsearch", "next", "operation", "operation-newop", "index.html")
 		);
+		mainOnly.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-newop\"", "the unreleased tree lists itself");
 		mainOnly.Should().Contain("href=\"/api/elasticsearch/v8\"");
 		mainOnly.Should().Contain("href=\"/api/elasticsearch\"");
 		mainOnly.Should().NotContain("/api/elasticsearch/v8/operation/operation-newop");
@@ -989,7 +1013,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 		// the numbered copy of the newest major keeps its reader on its own URLs
 		var numbered = files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "v9", "operation", "operation-ping", "index.html"));
 		numbered.Should().Contain("href=\"/api/elasticsearch/v9/operation/operation-ping\"");
-		numbered.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-ping\"");
+		numbered.Should().NotContain("href=\"/api/elasticsearch/next");
 	}
 
 	[Test]

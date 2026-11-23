@@ -133,7 +133,13 @@ public class OpenApiGeneratorCatalogSplitTests
 		var errorsAfterRendering = context.Collector.Errors;
 		var export = () => generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		entries.Should().ContainSingle("pages still render the trees that loaded");
+		entries.Should().BeEmpty("only the unreleased tree loaded, and no card links to it");
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "next", "index.html"))
+			.Should()
+			.BeTrue("pages still render the trees that loaded");
 		errorsAfterRendering.Should().Be(0, "rendering skips the missing tree with a warning");
 		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
 			"The API search export stops: API 'elasticsearch': version '8' is declared in the version index but could not be loaded."
