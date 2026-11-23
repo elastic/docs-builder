@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
+using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
@@ -194,6 +196,36 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void AuthenticationPage_KeepsEachHeadingLinkableAndListsItInTheRail()
+	{
+		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
+
+		var page = StructuralViewModel.Create(item.Model, RenderContext(item, renderer: AnchoredHeadingRenderer.Instance));
+
+		string
+			.Join("\n", page.TocItems.Select(static t => $"{t.Level} {t.Heading} #{t.Slug}"))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			2 Api key #doc-authentication-api-key
+			2 Basic #doc-authentication-basic-auth
+			2 Bearer #doc-authentication-bearer-auth
+			"""
+			);
+		// The sanitizer keeps the id and the heading link of every listed heading, so the Bump.sh anchors land.
+		string
+			.Join("\n", page.BodyHtml!.Value.Split('\n').Where(static line => line.Contains("heading-wrapper", StringComparison.Ordinal)))
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				<div class="heading-wrapper" id="doc-authentication-api-key"><h2><a class="headerlink" href="#doc-authentication-api-key">Api key</a></h2>
+				<div class="heading-wrapper" id="doc-authentication-basic-auth"><h2><a class="headerlink" href="#doc-authentication-basic-auth">Basic</a></h2>
+				<div class="heading-wrapper" id="doc-authentication-bearer-auth"><h2><a class="headerlink" href="#doc-authentication-bearer-auth">Bearer</a></h2>
+				"""
+			);
+	}
+
+	[Test]
 	[Arguments("apiKeyAuth", "doc-authentication-api-key-auth")]
 	[Arguments("apiKey", "doc-authentication-api-key")]
 	[Arguments("basicAuth", "doc-authentication-basic-auth")]
@@ -224,7 +256,11 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			.Should()
 			.BeEmpty();
 
-	private ApiRenderContext RenderContext(INavigationItem? current = null, OpenApiDocument? document = null) =>
+	private ApiRenderContext RenderContext(
+		INavigationItem? current = null,
+		OpenApiDocument? document = null,
+		IMarkdownStringRenderer? renderer = null
+	) =>
 		new(
 			fixture.Context,
 			document ?? fixture.Document,
@@ -233,6 +269,39 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = current ?? fixture.Navigation,
-			MarkdownRenderer = PassthroughMarkdownRenderer.Instance
+			MarkdownRenderer = renderer ?? PassthroughMarkdownRenderer.Instance
 		};
+
+	/// <summary>
+	/// Renders <c>## Heading [anchor]</c> lines with the markup the API description pipeline gives them
+	/// (<c>ApiDescriptionHeadingTests</c> in Elastic.Markdown.Tests pins it) and every other line as a paragraph.
+	/// </summary>
+	private sealed class AnchoredHeadingRenderer : IMarkdownStringRenderer
+	{
+		public static AnchoredHeadingRenderer Instance { get; } = new();
+
+		public string Render(string markdown, IFileInfo? source) => $"<p>{markdown}</p>";
+
+		public string RenderApiDescription(string markdown, IFileInfo? source) =>
+			string.Concat(
+				Lines(markdown).Select(
+					line => Heading(line) is { } h
+						? $"<div class=\"heading-wrapper\" id=\"{h.Slug}\"><h{h.Level}><a class=\"headerlink\" href=\"#{h.Slug}\">{h.Heading}</a></h{h.Level}>\n</div>\n"
+						: $"<p>{line}</p>\n"
+				)
+			);
+
+		public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) =>
+			[.. Lines(markdown).Select(Heading).OfType<TocItem>()];
+
+		private static IEnumerable<string> Lines(string markdown) =>
+			markdown.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+		private static TocItem? Heading(string line)
+		{
+			var level = line.TakeWhile(static c => c == '#').Count();
+			var open = line.LastIndexOf('[');
+			return level < 2 || open < 0 || !line.EndsWith(']') ? null : new TocItem(line[level..open].Trim(), line[(open + 1)..^1], level);
+		}
+	}
 }
