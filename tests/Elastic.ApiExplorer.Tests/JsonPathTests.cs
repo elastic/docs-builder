@@ -79,6 +79,16 @@ public class JsonPathTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_MapValue_PermalinkReadsAnAsteriskForTheKey()
+	{
+		var list = await BuildAsync("");
+
+		var terms = list.Items.Single(p => p.Name == "aggs").Children.Dictionary!.Properties.Items.Single();
+
+		terms.PermalinkLabel.Should().Be("aggs.*.terms");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_WithoutRootPath_HasNoPaths()
 	{
 		var list = await BuildAsync(null);
