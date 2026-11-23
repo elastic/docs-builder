@@ -250,9 +250,9 @@
 	border-top: 1px solid var(--color-border);
 }
 
-/* A Console-like ledger: the method in its own column so the verbs line up, then the title, then the route. The column fits a joined chip (POST | GET). */
-/* Wide enough for a joined two-method chip (POST | GET) in either root font size. A row with more methods grows its column to fit them,
-   so a long chip never runs into the title; the common rows stay aligned. */
+/* A Console-like ledger: the method in its own column so the verbs line up, then the title, then the route. The column is wide
+   enough for a joined two-method chip (POST | GET) in either root font size, and a row with more methods grows it, so a long
+   chip never runs into the title while the common rows stay aligned. */
 .api-group-row {
 	--api-group-method-column: minmax(8.75rem, max-content);
 	display: grid;
@@ -349,7 +349,7 @@
 	min-width: 0;
 }
 
-/* Overview routes: the part the whole group shares is muted, the part that differs reads first, path parameters in the accent. */
+/* Overview routes: plain monospace text that wraps at a segment boundary. */
 #markdown-content .api-group-route,
 .api-group-route {
 	padding: 0;
@@ -532,21 +532,11 @@
 	}
 }
 
-/* A joined chip is about 58px per method, and the row also needs its title (12rem), the chevron and at least 150px of route.
-   A chip of four or five methods leaves too little below a 700px container, and one of six or more below 860px, so such a
-   row stacks as it does on a phone; a wide ledger keeps its rows side by side and aligned. */
-@container api-group (max-width: 700px) {
-	.api-group-row:has(.api-method-group > :nth-child(4)) {
-		grid-template-columns: minmax(0, 1fr) 16px;
-		grid-template-areas:
-			'method chevron'
-			'title chevron'
-			'routes chevron';
-	}
-}
-
+/* A joined chip is about 58px per method, and the row also needs its title (12rem), the chevron and some route. With four or more
+   methods a container under 860px leaves too little, so such a row stacks as it does on a phone; a wide ledger keeps its rows
+   side by side and aligned. */
 @container api-group (max-width: 860px) {
-	.api-group-row:has(.api-method-group > :nth-child(6)) {
+	.api-group-row:has(.api-method-group > :nth-child(4)) {
 		grid-template-columns: minmax(0, 1fr) 16px;
 		grid-template-areas:
 			'method chevron'
