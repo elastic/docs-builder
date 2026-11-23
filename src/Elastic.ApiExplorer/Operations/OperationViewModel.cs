@@ -12,7 +12,7 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
-/// <summary>The Authentication section: the alternatives to authenticate with, on the Authentication page and on endpoints that set their own.</summary>
+/// <summary>The Authentication section of an endpoint that sets its own <c>security</c>: the alternatives to authenticate with.</summary>
 public record AuthenticationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	bool Optional,

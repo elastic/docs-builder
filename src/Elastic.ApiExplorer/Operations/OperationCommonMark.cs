@@ -144,46 +144,63 @@ internal static class OperationCommonMark
 		_ = markdown.AppendLine();
 	}
 
-	/// <summary>The alternatives on the Authentication page and its child page as one Markdown text, for the <c>.md</c> output.</summary>
-	internal static string AuthenticationSections(IReadOnlyList<AuthRequirement> requirements, bool optional) =>
-		string.Concat(AuthenticationFragments(requirements, optional, anchors: false));
-
 	/// <summary>
-	/// The alternatives on the Authentication page and its child page: a heading each, then the description and the credential
-	/// to send. Each piece is its own Markdown fragment, so the HTML page renders them one by one and a description cannot
-	/// change the sections after it. The HTML page sets each heading's Bump.sh anchor; the <c>.md</c> output leaves anchors
-	/// out, as docs pages do. Unprepared, so the caller prepares each fragment.
+	/// The document-level alternatives as the Authentication page and its child page show them: a heading each with its
+	/// Bump.sh anchor, then each scheme's description and the credential to send. Generated Markdown stays together, and each
+	/// spec description is a fragment of its own, so the HTML page renders it alone and it cannot change the sections after it.
+	/// Unprepared.
 	/// </summary>
-	internal static IEnumerable<string> AuthenticationFragments(IReadOnlyList<AuthRequirement> requirements, bool optional, bool anchors)
+	internal static IReadOnlyList<string> AuthenticationFragments(OpenApiDocument document)
 	{
-		if (optional)
-			yield return Fragment(m => ApiCommonMark.Paragraph(m, "Authentication is optional."));
+		var requirements = OpenApiAuthSchemeResolver.ResolveDocument(document);
+		if (requirements.Count == 0)
+			return [];
+
+		var fragments = new List<string>();
+		var generated = new StringBuilder();
+		if (OpenApiAuthSchemeResolver.AllowsAnonymous(document.Security))
+			ApiCommonMark.Paragraph(generated, "Authentication is optional.");
 		foreach (var requirement in requirements)
 		{
 			var together = requirement.Schemes.Count > 1;
-			var anchor = anchors ? $" [{ApiUrlBuilder.AuthenticationAnchor(requirement.Schemes.Select(static s => s.Id))}]" : "";
-			yield return Fragment(m => ApiCommonMark.Heading(m, 2, requirement.Label + anchor));
+			var anchor = ApiUrlBuilder.AuthenticationAnchor(requirement.Schemes.Select(static s => s.Id));
+			ApiCommonMark.Heading(generated, 2, $"{requirement.Label} [{anchor}]");
 			if (together)
-				yield return Fragment(m => ApiCommonMark.Paragraph(m, "Send all of these together."));
+				ApiCommonMark.Paragraph(generated, "Send all of these together.");
 			foreach (var scheme in requirement.Schemes)
 			{
 				if (together)
-					yield return Fragment(m => ApiCommonMark.Heading(m, 3, scheme.Label));
-				yield return Fragment(m => ApiCommonMark.Paragraph(m, scheme.DescriptionMarkdown));
-				yield return Fragment(m => ApiCommonMark.Fence(m, "http", scheme.CredentialExample));
+					ApiCommonMark.Heading(generated, 3, scheme.Label);
+				if (!string.IsNullOrWhiteSpace(scheme.DescriptionMarkdown))
+				{
+					Flush();
+					var description = new StringBuilder();
+					ApiCommonMark.Paragraph(description, scheme.DescriptionMarkdown);
+					fragments.Add(description.ToString());
+				}
+
+				ApiCommonMark.Fence(generated, "http", scheme.CredentialExample);
 				// OAuth 2.0 and OpenID Connect have no credential example, and a description is optional. The section must still name the scheme.
 				if (!together && string.IsNullOrEmpty(scheme.CredentialExample) && scheme.DescriptionMarkdown is null)
-					yield return Fragment(m => ApiCommonMark.Paragraph(m, $"Uses {scheme.Label} authentication."));
+					ApiCommonMark.Paragraph(generated, $"Uses {scheme.Label} authentication.");
 			}
+		}
+
+		Flush();
+		return fragments;
+
+		void Flush()
+		{
+			if (generated.Length == 0)
+				return;
+			fragments.Add(generated.ToString());
+			_ = generated.Clear();
 		}
 	}
 
-	private static string Fragment(Action<StringBuilder> write)
-	{
-		var markdown = new StringBuilder();
-		write(markdown);
-		return markdown.ToString();
-	}
+	/// <summary>The <c>.md</c> twin of the Authentication sections, written after the page's own prose.</summary>
+	internal static void WriteAuthenticationSections(StringBuilder markdown, OpenApiDocument document, string apiBaseUrl) =>
+		ApiCommonMark.Prepared(markdown, string.Concat(AuthenticationFragments(document)), apiBaseUrl);
 
 	// One scheme is a plain bullet. Several schemes are sent together, so they nest under one bullet that says so.
 	internal static void WriteRequirement(StringBuilder markdown, AuthRequirement requirement, string apiBaseUrl)

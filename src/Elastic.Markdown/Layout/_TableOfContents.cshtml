@@ -96,7 +96,7 @@
 		<div class="pt-6 hidden lg:block">
 			@if (Model.PageTocItems.Count > 0)
 			{
-				@await RenderPartialAsync(_PageToc.Create([.. Model.PageTocItems.Select(static item => new TocItem(item.Heading, item.Slug, item.Level))]))
+				@await RenderPartialAsync(_PageToc.Create([.. Model.PageTocItems.Select(static item => item.ToTocItem())]))
 			}
 
 		</div>

@@ -3,12 +3,42 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>Small CommonMark helpers shared by API page writers.</summary>
-internal static class ApiCommonMark
+internal static partial class ApiCommonMark
 {
+	/// <summary>
+	/// Drops the <c>[anchor]</c> that ends a heading, as the <c>.md</c> output of docs pages does: it sets the HTML id and
+	/// means nothing in plain Markdown. Lines inside fenced code blocks stay as written.
+	/// </summary>
+	public static string StripHeadingAnchors(string markdown)
+	{
+		var lines = markdown.Split('\n');
+		string? fence = null;
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var trimmed = lines[i].TrimStart();
+			if (fence is not null)
+			{
+				if (trimmed.StartsWith(fence, StringComparison.Ordinal))
+					fence = null;
+			}
+			else if (trimmed.StartsWith("```", StringComparison.Ordinal) || trimmed.StartsWith("~~~", StringComparison.Ordinal))
+				fence = trimmed[..3];
+			else
+				lines[i] = HeadingAnchor().Replace(lines[i], "$1");
+		}
+
+		return string.Join('\n', lines);
+	}
+
+	[GeneratedRegex(@"^(#{1,6}\s.*?)\s*\[[^\[\]]+\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex HeadingAnchor();
+
 	public static void Heading(StringBuilder markdown, int level, string text)
 	{
 		_ = markdown.Append('#', level);
@@ -28,7 +58,7 @@ internal static class ApiCommonMark
 
 	public static void Prepared(StringBuilder markdown, string? source, string apiBaseUrl)
 	{
-		var prepared = ApiMarkdown.Prepare(source, apiBaseUrl);
+		var prepared = StripHeadingAnchors(ApiMarkdown.Prepare(source, apiBaseUrl));
 		if (string.IsNullOrWhiteSpace(prepared))
 			return;
 

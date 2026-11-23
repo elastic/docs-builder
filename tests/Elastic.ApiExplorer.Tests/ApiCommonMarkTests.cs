@@ -6,6 +6,7 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
+using Nullean.Snapshots;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -71,5 +72,39 @@ public class ApiCommonMarkTests
 		ApiPropertyMarkdown.WriteList(markdown, list, "/api/fixture");
 
 		markdown.ToString().Should().Contain("- ``a`b`` (enum)").And.Contain("Values: ``x`y``, `plain`");
+	}
+
+	[Test]
+	public void StripHeadingAnchors_HeadingAnchors_DroppedOutsideCodeOnly()
+	{
+		const string markdown =
+			"""
+			## Api key [doc-authentication-api-key-auth]
+
+			See [the guide] for details.
+
+			```bash
+			# keep [this]
+			```
+
+			### Arrays [arrays]
+			""";
+
+		ApiCommonMark
+			.StripHeadingAnchors(markdown)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			## Api key
+
+			See [the guide] for details.
+
+			```bash
+			# keep [this]
+			```
+
+			### Arrays
+			"""
+			);
 	}
 }

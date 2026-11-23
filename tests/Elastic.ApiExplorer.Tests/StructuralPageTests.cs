@@ -161,41 +161,6 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void AuthenticationPage_GivesEachAlternativeAHeadingWithItsBumpShAnchor()
-	{
-		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
-		var page = StructuralViewModel.Create(item.Model, RenderContext(item));
-
-		// The page renders these fragments like its prose, so the headings are docs headings with these anchors.
-		string
-			.Concat(OperationCommonMark.AuthenticationFragments(page.Requirements, page.AuthenticationOptional, anchors: true))
-			.Should()
-			.MatchInlineSnapshot(
-				"""
-				## Api key [doc-authentication-api-key]
-
-				Send the encoded key with the ApiKey prefix.
-
-				```http
-				Authorization: <value>
-				```
-
-				## Basic [doc-authentication-basic-auth]
-
-				```http
-				Authorization: Basic <credentials>
-				```
-
-				## Bearer [doc-authentication-bearer-auth]
-
-				```http
-				Authorization: Bearer <token>
-				```
-				"""
-			);
-	}
-
-	[Test]
 	public void AuthenticationPage_KeepsEachHeadingLinkableAndListsItInTheRail()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
@@ -273,8 +238,8 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		};
 
 	/// <summary>
-	/// Renders <c>## Heading [anchor]</c> lines with the markup the API description pipeline gives them
-	/// (<c>ApiDescriptionHeadingTests</c> in Elastic.Markdown.Tests pins it) and every other line as a paragraph.
+	/// Renders heading lines with the markup the API description pipeline gives them (<c>ApiDescriptionHeadingTests</c> in
+	/// Elastic.Markdown.Tests pins it) and every other line as a paragraph. Headings are read as the passthrough reads them.
 	/// </summary>
 	private sealed class AnchoredHeadingRenderer : IMarkdownStringRenderer
 	{
@@ -282,26 +247,24 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 
 		public string Render(string markdown, IFileInfo? source) => $"<p>{markdown}</p>";
 
-		public string RenderApiDescription(string markdown, IFileInfo? source) =>
-			string.Concat(
-				Lines(markdown).Select(
-					line => Heading(line) is { } h
-						? $"<div class=\"heading-wrapper\" id=\"{h.Slug}\"><h{h.Level}><a class=\"headerlink\" href=\"#{h.Slug}\">{h.Heading}</a></h{h.Level}>\n</div>\n"
-						: $"<p>{line}</p>\n"
-				)
+		public string RenderApiDescription(string markdown, IFileInfo? source)
+		{
+			var headings = ReadApiDescriptionHeadings(markdown, source);
+			return string.Concat(
+				markdown
+					.ReplaceLineEndings("\n")
+					.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+					.Select(
+						line => headings.FirstOrDefault(
+							h => line.StartsWith(new string('#', h.Level) + " " + h.Heading, StringComparison.Ordinal)
+						) is { } h
+							? $"<div class=\"heading-wrapper\" id=\"{h.Slug}\"><h{h.Level}><a class=\"headerlink\" href=\"#{h.Slug}\">{h.Heading}</a></h{h.Level}>\n</div>\n"
+							: $"<p>{line}</p>\n"
+					)
 			);
+		}
 
 		public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) =>
-			[.. Lines(markdown).Select(Heading).OfType<TocItem>()];
-
-		private static IEnumerable<string> Lines(string markdown) =>
-			markdown.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
-
-		private static TocItem? Heading(string line)
-		{
-			var level = line.TakeWhile(static c => c == '#').Count();
-			var open = line.LastIndexOf('[');
-			return level < 2 || open < 0 || !line.EndsWith(']') ? null : new TocItem(line[level..open].Trim(), line[(open + 1)..^1], level);
-		}
+			PassthroughMarkdownRenderer.Instance.ReadApiDescriptionHeadings(markdown, source);
 	}
 }

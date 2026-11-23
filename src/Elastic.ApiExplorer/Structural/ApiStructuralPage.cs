@@ -106,8 +106,6 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 	public required ApiStructuralPage Page { get; init; }
 	public required IReadOnlyList<ApiServerDisplay> Servers { get; init; }
 	public required string EmptyMessage { get; init; }
-	public IReadOnlyList<AuthRequirement> Requirements { get; init; } = [];
-	public bool AuthenticationOptional { get; init; }
 
 	/// <summary>The Authentication page's topic prose, then a section for each alternative.</summary>
 	public HtmlString? BodyHtml { get; init; }
@@ -135,24 +133,24 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 			};
 		}
 
-		var requirements = ReadRequirements(context.Model);
-		var optional = OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security);
-		// The sections render like the topic prose, so their headings are docs headings: anchored, linkable and listed in On this page.
-		var (html, headings) = ApiMarkdown.RenderFragmentsWithHeadings(
-			context,
-			[page.Intro, .. OperationCommonMark.AuthenticationFragments(requirements, optional, anchors: true)]
-		);
+		var (html, headings) = RenderAuthentication(context, page.Intro);
 		return new StructuralViewModel(context)
 		{
 			Page = page,
 			Servers = [],
 			EmptyMessage = "This API does not declare authentication schemes.",
-			Requirements = requirements,
-			AuthenticationOptional = optional,
 			BodyHtml = html,
 			BodyHeadings = headings
 		};
 	}
+
+	/// <summary>
+	/// The Authentication page's body, also appended to a <c>children:</c> page that stands for it: the prose, then a section
+	/// for each document-level alternative. The sections come from the spec, so they render as API description Markdown and
+	/// their headings are docs headings: anchored, linkable and listed in On this page.
+	/// </summary>
+	internal static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderAuthentication(ApiRenderContext context, string? intro) =>
+		ApiMarkdown.RenderFragmentsWithHeadings(context, [intro, .. OperationCommonMark.AuthenticationFragments(context.Model)]);
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
 
@@ -191,11 +189,7 @@ internal static class StructuralCommonMark
 			return;
 		}
 
-		ApiCommonMark.Prepared(
-			markdown,
-			OperationCommonMark.AuthenticationSections(page.Requirements, page.AuthenticationOptional),
-			apiBaseUrl
-		);
+		OperationCommonMark.WriteAuthenticationSections(markdown, page.Document, apiBaseUrl);
 	}
 
 	private static void WriteServers(StringBuilder markdown, StructuralViewModel page)
