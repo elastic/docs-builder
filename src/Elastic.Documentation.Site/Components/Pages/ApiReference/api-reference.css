@@ -3545,13 +3545,10 @@ html:has(.api-page-shell) {
 }
 
 .api-url-optional {
-	border-bottom: 1.5px dashed var(--color-text-muted);
-	color: var(--color-text-muted);
+	text-decoration: underline dotted var(--color-text-muted);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
 	cursor: help;
-}
-
-.api-url-optional:hover {
-	color: var(--color-heading);
 }
 
 .optional.type-status {
