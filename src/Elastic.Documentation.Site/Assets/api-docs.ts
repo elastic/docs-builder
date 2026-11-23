@@ -333,8 +333,8 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
-    // Only the section links are this bundle's: the production On this page list has its own scroll spy (toc-nav.ts).
-    initToc(document, '.api-section-links[data-toc]')
+    // Only the sticky section links are this bundle's: the production On this page list has its own scroll spy (toc-nav.ts).
+    initToc(document, '[data-toc][data-toc-sticky]')
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true
