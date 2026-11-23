@@ -22,18 +22,30 @@ internal static partial class ApiCommonMark
 		for (var i = 0; i < lines.Length; i++)
 		{
 			var trimmed = lines[i].TrimStart();
+			var run = FenceRun(trimmed);
 			if (fence is not null)
 			{
-				if (trimmed.StartsWith(fence, StringComparison.Ordinal))
+				// As in CommonMark, only a run of the same character, at least as long, with nothing after it closes the block.
+				if (run is not null && run[0] == fence[0] && run.Length >= fence.Length && string.IsNullOrWhiteSpace(trimmed[run.Length..]))
 					fence = null;
 			}
-			else if (trimmed.StartsWith("```", StringComparison.Ordinal) || trimmed.StartsWith("~~~", StringComparison.Ordinal))
-				fence = trimmed[..3];
+			else if (run is not null)
+				fence = run;
 			else
 				lines[i] = HeadingAnchor().Replace(lines[i], "$1");
 		}
 
 		return string.Join('\n', lines);
+	}
+
+	// The backticks or tildes that open or close a fenced code block, or null when the line is not a fence.
+	private static string? FenceRun(string line)
+	{
+		if (line.Length == 0 || line[0] is not ('`' or '~'))
+			return null;
+
+		var length = line.TakeWhile(c => c == line[0]).Count();
+		return length >= 3 ? line[..length] : null;
 	}
 
 	[GeneratedRegex(@"^(#{1,6}\s.*?)\s*\[[^\[\]]+\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]

@@ -107,4 +107,32 @@ public class ApiCommonMarkTests
 			"""
 			);
 	}
+
+	[Test]
+	public void StripHeadingAnchors_LongerFenceHoldingAShorterOne_KeepsTheWholeBlock()
+	{
+		const string markdown =
+			"""
+			````markdown
+			```
+			# keep [this]
+			````
+
+			## Keys [keys]
+			""";
+
+		ApiCommonMark
+			.StripHeadingAnchors(markdown)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			````markdown
+			```
+			# keep [this]
+			````
+
+			## Keys
+			"""
+			);
+	}
 }
