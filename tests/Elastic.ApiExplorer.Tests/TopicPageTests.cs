@@ -20,6 +20,7 @@ using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -195,6 +196,55 @@ public partial class TopicPageTests
 		child.ShowsAuthentication.Should().BeTrue();
 		navigation.AuthenticationUrl.Should().Be(child.Url);
 		all.OfType<StructuralNavigationItem>().Single().Hidden.Should().BeTrue("the generated page stays only for old links");
+	}
+
+	[Test]
+	public async Task RenderAsync_ChildTitledAuthentication_RendersTheSpecSectionsOnTheApiDescriptionPath()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		// A spec description can hold HTML such as <br>, which only the API description path keeps.
+		var spec = Spec(topics: null, withSchemes: true).Replace(
+			"\"in\": \"header\" }",
+			"\"in\": \"header\", \"description\": \"Send the key.<br>Keep it secret.\" }",
+			StringComparison.Ordinal
+		);
+		var folder = Directory.CreateDirectory(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", $"api-topics-{Guid.NewGuid():N}")
+		);
+		try
+		{
+			var childFile = Path.Combine(folder.FullName, "auth-intro.md");
+			await File.WriteAllTextAsync(childFile, "# Authentication\n\nUse an API key.\n", ct);
+			var context = TestHelpers.CreateBuildContext();
+			var navigation = await Navigation(spec, [childFile], context);
+			var child = ApiExplorerFixture.Walk(navigation).OfType<SimpleMarkdownNavigationItem>().Single();
+			var renderContext = new ApiRenderContext(
+				context,
+				await TestSpecs.LoadValidSpecAsync(spec),
+				new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+			)
+			{ NavigationHtml = string.Empty, CurrentNavigation = child, MarkdownRenderer = PathMarkingRenderer.Instance };
+
+			var fs = new System.IO.Abstractions.TestingHelpers.MockFileSystem();
+			await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+				await child.RenderAsync(stream, renderContext, ct);
+
+			fs.File.ReadAllText("/out.html").Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-markdown-page"));
+		}
+		finally
+		{
+			folder.Delete(recursive: true);
+		}
+	}
+
+	/// <summary>Marks which path rendered each piece of Markdown: the page's own docs parser or the API description parser.</summary>
+	private sealed class PathMarkingRenderer : IMarkdownStringRenderer
+	{
+		public static PathMarkingRenderer Instance { get; } = new();
+
+		public string Render(string markdown, IFileInfo? source) => $"<div class=\"docs-path\">{markdown}</div>";
+
+		public string RenderApiDescription(string markdown, IFileInfo? source) => $"<div class=\"api-path\">{markdown}</div>";
 	}
 
 	[Test]

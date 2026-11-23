@@ -80,14 +80,12 @@ public class SimpleMarkdownNavigationItem(
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx);
-		// The authentication sections render with the page's own Markdown, so their headings are docs headings.
-		var withAuthentication = AppendAuthentication(markdownContent, context, anchors: true);
-		var rendered = context.MarkdownRenderer.RenderPreservingFirstHeadingWithMetadata(withAuthentication, FileInfo);
+		var rendered = context.MarkdownRenderer.RenderPreservingFirstHeadingWithMetadata(markdownContent, FileInfo);
 		var viewModel = new MarkdownPageViewModel(context)
 		{
 			PageTitle = rendered.Title ?? NavigationTitle,
 			MetaTitle = rendered.MetaTitle,
-			BodyHtml = new HtmlString(rendered.Html),
+			BodyHtml = new HtmlString(rendered.Html + AuthenticationHtml(context)?.Value),
 			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent))
 		};
 		var slice = MarkdownPageView.Create(viewModel);
@@ -97,31 +95,37 @@ public class SimpleMarkdownNavigationItem(
 	public async Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
 	{
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx).ConfigureAwait(false);
-		return AppendAuthentication(
-			ApiMarkdown.Prepare(markdownContent, context.CurrentNavigation.NavigationRoot.Url),
-			context,
-			anchors: false
-		);
-	}
-
-	private string AppendAuthentication(string markdown, ApiRenderContext context, bool anchors)
-	{
-		var requirements = ShowsAuthentication ? StructuralViewModel.ReadRequirements(context.Model) : [];
+		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
+		var markdown = ApiMarkdown.Prepare(markdownContent, apiBaseUrl);
+		var requirements = AuthenticationRequirements(context);
 		if (requirements.Count == 0)
 			return markdown;
 
-		var sections = anchors
-			? string.Join(
-				"\n",
-				OperationCommonMark.AuthenticationFragments(
-					requirements,
-					OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
-					anchors: true
-				)
-			)
-			: OperationCommonMark.AuthenticationSections(requirements, OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security));
-		return $"{markdown.TrimEnd()}\n\n{ApiMarkdown.Prepare(sections, context.CurrentNavigation.NavigationRoot.Url)}";
+		var sections = OperationCommonMark.AuthenticationSections(
+			requirements,
+			OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security)
+		);
+		return $"{markdown.TrimEnd()}\n\n{ApiMarkdown.Prepare(sections, apiBaseUrl)}";
 	}
+
+	// The sections come from the spec, so they render on the API description path like the generated Authentication page,
+	// not with the page's own Markdown: spec descriptions can hold HTML that the docs parser would show as text.
+	private HtmlString? AuthenticationHtml(ApiRenderContext context)
+	{
+		var requirements = AuthenticationRequirements(context);
+		if (requirements.Count == 0)
+			return null;
+
+		var fragments = OperationCommonMark.AuthenticationFragments(
+			requirements,
+			OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
+			anchors: true
+		);
+		return ApiMarkdown.RenderFragmentsWithHeadings(context, fragments).Html;
+	}
+
+	private IReadOnlyList<AuthRequirement> AuthenticationRequirements(ApiRenderContext context) =>
+		ShowsAuthentication ? StructuralViewModel.ReadRequirements(context.Model) : [];
 
 	// pageModel is unused (no pre-built model for markdown pages); delegate to the real implementation.
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default) =>
