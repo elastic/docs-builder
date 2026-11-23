@@ -532,6 +532,16 @@
 	}
 }
 
+/* A chip of four or more methods is wider than the method column can spare beside the title and the route, so such a row
+   stacks as it does on a phone, at any width. */
+.api-group-row:has(.api-method-group > :nth-child(4)) {
+	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-areas:
+		'method chevron'
+		'title chevron'
+		'routes chevron';
+}
+
 /*
  * Labeled HTTP method chips on operation/overview pages — Figma APIs node 10067:6424.
  * Icon + uppercase label, 24px tall, 8px radius. Sidebar glyphs stay in .nav-v2-api-method.
