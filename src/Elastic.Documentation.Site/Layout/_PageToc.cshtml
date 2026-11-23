@@ -1,7 +1,8 @@
 @inherits RazorSlice<IReadOnlyList<Elastic.Documentation.TocItem>>
-@* "On this page" in the right rail of docs and API pages. toc-nav.ts marks the current link with toc-current; data-toc-link
-   lets the design system scroll spy find the links where the rail opts in with data-toc. *@
-<div class="font-sans">
+@* "On this page" in the right rail of docs and API pages, one component: .page-toc in styles.css sets its link type, and
+   toc-nav.ts marks the current link with toc-current. Each layout hides its rail where it sits under the article.
+   data-toc-link lets the design system scroll spy find the links where the rail opts in with data-toc. *@
+<div class="page-toc font-sans">
 	<div class="font-bold mb-2">On this page</div>
 	<div class="relative toc-progress-container font-body">
 		<div class="toc-progress-indicator absolute top-0 h-0 w-[1px] bg-blue-elastic transition-[transform,height] duration-200 ease-out "></div>

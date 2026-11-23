@@ -151,6 +151,13 @@ body {
 		}
 	}
 
+	/* On this page (_PageToc) on docs and API pages alike: the sidebar link type, wherever the rail sits. Each layout
+	   hides its rail where the rail sits under the article. The design system bundle styles its own copy. */
+	.page-toc .sidebar-link {
+		@apply text-ink-light inline-block text-sm leading-[1.2em] text-pretty hover:text-black;
+		word-break: break-word;
+	}
+
 	.nav-badge {
 		@apply ml-auto inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[9px] font-bold;
 	}
