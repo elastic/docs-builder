@@ -58,8 +58,9 @@
 		var group = Model.Groups[i];
 		var headingId = "api-catalog-group-" + i;
 		var featuredColumns = group.Featured.Count == 3 ? "min-[1024px]:grid-cols-3" : "min-[1024px]:grid-cols-2";
-		// Without featured cards the cards of a group sit three across from the same width as the featured row, so both are the same size.
-		var otherColumns = group.Featured.Count > 0 ? featuredColumns : "min-[1024px]:grid-cols-3";
+		// Without featured cards the cards of a group step from one to two to three columns. Three starts at the width
+		// where the featured row goes three across, so from there both rows hold cards of the same size.
+		var otherColumns = group.Featured.Count > 0 ? featuredColumns : "sm:grid-cols-2 min-[1024px]:grid-cols-3";
 		var unattached = group.Unattached.ToList();
 		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
 			@if (group.Title is not null)
