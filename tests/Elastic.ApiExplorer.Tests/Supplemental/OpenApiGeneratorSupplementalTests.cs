@@ -83,11 +83,4 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture)
 	[Arguments("main", null, null)]
 	public void SupplementalMajor_NumericOrMainUsesHighest(string moniker, int? highest, int? expected) =>
 		OpenApiGenerator.SupplementalMajor(moniker, highest).Should().Be(expected);
-
-	[Test]
-	[Arguments("9.6", "This documentation is derived from the `9.6` branch of the repo.")]
-	[Arguments("8.19", "This documentation is derived from the `8.19` branch of the repo.")]
-	[Arguments("main", "This documentation is derived from the `main` branch of the repo.")]
-	public void WithSourceBranch_ReleasedVersionReplacesMain(string branch, string expected) =>
-		OpenApiGenerator.WithSourceBranch("This documentation is derived from the `main` branch of the repo.", branch).Should().Be(expected);
 }

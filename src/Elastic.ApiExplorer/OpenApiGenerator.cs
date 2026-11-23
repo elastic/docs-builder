@@ -632,7 +632,8 @@ public class OpenApiGenerator(
 			return null;
 
 		var document = await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
-		if (document?.Info is { } info)
+		// The moniker, not the branch, marks the unreleased spec: some repositories publish main from master.
+		if (version.Moniker != "main" && document?.Info is { } info)
 			info.Description = WithSourceBranch(info.Description, version.Version);
 		return document;
 	}
@@ -643,9 +644,7 @@ public class OpenApiGenerator(
 	/// </summary>
 	// TODO: remove once the specs drop this wording and the page renders the branch from the version index (elastic/docs-eng-team#1237).
 	internal static string? WithSourceBranch(string? description, string branch) =>
-		branch == "main"
-			? description
-			: description?.Replace("derived from the `main` branch", $"derived from the `{branch}` branch", StringComparison.Ordinal);
+		description?.Replace("derived from the `main` branch", $"derived from the `{branch}` branch", StringComparison.Ordinal);
 
 	private static readonly OpenApiDocument CatalogDocument = new()
 	{
