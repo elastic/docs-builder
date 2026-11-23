@@ -356,4 +356,23 @@ public class ServerlessPromotionTests
 		svc.Product.Should().Be(product);
 		svc.StagingSlice.Should().Be(stagingSlice);
 	}
+
+	[Test]
+	public void PreviewBundleFileNames_NameEveryRepositoryOfTheServiceAndOnlyThose() =>
+		ServerlessPromotion
+			.PreviewBundleFileNames(ServerlessPromotion.Services["elasticsearch"])
+			.Should()
+			.Equal(
+				"elasticsearch-serverless-cloud-serverless-staging.yaml",
+				"elasticsearch-serverless-cloud-serverless-head.yaml",
+				"elasticsearch-cloud-serverless-staging.yaml",
+				"elasticsearch-cloud-serverless-head.yaml"
+			);
+
+	[Test]
+	public void PreviewBundleFileNames_LeaveTheBundlesOfAServiceThatSharesTheProductFolder() =>
+		ServerlessPromotion
+			.PreviewBundleFileNames(ServerlessPromotion.Services["kibana"])
+			.Should()
+			.Equal("kibana-cloud-serverless-staging.yaml", "kibana-cloud-serverless-head.yaml");
 }

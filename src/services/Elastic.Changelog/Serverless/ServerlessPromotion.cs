@@ -165,6 +165,18 @@ public static partial class ServerlessPromotion
 		];
 	}
 
+	/// <summary>
+	/// The files a preview of <paramref name="svc"/> writes, named <c>{repo}-{product}-{label}.yaml</c>: one per repository
+	/// (the service repository and its submodules) and label. A run removes them first, so a release that no longer has changes,
+	/// because production caught up, does not stay on the site. Other services write to the same product folder, so only these names go.
+	/// </summary>
+	public static IReadOnlyList<string> PreviewBundleFileNames(ServerlessService svc) =>
+		[
+			.. new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).SelectMany(
+				repo => new[] { StagingLabel, HeadLabel }.Select(label => $"{repo}-{svc.Product}-{label}.yaml")
+			)
+		];
+
 	/// <summary>The first 12 characters of a ref, in lower case. It names a promotion in serverless-gitops and in its review pull request.</summary>
 	public static string ShortRef(string gitRef) => (gitRef.Length > 12 ? gitRef[..12] : gitRef).ToLowerInvariant();
 

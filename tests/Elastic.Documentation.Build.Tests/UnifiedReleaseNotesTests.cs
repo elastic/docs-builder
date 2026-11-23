@@ -90,9 +90,9 @@ public class UnifiedReleaseNotesTests : IDisposable
 			ExpectedVersions = expectedVersions
 		};
 
-	private UnifiedReleaseNotesBuildService Service()
+	private UnifiedReleaseNotesBuildService Service(params Product[] extraProducts)
 	{
-		var products = Products.ToDictionary(p => p.Id).ToFrozenDictionary();
+		var products = Products.Concat(extraProducts).ToDictionary(p => p.Id).ToFrozenDictionary();
 		var productsConfiguration = new ProductsConfiguration
 		{
 			Products = products,
@@ -370,6 +370,49 @@ public class UnifiedReleaseNotesTests : IDisposable
 			.NotContain("Elasticsearch unified change");
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "auditbeat")).Should().BeFalse();
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "release-notes")).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task Build_AdditionalProductWithLabelBundles_MergesTheServicesOfALabelAndKeepsTheLabelsApart()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		_ = WriteBundle(
+			"cloud-serverless",
+			"elasticsearch-serverless-cloud-serverless-staging.yaml",
+			"staging",
+			"Elasticsearch staging change"
+		);
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-head.yaml", "head", "Kibana head change");
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { AdditionalProductIds = ["cloud-serverless"] };
+
+		var succeeded = await Service(Serverless).Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(0);
+		var site = _fileSystem.Path.Join(_temp.FullName, "site");
+		var staging = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "staging", "index.html"));
+		staging.Should().Contain("Kibana staging change").And.Contain("Elasticsearch staging change").And.NotContain("Kibana head change");
+		var head = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "head", "index.html"));
+		head.Should().Contain("Kibana head change").And.NotContain("staging change");
+		var index = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "index.html"));
+		index.IndexOf("Staging", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("HEAD", StringComparison.Ordinal));
+		_fileSystem.File.Exists(_fileSystem.Path.Join(site, "kibana", "9.5.0", "index.html")).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task Build_AdditionalProductBundlesWithoutOptingIn_AreLeftOutOfTheSite()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service(Serverless).Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "cloud-serverless")).Should().BeFalse();
 	}
 
 	[Test]

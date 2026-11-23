@@ -100,6 +100,7 @@ internal sealed class PreviewReleaseCommands(
 	/// <remarks>
 	/// The site has a page per version for every DRA product, and the <c>staging</c> and <c>head</c> pages of the serverless products.
 	/// A product without bundles is left out of the site, and the build fails only when no product has any bundle.
+	/// The site is built from the bundles on disk: the release schedule is not read.
 	/// </remarks>
 	/// <param name="bundlesDir">Folder that holds one sub-folder of bundle files per product. Defaults to <c>./bundles</c>.</param>
 	/// <param name="output">Destination for the generated site. Defaults to <c>./site</c>. The folder is cleaned first.</param>
@@ -117,7 +118,7 @@ internal sealed class PreviewReleaseCommands(
 	{
 		string[] serverlessProducts = [.. ServerlessPromotion.Services.Values.Select(s => s.Product).Distinct(StringComparer.Ordinal)];
 		return await Unified.BuildSiteAsync(
-			"preview",
+			null,
 			new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl),
 			serverlessProducts,
 			ctx
@@ -160,6 +161,7 @@ internal sealed class PreviewReleaseCommands(
 		if (head is null)
 			return false;
 
+		RemoveSupersededBundles(svc, rootOutput);
 		var targets = ServerlessPromotion.PlanPreview(versionsYaml, svc, head);
 		if (targets.Count == 0)
 		{
@@ -194,6 +196,19 @@ internal sealed class PreviewReleaseCommands(
 		if (!productOutput.EnumerateFileSystemInfos().Any())
 			productOutput.Delete();
 		return true;
+	}
+
+	// A reused output folder may hold the bundles of an earlier run, such as a Staging release that production has caught up with.
+	private void RemoveSupersededBundles(ServerlessService svc, DirectoryInfo rootOutput)
+	{
+		foreach (var name in ServerlessPromotion.PreviewBundleFileNames(svc))
+		{
+			var path = Path.Combine(rootOutput.FullName, svc.Product, name);
+			if (!File.Exists(path))
+				continue;
+			_logger.LogInformation("Removing the bundle of an earlier run: {Path}", path);
+			File.Delete(path);
+		}
 	}
 
 	private async Task<string?> ResolveBranchHeadAsync(ServerlessBundler bundler, ServerlessService svc, CancellationToken ctx)

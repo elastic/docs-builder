@@ -33,6 +33,9 @@ public sealed record ServerlessBundleRequest(
 	/// <summary>Write a bundle with no entries for a range with no notes, so the release stays on record.</summary>
 	public bool WriteEmptyRange { get; init; }
 
+	/// <summary>Called for a range with no notes when <see cref="WriteEmptyRange"/> is off. The range is then a success with no bundle, not an error.</summary>
+	public Action? OnEmptyRange { get; init; }
+
 	/// <summary>When set, the short form of this ref ends the bundle file names, so promotions on one day do not share a name.</summary>
 	public string? ShortRefOf { get; init; }
 }
@@ -152,6 +155,7 @@ public sealed class ServerlessBundler(
 				EndGitRef = endRef,
 				BaseRef = svc.BaseBranch,
 				WriteEmptyRange = request.WriteEmptyRange,
+				OnEmptyRange = request.OnEmptyRange,
 				DryRun = request.DryRun,
 				OnBundlePathResolved = path => paths.Add(path)
 			};
@@ -165,7 +169,7 @@ public sealed class ServerlessBundler(
 			);
 			var bundleService = new ChangelogBundlingService(
 				logFactory,
-				ChangelogFileSystem.FromWorkingDirectory(),
+				ChangelogFileSystem.FromWorkingDirectory(extraRoots: [output.FullName]),
 				configurationContext,
 				cache: cache
 			);
