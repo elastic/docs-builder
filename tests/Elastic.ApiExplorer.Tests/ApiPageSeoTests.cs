@@ -21,6 +21,19 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiPageSeoTests(ApiExplorerFixture fixture)
 {
 	[Test]
+	public void FallbackDescription_OperationWithLongRoute_StaysWithinTheLimit()
+	{
+		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var operation = item.Model with { Route = "/" + new string('a', 400) };
+
+		var description = ApiFallbackDescription.For(operation, RenderContext(item), "Run a search");
+
+		description.Should().NotBeNull();
+		description.Length.Should().BeLessThanOrEqualTo(ApiSeoDescription.MaxLength);
+		description.Should().EndWith("...");
+	}
+
+	[Test]
 	public void OperationLayout_UsesSummaryInTitleAndExcerptedDescription()
 	{
 		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");

@@ -28,6 +28,17 @@ internal static class ApiFallbackDescription
 		ApiRenderContext context,
 		string navigationTitle,
 		IReadOnlyList<ApiOverviewRow>? tagRows = null
+	) => Sentence(page, context, navigationTitle, tagRows) is { } text ? Cap(text) : null;
+
+	/// <summary>Cuts at or before <see cref="ApiSeoDescription.MaxLength"/> characters, ellipsis included, so a long route or URL cannot push a description past the limit.</summary>
+	private static string Cap(string text) =>
+		text.Length <= ApiSeoDescription.MaxLength ? text : string.Concat(text.AsSpan(0, ApiSeoDescription.MaxLength - 3).TrimEnd(), "...");
+
+	private static string? Sentence(
+		IApiModel page,
+		ApiRenderContext context,
+		string navigationTitle,
+		IReadOnlyList<ApiOverviewRow>? tagRows
 	)
 	{
 		var product = context.ProductName;
@@ -42,9 +53,7 @@ internal static class ApiFallbackDescription
 					)
 				),
 			ApiOperation operation =>
-				ApiSeoDescription.Truncate(
-					$"{OpenApiExtensionReader.GetSummary(operation.Operation) ?? navigationTitle}: {operation.OperationType.Method.ToUpperInvariant()} {operation.Route} in the {product} API."
-				),
+				$"{OpenApiExtensionReader.GetSummary(operation.Operation) ?? navigationTitle}: {operation.OperationType.Method.ToUpperInvariant()} {operation.Route} in the {product} API.",
 			ApiStructuralPage { Kind: ApiStructuralKind.Authentication } =>
 				WithList(
 					$"How to authenticate requests to the {product} API",
@@ -62,6 +71,6 @@ internal static class ApiFallbackDescription
 	private static string WithList(string sentence, IEnumerable<string> items)
 	{
 		var listed = items.Distinct(StringComparer.Ordinal).Take(ListedItems).ToArray();
-		return ApiSeoDescription.Truncate(listed.Length == 0 ? $"{sentence}." : $"{sentence}: {string.Join(", ", listed)}.");
+		return listed.Length == 0 ? $"{sentence}." : $"{sentence}: {string.Join(", ", listed)}.";
 	}
 }
