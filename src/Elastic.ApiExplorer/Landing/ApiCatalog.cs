@@ -25,7 +25,7 @@ public class ApiCatalog : IApiGroupingModel
 
 	/// <summary>The line under the title.</summary>
 	public const string PageLede =
-		"Reference documentation for the Elastic REST APIs, for self-managed, Elastic Cloud and Serverless deployments.";
+		"Reference documentation for Elastic REST APIs to interact with the Elastic Stack and orchestrate your deployments.";
 
 	/// <summary>Section the catalog view hands to its layout, rendered above the width-limited container.</summary>
 	public const string HeroSection = "api-catalog-hero";
