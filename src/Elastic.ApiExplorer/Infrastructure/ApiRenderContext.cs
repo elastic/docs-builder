@@ -60,6 +60,9 @@ public record ApiRenderContext(
 	/// <summary>The version of the tree being rendered: <c>main</c> or a numeric major. Null on the catalog and other previews.</summary>
 	public string? Moniker { get; init; }
 
+	/// <summary>The minor release the tree renders from, such as <c>9.6</c>. Null for <c>main</c> and when the version index names no minor. It does not depend on the switcher, which is empty when only one version renders.</summary>
+	public string? Release { get; init; }
+
 	/// <summary>The newest version the API declares, whether or not its tree rendered. The versionless URL belongs to it.</summary>
 	public string? DefaultMoniker { get; init; }
 

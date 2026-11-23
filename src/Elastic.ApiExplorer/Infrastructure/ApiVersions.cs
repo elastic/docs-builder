@@ -9,6 +9,20 @@ public static class ApiVersions
 {
 	public static int? TryParseMajor(string moniker) => int.TryParse(moniker, out var major) ? major : null;
 
+	/// <summary>
+	/// The minor release a version-index branch names, such as <c>9.6</c>, or null for <c>main</c>, <c>master</c>,
+	/// a bare major or anything with a patch segment. The branch is what the page renders from, so it is what the label shows.
+	/// </summary>
+	public static string? ReleaseOf(string? branch)
+	{
+		var parts = branch?.Split('.');
+		var isRelease = parts is [var major, var minor] && IsNumber(major) && IsNumber(minor);
+		return isRelease ? branch : null;
+	}
+
+	/// <summary>Digits only, unlike <see cref="int.TryParse(string?, out int)"/>, which also accepts a sign and surrounding white space.</summary>
+	private static bool IsNumber(string part) => part.Length > 0 && part.All(char.IsAsciiDigit);
+
 	/// <summary>Sort key that puts <c>main</c> first and numeric majors after it, newest first, when sorted descending.</summary>
 	public static int Recency(string moniker) => moniker == "main" ? int.MaxValue : TryParseMajor(moniker) ?? 0;
 

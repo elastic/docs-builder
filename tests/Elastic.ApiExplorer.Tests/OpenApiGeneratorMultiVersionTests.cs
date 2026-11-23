@@ -977,15 +977,78 @@ public partial class OpenApiGeneratorMultiVersionTests
 			"""
 			versionless badges: none
 			v9 badges: none
-			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><span class="applies applies-inline"><a class="applicable-info" href="/api/elasticsearch/operation/operation-ping"><span class="applicable-name">Latest: v9</span></a></span></span></header>
+			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span><span class="applies applies-inline"><a class="applicable-info" href="/api/elasticsearch/operation/operation-ping"><span class="applicable-name">Latest: v9</span></a></span></span></header>
 			next badges: none
 			versionless: none
 			v9: none
 			v8: none
 			next: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch/operation/operation-ping"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
 			versionless landing: none
-			v8 landing: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
+			v8 landing: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
 			next landing: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
+			"""
+		);
+	}
+
+	[Test]
+	public async Task Generate_EachTree_ShowsTheIndexedMinorReleaseOnTheLandingFact()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		// the specs read 1.0, so a fact that fell back to info.version would show it on every page
+		var facts = string.Join(
+			"\n",
+			$"versionless: {ReadVersionFact(context, outputRoot, [])}",
+			$"v9: {ReadVersionFact(context, outputRoot, ["v9"])}",
+			$"v8: {ReadVersionFact(context, outputRoot, ["v8"])}",
+			$"next: {ReadVersionFact(context, outputRoot, ["next"])}"
+		);
+
+		facts.Should().MatchInlineSnapshot(
+			"""
+			versionless: <dt>Version</dt><dd>9.4</dd>
+			v9: <dt>Version</dt><dd>9.4</dd>
+			v8: <dt>Version</dt><dd>8.19</dd>
+			next: <dt>Version</dt><dd>1.0</dd>
+			"""
+		);
+	}
+
+	[Test]
+	public async Task Generate_OnlyOneTreeRenders_KeepsTheMinorReleaseWithoutASwitcher()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(missingVersionsAreUnreadable: true, ("8.19", SpecDocument("Elasticsearch 8")));
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var rendered = string.Join(
+			"\n",
+			$"v8 fact: {ReadVersionFact(context, outputRoot, ["v8"])}",
+			$"v8 landing notice: {ReadNotice(context, outputRoot, ["v8"])}"
+		);
+
+		rendered.Should().MatchInlineSnapshot(
+			"""
+			v8 fact: <dt>Version</dt><dd>8.19</dd>
+			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span></p>
 			"""
 		);
 	}
@@ -1019,9 +1082,9 @@ public partial class OpenApiGeneratorMultiVersionTests
 		notices.Should().MatchInlineSnapshot(
 			"""
 			v8 notice: none
-			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span></span></header>
+			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span></span></header>
 			next notice: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span></p>
-			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span></p>
+			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span></p>
 			"""
 		);
 	}
@@ -1326,6 +1389,10 @@ public partial class OpenApiGeneratorMultiVersionTests
 	/// <summary>The version notice under the title of a generated page, on one line, or <c>none</c>.</summary>
 	private static string ReadNotice(BuildContext context, string outputRoot, string[] segments) =>
 		ReadFragment(context, outputRoot, segments, "<p class=\"api-version-notice.*?</p>");
+
+	/// <summary>The "Version" fact of a generated landing page, on one line, or <c>none</c>.</summary>
+	private static string ReadVersionFact(BuildContext context, string outputRoot, string[] segments) =>
+		ReadFragment(context, outputRoot, segments, "<dt>Version</dt>\\s*<dd>.*?</dd>");
 
 	/// <summary>The badges row of a generated operation page, on one line, or <c>none</c>.</summary>
 	private static string ReadBadges(BuildContext context, string outputRoot, string[] segments) =>

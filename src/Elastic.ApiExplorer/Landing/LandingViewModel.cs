@@ -43,7 +43,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public string Heading => ApiPageTitle.Heading(ApiInfo.Title, ApiPageTitle.ReleasedVersionLabel(RenderContext.VersionSwitcherItems));
 
-	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
+	/// <summary>The minor release this tree renders from, such as <c>9.6</c>. A spec's own <c>info.version</c> is only the fallback, because ECE's reads <c>1</c> for every release.</summary>
+	public string? Version => RenderContext.Release ?? (string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version);
 
 	public bool HasFacts => Servers.Count > 0 || Version is not null;
 
