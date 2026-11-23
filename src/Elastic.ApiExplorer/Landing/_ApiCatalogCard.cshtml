@@ -11,13 +11,8 @@
 	var icon = attached ? "size-5" : "size-8";
 	var title = attached ? "text-sm" : "text-xl";
 	var desc = attached ? "mt-0.5 text-xs" : "mt-2";
-	// A featured card shares its cell with a tag-on, so it takes the height the tag-on leaves. Any other card fills its cell.
-	var height = Model.Kind switch
-	{
-		ApiCatalogCardKind.Featured => "grow",
-		ApiCatalogCardKind.Attached => "",
-		_ => "h-full"
-	};
+	// A standard card fills its list item. Featured and attached cards sit in a grid cell that sizes them.
+	var height = Model.Kind == ApiCatalogCardKind.Standard ? "h-full" : "";
 	var kind = attached ? "api-catalog-card-attached" : Model.HasVariant ? "api-catalog-card-parent" : "";
 }
 @* The card is the link. Nothing inside it is interactive, so there is no overlay to get trapped in a positioned

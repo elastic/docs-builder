@@ -80,6 +80,7 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 			Entry("elasticsearch-serverless", "Elasticsearch Serverless API")
 		);
 
+		Count(html, "api-catalog-cell-tagged").Should().Be(1, "only the cell with a tag-on spans two rows");
 		var between = html[PositionOf(html, "elasticsearch")..PositionOf(html, "elasticsearch-serverless")];
 		between.Should().NotContain("<li", "the tag-on is in the same list item as its parent, so the grid cannot separate them");
 	}

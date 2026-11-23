@@ -3465,10 +3465,23 @@ navigation-search[variant='hero'] {
 	line-clamp: 3;
 }
 
+/* A featured card and its tag-on share one cell. A cell with a tag-on spans two rows of the list through a subgrid, so
+   the featured cards of a row share their height, the tag-ons share the row below them and a card without a tag-on
+   ends with the others. */
+.api-catalog .api-catalog-cell {
+	display: grid;
+}
+
+.api-catalog .api-catalog-cell-tagged {
+	grid-row: span 2;
+	grid-template-rows: subgrid;
+}
+
 /* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
-   its border, with a light fill and a one-line description. */
+   its border, with a light fill and a one-line description. The negative margin cancels the 24px row gap of the list,
+   plus 1px so the two cards share one border. It is in pixels because the gap is, while rem is 14px on the classic layout. */
 .api-catalog .api-catalog-card-attached {
-	margin-top: -1px;
+	margin-top: -25px;
 	background: var(--color-grey-10);
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
