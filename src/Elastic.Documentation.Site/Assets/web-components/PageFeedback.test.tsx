@@ -251,6 +251,31 @@ describe('PageFeedback', () => {
         ).toHaveLength(1)
     })
 
+    it('describes Another reason differently for each reaction', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
+
+        await user.click(
+            screen.getByRole('button', { name: 'Yes, this page was helpful' })
+        )
+        expect(
+            screen.getByRole('checkbox', { name: /Another reason/ })
+        ).toHaveAccessibleName(
+            /^Another reason\s*Something else helped\. Tell us more below\.$/
+        )
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'No, this page was not helpful',
+            })
+        )
+        expect(
+            screen.getByRole('checkbox', { name: /Another reason/ })
+        ).toHaveAccessibleName(
+            /^Another reason\s*Something else went wrong\. Tell us more below\.$/
+        )
+    })
+
     it('shows a visible label above the comment field', async () => {
         const user = userEvent.setup()
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
