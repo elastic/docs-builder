@@ -506,12 +506,12 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
-	/// The document that titles the API: the default version's, or the first released one that loaded when the default
+	/// The document that titles the API: the default version's, or the newest released one that loaded when the default
 	/// did not. Never the unreleased tree, which no listing links to.
 	/// </summary>
 	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
 		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == resolved.Routes.DefaultMoniker)
-			?? resolved.Documents.FirstOrDefault(v => !resolved.Routes.IsNext(v.Version.Moniker));
+			?? resolved.Documents.Where(v => !resolved.Routes.IsNext(v.Version.Moniker)).MaxBy(v => ApiVersions.Recency(v.Version.Moniker));
 
 	internal ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{

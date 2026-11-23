@@ -264,6 +264,40 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task CatalogEntry_NewestMajorFailsToLoad_PrefersTheNewestSurvivorOverIndexOrder()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(
+			BaseUri,
+			MultiVersionHandler(
+				elasticsearchVersions: /*lang=json,strict*/ """{ "main": { "version": "main" }, "7": { "version": "7.17" }, "8": { "version": "8.19" }, "9": { "version": "9.4" } }"""
+			),
+			sleep: (_, _) => Task.CompletedTask
+		);
+		var reader = CreateVersionedReader(
+			missingVersionsAreUnreadable: true,
+			("main", SpecDocument("Elasticsearch main")),
+			("7.17", SpecDocument("Elasticsearch 7")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var apiConfig = ApiConfig(product);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
+
+		entry!.Url.Should().Be("/api/elasticsearch/v8", "the index lists 7 before 8, and the card opens the newest release that rendered");
+		entry.Title.Should().Be("Elasticsearch 8");
+	}
+
+	[Test]
 	public async Task CatalogEntry_OnlyTheUnreleasedTreeLoads_HasNoCard()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -1323,7 +1357,14 @@ public partial class OpenApiGeneratorMultiVersionTests
 		return reader;
 	}
 
-	private static HttpMessageHandler MultiVersionHandler(string repository = "elastic/elasticsearch") =>
+	private const string MainNineAndEight = /*lang=json,strict*/
+		"""{ "main": { "version": "main" }, "9": { "version": "9.4" }, "8": { "version": "8.19" } }""";
+
+	/// <param name="elasticsearchVersions">The versions the index declares for the Elasticsearch spec, in the order it lists them.</param>
+	private static HttpMessageHandler MultiVersionHandler(
+		string repository = "elastic/elasticsearch",
+		string elasticsearchVersions = MainNineAndEight
+	) =>
 		new StubHandler(request =>
 		{
 			if (request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal))
@@ -1332,11 +1373,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 					$$"""
 					{
 						"{{repository}}": {
-							"elasticsearch-openapi.json": {
-								"main": { "version": "main" },
-								"9": { "version": "9.4" },
-								"8": { "version": "8.19" }
-							},
+							"elasticsearch-openapi.json": {{elasticsearchVersions}},
 							"elastic-cloud-serverless.yml": {
 								"main": { "version": "main" },
 								"8": { "version": "8.19" }
