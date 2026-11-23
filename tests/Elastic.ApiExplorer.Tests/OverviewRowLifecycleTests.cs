@@ -64,6 +64,51 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		html.Should().MatchHtmlSnapshot();
 	}
 
+	[Test]
+	public async Task Render_RouteWithOptionalSegment_BracketsTheSegmentSomeVariantsLeaveOut()
+	{
+		var route = new EndpointRow(
+			"/{index}/_search",
+			"post",
+			["get"],
+			[new EndpointSegment("{index}", Optional: true), new EndpointSegment("_search", Optional: false)]
+		);
+
+		var html = await RenderRouteAsync(route);
+
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<code class="api-group-route">
+				<wbr>[/{index}]<wbr>/_search</code>
+			"""
+		);
+	}
+
+	[Test]
+	public async Task Render_RouteWithSeveralOptionalSegments_KeepsTheRouteAsWritten()
+	{
+		var route = new EndpointRow(
+			"/items/by-owner/{owner}",
+			"get",
+			[],
+			[
+				new EndpointSegment("items", Optional: false),
+				new EndpointSegment("by-owner", Optional: true),
+				new EndpointSegment("{owner}", Optional: true)
+			]
+		);
+
+		var html = await RenderRouteAsync(route);
+
+		// Brackets on each segment would suggest /items/{owner} and /items/by-owner are routes too.
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<code class="api-group-route">
+				<wbr>/items<wbr>/by-owner<wbr>/{owner}</code>
+			"""
+		);
+	}
+
 	private (ApiOverviewRow Row, IReadOnlyList<ApiOverviewRow> Siblings) RowFor(string operationId) =>
 		RowFor(fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == operationId));
 
@@ -72,6 +117,11 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		var rows = ApiOverviewBuilder.BuildTagChildren(operation.Parent!, fixture.Context.VersionsConfiguration);
 		return (rows.Single(r => r.Url == operation.Url), [.. rows.Where(r => r.Url != operation.Url)]);
 	}
+
+	private static async Task<string> RenderRouteAsync(EndpointRow route) =>
+		await _GroupRoute.Create(new GroupRouteModel(route)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
 
 	private static async Task<string> RenderAsync(ApiOverviewRow row)
 	{

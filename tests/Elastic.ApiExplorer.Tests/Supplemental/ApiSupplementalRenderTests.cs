@@ -627,7 +627,67 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().NotContain("id=\"sneaky\"", "raw HTML cannot claim an id the sidebar does not link to");
 		html.Split("id=\"getting-started\"").Length.Should().Be(2, "the post section owns its anchor");
 		html.Should().Contain("<h3 id=\"getting-started\">");
-		html.Should().NotContain("href=\"#getting-started\"", "the intro heading's own link would land on the post section");
+		html
+			.Split("href=\"#getting-started\"")
+			.Length
+			.Should()
+			.Be(2, "only On this page links the post section; the intro heading's own link would land on it too");
+	}
+
+	[Test]
+	public async Task Tag_OnThisPage_ListsIntroHeadingsSectionsThenEndpoints()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(
+			nav.Index.Model,
+			nav,
+			tags: Doc(
+				"search",
+				"""
+			## Description
+
+			### Overview
+
+			#### Too deep
+
+			### Endpoints
+
+			## Getting started
+
+			SUPP_TAG_GETTING_STARTED
+			"""
+			)
+		);
+
+		// Intro headings down to level 3, then the supplemental sections as level 3, then the page's Endpoints entry.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#toc-nav"));
+		html.Split("id=\"endpoints\"").Length.Should().Be(2, "an intro heading cannot claim the id the endpoint list owns");
+	}
+
+	[Test]
+	public async Task Tag_SupplementalEndpointsSection_LeavesTheEndpointsAnchorToTheList()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(
+			nav.Index.Model,
+			nav,
+			tags: Doc(
+				"search",
+				"""
+			## Description
+
+			Intro.
+
+			## Endpoints
+
+			SUPP_TAG_ENDPOINTS_BODY
+			"""
+			)
+		);
+
+		html.Split("id=\"endpoints\"").Length.Should().Be(2, "only the list's heading owns the anchor On this page links to");
+		html.Should().Contain("<h3 id=\"endpoints-2\">Endpoints</h3>");
+		html.Should().Contain("href=\"#endpoints-2\"");
 	}
 
 	[Test]
@@ -639,9 +699,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-group-list");
 		html.Should().Contain("class=\"api-group-row\"");
 		html.Should().Contain("class=\"api-overview-title\"");
-		html.Should().Contain("api-url-row");
+		html.Should().Contain("class=\"api-group-route\"");
 		html.Should().NotContain("<table");
-		html.Should().NotContain("api-url-list-item-landing");
 	}
 
 	[Test]
@@ -681,7 +740,6 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 			.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal)
 			.Should()
 			.BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
-		html.Should().NotContain("api-landing-meta");
 		html.Should().NotContain("Reference topics");
 	}
 
@@ -711,14 +769,31 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Product_OverviewRows_ListEveryEndpointInTheGroupedIndex()
+	public async Task Product_Landing_ListsGroupsNotOperations()
 	{
 		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
 
-		html.Should().Contain("api-index-group");
-		html.Should().Contain("api-index-item");
-		html.Should().NotContain("api-group-row");
-		html.Should().NotContain("<table");
+		html.Should().Contain("class=\"api-group-row api-index-row\" href=\"/api/fixture/group/");
+		html.Should().NotContain("api-group-route", "operation rows carry a route; group rows do not");
+	}
+
+	[Test]
+	public async Task Product_Landing_GroupCard_SummarizesTheSupplementalDescription()
+	{
+		var html = await RenderAsync(
+			fixture.Navigation.Index.Model,
+			fixture.Navigation,
+			tags: Doc("search", """
+			## Description
+
+			SupplementalCardSummary
+			""")
+		);
+
+		html.Should().Contain(
+			"<span class=\"api-index-row-summary\">SupplementalCardSummary</span>",
+			"the card says what the group page says"
+		);
 	}
 
 	[Test]

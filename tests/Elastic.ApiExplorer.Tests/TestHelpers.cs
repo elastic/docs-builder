@@ -163,13 +163,17 @@ public static class TestHelpers
 	public static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
 
 	/// <summary>Renders an index page (product landing or group page) to HTML.</summary>
-	public static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
+	public static async Task<string> RenderIndexAsync(
+		ILeafNavigationItem<IApiModel> index,
+		INavigationItem current,
+		OpenApiInfo? info = null
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var context = CreateBuildContext(collector);
 		var renderContext = new ApiRenderContext(
 			context,
-			new OpenApiDocument(),
+			info is null ? new OpenApiDocument() : new OpenApiDocument { Info = info },
 			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
 		)
 		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };

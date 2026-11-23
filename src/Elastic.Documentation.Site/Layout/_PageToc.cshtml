@@ -1,6 +1,6 @@
 @inherits RazorSlice<IReadOnlyList<Elastic.Documentation.TocItem>>
-@* "On this page" in the right rail of docs and API pages. It sits inside a .sidebar, which sets the link type, and toc-nav.ts
-   marks the current link with toc-current. *@
+@* "On this page" in the right rail of docs and API pages. toc-nav.ts marks the current link with toc-current; data-toc-link
+   lets the design system scroll spy find the links where the rail opts in with data-toc. *@
 <div class="font-sans">
 	<div class="font-bold mb-2">On this page</div>
 	<div class="relative toc-progress-container font-body">
@@ -11,7 +11,8 @@
 				<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
 					<a
 						class="sidebar-link inline-block my-1.5 @(item.Level == 3 ? "ml-4" : string.Empty)"
-						href="#@item.Slug">
+						href="#@item.Slug"
+						data-toc-link>
 						@item.Heading
 					</a>
 				</li>

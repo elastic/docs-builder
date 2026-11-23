@@ -136,7 +136,7 @@ internal static class ApiMarkdownFrontMatter
 		{
 			ApiCatalog => ApiCatalog.PageDescription,
 			ApiLanding => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
-			ApiTag tag => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
+			ApiTag tag => TagSummary(tag, context),
 			ApiOperation operation =>
 				FirstLine(
 					ApiMarkdown.Prepare(
@@ -155,7 +155,12 @@ internal static class ApiMarkdownFrontMatter
 		};
 	}
 
-	private static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
+	/// <summary>The one-line description of a group, from its supplemental description when it has one: what its meta description and its card on the product landing page say.</summary>
+	internal static string? TagSummary(ApiTag tag, ApiRenderContext context) =>
+		ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), context.CurrentNavigation.NavigationRoot.Url));
+
+	/// <summary>The description a group shows: its supplemental one when it has one, else the spec's.</summary>
+	internal static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
 		context.TagSupplemental.TryGetValue(tag.Name, out var doc) ? doc.DescriptionOr(tag.Description) : tag.Description;
 
 	private static string? OperationDescription(ApiOperation operation, ApiRenderContext context)
