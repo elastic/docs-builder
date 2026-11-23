@@ -91,6 +91,13 @@ Any other `##` heading is appended after the generated reference content. Headin
 
 A group's intro lists its top-level sections in the sidebar, above the endpoints. Only the shallowest heading level in the intro gets an entry, which is `##` when the intro follows the rules above. A `###` heading stays on the page as a subsection of its parent `##` and has no sidebar entry. Use the heading structure to keep the sidebar short.
 
+### The Endpoints heading on tag pages
+
+A group page puts an `Endpoints` heading with the fragment `#endpoints` above its list of operations, and its On this page list links to it. That fragment belongs to the list.
+
+- A `###` heading named `Endpoints` in the intro gets no anchor and no entry in On this page.
+- An extra `## Endpoints` section keeps its content, but its fragment becomes `#endpoints-2`. Update any link to it, or rename the heading if you want a fragment that stays the same.
+
 ## Version-specific files
 
 If one major needs different text, add a `.vN.md` file next to the base file:
