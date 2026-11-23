@@ -13,7 +13,7 @@ import { initDocsBarSync } from './ds/docs-bar'
 import { initFeedback } from './ds/feedback'
 import { initLightboxes } from './ds/lightbox'
 import { initListings } from './ds/listing'
-import { initNav } from './ds/nav'
+import { bindDrawerFocus, initNav } from './ds/nav'
 import { initNavFilter } from './ds/nav-filter'
 import { initFlyoutResize, initFlyouts, initToasts } from './ds/overlays'
 import { initPageJumpers } from './ds/page-jumper'
@@ -71,6 +71,7 @@ bindApiBetaBanner((banner) => init(banner))
 initDocsBarSync()
 initApiChromeSync()
 bindSearchShortcut()
+bindDrawerFocus()
 document.addEventListener('DOMContentLoaded', () => init())
 // htmx swaps #main-container; re-bind inside the swapped content
 document.addEventListener('htmx:load', (event) => {

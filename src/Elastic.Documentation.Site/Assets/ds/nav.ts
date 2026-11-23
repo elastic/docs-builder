@@ -96,3 +96,26 @@ export function markCurrent(side: ParentNode = document) {
         scroller.scrollTop = Math.max(0, offset)
     }
 }
+
+// On a narrow screen the sidebar is a drawer that opens from a checkbox. The tree follows the content in the markup, so
+// the next Tab after opening would go into the article behind the scrim. Opening moves focus to the drawer's first
+// control, and closing it puts focus back on the checkbox, so the keyboard keeps its place.
+const drawerControls =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+export function bindDrawerFocus() {
+    document.addEventListener('change', ({ target: toggle }) => {
+        if (
+            !(toggle instanceof HTMLInputElement) ||
+            toggle.id !== 'pages-nav-hamburger'
+        )
+            return
+        const drawer = document.getElementById('pages-nav')
+        if (!drawer) return
+        if (toggle.checked) {
+            drawer.querySelector<HTMLElement>(drawerControls)?.focus()
+        } else if (drawer.contains(document.activeElement)) {
+            toggle.focus()
+        }
+    })
+}

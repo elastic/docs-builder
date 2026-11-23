@@ -1,4 +1,4 @@
-import { initNav, markCurrent } from './nav'
+import { bindDrawerFocus, initNav, markCurrent } from './nav'
 
 const tree = `
 <div data-nav-side>
@@ -113,5 +113,59 @@ describe('initNav', () => {
         expect(
             document.querySelector('[aria-current="page"]')?.textContent
         ).toBe('Page')
+    })
+})
+
+describe('bindDrawerFocus', () => {
+    // The shell's order: the checkbox, the content, then the drawer.
+    const shell = (toggleId = 'pages-nav-hamburger') => `
+<input type="checkbox" id="${toggleId}">
+<main><a href="/article" id="article-link">Article</a></main>
+<aside id="pages-nav"><button id="version">9.0</button><a href="/first" id="first">First</a></aside>`
+
+    function toggle(checked: boolean) {
+        const input = document.querySelector<HTMLInputElement>('input')!
+        input.checked = checked
+        input.dispatchEvent(new Event('change', { bubbles: true }))
+        return input
+    }
+
+    beforeAll(bindDrawerFocus)
+
+    it('moves focus to the first control in the drawer when it opens', () => {
+        document.body.innerHTML = shell()
+
+        toggle(true)
+
+        expect(document.activeElement?.id).toBe('version')
+    })
+
+    it('puts focus back on the checkbox when the drawer closes with focus inside it', () => {
+        document.body.innerHTML = shell()
+        toggle(true)
+
+        const input = toggle(false)
+
+        expect(document.activeElement).toBe(input)
+    })
+
+    it('leaves focus alone when the drawer closes with focus elsewhere', () => {
+        document.body.innerHTML = shell()
+        toggle(true)
+        document.getElementById('article-link')!.focus()
+
+        toggle(false)
+
+        expect(document.activeElement?.id).toBe('article-link')
+    })
+
+    it('ignores a checkbox that is not the drawer toggle', () => {
+        document.body.innerHTML = shell('other')
+        const input = document.querySelector<HTMLInputElement>('input')!
+        input.focus()
+
+        toggle(true)
+
+        expect(document.activeElement).toBe(input)
     })
 })
