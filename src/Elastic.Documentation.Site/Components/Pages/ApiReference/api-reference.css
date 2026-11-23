@@ -3465,15 +3465,15 @@ button.example-response-tab:focus-visible {
 /* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines.
    The type sizes are tokens, so they scale with the root font size like the type of the attached card. */
 .api-catalog .api-catalog-card:not(.api-catalog-card-attached) {
-	gap: 14px;
-	padding: 16px 20px;
+	gap: 0.875rem;
+	padding: 1rem 1.25rem;
 }
 
 .api-catalog
 	.api-catalog-card:not(.api-catalog-card-attached)
 	.api-catalog-card-icon {
-	width: 24px;
-	height: 24px;
+	width: 1.5rem;
+	height: 1.5rem;
 }
 
 .api-catalog
@@ -3486,7 +3486,7 @@ button.example-response-tab:focus-visible {
 .api-catalog
 	.api-catalog-card:not(.api-catalog-card-attached)
 	.api-catalog-desc {
-	margin-top: 4px;
+	margin-top: 0.25rem;
 	font-size: var(--text-sm);
 	line-height: 1.45;
 }
@@ -3516,17 +3516,17 @@ button.example-response-tab:focus-visible {
 	/* From two columns up, every cell but the last spans both rows, so a card without a tag-on still takes the row
 	   below it and the next card starts a new row instead of filling the gap beside a tag-on. The last cell has
 	   nothing after it. */
-	@media (min-width: 640px) {
+	@media (min-width: 761px) {
 		.api-catalog .api-catalog-cell:not(:last-child) {
 			grid-row: span 2;
 			grid-template-rows: subgrid;
 		}
 	}
 
-	/* In the subgrid the tag-on sits one row gap below its parent. The negative margin cancels the 16px gap, plus 1px
-	   for the shared border. It is in pixels because the gap is, while rem is 14px on the classic layout. */
+	/* In the subgrid the tag-on sits one row gap below its parent. The negative margin cancels the 1rem gap, plus 1px
+	   for the shared border. */
 	.api-catalog .api-catalog-card-attached {
-		margin-top: -17px;
+		margin-top: calc(-1rem - 1px);
 	}
 }
 
