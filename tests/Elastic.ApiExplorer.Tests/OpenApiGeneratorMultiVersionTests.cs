@@ -877,6 +877,42 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task Generate_EachTree_ShowsTheIndexedMinorReleaseOnTheLandingFact()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		// the specs read 1.0, so a fact that fell back to info.version would show it on every page
+		var facts = string.Join(
+			"\n",
+			$"versionless: {ReadVersionFact(context, outputRoot, [])}",
+			$"v9: {ReadVersionFact(context, outputRoot, ["v9"])}",
+			$"v8: {ReadVersionFact(context, outputRoot, ["v8"])}",
+			$"next: {ReadVersionFact(context, outputRoot, ["next"])}"
+		);
+
+		facts.Should().MatchInlineSnapshot(
+			"""
+			versionless: <dt>Version</dt><dd>9.4</dd>
+			v9: <dt>Version</dt><dd>9.4</dd>
+			v8: <dt>Version</dt><dd>8.19</dd>
+			next: <dt>Version</dt><dd>1.0</dd>
+			"""
+		);
+	}
+
+	[Test]
 	public async Task Generate_NewestMajorFailsToLoad_RendersTheNoticesWithoutALatestVersionLink()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -1211,6 +1247,10 @@ public partial class OpenApiGeneratorMultiVersionTests
 	/// <summary>The version notice under the title of a generated page, on one line, or <c>none</c>.</summary>
 	private static string ReadNotice(BuildContext context, string outputRoot, string[] segments) =>
 		ReadFragment(context, outputRoot, segments, "<p class=\"api-version-notice.*?</p>");
+
+	/// <summary>The "Version" fact of a generated landing page, on one line, or <c>none</c>.</summary>
+	private static string ReadVersionFact(BuildContext context, string outputRoot, string[] segments) =>
+		ReadFragment(context, outputRoot, segments, "<dt>Version</dt>\\s*<dd>.*?</dd>");
 
 	/// <summary>The badges row of a generated operation page, on one line, or <c>none</c>.</summary>
 	private static string ReadBadges(BuildContext context, string outputRoot, string[] segments) =>
