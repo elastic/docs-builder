@@ -150,8 +150,8 @@ internal static class ApiMarkdownFrontMatter
 	}
 
 	/// <summary>
-	/// The first line of the operation's own text, or null when it has none a reader would see. An HTML comment is not text:
-	/// the HTML page drops it and falls back, so the Markdown must too.
+	/// The first line of the operation's own text once its HTML comments are gone, as the HTML page reads it, or null when nothing a reader
+	/// would see is left. The page then takes the generated sentence.
 	/// </summary>
 	private static string? OperationDescriptionLine(ApiOperation operation, ApiRenderContext context, string apiBaseUrl)
 	{
@@ -159,7 +159,7 @@ internal static class ApiMarkdownFrontMatter
 			OperationDescription(operation, context),
 			OpenApiExtensionReader.GetSummary(operation.Operation)
 		);
-		return FirstLine(ApiMarkdown.Prepare(text, apiBaseUrl)) is { } line && ApiSeoDescription.Excerpt(line) is not null ? line : null;
+		return FirstLine(ApiMarkdown.Prepare(text, apiBaseUrl) is { } prepared ? ApiSeoDescription.WithoutComments(prepared) : null);
 	}
 
 	/// <summary>The one-line description of a group, from its supplemental description when it has one: what its meta description and its card on the product landing page say.</summary>

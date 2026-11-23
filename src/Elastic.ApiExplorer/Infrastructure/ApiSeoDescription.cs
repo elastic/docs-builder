@@ -18,13 +18,18 @@ internal static partial class ApiSeoDescription
 		if (string.IsNullOrWhiteSpace(markdown))
 			return null;
 
-		// An HTML comment is not prose: left in, it would be the first paragraph of a description that opens with a note to authors.
-		// Code is kept as written: a comment shown in a code span or a fence is visible text on the group page.
-		var visible = HtmlCommentPattern().Replace(markdown, static match => match.Groups["code"].Success ? match.Value : string.Empty);
+		var visible = WithoutComments(markdown);
 		var paragraph = FirstParagraph(visible) ?? visible;
 		var plain = ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
 	}
+
+	/// <summary>
+	/// The Markdown without its HTML comments. A comment is not prose: left in, it would be the first paragraph of a description that opens
+	/// with a note to authors. Code is kept as written: a comment shown in a code span or a fence is visible text on the page.
+	/// </summary>
+	internal static string WithoutComments(string markdown) =>
+		HtmlCommentPattern().Replace(markdown, static match => match.Groups["code"].Success ? match.Value : string.Empty);
 
 	/// <summary>
 	/// The operation's own text for a meta description. Drops the leading "all methods and paths" block (a bold

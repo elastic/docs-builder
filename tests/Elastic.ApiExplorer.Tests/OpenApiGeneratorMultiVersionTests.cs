@@ -1086,6 +1086,9 @@ public partial class OpenApiGeneratorMultiVersionTests
 		pages["/api/elasticsearch/group/endpoint-bare"].Should().Be("Bare endpoints in the elasticsearch API: Bare, Commented.");
 		pages["/api/elasticsearch/operation/operation-bare"].Should().Be("Bare: GET /bare in the elasticsearch API.");
 		pages["/api/elasticsearch/operation/operation-commented"].Should().Be("Commented: GET /commented in the elasticsearch API.");
+		pages["/api/elasticsearch/operation/operation-leading"]
+			.Should()
+			.Be("Written for readers.", "a leading author note does not hide the prose after it");
 		pages["/api/elasticsearch/servers"].Should().Be("Server URLs for the elasticsearch API: https://example.com.");
 		pages["/api/elasticsearch/v8/authentication"].Should().Be("How to authenticate requests to the elasticsearch API: Api key.");
 		pages["/api/elasticsearch/next"]
@@ -1102,6 +1105,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 		markdown["/api/elasticsearch/v8"].Should().Be("Search and analyze data.");
 		markdown["/api/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
 		markdown["/api/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
+		markdown["/api/elasticsearch/operation/operation-leading"].Should().Be("Written for readers.");
 		markdown["/api/elasticsearch/v9/authentication"].Should().Be("Topic text.");
 		foreach (var (url, description) in markdown.Where(page => pages.ContainsKey(page.Key)))
 			description.Should().Be(pages[url], $"the Markdown of {url} carries the same description as its HTML");
@@ -1197,7 +1201,8 @@ public partial class OpenApiGeneratorMultiVersionTests
 		{
 			["/summarized"] = SeoPath("summarized", "described", "Summarize things"),
 			["/bare"] = SeoPath("bare", "bare", null),
-			["/commented"] = SeoPath("commented", "bare", null, "<!-- note to authors -->")
+			["/commented"] = SeoPath("commented", "bare", null, "<!-- note to authors -->"),
+			["/leading"] = SeoPath("leading", "described", null, "<!-- note to authors -->\n\nWritten for readers.")
 		};
 		return document;
 	}
