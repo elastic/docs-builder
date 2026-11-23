@@ -631,8 +631,20 @@ public class OpenApiGenerator(
 		if (stream is null)
 			return null;
 
-		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
+		var document = await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
+		// The moniker, not the branch, marks the unreleased spec: some repositories publish main from master.
+		if (version.Moniker != "main" && document?.Info is { } info)
+			info.Description = WithSourceBranch(info.Description, version.Version);
+		return document;
 	}
+
+	/// <summary>
+	/// A released spec can be cut from <c>main</c> before its description names the release branch, so the page
+	/// would claim it is derived from <c>main</c>. Name the branch the version index actually published.
+	/// </summary>
+	// TODO: remove once the specs drop this wording and the page renders the branch from the version index (elastic/docs-eng-team#1237).
+	internal static string? WithSourceBranch(string? description, string branch) =>
+		description?.Replace("derived from the `main` branch", $"derived from the `{branch}` branch", StringComparison.Ordinal);
 
 	private static readonly OpenApiDocument CatalogDocument = new()
 	{

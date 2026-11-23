@@ -115,6 +115,63 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task ResolveDocumentsForProduct_ReleasedSpecSaysMainBranch_NamesTheIndexBranch()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		// main is published from master, as elastic/cloud does: the unreleased spec must keep its wording.
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(/*lang=json,strict*/
+					"""
+					{
+						"elastic/elasticsearch": {
+							"elasticsearch-openapi.json": {
+								"main": { "version": "master" },
+								"9": { "version": "9.4" },
+								"8": { "version": "8.19" }
+							}
+						}
+					}
+					"""
+				)
+				: SpecResponse(request)
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("master", SourceBranchSpec("main")),
+			("9.4", SourceBranchSpec("main")),
+			("8.19", SourceBranchSpec("8.19"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		resolved
+			.Documents
+			.Select(d => $"{d.Version.Moniker}: {d.Document.Info.Description}")
+			.Should()
+			.BeEquivalentTo(
+				"main: This documentation is derived from the `main` branch of the repository.",
+				"9: This documentation is derived from the `9.4` branch of the repository.",
+				"8: This documentation is derived from the `8.19` branch of the repository."
+			);
+	}
+
+	private static OpenApiDocument SourceBranchSpec(string branch)
+	{
+		var document = SpecDocument("Elasticsearch");
+		document.Info.Description = $"This documentation is derived from the `{branch}` branch of the repository.";
+		return document;
+	}
+
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionNamedNext_ReportsAnErrorAndLeavesItOut()
 	{
 		var collector = new RecordingDiagnosticsCollector();
