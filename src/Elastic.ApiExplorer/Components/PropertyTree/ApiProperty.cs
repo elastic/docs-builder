@@ -171,10 +171,19 @@ public record ApiPropertyChildren
 /// </summary>
 public record ApiProperty
 {
+	/// <summary>What a map's key row is called on the page. The builder names the row <c>&lt;string&gt;</c> internally.</summary>
+	public const string MapKeyDisplayName = "property name*";
+
 	public required string Name { get; init; }
 
 	/// <summary>Whether this is the synthetic row that holds a map's value fields, not a field of the schema.</summary>
 	public bool IsMapKey => Name == ApiPropertyPath.MapKeyMarker;
+
+	/// <summary>The name the page shows: <see cref="Name"/>, except on a map's key row.</summary>
+	public string DisplayName => DisplayNameOf(Name);
+
+	/// <summary>The name the page shows for a row called <paramref name="name"/>.</summary>
+	public static string DisplayNameOf(string name) => name == ApiPropertyPath.MapKeyMarker ? MapKeyDisplayName : name;
 
 	/// <summary>The underlying OpenAPI schema; views read scalar values off it directly.</summary>
 	public required IOpenApiSchema Schema { get; init; }

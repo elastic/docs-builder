@@ -76,7 +76,7 @@ public partial record OperationPageModel
 	public IReadOnlyList<string> RequestPropertyNames =>
 		field ??= NamesOf(
 			RequestProperties is not null
-				? RequestProperties.Items.Select(static p => p.Name)
+				? RequestProperties.Items.Select(static p => p.DisplayName)
 				: ApiBodyContent.VariantNames(RequestUnionVariants)
 		);
 
