@@ -1241,7 +1241,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public async Task Generate_EmptyMetaDescriptions_AreOnlyPagesWithNoSourceSentence()
+	public async Task Generate_PagesWithNoSourceSentence_GetADescriptionBuiltFromSpecFacts()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -1260,22 +1260,15 @@ public partial class OpenApiGeneratorMultiVersionTests
 		var pages = ReadMetaDescriptions(context.WriteFileSystem, outputRoot);
 		EmptyDescriptionPages(pages)
 			.Should()
-			.Equal(
-				"/api/elasticsearch/group/endpoint-bare",
-				"/api/elasticsearch/next/authentication",
-				"/api/elasticsearch/next/group/endpoint-bare",
-				"/api/elasticsearch/next/operation/operation-bare",
-				"/api/elasticsearch/next/servers",
-				"/api/elasticsearch/operation/operation-bare",
-				"/api/elasticsearch/servers",
-				"/api/elasticsearch/v8/authentication",
-				"/api/elasticsearch/v8/group/endpoint-bare",
-				"/api/elasticsearch/v8/operation/operation-bare",
-				"/api/elasticsearch/v8/servers",
-				"/api/elasticsearch/v9/group/endpoint-bare",
-				"/api/elasticsearch/v9/operation/operation-bare",
-				"/api/elasticsearch/v9/servers"
-			);
+			.BeEmpty("a page with no source sentence takes a description built from what the spec declares");
+		pages["/api/elasticsearch/group/endpoint-bare"].Should().Be("Bare endpoints in the elasticsearch API: Bare, Commented.");
+		pages["/api/elasticsearch/operation/operation-bare"].Should().Be("Bare: GET /bare in the elasticsearch API.");
+		pages["/api/elasticsearch/operation/operation-commented"].Should().Be("Commented: GET /commented in the elasticsearch API.");
+		pages["/api/elasticsearch/operation/operation-leading"]
+			.Should()
+			.Be("Written for readers.", "a leading author note does not hide the prose after it");
+		pages["/api/elasticsearch/servers"].Should().Be("Server URLs for the elasticsearch API: https://example.com.");
+		pages["/api/elasticsearch/v8/authentication"].Should().Be("How to authenticate requests to the elasticsearch API: Api key.");
 		pages["/api/elasticsearch/next"]
 			.Should()
 			.Be("Search and analyze data.", "a landing with no description of its own takes the canonical one");
@@ -1290,10 +1283,36 @@ public partial class OpenApiGeneratorMultiVersionTests
 		markdown["/api/elasticsearch/v8"].Should().Be("Search and analyze data.");
 		markdown["/api/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
 		markdown["/api/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
+		markdown["/api/elasticsearch/operation/operation-leading"].Should().Be("Written for readers.");
 		markdown["/api/elasticsearch/v9/authentication"].Should().Be("Topic text.");
-		markdown["/api/elasticsearch/next/authentication"].Should().BeEmpty();
 		foreach (var (url, description) in markdown.Where(page => pages.ContainsKey(page.Key)))
 			description.Should().Be(pages[url], $"the Markdown of {url} carries the same description as its HTML");
+	}
+
+	[Test]
+	public async Task Generate_LandingWhoseCanonicalSpecHasNoDescription_GetsTheGeneratedSentenceInHtmlAndMarkdown()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SeoSample("Elasticsearch main", null)),
+			("9.4", SeoSample("Elasticsearch 9", null)),
+			("8.19", SeoSample("Elasticsearch 8", null))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var pages = ReadMetaDescriptions(context.WriteFileSystem, outputRoot);
+		var markdown = ReadMarkdownDescriptions(context.WriteFileSystem, outputRoot);
+		foreach (var url in new[] { "/api/elasticsearch", "/api/elasticsearch/next", "/api/elasticsearch/v8" })
+		{
+			pages[url].Should().Be("Reference documentation for the elasticsearch API.");
+			markdown[url].Should().Be(pages[url]);
+		}
 	}
 
 	/// <summary>Front matter description per page URL, read from every generated Markdown file. A page without one reads as empty.</summary>
@@ -1359,12 +1378,14 @@ public partial class OpenApiGeneratorMultiVersionTests
 		document.Paths = new OpenApiPaths
 		{
 			["/summarized"] = SeoPath("summarized", "described", "Summarize things"),
-			["/bare"] = SeoPath("bare", "bare", null)
+			["/bare"] = SeoPath("bare", "bare", null),
+			["/commented"] = SeoPath("commented", "bare", null, "<!-- note to authors -->"),
+			["/leading"] = SeoPath("leading", "described", null, "<!-- note to authors -->\n\nWritten for readers.")
 		};
 		return document;
 	}
 
-	private static OpenApiPathItem SeoPath(string operationId, string tag, string? summary) =>
+	private static OpenApiPathItem SeoPath(string operationId, string tag, string? summary, string? description = null) =>
 		new()
 		{
 			Operations = new Dictionary<HttpMethod, OpenApiOperation>
@@ -1373,6 +1394,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 				{
 					OperationId = operationId,
 					Summary = summary,
+					Description = description,
 					Tags = new HashSet<OpenApiTagReference> { new(tag) },
 					Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
 				}

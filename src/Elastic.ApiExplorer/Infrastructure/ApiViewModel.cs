@@ -104,6 +104,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
 	protected virtual string? LayoutPageDescription => null;
 
+	/// <summary>Plain text for the meta description when <see cref="LayoutPageDescription"/> gives none; see <see cref="ApiFallbackDescription"/>.</summary>
+	protected virtual string? FallbackPageDescription => null;
+
 	private string? GetGitHubDocsUrl()
 	{
 		var repo = BuildContext.Git.RepositoryName;
@@ -129,7 +132,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		return new()
 		{
 			DocSetName = "Api Explorer",
-			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
+			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? FallbackPageDescription ?? "",
 			Title = SeoDocumentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,

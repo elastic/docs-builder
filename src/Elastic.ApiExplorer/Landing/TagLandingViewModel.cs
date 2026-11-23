@@ -67,4 +67,7 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 	protected override string? LayoutPageTitle => Tag.DisplayName;
 
 	protected override string? LayoutPageDescription => DescriptionMarkdown;
+
+	protected override string? FallbackPageDescription =>
+		ApiFallbackDescription.For(Tag, RenderContext, CurrentNavigationItem.NavigationTitle, OverviewRows);
 }

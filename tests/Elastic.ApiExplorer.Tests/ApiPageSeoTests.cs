@@ -21,6 +21,47 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiPageSeoTests(ApiExplorerFixture fixture)
 {
 	[Test]
+	public void FallbackDescription_OperationWithLongRoute_StaysWithinTheLimit()
+	{
+		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var operation = item.Model with { Route = "/" + new string('a', 400) };
+
+		var description = ApiFallbackDescription.For(operation, RenderContext(item), "Run a search");
+
+		description.Should().NotBeNull();
+		description.Length.Should().BeLessThanOrEqualTo(ApiSeoDescription.MaxLength);
+		description.Should().EndWith("...");
+	}
+
+	[Test]
+	public void FallbackDescription_CutInsideASurrogatePair_KeepsNoHalfCharacter()
+	{
+		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var context = RenderContext(item);
+		const string rocket = "\U0001F680";
+
+		// Slide a two-unit rocket across the cut, so one position straddles it whatever the sentence before the route is.
+		for (var padding = 100; padding < 150; padding++)
+		{
+			var operation = item.Model with { Route = "/" + new string('a', padding) + rocket + new string('b', 100) };
+			var description = ApiFallbackDescription.For(operation, context, "S");
+
+			description.Should().NotBeNull();
+			description.Length.Should().BeLessThanOrEqualTo(ApiSeoDescription.MaxLength);
+			description
+				.Any(char.IsSurrogate)
+				.Should()
+				.Be(description.Contains(rocket, StringComparison.Ordinal), $"padding {padding}: a rocket is whole or gone, never half");
+		}
+	}
+
+	[Test]
+	[Arguments("Elasticsearch", new string[0], "The Elasticsearch API declares no authentication for the API as a whole.")]
+	[Arguments("Elasticsearch", new[] { "API key", "Basic" }, "How to authenticate requests to the Elasticsearch API: API key, Basic.")]
+	public void FallbackDescription_Authentication_ReflectsWhatTheSpecDeclares(string product, string[] labels, string expected) =>
+		ApiFallbackDescription.Authentication(product, labels).Should().Be(expected);
+
+	[Test]
 	public void OperationLayout_UsesSummaryInTitleAndExcerptedDescription()
 	{
 		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
