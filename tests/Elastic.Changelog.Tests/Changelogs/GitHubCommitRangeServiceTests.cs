@@ -305,6 +305,88 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
 	}
 
+	private static readonly CommitRangeArguments ColdArgs = new() { Owner = Owner, Repo = Repo, StartRef = Sha(0), EndRef = Sha(120) };
+
+	private static HttpResponseMessage Unprocessable() =>
+		new(HttpStatusCode.UnprocessableEntity)
+		{
+			Content = new StringContent("""{"message":"Server Error: Sorry, this diff is taking too long to generate."}""")
+		};
+
+	private static string CommitList(IEnumerable<int> newestFirst) =>
+		"[" + string.Join(",", newestFirst.Select(i => $$"""{ "sha": "{{Sha(i)}}" }""")) + "]";
+
+	/// <summary>A cold range: the whole compare answers 422 until GitHub has compared the stages before it.</summary>
+	private (GitHubCommitRangeService Service, List<string> Requests) ColdRangeService(Func<HttpRequestMessage, bool> wholeRangeIsCold)
+	{
+		var sha1 = Sha(1);
+		var requests = new List<string>();
+		var handler = new StubHandler(req =>
+		{
+			requests.Add(req.RequestUri!.PathAndQuery);
+			if (req.RequestUri.AbsolutePath == "/graphql")
+			{
+				var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+				return Json(IsDetailsQuery(body) ? DefaultDetails(body) : GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]));
+			}
+
+			if (req.RequestUri.AbsolutePath.EndsWith("/commits", StringComparison.Ordinal))
+				return Json(CommitList(Enumerable.Range(0, 121).Reverse()));
+
+			if (req.RequestUri.AbsolutePath.EndsWith($"...{Sha(120)}", StringComparison.Ordinal) && wholeRangeIsCold(req))
+				return Unprocessable();
+
+			return Json(CompareJson(1, [sha1]));
+		});
+		return (new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		), requests);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ColdCompareAnswers422_IsComparedInStagesAndResolves()
+	{
+		var whole = 0;
+		var (service, requests) = ColdRangeService(_ => ++whole == 1);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
+		requests
+			.Where(r => r.Contains("/compare/", StringComparison.Ordinal))
+			.Select(r => r[(r.IndexOf("...", StringComparison.Ordinal) + 3)..r.IndexOf('?', StringComparison.Ordinal)])
+			.Should()
+			.Equal(Sha(120), Sha(50), Sha(100), Sha(120));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ColdCompareStaysUnprocessable_IsAnErrorAfterOneRetryOfTheWholeRange()
+	{
+		var (service, requests) = ColdRangeService(_ => true);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, ColdArgs, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Errors.Should().Be(1);
+		requests.Count(r => r.Contains($"...{Sha(120)}", StringComparison.Ordinal)).Should().Be(2);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ColdCompareWithAStartOutsideTheEnd_RetriesWithoutStages()
+	{
+		var whole = 0;
+		var (service, requests) = ColdRangeService(_ => ++whole == 1);
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "deadbeef", EndRef = Sha(120) };
+
+		_ = await service.ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		requests.Count(r => r.Contains("/compare/", StringComparison.Ordinal)).Should().Be(2);
+		requests.Count(r => r.Contains("/commits?", StringComparison.Ordinal)).Should().Be(10);
+	}
+
 	[Test]
 	public async Task ResolvePullRequests_MergeCommitPr_DeduplicatesAcrossCommits()
 	{
