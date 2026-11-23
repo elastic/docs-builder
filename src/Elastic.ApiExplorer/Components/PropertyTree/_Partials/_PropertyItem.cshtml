@@ -175,12 +175,13 @@
 						<dt id="@dict.KeyAnchorId">
 							@if (dict.JsonPath is { } keyPath)
 							{
-								<code data-tooltip="@keyPath" data-tooltip-theme="mono">&lt;string&gt;</code>
+								<code data-tooltip="@keyPath" data-tooltip-theme="mono">property name*</code>
 							}
 							else
 							{
-								<code>&lt;string&gt;</code>
+								<code>property name*</code>
 							}
+							<span class="values-label">additional property</span>
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
 						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))
