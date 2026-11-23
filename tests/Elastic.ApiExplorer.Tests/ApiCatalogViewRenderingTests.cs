@@ -71,6 +71,19 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Render_Catalog_TwoFeaturedCards_KeepEveryGridAtTwoColumns()
+	{
+		var html = await RenderAsync(
+			Entry("elasticsearch", "Elasticsearch API"),
+			Entry("kibana", "Kibana APIs"),
+			Entry("cloud", "Elastic Cloud API")
+		);
+
+		Count(html, "sm:grid-cols-2").Should().Be(2, "the featured row and the Orchestration row both step to two");
+		html.Should().NotContain("min-[1024px]:grid-cols-3");
+	}
+
+	[Test]
 	public async Task Render_Catalog_TagOnSharesTheCellOfItsParent()
 	{
 		var html = await RenderAsync(

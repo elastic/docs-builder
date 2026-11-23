@@ -49,7 +49,8 @@
 }
 @{
 	// Every grid steps from one to two to three columns at the same widths, so cards of different groups stay the same size.
-	const string columns = "sm:grid-cols-2 min-[1024px]:grid-cols-3";
+	// Two featured cards fill a row of two, so every grid on the page stays at two columns then.
+	var columns = Model.Groups.Any(g => g.Featured.Count == 2) ? "sm:grid-cols-2" : "sm:grid-cols-2 min-[1024px]:grid-cols-3";
 	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
 	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
 	var catalogClass = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled ? "api-catalog band band--soft band--wash-b" : "api-catalog";
