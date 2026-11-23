@@ -75,6 +75,9 @@ public record ApiRenderContext(
 			? Model.Info.Description
 			: CatalogEntries.FirstOrDefault(entry => entry.Key == CurrentApiKey)?.Description;
 
+	/// <summary>The product name the page titles and fallback descriptions use.</summary>
+	internal string ProductName => ApiPageTitle.ProductName(Product?.DisplayName, Model.Info?.Title);
+
 	/// <summary>The absolute canonical URL of <paramref name="pageUrl"/>, or its path when the build has no canonical base URL.</summary>
 	public string CanonicalUrl(string pageUrl)
 	{

@@ -55,7 +55,7 @@ internal static class ApiMarkdownFrontMatter
 		var title = Heading(body) ?? current.NavigationTitle;
 		return new(
 			title,
-			ResolveDescription(page, context, body),
+			ResolveDescription(page, context, body, current.NavigationTitle),
 			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
 			page is ApiLanding ? CollectFacts(context) : null
@@ -129,7 +129,10 @@ internal static class ApiMarkdownFrontMatter
 	private static string YamlScalar(string value) =>
 		$"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t")}\"";
 
-	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body)
+	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body, string navigationTitle) =>
+		AuthoredDescription(page, context, body) ?? ApiFallbackDescription.For(page, context, navigationTitle);
+
+	private static string? AuthoredDescription(IApiModel page, ApiRenderContext context, string body)
 	{
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		return page switch

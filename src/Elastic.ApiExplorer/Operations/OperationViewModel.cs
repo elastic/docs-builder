@@ -83,6 +83,9 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	protected override string? LayoutPageDescription =>
 		ApiSeoDescription.OperationText(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
 
+	protected override string? FallbackPageDescription =>
+		ApiFallbackDescription.For(Operation, RenderContext, CurrentNavigationItem.NavigationTitle);
+
 	protected override IReadOnlyList<TocItem> GetTocItems()
 	{
 		var operation = Operation.Operation;

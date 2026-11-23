@@ -53,6 +53,9 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	protected override string? LayoutPageDescription => RenderContext.LandingDescription;
 
+	protected override string? FallbackPageDescription =>
+		ApiFallbackDescription.For(Landing, RenderContext, CurrentNavigationItem.NavigationTitle);
+
 	/// <summary>On this page, in page order: the description's headings, then the endpoint groups.</summary>
 	protected override IReadOnlyList<TocItem> GetTocItems() => EndpointsSection.Toc(Intro.Headings, IndexBlocks.Count > 0);
 

@@ -1063,7 +1063,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public async Task Generate_EmptyMetaDescriptions_AreOnlyPagesWithNoSourceSentence()
+	public async Task Generate_PagesWithNoSourceSentence_GetADescriptionBuiltFromSpecFacts()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -1082,22 +1082,11 @@ public partial class OpenApiGeneratorMultiVersionTests
 		var pages = ReadMetaDescriptions(context.WriteFileSystem, outputRoot);
 		EmptyDescriptionPages(pages)
 			.Should()
-			.Equal(
-				"/api/elasticsearch/group/endpoint-bare",
-				"/api/elasticsearch/next/authentication",
-				"/api/elasticsearch/next/group/endpoint-bare",
-				"/api/elasticsearch/next/operation/operation-bare",
-				"/api/elasticsearch/next/servers",
-				"/api/elasticsearch/operation/operation-bare",
-				"/api/elasticsearch/servers",
-				"/api/elasticsearch/v8/authentication",
-				"/api/elasticsearch/v8/group/endpoint-bare",
-				"/api/elasticsearch/v8/operation/operation-bare",
-				"/api/elasticsearch/v8/servers",
-				"/api/elasticsearch/v9/group/endpoint-bare",
-				"/api/elasticsearch/v9/operation/operation-bare",
-				"/api/elasticsearch/v9/servers"
-			);
+			.BeEmpty("a page with no source sentence takes a description built from what the spec declares");
+		pages["/api/elasticsearch/group/endpoint-bare"].Should().Be("Bare endpoints in the elasticsearch API: Bare.");
+		pages["/api/elasticsearch/operation/operation-bare"].Should().Be("Bare: GET /bare in the elasticsearch API.");
+		pages["/api/elasticsearch/servers"].Should().Be("Server URLs for the elasticsearch API: https://example.com.");
+		pages["/api/elasticsearch/v8/authentication"].Should().Be("How to authenticate requests to the elasticsearch API: Api key.");
 		pages["/api/elasticsearch/next"]
 			.Should()
 			.Be("Search and analyze data.", "a landing with no description of its own takes the canonical one");
@@ -1113,7 +1102,6 @@ public partial class OpenApiGeneratorMultiVersionTests
 		markdown["/api/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
 		markdown["/api/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
 		markdown["/api/elasticsearch/v9/authentication"].Should().Be("Topic text.");
-		markdown["/api/elasticsearch/next/authentication"].Should().BeEmpty();
 		foreach (var (url, description) in markdown.Where(page => pages.ContainsKey(page.Key)))
 			description.Should().Be(pages[url], $"the Markdown of {url} carries the same description as its HTML");
 	}
