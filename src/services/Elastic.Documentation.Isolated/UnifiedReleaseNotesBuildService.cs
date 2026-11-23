@@ -37,6 +37,13 @@ public record UnifiedReleaseNotesBuildOptions
 	/// </summary>
 	public IReadOnlyCollection<string> AdditionalProductIds { get; init; } = [];
 
+	/// <summary>
+	/// Rewrites the content of a bundle file as it is copied into the site: product id, file name and content in, content out.
+	/// <c>release preview build</c> uses it to scrub references to private repositories, so the preview shows what publication
+	/// would. A failure to scrub fails the build. Not applied by default.
+	/// </summary>
+	public Func<string, string, string, Cancel, Task<string>>? ScrubBundle { get; init; }
+
 	/// <summary>URL path prefix prepended to every generated link.</summary>
 	public string? PathPrefix { get; init; }
 
@@ -78,7 +85,7 @@ public class UnifiedReleaseNotesBuildService(
 		}
 
 		var realFs = new FileSystem();
-		var bundles = LoadBundles(collector, realFs, products, options);
+		var bundles = await LoadBundlesAsync(collector, realFs, products, options, ctx);
 		if (bundles.Count == 0)
 		{
 			collector.EmitError(
@@ -125,11 +132,12 @@ public class UnifiedReleaseNotesBuildService(
 		return await service.BuildFrom(collector, buildOptions, docFs, ctx);
 	}
 
-	private IReadOnlyList<ProductBundles> LoadBundles(
+	private async Task<IReadOnlyList<ProductBundles>> LoadBundlesAsync(
 		IDiagnosticsCollector collector,
 		IFileSystem realFs,
 		IReadOnlyList<Product> products,
-		UnifiedReleaseNotesBuildOptions options
+		UnifiedReleaseNotesBuildOptions options,
+		Cancel ctx
 	)
 	{
 		var loader = new BundleLoader(realFs);
@@ -162,13 +170,21 @@ public class UnifiedReleaseNotesBuildService(
 
 			// Copy every YAML file, not only the loaded bundles: LoadBundles folds amend sidecars into their
 			// parent and drops them from its result, and the directive merges them again from the docset folder.
-			var files = realFs
+			var files = new List<(string FileName, string Content)>();
+			var paths = realFs
 				.Directory
 				.EnumerateFiles(folder, "*.yaml")
 				.Concat(realFs.Directory.EnumerateFiles(folder, "*.yml"))
-				.Order(StringComparer.Ordinal)
-				.Select(file => (FileName: realFs.Path.GetFileName(file), Content: realFs.File.ReadAllText(file)))
-				.ToArray();
+				.Order(StringComparer.Ordinal);
+			foreach (var file in paths)
+			{
+				var fileName = realFs.Path.GetFileName(file);
+				var content = realFs.File.ReadAllText(file);
+				if (options.ScrubBundle is { } scrub)
+					content = await scrub(product.Id, fileName, content, ctx);
+				files.Add((fileName, content));
+			}
+
 			result.Add(
 				new ProductBundles(new ProductVersions(product, NewestFirst(loaded.Select(b => NormalizeVersion(b.Version)))), files)
 			);

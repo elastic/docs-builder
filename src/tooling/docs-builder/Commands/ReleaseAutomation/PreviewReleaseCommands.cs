@@ -4,10 +4,14 @@
 
 using System.Net.Http.Headers;
 using Actions.Core.Services;
+using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Caching;
+using Elastic.Changelog.Scrubbing;
 using Elastic.Changelog.Serverless;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -20,6 +24,7 @@ internal sealed class PreviewReleaseCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
+	AssemblyConfiguration assemblyConfiguration,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
 )
@@ -101,6 +106,8 @@ internal sealed class PreviewReleaseCommands(
 	/// The site has a page per version for every DRA product, and the <c>staging</c> and <c>head</c> pages of the serverless products.
 	/// A product without bundles is left out of the site, and the build fails only when no product has any bundle.
 	/// The site is built from the bundles on disk: the release schedule is not read.
+	/// Bundles are scrubbed like the ones that are published: a reference to a repository that <c>assembler.yml</c> marks private
+	/// is removed from the entries and from their text, so the preview shows what publication will.
 	/// </remarks>
 	/// <param name="bundlesDir">Folder that holds one sub-folder of bundle files per product. Defaults to <c>./bundles</c>.</param>
 	/// <param name="output">Destination for the generated site. Defaults to <c>./site</c>. The folder is cleaned first.</param>
@@ -117,10 +124,16 @@ internal sealed class PreviewReleaseCommands(
 	)
 	{
 		string[] serverlessProducts = [.. ServerlessPromotion.Services.Values.Select(s => s.Product).Distinct(StringComparer.Ordinal)];
+		var scrubber = new ChangelogContentScrubber(logFactory, LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assemblyConfiguration));
 		return await Unified.BuildSiteAsync(
 			null,
 			new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl),
 			serverlessProducts,
+			async (product, fileName, content, token) => (await scrubber.ScrubAsync(
+				$"{ChangelogKeys.BundlePrefix}{product}/{fileName}",
+				content,
+				token
+			)).Content,
 			ctx
 		);
 	}
@@ -161,7 +174,6 @@ internal sealed class PreviewReleaseCommands(
 		if (head is null)
 			return false;
 
-		RemoveSupersededBundles(svc, rootOutput);
 		var targets = ServerlessPromotion.PlanPreview(versionsYaml, svc, head);
 		if (targets.Count == 0)
 		{
@@ -170,45 +182,77 @@ internal sealed class PreviewReleaseCommands(
 				svc.Id,
 				svc.FinalSlice
 			);
+			ReplaceBundles(svc, rootOutput, null);
 			return true;
 		}
 
-		var productOutput = new DirectoryInfo(Path.Combine(rootOutput.FullName, svc.Product));
-		_ = Directory.CreateDirectory(productOutput.FullName);
-		foreach (var target in targets)
+		// The bundles of a run are written aside and replace the earlier ones only when every range has finished. A failed
+		// comparison then leaves the last good bundles in place, and not a Staging bundle next to a missing HEAD one.
+		var pending = new DirectoryInfo(Path.Combine(rootOutput.FullName, "preview-pending", svc.Id));
+		if (pending.Exists)
+			pending.Delete(true);
+		_ = Directory.CreateDirectory(pending.FullName);
+		try
 		{
-			_logger.LogInformation(
-				"Previewing '{Service}' as {Label}: {Start}..{End}",
-				svc.Id,
-				target.Label,
-				target.StartRef,
-				target.EndRef
-			);
-			var result = await bundler.BundleAsync(
-				new ServerlessBundleRequest(svc, target.StartRef, target.EndRef, target.Label, productOutput),
-				ctx
-			);
-			if (!result.Success)
-				return false;
-		}
+			foreach (var target in targets)
+			{
+				_logger.LogInformation(
+					"Previewing '{Service}' as {Label}: {Start}..{End}",
+					svc.Id,
+					target.Label,
+					target.StartRef,
+					target.EndRef
+				);
+				var request = new ServerlessBundleRequest(svc, target.StartRef, target.EndRef, target.Label, pending)
+				{
+					OnEmptyRange =
+						() => _logger.LogInformation(
+							"'{Service}' has no release notes between {Start} and {End}, so it has no {Label} page.",
+							svc.Id,
+							target.StartRef,
+							target.EndRef,
+							target.Label
+						)
+				};
+				var result = await bundler.BundleAsync(request, ctx);
+				if (!result.Success)
+					return false;
+			}
 
-		// A product that wrote nothing leaves no folder behind.
-		if (!productOutput.EnumerateFileSystemInfos().Any())
-			productOutput.Delete();
-		return true;
+			ReplaceBundles(svc, rootOutput, pending);
+			return true;
+		}
+		finally
+		{
+			pending.Delete(true);
+			if (pending.Parent is { Exists: true } parent && !parent.EnumerateFileSystemInfos().Any())
+				parent.Delete();
+		}
 	}
 
 	// A reused output folder may hold the bundles of an earlier run, such as a Staging release that production has caught up with.
-	private void RemoveSupersededBundles(ServerlessService svc, DirectoryInfo rootOutput)
+	// Only the files this service writes go: the other service's bundles share the folder of the product.
+	private void ReplaceBundles(ServerlessService svc, DirectoryInfo rootOutput, DirectoryInfo? pending)
 	{
+		var productOutput = new DirectoryInfo(Path.Combine(rootOutput.FullName, svc.Product));
 		foreach (var name in ServerlessPromotion.PreviewBundleFileNames(svc))
 		{
-			var path = Path.Combine(rootOutput.FullName, svc.Product, name);
+			var path = Path.Combine(productOutput.FullName, name);
 			if (!File.Exists(path))
 				continue;
 			_logger.LogInformation("Removing the bundle of an earlier run: {Path}", path);
 			File.Delete(path);
 		}
+
+		foreach (var file in pending?.EnumerateFiles() ?? [])
+		{
+			_ = Directory.CreateDirectory(productOutput.FullName);
+			file.MoveTo(Path.Combine(productOutput.FullName, file.Name), overwrite: true);
+		}
+
+		// A product that wrote nothing leaves no folder behind.
+		if (productOutput.Exists && !productOutput.EnumerateFileSystemInfos().Any())
+			productOutput.Delete();
 	}
 
 	private async Task<string?> ResolveBranchHeadAsync(ServerlessBundler bundler, ServerlessService svc, CancellationToken ctx)

@@ -5,7 +5,9 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.Changelog.Scrubbing;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
@@ -413,6 +415,79 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		succeeded.Should().BeTrue();
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "cloud-serverless")).Should().BeFalse();
+	}
+
+	private const string PrivateReference = "https://github.com/elastic/private-repo/pull/12";
+	private const string PublicReference = "https://github.com/elastic/kibana/pull/99";
+
+	private string WriteBundleWithReferences() =>
+		WriteFile(
+			"kibana",
+			"kibana-kibana-9.5.0.yaml",
+			$$"""
+			products:
+			- product: kibana
+			  target: 9.5.0
+			  repo: kibana
+			  owner: elastic
+			entries:
+			- title: Entry with references
+			  type: enhancement
+			  description: Follows {{PrivateReference}} and {{PublicReference}}.
+			  products:
+			  - product: kibana
+			    target: 9.5.0
+			  prs:
+			  - "{{PrivateReference}}"
+			  - "{{PublicReference}}"
+			"""
+		);
+
+	private static async Task<string> ScrubLikePublication(string product, string fileName, string content, Cancel ctx) =>
+		(await new ChangelogContentScrubber(new TestLoggerFactory(), ["elastic/kibana"]).ScrubAsync(
+			$"{ChangelogKeys.BundlePrefix}{product}/{fileName}",
+			content,
+			ctx
+		)).Content;
+
+	[Test]
+	public async Task Build_WithAScrubber_RemovesReferencesToRepositoriesThatAreNotAllowed()
+	{
+		_ = WriteBundleWithReferences();
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { ScrubBundle = (p, f, c, ctx) => ScrubLikePublication(p, f, c, ctx) };
+
+		var succeeded = await Service().Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		var html = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "kibana", "9.5.0", "index.html"));
+		html.Should().Contain("Entry with references").And.Contain("kibana/pull/99").And.NotContain("private-repo");
+	}
+
+	[Test]
+	public async Task Build_WithoutAScrubber_KeepsTheReferencesAsWritten()
+	{
+		_ = WriteBundleWithReferences();
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		var html = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "kibana", "9.5.0", "index.html"));
+		html.Should().Contain("private-repo");
+	}
+
+	[Test]
+	public async Task Build_WhenTheScrubberFails_FailsInsteadOfPublishingTheBundleAsItIs()
+	{
+		_ = WriteBundleWithReferences();
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { ScrubBundle = (_, _, _, _) => throw new InvalidOperationException("cannot scrub") };
+
+		var act = async () => await Service().Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		await act.Should().ThrowAsync<InvalidOperationException>();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "kibana")).Should().BeFalse();
 	}
 
 	[Test]

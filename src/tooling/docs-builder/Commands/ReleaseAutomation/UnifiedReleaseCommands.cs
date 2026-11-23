@@ -330,7 +330,7 @@ internal sealed class UnifiedReleaseCommands(
 		string? pathPrefix = null,
 		Uri? canonicalBaseUrl = null,
 		CancellationToken ctx = default
-	) => await BuildSiteAsync(versionOrKeyword, new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl), [], ctx);
+	) => await BuildSiteAsync(versionOrKeyword, new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl), [], null, ctx);
 
 	/// <summary>
 	/// Builds the site, with <paramref name="additionalProductIds"/> next to the DRA products. <c>release preview build</c> adds the
@@ -341,6 +341,7 @@ internal sealed class UnifiedReleaseCommands(
 		string? versionOrKeyword,
 		UnifiedSiteOptions site,
 		IReadOnlyCollection<string> additionalProductIds,
+		Func<string, string, string, CancellationToken, Task<string>>? scrubBundle,
 		CancellationToken ctx
 	)
 	{
@@ -369,6 +370,7 @@ internal sealed class UnifiedReleaseCommands(
 			BundlesDirectory = bundlesDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles")),
 			Output = output ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "site")),
 			AdditionalProductIds = additionalProductIds,
+			ScrubBundle = scrubBundle,
 			ExpectedVersions = [.. targets.Select(t => t.Version)],
 			PathPrefix = pathPrefix,
 			CanonicalBaseUrl = canonicalBaseUrl
