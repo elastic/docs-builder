@@ -3519,18 +3519,23 @@ navigation-search[variant='hero'] {
 	column-gap: 14px;
 }
 
-/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group), so they step down from it instead of matching it.
-   Each page's own Endpoints heading takes the same size, so the page reads as one outline. */
+/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group, 30px on a
+   topic, Authentication or children: page), so they step down from it instead of matching it. Each landing and group page's
+   own Endpoints heading takes the same size, so the page reads as one outline. */
 .api-landing .docs-measure h2,
 .api-landing > h2,
 .api-group > h2,
-.api-group .api-tag-description h2 {
+.api-group .api-tag-description h2,
+.api-page-intro + #elastic-docs-v3 h2,
+.api-markdown-page h2 {
 	margin-top: 32px;
 	font-size: var(--text-2xl);
 }
 
 .api-landing .docs-measure h3,
-.api-group .api-tag-description h3 {
+.api-group .api-tag-description h3,
+.api-page-intro + #elastic-docs-v3 h3,
+.api-markdown-page h3 {
 	font-size: var(--text-xl);
 }
 
@@ -4959,6 +4964,14 @@ body[data-api-column-dragging] {
 	padding-top: 0;
 }
 
+/* On this page shows only where the API rail sits beside the content, from 1024px. The docs layout puts its rail there
+   from 1280px (lg), so each layout hides its own rail. */
+@media (max-width: 1023px) {
+	.api-rail-toc {
+		display: none;
+	}
+}
+
 /* In an API sidebar, the rows above the first group (Overview, Authentication, guides) sit as close as the rows
    inside a group (.nav-group-items > li in styles.css), so only a group label gets the larger gap. The class is set
    only on trees that open with an Overview row, so docs sidebars keep their spacing. */
@@ -4966,24 +4979,4 @@ body[data-api-column-dragging] {
 	> li:not(.nav-folder, .nav-group)
 	+ li:not(.nav-folder, .nav-group) {
 	margin-top: 16px;
-}
-
-/* On this page shows only where the rail sits beside the content, from the same 1024px as the docs list. */
-@media (max-width: 1023px) {
-	.api-rail-toc {
-		display: none;
-	}
-}
-
-/* The API rail is not inside the docs .sidebar, so its On this page links take the docs sidebar link style here (styles.css .sidebar .sidebar-link). */
-.api-rail-toc .sidebar-link {
-	color: var(--color-ink-light, #535966);
-	font-size: 14px;
-	line-height: 1.2em;
-	text-wrap: pretty;
-	word-break: break-word;
-}
-
-.api-rail-toc .sidebar-link:hover {
-	color: #000;
 }

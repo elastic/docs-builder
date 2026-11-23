@@ -85,10 +85,11 @@ public class SimpleMarkdownNavigationItem(
 		{
 			PageTitle = rendered.Title ?? NavigationTitle,
 			MetaTitle = rendered.MetaTitle,
-			BodyHtml = new HtmlString(rendered.Html),
-			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent)),
-			AuthenticationRequirements = ShowsAuthentication ? StructuralViewModel.ReadRequirements(context.Model) : [],
-			AuthenticationOptional = ShowsAuthentication && OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security)
+			// The authentication sections come from the spec, so they render on the API description path, not with this page's Markdown.
+			BodyHtml = new HtmlString(
+				rendered.Html + (ShowsAuthentication ? StructuralViewModel.RenderAuthentication(context, null).Html?.Value : null)
+			),
+			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent))
 		};
 		var slice = MarkdownPageView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -98,20 +99,11 @@ public class SimpleMarkdownNavigationItem(
 	{
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx).ConfigureAwait(false);
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
-		var markdown = ApiMarkdown.Prepare(markdownContent, apiBaseUrl);
-		var requirements = ShowsAuthentication ? StructuralViewModel.ReadRequirements(context.Model) : [];
-		if (requirements.Count == 0)
-			return markdown;
-
-		var tabs = new StringBuilder();
-		ApiCommonMark.Heading(tabs, 2, "Authentication");
-		OperationCommonMark.WriteAuthentication(
-			tabs,
-			requirements,
-			OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
-			apiBaseUrl
-		);
-		return $"{markdown?.TrimEnd()}\n\n{tabs}";
+		var markdown = new StringBuilder();
+		ApiCommonMark.Prepared(markdown, markdownContent, apiBaseUrl);
+		if (ShowsAuthentication)
+			OperationCommonMark.WriteAuthenticationSections(markdown, context.Model, apiBaseUrl);
+		return markdown.ToString();
 	}
 
 	// pageModel is unused (no pre-built model for markdown pages); delegate to the real implementation.
