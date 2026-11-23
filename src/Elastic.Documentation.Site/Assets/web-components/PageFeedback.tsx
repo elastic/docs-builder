@@ -479,7 +479,7 @@ export const PageFeedback = ({
 
                     <div className="page-feedback__details">
                         <label
-                            className="sr-only"
+                            className="page-feedback__comment-label"
                             htmlFor={`${questionId}-comment`}
                         >
                             Tell us more (optional)
@@ -489,7 +489,6 @@ export const PageFeedback = ({
                             className="page-feedback__textarea"
                             value={comment}
                             maxLength={COMMENT_MAX_LENGTH}
-                            placeholder="Tell us more (optional)"
                             aria-describedby={guidanceId}
                             disabled={isSaving}
                             onChange={(event) => setComment(event.target.value)}
