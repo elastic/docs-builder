@@ -40,7 +40,7 @@ Supports pagination through `size` and `from`.
 
 ## Authentication
 
-- Api key: `Authorization: <value>`
+- Api key: `Authorization: ApiKey <api-key>`
   Send the encoded key with the ApiKey prefix.
 - Basic: `Authorization: Basic <credentials>`
 - Bearer: `Authorization: Bearer <token>`

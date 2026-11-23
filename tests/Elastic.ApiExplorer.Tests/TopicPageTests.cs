@@ -471,7 +471,7 @@ public partial class TopicPageTests
 			## Api key
 
 			```http
-			Authorization: <value>
+			Authorization: ApiKey <api-key>
 			```
 			"""
 		);

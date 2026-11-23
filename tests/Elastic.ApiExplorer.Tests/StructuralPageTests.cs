@@ -113,7 +113,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		var schemes = requirements.SelectMany(requirement => requirement.Schemes).ToArray();
 		var apiKey = schemes.Should().ContainSingle(scheme => scheme.Id == "apiKey").Subject;
 		apiKey.Label.Should().Be("Api key");
-		apiKey.CredentialExample.Should().Be("Authorization: <value>");
+		apiKey.CredentialExample.Should().Be("Authorization: ApiKey <api-key>");
 		schemes.Select(scheme => scheme.Id).Should().Contain(["apiKey", "basicAuth", "bearerAuth"]);
 	}
 
@@ -142,7 +142,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			Send the encoded key with the ApiKey prefix.
 
 			```http
-			Authorization: <value>
+			Authorization: ApiKey <api-key>
 			```
 
 			## Basic
