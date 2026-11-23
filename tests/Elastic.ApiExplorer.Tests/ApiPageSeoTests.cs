@@ -172,6 +172,8 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		ApiSeoDescription.Excerpt("Use `<!-- marker -->` to mark a block.").Should().Be("Use <!-- marker --> to mark a block.");
 		ApiSeoDescription.Excerpt("<!-- note -->\n\nUse `<!-- marker -->` here.").Should().Be("Use <!-- marker --> here.");
 		ApiSeoDescription.Excerpt("```html\n<!-- marker -->\n```\n\nMore.").Should().Contain("<!-- marker -->");
+		// Escaped backticks are literal text, so the comment between them is a real comment and is hidden on the page.
+		ApiSeoDescription.Excerpt("Intro \\`<!-- hidden -->\\` end.").Should().NotContain("<!--");
 	}
 
 	[Test]

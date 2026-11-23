@@ -142,7 +142,7 @@ internal static partial class ApiSeoDescription
 		return string.Concat(text.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 	}
 
-	[GeneratedRegex(@"(?<code>^(?<fence>```|~~~).*?^\k<fence>|`[^`\n]+`)|<!--.*?-->", RegexOptions.Singleline
+	[GeneratedRegex(@"(?<code>^(?<fence>```|~~~).*?^\k<fence>|(?<!\\)`[^`\n]+`)|<!--.*?-->", RegexOptions.Singleline
 		| RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlCommentPattern();
 
