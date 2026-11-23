@@ -195,10 +195,12 @@ For versioned products, {{dbuild}} renders every resolved version from the index
 | Index moniker | URL path | Role | Notice |
 |---|---|---|---|
 | `9`, the highest numeric major | `/api/<key>/` and `/api/<key>/v9/` | Newest released major, the default. Both URLs serve the same pages. | None |
-| `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8` label and a link to the latest version |
+| `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8.19` label and a link to the latest version |
 | `main` | `/api/<key>/next/` | Unreleased spec | An `Unreleased` warning and a link to the latest version |
 
-On every generated API page, the `Unreleased` warning sits directly under the title. The `Version 8` label and its link sit under the title too, except on operation pages. There they join the badges row, next to `Auth` and `Deprecated`, as `Version 8` and `Latest: v9`, so the title stays next to its request line.
+On every generated API page, the `Unreleased` warning sits directly under the title. The `Version 8.19` label and its link sit under the title too, except on operation pages. There they join the badges row, next to `Auth` and `Deprecated`, as `Version 8.19` and `Latest: v9`, so the title stays next to its request line.
+
+The label and the landing page's `Version` fact name the minor release that the version index entry points at, such as `8.19` for `8` or `9.6` for `9`. They show it even when only one version renders and there is no version picker. When the index names no minor, as for `main` or a bare major, the label falls back to the major, such as `Version 8`. The landing fact then falls back to the spec's own `info.version`, or shows nothing when the spec has none.
 
 Hand-written `children:` Markdown pages show no notice, so a page without one is not proof that it belongs to the latest version.
 The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise. If the newest major failed to load, the notice keeps the page's own version and has no link.
