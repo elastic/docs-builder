@@ -150,6 +150,14 @@ page-feedback + #prev-next-nav {
 .page-feedback__details {
 	display: grid;
 	gap: 0.625rem;
+	margin-top: 0.5rem;
+	border-top: 1px solid var(--color-grey-20);
+	padding-top: 1.5rem;
+}
+
+.page-feedback__comment-label {
+	font-size: 1.125rem;
+	font-weight: 600;
 }
 
 .page-feedback__textarea {
