@@ -97,6 +97,7 @@ A group page puts an `Endpoints` heading with the fragment `#endpoints` above it
 
 - A `###` heading named `Endpoints` in the intro gets no anchor and no entry in On this page.
 - An extra `## Endpoints` section keeps its content, but its fragment gets a numeric suffix, usually `#endpoints-2`. The suffix is the first one not already taken by another section on the page, so check the fragment on the rendered page before you link to it. Rename the heading if you want a fragment that does not depend on the other sections.
+- Supplemental sections take priority over intro headings for a fragment. If an intro heading would get the same fragment as a supplemental section, for example an intro `### Endpoints 2` and an extra `## Endpoints`, the section keeps `#endpoints-2` and the intro heading loses its anchor and its On this page entry. Rename one of the two headings.
 
 ## Version-specific files
 
