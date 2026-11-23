@@ -641,6 +641,7 @@ public class OpenApiGenerator(
 	/// A released spec can be cut from <c>main</c> before its description names the release branch, so the page
 	/// would claim it is derived from <c>main</c>. Name the branch the version index actually published.
 	/// </summary>
+	// TODO: remove once the specs drop this wording and the page renders the branch from the version index (elastic/docs-eng-team#1237).
 	internal static string? WithSourceBranch(string? description, string branch) =>
 		branch == "main"
 			? description
