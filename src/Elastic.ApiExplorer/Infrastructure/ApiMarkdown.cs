@@ -95,10 +95,7 @@ public static partial class ApiMarkdown
 		IReadOnlyList<ApiSupplementalSection> postSections
 	)
 	{
-		var pageAnchors = ApiPostSection
-			.Anchors(postSections, GroupPageAnchors)
-			.Append(ApiViewModel.EndpointsAnchor)
-			.ToHashSet(StringComparer.Ordinal);
+		var pageAnchors = ApiPostSection.Anchors(postSections, GroupPageAnchors).Concat(GroupPageAnchors).ToHashSet(StringComparer.Ordinal);
 		return [.. ReadHeadings(renderer, markdown, apiBaseUrl).Where(heading => !pageAnchors.Contains(heading.Slug))];
 	}
 

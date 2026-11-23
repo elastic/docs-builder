@@ -159,7 +159,8 @@ internal static class ApiMarkdownFrontMatter
 	internal static string? TagSummary(ApiTag tag, ApiRenderContext context) =>
 		ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), context.CurrentNavigation.NavigationRoot.Url));
 
-	private static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
+	/// <summary>The description a group shows: its supplemental one when it has one, else the spec's.</summary>
+	internal static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
 		context.TagSupplemental.TryGetValue(tag.Name, out var doc) ? doc.DescriptionOr(tag.Description) : tag.Description;
 
 	private static string? OperationDescription(ApiOperation operation, ApiRenderContext context)

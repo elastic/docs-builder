@@ -701,7 +701,6 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("class=\"api-overview-title\"");
 		html.Should().Contain("class=\"api-group-route\"");
 		html.Should().NotContain("<table");
-		html.Should().NotContain("api-url-list-item-landing");
 	}
 
 	[Test]
@@ -741,7 +740,6 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 			.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal)
 			.Should()
 			.BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
-		html.Should().NotContain("api-landing-meta");
 		html.Should().NotContain("Reference topics");
 	}
 

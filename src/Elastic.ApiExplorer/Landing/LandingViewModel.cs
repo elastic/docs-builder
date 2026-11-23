@@ -29,8 +29,6 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>The endpoint groups in lists of their own, one per classification heading, so each list can carry the group page's frame.</summary>
 	public IReadOnlyList<ApiIndexBlock> IndexBlocks => field ??= ApiIndexBlock.Of(ApiOverviewBuilder.WithoutGuidePages(OverviewSections));
 
-	public int GroupCount => IndexBlocks.Sum(static block => block.Groups.Count);
-
 	private RenderedIntro Intro => field ??= RenderIntro();
 
 	private ApiMarkdown.HtmlSplit DescriptionParts => field ??= ApiMarkdown.SplitAtFirstHeading(Intro.Html.Value ?? "");

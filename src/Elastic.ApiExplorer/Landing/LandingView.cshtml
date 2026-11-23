@@ -45,7 +45,8 @@
 		@* The groups only, in the same framed list as a group page's operations: each group page lists its operations, and search finds any of them. *@
 		<div class="api-overview">
 			<div class="api-index">
-				<p class="api-group-count">@Model.GroupCount @(Model.GroupCount == 1 ? "group" : "groups")</p>
+				@{ var groups = Model.IndexBlocks.Sum(static block => block.Groups.Count); }
+				<p class="api-group-count">@groups @(groups == 1 ? "group" : "groups")</p>
 				@foreach (var block in Model.IndexBlocks)
 				{
 					if (block.Heading is { } classification)

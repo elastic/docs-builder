@@ -74,7 +74,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 			[new EndpointSegment("{index}", Optional: true), new EndpointSegment("_search", Optional: false)]
 		);
 
-		var html = await _GroupRoute.Create(route).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		var html = await RenderRouteAsync(route);
 
 		html.Should().MatchInlineHtmlSnapshot(
 			"""
@@ -98,7 +98,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 			]
 		);
 
-		var html = await _GroupRoute.Create(route).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		var html = await RenderRouteAsync(route);
 
 		// Brackets on each segment would suggest /items/{owner} and /items/by-owner are routes too.
 		html.Should().MatchInlineHtmlSnapshot(
@@ -117,6 +117,9 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		var rows = ApiOverviewBuilder.BuildTagChildren(operation.Parent!, fixture.Context.VersionsConfiguration);
 		return (rows.Single(r => r.Url == operation.Url), [.. rows.Where(r => r.Url != operation.Url)]);
 	}
+
+	private static async Task<string> RenderRouteAsync(EndpointRow route) =>
+		await _GroupRoute.Create(route).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 	private static async Task<string> RenderAsync(ApiOverviewRow row)
 	{

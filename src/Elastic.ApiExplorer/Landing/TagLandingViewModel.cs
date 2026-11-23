@@ -22,15 +22,9 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 	/// <summary>Built before the slice renders so the view only iterates.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
 
-	public string? DescriptionMarkdown
-	{
-		get
-		{
-			if (RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc))
-				return doc.DescriptionOr(Tag.Description);
-			return Tag.Description;
-		}
-	}
+	private ApiSupplementalDoc? TagDoc => RenderContext.TagSupplemental.GetValueOrDefault(Tag.Name);
+
+	public string? DescriptionMarkdown => ApiMarkdownFrontMatter.TagDescription(Tag, RenderContext);
 
 	/// <summary>The intro headings that get an anchor: the sidebar links to them, and so does On this page.</summary>
 	private IReadOnlyList<TocItem> IntroHeadings =>
@@ -38,7 +32,7 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 			RenderContext.MarkdownRenderer,
 			DescriptionMarkdown,
 			RenderContext.CurrentNavigation.NavigationRoot.Url,
-			RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc) ? doc.PostSections : []
+			TagDoc?.PostSections ?? []
 		);
 
 	/// <summary>The intro keeps the anchor ids of its headings, which the sidebar and On this page link to.</summary>
@@ -57,9 +51,7 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 		);
 
 	public IReadOnlyList<ApiPostSection> PostSections =>
-		field ??= RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc)
-			? ApiPostSection.From(RenderContext, doc.PostSections, ApiMarkdown.GroupPageAnchors)
-			: [];
+		field ??= ApiPostSection.From(RenderContext, TagDoc?.PostSections ?? [], ApiMarkdown.GroupPageAnchors);
 
 	public TagExternalDocsDisplay? ExternalDocsDisplay =>
 		Tag.ExternalDocs is null
