@@ -44,15 +44,4 @@ Placeholder.
 
 		$"{heading.Level} {heading.Heading} #{heading.Slug}".Should().Be("2 Api key #doc-authentication-api-key-auth");
 	}
-
-	[Test]
-	public void ReadApiDescriptionHeadings_ReferenceLinkAtTheEnd_ReadsItsLabelAsTheAnchor()
-	{
-		var writer = new HtmlWriter(Set, FileSystem, new DescriptionGenerator());
-
-		var heading = writer.ReadApiDescriptionHeadings("## Configure [API keys][keys]\n", null).Single();
-
-		// The API .md output (ApiCommonMark.StripHeadingAnchors) drops the same text, so it matches this heading.
-		$"{heading.Heading} #{heading.Slug}".Should().Be("Configure [API keys] #keys");
-	}
 }

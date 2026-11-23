@@ -145,12 +145,12 @@ internal static class OperationCommonMark
 	}
 
 	/// <summary>
-	/// The document-level alternatives as the Authentication page and its child page show them: a heading each with its
-	/// Bump.sh anchor, then each scheme's description and the credential to send. Generated Markdown stays together, and each
-	/// spec description is a fragment of its own, so the HTML page renders it alone and it cannot change the sections after it.
-	/// Unprepared.
+	/// The document-level alternatives as the Authentication page and its child page show them: a heading each, then each
+	/// scheme's description and the credential to send. Generated Markdown stays together, and each spec description is a
+	/// fragment of its own, so the HTML page renders it alone and it cannot change the sections after it. The HTML page sets
+	/// each heading's Bump.sh anchor with <paramref name="anchors"/>; the <c>.md</c> output leaves it out. Unprepared.
 	/// </summary>
-	internal static IReadOnlyList<string> AuthenticationFragments(OpenApiDocument document)
+	internal static IReadOnlyList<string> AuthenticationFragments(OpenApiDocument document, bool anchors)
 	{
 		var requirements = OpenApiAuthSchemeResolver.ResolveDocument(document);
 		if (requirements.Count == 0)
@@ -163,8 +163,8 @@ internal static class OperationCommonMark
 		foreach (var requirement in requirements)
 		{
 			var together = requirement.Schemes.Count > 1;
-			var anchor = ApiUrlBuilder.AuthenticationAnchor(requirement.Schemes.Select(static s => s.Id));
-			ApiCommonMark.Heading(generated, 2, $"{requirement.Label} [{anchor}]");
+			var anchor = anchors ? $" [{ApiUrlBuilder.AuthenticationAnchor(requirement.Schemes.Select(static s => s.Id))}]" : "";
+			ApiCommonMark.Heading(generated, 2, requirement.Label + anchor);
 			if (together)
 				ApiCommonMark.Paragraph(generated, "Send all of these together.");
 			foreach (var scheme in requirement.Schemes)
@@ -174,9 +174,7 @@ internal static class OperationCommonMark
 				if (!string.IsNullOrWhiteSpace(scheme.DescriptionMarkdown))
 				{
 					Flush();
-					var description = new StringBuilder();
-					ApiCommonMark.Paragraph(description, scheme.DescriptionMarkdown);
-					fragments.Add(description.ToString());
+					fragments.Add($"{scheme.DescriptionMarkdown.TrimEnd()}\n\n");
 				}
 
 				ApiCommonMark.Fence(generated, "http", scheme.CredentialExample);
@@ -200,7 +198,7 @@ internal static class OperationCommonMark
 
 	/// <summary>The <c>.md</c> twin of the Authentication sections, written after the page's own prose.</summary>
 	internal static void WriteAuthenticationSections(StringBuilder markdown, OpenApiDocument document, string apiBaseUrl) =>
-		ApiCommonMark.Prepared(markdown, string.Concat(AuthenticationFragments(document)), apiBaseUrl);
+		ApiCommonMark.Prepared(markdown, string.Concat(AuthenticationFragments(document, anchors: false)), apiBaseUrl);
 
 	// One scheme is a plain bullet. Several schemes are sent together, so they nest under one bullet that says so.
 	internal static void WriteRequirement(StringBuilder markdown, AuthRequirement requirement, string apiBaseUrl)

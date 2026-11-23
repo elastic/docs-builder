@@ -161,11 +161,11 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void AuthenticationPage_KeepsEachHeadingLinkableAndListsItInTheRail()
+	public void AuthenticationPage_ListsEachAlternativeInTheRailByItsBumpShAnchor()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
 
-		var page = StructuralViewModel.Create(item.Model, RenderContext(item, renderer: AnchoredHeadingRenderer.Instance));
+		var page = StructuralViewModel.Create(item.Model, RenderContext(item));
 
 		string
 			.Join("\n", page.TocItems.Select(static t => $"{t.Level} {t.Heading} #{t.Slug}"))
@@ -176,17 +176,6 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			2 Basic #doc-authentication-basic-auth
 			2 Bearer #doc-authentication-bearer-auth
 			"""
-			);
-		// The sanitizer keeps the id and the heading link of every listed heading, so the Bump.sh anchors land.
-		string
-			.Join("\n", page.BodyHtml!.Value.Split('\n').Where(static line => line.Contains("heading-wrapper", StringComparison.Ordinal)))
-			.Should()
-			.MatchInlineSnapshot(
-				"""
-				<div class="heading-wrapper" id="doc-authentication-api-key"><h2><a class="headerlink" href="#doc-authentication-api-key">Api key</a></h2>
-				<div class="heading-wrapper" id="doc-authentication-basic-auth"><h2><a class="headerlink" href="#doc-authentication-basic-auth">Basic</a></h2>
-				<div class="heading-wrapper" id="doc-authentication-bearer-auth"><h2><a class="headerlink" href="#doc-authentication-bearer-auth">Bearer</a></h2>
-				"""
 			);
 	}
 
@@ -210,7 +199,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		);
 
 		string
-			.Join("<<< next fragment >>>\n", OperationCommonMark.AuthenticationFragments(document))
+			.Join("<<< next fragment >>>\n", OperationCommonMark.AuthenticationFragments(document, anchors: true))
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -267,11 +256,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			.Should()
 			.BeEmpty();
 
-	private ApiRenderContext RenderContext(
-		INavigationItem? current = null,
-		OpenApiDocument? document = null,
-		IMarkdownStringRenderer? renderer = null
-	) =>
+	private ApiRenderContext RenderContext(INavigationItem? current = null, OpenApiDocument? document = null) =>
 		new(
 			fixture.Context,
 			document ?? fixture.Document,
@@ -280,37 +265,6 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = current ?? fixture.Navigation,
-			MarkdownRenderer = renderer ?? PassthroughMarkdownRenderer.Instance
+			MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 		};
-
-	/// <summary>
-	/// Renders heading lines with the markup the API description pipeline gives them (<c>ApiDescriptionHeadingTests</c> in
-	/// Elastic.Markdown.Tests pins it) and every other line as a paragraph. Headings are read as the passthrough reads them.
-	/// </summary>
-	private sealed class AnchoredHeadingRenderer : IMarkdownStringRenderer
-	{
-		public static AnchoredHeadingRenderer Instance { get; } = new();
-
-		public string Render(string markdown, IFileInfo? source) => $"<p>{markdown}</p>";
-
-		public string RenderApiDescription(string markdown, IFileInfo? source)
-		{
-			var headings = ReadApiDescriptionHeadings(markdown, source);
-			return string.Concat(
-				markdown
-					.ReplaceLineEndings("\n")
-					.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-					.Select(
-						line => headings.FirstOrDefault(
-							h => line.StartsWith(new string('#', h.Level) + " " + h.Heading, StringComparison.Ordinal)
-						) is { } h
-							? $"<div class=\"heading-wrapper\" id=\"{h.Slug}\"><h{h.Level}><a class=\"headerlink\" href=\"#{h.Slug}\">{h.Heading}</a></h{h.Level}>\n</div>\n"
-							: $"<p>{line}</p>\n"
-					)
-			);
-		}
-
-		public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) =>
-			PassthroughMarkdownRenderer.Instance.ReadApiDescriptionHeadings(markdown, source);
-	}
 }

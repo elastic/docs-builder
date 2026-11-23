@@ -3,56 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
-using System.Text.RegularExpressions;
-using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>Small CommonMark helpers shared by API page writers.</summary>
-internal static partial class ApiCommonMark
+internal static class ApiCommonMark
 {
-	/// <summary>
-	/// Drops the <c>[anchor]</c> that ends a heading, as the <c>.md</c> output of docs pages does: it sets the HTML id and
-	/// means nothing in plain Markdown. Lines inside fenced code blocks stay as written.
-	/// </summary>
-	public static string StripHeadingAnchors(string markdown)
-	{
-		var lines = markdown.Split('\n');
-		string? fence = null;
-		for (var i = 0; i < lines.Length; i++)
-		{
-			var trimmed = lines[i].TrimStart();
-			var run = FenceRun(trimmed);
-			if (fence is not null)
-			{
-				// As in CommonMark, only a run of the same character, at least as long, with nothing after it closes the block.
-				if (run is not null && run[0] == fence[0] && run.Length >= fence.Length && string.IsNullOrWhiteSpace(trimmed[run.Length..]))
-					fence = null;
-			}
-			else if (run is not null)
-				fence = run;
-			else
-				lines[i] = HeadingAnchor().Replace(lines[i], "$1");
-		}
-
-		return string.Join('\n', lines);
-	}
-
-	// The backticks or tildes that open or close a fenced code block, or null when the line is not a fence.
-	private static string? FenceRun(string line)
-	{
-		if (line.Length == 0 || line[0] is not ('`' or '~'))
-			return null;
-
-		var length = line.TakeWhile(c => c == line[0]).Count();
-		return length >= 3 ? line[..length] : null;
-	}
-
-	// The anchor is what the docs parser reads as one (HeadingAnchorParser.MatchAnchor in Elastic.Markdown, which this
-	// project does not reference), so the .md output drops exactly what the HTML turns into an id.
-	[GeneratedRegex(@"^(#{1,6}\s.*?)\s*\[[^[]+\]\s*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex HeadingAnchor();
-
 	public static void Heading(StringBuilder markdown, int level, string text)
 	{
 		_ = markdown.Append('#', level);
@@ -72,7 +28,7 @@ internal static partial class ApiCommonMark
 
 	public static void Prepared(StringBuilder markdown, string? source, string apiBaseUrl)
 	{
-		var prepared = StripHeadingAnchors(ApiMarkdown.Prepare(source, apiBaseUrl));
+		var prepared = ApiMarkdown.Prepare(source, apiBaseUrl);
 		if (string.IsNullOrWhiteSpace(prepared))
 			return;
 

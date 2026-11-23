@@ -150,7 +150,10 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 	/// their headings are docs headings: anchored, linkable and listed in On this page.
 	/// </summary>
 	internal static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderAuthentication(ApiRenderContext context, string? intro) =>
-		ApiMarkdown.RenderFragmentsWithHeadings(context, [intro, .. OperationCommonMark.AuthenticationFragments(context.Model)]);
+		ApiMarkdown.RenderFragmentsWithHeadings(
+			context,
+			[intro, .. OperationCommonMark.AuthenticationFragments(context.Model, anchors: true)]
+		);
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
 

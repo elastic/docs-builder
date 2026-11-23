@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
@@ -45,7 +44,4 @@ public record PageTocItem
 	/// from regular headings (which should preserve their levels).
 	/// </summary>
 	public bool IsStepperStep { get; init; }
-
-	/// <summary>The entry as the shared "On this page" list takes it.</summary>
-	public TocItem ToTocItem() => new(Heading, Slug, Level);
 }
