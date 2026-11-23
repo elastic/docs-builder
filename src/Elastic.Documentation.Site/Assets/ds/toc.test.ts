@@ -236,20 +236,31 @@ describe('initToc', () => {
         history.pushState(null, '', window.location.pathname)
     })
 
-    it('survives a heading id with a literal percent sign', () => {
+    it('finds a heading whose id has a literal percent sign', () => {
         document.body.innerHTML = `
         <nav data-toc>
+          <a data-toc-link href="#intro">Intro</a>
           <a data-toc-link href="#100%-coverage">Coverage</a>
         </nav>
-        <h2 id="100%-coverage">100% coverage</h2>`
+        <h2 id="intro">Intro</h2><h2 id="100%-coverage">100% coverage</h2>`
+        const rect = (top: number) => ({ top }) as DOMRect
+        document.getElementById('intro')!.getBoundingClientRect = () =>
+            rect(-600)
         document.getElementById('100%-coverage')!.getBoundingClientRect = () =>
-            ({ top: -300 }) as DOMRect
+            rect(-100)
 
         expect(() => initToc()).not.toThrow()
+
+        // The first link is the fallback when no heading is found, so the second being current proves the lookup worked.
         expect(
             document
-                .querySelector('[data-toc-link]')!
+                .querySelector('[href="#100%-coverage"]')!
                 .getAttribute('aria-current')
         ).toBe('location')
+        expect(
+            document
+                .querySelector('[href="#intro"]')!
+                .hasAttribute('aria-current')
+        ).toBe(false)
     })
 })
