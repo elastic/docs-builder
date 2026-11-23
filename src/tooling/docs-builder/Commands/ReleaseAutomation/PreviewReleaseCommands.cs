@@ -106,8 +106,9 @@ internal sealed class PreviewReleaseCommands(
 	/// The site has a page per version for every DRA product, and the <c>staging</c> and <c>head</c> pages of the serverless products.
 	/// A product without bundles is left out of the site, and the build fails only when no product has any bundle.
 	/// The site is built from the bundles on disk: the release schedule is not read.
-	/// Bundles are scrubbed like the ones that are published: a reference to a repository that <c>assembler.yml</c> marks private
-	/// is removed from the entries and from their text, so the preview shows what publication will.
+	/// Bundles are scrubbed like the ones that are published: a pull request or issue reference to a repository that
+	/// <c>assembler.yml</c> marks private is removed from the entries and from their text. Other links, such as to a repository, a commit
+	/// or a comparison, are not recognized and stay as written, as they do in publication.
 	/// </remarks>
 	/// <param name="bundlesDir">Folder that holds one sub-folder of bundle files per product. Defaults to <c>./bundles</c>.</param>
 	/// <param name="output">Destination for the generated site. Defaults to <c>./site</c>. The folder is cleaned first.</param>
@@ -182,15 +183,13 @@ internal sealed class PreviewReleaseCommands(
 				svc.Id,
 				svc.FinalSlice
 			);
-			ReplaceBundles(svc, rootOutput, null);
+			ServerlessPreviewBundles.Replace(svc, rootOutput, null, _logger);
 			return true;
 		}
 
 		// The bundles of a run are written aside and replace the earlier ones only when every range has finished. A failed
 		// comparison then leaves the last good bundles in place, and not a Staging bundle next to a missing HEAD one.
-		var pending = new DirectoryInfo(Path.Combine(rootOutput.FullName, "preview-pending", svc.Id));
-		if (pending.Exists)
-			pending.Delete(true);
+		var pending = new DirectoryInfo(Path.Combine(rootOutput.FullName, "preview-pending", $"{svc.Id}-{Guid.NewGuid():N}"));
 		_ = Directory.CreateDirectory(pending.FullName);
 		try
 		{
@@ -207,7 +206,7 @@ internal sealed class PreviewReleaseCommands(
 				{
 					OnEmptyRange =
 						() => _logger.LogInformation(
-							"'{Service}' has no release notes between {Start} and {End}, so it has no {Label} page.",
+							"A repository of '{Service}' has no release notes between {Start} and {End} for {Label}. Another repository of the service may still have some.",
 							svc.Id,
 							target.StartRef,
 							target.EndRef,
@@ -219,7 +218,7 @@ internal sealed class PreviewReleaseCommands(
 					return false;
 			}
 
-			ReplaceBundles(svc, rootOutput, pending);
+			ServerlessPreviewBundles.Replace(svc, rootOutput, pending, _logger);
 			return true;
 		}
 		finally
@@ -228,31 +227,6 @@ internal sealed class PreviewReleaseCommands(
 			if (pending.Parent is { Exists: true } parent && !parent.EnumerateFileSystemInfos().Any())
 				parent.Delete();
 		}
-	}
-
-	// A reused output folder may hold the bundles of an earlier run, such as a Staging release that production has caught up with.
-	// Only the files this service writes go: the other service's bundles share the folder of the product.
-	private void ReplaceBundles(ServerlessService svc, DirectoryInfo rootOutput, DirectoryInfo? pending)
-	{
-		var productOutput = new DirectoryInfo(Path.Combine(rootOutput.FullName, svc.Product));
-		foreach (var name in ServerlessPromotion.PreviewBundleFileNames(svc))
-		{
-			var path = Path.Combine(productOutput.FullName, name);
-			if (!File.Exists(path))
-				continue;
-			_logger.LogInformation("Removing the bundle of an earlier run: {Path}", path);
-			File.Delete(path);
-		}
-
-		foreach (var file in pending?.EnumerateFiles() ?? [])
-		{
-			_ = Directory.CreateDirectory(productOutput.FullName);
-			file.MoveTo(Path.Combine(productOutput.FullName, file.Name), overwrite: true);
-		}
-
-		// A product that wrote nothing leaves no folder behind.
-		if (productOutput.Exists && !productOutput.EnumerateFileSystemInfos().Any())
-			productOutput.Delete();
 	}
 
 	private async Task<string?> ResolveBranchHeadAsync(ServerlessBundler bundler, ServerlessService svc, CancellationToken ctx)

@@ -420,6 +420,8 @@ public class UnifiedReleaseNotesTests : IDisposable
 	private const string PrivateReference = "https://github.com/elastic/private-repo/pull/12";
 	private const string PublicReference = "https://github.com/elastic/kibana/pull/99";
 
+	// The renderer shows the description of an entry only for a bundle with a private repository in it, which is what the
+	// Elastic Cloud Hosted preview has. edot-cloud-forwarder-aws is private in assembler.yml.
 	private string WriteBundleWithReferences() =>
 		WriteFile(
 			"kibana",
@@ -428,7 +430,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			products:
 			- product: kibana
 			  target: 9.5.0
-			  repo: kibana
+			  repo: edot-cloud-forwarder-aws
 			  owner: elastic
 			entries:
 			- title: Entry with references
@@ -462,6 +464,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 		succeeded.Should().BeTrue();
 		var html = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "kibana", "9.5.0", "index.html"));
 		html.Should().Contain("Entry with references").And.Contain("kibana/pull/99").And.NotContain("private-repo");
+		html.Should().Contain("Follows", "the description renders as a highlight, so its text is scrubbed in place and not hidden");
 	}
 
 	[Test]
@@ -474,7 +477,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		succeeded.Should().BeTrue();
 		var html = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "kibana", "9.5.0", "index.html"));
-		html.Should().Contain("private-repo");
+		html.Should().Contain("private-repo").And.Contain("Follows");
 	}
 
 	[Test]
