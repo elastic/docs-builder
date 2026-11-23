@@ -34,6 +34,12 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	[Arguments("Elasticsearch", new string[0], "The Elasticsearch API declares no authentication schemes.")]
+	[Arguments("Elasticsearch", new[] { "API key", "Basic" }, "How to authenticate requests to the Elasticsearch API: API key, Basic.")]
+	public void FallbackDescription_Authentication_ReflectsWhatTheSpecDeclares(string product, string[] labels, string expected) =>
+		ApiFallbackDescription.Authentication(product, labels).Should().Be(expected);
+
+	[Test]
 	public void OperationLayout_UsesSummaryInTitleAndExcerptedDescription()
 	{
 		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");

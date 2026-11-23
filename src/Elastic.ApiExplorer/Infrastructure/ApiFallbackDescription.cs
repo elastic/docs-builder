@@ -55,9 +55,9 @@ internal static class ApiFallbackDescription
 			ApiOperation operation =>
 				$"{OpenApiExtensionReader.GetSummary(operation.Operation) ?? navigationTitle}: {operation.OperationType.Method.ToUpperInvariant()} {operation.Route} in the {product} API.",
 			ApiStructuralPage { Kind: ApiStructuralKind.Authentication } =>
-				WithList(
-					$"How to authenticate requests to the {product} API",
-					StructuralViewModel.ReadRequirements(context.Model).SelectMany(static r => r.Schemes).Select(static s => s.Label)
+				Authentication(
+					product,
+					[.. StructuralViewModel.ReadRequirements(context.Model).SelectMany(static r => r.Schemes).Select(static s => s.Label)]
 				),
 			ApiStructuralPage =>
 				WithList(
@@ -67,6 +67,12 @@ internal static class ApiFallbackDescription
 			_ => null
 		};
 	}
+
+	/// <summary>The Authentication page of a spec that allows only anonymous access says it declares no schemes, so the description must not promise instructions.</summary>
+	internal static string Authentication(string product, IReadOnlyList<string> schemeLabels) =>
+		schemeLabels.Count == 0
+			? $"The {product} API declares no authentication schemes."
+			: WithList($"How to authenticate requests to the {product} API", schemeLabels);
 
 	private static string WithList(string sentence, IEnumerable<string> items)
 	{
