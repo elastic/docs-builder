@@ -82,7 +82,7 @@
     "defaults"
   ],
   "dependencies": {
-    "@elastic/eui": "117.0.0",
+    "@elastic/eui": "123.3.0",
     "@elastic/highlightjs-esql": "4.36.0",
     "@elastic/opentelemetry-browser": "0.5.0",
     "@emotion/css": "11.13.5",
