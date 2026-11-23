@@ -98,7 +98,6 @@ export function drawResults(
                 '[data-search-title]'
             )!.textContent = result.title
             if (result.deprecated) {
-                item.setAttribute('data-deprecated', '')
                 item.querySelector<HTMLElement>(
                     '[data-search-deprecated]'
                 )?.removeAttribute('hidden')

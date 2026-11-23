@@ -372,17 +372,6 @@
 	transform: rotate(-90deg);
 }
 
-/* The same deprecated treatment as the sidebar's nav-tree rows: the title strikes its own <s>, so a hover underline adds to it. */
-.api-deprecated-title {
-	text-decoration: line-through;
-	opacity: 0.7;
-}
-
-/* The chip keeps its method colour so a retired DELETE still reads as a delete; lower saturation says it is retired. */
-.api-group-row--deprecated .api-method {
-	filter: saturate(0.4);
-}
-
 /* Product landing: each endpoint group is a row of the group page's list. The endpoint count follows the name the way
    badges follow an operation title, then comes what the group is for, which the sidebar does not say. */
 .api-index .api-index-heading {
@@ -1934,14 +1923,6 @@ a.type-linked:hover {
 	padding-block: 0.125rem;
 	font-size: var(--text-xs);
 	font-weight: var(--weight-medium);
-}
-
-/* Deprecated property/parameter styling - strikethrough */
-.property-item.deprecated > dt > a > code:first-child,
-.query-param.deprecated > dt > a > code:first-child,
-.path-param.deprecated > dt > a > code:first-child {
-	text-decoration: line-through;
-	opacity: 0.7;
 }
 
 /* Version badge - subtle grey */

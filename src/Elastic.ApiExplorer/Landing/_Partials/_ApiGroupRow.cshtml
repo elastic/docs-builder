@@ -1,7 +1,7 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<ApiGroupRowModel>
 <li>
-	<a class="api-group-row@(Model.Row.Deprecated ? " api-group-row--deprecated" : "")" href="@Model.Row.Url" @(new HtmlString(Model.HxAttributes))>
+	<a class="api-group-row" href="@Model.Row.Url" @(new HtmlString(Model.HxAttributes))>
 		<span class="api-group-method">
 			@if (Model.Row.PrimaryRoute is { } methodsRoute)
 			{
@@ -9,7 +9,7 @@
 			}
 		</span>
 		<span class="api-group-heading">
-			<span class="api-overview-title">@if (Model.Row.Deprecated){<s class="api-deprecated-title">@Model.Row.Title</s>}else{@Model.Row.Title}</span>
+			<span class="api-overview-title">@Model.Row.Title</span>
 			@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(Model.Row.Availability, Model.Row.Deprecated, Model.Row.DesignSystem)))
 		</span>
 		<span class="api-group-routes">
