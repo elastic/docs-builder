@@ -272,7 +272,10 @@ public partial class ApiPagesNavRenderingTests
 		}
 
 		foreach (var link in chips)
-			link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal).Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
+			link
+				.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal)
+				.Should()
+				.BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
 		// The legacy chip is the link's ::after, which is read after every child, so after "Deprecated" too.
 		legacy.Should().Contain("data-method=\"GET\"");
 	}
@@ -317,6 +320,26 @@ public partial class ApiPagesNavRenderingTests
 					</li>
 			"""
 		);
+	}
+
+	[Test]
+	public async Task RenderLegacy_ExtensionMethodWithMarkup_IsEncodedInTheAttribute()
+	{
+		NavigationRenderNode[] nodes =
+		[
+			new()
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Custom verb",
+				Url = "/api/test/operation/operation-custom",
+				HttpMethods = ["x\"&lt;"]
+			}
+		];
+
+		var html = await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("data-method=\"X&quot;&amp;LT;\"");
 	}
 
 	[Test]

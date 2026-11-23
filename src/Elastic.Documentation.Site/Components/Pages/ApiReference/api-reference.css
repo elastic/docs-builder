@@ -751,14 +751,12 @@
 #pages-nav
 	li:has(
 		> a.sidebar-link > :is(.nav-v2-api-method, .nav-v2-api-method-group)
-	),
-#pages-nav li:has(> a.sidebar-link[data-method]) {
+	) {
 	padding-right: var(--space-2);
 }
 
 #pages-nav
-	a.sidebar-link:has(> :is(.nav-v2-api-method, .nav-v2-api-method-group)),
-#pages-nav a.sidebar-link[data-method] {
+	a.sidebar-link:has(> :is(.nav-v2-api-method, .nav-v2-api-method-group)) {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
@@ -772,13 +770,7 @@
  * DELETE red, HEAD purple, OPTIONS gray). Current and hovered rows keep the chip fill and darken only the border
  * (hover a mid step, current the darkest), so the 9px label stays above WCAG AA (4.5:1).
  */
-/* A single-method row draws the same chip as its link's ::after, from data-method (_TocTreeNavLegacy.cshtml). */
-#pages-nav a.sidebar-link[data-method]::after {
-	content: attr(data-method);
-}
-
-#pages-nav .nav-v2-api-method,
-#pages-nav a.sidebar-link[data-method]::after {
+#pages-nav .nav-v2-api-method {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
@@ -798,122 +790,101 @@
 	transition: border-color 0.12s ease;
 }
 
-#pages-nav .nav-v2-api-method-get,
-#pages-nav a.sidebar-link[data-method='GET']::after {
+#pages-nav .nav-v2-api-method-get {
 	background-color: var(--color-accent-surface);
 	border-color: var(--color-accent-border);
 	color: var(--color-accent-hover);
 }
 
-#pages-nav .nav-v2-api-method-post,
-#pages-nav a.sidebar-link[data-method='POST']::after {
+#pages-nav .nav-v2-api-method-post {
 	background-color: var(--color-success-surface);
 	border-color: var(--color-success-surface);
 	color: var(--color-success);
 }
 
-#pages-nav .nav-v2-api-method-put,
-#pages-nav a.sidebar-link[data-method='PUT']::after {
+#pages-nav .nav-v2-api-method-put {
 	background-color: var(--color-warning-surface);
 	border-color: var(--color-warning-surface);
 	color: var(--color-warning);
 }
 
-#pages-nav .nav-v2-api-method-patch,
-#pages-nav a.sidebar-link[data-method='PATCH']::after {
+#pages-nav .nav-v2-api-method-patch {
 	background-color: var(--color-success-surface);
 	border-color: var(--color-success-surface);
 	color: var(--color-success);
 }
 
-#pages-nav .nav-v2-api-method-delete,
-#pages-nav a.sidebar-link[data-method='DELETE']::after {
+#pages-nav .nav-v2-api-method-delete {
 	background-color: var(--color-danger-surface);
 	border-color: var(--color-danger-surface);
 	color: var(--color-danger);
 }
 
-#pages-nav .nav-v2-api-method-head,
-#pages-nav a.sidebar-link[data-method='HEAD']::after {
+#pages-nav .nav-v2-api-method-head {
 	background-color: var(--color-important-surface);
 	border-color: var(--color-important-surface);
 	color: var(--color-important);
 }
 
-#pages-nav .nav-v2-api-method-options,
-#pages-nav a.sidebar-link[data-method='OPTIONS']::after {
+#pages-nav .nav-v2-api-method-options {
 	background-color: var(--color-border);
 	border-color: var(--color-border-control);
 	color: var(--color-text-muted);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-get,
-#pages-nav a.sidebar-link[data-method='GET']:hover::after {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-get {
 	border-color: var(--color-accent);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-get,
-#pages-nav a.sidebar-link[data-method='GET'].current::after {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-get {
 	border-color: var(--color-accent-hover);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-post,
-#pages-nav a.sidebar-link[data-method='POST']:hover::after {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-post {
 	border-color: var(--color-success);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-post,
-#pages-nav a.sidebar-link[data-method='POST'].current::after {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-post {
 	border-color: var(--color-success);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-put,
-#pages-nav a.sidebar-link[data-method='PUT']:hover::after {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-put {
 	border-color: var(--color-warning);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-put,
-#pages-nav a.sidebar-link[data-method='PUT'].current::after {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-put {
 	border-color: var(--color-warning);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-patch,
-#pages-nav a.sidebar-link[data-method='PATCH']:hover::after {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-patch {
 	border-color: var(--color-success);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-patch,
-#pages-nav a.sidebar-link[data-method='PATCH'].current::after {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
 	border-color: var(--color-success);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-delete,
-#pages-nav a.sidebar-link[data-method='DELETE']:hover::after {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-delete {
 	border-color: var(--color-danger);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-delete,
-#pages-nav a.sidebar-link[data-method='DELETE'].current::after {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
 	border-color: var(--color-danger);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-head,
-#pages-nav a.sidebar-link[data-method='HEAD']:hover::after {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-head {
 	border-color: var(--color-important);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-head,
-#pages-nav a.sidebar-link[data-method='HEAD'].current::after {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-head {
 	border-color: var(--color-important);
 }
 
-#pages-nav a.sidebar-link:hover .nav-v2-api-method-options,
-#pages-nav a.sidebar-link[data-method='OPTIONS']:hover::after {
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-options {
 	border-color: var(--color-text-muted);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-options,
-#pages-nav a.sidebar-link[data-method='OPTIONS'].current::after {
+#pages-nav a.sidebar-link.current .nav-v2-api-method-options {
 	border-color: var(--color-text-muted);
 }
 
