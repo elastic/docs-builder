@@ -31,6 +31,7 @@ public sealed partial class GitHubCommitRangeService(
 	private const int GraphQlBatchSize = 25;
 	private const int PullRequestDetailBatchSize = 50;
 	private const int MaxAssociatedPullRequests = 10;
+	private const int FullShaLength = 40;
 	private const int WarmUpStageSize = 50;
 	private const int MaxWarmUpPages = 10;
 	private const int MaxWarmUpStageAttempts = 3;
@@ -288,19 +289,27 @@ public sealed partial class GitHubCommitRangeService(
 	/// <summary>The commit a ref names. A tag or a branch, which release workflows pass, never matches the sha in a commit listing. Falls back to the ref itself.</summary>
 	private async Task<string> ResolveCommitShaAsync(CommitRangeArguments args, string gitRef, Cancel ctx)
 	{
-		var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/commits/{Uri.EscapeDataString(gitRef)}";
-		using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
-		if (!response.IsSuccessStatusCode)
+		// A full sha needs no lookup, and a lookup that fails must not take the stages with it.
+		if (gitRef.Length == FullShaLength && CommitShaRegex().IsMatch(gitRef))
 			return gitRef;
 
-		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
 		try
 		{
+			var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/commits/{Uri.EscapeDataString(gitRef)}";
+			using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+			if (!response.IsSuccessStatusCode)
+				return gitRef;
+
+			var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
 			using var doc = JsonDocument.Parse(json);
-			return doc.RootElement.TryGetProperty("sha", out var sha) && sha.GetString() is { Length: > 0 } resolved ? resolved : gitRef;
+			return doc.RootElement is { ValueKind: JsonValueKind.Object } root
+				&& root.TryGetProperty("sha", out var sha)
+				&& sha is { ValueKind: JsonValueKind.String }
+				&& sha.GetString() is { Length: > 0 } resolved ? resolved : gitRef;
 		}
-		catch (JsonException)
+		catch (Exception e) when (e is JsonException or HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested)
 		{
+			_logger.LogDebug(e, "Could not resolve {Ref} to a commit; looking for it as written", gitRef);
 			return gitRef;
 		}
 	}
