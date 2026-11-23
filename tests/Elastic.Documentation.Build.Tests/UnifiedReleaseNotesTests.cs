@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Versions;
+using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -137,6 +138,123 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		files.Keys.Should().NotContain(k => k.Contains("auditbeat") || k.Contains("curator"));
 	}
+
+	private static readonly Product Serverless = CreateProduct("cloud-serverless", "Elastic Cloud Serverless", ReleaseNotesPath.OnRelease);
+
+	private static IReadOnlyDictionary<string, string> GeneratePreviewFiles() =>
+		UnifiedReleaseNotesDocset.Generate([
+			new ProductVersions(Products[0], ["9.6.0"]),
+			new ProductVersions(Serverless, ["staging", "head"])
+		]);
+
+	[Test]
+	public void SelectProducts_AdditionalProductIds_JoinTheDraProductsInIdOrder() =>
+		UnifiedReleaseNotesDocset
+			.SelectProducts([.. Products, Serverless], ["cloud-serverless", "curator"])
+			.Select(p => p.Id)
+			.Should()
+			.Equal("cloud-serverless", "curator", "elasticsearch", "kibana");
+
+	[Test]
+	public void SelectProducts_AdditionalProductIdOfAnUnknownProduct_IsIgnored() =>
+		UnifiedReleaseNotesDocset.SelectProducts(Products, ["nope"]).Select(p => p.Id).Should().Equal("elasticsearch", "kibana");
+
+	[Test]
+	public void Generate_PreviewLabels_AreTitledAsTheEnvironmentTheyName()
+	{
+		var files = GeneratePreviewFiles();
+
+		files["cloud-serverless/index.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Elastic Cloud Serverless
+			---
+
+			# Elastic Cloud Serverless release notes
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			## Versions
+
+			- [Staging](staging.md)
+			- [HEAD](head.md)
+			"""
+			);
+		files["cloud-serverless/staging.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Staging
+			---
+
+			# Elastic Cloud Serverless Staging
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: staging
+			:highlights:
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/head/known-issues.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Known issues
+			---
+
+			# Elastic Cloud Serverless HEAD known issues
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: head
+			:type: known-issue
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/toc.yml"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			toc:
+			  - file: index.md
+			  - file: staging.md
+			    children:
+			      - file: staging/known-issues.md
+			      - file: staging/breaking-changes.md
+			      - file: staging/deprecations.md
+			  - file: head.md
+			    children:
+			      - file: head/known-issues.md
+			      - file: head/breaking-changes.md
+			      - file: head/deprecations.md
+			"""
+			);
+	}
+
+	[Test]
+	public void Generate_RootIndex_NamesServerlessOnlyWhenAServerlessProductIsOnTheSite()
+	{
+		GeneratePreviewFiles()["index.md"].Should().Contain("Elastic Cloud Serverless and Elastic Cloud Hosted");
+		GenerateFiles()["index.md"].Should().NotContain("Serverless");
+	}
+
+	[Test]
+	public void Generate_VersionsKeepTheirOwnTitles() => GenerateFiles()["kibana/9.6.0.md"].Should().Contain("# Kibana 9.6.0");
 
 	[Test]
 	public void Generate_Docset_DeclaresTheTocWithProductsInOrder()

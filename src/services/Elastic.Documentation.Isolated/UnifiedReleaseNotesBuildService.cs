@@ -31,6 +31,12 @@ public record UnifiedReleaseNotesBuildOptions
 	/// </summary>
 	public IReadOnlyCollection<string> ExpectedVersions { get; init; } = [];
 
+	/// <summary>
+	/// Products without <c>release-notes: dra</c> to put on the site, by id, such as the serverless products. Their releases are
+	/// labels, so <see cref="ExpectedVersions"/> does not apply to them.
+	/// </summary>
+	public IReadOnlyCollection<string> AdditionalProductIds { get; init; } = [];
+
 	/// <summary>URL path prefix prepended to every generated link.</summary>
 	public string? PathPrefix { get; init; }
 
@@ -61,7 +67,10 @@ public class UnifiedReleaseNotesBuildService(
 
 	public async Task<bool> Build(IDiagnosticsCollector collector, UnifiedReleaseNotesBuildOptions options, Cancel ctx = default)
 	{
-		var products = UnifiedReleaseNotesDocset.SelectProducts(configurationContext.ProductsConfiguration.Products.Values);
+		var products = UnifiedReleaseNotesDocset.SelectProducts(
+			configurationContext.ProductsConfiguration.Products.Values,
+			options.AdditionalProductIds
+		);
 		if (products.Count == 0)
 		{
 			collector.EmitError(string.Empty, "No products with 'release-notes: dra' found in products.yml. There is nothing to build.");
@@ -142,7 +151,8 @@ public class UnifiedReleaseNotesBuildService(
 				continue;
 			}
 
-			var missing = MissingVersions(loaded.Select(b => b.Version), options.ExpectedVersions);
+			var isDra = product.Features.ReleaseNotes == ReleaseNotesPath.DailyReleasableArtifacts;
+			var missing = isDra ? MissingVersions(loaded.Select(b => b.Version), options.ExpectedVersions) : [];
 			if (missing.Count > 0)
 				_logger.LogInformation(
 					"'{Product}' has no bundle for {Versions}. It did not change in them.",

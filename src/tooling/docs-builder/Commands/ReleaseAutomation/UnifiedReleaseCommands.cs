@@ -25,6 +25,9 @@ using SharpYaml;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 
+/// <summary>Where <c>release unified build</c> reads its bundles, writes its site, and what it puts in the links of the site.</summary>
+internal sealed record UnifiedSiteOptions(DirectoryInfo? BundlesDir, DirectoryInfo? Output, string? PathPrefix, Uri? CanonicalBaseUrl);
+
 /// <summary>Unified release automation commands.</summary>
 internal sealed class UnifiedReleaseCommands(
 	ILoggerFactory logFactory,
@@ -327,8 +330,17 @@ internal sealed class UnifiedReleaseCommands(
 		string? pathPrefix = null,
 		Uri? canonicalBaseUrl = null,
 		CancellationToken ctx = default
+	) => await BuildSiteAsync(versionOrKeyword, new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl), [], ctx);
+
+	/// <summary>Builds the site, with <paramref name="additionalProductIds"/> next to the DRA products. <c>release preview build</c> adds the serverless products.</summary>
+	internal async Task<int> BuildSiteAsync(
+		string versionOrKeyword,
+		UnifiedSiteOptions site,
+		IReadOnlyCollection<string> additionalProductIds,
+		CancellationToken ctx
 	)
 	{
+		var (bundlesDir, output, pathPrefix, canonicalBaseUrl) = site;
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
@@ -346,6 +358,7 @@ internal sealed class UnifiedReleaseCommands(
 		{
 			BundlesDirectory = bundlesDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles")),
 			Output = output ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "site")),
+			AdditionalProductIds = additionalProductIds,
 			ExpectedVersions = [.. targets.Select(t => t.Version)],
 			PathPrefix = pathPrefix,
 			CanonicalBaseUrl = canonicalBaseUrl

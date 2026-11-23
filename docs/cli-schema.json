@@ -6920,6 +6920,199 @@
       ],
       "namespaces": [
         {
+          "segment": "preview",
+          "summary": "Commands for the release notes preview site: every product that previews its release notes before they ship.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "release",
+                "preview"
+              ],
+              "name": "build",
+              "summary": "Build the preview site from the bundles that release preview bundle wrote.",
+              "notes": "The site has a page per version for every DRA product, and the staging and head pages of the serverless products.\nA product without bundles is left out of the site, and the build fails only when no product has any bundle.",
+              "usage": "docs-builder release preview build [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "bundles-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Folder that holds one sub-folder of bundle files per product. Defaults to ./bundles."
+                },
+                {
+                  "role": "flag",
+                  "name": "output",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Destination for the generated site. Defaults to ./site. The folder is cleaned first."
+                },
+                {
+                  "role": "flag",
+                  "name": "path-prefix",
+                  "type": "string",
+                  "required": false,
+                  "summary": "URL path prefix prepended to every generated link."
+                },
+                {
+                  "role": "flag",
+                  "name": "canonical-base-url",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Base URL written into canonical link tags."
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "hidden": true
+            },
+            {
+              "path": [
+                "release",
+                "preview"
+              ],
+              "name": "bundle",
+              "summary": "Generate the changelog bundles of everything the preview site shows.",
+              "notes": "The DRA products are bundled like release unified bundle preview, for the next patch and minor versions.\n\n\n\nEach serverless service (Kibana, Elasticsearch, and the Elastic Cloud Hosted frontend-adminconsole) is bundled twice,\nas the commits since the version in production: up to the version on its staging slice (staging), and up to the head\nof its base branch (head). A release without changes has no bundle. The bundles are written to the folder of the\nproduct of the service: cloud-serverless for Kibana and Elasticsearch, cloud-hosted for the hosted service.\n\n\nRequires GITHUB_TOKEN with read access to elastic/serverless-gitops and the repositories of the services.",
+              "usage": "docs-builder release preview bundle [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "output-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Root directory for bundle output. Defaults to ./bundles. Each product writes to a <product-id>/ subdirectory."
+                },
+                {
+                  "role": "flag",
+                  "name": "changelog-configs",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Optional directory of prototype <product-id>.changelog.yml files for the DRA products."
+                },
+                {
+                  "role": "flag",
+                  "name": "products",
+                  "type": "array",
+                  "required": false,
+                  "summary": "Limit the DRA products to these (repeatable). All DRA products are bundled by default.",
+                  "repeatable": true,
+                  "elementType": "string"
+                },
+                {
+                  "role": "flag",
+                  "name": "services",
+                  "type": "array",
+                  "required": false,
+                  "summary": "Limit the serverless services to these (repeatable): kibana, elasticsearch, frontend-adminconsole. All are bundled by default.",
+                  "repeatable": true,
+                  "elementType": "string"
+                },
+                {
+                  "role": "flag",
+                  "name": "strict",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Fail when a DRA product is not onboarded. By default it is skipped with a warning.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "cache-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the application data of docs-builder."
+                },
+                {
+                  "role": "flag",
+                  "name": "no-cache",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Do not read or write the cache of commit ranges.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "hidden": true
+            }
+          ],
+          "namespaces": []
+        },
+        {
           "segment": "unified",
           "summary": "Unified release automation commands.",
           "options": [],

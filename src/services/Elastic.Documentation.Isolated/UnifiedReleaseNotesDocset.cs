@@ -33,9 +33,30 @@ public static class UnifiedReleaseNotesDocset
 		("deprecations.md", "Deprecations", "deprecations", ":type: deprecation\n:subsections:")
 	];
 
-	/// <summary>The products that appear in the docset, in navigation order.</summary>
-	public static IReadOnlyList<Product> SelectProducts(IEnumerable<Product> products) =>
-		[.. UnifiedBundlePlanner.SelectDraProducts(products).OrderBy(p => p.Id, StringComparer.Ordinal)];
+	/// <summary>
+	/// The products that appear in the docset, in navigation order: the DRA products, and the products named in
+	/// <paramref name="additionalProductIds"/>, such as the serverless products whose releases are labels, not versions.
+	/// </summary>
+	public static IReadOnlyList<Product> SelectProducts(
+		IEnumerable<Product> products,
+		IReadOnlyCollection<string>? additionalProductIds = null
+	)
+	{
+		var all = products.ToArray();
+		var additional = all.Where(p => additionalProductIds?.Contains(p.Id, StringComparer.Ordinal) ?? false);
+		return [.. UnifiedBundlePlanner.SelectDraProducts(all).Concat(additional).Distinct().OrderBy(p => p.Id, StringComparer.Ordinal)];
+	}
+
+	/// <summary>
+	/// The title of a release in navigation and headings. A version, or a date, is its own title. The preview labels of the
+	/// serverless products name an environment, so they read as words.
+	/// </summary>
+	public static string VersionTitle(string version) => version switch
+	{
+		"staging" => "Staging",
+		"head" => "HEAD",
+		_ => version
+	};
 
 	/// <summary>Where the bundle files of a product live, relative to the docset root.</summary>
 	public static string BundlesPath(string productId) => $"{BundlesFolder}/{productId}";
@@ -95,7 +116,7 @@ public static class UnifiedReleaseNotesDocset
 			"",
 			"# Unified release notes preview",
 			"",
-			"This site previews release notes for Elastic products that publish through the DRA (Daily Releasable Artifacts) pipeline.",
+			IntroductionOf(products),
 			"",
 			"A scheduled workflow rebuilds it whenever a new build candidate is cut or a SNAPSHOT advances.",
 			"",
@@ -107,6 +128,14 @@ public static class UnifiedReleaseNotesDocset
 		lines.AddRange(products.Select(p => $"- [{p.Product.DisplayName}]({p.Product.Id}/index.md)"));
 		return string.Join('\n', lines) + "\n";
 	}
+
+	private static string IntroductionOf(IReadOnlyList<ProductVersions> products) =>
+		products.Any(p => p.Product.Features.ReleaseNotes != ReleaseNotesPath.DailyReleasableArtifacts)
+			? "This site previews release notes for Elastic products that publish through the DRA (Daily Releasable Artifacts) pipeline, "
+				+ "and for Elastic Cloud Serverless and Elastic Cloud Hosted. A serverless or hosted release is previewed as "
+				+ "**Staging**, the changes that run on staging and are not in production yet, and **HEAD**, everything merged "
+				+ "that is not in production yet."
+			: "This site previews release notes for Elastic products that publish through the DRA (Daily Releasable Artifacts) pipeline.";
 
 	private static string GenerateProductIndex(Product product, IReadOnlyList<string> versions) =>
 		string.Join(
@@ -123,17 +152,17 @@ public static class UnifiedReleaseNotesDocset
 				"",
 				"## Versions",
 				""
-			}.Concat(versions.Select(v => $"- [{v}]({v}.md)")).Append("")
+			}.Concat(versions.Select(v => $"- [{VersionTitle(v)}]({v}.md)")).Append("")
 		);
 
 	private static string GenerateVersionPage(Product product, string version) =>
 		string.Join(
 			'\n',
 			"---",
-			$"navigation_title: {version}",
+			$"navigation_title: {VersionTitle(version)}",
 			"---",
 			"",
-			$"# {product.DisplayName} {version}",
+			$"# {product.DisplayName} {VersionTitle(version)}",
 			"",
 			UnreleasedNotice,
 			"",
@@ -155,7 +184,7 @@ public static class UnifiedReleaseNotesDocset
 			$"navigation_title: {page.NavigationTitle}",
 			"---",
 			"",
-			$"# {product.DisplayName} {version} {page.Heading}",
+			$"# {product.DisplayName} {VersionTitle(version)} {page.Heading}",
 			"",
 			UnreleasedNotice,
 			"",
