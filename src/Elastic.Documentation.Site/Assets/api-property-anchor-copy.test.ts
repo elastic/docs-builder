@@ -1,4 +1,5 @@
 import { initApiDocs } from './api-docs'
+import { initTooltips } from './tooltip'
 
 describe('property anchor copy', () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
@@ -10,6 +11,16 @@ describe('property anchor copy', () => {
         })
         // The link still scrolls to the property, which jsdom cannot do
         Element.prototype.scrollIntoView = vi.fn()
+        // jsdom has no popover API; an open attribute stands in for the top layer.
+        Object.assign(HTMLElement.prototype, {
+            showPopover(this: HTMLElement) {
+                this.setAttribute('data-open', '')
+            },
+            hidePopover(this: HTMLElement) {
+                this.removeAttribute('data-open')
+            },
+        })
+        initTooltips()
     })
 
     beforeEach(() => {
@@ -33,12 +44,21 @@ describe('property anchor copy', () => {
         )
     })
 
-    it('shows "Copied!" in the icon tooltip after the copy', async () => {
+    it('shows "Copied!" in the open tooltip when the icon is clicked', async () => {
+        vi.useFakeTimers()
         const icon = document.querySelector<HTMLElement>('a.property-anchor')!
-        icon.click()
-        await Promise.resolve()
+        const mouse = { bubbles: true, pointerType: 'mouse' }
+        icon.dispatchEvent(new PointerEvent('pointerover', mouse))
+        await vi.advanceTimersByTimeAsync(80)
 
-        expect(icon.dataset.tooltip).toBe('Copied!')
+        icon.dispatchEvent(new PointerEvent('pointerdown', mouse))
+        icon.click()
+        await vi.advanceTimersByTimeAsync(0)
+
+        const tooltip = document.querySelector('[role="tooltip"][data-open]')
+        expect(tooltip?.textContent).toBe('Copied!')
+        document.dispatchEvent(new Event('htmx:beforeSwap'))
+        vi.useRealTimers()
     })
 
     it('does not copy when the property name is clicked', () => {

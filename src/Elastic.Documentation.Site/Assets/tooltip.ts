@@ -64,7 +64,11 @@ function propertyPath(name: HTMLElement): string {
 }
 
 function targetOf(node: EventTarget | null): HTMLElement | null {
-    return node instanceof Element ? node.closest<HTMLElement>(TARGET) : null
+    const target =
+        node instanceof Element ? node.closest<HTMLElement>(TARGET) : null
+    // A top-level property name has no path to show, so it must not close another tooltip, such as a focused control's.
+    if (target?.matches(PROPERTY_NAME) && !propertyPath(target)) return null
+    return target
 }
 
 function current(): HTMLElement | null {
@@ -98,7 +102,6 @@ function show(target: HTMLElement) {
     hide()
     if (!target.isConnected) return
     const text = target.dataset.tooltip ?? propertyPath(target)
-    // A top-level property's path is its name, which the row already shows.
     if (!text) return
     const el = tooltipElement()
     el.textContent = text

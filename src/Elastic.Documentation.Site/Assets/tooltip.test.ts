@@ -366,6 +366,20 @@ describe('tooltips', () => {
         expect(shown()).toBeNull()
     })
 
+    it('keeps the tooltip of a focused control while the pointer crosses a top-level property name', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-query" aria-label="Link to query" data-tooltip="Copy link"></a><code id="top">query</code></dt></div></dl>`
+        )
+        byId('plain').focus()
+        await vi.advanceTimersByTimeAsync(0)
+
+        pointer('pointerover', byId('top'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('Back to top')
+    })
+
     it('swaps the text of the tooltip on screen for a moment', async () => {
         pointer('pointerover', byId('copy'))
         await vi.advanceTimersByTimeAsync(80)
