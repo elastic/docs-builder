@@ -3465,7 +3465,8 @@ navigation-search[variant='hero'] {
 	line-clamp: 2;
 }
 
-/* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines. */
+/* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines.
+   The type sizes are tokens, so they scale with the root font size like the type of the attached card. */
 .api-catalog .api-catalog-card:not(.api-catalog-card-attached) {
 	gap: 14px;
 	padding: 16px 20px;
@@ -3481,16 +3482,16 @@ navigation-search[variant='hero'] {
 .api-catalog
 	.api-catalog-card:not(.api-catalog-card-attached)
 	.api-catalog-card-title {
-	font-size: 17px;
-	line-height: 24px;
+	font-size: var(--text-lg);
+	line-height: 1.35;
 }
 
 .api-catalog
 	.api-catalog-card:not(.api-catalog-card-attached)
 	.api-catalog-desc {
 	margin-top: 4px;
-	font-size: 14px;
-	line-height: 20px;
+	font-size: var(--text-sm);
+	line-height: 1.45;
 }
 
 /* A featured card and its tag-on share one cell. Through a subgrid, a cell with a tag-on spans two rows of the list, so
