@@ -48,7 +48,6 @@ public record ApplicableTo
 
 	public AppliesCollection? Product { get; set; }
 
-	/// <summary>The Elastic Cloud platform layer: console, organization, authentication, and billing.</summary>
 	public AppliesCollection? Cloud { get; set; }
 
 	public ProductApplicability? ProductApplicability { get; set; }
