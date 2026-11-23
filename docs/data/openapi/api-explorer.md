@@ -200,7 +200,9 @@ For versioned products, {{dbuild}} renders every resolved version from the index
 
 On every generated API page, the `Unreleased` warning sits directly under the title. The `Version 8.19` label and its link sit under the title too, except on operation pages. There they join the badges row, next to `Auth` and `Deprecated`, as `Version 8.19` and `Latest: v9`, so the title stays next to its request line.
 
-The label and the landing page's `Version` fact name the minor release that the version index entry points at, such as `8.19` for `8` or `9.6` for `9`. They show it even when only one version renders and there is no version picker. When the index names no minor, as for `main` or a bare major, the label falls back to the major, such as `Version 8`. The landing fact then falls back to the spec's own `info.version`, or shows nothing when the spec has none.
+The landing page's `Version` fact names the minor release that the version index entry points at, such as `9.6` for `9` or `8.19` for `8`. It shows on every version tree, with or without a version picker. When the index names no minor, as for `main` or a bare major, the fact uses the spec's own `info.version`, or shows nothing when the spec has none.
+
+The older-major label names the same minor, as in `Version 8.19`, and shows only on older majors. If the index names no minor for an older major, it reads `Version 8`. The newest major has no label, and `main` at `/next/` keeps its `Unreleased` warning in its place.
 
 Hand-written `children:` Markdown pages show no notice, so a page without one is not proof that it belongs to the latest version.
 The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise. If the newest major failed to load, the notice keeps the page's own version and has no link.
