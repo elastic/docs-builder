@@ -48,6 +48,8 @@
 	}
 }
 @{
+	// Every grid steps from one to two to three columns at the same widths, so cards of different groups stay the same size.
+	const string columns = "sm:grid-cols-2 min-[1024px]:grid-cols-3";
 	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
 	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
 	var catalogClass = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled ? "api-catalog band band--soft band--wash-b" : "api-catalog";
@@ -57,9 +59,6 @@
 	{
 		var group = Model.Groups[i];
 		var headingId = "api-catalog-group-" + i;
-		// Every grid steps from one to two to three columns at the same widths, so cards of different groups stay the same size.
-		// Two featured cards fill a row of two, so they stay at two columns.
-		var columns = group.Featured.Count == 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 min-[1024px]:grid-cols-3";
 		var unattached = group.Unattached.ToList();
 		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
 			@if (group.Title is not null)
