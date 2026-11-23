@@ -4,13 +4,12 @@
 	var item = Model.Item;
 	var titleId = "api-catalog-title-" + Regex.Replace(item.Key, "[^a-zA-Z0-9_-]", "-", RegexOptions.None, Elastic.Documentation.RegexTimeouts.MatchTimeout);
 	var attached = Model.Kind == ApiCatalogCardKind.Attached;
-	// The classes are the ones on the cards of the elastic.co/docs landing page ("Solutions and use cases"): the
-	// icon, top-aligned, beside one column holding a bold text-xl title and a mt-2 description. The attached card is a
-	// smaller version of it.
-	var box = attached ? "gap-3 px-4 py-3" : "gap-4 p-6";
-	var icon = attached ? "size-5" : "size-8";
-	var title = attached ? "text-sm" : "text-xl";
-	var desc = attached ? "mt-0.5 text-xs" : "mt-2";
+	// The full-size card is sized in the catalog stylesheet, so the page shows as many cards as fit on a laptop screen. The attached
+	// card is a smaller version of it, sized here.
+	var box = attached ? "gap-3 px-4 py-3" : "";
+	var icon = attached ? "size-5" : "";
+	var title = attached ? "text-sm" : "";
+	var desc = attached ? "mt-0.5 text-xs" : "";
 	// A standard card fills its list item. Featured and attached cards sit in a grid cell that sizes them.
 	var height = Model.Kind == ApiCatalogCardKind.Standard ? "h-full" : "";
 	var kind = attached ? "api-catalog-card-attached" : Model.HasVariant ? "api-catalog-card-parent" : "";

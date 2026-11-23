@@ -69,7 +69,7 @@
 			{
 				@* A tag-on shares the cell of its parent, so it stays attached under it however many columns the grid has. A cell with a
 				   tag-on spans two rows, so the featured cards of a row line up and the tag-ons sit in the row below them. *@
-				<ul class="api-catalog-featured m-0 mb-4 grid list-none grid-cols-1 gap-6 p-0 @columns">
+				<ul class="api-catalog-featured m-0 mb-4 grid list-none grid-cols-1 gap-4 p-0 @columns">
 					@foreach (var item in group.Featured)
 					{
 						var hasVariant = group.TryGetVariant(item, out var variant);
@@ -85,7 +85,7 @@
 			}
 			@if (unattached.Count > 0)
 			{
-				<ul class="m-0 grid list-none grid-cols-1 gap-6 p-0 @columns">
+				<ul class="m-0 grid list-none grid-cols-1 gap-4 p-0 @columns">
 					@foreach (var item in unattached)
 					{
 						<li class="m-0 list-none">

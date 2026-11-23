@@ -3349,7 +3349,7 @@ button.example-response-tab:focus-visible {
 }
 
 .api-catalog .hub-hero.api-catalog-hero {
-	padding: 36px 0 28px;
+	padding: 20px 0 20px;
 	margin-bottom: 0;
 	border-bottom: 0;
 	text-align: center;
@@ -3361,7 +3361,7 @@ button.example-response-tab:focus-visible {
    Inter behind it if the font does not load. The hub hero sets no family, which left this title in Inter. */
 .api-catalog .hub-hero .hub-hero-top h1 {
 	font-family: 'Space Grotesk', var(--font-sans);
-	font-size: clamp(var(--text-4xl), 3vw, var(--text-5xl));
+	font-size: clamp(var(--text-3xl), 2.2vw, var(--text-4xl));
 	font-weight: 700;
 	line-height: 1.14;
 	letter-spacing: -0.02em;
@@ -3373,9 +3373,9 @@ button.example-response-tab:focus-visible {
    first line runs close to the finder's edges and the two read as one block. */
 .api-catalog .api-catalog-lede {
 	max-width: 640px;
-	margin: 12px auto 0;
+	margin: 6px auto 0;
 	font-family: var(--font-body);
-	font-size: var(--text-lg);
+	font-size: var(--text-base);
 	line-height: 1.55;
 	color: var(--color-ink-light);
 	text-wrap: pretty;
@@ -3387,7 +3387,7 @@ button.example-response-tab:focus-visible {
    one sits outside `.api-catalog`, so the rule stands alone. */
 .api-catalog-finder {
 	max-width: 640px;
-	margin: 20px auto 0;
+	margin: 14px auto 0;
 	text-align: left;
 }
 
@@ -3431,7 +3431,7 @@ navigation-search[variant='hero'] {
 
 /* Light grouping: a small label per group, with the gap between groups kept tight so the page still fits one screen. */
 .api-catalog .api-catalog-group + .api-catalog-group {
-	margin-top: 32px;
+	margin-top: 20px;
 }
 
 .api-catalog .api-catalog-group-title {
@@ -3456,13 +3456,41 @@ navigation-search[variant='hero'] {
 	height: 100%;
 }
 
-/* Descriptions are up to 150 characters, so they are clamped. */
+/* Descriptions are up to 150 characters, so they are clamped to two lines. */
 .api-catalog .api-catalog-desc {
 	display: -webkit-box;
 	overflow: hidden;
 	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 3;
-	line-clamp: 3;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+}
+
+/* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines. */
+.api-catalog .api-catalog-card:not(.api-catalog-card-attached) {
+	gap: 14px;
+	padding: 16px 20px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-icon {
+	width: 24px;
+	height: 24px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-title {
+	font-size: 17px;
+	line-height: 24px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-desc {
+	margin-top: 4px;
+	font-size: 14px;
+	line-height: 20px;
 }
 
 /* A featured card and its tag-on share one cell. A cell with a tag-on spans two rows of the list through a subgrid, so
@@ -3478,10 +3506,10 @@ navigation-search[variant='hero'] {
 }
 
 /* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
-   its border, with a light fill and a one-line description. The negative margin cancels the 24px row gap of the list,
+   its border, with a light fill and a one-line description. The negative margin cancels the 16px row gap of the list,
    plus 1px so the two cards share one border. It is in pixels because the gap is, while rem is 14px on the classic layout. */
 .api-catalog .api-catalog-card-attached {
-	margin-top: -25px;
+	margin-top: -17px;
 	background: var(--color-grey-10);
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;

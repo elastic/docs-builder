@@ -66,8 +66,8 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 			Entry("cloud-enterprise", "Elastic Cloud Enterprise API")
 		);
 
-		Count(html, "text-xl").Should().Be(5, "the stack and Orchestration cards share the full-size title");
-		Count(html, "text-sm").Should().Be(1, "only the Serverless tag-on is small");
+		Count(html, "api-catalog-card-attached").Should().Be(1, "only the Serverless tag-on is attached");
+		Count(html, "text-sm").Should().Be(1, "every other card takes its size from the catalog stylesheet, and only the tag-on is small");
 	}
 
 	[Test]

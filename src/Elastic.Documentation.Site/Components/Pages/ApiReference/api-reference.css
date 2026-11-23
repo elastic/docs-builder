@@ -3453,13 +3453,41 @@ button.example-response-tab:focus-visible {
 	height: 100%;
 }
 
-/* Descriptions are up to 150 characters, so they are clamped. */
+/* Descriptions are up to 150 characters, so they are clamped to two lines. */
 .api-catalog .api-catalog-desc {
 	display: -webkit-box;
 	overflow: hidden;
 	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 3;
-	line-clamp: 3;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+}
+
+/* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines. */
+.api-catalog .api-catalog-card:not(.api-catalog-card-attached) {
+	gap: 14px;
+	padding: 16px 20px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-icon {
+	width: 24px;
+	height: 24px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-title {
+	font-size: 17px;
+	line-height: 24px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-desc {
+	margin-top: 4px;
+	font-size: 14px;
+	line-height: 20px;
 }
 
 /* A featured card and its tag-on share one cell. A cell with a tag-on spans two rows of the list through a subgrid, so
@@ -3475,10 +3503,10 @@ button.example-response-tab:focus-visible {
 }
 
 /* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
-   its border, with a light fill and a one-line description. The negative margin cancels the 24px row gap of the list,
+   its border, with a light fill and a one-line description. The negative margin cancels the 16px row gap of the list,
    plus 1px so the two cards share one border. It is in pixels because the gap is, while rem is 14px on the classic layout. */
 .api-catalog .api-catalog-card-attached {
-	margin-top: -25px;
+	margin-top: -17px;
 	background: var(--color-surface-sunken);
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;

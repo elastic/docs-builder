@@ -155,6 +155,10 @@
 	gap: var(--space-3);
 }
 
+.gap-4 {
+	gap: var(--space-4);
+}
+
 .gap-6 {
 	gap: var(--space-5);
 }
