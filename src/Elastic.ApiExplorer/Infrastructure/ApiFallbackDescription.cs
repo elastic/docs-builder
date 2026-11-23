@@ -79,10 +79,10 @@ internal static class ApiFallbackDescription
 		};
 	}
 
-	/// <summary>The Authentication page of a spec that allows only anonymous access says it declares no schemes, so the description must not promise instructions.</summary>
+	/// <summary>No label means no document-level authentication: the spec has no schemes, or allows anonymous access as a whole. Individual operations can still declare their own, so the sentence claims nothing about them.</summary>
 	internal static string Authentication(string product, IReadOnlyList<string> schemeLabels) =>
 		schemeLabels.Count == 0
-			? $"The {product} API declares no authentication schemes."
+			? $"The {product} API declares no authentication for the API as a whole."
 			: WithList($"How to authenticate requests to the {product} API", schemeLabels);
 
 	private static string WithList(string sentence, IEnumerable<string> items)
