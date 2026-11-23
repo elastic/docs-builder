@@ -40,7 +40,7 @@
 	}
 	@if (Model.OverviewRows.Count > 0)
 	{
-		<h2 id="@ApiViewModel.EndpointsAnchor">Endpoints</h2>
+		<h2 id="@EndpointsSection.Anchor">Endpoints</h2>
 		<div class="api-overview">
 			@(await RenderPartialAsync<_ApiGroupList, ApiGroupListModel>(new ApiGroupListModel(Model.OverviewRows, LayoutModel.HxAttributes)))
 		</div>

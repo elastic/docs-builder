@@ -38,6 +38,9 @@ public record ApiOverviewRow
 
 	public bool Deprecated { get; init; }
 
+	/// <summary>The first route of an operation row, the one an overview shows; null for any other row.</summary>
+	public EndpointRow? PrimaryRoute => Endpoint is { Rows.Count: > 0 } endpoint ? endpoint.Rows[0] : null;
+
 	/// <summary>True when the design system look is on, which picks the markup of the row's badges.</summary>
 	public bool DesignSystem { get; init; }
 

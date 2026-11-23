@@ -119,7 +119,9 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 	}
 
 	private static async Task<string> RenderRouteAsync(EndpointRow route) =>
-		await _GroupRoute.Create(route).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		await _GroupRoute.Create(new GroupRouteModel(route)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
 
 	private static async Task<string> RenderAsync(ApiOverviewRow row)
 	{

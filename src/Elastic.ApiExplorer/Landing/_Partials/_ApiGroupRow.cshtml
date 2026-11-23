@@ -1,31 +1,27 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<ApiGroupRowModel>
-@{
-	var row = Model.Row;
-	var route = row.Endpoint is { Rows.Count: > 0 } endpoint ? endpoint.Rows[0] : null;
-}
 <li>
-	<a class="api-group-row@(row.Deprecated ? " api-group-row--deprecated" : "")" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
+	<a class="api-group-row@(Model.Row.Deprecated ? " api-group-row--deprecated" : "")" href="@Model.Row.Url" @(new HtmlString(Model.HxAttributes))>
 		<span class="api-group-method">
-			@if (route is not null)
+			@if (Model.Row.PrimaryRoute is { } methodsRoute)
 			{
-				@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(route.Methods))
+				@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(methodsRoute.Methods))
 			}
 		</span>
 		<span class="api-group-heading">
-			<span class="api-overview-title">@if (row.Deprecated){<s class="api-deprecated-title">@row.Title</s>}else{@row.Title}</span>
-			@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(row.Availability, row.Deprecated, row.DesignSystem)))
+			<span class="api-overview-title">@if (Model.Row.Deprecated){<s class="api-deprecated-title">@Model.Row.Title</s>}else{@Model.Row.Title}</span>
+			@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(Model.Row.Availability, Model.Row.Deprecated, Model.Row.DesignSystem)))
 		</span>
 		<span class="api-group-routes">
-			@if (route is not null)
+			@if (Model.Row.PrimaryRoute is { } route)
 			{
-				@(await RenderPartialAsync<_GroupRoute, EndpointRow>(route))
+				@(await RenderPartialAsync<_GroupRoute, GroupRouteModel>(new GroupRouteModel(route)))
 			}
-			else if (row.Kind == OverviewRowKind.Schema)
+			else if (Model.Row.Kind == OverviewRowKind.Schema)
 			{
-				<code class="api-group-route">@row.SchemaId</code>
+				<code class="api-group-route">@Model.Row.SchemaId</code>
 			}
-			else if (row.Kind != OverviewRowKind.Operation)
+			else if (Model.Row.Kind != OverviewRowKind.Operation)
 			{
 				@:Additional documentation
 			}

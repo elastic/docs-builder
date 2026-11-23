@@ -799,7 +799,15 @@ public class OpenApiGenerator(
 		if (item is TagNavigationItem tag && tags.TryGetValue(tag.Index.Model.Name, out var doc))
 		{
 			var description = doc.DescriptionOr(tag.Index.Model.Description);
-			tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(markdownStringRenderer, description, apiBaseUrl, doc.PostSections));
+			tag.ApplyIntroHeadings(
+				ApiMarkdown.ReadIntroHeadings(
+					markdownStringRenderer,
+					description,
+					apiBaseUrl,
+					doc.PostSections,
+					EndpointsSection.ReservedAnchors
+				)
+			);
 		}
 
 		foreach (var child in children)

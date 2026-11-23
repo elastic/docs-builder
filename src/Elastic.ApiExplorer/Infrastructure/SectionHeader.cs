@@ -67,7 +67,7 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 	internal static IReadOnlyList<ApiPostSection> From(
 		ApiRenderContext context,
 		IReadOnlyList<ApiSupplementalSection> sections,
-		IReadOnlyCollection<string>? reserved = null
+		IReadOnlySet<string> reserved
 	)
 	{
 		if (sections.Count == 0)
@@ -85,12 +85,9 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 	}
 
 	/// <summary>The anchor of each section, without rendering the bodies. Group intro headings use it to avoid these anchors.</summary>
-	internal static IReadOnlyList<string> Anchors(
-		IReadOnlyList<ApiSupplementalSection> sections,
-		IReadOnlyCollection<string>? reserved = null
-	)
+	internal static IReadOnlyList<string> Anchors(IReadOnlyList<ApiSupplementalSection> sections, IReadOnlySet<string> reserved)
 	{
-		var used = OperationReservedAnchors.Concat(reserved ?? []).ToHashSet(StringComparer.Ordinal);
+		var used = OperationReservedAnchors.Concat(reserved).ToHashSet(StringComparer.Ordinal);
 		var anchors = new List<string>(sections.Count);
 		foreach (var s in sections)
 		{

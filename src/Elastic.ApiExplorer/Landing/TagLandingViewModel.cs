@@ -32,7 +32,8 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 			RenderContext.MarkdownRenderer,
 			DescriptionMarkdown,
 			RenderContext.CurrentNavigation.NavigationRoot.Url,
-			TagDoc?.PostSections ?? []
+			TagDoc?.PostSections ?? [],
+			EndpointsSection.ReservedAnchors
 		);
 
 	/// <summary>The intro keeps the anchor ids of its headings, which the sidebar and On this page link to.</summary>
@@ -45,13 +46,13 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	/// <summary>On this page, in page order: the intro's headings, the supplemental sections, then the endpoint list.</summary>
 	protected override IReadOnlyList<TocItem> GetTocItems() =>
-		WithEndpoints(
+		EndpointsSection.Toc(
 			[.. IntroHeadings, .. PostSections.Select(static section => new TocItem(section.Heading, section.Anchor, 3))],
 			OverviewRows.Count > 0
 		);
 
 	public IReadOnlyList<ApiPostSection> PostSections =>
-		field ??= ApiPostSection.From(RenderContext, TagDoc?.PostSections ?? [], ApiMarkdown.GroupPageAnchors);
+		field ??= ApiPostSection.From(RenderContext, TagDoc?.PostSections ?? [], EndpointsSection.ReservedAnchors);
 
 	public TagExternalDocsDisplay? ExternalDocsDisplay =>
 		Tag.ExternalDocs is null

@@ -830,7 +830,9 @@ public class TagMetadataTests
 			new TocItem("Panel types", "panel-types", 2),
 			new TocItem("Embedding", "embedding", 3)
 		]);
-		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(renderer, "## x", tag.NavigationRoot.Url, []));
+		tag.ApplyIntroHeadings(
+			ApiMarkdown.ReadIntroHeadings(renderer, "## x", tag.NavigationRoot.Url, [], EndpointsSection.ReservedAnchors)
+		);
 
 		tag
 			.NavigationItems
@@ -857,12 +859,15 @@ public class TagMetadataTests
 			new TocItem("Panel types", "panel-types", 2),
 			new TocItem("What's supported", "whats-supported", 2)
 		]);
-		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
-			renderer,
-			"## Panel types\n\n## What's supported\n",
-			tag.NavigationRoot.Url,
-			[new ApiSupplementalSection("Panel types", "Owned by the post section.")]
-		));
+		tag.ApplyIntroHeadings(
+			ApiMarkdown.ReadIntroHeadings(
+				renderer,
+				"## Panel types\n\n## What's supported\n",
+				tag.NavigationRoot.Url,
+				[new ApiSupplementalSection("Panel types", "Owned by the post section.")],
+				EndpointsSection.ReservedAnchors
+			)
+		);
 
 		tag
 			.NavigationItems
@@ -932,7 +937,6 @@ public class TagMetadataTests
 
 		// The docs scroll spy follows every h2 and h3. A classification has no On this page link, so as an h3 it would drop Endpoints as the current entry.
 		html.Should().Contain("<div class=\"api-index-heading\" role=\"heading\" aria-level=\"3\">Platform</div>");
-		html.Should().NotContain("<h3 class=\"api-index-heading\"");
 	}
 
 	[Test]

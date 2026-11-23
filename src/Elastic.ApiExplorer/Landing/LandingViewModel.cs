@@ -29,6 +29,9 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>The endpoint groups in lists of their own, one per classification heading, so each list can carry the group page's frame.</summary>
 	public IReadOnlyList<ApiIndexBlock> IndexBlocks => field ??= ApiIndexBlock.Of(ApiOverviewBuilder.WithoutGuidePages(OverviewSections));
 
+	/// <summary>"45 groups": the caption above the endpoint groups.</summary>
+	public string GroupsLabel => CountLabel.Of(IndexBlocks.Sum(static block => block.Groups.Count), "group");
+
 	private RenderedIntro Intro => field ??= RenderIntro();
 
 	private ApiMarkdown.HtmlSplit DescriptionParts => field ??= ApiMarkdown.SplitAtFirstHeading(Intro.Html.Value ?? "");
@@ -51,15 +54,11 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	protected override string? LayoutPageDescription => RenderContext.LandingDescription;
 
 	/// <summary>On this page, in page order: the description's headings, then the endpoint groups.</summary>
-	protected override IReadOnlyList<TocItem> GetTocItems() => WithEndpoints(Intro.Headings, IndexBlocks.Count > 0);
+	protected override IReadOnlyList<TocItem> GetTocItems() => EndpointsSection.Toc(Intro.Headings, IndexBlocks.Count > 0);
 
 	private RenderedIntro RenderIntro()
 	{
-		var (html, headings) = ApiMarkdown.RenderWithHeadings(
-			RenderContext,
-			ApiInfo.Description,
-			new HashSet<string>([EndpointsAnchor], StringComparer.Ordinal)
-		);
+		var (html, headings) = ApiMarkdown.RenderWithHeadings(RenderContext, ApiInfo.Description, EndpointsSection.ReservedAnchors);
 		return new RenderedIntro(html, headings);
 	}
 

@@ -204,12 +204,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				tagNavigationItem,
 				takenMonikers
 			);
-			tagNavigationItem.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
-				markdownRenderer,
-				tag.Description,
-				rootNavigation.Url,
-				postSections: []
-			));
+			tagNavigationItem.ApplyIntroHeadings(
+				ApiMarkdown.ReadIntroHeadings(
+					markdownRenderer,
+					tag.Description,
+					rootNavigation.Url,
+					postSections: [],
+					reserved: EndpointsSection.ReservedAnchors
+				)
+			);
 		}
 	}
 
