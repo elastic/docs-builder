@@ -30,11 +30,15 @@ public class ApiVersionSwitcherTests
 	}
 
 	[Test]
-	public void Build_MainAndOneMajor_ReleasedPageHasNoPicker()
+	public void Build_MainAndOneMajor_ReleasedPageKeepsItsOwnVersionAsTheOnlyEntry()
 	{
 		var routes = ApiVersionRoutes.For("elasticsearch", ["main", "9"]);
 
-		ApiVersionSwitcher.Build("", routes, ["main", "9"], "elasticsearch").Should().BeEmpty();
+		ApiVersionSwitcher
+			.Build("", routes, ["main", "9"], "elasticsearch")
+			.Select(i => $"{i.Label} {i.Selected}")
+			.Should()
+			.Equal(["v9 (latest) True"], "one entry is no picker, and the titles and the breadcrumb still name the version");
 		ApiVersionSwitcher
 			.Build("", routes, ["main", "9"], "elasticsearch/next")
 			.Select(i => i.Label)

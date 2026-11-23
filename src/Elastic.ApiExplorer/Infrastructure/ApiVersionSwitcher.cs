@@ -12,7 +12,8 @@ public static class ApiVersionSwitcher
 	/// One entry per version, for the page tree served at <paramref name="currentSuffix"/>. Each entry links to the
 	/// version's URL from <paramref name="routes"/>, except the selected one, which links to the current tree's own root,
 	/// so the numbered copy of the default major stays on its own URLs. The unreleased tree is listed only on its own
-	/// pages: it is a preview opened by URL, so no released page links to it.
+	/// pages: it is a preview opened by URL, so no released page links to it. An API with one released version keeps
+	/// that entry, because titles and the breadcrumb name the selected version; the menus need two entries to show.
 	/// </summary>
 	public static IReadOnlyList<ApiVersionSwitcherItem> Build(
 		string? urlPathPrefix,
@@ -22,12 +23,12 @@ public static class ApiVersionSwitcher
 		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>? pageNames = null
 	)
 	{
-		var listed = monikers.Where(m => !routes.IsNext(m) || routes.Suffixes(m).Contains(currentSuffix)).ToArray();
-		if (listed.Length <= 1)
+		if (monikers.Count <= 1)
 			return [];
 
 		var latest = ApiVersions.LatestMajor(monikers);
-		return listed
+		return monikers
+			.Where(m => !routes.IsNext(m) || routes.Suffixes(m).Contains(currentSuffix))
 			.OrderByDescending(ApiVersions.Recency)
 			.Select(m => (Moniker: m, Selected: routes.Suffixes(m).Contains(currentSuffix)))
 			.Select(
