@@ -177,6 +177,9 @@ public record ApiProperty
 	/// <summary>What a map's key row is called on the page. The builder names the row <c>&lt;string&gt;</c> internally.</summary>
 	public const string MapKeyDisplayName = "property name*";
 
+	/// <summary>What a map's key row says it is, and what a screen reader announces in place of the key, since a bare <c>*</c> can be skipped.</summary>
+	public const string MapKeyKind = "additional property";
+
 	public required string Name { get; init; }
 
 	/// <summary>Whether this is the synthetic row that holds a map's value fields, not a field of the schema.</summary>
@@ -202,20 +205,20 @@ public record ApiProperty
 
 	/// <summary>
 	/// What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.
-	/// A map's key reads <c>*</c> in the path, as the row's own label does. Only a whole segment counts, so a field whose name merely
-	/// contains the <c>&lt;string&gt;</c> marker keeps its name.
+	/// A map's key reads as <see cref="MapKeyKind"/> in place of the <c>&lt;string&gt;</c> marker. Only a whole segment counts, so a field
+	/// whose name merely contains the marker keeps its name.
 	/// </summary>
 	public string PermalinkLabel =>
-		JsonPath is { Length: > 0 } path ? string.Join('.', path.Split('.').Select(SpokenSegment)) : DisplayName;
+		JsonPath is { Length: > 0 } path ? string.Join('.', path.Split('.').Select(SpokenSegment)) : IsMapKey ? MapKeyKind : Name;
 
-	/// <summary>A path segment as announced: a map key, with any <c>[]</c> after it, reads <c>*</c>.</summary>
+	/// <summary>A path segment as announced: a map key, with any <c>[]</c> after it, reads as <see cref="MapKeyKind"/>.</summary>
 	private static string SpokenSegment(string segment)
 	{
 		if (!segment.StartsWith(ApiPropertyPath.MapKeyMarker, StringComparison.Ordinal))
 			return segment;
 
 		var rest = segment[ApiPropertyPath.MapKeyMarker.Length..];
-		return rest.Replace(ApiPropertyPath.ItemsMarker, "", StringComparison.Ordinal).Length == 0 ? "*" + rest : segment;
+		return rest.Replace(ApiPropertyPath.ItemsMarker, "", StringComparison.Ordinal).Length == 0 ? MapKeyKind + rest : segment;
 	}
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }

@@ -26,6 +26,7 @@ public class JsonPathTests
 		      "Bool": { "type": "object", "properties": { "must": { "type": "array", "items": { "$ref": "#/components/schemas/Match" } } } },
 		      "Agg": { "type": "object", "properties": { "terms": { "type": "string" } } },
 		      "Odd": { "type": "object", "properties": { "settings": { "type": "object", "properties": { "value<string>": { "type": "string" } } } } },
+		      "Bag": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Agg" } },
 		      "Many": { "type": "array", "items": { "$ref": "#/components/schemas/Match" } },
 		      "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
 		      "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
@@ -80,13 +81,13 @@ public class JsonPathTests
 	}
 
 	[Test]
-	public async Task BuildPropertyList_MapValue_PermalinkReadsAnAsteriskForTheKey()
+	public async Task BuildPropertyList_MapValue_PermalinkReadsTheKeyAsWords()
 	{
 		var list = await BuildAsync("");
 
 		var terms = list.Items.Single(p => p.Name == "aggs").Children.Dictionary!.Properties.Items.Single();
 
-		terms.PermalinkLabel.Should().Be("aggs.*.terms");
+		terms.PermalinkLabel.Should().Be("aggs.additional property.terms");
 	}
 
 	[Test]
@@ -102,6 +103,21 @@ public class JsonPathTests
 		var value = list.Items.Single().Children.Properties!.Items.Single();
 
 		value.PermalinkLabel.Should().Be("settings.value<string>", "only a whole <string> segment is a map key");
+	}
+
+	[Test]
+	public async Task Build_RootMapBody_PermalinkNamesTheKeyRowInWords()
+	{
+		var document = await LoadSpecAsync(Spec);
+
+		var body = ApiBodyContent.Build(
+			document.Components!.Schemas!["Bag"],
+			new PropertyTreeScope { Prefix = "req", JsonPath = "", IsRequest = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.Properties!.Items.Single().PermalinkLabel.Should().Be("additional property", "a lone * can be read as nothing");
 	}
 
 	[Test]
