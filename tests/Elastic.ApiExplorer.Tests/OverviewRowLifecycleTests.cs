@@ -84,6 +84,31 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		);
 	}
 
+	[Test]
+	public async Task Render_RouteWithSeveralOptionalSegments_KeepsTheRouteAsWritten()
+	{
+		var route = new EndpointRow(
+			"/items/by-owner/{owner}",
+			"get",
+			[],
+			[
+				new EndpointSegment("items", Optional: false),
+				new EndpointSegment("by-owner", Optional: true),
+				new EndpointSegment("{owner}", Optional: true)
+			]
+		);
+
+		var html = await _GroupRoute.Create(route).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		// Brackets on each segment would suggest /items/{owner} and /items/by-owner are routes too.
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<code class="api-group-route">
+				<wbr>/items<wbr>/by-owner<wbr>/{owner}</code>
+			"""
+		);
+	}
+
 	private (ApiOverviewRow Row, IReadOnlyList<ApiOverviewRow> Siblings) RowFor(string operationId) =>
 		RowFor(fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == operationId));
 

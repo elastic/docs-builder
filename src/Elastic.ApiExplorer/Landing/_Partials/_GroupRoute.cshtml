@@ -1,4 +1,7 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<EndpointRow>
-@* The route of an overview row as plain text; a segment some variants leave out sits in brackets, so the longest route does not read as the only one. A <wbr> before each slash lets a long route wrap between segments, not mid-word. Segments stay on the brace lines so Razor emits no whitespace between them. *@
-<code class="api-group-route">@if (Model.Segments.Count == 0){@("/")}@foreach (var segment in Model.Segments){<wbr>@(segment.Optional ? $"[/{segment.Text}]" : "/" + segment.Text)}</code>
+@* The route of an overview row as plain text. When exactly one segment is optional, it sits in brackets: the route then has two variants, with and without it, so the longest route does not read as the only one. With several optional segments the variants need not combine freely, so the route stays as written. A <wbr> before each slash lets a long route wrap between segments, not mid-word. Segments stay on the brace lines so Razor emits no whitespace between them. *@
+@{
+	var bracketed = Model.Segments.Count(static segment => segment.Optional) == 1;
+}
+<code class="api-group-route">@if (Model.Segments.Count == 0){@("/")}@foreach (var segment in Model.Segments){<wbr>@(bracketed && segment.Optional ? $"[/{segment.Text}]" : "/" + segment.Text)}</code>
