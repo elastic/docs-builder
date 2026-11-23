@@ -96,7 +96,7 @@ A group's intro lists its top-level sections in the sidebar, above the endpoints
 A group page puts an `Endpoints` heading with the fragment `#endpoints` above its list of operations, and its On this page list links to it. That fragment belongs to the list.
 
 - A `###` heading named `Endpoints` in the intro gets no anchor and no entry in On this page.
-- An extra `## Endpoints` section keeps its content, but its fragment becomes `#endpoints-2`. Update any link to it, or rename the heading if you want a fragment that stays the same.
+- An extra `## Endpoints` section keeps its content, but its fragment gets a numeric suffix, usually `#endpoints-2`. The suffix is the first one not already taken by another section on the page, so check the fragment on the rendered page before you link to it. Rename the heading if you want a fragment that does not depend on the other sections.
 
 ## Version-specific files
 
