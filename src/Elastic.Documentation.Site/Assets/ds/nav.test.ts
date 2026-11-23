@@ -130,7 +130,17 @@ describe('bindDrawerFocus', () => {
         return input
     }
 
+    // jsdom has no layout, so the viewport is a flag the tests set.
+    function viewport(narrow: boolean) {
+        window.matchMedia = ((query: string) =>
+            ({
+                matches: narrow,
+                media: query,
+            }) as MediaQueryList) as typeof window.matchMedia
+    }
+
     beforeAll(bindDrawerFocus)
+    beforeEach(() => viewport(true))
 
     it('moves focus to the first control in the drawer when it opens', () => {
         document.body.innerHTML = shell()
@@ -161,6 +171,17 @@ describe('bindDrawerFocus', () => {
 
     it('ignores a checkbox that is not the drawer toggle', () => {
         document.body.innerHTML = shell('other')
+        const input = document.querySelector<HTMLInputElement>('input')!
+        input.focus()
+
+        toggle(true)
+
+        expect(document.activeElement).toBe(input)
+    })
+
+    it('leaves focus alone above the drawer breakpoint, where the sidebar is always open', () => {
+        viewport(false)
+        document.body.innerHTML = shell()
         const input = document.querySelector<HTMLInputElement>('input')!
         input.focus()
 
