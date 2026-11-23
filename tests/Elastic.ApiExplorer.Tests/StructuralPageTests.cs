@@ -164,9 +164,9 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
 		var page = StructuralViewModel.Create(item.Model, RenderContext(item));
 
-		// The page renders this Markdown with its prose, so the headings are docs headings with these anchors.
-		OperationCommonMark
-			.AuthenticationSections(page.Requirements, page.AuthenticationOptional, anchors: true)
+		// The page renders these fragments like its prose, so the headings are docs headings with these anchors.
+		string
+			.Concat(OperationCommonMark.AuthenticationFragments(page.Requirements, page.AuthenticationOptional, anchors: true))
 			.Should()
 			.MatchInlineSnapshot(
 				"""

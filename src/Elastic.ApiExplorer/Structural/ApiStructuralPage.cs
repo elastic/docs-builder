@@ -137,10 +137,11 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 		var requirements = ReadRequirements(context.Model);
 		var optional = OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security);
-		// The sections render with the topic prose, so their headings are docs headings: anchored, linkable and listed in On this page.
-		var sections = OperationCommonMark.AuthenticationSections(requirements, optional, anchors: true);
-		var body = string.Join("\n\n", new[] { page.Intro, sections }.Where(static part => !string.IsNullOrWhiteSpace(part)));
-		var (html, headings) = string.IsNullOrWhiteSpace(body) ? (null, []) : ApiMarkdown.RenderWithHeadings(context, body);
+		// The sections render like the topic prose, so their headings are docs headings: anchored, linkable and listed in On this page.
+		var (html, headings) = ApiMarkdown.RenderFragmentsWithHeadings(
+			context,
+			[page.Intro, .. OperationCommonMark.AuthenticationFragments(requirements, optional, anchors: true)]
+		);
 		return new StructuralViewModel(context)
 		{
 			Page = page,
@@ -192,7 +193,7 @@ internal static class StructuralCommonMark
 
 		ApiCommonMark.Prepared(
 			markdown,
-			OperationCommonMark.AuthenticationSections(page.Requirements, page.AuthenticationOptional, anchors: false),
+			OperationCommonMark.AuthenticationSections(page.Requirements, page.AuthenticationOptional),
 			apiBaseUrl
 		);
 	}

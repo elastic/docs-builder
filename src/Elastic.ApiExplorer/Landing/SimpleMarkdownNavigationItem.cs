@@ -110,11 +110,16 @@ public class SimpleMarkdownNavigationItem(
 		if (requirements.Count == 0)
 			return markdown;
 
-		var sections = OperationCommonMark.AuthenticationSections(
-			requirements,
-			OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
-			anchors
-		);
+		var sections = anchors
+			? string.Join(
+				"\n",
+				OperationCommonMark.AuthenticationFragments(
+					requirements,
+					OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
+					anchors: true
+				)
+			)
+			: OperationCommonMark.AuthenticationSections(requirements, OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security));
 		return $"{markdown.TrimEnd()}\n\n{ApiMarkdown.Prepare(sections, context.CurrentNavigation.NavigationRoot.Url)}";
 	}
 

@@ -82,6 +82,27 @@ public static partial class ApiMarkdown
 	}
 
 	/// <summary>
+	/// Renders Markdown fragments one by one, with anchors on their headings, and returns those headings in page order. A
+	/// fragment cannot change the next one, so an unclosed fence in a spec description stays inside that description.
+	/// </summary>
+	public static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderFragmentsWithHeadings(
+		ApiRenderContext context,
+		IEnumerable<string?> fragments
+	)
+	{
+		var html = new StringBuilder();
+		var headings = new List<TocItem>();
+		foreach (var fragment in fragments.Where(static f => !string.IsNullOrWhiteSpace(f)))
+		{
+			var (fragmentHtml, fragmentHeadings) = RenderWithHeadings(context, fragment);
+			_ = html.Append(fragmentHtml.Value);
+			headings.AddRange(fragmentHeadings);
+		}
+
+		return html.Length == 0 ? (null, []) : (new HtmlString(html.ToString()), headings);
+	}
+
+	/// <summary>
 	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
 	/// so an intro heading with the same slug is left out rather than linking to the post section.
 	/// </summary>
