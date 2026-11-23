@@ -3462,16 +3462,13 @@ button.example-response-tab:focus-visible {
 	line-clamp: 3;
 }
 
-/* The compact card is the small one for everything in a group but the main APIs. Two lines are enough at its size. */
-.api-catalog .api-catalog-card-compact .api-catalog-desc {
-	-webkit-line-clamp: 2;
-	line-clamp: 2;
-}
-
-/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
-   light fill and a one-line description. */
+/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
+   its border, with a light fill and a one-line description. */
 .api-catalog .api-catalog-card-attached {
+	margin-top: -1px;
 	background: var(--color-surface-sunken);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
 }
 
 .api-catalog .api-catalog-card-attached .api-catalog-desc {
@@ -3479,38 +3476,16 @@ button.example-response-tab:focus-visible {
 	line-clamp: 1;
 }
 
-/* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
-   parent above it and stays a separate card. */
-@media (min-width: 1101px) {
-	.api-catalog .api-catalog-featured {
-		margin-bottom: 0;
-	}
+.api-catalog .api-catalog-card-parent {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
 
-	.api-catalog .api-catalog-tagons {
-		row-gap: 0;
-		margin-top: -1px;
-	}
-
-	.api-catalog .api-catalog-cell {
-		grid-column-start: var(--api-catalog-column);
-	}
-
-	.api-catalog .api-catalog-card-parent {
-		border-bottom-left-radius: 0;
-		border-bottom-right-radius: 0;
-	}
-
-	.api-catalog .api-catalog-card-attached {
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
-	}
-
-	/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
-	.api-catalog .api-catalog-card-parent:hover,
-	.api-catalog .api-catalog-card-attached:hover {
-		position: relative;
-		z-index: 1;
-	}
+/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
+.api-catalog .api-catalog-card-parent:hover,
+.api-catalog .api-catalog-card-attached:hover {
+	position: relative;
+	z-index: 1;
 }
 
 .api-landing-heading {

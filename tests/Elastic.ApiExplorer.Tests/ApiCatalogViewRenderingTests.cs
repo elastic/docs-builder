@@ -66,7 +66,22 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 			Entry("cloud-enterprise", "Elastic Cloud Enterprise API")
 		);
 
-		Count(html, "api-catalog-card-compact").Should().Be(1, "only the Serverless tag-on is compact");
+		Count(html, "text-xl").Should().Be(5, "the stack and Orchestration cards share the full-size title");
+		Count(html, "text-sm").Should().Be(1, "only the Serverless tag-on is small");
+	}
+
+	[Test]
+	public async Task Render_Catalog_TagOnSharesTheCellOfItsParent()
+	{
+		var html = await RenderAsync(
+			Entry("elasticsearch", "Elasticsearch API"),
+			Entry("kibana", "Kibana APIs"),
+			Entry("logstash", "Logstash APIs"),
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API")
+		);
+
+		var between = html[PositionOf(html, "elasticsearch")..PositionOf(html, "elasticsearch-serverless")];
+		between.Should().NotContain("<li", "the tag-on is in the same list item as its parent, so the grid cannot separate them");
 	}
 
 	[Test]
