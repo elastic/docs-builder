@@ -207,7 +207,9 @@ The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `m
 Search indexes the default version at `/api/<key>/` and older majors at `/api/<key>/vN/`, not `main` at `/next/` or the `/v9/` copy of the newest major. Search from a `/next/` page is the normal search with a lift for that API's default-version results. It does not filter by version, and operations that exist only in older majors stay hidden.
 An API whose index lists no numeric major keeps `main` at `/api/<key>/` and has no `/next/`.
 The default comes from the versions the index declares. If the newest major fails to load, nothing
-renders at `/api/<key>/`, and no older major takes its place.
+renders at `/api/<key>/`, and no older major takes its place. The API's card on the API landing page
+then opens the newest older major that loaded. It never opens `/next/`, so an API with no released
+version loaded has no card.
 A version named `next` in the index is a build error, because `next` is the URL segment of `main`.
 
 When a local spec file exists, it overrides only the `main` moniker. Older majors still resolve
@@ -216,8 +218,11 @@ remotely through the index. In `docs-builder serve`, a local spec edit therefore
 
 Versionless products (`versioning: serverless` and similar) render only the unversioned
 `/api/<key>/` path even when the index lists historical monikers. When more than one
-version is rendered, the bar shows a version picker beside the API name. The unreleased tree is
-labeled `Next (unreleased)`, and each frozen major is `v9`, `v8`. When the API has a numbered major, the unreleased tree is served at `/next`. Without one, it is the default and keeps the unversioned URL. The highest frozen major carries `(latest)`, as in `v9 (latest)`, and the unversioned URL serves it. Isolated builds put the same picker
+released version is rendered, the bar shows a version picker beside the API name. Each frozen major is `v9`, `v8`. When the API has a numbered major, the unreleased tree is served at `/next`. Without one, it is the default and keeps the unversioned URL. The highest frozen major carries `(latest)`, as in `v9 (latest)`, and the unversioned URL serves it.
+
+The `/next` tree is a preview that you open by its URL, `/api/<key>/next/`. No released page links to it, and the picker on a released page does not list it. On a `/next` page the picker lists it as `Next (unreleased)`, selected, above the released versions.
+
+Isolated builds put the same picker
 under the API name in the left navigation.
 Picking a version opens the same page in that version when it has one, for example the same
 operation, and that version's landing page otherwise. On a `/v9/` page, the `v9 (latest)` entry

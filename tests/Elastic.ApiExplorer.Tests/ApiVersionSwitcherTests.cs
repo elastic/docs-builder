@@ -20,14 +20,30 @@ public class ApiVersionSwitcherTests
 	}
 
 	[Test]
-	public void Build_MultipleVersions_OrdersCurrentMajorFirstAndMarksCurrent()
+	public void Build_ReleasedPage_ListsTheReleasedVersionsNewestFirstAndMarksCurrent()
 	{
 		var items = ApiVersionSwitcher.Build("", Es, ["main", "9", "8"], "elasticsearch/v8");
 
-		items.Should().HaveCount(3);
-		items.Select(i => i.Label).Should().Equal("Next (unreleased)", "v9 (latest)", "v8");
-		items.Select(i => i.Url).Should().Equal("/api/elasticsearch/next", "/api/elasticsearch", "/api/elasticsearch/v8");
+		items.Select(i => i.Label).Should().Equal(["v9 (latest)", "v8"], "the unreleased tree is opened by URL, not from a released page");
+		items.Select(i => i.Url).Should().Equal("/api/elasticsearch", "/api/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v8");
+	}
+
+	[Test]
+	public void Build_MainAndOneMajor_ReleasedPageKeepsItsOwnVersionAsTheOnlyEntry()
+	{
+		var routes = ApiVersionRoutes.For("elasticsearch", ["main", "9"]);
+
+		ApiVersionSwitcher
+			.Build("", routes, ["main", "9"], "elasticsearch")
+			.Select(i => $"{i.Label} {i.Selected}")
+			.Should()
+			.Equal(["v9 (latest) True"], "one entry is no picker, and the titles and the breadcrumb still name the version");
+		ApiVersionSwitcher
+			.Build("", routes, ["main", "9"], "elasticsearch/next")
+			.Select(i => i.Label)
+			.Should()
+			.Equal("Next (unreleased)", "v9 (latest)");
 	}
 
 	[Test]
@@ -44,10 +60,7 @@ public class ApiVersionSwitcherTests
 	{
 		var items = ApiVersionSwitcher.Build("", Es, ["main", "9", "8"], "elasticsearch/v9");
 
-		items
-			.Select(i => $"{i.Url} {i.Selected}")
-			.Should()
-			.Equal("/api/elasticsearch/next False", "/api/elasticsearch/v9 True", "/api/elasticsearch/v8 False");
+		items.Select(i => $"{i.Url} {i.Selected}").Should().Equal("/api/elasticsearch/v9 True", "/api/elasticsearch/v8 False");
 	}
 
 	[Test]
@@ -107,18 +120,11 @@ public class ApiVersionSwitcherTests
 	}
 
 	[Test]
-	public void ForPage_FromTheVersionlessDefault_LinksToSamePageInMain()
+	public void ForPage_FromTheVersionlessDefault_KeepsItsPageAndLinksOlderMajorsToTheirRoot()
 	{
 		var items = ApiVersionSwitcher.ForPage(Items("elasticsearch"), "/api/elasticsearch/operation/operation-ping");
 
-		items
-			.Select(i => i.Url)
-			.Should()
-			.Equal(
-				"/api/elasticsearch/next/operation/operation-ping",
-				"/api/elasticsearch/operation/operation-ping",
-				"/api/elasticsearch/v8"
-			);
+		items.Select(i => i.Url).Should().Equal("/api/elasticsearch/operation/operation-ping", "/api/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v9 (latest)");
 	}
 
@@ -127,14 +133,7 @@ public class ApiVersionSwitcherTests
 	{
 		var items = ApiVersionSwitcher.ForPage(Items("elasticsearch/v9"), "/api/elasticsearch/v9/operation/operation-ping");
 
-		items
-			.Select(i => i.Url)
-			.Should()
-			.Equal(
-				"/api/elasticsearch/next/operation/operation-ping",
-				"/api/elasticsearch/v9/operation/operation-ping",
-				"/api/elasticsearch/v8"
-			);
+		items.Select(i => i.Url).Should().Equal("/api/elasticsearch/v9/operation/operation-ping", "/api/elasticsearch/v8");
 	}
 
 	[Test]
@@ -178,15 +177,12 @@ public class ApiVersionSwitcherTests
 		var items = ApiVersionSwitcher.ForPage(
 			ApiVersionSwitcher.Build(
 				"",
-				ApiVersionRoutes.For("elasticsearch", ["main", "8"]),
-				["main", "8"],
+				Es,
+				["main", "9", "8"],
 				"elasticsearch/v8",
 				new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>
 				{
-					["main"] = Pages(
-						[""],
-						["/operation/operation-search", "/operation/operation-search-1", "/operation/operation-search-2"]
-					),
+					["9"] = Pages([""], ["/operation/operation-search", "/operation/operation-search-1", "/operation/operation-search-2"]),
 					["8"] = Pages([""], ["/operation/operation-search-2"])
 				}
 			),
@@ -196,6 +192,6 @@ public class ApiVersionSwitcherTests
 		items
 			.Select(i => i.Url)
 			.Should()
-			.Equal("/api/elasticsearch/next/operation/operation-search", "/api/elasticsearch/v8/operation/operation-search-2");
+			.Equal("/api/elasticsearch/operation/operation-search", "/api/elasticsearch/v8/operation/operation-search-2");
 	}
 }
