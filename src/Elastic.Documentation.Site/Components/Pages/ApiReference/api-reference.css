@@ -3434,25 +3434,89 @@ button.example-response-tab:focus-visible {
 	height: 100%;
 }
 
-/* Descriptions are up to 150 characters, so they are clamped. */
+/* Descriptions are up to 150 characters, so they are clamped to two lines. */
 .api-catalog .api-catalog-desc {
 	display: -webkit-box;
 	overflow: hidden;
 	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 3;
-	line-clamp: 3;
-}
-
-/* The compact card is the small one for everything in a group but the main APIs. Two lines are enough at its size. */
-.api-catalog .api-catalog-card-compact .api-catalog-desc {
 	-webkit-line-clamp: 2;
 	line-clamp: 2;
 }
 
-/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
-   light fill and a one-line description. */
+/* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines.
+   The type sizes are tokens, so they scale with the root font size like the type of the attached card. */
+.api-catalog .api-catalog-card:not(.api-catalog-card-attached) {
+	gap: 0.875rem;
+	padding: 1rem 1.25rem;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-icon {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-title {
+	font-size: var(--text-lg);
+	line-height: 1.35;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-desc {
+	margin-top: 0.25rem;
+	font-size: var(--text-sm);
+	line-height: 1.45;
+}
+
+/* A featured card and its tag-on share one cell. Through a subgrid, a cell with a tag-on spans two rows of the list, so
+   the featured cards of a row share their height, the tag-ons share the row below them and a card without a tag-on
+   ends with the others. Without subgrid the cell is a plain grid and the tag-on sits flush under its parent. */
+.api-catalog .api-catalog-cell {
+	display: grid;
+}
+
+/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
+   its border, with a light fill and a one-line description. The 1px margin makes the two cards share one border. */
 .api-catalog .api-catalog-card-attached {
+	margin-top: -1px;
 	background: var(--color-surface-sunken);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+@supports (grid-template-rows: subgrid) {
+	.api-catalog .api-catalog-cell-tagged {
+		grid-row: span 2;
+		grid-template-rows: subgrid;
+	}
+
+	/* From two columns up, every cell but the last spans both rows, so a card without a tag-on still takes the row
+	   below it and the next card starts a new row instead of filling the gap beside a tag-on. The last cell has
+	   nothing after it. */
+	@media (min-width: 761px) {
+		.api-catalog .api-catalog-cell:not(:last-child) {
+			grid-row: span 2;
+			grid-template-rows: subgrid;
+		}
+	}
+
+	/* In the subgrid the tag-on sits one row gap below its parent. The negative margin cancels the 1rem gap, plus 1px
+	   for the shared border. */
+	.api-catalog .api-catalog-card-attached {
+		margin-top: calc(-1rem - 1px);
+	}
+}
+
+/* Without subgrid a cell sizes to its content, so a card without a tag-on does not stretch to the height of a
+   neighbour's card and tag-on together. */
+@supports not (grid-template-rows: subgrid) {
+	.api-catalog .api-catalog-cell {
+		align-self: start;
+	}
 }
 
 .api-catalog .api-catalog-card-attached .api-catalog-desc {
@@ -3460,38 +3524,16 @@ button.example-response-tab:focus-visible {
 	line-clamp: 1;
 }
 
-/* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
-   parent above it and stays a separate card. */
-@media (min-width: 1101px) {
-	.api-catalog .api-catalog-featured {
-		margin-bottom: 0;
-	}
+.api-catalog .api-catalog-card-parent {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
 
-	.api-catalog .api-catalog-tagons {
-		row-gap: 0;
-		margin-top: -1px;
-	}
-
-	.api-catalog .api-catalog-cell {
-		grid-column-start: var(--api-catalog-column);
-	}
-
-	.api-catalog .api-catalog-card-parent {
-		border-bottom-left-radius: 0;
-		border-bottom-right-radius: 0;
-	}
-
-	.api-catalog .api-catalog-card-attached {
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
-	}
-
-	/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
-	.api-catalog .api-catalog-card-parent:hover,
-	.api-catalog .api-catalog-card-attached:hover {
-		position: relative;
-		z-index: 1;
-	}
+/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
+.api-catalog .api-catalog-card-parent:hover,
+.api-catalog .api-catalog-card-attached:hover {
+	position: relative;
+	z-index: 1;
 }
 
 .api-landing-heading {

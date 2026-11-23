@@ -3330,7 +3330,7 @@ button.example-response-tab:focus-visible {
 }
 
 .api-catalog .hub-hero.api-catalog-hero {
-	padding: 36px 0 28px;
+	padding: 20px 0 20px;
 	margin-bottom: 0;
 	border-bottom: 0;
 	text-align: center;
@@ -3342,7 +3342,7 @@ button.example-response-tab:focus-visible {
    Inter behind it if the font does not load. The hub hero sets no family, which left this title in Inter. */
 .api-catalog .hub-hero .hub-hero-top h1 {
 	font-family: 'Space Grotesk', var(--font-sans);
-	font-size: clamp(var(--text-4xl), 3vw, var(--text-5xl));
+	font-size: clamp(var(--text-3xl), 2.2vw, var(--text-4xl));
 	font-weight: 700;
 	line-height: 1.14;
 	letter-spacing: -0.02em;
@@ -3354,9 +3354,9 @@ button.example-response-tab:focus-visible {
    first line runs close to the finder's edges and the two read as one block. */
 .api-catalog .api-catalog-lede {
 	max-width: 640px;
-	margin: 12px auto 0;
+	margin: 6px auto 0;
 	font-family: var(--font-body);
-	font-size: var(--text-lg);
+	font-size: var(--text-base);
 	line-height: 1.55;
 	color: var(--color-ink-light);
 	text-wrap: pretty;
@@ -3368,7 +3368,7 @@ button.example-response-tab:focus-visible {
    one sits outside `.api-catalog`, so the rule stands alone. */
 .api-catalog-finder {
 	max-width: 640px;
-	margin: 20px auto 0;
+	margin: 14px auto 0;
 	text-align: left;
 }
 
@@ -3412,7 +3412,7 @@ navigation-search[variant='hero'] {
 
 /* Light grouping: a small label per group, with the gap between groups kept tight so the page still fits one screen. */
 .api-catalog .api-catalog-group + .api-catalog-group {
-	margin-top: 32px;
+	margin-top: 20px;
 }
 
 .api-catalog .api-catalog-group-title {
@@ -3437,27 +3437,89 @@ navigation-search[variant='hero'] {
 	height: 100%;
 }
 
-/* Descriptions are up to 150 characters, so they are clamped. */
+/* Descriptions are up to 150 characters, so they are clamped to two lines. */
 .api-catalog .api-catalog-desc {
 	display: -webkit-box;
 	overflow: hidden;
 	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 3;
-	line-clamp: 3;
-}
-
-/* The compact card is the small one for everything in a group but the main APIs. Two lines are enough at its size. */
-.api-catalog .api-catalog-card-compact .api-catalog-desc {
 	-webkit-line-clamp: 2;
 	line-clamp: 2;
 }
 
-/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
-   light fill and a one-line description. It follows its parent in the list, so this holds when the cards stack too. */
+/* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines.
+   The type sizes are tokens, so they scale with the root font size like the type of the attached card. */
+.api-catalog .api-catalog-card:not(.api-catalog-card-attached) {
+	gap: 14px;
+	padding: 16px 20px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-icon {
+	width: 24px;
+	height: 24px;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-title {
+	font-size: var(--text-lg);
+	line-height: 1.35;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-desc {
+	margin-top: 4px;
+	font-size: var(--text-sm);
+	line-height: 1.45;
+}
+
+/* A featured card and its tag-on share one cell. Through a subgrid, a cell with a tag-on spans two rows of the list, so
+   the featured cards of a row share their height, the tag-ons share the row below them and a card without a tag-on
+   ends with the others. Without subgrid the cell is a plain grid and the tag-on sits flush under its parent. */
+.api-catalog .api-catalog-cell {
+	display: grid;
+}
+
+/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
+   its border, with a light fill and a one-line description. The 1px margin makes the two cards share one border. */
 .api-catalog .api-catalog-card-attached {
+	margin-top: -1px;
 	background: var(--color-grey-10);
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
+}
+
+@supports (grid-template-rows: subgrid) {
+	.api-catalog .api-catalog-cell-tagged {
+		grid-row: span 2;
+		grid-template-rows: subgrid;
+	}
+
+	/* From two columns up, every cell but the last spans both rows, so a card without a tag-on still takes the row
+	   below it and the next card starts a new row instead of filling the gap beside a tag-on. The last cell has
+	   nothing after it. */
+	@media (min-width: 640px) {
+		.api-catalog .api-catalog-cell:not(:last-child) {
+			grid-row: span 2;
+			grid-template-rows: subgrid;
+		}
+	}
+
+	/* In the subgrid the tag-on sits one row gap below its parent. The negative margin cancels the 16px gap, plus 1px
+	   for the shared border. It is in pixels because the gap is, while rem is 14px on the classic layout. */
+	.api-catalog .api-catalog-card-attached {
+		margin-top: -17px;
+	}
+}
+
+/* Without subgrid a cell sizes to its content, so a card without a tag-on does not stretch to the height of a
+   neighbour's card and tag-on together. */
+@supports not (grid-template-rows: subgrid) {
+	.api-catalog .api-catalog-cell {
+		align-self: start;
+	}
 }
 
 .api-catalog .api-catalog-card-attached .api-catalog-desc {
@@ -3470,28 +3532,11 @@ navigation-search[variant='hero'] {
 	border-bottom-right-radius: 0;
 }
 
-/* Cancels the 1.5rem gap of the list, plus 1px so the two cards share one border. */
-.api-catalog .api-catalog-cell-variant {
-	margin-top: calc(-1.5rem - 1px);
-}
-
 /* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
 .api-catalog .api-catalog-card-parent:hover,
 .api-catalog .api-catalog-card-attached:hover {
 	position: relative;
 	z-index: 1;
-}
-
-/* From the width where the featured cards sit in one row: parents in row 1, each tag-on in row 2 under its parent. */
-@media (min-width: 1024px) {
-	.api-catalog .api-catalog-cell {
-		grid-column-start: var(--api-catalog-column);
-		grid-row: 1;
-	}
-
-	.api-catalog .api-catalog-cell-variant {
-		grid-row: 2;
-	}
 }
 
 .api-landing-heading {
