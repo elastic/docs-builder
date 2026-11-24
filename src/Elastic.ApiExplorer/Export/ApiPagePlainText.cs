@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Text;
 using Elastic.ApiExplorer.Infrastructure;
 using Markdig;
@@ -24,12 +25,8 @@ internal static class ApiPagePlainText
 	{
 		var document = Markdown.Parse(markdown, Pipeline);
 		var headings = document.Descendants<HeadingBlock>().ToArray();
-		// The page renderer takes its title from a top-level H1, never from one nested in a quote or a list.
-		var title = document
-			.OfType<HeadingBlock>()
-			.Where(static h => h.Level == 1)
-			.Select(HeadingText)
-			.FirstOrDefault(static t => t.Length > 0);
+		// The page renderer prefers a top-level H1 to one nested in a quote or a list, and falls back to the nested one.
+		var title = FirstTitle(document.OfType<HeadingBlock>()) ?? FirstTitle(headings);
 		using var writer = new StringWriter();
 		_ = Markdown.ToPlainText(markdown, writer, Pipeline);
 		return new ApiPageSearchText(
@@ -53,6 +50,43 @@ internal static class ApiPagePlainText
 	public static string Description(string? description) =>
 		string.IsNullOrWhiteSpace(description) ? "" : ApiSeoDescription.ToPlainText(ApiSeoDescription.WithoutComments(description));
 
+	private static string? FirstTitle(IEnumerable<HeadingBlock> headings) =>
+		headings.Where(static h => h.Level == 1).Select(HeadingText).FirstOrDefault(static t => t.Length > 0);
+
+	// Inline elements an author formats a heading with. Any other tag, such as `<tenant>`, is a literal placeholder readers see.
+	private static readonly FrozenSet<string> MarkupTags = FrozenSet.Create(
+		StringComparer.OrdinalIgnoreCase,
+		"a",
+		"abbr",
+		"b",
+		"br",
+		"code",
+		"del",
+		"em",
+		"i",
+		"ins",
+		"kbd",
+		"mark",
+		"q",
+		"s",
+		"small",
+		"span",
+		"strong",
+		"sub",
+		"sup",
+		"u",
+		"wbr"
+	);
+
+	private static bool IsPlaceholder(string tag)
+	{
+		if (tag.StartsWith("<!--", StringComparison.Ordinal) || tag.StartsWith("</", StringComparison.Ordinal))
+			return false;
+		var name = tag.AsSpan(1).TrimEnd('>').TrimEnd('/');
+		var end = name.IndexOfAny(' ', '\t', '/');
+		return !MarkupTags.Contains((end < 0 ? name : name[..end]).ToString());
+	}
+
 	private static string HeadingText(HeadingBlock heading)
 	{
 		if (heading.Inline is null)
@@ -65,8 +99,8 @@ internal static class ApiPagePlainText
 				LiteralInline literal => text.Append(literal.Content),
 				CodeInline code => text.Append(code.Content),
 				HtmlEntityInline entity => text.Append(entity.Transcoded),
-				// The export writes a generated title such as `Access <tenant>` as it is, so a tag in a heading is its visible text.
-				HtmlInline html => text.Append(html.Tag),
+				// The export writes a generated title such as `Access <tenant>` as it is, so a placeholder is visible text.
+				HtmlInline html when IsPlaceholder(html.Tag) => text.Append(html.Tag),
 				AutolinkInline autolink => text.Append(autolink.Url),
 				LineBreakInline => text.Append(' '),
 				_ => text

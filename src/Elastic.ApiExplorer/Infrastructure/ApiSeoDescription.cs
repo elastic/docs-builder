@@ -166,14 +166,15 @@ internal static partial class ApiSeoDescription
 	[GeneratedRegex(@"\*\*([^*]+)\*\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BoldStarPattern();
 
-	// As in CommonMark, an underscore inside a word neither opens nor closes emphasis, so `max_docs` keeps its underscore.
-	[GeneratedRegex(@"(?<!\w)__([^_]+)__(?!\w)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	// As in CommonMark, an underscore between letters or digits neither opens nor closes emphasis, so `max_docs` keeps its
+	// underscore while `___both___` still loses its markers.
+	[GeneratedRegex(@"(?<![\p{L}\p{N}])__([^_]+)__(?![\p{L}\p{N}])", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BoldUnderscorePattern();
 
 	[GeneratedRegex(@"\*([^*]+)\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ItalicStarPattern();
 
-	[GeneratedRegex(@"(?<!\w)_([^_]+)_(?!\w)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	[GeneratedRegex(@"(?<![\p{L}\p{N}])_([^_]+)_(?![\p{L}\p{N}])", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ItalicUnderscorePattern();
 
 	[GeneratedRegex(@"`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
