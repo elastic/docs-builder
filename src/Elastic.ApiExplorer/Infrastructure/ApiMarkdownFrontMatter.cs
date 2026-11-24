@@ -52,7 +52,8 @@ internal static class ApiMarkdownFrontMatter
 
 	internal static ApiPageFrontMatter Collect(string body, INavigationItem current, ApiRenderContext context, IApiModel page)
 	{
-		var title = Heading(body) ?? current.NavigationTitle;
+		// Front matter is plain text: the H1 is Markdown, so an escaped name such as `HTTP \<code\> responses` reads as written.
+		var title = Plain(Heading(body)) ?? current.NavigationTitle;
 		return new(
 			title,
 			ResolveDescription(page, context, body, current.NavigationTitle),
@@ -144,7 +145,7 @@ internal static class ApiMarkdownFrontMatter
 			ApiStructuralPage structural => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(structural.Intro, apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
 			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
-			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
+			SimpleMarkdownNavigationItem => Plain(ApiSeoDescription.FirstParagraph(body)),
 			_ => null
 		};
 	}
@@ -194,12 +195,16 @@ internal static class ApiMarkdownFrontMatter
 		return null;
 	}
 
+	/// <summary>The first line of Markdown <paramref name="text"/>, as plain text.</summary>
 	private static string? FirstLine(string? text)
 	{
 		if (string.IsNullOrWhiteSpace(text))
 			return null;
 
 		using var reader = new StringReader(text.Trim());
-		return reader.ReadLine()?.Trim();
+		return Plain(reader.ReadLine());
 	}
+
+	private static string? Plain(string? markdown) =>
+		string.IsNullOrWhiteSpace(markdown) ? null : ApiSeoDescription.ToPlainText(markdown) is { Length: > 0 } plain ? plain : null;
 }

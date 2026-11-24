@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -93,6 +94,69 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		landing.Should().MatchSnapshot(name: "landing");
 		operation.Should().MatchSnapshot(name: "operation");
 		catalog.Should().MatchSnapshot(name: "catalog");
+	}
+
+	[Test]
+	public async Task Generate_NameWithAngleBrackets_IsEscapedInMarkdownAndPlainInFrontMatter()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-literal-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(LiteralNameSpec())
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var group = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-codes.md"),
+				TestContext.Current!.Execution.CancellationToken
+			);
+		group.Should().StartWith("---\ntype: api\ntitle: HTTP <code> responses\n");
+		group.Should().Contain("\n# HTTP \\<code\\> responses\n");
+	}
+
+	private static OpenApiDocument LiteralNameSpec()
+	{
+		static OpenApiPathItem Get(string id, string tag) =>
+			new()
+			{
+				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				{
+					[HttpMethod.Get] = new()
+					{
+						OperationId = id,
+						Summary = id,
+						Tags = new HashSet<OpenApiTagReference> { new(tag) },
+						Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+					}
+				}
+			};
+
+		return new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "Elasticsearch", Version = "1.0" },
+			Paths = new OpenApiPaths { ["/codes"] = Get("codes", "codes"), ["/ping"] = Get("ping", "core") },
+			Tags = new HashSet<OpenApiTag>
+			{
+				new()
+				{
+					Name = "codes",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("HTTP <code> responses"))
+					}
+				},
+				new() { Name = "core" }
+			}
+		};
 	}
 
 	[Test]

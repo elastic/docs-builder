@@ -14,6 +14,24 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiCommonMarkTests
 {
 	[Test]
+	[Arguments("HTTP <code> responses")]
+	[Arguments("Snapshot & restore")]
+	[Arguments("R&D;")]
+	[Arguments("&amp; and &#123;")]
+	[Arguments("max_docs and _types.query_dsl")]
+	[Arguments("__init__ and *glob* and `tick`")]
+	[Arguments("[link](url) and ![img](x)")]
+	[Arguments("back\\slash > quote")]
+	public void Text_ReadBackAsMarkdown_IsTheTextAsWritten(string text) =>
+		ApiSeoDescription.ToPlainText(ApiCommonMark.Text(text)).Should().Be(text);
+
+	[Test]
+	[Arguments("Snapshot and restore", "Snapshot and restore")]
+	[Arguments("max_docs", "max_docs")]
+	[Arguments("HTTP <code>", "HTTP \\<code\\>")]
+	public void Text_PlainName_EscapesOnlyWhatCouldBeMarkup(string text, string expected) => ApiCommonMark.Text(text).Should().Be(expected);
+
+	[Test]
 	[Arguments("plain", "`plain`")]
 	[Arguments("a`b", "``a`b``")]
 	[Arguments("`x", "`` `x ``")]

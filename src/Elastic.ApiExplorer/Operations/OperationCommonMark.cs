@@ -18,7 +18,7 @@ internal static class OperationCommonMark
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var operation = apiOperation.Operation;
 		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
-		ApiCommonMark.Heading(markdown, 1, title);
+		ApiCommonMark.Heading(markdown, 1, ApiCommonMark.Text(title));
 		WriteBadges(markdown, apiOperation.Deprecated, page);
 		WriteServers(markdown, page);
 		WritePaths(markdown, page);
@@ -164,13 +164,13 @@ internal static class OperationCommonMark
 		{
 			var together = requirement.Schemes.Count > 1;
 			var anchor = anchors ? $" [{ApiUrlBuilder.AuthenticationAnchor(requirement.Schemes.Select(static s => s.Id))}]" : "";
-			ApiCommonMark.Heading(generated, 2, requirement.Label + anchor);
+			ApiCommonMark.Heading(generated, 2, ApiCommonMark.Text(requirement.Label) + anchor);
 			if (together)
 				ApiCommonMark.Paragraph(generated, "Send all of these together.");
 			foreach (var scheme in requirement.Schemes)
 			{
 				if (together)
-					ApiCommonMark.Heading(generated, 3, scheme.Label);
+					ApiCommonMark.Heading(generated, 3, ApiCommonMark.Text(scheme.Label));
 				if (!string.IsNullOrWhiteSpace(scheme.DescriptionMarkdown))
 				{
 					Flush();
@@ -180,7 +180,7 @@ internal static class OperationCommonMark
 				ApiCommonMark.Fence(generated, "http", scheme.CredentialExample);
 				// OAuth 2.0 and OpenID Connect have no credential example, and a description is optional. The section must still name the scheme.
 				if (!together && string.IsNullOrEmpty(scheme.CredentialExample) && scheme.DescriptionMarkdown is null)
-					ApiCommonMark.Paragraph(generated, $"Uses {scheme.Label} authentication.");
+					ApiCommonMark.Paragraph(generated, $"Uses {ApiCommonMark.Text(scheme.Label)} authentication.");
 			}
 		}
 
@@ -322,7 +322,7 @@ internal static class OperationCommonMark
 
 		foreach (var scenario in perExample)
 		{
-			ApiCommonMark.Heading(markdown, 3, scenario.Title);
+			ApiCommonMark.Heading(markdown, 3, ApiCommonMark.Text(scenario.Title));
 			WriteSamples(markdown, [.. scenario.CodeSamples.Where(static c => !c.Generated)]);
 		}
 	}
@@ -331,7 +331,7 @@ internal static class OperationCommonMark
 	{
 		foreach (var sample in samples)
 		{
-			ApiCommonMark.Heading(markdown, 4, sample.Language);
+			ApiCommonMark.Heading(markdown, 4, ApiCommonMark.Text(sample.Language));
 			ApiCommonMark.Fence(markdown, sample.Language.ToLowerInvariant(), sample.Source);
 		}
 	}
@@ -350,14 +350,14 @@ internal static class OperationCommonMark
 		ApiCommonMark.Heading(markdown, 2, heading);
 		foreach (var example in examples)
 		{
-			ApiCommonMark.Heading(markdown, 4, example.Title);
+			ApiCommonMark.Heading(markdown, 4, ApiCommonMark.Text(example.Title));
 			if (example.MediaType is not null)
 				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(example.MediaType));
 			if (example.Generated)
 				ApiCommonMark.Paragraph(markdown, ResponseBodyExample.Note);
 			ApiCommonMark.Prepared(markdown, example.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrEmpty(example.ExternalValue))
-				ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(example.ExternalValue, example.ExternalValue));
+				ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(ApiCommonMark.Text(example.ExternalValue), example.ExternalValue));
 			ApiCommonMark.Fence(markdown, "json", example.JsonValue);
 		}
 	}

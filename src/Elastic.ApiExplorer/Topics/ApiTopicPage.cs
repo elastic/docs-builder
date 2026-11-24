@@ -43,7 +43,7 @@ public record ApiTopicPage(string Title, string Content) : IApiModel<TopicViewMo
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, TopicViewModel? pageModel, Cancel ctx = default)
 	{
 		var markdown = new StringBuilder();
-		ApiCommonMark.Heading(markdown, 1, Title);
+		ApiCommonMark.Heading(markdown, 1, ApiCommonMark.Text(Title));
 		ApiCommonMark.Prepared(markdown, Content, context.CurrentNavigation.NavigationRoot.Url);
 		return Task.FromResult<string?>(markdown.ToString());
 	}

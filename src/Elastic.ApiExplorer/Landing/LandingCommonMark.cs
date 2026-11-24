@@ -24,7 +24,7 @@ internal static class LandingCommonMark
 			// as part of the group above them. A lone group needs none.
 			var heading = group.Title ?? (groups.Count > 1 ? OtherApisHeading : null);
 			if (heading is not null)
-				ApiCommonMark.Heading(markdown, 2, heading);
+				ApiCommonMark.Heading(markdown, 2, ApiCommonMark.Text(heading));
 			foreach (var entry in group.Entries)
 				WriteCatalogEntry(markdown, entry);
 		}
@@ -34,7 +34,7 @@ internal static class LandingCommonMark
 	private static void WriteCatalogEntry(StringBuilder markdown, ApiCatalogEntry entry)
 	{
 		var url = entry.Url;
-		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(ApiCommonMark.Text(entry.Title), url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
 		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
 			_ = markdown.AppendLine($"  {summary}");
 		_ = markdown.AppendLine(
@@ -45,7 +45,7 @@ internal static class LandingCommonMark
 	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl, string? versionLabel = null)
 	{
 		var markdown = new StringBuilder();
-		ApiCommonMark.Heading(markdown, 1, ApiPageTitle.Heading(info?.Title ?? "API Documentation", versionLabel));
+		ApiCommonMark.Heading(markdown, 1, ApiCommonMark.Text(ApiPageTitle.Heading(info?.Title ?? "API Documentation", versionLabel)));
 		ApiCommonMark.Prepared(markdown, info?.Description, apiBaseUrl);
 		WriteOverview(markdown, rows);
 		return markdown.ToString();
@@ -55,7 +55,7 @@ internal static class LandingCommonMark
 	{
 		var markdown = new StringBuilder();
 		var apiBaseUrl = model.CurrentNavigationItem.NavigationRoot.Url;
-		ApiCommonMark.Heading(markdown, 1, model.Tag.DisplayName);
+		ApiCommonMark.Heading(markdown, 1, ApiCommonMark.Text(model.Tag.DisplayName));
 		if (!string.Equals(model.Tag.Name, model.Tag.DisplayName, StringComparison.Ordinal))
 			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(model.Tag.Name));
 
@@ -80,19 +80,21 @@ internal static class LandingCommonMark
 			switch (row.Kind)
 			{
 				case OverviewRowKind.ClassificationHeading:
-					ApiCommonMark.Heading(markdown, 2, row.Title);
+					ApiCommonMark.Heading(markdown, 2, ApiCommonMark.Text(row.Title));
 					break;
 				case OverviewRowKind.TagHeading:
-					ApiCommonMark.Heading(markdown, 3, ApiCommonMark.Link(row.Title, row.Url));
+					ApiCommonMark.Heading(markdown, 3, ApiCommonMark.Link(ApiCommonMark.Text(row.Title), row.Url));
 					break;
 				case OverviewRowKind.SchemaCategoryHeading:
-					ApiCommonMark.Heading(markdown, 3, row.Title);
+					ApiCommonMark.Heading(markdown, 3, ApiCommonMark.Text(row.Title));
 					break;
 				case OverviewRowKind.Schema:
-					_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)} ({ApiCommonMark.CodeSpan(row.SchemaId)})");
+					_ = markdown.AppendLine(
+						$"- {ApiCommonMark.Link(ApiCommonMark.Text(row.Title), row.Url)} ({ApiCommonMark.CodeSpan(row.SchemaId)})"
+					);
 					break;
 				case OverviewRowKind.MarkdownPage:
-					_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)}");
+					_ = markdown.AppendLine($"- {ApiCommonMark.Link(ApiCommonMark.Text(row.Title), row.Url)}");
 					break;
 				case OverviewRowKind.Operation:
 					WriteOperationRow(markdown, row);
@@ -110,6 +112,6 @@ internal static class LandingCommonMark
 		}
 
 		var paths = string.Join(", ", endpoint.Rows.Select(OperationCommonMark.PathLabel));
-		_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)}: {paths}");
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(ApiCommonMark.Text(row.Title), row.Url)}: {paths}");
 	}
 }
