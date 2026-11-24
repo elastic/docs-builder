@@ -1,7 +1,9 @@
 name: assembler-preview
 
 on:
-  pull_request: ~
+  pull_request:
+    # labeled and unlabeled rebuild the preview only for a preview:<flag> label; see the build job's condition.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -32,7 +34,10 @@ jobs:
       deployments: write
       id-token: write
       pull-requests: read
-    if: needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: >-
+      needs.changes.outputs.code == 'true'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || startsWith(github.event.label.name, 'preview:'))
     runs-on: docs-internal-latest-16
     env:
       PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
@@ -83,6 +88,11 @@ jobs:
 
       - name: Bootstrap Action Workspace
         uses: elastic/docs-builder/.github/actions/bootstrap@main
+
+      - name: Feature flags from pull request labels
+        uses: $/.github/actions/preview-feature-flags
+        with:
+          pr-number: ${{ env.PR_NUMBER }}
 
       - name: Build assembled documentation
         run: |

@@ -1,0 +1,46 @@
+name: Feature flags from pull request labels
+description: |
+  Exports `FEATURE_<FLAG>=true` to the steps that follow for every `preview:<flag>` label on the pull request,
+  so a preview can build with a flag that its environment leaves off. Only a flag that `FeatureFlags.KnownKeys`
+  lists is exported; a label naming any other flag is reported and ignored. A pull request without such labels
+  exports nothing, and its preview builds as before.
+
+inputs:
+  pr-number:
+    description: 'The pull request whose labels are read'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Export FEATURE_* for preview labels
+      uses: actions/github-script@v9
+      env:
+        PR_NUMBER: ${{ inputs.pr-number }}
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const workspace = process.env.GITHUB_WORKSPACE;
+          const { knownKeysFrom, flagsFromLabels, labelPrefix } = require(path.join(workspace, '.github/actions/preview-feature-flags/flags.js'));
+
+          const { owner, repo } = context.repo;
+          const prNumber = parseInt(process.env.PR_NUMBER, 10);
+          if (isNaN(prNumber) || prNumber <= 0) {
+            core.setFailed(`Invalid PR number: ${process.env.PR_NUMBER}`);
+            return;
+          }
+          const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+          const labels = pr.labels.map((label) => label.name);
+
+          const source = fs.readFileSync(path.join(workspace, 'src/Elastic.Documentation.Configuration/Builder/FeatureFlags.cs'), 'utf8');
+          const { enabled, unknown } = flagsFromLabels(labels, knownKeysFrom(source));
+          for (const label of unknown) {
+            core.warning(`The label ${label} names no flag in FeatureFlags.KnownKeys and is ignored`);
+          }
+          for (const name of enabled) {
+            core.exportVariable(name, 'true');
+          }
+          core.info(enabled.length > 0
+            ? `Preview feature flags from labels: ${enabled.join(' ')}`
+            : `No ${labelPrefix}<flag> label; the preview builds with its environment's flags only`);
