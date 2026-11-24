@@ -16,6 +16,10 @@ namespace Elastic.Documentation.Search.Highlighting;
 /// </summary>
 public static class SearchResultProcessor
 {
+	/// <summary>
+	/// With <paramref name="highlightOptions"/>, the result's title and description are HTML: text outside the marks is encoded, so
+	/// literal text such as <c>&lt;tenant&gt;</c> shows as written. Without them, both are the document's plain text.
+	/// </summary>
 	public static SearchResultItem<TDocument> ProcessHit<TDocument>(
 		Hit<TDocument> hit,
 		string searchQuery,
@@ -23,6 +27,7 @@ public static class SearchResultProcessor
 		HighlightOptions? highlightOptions = null
 	) where TDocument : SearchDocumentBase
 	{
+		var html = highlightOptions is not null;
 		var options = highlightOptions ?? HighlightOptions.Default;
 		var doc = hit.Source!;
 		var highlights = hit.Highlight;
@@ -30,6 +35,8 @@ public static class SearchResultProcessor
 			.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Where(token => token.Length >= options.MinTokenLength)
 			.Where(token => options.ExcludePattern is null || !options.ExcludePattern.IsMatch(token))
+			// A token is matched against encoded text, so `<tenant>` must be encoded the same way.
+			.Select(token => html ? StringHighlightExtensions.Encode(token) : token)
 			.ToArray();
 
 		string? highlightedTitle = null;
@@ -44,8 +51,8 @@ public static class SearchResultProcessor
 				highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 		}
 
-		var title = (highlightedTitle ?? doc.Title).HighlightTokens(searchTokens, synonyms, options.WholeWordOnly);
-		var description = (!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : doc.Description ?? string.Empty)
+		var title = Html(highlightedTitle ?? doc.Title, html).HighlightTokens(searchTokens, synonyms, options.WholeWordOnly);
+		var description = Html(!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : doc.Description ?? string.Empty, html)
 			.Replace("\r\n", " ")
 			.Replace("\n", " ")
 			.Replace("\r", " ")
@@ -61,6 +68,8 @@ public static class SearchResultProcessor
 			Properties = MatchedProperties(hit, options)
 		};
 	}
+
+	private static string Html(string text, bool html) => html ? text.EncodeAroundMarks() : text;
 
 	private const int MaxMatchedProperties = 3;
 

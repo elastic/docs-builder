@@ -72,6 +72,30 @@ public static class StringHighlightExtensions
 		return result;
 	}
 
+	/// <summary>
+	/// Encodes <c>&amp;</c>, <c>&lt;</c>, <c>&gt;</c> and <c>"</c> in <paramref name="text"/> and keeps its
+	/// <c>&lt;mark&gt;</c> tags, so literal text such as <c>&lt;tenant&gt;</c> renders as text in a highlighted result.
+	/// Other characters stay as they are, so a token still matches the text it was typed for.
+	/// </summary>
+	public static string EncodeAroundMarks(this string text)
+	{
+		var sb = new StringBuilder(text.Length + 16);
+		var pos = 0;
+		while (
+			text.IndexOf(MarkOpen, pos, StringComparison.OrdinalIgnoreCase) is var open and >= 0
+			&& text.IndexOf(MarkClose, open + MarkOpen.Length, StringComparison.OrdinalIgnoreCase) is var close and >= 0
+		)
+		{
+			_ = sb.Append(Encode(text[pos..open])).Append(MarkOpen).Append(Encode(text[(open + MarkOpen.Length)..close])).Append(MarkClose);
+			pos = close + MarkClose.Length;
+		}
+		return sb.Append(Encode(text[pos..])).ToString();
+	}
+
+	/// <summary>The encoding <see cref="EncodeAroundMarks"/> applies to text outside the marks.</summary>
+	public static string Encode(string text) =>
+		text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+
 	private static string? ExtractSynonymTarget(string? synonym)
 	{
 		if (string.IsNullOrEmpty(synonym))
@@ -119,7 +143,11 @@ public static class StringHighlightExtensions
 
 			var absoluteIndex = pos + matchIndex;
 
-			if (IsInsideMarkTagSyntax(textSpan, absoluteIndex, tokenSpan.Length) || IsInsideMarkTagContent(textSpan, absoluteIndex))
+			if (
+				IsInsideMarkTagSyntax(textSpan, absoluteIndex, tokenSpan.Length)
+				|| IsInsideMarkTagContent(textSpan, absoluteIndex)
+				|| SplitsEntity(textSpan, absoluteIndex, tokenSpan.Length)
+			)
 			{
 				_ = sb.Append(remaining[..(matchIndex + tokenSpan.Length)]);
 				pos = absoluteIndex + token.Length;
@@ -225,6 +253,26 @@ public static class StringHighlightExtensions
 		}
 
 		return false;
+	}
+
+	/// <summary>
+	/// Whether a match starts or ends inside an entity such as <c>&amp;lt;</c> in encoded text: a mark there would break the entity,
+	/// for example when a reader types <c>lt</c>.
+	/// </summary>
+	private static bool SplitsEntity(ReadOnlySpan<char> text, int position, int length) =>
+		IsInsideEntity(text, position) || IsInsideEntity(text, position + length);
+
+	// The longest entity Encode writes is `&quot;`.
+	private const int MaxEntityLength = 6;
+
+	private static bool IsInsideEntity(ReadOnlySpan<char> text, int position)
+	{
+		var start = text[Math.Max(0, position - MaxEntityLength + 1)..position].LastIndexOf('&');
+		if (start < 0)
+			return false;
+		var ampersand = Math.Max(0, position - MaxEntityLength + 1) + start;
+		var semicolon = text[ampersand..Math.Min(text.Length, ampersand + MaxEntityLength)].IndexOf(';');
+		return semicolon >= 0 && ampersand + semicolon >= position;
 	}
 
 	private static bool IsInsideMarkTagContent(ReadOnlySpan<char> text, int position)
