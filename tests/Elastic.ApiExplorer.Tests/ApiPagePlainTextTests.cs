@@ -13,6 +13,8 @@ public class ApiPagePlainTextTests
 	[Arguments("# 1. Authentication", "1. Authentication")]
 	[Arguments("# [Core](/docs/api/elasticsearch/v8/group/endpoint-core)", "Core")]
 	[Arguments("# The `<tenant>` parameter", "The <tenant> parameter")]
+	[Arguments("# Access <tenant>", "Access <tenant>")]
+	[Arguments("# Contact <support@example.com>", "Contact support@example.com")]
 	public void Read_Heading_IsItsVisibleText(string heading, string expected)
 	{
 		var text = ApiPagePlainText.Read($"{heading}\n\nBody.\n\n{heading.Replace("# ", "## ")}", "Fallback", description: null);
@@ -20,6 +22,10 @@ public class ApiPagePlainTextTests
 		text.Title.Should().Be(expected);
 		text.Headings.Should().Equal(expected);
 	}
+
+	[Test]
+	public void Read_QuotedH1BeforeTheTopLevelOne_TakesTheTopLevelTitle() =>
+		ApiPagePlainText.Read("> # Note\n\n# Authentication\n\nBody.", "Fallback", description: null).Title.Should().Be("Authentication");
 
 	[Test]
 	public void Read_WithoutAnH1_UsesTheFallbackTitle() =>
@@ -30,6 +36,8 @@ public class ApiPagePlainTextTests
 	[Arguments("Send a `<ping>` first.", "Send a <ping> first.")]
 	[Arguments("Send a <ping> first.", "Send a <ping> first.")]
 	[Arguments("<!-- note for authors --> Send a **ping** first.", "Send a ping first.")]
+	[Arguments("Uses `max_docs` and `max_age`.", "Uses max_docs and max_age.")]
+	[Arguments("Uses _either_ value.", "Uses either value.")]
 	public void Description_MarkdownOrPlainText_IsPlainText(string description, string expected) =>
 		ApiPagePlainText.Description(description).Should().Be(expected);
 }

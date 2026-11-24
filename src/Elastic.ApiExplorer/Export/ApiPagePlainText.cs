@@ -24,10 +24,16 @@ internal static class ApiPagePlainText
 	{
 		var document = Markdown.Parse(markdown, Pipeline);
 		var headings = document.Descendants<HeadingBlock>().ToArray();
+		// The page renderer takes its title from a top-level H1, never from one nested in a quote or a list.
+		var title = document
+			.OfType<HeadingBlock>()
+			.Where(static h => h.Level == 1)
+			.Select(HeadingText)
+			.FirstOrDefault(static t => t.Length > 0);
 		using var writer = new StringWriter();
 		_ = Markdown.ToPlainText(markdown, writer, Pipeline);
 		return new ApiPageSearchText(
-			headings.Where(static h => h.Level == 1).Select(HeadingText).FirstOrDefault(static t => t.Length > 0) ?? fallbackTitle,
+			title ?? fallbackTitle,
 			Description(description),
 			writer.ToString().Trim(),
 			[
@@ -59,6 +65,9 @@ internal static class ApiPagePlainText
 				LiteralInline literal => text.Append(literal.Content),
 				CodeInline code => text.Append(code.Content),
 				HtmlEntityInline entity => text.Append(entity.Transcoded),
+				// The export writes a generated title such as `Access <tenant>` as it is, so a tag in a heading is its visible text.
+				HtmlInline html => text.Append(html.Tag),
+				AutolinkInline autolink => text.Append(autolink.Url),
 				LineBreakInline => text.Append(' '),
 				_ => text
 			};
