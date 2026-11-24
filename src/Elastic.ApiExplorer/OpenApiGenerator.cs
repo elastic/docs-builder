@@ -356,7 +356,7 @@ public class OpenApiGenerator(
 				item.Url,
 				item.NavigationTitle,
 				ContentHash.CreateNormalized(relative),
-				IsSearchablePage(item) ? SearchOf(relative, item, page, pageContext) : null
+				IsSearchablePage(item) ? SearchOf(markdown, item, page, pageContext) : null
 			);
 		}).ConfigureAwait(false);
 

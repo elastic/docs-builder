@@ -31,6 +31,8 @@ public class ApiLookupQueryBuilderTests
 			.Should()
 			.Equal("api.landing", "api.page");
 		mustNot.GetProperty("must_not").GetProperty("multi_match").GetProperty("query").GetString().Should().Be("kibana api");
+		// Every word must be in the title; a word found only in the body leaves the page out.
+		mustNot.GetProperty("must_not").GetProperty("multi_match").GetProperty("operator").GetString().Should().Be("and");
 	}
 
 	[Test]

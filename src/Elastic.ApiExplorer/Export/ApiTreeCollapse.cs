@@ -47,12 +47,18 @@ internal static class ApiTreeCollapse
 	private static (bool IsDefault, int Recency) Rank(ApiTreeEntry tree, string defaultTree) =>
 		(tree.Tree == defaultTree, ApiVersions.Recency(tree.Tree));
 
-	/// <summary>Everything the index stores for the document except the URLs, which differ per tree by construction.</summary>
+	/// <summary>
+	/// Everything the index stores for the document except the URLs, which differ per tree by construction. The path counts relative
+	/// to its tree's root, so pages at different slugs stay apart. A page document's body is its export, whose links point into its
+	/// tree, so its content hash, which reads those links relative to the tree, stands for it.
+	/// </summary>
 	private static string Fingerprint(DocumentationDocument doc)
 	{
+		var root = doc.Api!.Trees[0].Root;
 		var withoutUrls = doc with
 		{
-			Path = "",
+			Path = doc.Path.StartsWith(root, StringComparison.Ordinal) ? doc.Path[root.Length..] : doc.Path,
+			Body = doc.Api.Page ? "" : doc.Body,
 			Parents = [.. doc.Parents.Select(static p => p with { Path = "" })],
 			Api = doc.Api! with { Trees = [] }
 		};

@@ -673,6 +673,40 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Test]
+	[Arguments("endpoint-snapshot", 1)]
+	[Arguments("endpoint-snapshot-restore", 2)]
+	public void Collapse_SamePageInTwoTrees_MergesOnlyAtTheSameSlug(string v8Slug, int expected)
+	{
+		static DocumentationDocument Page(string tree, string root, string slug) =>
+			new()
+			{
+				ContentType = "api",
+				Path = $"{root}/group/{slug}",
+				Title = "Snapshot and restore",
+				SearchTitle = "Snapshot and restore",
+				Body = $"# Snapshot and restore\n\n- [Create]({root}/operation/operation-create)\n",
+				ContentBodyHash = "same-page",
+				Api = new ApiOperationMetadata
+				{
+					Key = "elasticsearch",
+					Trees = [new ApiTreeEntry { Tree = tree, Root = root }],
+					Endpoints = [],
+					Method = "",
+					Path = "",
+					OperationId = "",
+					Page = true
+				}
+			};
+
+		var docs = ApiTreeCollapse.Collapse(
+			[Page("9", "/docs/api/elasticsearch", "endpoint-snapshot"), Page("8", "/docs/api/elasticsearch/v8", v8Slug)],
+			defaultTree: "9"
+		);
+
+		docs.Should().HaveCount(expected);
+	}
+
+	[Test]
 	public void ConvertToLandingDocument_Tree_IndexesTheApiRootAsALandingPage()
 	{
 		var spec = TreeSpec();

@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Export;
 public sealed record ApiPageContent(string Url, string Title, string ContentHash, ApiPageSearch? Search = null);
 
 /// <summary>
-/// What search reads of a page: the plain-text title and description of its front matter, and its Markdown export with links into
-/// the version tree made relative, so the same page in two trees reads the same. The indexer turns the Markdown into plain text.
+/// What search reads of a page: the plain-text title and description of its front matter, and its Markdown export as readers get it.
+/// The indexer turns the Markdown into plain text.
 /// </summary>
 public sealed record ApiPageSearch(string Title, string Description, string Markdown);

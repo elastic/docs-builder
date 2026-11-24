@@ -20,7 +20,7 @@ body:
 
 `admin`
 
-- [Get the status]({api-root}/operation/operation-status): `GET` `/_status`
+- [Get the status](/docs/api/elasticsearch/operation/operation-status): `GET` `/_status`
 
 
 /docs/api/elasticsearch/group/endpoint-core [9, 8] page: True, sitemap only: False, hidden: False, dated: True
@@ -39,7 +39,7 @@ Endpoints every client uses, starting with `<ping>`.
 
 Send a `<ping>` before anything else.
 
-- [Ping]({api-root}/operation/operation-ping): `GET` `/ping`
+- [Ping](/docs/api/elasticsearch/operation/operation-ping): `GET` `/ping`
 
 
 /docs/api/elasticsearch/servers [9, 8] page: False, sitemap only: True, hidden: True, dated: True
