@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using System.Net.Http.Headers;
 using Actions.Core.Services;
 using Elastic.Changelog.Bundling;
@@ -12,6 +13,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Configuration.ReleaseSchedule;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -43,8 +45,15 @@ internal sealed class PreviewReleaseCommands(
 	/// <para>
 	/// Each serverless service (Kibana, Elasticsearch, and the Elastic Cloud Hosted <c>frontend-adminconsole</c>) is bundled twice,
 	/// as the commits since the version in production: up to the version on its staging slice (<c>staging</c>), and up to the head
-	/// of its base branch (<c>head</c>). A release without changes has no bundle. The bundles are written to the folder of the
+	/// of its base branch (<c>edge</c>). A release without changes has no bundle. The bundles are written to the folder of the
 	/// product of the service: <c>cloud-serverless</c> for Kibana and Elasticsearch, <c>cloud-hosted</c> for the hosted service.
+	/// </para>
+	/// <para>
+	/// A pull request that lacks a product or area label that the repository requires is bundled anyway, under the product of the bundle
+	/// profile, and not an error. It is listed, with the labels to add, in <c>_diagnostics/preview-problems.json</c> in the output
+	/// folder, which <c>release preview build</c> turns into a diagnostics page. So is a pull request without a type label.
+	/// A pull request of a private repository is listed by repository and number only.
+	/// A run limited by <c>--products</c> or <c>--services</c> replaces the problems of the bundles it refreshed, and keeps the rest.
 	/// </para>
 	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the repositories of the services.</para>
 	/// </remarks>
@@ -73,7 +82,13 @@ internal sealed class PreviewReleaseCommands(
 			return 1;
 
 		var rootOutput = outputDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles"));
-		var dra = await Unified.Bundle("preview", rootOutput, changelogConfigs, products, strict, cacheDir, noCache, ctx);
+		var problems = new PreviewProblemLog();
+		var dra = await Unified.BundleAsync(
+			"preview",
+			new UnifiedBundleOptions(rootOutput, changelogConfigs, products, strict, cacheDir, noCache),
+			problems,
+			ctx
+		);
 		if (dra != 0)
 			return dra;
 
@@ -92,20 +107,39 @@ internal sealed class PreviewReleaseCommands(
 		var bundler = new ServerlessBundler(logFactory, collector, configurationContext, http, cache);
 		foreach (var service in selected)
 		{
-			if (!await BundleServiceAsync(bundler, service, rootOutput, ctx))
+			if (!await BundleServiceAsync(bundler, service, rootOutput, problems, ctx))
 				return 1;
 			if (cache is not null)
 				await cache.SaveAsync(ctx);
 		}
 
+		// Only now, when every service succeeded: the services this run did not refresh may still hold a bundle of the release that was
+		// called head, and the site would publish it next to Edge. A run that failed leaves the last good bundles where they were.
+		ServerlessPreviewBundles.RemoveLegacy(rootOutput, _logger);
+
+		// What the site lists on its diagnostics page. Written even when empty, so the page of an earlier run does not stay.
+		var allowRepos = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assemblyConfiguration);
+		var fileSystem = new FileSystem();
+		var fresh = problems.ToProblems(allowRepos);
+		var written = PartialRun(products, services) && PreviewProblemsFile.TryRead(fileSystem, rootOutput.FullName, out var existing)
+			? PreviewProblemMerge.Merge(existing, fresh, RefreshedDraProducts(products), RefreshedRepositories(selected))
+			: fresh;
+		PreviewProblemsFile.Write(fileSystem, rootOutput.FullName, written);
+		_logger.LogInformation(
+			"{Count} pull request(s) have a label missing in this run. The diagnostics page lists them.",
+			problems.PullRequestCount
+		);
 		return 0;
 	}
 
 	/// <summary>Build the preview site from the bundles that <c>release preview bundle</c> wrote.</summary>
 	/// <remarks>
-	/// The site has a page per version for every DRA product, and the <c>staging</c> and <c>head</c> pages of the serverless products.
+	/// The site has a page per version for every DRA product, and the <c>staging</c> and <c>edge</c> pages of the serverless products.
 	/// A product without bundles is left out of the site, and the build fails only when no product has any bundle.
-	/// The site is built from the bundles on disk: the release schedule is not read.
+	/// The site is built from the bundles on disk: the release schedule is not read. A serverless release has no version number, as it is named by the day it ships,
+	/// so its page says what it would be named if it shipped on the day of the build. When the folder has the problems file of
+	/// <c>release preview bundle</c>, the site also has a diagnostics page. It lists the pull requests
+	/// that lack a label, or says that none does. Without the file, the folder was not checked and the site has no such page.
 	/// Bundles are scrubbed like the ones that are published: a pull request or issue reference to a repository that
 	/// <c>assembler.yml</c> marks private is removed from the entries and from their text. Other links, such as to a repository, a commit
 	/// or a comparison, are not recognized and stay as written, as they do in publication.
@@ -128,7 +162,14 @@ internal sealed class PreviewReleaseCommands(
 		var scrubber = new ChangelogContentScrubber(logFactory, LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assemblyConfiguration));
 		return await Unified.BuildSiteAsync(
 			null,
-			new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl),
+			new UnifiedSiteOptions(
+				bundlesDir,
+				output,
+				pathPrefix,
+				canonicalBaseUrl,
+				ShowDiagnostics: true,
+				PreviewDate: DateOnly.FromDateTime(DateTime.UtcNow)
+			),
 			serverlessProducts,
 			async (product, fileName, content, token) => (await scrubber.ScrubAsync(
 				$"{ChangelogKeys.BundlePrefix}{product}/{fileName}",
@@ -138,6 +179,27 @@ internal sealed class PreviewReleaseCommands(
 			ctx
 		);
 	}
+
+	// A run limited to some products or services leaves the other bundles, and so their problems, where they are.
+	private static bool PartialRun(string[]? products, string[]? services) => products is { Length: > 0 } || services is { Length: > 0 };
+
+	private IReadOnlyList<string> RefreshedDraProducts(string[]? products) =>
+		[
+			.. UnifiedBundlePlanner
+				.FilterProducts(
+					UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
+					products
+				)
+				.Selected
+				.Select(p => p.Id)
+		];
+
+	private static IReadOnlyList<(string Product, string Repo)> RefreshedRepositories(IReadOnlyList<ServerlessService> services) =>
+		[
+			.. services.SelectMany(
+				svc => new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).Select(repo => (svc.Product, repo))
+			)
+		];
 
 	private IReadOnlyList<ServerlessService>? SelectServices(string[]? requested)
 	{
@@ -161,6 +223,7 @@ internal sealed class PreviewReleaseCommands(
 		ServerlessBundler bundler,
 		ServerlessService svc,
 		DirectoryInfo rootOutput,
+		PreviewProblemLog problems,
 		CancellationToken ctx
 	)
 	{
@@ -188,7 +251,7 @@ internal sealed class PreviewReleaseCommands(
 		}
 
 		// The bundles of a run are written aside and replace the earlier ones only when every range has finished. A failed
-		// comparison then leaves the last good bundles in place, and not a Staging bundle next to a missing HEAD one.
+		// comparison then leaves the last good bundles in place, and not a Staging bundle next to a missing Edge one.
 		var pending = new DirectoryInfo(Path.Combine(rootOutput.FullName, "preview-pending", $"{svc.Id}-{Guid.NewGuid():N}"));
 		_ = Directory.CreateDirectory(pending.FullName);
 		try
@@ -204,6 +267,7 @@ internal sealed class PreviewReleaseCommands(
 				);
 				var request = new ServerlessBundleRequest(svc, target.StartRef, target.EndRef, target.Label, pending)
 				{
+					Problems = problems,
 					OnEmptyRange =
 						() => _logger.LogInformation(
 							"A repository of '{Service}' has no release notes between {Start} and {End} for {Label}. Another repository of the service may still have some.",

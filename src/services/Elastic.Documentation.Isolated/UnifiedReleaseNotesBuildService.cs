@@ -44,6 +44,18 @@ public record UnifiedReleaseNotesBuildOptions
 	/// </summary>
 	public Func<string, string, string, Cancel, Task<string>>? ScrubBundle { get; init; }
 
+	/// <summary>
+	/// Add the diagnostics page when the bundles folder has the problems file of <c>release preview bundle</c>. Off by default: the
+	/// file names pull requests of private repositories, and a folder reused by another command must not put them on its site.
+	/// </summary>
+	public bool ShowDiagnostics { get; init; }
+
+	/// <summary>
+	/// The day the site is built, for the preview releases of the serverless products. They have no version number: a release is named
+	/// by the day it ships, so the page says what the name would be if it shipped today. Left out when <c>null</c>.
+	/// </summary>
+	public DateOnly? PreviewDate { get; init; }
+
 	/// <summary>URL path prefix prepended to every generated link.</summary>
 	public string? PathPrefix { get; init; }
 
@@ -98,7 +110,10 @@ public class UnifiedReleaseNotesBuildService(
 		products = [.. bundles.Select(b => b.Product)];
 
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "unified-release-notes", "docs");
-		var mockFs = CreateVirtualDocset(docsRoot, bundles);
+		IReadOnlyList<PreviewProblem> problems = [];
+		var checkedForProblems = options.ShowDiagnostics
+			&& PreviewProblemsFile.TryRead(realFs, options.BundlesDirectory.FullName, out problems);
+		var mockFs = CreateVirtualDocset(docsRoot, bundles, checkedForProblems ? problems : null, options.PreviewDate);
 		PrepareOutput(realFs, options.Output.FullName);
 
 		var docFs = DocumentationFileSystem.Resolve(
@@ -204,11 +219,20 @@ public class UnifiedReleaseNotesBuildService(
 	private static IReadOnlyList<string> NewestFirst(IEnumerable<string> versions) =>
 		[.. versions.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(VersionOrDate.Parse)];
 
-	private static MockFileSystem CreateVirtualDocset(string docsRoot, IReadOnlyList<ProductBundles> bundles)
+	private static MockFileSystem CreateVirtualDocset(
+		string docsRoot,
+		IReadOnlyList<ProductBundles> bundles,
+		IReadOnlyList<PreviewProblem>? problems,
+		DateOnly? previewDate
+	)
 	{
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = docsRoot, CreateDefaultTempDir = false });
 
-		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate([.. bundles.Select(b => b.Versions)]))
+		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate(
+			[.. bundles.Select(b => b.Versions)],
+			problems,
+			previewDate
+		))
 			mockFs.AddFile(mockFs.Path.Join(docsRoot, relativePath), new MockFileData(content));
 
 		foreach (var (productVersions, files) in bundles)

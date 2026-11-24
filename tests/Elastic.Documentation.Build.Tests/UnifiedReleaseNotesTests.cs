@@ -146,7 +146,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 	private static IReadOnlyDictionary<string, string> GeneratePreviewFiles() =>
 		UnifiedReleaseNotesDocset.Generate([
 			new ProductVersions(Products[0], ["9.6.0"]),
-			new ProductVersions(Serverless, ["staging", "head"])
+			new ProductVersions(Serverless, ["staging", "edge"])
 		]);
 
 	[Test]
@@ -183,7 +183,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			## Versions
 
 			- [Staging](staging.md)
-			- [HEAD](head.md)
+			- [Edge](edge.md)
 			"""
 			);
 		files["cloud-serverless/staging.md"]
@@ -200,6 +200,8 @@ public class UnifiedReleaseNotesTests : IDisposable
 			This is a preview of an unreleased version. The release notes can change until the version ships.
 			:::
 
+			These are the changes running on the staging environment that are not in production yet. They are next to be released.
+
 			:::{changelog} /changelog/bundles/cloud-serverless
 			:version: staging
 			:highlights:
@@ -207,7 +209,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			:::
 			"""
 			);
-		files["cloud-serverless/head/known-issues.md"]
+		files["cloud-serverless/edge/known-issues.md"]
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -215,14 +217,14 @@ public class UnifiedReleaseNotesTests : IDisposable
 			navigation_title: Known issues
 			---
 
-			# Elastic Cloud Serverless HEAD known issues
+			# Elastic Cloud Serverless Edge known issues
 
 			:::{warning}
 			This is a preview of an unreleased version. The release notes can change until the version ships.
 			:::
 
 			:::{changelog} /changelog/bundles/cloud-serverless
-			:version: head
+			:version: edge
 			:type: known-issue
 			:subsections:
 			:::
@@ -239,13 +241,92 @@ public class UnifiedReleaseNotesTests : IDisposable
 			      - file: staging/known-issues.md
 			      - file: staging/breaking-changes.md
 			      - file: staging/deprecations.md
-			  - file: head.md
+			  - file: edge.md
 			    children:
-			      - file: head/known-issues.md
-			      - file: head/breaking-changes.md
-			      - file: head/deprecations.md
+			      - file: edge/known-issues.md
+			      - file: edge/breaking-changes.md
+			      - file: edge/deprecations.md
 			"""
 			);
+	}
+
+	[Test]
+	public void Generate_PreviewLabelsWithADate_ExplainEachReleaseAndNameTheVersionItWouldGetToday()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Products[0], ["9.5.0"]), new ProductVersions(Serverless, ["staging", "edge"])],
+			null,
+			new DateOnly(2026, 11, 24)
+		);
+
+		files["cloud-serverless/staging.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Staging
+			---
+
+			# Elastic Cloud Serverless Staging
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			These are the changes running on the staging environment that are not in production yet. They are next to be released. If released today, this release would be dated **2026-11-24**.
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: staging
+			:highlights:
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/edge.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Edge
+			---
+
+			# Elastic Cloud Serverless Edge
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			These are all the changes merged to the default branch that are not in production yet. If released today, this release would be dated **2026-11-24**.
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: edge
+			:highlights:
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/index.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Elastic Cloud Serverless
+			---
+
+			# Elastic Cloud Serverless release notes
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			## Versions
+
+			- [Staging](staging.md), dated 2026-11-24 if released today
+			- [Edge](edge.md), dated 2026-11-24 if released today
+			"""
+			);
+		files["kibana/9.5.0.md"].Should().NotContain("If released today", "a version is its own name");
+		files["kibana/index.md"].Should().NotContain("if released today");
 	}
 
 	[Test]
@@ -385,7 +466,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			"staging",
 			"Elasticsearch staging change"
 		);
-		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-head.yaml", "head", "Kibana head change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-edge.yaml", "edge", "Kibana edge change");
 		var collector = new DiagnosticsCollector([]);
 		var options = Options("9.5.0") with { AdditionalProductIds = ["cloud-serverless"] };
 
@@ -396,12 +477,60 @@ public class UnifiedReleaseNotesTests : IDisposable
 		collector.Warnings.Should().Be(0);
 		var site = _fileSystem.Path.Join(_temp.FullName, "site");
 		var staging = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "staging", "index.html"));
-		staging.Should().Contain("Kibana staging change").And.Contain("Elasticsearch staging change").And.NotContain("Kibana head change");
-		var head = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "head", "index.html"));
-		head.Should().Contain("Kibana head change").And.NotContain("staging change");
+		staging.Should().Contain("Kibana staging change").And.Contain("Elasticsearch staging change").And.NotContain("Kibana edge change");
+		var head = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "edge", "index.html"));
+		head.Should().Contain("Kibana edge change").And.NotContain("staging change");
 		var index = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "index.html"));
-		index.IndexOf("Staging", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("HEAD", StringComparison.Ordinal));
+		index.IndexOf("Staging", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("Edge", StringComparison.Ordinal));
 		_fileSystem.File.Exists(_fileSystem.Path.Join(site, "kibana", "9.5.0", "index.html")).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task Build_WithAPreviewDate_ThePagesOfThePreviewReleasesSayWhatTheyWouldBeNamedToday()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-edge.yaml", "edge", "Kibana edge change");
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { AdditionalProductIds = ["cloud-serverless"], PreviewDate = new DateOnly(2026, 11, 24) };
+
+		var succeeded = await Service(Serverless).Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		var site = _fileSystem.Path.Join(_temp.FullName, "site");
+		foreach (var release in new[] { "staging", "edge" })
+			_fileSystem
+				.File
+				.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", release, "index.html"))
+				.Should()
+				.Contain("If released today, this release would be dated")
+				.And
+				.Contain("2026-11-24");
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "index.html"))
+			.Should()
+			.Contain("dated 2026-11-24 if released today");
+		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "kibana", "9.5.0", "index.html")).Should().NotContain("If released today");
+	}
+
+	[Test]
+	public async Task Build_WithoutAPreviewDate_ThePreviewReleasesSayWhatTheyAreButNotWhenTheyWouldShip()
+	{
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		var collector = new DiagnosticsCollector([]);
+		var options = Options() with { AdditionalProductIds = ["cloud-serverless"] };
+
+		var succeeded = await Service(Serverless).Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "cloud-serverless", "staging", "index.html"))
+			.Should()
+			.Contain("running on the staging environment")
+			.And
+			.NotContain("If released today");
 	}
 
 	[Test]
@@ -491,6 +620,269 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		await act.Should().ThrowAsync<InvalidOperationException>();
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "kibana")).Should().BeFalse();
+	}
+
+	private static readonly Product Hosted = CreateProduct("cloud-hosted", "Elastic Cloud Hosted", ReleaseNotesPath.OnRelease);
+
+	private static readonly PreviewProblem[] DiagnosticsProblems =
+	[
+		new()
+		{
+			Product = "cloud-hosted",
+			Release = "edge",
+			Kind = PreviewProblemKind.MissingProductLabel,
+			Owner = "elastic",
+			Repo = "private-example",
+			Number = 1048,
+			Labels = "@Product:ECE, @Product:ECH"
+		},
+		new()
+		{
+			Product = "cloud-hosted",
+			Release = "edge",
+			Kind = PreviewProblemKind.MissingTypeLabel,
+			Owner = "elastic",
+			Repo = "private-example",
+			Number = 1081
+		},
+		new()
+		{
+			Product = "kibana",
+			Release = "9.5.0",
+			Kind = PreviewProblemKind.MissingTypeLabel,
+			Owner = "elastic",
+			Repo = "kibana",
+			Number = 7,
+			Url = "https://github.com/elastic/kibana/pull/7",
+			Title = "Fix [a link](https://evil.example) and *bold* | a pipe and x^2^",
+			Labels = ">bug, >enhancement"
+		}
+	];
+
+	[Test]
+	public void Generate_WithProblems_ListsThemByProductReleaseAndKind()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Products[0], ["9.5.0"]), new ProductVersions(Hosted, ["edge"])],
+			DiagnosticsProblems
+		);
+
+		files["diagnostics.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Diagnostics
+			---
+
+			# Release notes diagnostics
+
+			This page lists the pull requests whose release notes end up in the wrong place because a label is missing.
+			A pull request without a product label may show under the wrong product. One without an area label has no area.
+			One without a type label shows under Other changes. Add the label to the pull request, and the next hourly rebuild of this site picks it up.
+
+			3 pull requests lack a label. They are listed below, by product and release.
+
+			:::{note}
+			A pull request of a private repository is named by repository and number, without a link or a title.
+			:::
+
+			## Elastic Cloud Hosted
+
+			### Elastic Cloud Hosted Edge
+
+			:::{dropdown} No product label (1)
+			:open:
+
+			The release note shows under the product of its bundle, which may not be its product.
+
+			Add one of these labels: `@Product:ECE`, `@Product:ECH`.
+
+			- `elastic/private-example#1048`
+
+			:::
+
+			:::{dropdown} No type label (1)
+
+			The release note shows under Other changes.
+
+			- `elastic/private-example#1081`
+
+			:::
+
+			## Kibana
+
+			### Kibana 9.5.0
+
+			:::{dropdown} No type label (1)
+
+			The release note shows under Other changes.
+
+			Add one of these labels: `>bug`, `>enhancement`.
+
+			- [elastic/kibana\#7](https://github.com/elastic/kibana/pull/7) Fix \[a link\]\(https\://evil.example\) and \*bold\* \| a pipe and x\^2\^
+
+			:::
+			"""
+			);
+	}
+
+	[Test]
+	public void Generate_TheDiagnosticsPage_UsesLineFeedsOnEveryPlatform()
+	{
+		var withProblems = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Products[0], ["9.5.0"])],
+			DiagnosticsProblems
+		)["diagnostics.md"];
+		var withoutProblems = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])], [])["diagnostics.md"];
+
+		withProblems.Should().NotContain("\r");
+		withoutProblems.Should().NotContain("\r");
+	}
+
+	[Test]
+	public void Generate_WithProblems_AddsTheDiagnosticsPageToTheTocAndTheIndex()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])], DiagnosticsProblems);
+
+		files["docset.yml"].Should().Contain("  - file: index.md\n  - file: diagnostics.md\n  - toc: kibana");
+		files["index.md"].Should().Contain("## Diagnostics").And.Contain("(diagnostics.md)");
+	}
+
+	[Test]
+	public void Generate_WithoutProblems_HasNoDiagnosticsPage()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])]);
+
+		files.Should().NotContainKey("diagnostics.md");
+		files["docset.yml"].Should().NotContain("diagnostics");
+		files["index.md"].Should().NotContain("Diagnostics");
+	}
+
+	[Test]
+	public void Generate_WithNoProblemsFound_HasAPageThatSaysWhatItIsForAndThatAllIsWell()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])], []);
+
+		files["diagnostics.md"]
+			.Should()
+			.Contain("This page lists the pull requests whose release notes end up in the wrong place because a label is missing.")
+			.And
+			.Contain("**No pull request lacks a label right now.** There is nothing to fix.")
+			.And
+			.NotContain("## ");
+		files["docset.yml"].Should().Contain("  - file: diagnostics.md");
+		files["index.md"].Should().Contain("## Diagnostics").And.Contain("No pull request lacks a label right now.");
+	}
+
+	[Test]
+	public async Task Build_WithAProblemsFileThatFoundNothing_RendersAPageThatSaysSo()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), []);
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(
+			collector,
+			Options("9.5.0") with { ShowDiagnostics = true },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "diagnostics", "index.html"))
+			.Should()
+			.Contain("No pull request lacks a label right now.")
+			.And
+			.Contain("end up in the wrong place");
+	}
+
+	[Test]
+	public async Task Build_WithAProblemsFile_RendersTheDiagnosticsPageAndLinksOnlyPublicPullRequests()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), DiagnosticsProblems);
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service(Hosted).Build(
+			collector,
+			Options("9.5.0") with { ShowDiagnostics = true },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		var site = _fileSystem.Path.Join(_temp.FullName, "site");
+		var page = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "diagnostics", "index.html"));
+		page
+			.Should()
+			.Contain("kibana/pull/7")
+			.And
+			.Contain("elastic/private-example#1048")
+			.And
+			.NotContain("pull/1048")
+			.And
+			.NotContain("href=\"https://evil.example");
+		page.Should().Contain("a pipe", "the title is text, so the pipe does not end the line").And.Contain("@Product:ECH");
+		page.Should().Contain("x^2^", "a caret is text, not superscript").And.NotContain("<sup>");
+		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "index.html")).Should().Contain("diagnostics");
+	}
+
+	[Test]
+	public async Task Build_WithAProblemsFileButDiagnosticsNotRequested_LeavesThePrivatePullRequestsOffTheSite()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), DiagnosticsProblems);
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service(Hosted).Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "diagnostics")).Should().BeFalse();
+		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "index.html")).Should().NotContain("iagnostics");
+	}
+
+	[Test]
+	public void Generate_ProblemsOfSeveralRepositoriesInOneRelease_EachRepositoryNamesItsOwnLabels()
+	{
+		PreviewProblem Problem(string repo, int number, string labels) =>
+			new()
+			{
+				Product = "cloud-serverless",
+				Release = "edge",
+				Kind = PreviewProblemKind.MissingAreaLabel,
+				Owner = "elastic",
+				Repo = repo,
+				Number = number,
+				Url = $"https://github.com/elastic/{repo}/pull/{number}",
+				Title = $"Change {number}",
+				Labels = labels
+			};
+
+		var files = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Serverless, ["edge"])],
+			[Problem("kibana", 1, ":Search"), Problem("elasticsearch", 2, ":Analytics, :Ingest")]
+		);
+
+		var page = files["diagnostics.md"].ReplaceLineEndings("\n");
+		page.Should().Contain(
+			"**elastic/elasticsearch**\n\nAdd one of these labels: `:Analytics`, `:Ingest`.\n\n- [elastic/elasticsearch\\#2]"
+		);
+		page.Should().Contain("**elastic/kibana**\n\nAdd one of these labels: `:Search`.\n\n- [elastic/kibana\\#1]");
+	}
+
+	[Test]
+	public async Task Build_WithoutAProblemsFile_HasNoDiagnosticsPage()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "diagnostics")).Should().BeFalse();
 	}
 
 	[Test]

@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.ReleaseSchedule;
 
 namespace Elastic.Documentation.Isolated;
@@ -54,7 +56,7 @@ public static class UnifiedReleaseNotesDocset
 	public static string VersionTitle(string version) => version switch
 	{
 		"staging" => "Staging",
-		"head" => "HEAD",
+		"edge" => "Edge",
 		_ => version
 	};
 
@@ -62,22 +64,30 @@ public static class UnifiedReleaseNotesDocset
 	public static string BundlesPath(string productId) => $"{BundlesFolder}/{productId}";
 
 	/// <summary>Generates every file of the docset, keyed by its path relative to the docset root.</summary>
-	public static IReadOnlyDictionary<string, string> Generate(IReadOnlyList<ProductVersions> products)
+	public static IReadOnlyDictionary<string, string> Generate(
+		IReadOnlyList<ProductVersions> products,
+		IReadOnlyList<PreviewProblem>? problems = null,
+		DateOnly? previewDate = null
+	)
 	{
 		var files = new Dictionary<string, string>(StringComparer.Ordinal)
 		{
-			["docset.yml"] = "project: unified-release-notes\n" + GenerateToc(products),
-			["index.md"] = GenerateRootIndex(products)
+			["docset.yml"] = "project: unified-release-notes\n" + GenerateToc(products, problems is not null),
+			["index.md"] = GenerateRootIndex(products, problems?.Count)
 		};
+
+		// A page that checked and found nothing is still a page: it says what it is for, and that all is well.
+		if (problems is not null)
+			files[UnifiedReleaseNotesDiagnosticsPage.FileName] = UnifiedReleaseNotesDiagnosticsPage.Generate(products, problems);
 
 		foreach (var (product, versions) in products)
 		{
 			var folder = product.Id;
 			files[$"{folder}/toc.yml"] = GenerateProductToc(versions);
-			files[$"{folder}/index.md"] = GenerateProductIndex(product, versions);
+			files[$"{folder}/index.md"] = GenerateProductIndex(product, versions, previewDate);
 			foreach (var version in versions)
 			{
-				files[$"{folder}/{version}.md"] = GenerateVersionPage(product, version);
+				files[$"{folder}/{version}.md"] = GenerateVersionPage(product, version, previewDate);
 				foreach (var page in Pages)
 					files[$"{folder}/{version}/{page.FileName}"] = GenerateVersionSectionPage(product, version, page);
 			}
@@ -86,9 +96,11 @@ public static class UnifiedReleaseNotesDocset
 		return files;
 	}
 
-	private static string GenerateToc(IReadOnlyList<ProductVersions> products)
+	private static string GenerateToc(IReadOnlyList<ProductVersions> products, bool hasDiagnostics)
 	{
 		var lines = new List<string> { "toc:", "  - file: index.md" };
+		if (hasDiagnostics)
+			lines.Add($"  - file: {UnifiedReleaseNotesDiagnosticsPage.FileName}");
 		lines.AddRange(products.Select(p => $"  - toc: {p.Product.Id}"));
 		return string.Join('\n', lines) + "\n";
 	}
@@ -106,7 +118,7 @@ public static class UnifiedReleaseNotesDocset
 		return string.Join('\n', lines) + "\n";
 	}
 
-	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products)
+	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products, int? problemCount)
 	{
 		var lines = new List<string>
 		{
@@ -126,6 +138,15 @@ public static class UnifiedReleaseNotesDocset
 			""
 		};
 		lines.AddRange(products.Select(p => $"- [{p.Product.DisplayName}]({p.Product.Id}/index.md)"));
+		if (problemCount is { } count)
+			lines.AddRange([
+				"",
+				"## Diagnostics",
+				"",
+				count == 0
+					? $"No pull request lacks a label right now. [See what the diagnostics page checks]({UnifiedReleaseNotesDiagnosticsPage.FileName})."
+					: $"Some pull requests lack a label that puts their release note in the right place. [See which and what to add]({UnifiedReleaseNotesDiagnosticsPage.FileName})."
+			]);
 		return string.Join('\n', lines) + "\n";
 	}
 
@@ -133,11 +154,11 @@ public static class UnifiedReleaseNotesDocset
 		products.Any(p => p.Product.Features.ReleaseNotes != ReleaseNotesPath.DailyReleasableArtifacts)
 			? "This site previews release notes for Elastic products that publish through the DRA (Daily Releasable Artifacts) pipeline, "
 				+ "and for Elastic Cloud Serverless and Elastic Cloud Hosted. A serverless or hosted release is previewed as "
-				+ "**Staging**, the changes that run on staging and are not in production yet, and **HEAD**, everything merged "
-				+ "that is not in production yet."
+				+ "**Staging**, the changes running on the staging environment that are not in production yet, and **Edge**, everything "
+				+ "merged to the default branch that is not in production yet. Neither has a version number: a release is named by the day it ships."
 			: "This site previews release notes for Elastic products that publish through the DRA (Daily Releasable Artifacts) pipeline.";
 
-	private static string GenerateProductIndex(Product product, IReadOnlyList<string> versions) =>
+	private static string GenerateProductIndex(Product product, IReadOnlyList<string> versions, DateOnly? previewDate) =>
 		string.Join(
 			'\n',
 			new[]
@@ -152,26 +173,51 @@ public static class UnifiedReleaseNotesDocset
 				"",
 				"## Versions",
 				""
-			}.Concat(versions.Select(v => $"- [{VersionTitle(v)}]({v}.md)")).Append("")
+			}.Concat(versions.Select(v => $"- [{VersionTitle(v)}]({v}.md){DatedIfShippedToday(v, previewDate)}")).Append("")
 		);
 
-	private static string GenerateVersionPage(Product product, string version) =>
+	private static string GenerateVersionPage(Product product, string version, DateOnly? previewDate) =>
 		string.Join(
 			'\n',
-			"---",
-			$"navigation_title: {VersionTitle(version)}",
-			"---",
-			"",
-			$"# {product.DisplayName} {VersionTitle(version)}",
-			"",
-			UnreleasedNotice,
-			"",
-			":::{changelog} /" + BundlesPath(product.Id),
-			$":version: {version}",
-			VersionOptions,
-			":::",
-			""
+			new[]
+			{
+				"---",
+				$"navigation_title: {VersionTitle(version)}",
+				"---",
+				"",
+				$"# {product.DisplayName} {VersionTitle(version)}",
+				"",
+				UnreleasedNotice,
+				""
+			}.Concat(PreviewDescription(version, previewDate) is { } description ? [description, ""] : []).Concat([
+				":::{changelog} /" + BundlesPath(product.Id),
+				$":version: {version}",
+				VersionOptions,
+				":::",
+				""
+			])
 		);
+
+	/// <summary>
+	/// What a preview release of a serverless product is, in words a visitor needs, and the version it would get if it shipped today: a
+	/// serverless release is named by the day it ships. <c>null</c> for a version, which is its own explanation.
+	/// </summary>
+	private static string? PreviewDescription(string version, DateOnly? today)
+	{
+		var what = version switch
+		{
+			"staging" =>
+				"These are the changes running on the staging environment that are not in production yet. They are next to be released.",
+			"edge" => "These are all the changes merged to the default branch that are not in production yet.",
+			_ => null
+		};
+		return what is null || today is not { } date ? what : $"{what} If released today, this release would be dated **{Format(date)}**.";
+	}
+
+	private static string DatedIfShippedToday(string version, DateOnly? today) =>
+		today is { } date && PreviewDescription(version, null) is not null ? $", dated {Format(date)} if released today" : string.Empty;
+
+	private static string Format(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
 	private static string GenerateVersionSectionPage(
 		Product product,

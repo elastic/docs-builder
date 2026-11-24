@@ -114,11 +114,11 @@ public static partial class ServerlessPromotion
 		)
 	};
 
-	/// <summary>Label of the preview release that ends at the version on the staging slice.</summary>
+	/// <summary>Label of the preview release that ends at the version on the staging slice: what runs on staging and is not in production.</summary>
 	public const string StagingLabel = "staging";
 
-	/// <summary>Label of the preview release that ends at the head of the base branch.</summary>
-	public const string HeadLabel = "head";
+	/// <summary>Label of the preview release that ends at the tip of the base branch: everything merged that is not in production yet.</summary>
+	public const string EdgeLabel = "edge";
 
 	[GeneratedRegex(@"^gitops:\s+(?<slices>\S+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PromotionSlicesRegex();
@@ -156,7 +156,7 @@ public static partial class ServerlessPromotion
 		var ends = new[]
 		{
 			(Label: StagingLabel, End: ParseFinalSliceVersion(versionsYaml, svc.StagingSlice)),
-			(Label: HeadLabel, End: baseBranchHead)
+			(Label: EdgeLabel, End: baseBranchHead)
 		};
 		return [
 			.. ends.Where(e => !string.IsNullOrEmpty(e.End) && !SameRef(start, e.End)).Select(
@@ -173,9 +173,24 @@ public static partial class ServerlessPromotion
 	public static IReadOnlyList<string> PreviewBundleFileNames(ServerlessService svc) =>
 		[
 			.. new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).SelectMany(
-				repo => new[] { StagingLabel, HeadLabel }.Select(label => $"{repo}-{svc.Product}-{label}.yaml")
+				repo => CleanupLabels.Select(label => $"{repo}-{svc.Product}-{label}.yaml")
 			)
 		];
+
+	private static readonly string[] CleanupLabels = [StagingLabel, EdgeLabel];
+
+	/// <summary>
+	/// The bundles an earlier version of the preview wrote for the edge release, which it called <c>head</c>, for every service. A folder
+	/// reused since then still holds them, and the site build would publish them as a release of their own, next to Edge. A run
+	/// removes all of them, also those of a service it does not refresh: a service left out of a partial run has no Edge bundle until
+	/// it is refreshed, and that is better than a second, stale release.
+	/// </summary>
+	public static IReadOnlyList<(string Product, string FileName)> LegacyBundleFileNames() =>
+		[.. Services.Values.SelectMany(svc => LegacyBundleFileNames(svc).Select(name => (svc.Product, name)))];
+
+	/// <summary>The bundles of the release that was called <c>head</c> for one service: one per repository, the service repository and its submodules.</summary>
+	public static IReadOnlyList<string> LegacyBundleFileNames(ServerlessService svc) =>
+		[.. new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).Select(repo => $"{repo}-{svc.Product}-head.yaml")];
 
 	/// <summary>The first 12 characters of a ref, in lower case. It names a promotion in serverless-gitops and in its review pull request.</summary>
 	public static string ShortRef(string gitRef) => (gitRef.Length > 12 ? gitRef[..12] : gitRef).ToLowerInvariant();

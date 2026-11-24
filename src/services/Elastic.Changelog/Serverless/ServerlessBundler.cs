@@ -36,6 +36,9 @@ public sealed record ServerlessBundleRequest(
 	/// <summary>Called for a range with no notes when <see cref="WriteEmptyRange"/> is off. The range is then a success with no bundle, not an error.</summary>
 	public Action? OnEmptyRange { get; init; }
 
+	/// <summary>When set, a pull request without a product or area label is bundled anyway and recorded here, for the preview site to list.</summary>
+	public PreviewProblemLog? Problems { get; init; }
+
 	/// <summary>When set, the short form of this ref ends the bundle file names, so promotions on one day do not share a name.</summary>
 	public string? ShortRefOf { get; init; }
 }
@@ -156,6 +159,10 @@ public sealed class ServerlessBundler(
 				BaseRef = svc.BaseBranch,
 				WriteEmptyRange = request.WriteEmptyRange,
 				OnEmptyRange = request.OnEmptyRange,
+				TolerateMissingLabels = request.Problems is not null,
+				OnPullRequestProblem = request.Problems is null
+					? null
+					: problem => request.Problems.Add(svc.Product, request.BundleVersion, problem),
 				DryRun = request.DryRun,
 				OnBundlePathResolved = path => paths.Add(path)
 			};
