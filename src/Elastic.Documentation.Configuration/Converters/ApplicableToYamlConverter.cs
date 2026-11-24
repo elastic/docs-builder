@@ -140,23 +140,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		dictionary[key] = string.IsNullOrEmpty(val) ? null : val;
 	}
 
-	// TODO: remove once SharpYaml ships a release after 3.17.0 (https://github.com/elastic/docs-eng-team/issues/1236).
-	// SharpYaml 3.17.0 reads `{ self:, ece: ga }` as a key named `self:` (colon kept) when a comma follows the
-	// empty value. YAML defines it as key `self` with no value, so strip the colon or the key is dropped as unknown.
-	private static Dictionary<string, object?> NormalizeEmptyValueKeys(Dictionary<string, object?> dictionary)
+	private ApplicableTo FinalizeApplicableTo(Dictionary<string, object?> dictionary, List<(Severity, string)> diagnostics)
 	{
-		var normalized = new Dictionary<string, object?>(dictionary.Comparer);
-		foreach (var (key, value) in dictionary)
-		{
-			var name = value is null && key.Length > 1 && key.EndsWith(':') ? key[..^1] : key;
-			normalized[name] = value is Dictionary<string, object?> nested ? NormalizeEmptyValueKeys(nested) : value;
-		}
-		return normalized;
-	}
-
-	private ApplicableTo FinalizeApplicableTo(Dictionary<string, object?> rawDictionary, List<(Severity, string)> diagnostics)
-	{
-		var dictionary = NormalizeEmptyValueKeys(rawDictionary);
 		var applicableTo = new ApplicableTo();
 
 		var keys = dictionary.Keys.Select(x => x.Replace('_', '-')).ToArray();
