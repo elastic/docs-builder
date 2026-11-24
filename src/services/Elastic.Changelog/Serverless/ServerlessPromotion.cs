@@ -114,11 +114,11 @@ public static partial class ServerlessPromotion
 		)
 	};
 
-	/// <summary>Label of the preview release that ends at the version on the staging slice.</summary>
+	/// <summary>Label of the preview release that ends at the version on the staging slice: what runs on staging and is not in production.</summary>
 	public const string StagingLabel = "staging";
 
-	/// <summary>Label of the preview release that ends at the head of the base branch.</summary>
-	public const string HeadLabel = "head";
+	/// <summary>Label of the preview release that ends at the tip of the base branch: everything merged that is not in production yet.</summary>
+	public const string EdgeLabel = "edge";
 
 	[GeneratedRegex(@"^gitops:\s+(?<slices>\S+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PromotionSlicesRegex();
@@ -156,7 +156,7 @@ public static partial class ServerlessPromotion
 		var ends = new[]
 		{
 			(Label: StagingLabel, End: ParseFinalSliceVersion(versionsYaml, svc.StagingSlice)),
-			(Label: HeadLabel, End: baseBranchHead)
+			(Label: EdgeLabel, End: baseBranchHead)
 		};
 		return [
 			.. ends.Where(e => !string.IsNullOrEmpty(e.End) && !SameRef(start, e.End)).Select(
@@ -173,7 +173,7 @@ public static partial class ServerlessPromotion
 	public static IReadOnlyList<string> PreviewBundleFileNames(ServerlessService svc) =>
 		[
 			.. new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).SelectMany(
-				repo => new[] { StagingLabel, HeadLabel }.Select(label => $"{repo}-{svc.Product}-{label}.yaml")
+				repo => new[] { StagingLabel, EdgeLabel }.Select(label => $"{repo}-{svc.Product}-{label}.yaml")
 			)
 		];
 

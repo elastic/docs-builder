@@ -47,13 +47,13 @@ public class ServerlessPreviewBundlesTests : IDisposable
 	public void Replace_NewFiles_ReplaceTheOnesOfAnEarlierRun()
 	{
 		Existing("kibana-cloud-serverless-staging.yaml", "old staging");
-		Existing("kibana-cloud-serverless-head.yaml", "old head");
-		var pending = Pending(("kibana-cloud-serverless-staging.yaml", "new staging"), ("kibana-cloud-serverless-head.yaml", "new head"));
+		Existing("kibana-cloud-serverless-edge.yaml", "old edge");
+		var pending = Pending(("kibana-cloud-serverless-staging.yaml", "new staging"), ("kibana-cloud-serverless-edge.yaml", "new edge"));
 
 		ServerlessPreviewBundles.Replace(Kibana, _root, pending, NullLogger.Instance);
 
 		File.ReadAllText(Product("kibana-cloud-serverless-staging.yaml")).Should().Be("new staging");
-		File.ReadAllText(Product("kibana-cloud-serverless-head.yaml")).Should().Be("new head");
+		File.ReadAllText(Product("kibana-cloud-serverless-edge.yaml")).Should().Be("new edge");
 	}
 
 	[Test]
@@ -61,27 +61,27 @@ public class ServerlessPreviewBundlesTests : IDisposable
 	{
 		Existing("kibana-cloud-serverless-staging.yaml", "kibana");
 		Existing("elasticsearch-serverless-cloud-serverless-staging.yaml", "es serverless");
-		Existing("elasticsearch-cloud-serverless-head.yaml", "es");
+		Existing("elasticsearch-cloud-serverless-edge.yaml", "es");
 
 		ServerlessPreviewBundles.Replace(Kibana, _root, null, NullLogger.Instance);
 
-		ProductFiles().Should().Equal("elasticsearch-cloud-serverless-head.yaml", "elasticsearch-serverless-cloud-serverless-staging.yaml");
+		ProductFiles().Should().Equal("elasticsearch-cloud-serverless-edge.yaml", "elasticsearch-serverless-cloud-serverless-staging.yaml");
 	}
 
 	[Test]
 	public void Replace_TwoServicesSharingTheProductFolder_EachKeepsTheBundlesOfTheOther()
 	{
 		Existing("kibana-cloud-serverless-staging.yaml", "kibana staging");
-		Existing("kibana-cloud-serverless-head.yaml", "kibana head");
-		var pending = Pending(("elasticsearch-serverless-cloud-serverless-head.yaml", "es head"));
+		Existing("kibana-cloud-serverless-edge.yaml", "kibana edge");
+		var pending = Pending(("elasticsearch-serverless-cloud-serverless-edge.yaml", "es edge"));
 
 		ServerlessPreviewBundles.Replace(Elasticsearch, _root, pending, NullLogger.Instance);
 
 		ProductFiles()
 			.Should()
 			.Equal(
-				"elasticsearch-serverless-cloud-serverless-head.yaml",
-				"kibana-cloud-serverless-head.yaml",
+				"elasticsearch-serverless-cloud-serverless-edge.yaml",
+				"kibana-cloud-serverless-edge.yaml",
 				"kibana-cloud-serverless-staging.yaml"
 			);
 	}

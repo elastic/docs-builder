@@ -146,7 +146,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 	private static IReadOnlyDictionary<string, string> GeneratePreviewFiles() =>
 		UnifiedReleaseNotesDocset.Generate([
 			new ProductVersions(Products[0], ["9.6.0"]),
-			new ProductVersions(Serverless, ["staging", "head"])
+			new ProductVersions(Serverless, ["staging", "edge"])
 		]);
 
 	[Test]
@@ -183,7 +183,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			## Versions
 
 			- [Staging](staging.md)
-			- [HEAD](head.md)
+			- [Edge](edge.md)
 			"""
 			);
 		files["cloud-serverless/staging.md"]
@@ -200,6 +200,8 @@ public class UnifiedReleaseNotesTests : IDisposable
 			This is a preview of an unreleased version. The release notes can change until the version ships.
 			:::
 
+			These are the changes running on the staging environment that are not in production yet. They are next to be released.
+
 			:::{changelog} /changelog/bundles/cloud-serverless
 			:version: staging
 			:highlights:
@@ -207,7 +209,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			:::
 			"""
 			);
-		files["cloud-serverless/head/known-issues.md"]
+		files["cloud-serverless/edge/known-issues.md"]
 			.Should()
 			.MatchInlineSnapshot(
 				"""
@@ -215,14 +217,14 @@ public class UnifiedReleaseNotesTests : IDisposable
 			navigation_title: Known issues
 			---
 
-			# Elastic Cloud Serverless HEAD known issues
+			# Elastic Cloud Serverless Edge known issues
 
 			:::{warning}
 			This is a preview of an unreleased version. The release notes can change until the version ships.
 			:::
 
 			:::{changelog} /changelog/bundles/cloud-serverless
-			:version: head
+			:version: edge
 			:type: known-issue
 			:subsections:
 			:::
@@ -239,13 +241,92 @@ public class UnifiedReleaseNotesTests : IDisposable
 			      - file: staging/known-issues.md
 			      - file: staging/breaking-changes.md
 			      - file: staging/deprecations.md
-			  - file: head.md
+			  - file: edge.md
 			    children:
-			      - file: head/known-issues.md
-			      - file: head/breaking-changes.md
-			      - file: head/deprecations.md
+			      - file: edge/known-issues.md
+			      - file: edge/breaking-changes.md
+			      - file: edge/deprecations.md
 			"""
 			);
+	}
+
+	[Test]
+	public void Generate_PreviewLabelsWithADate_ExplainEachReleaseAndNameTheVersionItWouldGetToday()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Products[0], ["9.5.0"]), new ProductVersions(Serverless, ["staging", "edge"])],
+			null,
+			new DateOnly(2026, 11, 24)
+		);
+
+		files["cloud-serverless/staging.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Staging
+			---
+
+			# Elastic Cloud Serverless Staging
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			These are the changes running on the staging environment that are not in production yet. They are next to be released. If released today, this release would be dated **2026-11-24**.
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: staging
+			:highlights:
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/edge.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Edge
+			---
+
+			# Elastic Cloud Serverless Edge
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			These are all the changes merged to the main branch that are not in production yet. They include the changes on staging. If released today, this release would be dated **2026-11-24**.
+
+			:::{changelog} /changelog/bundles/cloud-serverless
+			:version: edge
+			:highlights:
+			:subsections:
+			:::
+			"""
+			);
+		files["cloud-serverless/index.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Elastic Cloud Serverless
+			---
+
+			# Elastic Cloud Serverless release notes
+
+			:::{warning}
+			This is a preview of an unreleased version. The release notes can change until the version ships.
+			:::
+
+			## Versions
+
+			- [Staging](staging.md), dated 2026-11-24 if released today
+			- [Edge](edge.md), dated 2026-11-24 if released today
+			"""
+			);
+		files["kibana/9.5.0.md"].Should().NotContain("If released today", "a version is its own name");
+		files["kibana/index.md"].Should().NotContain("if released today");
 	}
 
 	[Test]
@@ -385,7 +466,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			"staging",
 			"Elasticsearch staging change"
 		);
-		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-head.yaml", "head", "Kibana head change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-edge.yaml", "edge", "Kibana edge change");
 		var collector = new DiagnosticsCollector([]);
 		var options = Options("9.5.0") with { AdditionalProductIds = ["cloud-serverless"] };
 
@@ -396,11 +477,11 @@ public class UnifiedReleaseNotesTests : IDisposable
 		collector.Warnings.Should().Be(0);
 		var site = _fileSystem.Path.Join(_temp.FullName, "site");
 		var staging = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "staging", "index.html"));
-		staging.Should().Contain("Kibana staging change").And.Contain("Elasticsearch staging change").And.NotContain("Kibana head change");
-		var head = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "head", "index.html"));
-		head.Should().Contain("Kibana head change").And.NotContain("staging change");
+		staging.Should().Contain("Kibana staging change").And.Contain("Elasticsearch staging change").And.NotContain("Kibana edge change");
+		var head = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "edge", "index.html"));
+		head.Should().Contain("Kibana edge change").And.NotContain("staging change");
 		var index = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "index.html"));
-		index.IndexOf("Staging", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("HEAD", StringComparison.Ordinal));
+		index.IndexOf("Staging", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("Edge", StringComparison.Ordinal));
 		_fileSystem.File.Exists(_fileSystem.Path.Join(site, "kibana", "9.5.0", "index.html")).Should().BeTrue();
 	}
 
@@ -500,7 +581,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 		new()
 		{
 			Product = "cloud-hosted",
-			Release = "head",
+			Release = "edge",
 			Kind = PreviewProblemKind.MissingProductLabel,
 			Owner = "elastic",
 			Repo = "private-example",
@@ -510,7 +591,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 		new()
 		{
 			Product = "cloud-hosted",
-			Release = "head",
+			Release = "edge",
 			Kind = PreviewProblemKind.MissingTypeLabel,
 			Owner = "elastic",
 			Repo = "private-example",
@@ -534,7 +615,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 	public void Generate_WithProblems_ListsThemByProductReleaseAndKind()
 	{
 		var files = UnifiedReleaseNotesDocset.Generate(
-			[new ProductVersions(Products[0], ["9.5.0"]), new ProductVersions(Hosted, ["head"])],
+			[new ProductVersions(Products[0], ["9.5.0"]), new ProductVersions(Hosted, ["edge"])],
 			DiagnosticsProblems
 		);
 
@@ -560,7 +641,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 			## Elastic Cloud Hosted
 
-			### Elastic Cloud Hosted HEAD
+			### Elastic Cloud Hosted Edge
 
 			:::{dropdown} No product label (1)
 			:open:
@@ -709,7 +790,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			new()
 			{
 				Product = "cloud-serverless",
-				Release = "head",
+				Release = "edge",
 				Kind = PreviewProblemKind.MissingAreaLabel,
 				Owner = "elastic",
 				Repo = repo,
@@ -720,7 +801,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			};
 
 		var files = UnifiedReleaseNotesDocset.Generate(
-			[new ProductVersions(Serverless, ["head"])],
+			[new ProductVersions(Serverless, ["edge"])],
 			[Problem("kibana", 1, ":Search"), Problem("elasticsearch", 2, ":Analytics, :Ingest")]
 		);
 

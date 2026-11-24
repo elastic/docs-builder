@@ -24,7 +24,7 @@ public class PreviewProblemLogTests
 	public void ToProblems_PublicRepository_KeepsTheLinkAndTheTitle()
 	{
 		var log = new PreviewProblemLog();
-		log.Add("kibana", "head", Problem("kibana", 7, title: "Public title"));
+		log.Add("kibana", "edge", Problem("kibana", 7, title: "Public title"));
 
 		var problem = log.ToProblems(Allow).Should().ContainSingle().Which;
 
@@ -37,7 +37,7 @@ public class PreviewProblemLogTests
 	public void ToProblems_PrivateRepository_DropsTheLinkAndTheTitle()
 	{
 		var log = new PreviewProblemLog();
-		log.Add("cloud-hosted", "head", Problem("private-example", 1048, title: "Secret title"));
+		log.Add("cloud-hosted", "edge", Problem("private-example", 1048, title: "Secret title"));
 
 		var problem = log.ToProblems(Allow).Should().ContainSingle().Which;
 
@@ -52,7 +52,7 @@ public class PreviewProblemLogTests
 		var log = new PreviewProblemLog();
 		log.Add(
 			"kibana",
-			"head",
+			"edge",
 			new GitRangePrProblem(5, "https://example.com/not-github", "Hidden", PreviewProblemKind.MissingTypeLabel, string.Empty)
 		);
 
@@ -65,7 +65,7 @@ public class PreviewProblemLogTests
 	public void ToProblems_AllowlistIgnoresCase()
 	{
 		var log = new PreviewProblemLog();
-		log.Add("kibana", "head", Problem("kibana", 1));
+		log.Add("kibana", "edge", Problem("kibana", 1));
 
 		log.ToProblems(["Elastic/Kibana"]).Single().Url.Should().NotBeNull();
 	}
@@ -74,10 +74,10 @@ public class PreviewProblemLogTests
 	public void Add_TheSamePullRequestTwiceForARelease_IsRecordedOnceButOtherReleasesAndKindsAreKept()
 	{
 		var log = new PreviewProblemLog();
-		log.Add("kibana", "head", Problem("kibana", 1));
-		log.Add("kibana", "head", Problem("kibana", 1));
+		log.Add("kibana", "edge", Problem("kibana", 1));
+		log.Add("kibana", "edge", Problem("kibana", 1));
 		log.Add("kibana", "staging", Problem("kibana", 1));
-		log.Add("kibana", "head", Problem("kibana", 1, PreviewProblemKind.MissingTypeLabel));
+		log.Add("kibana", "edge", Problem("kibana", 1, PreviewProblemKind.MissingTypeLabel));
 
 		log.Count.Should().Be(3);
 	}
@@ -87,18 +87,18 @@ public class PreviewProblemLogTests
 	{
 		var log = new PreviewProblemLog();
 		log.Add("kibana", "staging", Problem("kibana", 9));
-		log.Add("cloud-hosted", "head", Problem("private-example", 3, PreviewProblemKind.MissingTypeLabel));
-		log.Add("cloud-hosted", "head", Problem("private-example", 2));
-		log.Add("cloud-hosted", "head", Problem("private-example", 1));
+		log.Add("cloud-hosted", "edge", Problem("private-example", 3, PreviewProblemKind.MissingTypeLabel));
+		log.Add("cloud-hosted", "edge", Problem("private-example", 2));
+		log.Add("cloud-hosted", "edge", Problem("private-example", 1));
 
 		log
 			.ToProblems(Allow)
 			.Select(p => (p.Product, p.Release, p.Kind, p.Number))
 			.Should()
 			.Equal(
-				("cloud-hosted", "head", PreviewProblemKind.MissingProductLabel, 1),
-				("cloud-hosted", "head", PreviewProblemKind.MissingProductLabel, 2),
-				("cloud-hosted", "head", PreviewProblemKind.MissingTypeLabel, 3),
+				("cloud-hosted", "edge", PreviewProblemKind.MissingProductLabel, 1),
+				("cloud-hosted", "edge", PreviewProblemKind.MissingProductLabel, 2),
+				("cloud-hosted", "edge", PreviewProblemKind.MissingTypeLabel, 3),
 				("kibana", "staging", PreviewProblemKind.MissingProductLabel, 9)
 			);
 	}
@@ -108,8 +108,8 @@ public class PreviewProblemLogTests
 	{
 		var fileSystem = new MockFileSystem();
 		var log = new PreviewProblemLog();
-		log.Add("kibana", "head", Problem("kibana", 7, title: "Public title"));
-		log.Add("cloud-hosted", "head", Problem("private-example", 1048, title: "Secret title"));
+		log.Add("kibana", "edge", Problem("kibana", 7, title: "Public title"));
+		log.Add("cloud-hosted", "edge", Problem("private-example", 1048, title: "Secret title"));
 		var problems = log.ToProblems(Allow);
 
 		PreviewProblemsFile.Write(fileSystem, "/bundles", problems);

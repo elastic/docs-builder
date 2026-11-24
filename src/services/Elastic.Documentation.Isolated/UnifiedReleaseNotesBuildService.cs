@@ -50,6 +50,12 @@ public record UnifiedReleaseNotesBuildOptions
 	/// </summary>
 	public bool ShowDiagnostics { get; init; }
 
+	/// <summary>
+	/// The day the site is built, for the preview releases of the serverless products. They have no version number: a release is named
+	/// by the day it ships, so the page says what the name would be if it shipped today. Left out when <c>null</c>.
+	/// </summary>
+	public DateOnly? PreviewDate { get; init; }
+
 	/// <summary>URL path prefix prepended to every generated link.</summary>
 	public string? PathPrefix { get; init; }
 
@@ -107,7 +113,7 @@ public class UnifiedReleaseNotesBuildService(
 		IReadOnlyList<PreviewProblem> problems = [];
 		var checkedForProblems = options.ShowDiagnostics
 			&& PreviewProblemsFile.TryRead(realFs, options.BundlesDirectory.FullName, out problems);
-		var mockFs = CreateVirtualDocset(docsRoot, bundles, checkedForProblems ? problems : null);
+		var mockFs = CreateVirtualDocset(docsRoot, bundles, checkedForProblems ? problems : null, options.PreviewDate);
 		PrepareOutput(realFs, options.Output.FullName);
 
 		var docFs = DocumentationFileSystem.Resolve(
@@ -216,12 +222,17 @@ public class UnifiedReleaseNotesBuildService(
 	private static MockFileSystem CreateVirtualDocset(
 		string docsRoot,
 		IReadOnlyList<ProductBundles> bundles,
-		IReadOnlyList<PreviewProblem>? problems
+		IReadOnlyList<PreviewProblem>? problems,
+		DateOnly? previewDate
 	)
 	{
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = docsRoot, CreateDefaultTempDir = false });
 
-		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate([.. bundles.Select(b => b.Versions)], problems))
+		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate(
+			[.. bundles.Select(b => b.Versions)],
+			problems,
+			previewDate
+		))
 			mockFs.AddFile(mockFs.Path.Join(docsRoot, relativePath), new MockFileData(content));
 
 		foreach (var (productVersions, files) in bundles)
