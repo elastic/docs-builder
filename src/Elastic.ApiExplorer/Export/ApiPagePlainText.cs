@@ -78,13 +78,20 @@ internal static class ApiPagePlainText
 		"wbr"
 	);
 
+	private static bool IsBreak(string tag) => TagName(tag).Equals("br", StringComparison.OrdinalIgnoreCase);
+
 	private static bool IsPlaceholder(string tag)
 	{
 		if (tag.StartsWith("<!--", StringComparison.Ordinal) || tag.StartsWith("</", StringComparison.Ordinal))
 			return false;
+		return !MarkupTags.Contains(TagName(tag));
+	}
+
+	private static string TagName(string tag)
+	{
 		var name = tag.AsSpan(1).TrimEnd('>').TrimEnd('/');
 		var end = name.IndexOfAny(' ', '\t', '/');
-		return !MarkupTags.Contains((end < 0 ? name : name[..end]).ToString());
+		return (end < 0 ? name : name[..end]).ToString();
 	}
 
 	private static string HeadingText(HeadingBlock heading)
@@ -100,6 +107,8 @@ internal static class ApiPagePlainText
 				CodeInline code => text.Append(code.Content),
 				HtmlEntityInline entity => text.Append(entity.Transcoded),
 				// The export writes a generated title such as `Access <tenant>` as it is, so a placeholder is visible text.
+				// A line break between words still separates them.
+				HtmlInline html when IsBreak(html.Tag) => text.Append(' '),
 				HtmlInline html when IsPlaceholder(html.Tag) => text.Append(html.Tag),
 				AutolinkInline autolink => text.Append(autolink.Url),
 				LineBreakInline => text.Append(' '),

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
@@ -127,12 +128,20 @@ internal static partial class ApiSeoDescription
 	{
 		var text = ImagePattern().Replace(markdown, "$1");
 		text = LinkPattern().Replace(text, "$1");
+		text = HeadingPattern().Replace(text, string.Empty);
+		// A code span is quoted as written, so `___value___` keeps its underscores. Each one waits in a slot while emphasis is
+		// stripped, so emphasis around it, as in **`max_docs`**, still goes.
+		var codes = new List<string>();
+		text = CodePattern().Replace(text, code =>
+		{
+			codes.Add(code.Groups[1].Value);
+			return $"\u0001{codes.Count - 1}\u0002";
+		});
 		text = BoldStarPattern().Replace(text, "$1");
 		text = BoldUnderscorePattern().Replace(text, "$1");
-		text = CodePattern().Replace(text, "$1");
 		text = ItalicStarPattern().Replace(text, "$1");
 		text = ItalicUnderscorePattern().Replace(text, "$1");
-		text = HeadingPattern().Replace(text, string.Empty);
+		text = CodeSlotPattern().Replace(text, slot => codes[int.Parse(slot.Groups[1].ValueSpan, CultureInfo.InvariantCulture)]);
 		return WhitespacePattern().Replace(text, " ").Trim();
 	}
 
@@ -179,6 +188,9 @@ internal static partial class ApiSeoDescription
 
 	[GeneratedRegex(@"`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodePattern();
+
+	[GeneratedRegex("\u0001(\\d+)\u0002", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex CodeSlotPattern();
 
 	[GeneratedRegex(@"^#{1,6}\s+", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingPattern();

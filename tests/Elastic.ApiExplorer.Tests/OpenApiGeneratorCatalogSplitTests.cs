@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
@@ -406,7 +407,15 @@ public class OpenApiGeneratorCatalogSplitTests
 					Description =
 						"Endpoints every client uses, starting with `<ping>`.\n\n## Connecting\n\nSend a `<ping>` before anything else."
 				},
-				new() { Name = "admin" }
+				// A generated title shows as literal text, tags included.
+				new()
+				{
+					Name = "admin",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("HTTP <code> responses"))
+					}
+				}
 			},
 			Servers = [new OpenApiServer { Url = "https://localhost:9200" }],
 			Components = new OpenApiComponents

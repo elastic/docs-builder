@@ -368,8 +368,10 @@ public class OpenApiGenerator(
 	private static ApiPageSearchText SearchText(string markdown, INavigationItem item, IApiModel page, ApiRenderContext context)
 	{
 		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
-		// The rendered heading is the title, so an authored page found by its H1 matches the title readers see.
-		return ApiPagePlainText.Read(body, item.NavigationTitle, ApiMarkdownFrontMatter.Collect(body, item, context, page).Description);
+		var text = ApiPagePlainText.Read(body, item.NavigationTitle, ApiMarkdownFrontMatter.Collect(body, item, context, page).Description);
+		// An authored page shows its H1, which its navigation title may not match. A generated page shows its model's title as
+		// literal text, which the export writes unescaped, so `HTTP <code> responses` is not read back as Markdown.
+		return item is SimpleMarkdownNavigationItem ? text : text with { Title = item.NavigationTitle };
 	}
 
 	/// <summary>

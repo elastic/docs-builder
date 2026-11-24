@@ -15,6 +15,7 @@ public class ApiPagePlainTextTests
 	[Arguments("# The `<tenant>` parameter", "The <tenant> parameter")]
 	[Arguments("# Access <tenant>", "Access <tenant>")]
 	[Arguments("# Connect <!-- update this example -->", "Connect")]
+	[Arguments("# Snapshot<br>restore", "Snapshot restore")]
 	[Arguments("# A <b>bold</b> <span class=\"x\">move</span>", "A bold move")]
 	[Arguments("# Contact <support@example.com>", "Contact support@example.com")]
 	public void Read_Heading_IsItsVisibleText(string heading, string expected)
@@ -45,6 +46,8 @@ public class ApiPagePlainTextTests
 	[Arguments("Uses `max_docs` and `max_age`.", "Uses max_docs and max_age.")]
 	[Arguments("Uses _either_ value.", "Uses either value.")]
 	[Arguments("Use ___both___ methods.", "Use both methods.")]
+	[Arguments("Use `___value___` as is.", "Use ___value___ as is.")]
+	[Arguments("Use **`max_docs`** here.", "Use max_docs here.")]
 	public void Description_MarkdownOrPlainText_IsPlainText(string description, string expected) =>
 		ApiPagePlainText.Description(description).Should().Be(expected);
 }

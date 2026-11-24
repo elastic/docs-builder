@@ -8,12 +8,12 @@ Authentication
 This API does not declare authentication schemes.
 
 /docs/api/elasticsearch/group/endpoint-admin [9, 8] page: True, sitemap only: False, hidden: False, dated: True
-title: Admin
+title: HTTP <code> responses
 parents: API > Elasticsearch API
-description: Admin endpoints in the elasticsearch API: Get the status.
+description: HTTP <code> responses endpoints in the elasticsearch API: Get the status.
 headings: 
 body:
-Admin
+HTTP  responses
 admin
 Get the status: GET /_status
 
