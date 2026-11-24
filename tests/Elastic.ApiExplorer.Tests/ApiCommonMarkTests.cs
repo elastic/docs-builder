@@ -66,6 +66,10 @@ public class ApiCommonMarkTests
 	[Arguments("See <a href=\"https://example.com\">the docs</a>.", "See the docs.")]
 	[Arguments("Use `<index>` or \\<alias\\>.", "Use <index> or <alias>.")]
 	[Arguments("Uses `max_docs` and **bold** [links](x) &amp; more.", "Uses max_docs and bold links & more.")]
+	// The page renders a description's raw HTML and its sanitizer removes an unknown tag, so a bare placeholder is not shown, and an
+	// image shows as a picture, not as its alt text. Plain text follows the page; a placeholder meant to show goes in a code span.
+	[Arguments("Returns <index> when available.", "Returns when available.")]
+	[Arguments("See ![shard layout](diagram.png).", "See .")]
 	public void ToPlainText_Markdown_IsTheTextThePageShows(string markdown, string expected) =>
 		ApiMarkdown.ToPlainText(markdown).Should().Be(expected);
 
