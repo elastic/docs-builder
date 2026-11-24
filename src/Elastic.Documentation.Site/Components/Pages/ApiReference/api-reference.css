@@ -1641,24 +1641,23 @@ button.response-status-toggle:focus {
 	display: none;
 }
 
-/* Below 30rem the name, required and description tracks alone do not fit, so the list stays and the control goes. */
-@container api-param-section (max-width: 29.99rem) {
+/* Below 32rem the four tracks at their minimums do not fit, so the list stays and the control goes. */
+@container api-param-section (max-width: 31.99rem) {
 	.api-param-layout {
 		display: none;
 	}
 }
 
-@container api-param-section (min-width: 30rem) {
+@container api-param-section (min-width: 32rem) {
 	/* The body is the grid; the head row, the list, each row and each row's dt are subgrids of it, so every cell shares
 	   the same four tracks. The collapsed fallback (display: none) must still win, hence the .expanded qualifier. Only
-	   the name and the required flag are sized to their content: a long type wraps between its constraints, and the
-	   description takes what is left. */
+	   the required flag is sized to its content: a long name breaks where it must, a long type wraps between its
+	   constraints, and the description takes what is left. */
 	.api-param-section.expanded[data-layout='table'] > .api-param-section-body {
 		display: grid;
-		grid-template-columns: max-content minmax(0, auto) max-content minmax(
-				12rem,
-				1fr
-			);
+		grid-template-columns:
+			minmax(8rem, max-content) minmax(5rem, auto)
+			max-content minmax(12rem, 1fr);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md);
 	}
@@ -1771,6 +1770,7 @@ button.response-status-toggle:focus {
 		> dt
 		> code {
 		grid-column: 1;
+		overflow-wrap: anywhere;
 	}
 
 	.api-param-section[data-layout='table']
