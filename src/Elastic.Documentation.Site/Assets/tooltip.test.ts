@@ -377,6 +377,17 @@ describe('tooltips', () => {
         expect(shown()).toBe('*')
     })
 
+    it('shows nothing on a map key row without a path', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-string" aria-label="Link to additional property" data-tooltip="Copy link"></a><code id="pathless-key">property name*</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('pathless-key'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBeNull()
+    })
+
     it('shows nothing on a top-level property name, whose path is its name', async () => {
         document.body.insertAdjacentHTML(
             'beforeend',

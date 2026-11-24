@@ -69,9 +69,10 @@ function propertyPath(name: HTMLElement): string {
     const label = name.previousElementSibling?.getAttribute('aria-label') ?? ''
     if (!label.startsWith(PERMALINK_LABEL_PREFIX)) return ''
     const path = label.slice(PERMALINK_LABEL_PREFIX.length)
-    return path === name.textContent
-        ? ''
-        : path.split('.').map(shownSegment).join('.')
+    // A top-level field's path is its name. A map key row without a path is labelled by its kind alone; with one, it
+    // carries its own data-tooltip.
+    if (path === name.textContent || path === MAP_KEY_LABEL) return ''
+    return path.split('.').map(shownSegment).join('.')
 }
 
 function targetOf(node: EventTarget | null): HTMLElement | null {
