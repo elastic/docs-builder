@@ -35,8 +35,6 @@ public static class SearchResultProcessor
 			.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Where(token => token.Length >= options.MinTokenLength)
 			.Where(token => options.ExcludePattern is null || !options.ExcludePattern.IsMatch(token))
-			// A token is matched against encoded text, so `<tenant>` must be encoded the same way.
-			.Select(token => html ? StringHighlightExtensions.Encode(token) : token)
 			.ToArray();
 
 		string? highlightedTitle = null;
@@ -51,13 +49,14 @@ public static class SearchResultProcessor
 				highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 		}
 
-		var title = Html(highlightedTitle ?? doc.Title, html).HighlightTokens(searchTokens, synonyms, options.WholeWordOnly);
-		var description = Html(!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : doc.Description ?? string.Empty, html)
+		var matching = new TokenMatching(options.WholeWordOnly, Encoded: html);
+		var title = Html(highlightedTitle, doc.Title, html).HighlightTokens(searchTokens, synonyms, matching);
+		var description = Html(!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : null, doc.Description ?? string.Empty, html)
 			.Replace("\r\n", " ")
 			.Replace("\n", " ")
 			.Replace("\r", " ")
 			.Trim(['|', ' '])
-			.HighlightTokens(searchTokens, synonyms, options.WholeWordOnly);
+			.HighlightTokens(searchTokens, synonyms, matching);
 
 		return new SearchResultItem<TDocument>
 		{
@@ -69,7 +68,16 @@ public static class SearchResultProcessor
 		};
 	}
 
-	private static string Html(string text, bool html) => html ? text.EncodeAroundMarks() : text;
+	/// <summary>
+	/// The Elasticsearch fragment when there is one, else the document's own text. As HTML, the fragment is normalized and the
+	/// document text is encoded whole, so a literal <c>&lt;mark&gt;</c> in it stays text.
+	/// </summary>
+	private static string Html(string? highlighted, string text, bool html) => (html, highlighted) switch
+	{
+		(false, _) => highlighted ?? text,
+		(true, { } fragment) => fragment.ReencodeHighlight(),
+		(true, null) => StringHighlightExtensions.Encode(text)
+	};
 
 	private const int MaxMatchedProperties = 3;
 

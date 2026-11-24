@@ -142,7 +142,7 @@ public partial class DefaultSearchService<TDocument>(
 					.Aggregations(agg => agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType))))
 					.Source(sf => sf.Filter(f => f.Includes(AutocompleteSourceIncludes)))
 					.Highlight(
-						h => h.Fields(
+						h => h.Encoder(Elastic.Clients.Elasticsearch.Core.Search.HighlighterEncoder.Html).Fields(
 							f => f.Add(
 								QueryFieldNames.Title,
 								hf => hf
@@ -250,7 +250,7 @@ public partial class DefaultSearchService<TDocument>(
 				if (request.IncludeHighlighting)
 				{
 					_ = s.Highlight(
-						h => h.Fields(
+						h => h.Encoder(Elastic.Clients.Elasticsearch.Core.Search.HighlighterEncoder.Html).Fields(
 							f => f.Add(
 								QueryFieldNames.Title,
 								hf => hf

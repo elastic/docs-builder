@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using System.Text;
 
 namespace Elastic.Documentation.Search.Highlighting;
@@ -22,6 +23,18 @@ public static class StringHighlightExtensions
 		ReadOnlySpan<string> tokens,
 		IReadOnlyDictionary<string, string[]>? synonyms = null,
 		bool wholeWordOnly = false
+	) => text.HighlightTokens(tokens, synonyms, new TokenMatching(wholeWordOnly, Encoded: false));
+
+	/// <summary>
+	/// As <see cref="HighlightTokens(string, ReadOnlySpan{string}, IReadOnlyDictionary{string, string[]}?, bool)"/>. With
+	/// <see cref="TokenMatching.Encoded"/>, <paramref name="text"/> is encoded HTML: synonyms are looked up by the typed token,
+	/// and each candidate is encoded before it is matched.
+	/// </summary>
+	public static string HighlightTokens(
+		this string text,
+		ReadOnlySpan<string> tokens,
+		IReadOnlyDictionary<string, string[]>? synonyms,
+		TokenMatching matching
 	)
 	{
 		if (tokens.Length == 0 || string.IsNullOrEmpty(text))
@@ -34,7 +47,7 @@ public static class StringHighlightExtensions
 			if (string.IsNullOrEmpty(token))
 				continue;
 
-			result = HighlightSingleToken(result, token, wholeWordOnly);
+			result = Mark(result, token, matching);
 
 			if (synonyms == null)
 				continue;
@@ -45,7 +58,7 @@ public static class StringHighlightExtensions
 				{
 					var synonymToHighlight = ExtractSynonymTarget(synonym);
 					if (!string.IsNullOrEmpty(synonymToHighlight))
-						result = HighlightSingleToken(result, synonymToHighlight, wholeWordOnly);
+						result = Mark(result, synonymToHighlight, matching);
 				}
 			}
 
@@ -63,7 +76,7 @@ public static class StringHighlightExtensions
 						&& source.Equals(token, StringComparison.OrdinalIgnoreCase)
 					)
 					{
-						result = HighlightSingleToken(result, target, wholeWordOnly);
+						result = Mark(result, target, matching);
 					}
 				}
 			}
@@ -73,28 +86,37 @@ public static class StringHighlightExtensions
 	}
 
 	/// <summary>
-	/// Encodes <c>&amp;</c>, <c>&lt;</c>, <c>&gt;</c> and <c>"</c> in <paramref name="text"/> and keeps its
-	/// <c>&lt;mark&gt;</c> tags, so literal text such as <c>&lt;tenant&gt;</c> renders as text in a highlighted result.
-	/// Other characters stay as they are, so a token still matches the text it was typed for.
+	/// Normalizes a fragment Elasticsearch highlighted with the HTML encoder: its text is encoded and only its own
+	/// <c>&lt;mark&gt;</c> tags are raw, so a literal <c>&lt;mark&gt;</c> in a document never pairs with one. The text is decoded
+	/// and encoded again with <see cref="Encode"/>, so a token encoded the same way still matches it.
 	/// </summary>
-	public static string EncodeAroundMarks(this string text)
+	public static string ReencodeHighlight(this string fragment)
 	{
-		var sb = new StringBuilder(text.Length + 16);
+		var sb = new StringBuilder(fragment.Length);
 		var pos = 0;
 		while (
-			text.IndexOf(MarkOpen, pos, StringComparison.OrdinalIgnoreCase) is var open and >= 0
-			&& text.IndexOf(MarkClose, open + MarkOpen.Length, StringComparison.OrdinalIgnoreCase) is var close and >= 0
+			fragment.IndexOf(MarkOpen, pos, StringComparison.Ordinal) is var open and >= 0
+			&& fragment.IndexOf(MarkClose, open + MarkOpen.Length, StringComparison.Ordinal) is var close and >= 0
 		)
 		{
-			_ = sb.Append(Encode(text[pos..open])).Append(MarkOpen).Append(Encode(text[(open + MarkOpen.Length)..close])).Append(MarkClose);
+			_ = sb
+				.Append(Reencode(fragment[pos..open]))
+				.Append(MarkOpen)
+				.Append(Reencode(fragment[(open + MarkOpen.Length)..close]))
+				.Append(MarkClose);
 			pos = close + MarkClose.Length;
 		}
-		return sb.Append(Encode(text[pos..])).ToString();
+		return sb.Append(Reencode(fragment[pos..])).ToString();
 	}
 
-	/// <summary>The encoding <see cref="EncodeAroundMarks"/> applies to text outside the marks.</summary>
+	private static string Reencode(string html) => Encode(WebUtility.HtmlDecode(html));
+
+	/// <summary>Encodes <c>&amp;</c>, <c>&lt;</c>, <c>&gt;</c> and <c>"</c> only, so other characters such as <c>é</c> still match a typed token.</summary>
 	public static string Encode(string text) =>
 		text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+
+	private static string Mark(string text, string candidate, TokenMatching matching) =>
+		HighlightSingleToken(text, matching.Encoded ? Encode(candidate) : candidate, matching.WholeWordOnly);
 
 	private static string? ExtractSynonymTarget(string? synonym)
 	{
@@ -284,3 +306,8 @@ public static class StringHighlightExtensions
 		return lastOpen > lastClose;
 	}
 }
+
+/// <summary>How <see cref="StringHighlightExtensions.HighlightTokens(string, ReadOnlySpan{string}, IReadOnlyDictionary{string, string[]}?, TokenMatching)"/> matches a token.</summary>
+/// <param name="WholeWordOnly">Only complete words are marked.</param>
+/// <param name="Encoded">The text is encoded HTML, so each candidate is encoded before it is matched.</param>
+public readonly record struct TokenMatching(bool WholeWordOnly, bool Encoded);
