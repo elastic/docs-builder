@@ -19,6 +19,9 @@ const rowSelector =
 // The description is the row's only dd without a class; values, examples and links each carry one.
 const descriptionSelector = ':scope > dd:not([class])'
 const clampToggleClass = 'api-param-clamp-toggle'
+// The control lives in a dd of its own: a dl group may hold only terms and descriptions.
+const clampRowClass = 'api-param-clamp-row'
+const clampToggleSelector = `:scope > .${clampRowClass} > .${clampToggleClass}`
 
 function isParamLayout(value: unknown): value is ParamLayout {
     return value === 'list' || value === 'table'
@@ -77,9 +80,7 @@ function setClampToggle(toggle: HTMLButtonElement, expanded: boolean): void {
 
 function setRowExpanded(row: HTMLElement, expanded: boolean): void {
     row.dataset.clamp = expanded ? 'expanded' : 'clamped'
-    const toggle = row.querySelector<HTMLButtonElement>(
-        `:scope > .${clampToggleClass}`
-    )
+    const toggle = row.querySelector<HTMLButtonElement>(clampToggleSelector)
     if (toggle) setClampToggle(toggle, expanded)
 }
 
@@ -93,32 +94,34 @@ export function clampDescriptions(
 ): void {
     for (const row of section.querySelectorAll<HTMLElement>(rowSelector)) {
         const description = row.querySelector<HTMLElement>(descriptionSelector)
-        let toggle = row.querySelector<HTMLButtonElement>(
-            `:scope > .${clampToggleClass}`
-        )
+        const toggle = row.querySelector<HTMLButtonElement>(clampToggleSelector)
         if (!description) continue
         if (row.dataset.clamp !== 'expanded') row.dataset.clamp = 'clamped'
         if (row.dataset.clamp === 'clamped' && !overflows(description)) {
             delete row.dataset.clamp
-            toggle?.remove()
+            toggle?.parentElement?.remove()
             continue
         }
         if (toggle) continue
         const dt = row.querySelector<HTMLElement>(':scope > dt')
         if (dt?.id && !description.id) description.id = `${dt.id}-description`
-        toggle = document.createElement('button')
-        toggle.type = 'button'
-        toggle.className = clampToggleClass
-        if (description.id) toggle.setAttribute('aria-controls', description.id)
-        setClampToggle(toggle, false)
-        description.after(toggle)
+        const control = document.createElement('button')
+        control.type = 'button'
+        control.className = clampToggleClass
+        if (description.id)
+            control.setAttribute('aria-controls', description.id)
+        setClampToggle(control, false)
+        const clampRow = document.createElement('dd')
+        clampRow.className = clampRowClass
+        clampRow.append(control)
+        description.after(clampRow)
     }
 }
 
 function unclampDescriptions(section: HTMLElement): void {
     for (const row of section.querySelectorAll<HTMLElement>(rowSelector)) {
         delete row.dataset.clamp
-        row.querySelector(`:scope > .${clampToggleClass}`)?.remove()
+        row.querySelector(`:scope > .${clampRowClass}`)?.remove()
     }
 }
 

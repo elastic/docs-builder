@@ -131,6 +131,8 @@ describe('parameter layout switch', () => {
 
         // The handlers bind once per document; a test that clicks or focuses needs them bound.
         beforeEach(() => initParamLayout())
+        // A failed assertion must not leave a mocked getComputedStyle for the tests after it.
+        afterEach(() => vi.restoreAllMocks())
         const row = (id: string) => document.getElementById(id)!
         const toggle = (id: string) =>
             row(id).querySelector<HTMLButtonElement>('.api-param-clamp-toggle')
@@ -139,6 +141,9 @@ describe('parameter layout switch', () => {
             applyParamLayout('table', document, longOnly)
             expect(row('query-params-long').dataset.clamp).toBe('clamped')
             expect(toggle('query-params-long')!.textContent).toBe('Show more')
+            expect(toggle('query-params-long')!.parentElement!.tagName).toBe(
+                'DD'
+            )
             expect(
                 toggle('query-params-long')!.getAttribute('aria-controls')
             ).toBe('query-params-keep_alive-description')
@@ -219,7 +224,6 @@ describe('parameter layout switch', () => {
             expect(toggle('query-params-long')!.textContent).toBe('Show more')
             expect(row('query-params-short').dataset.clamp).toBeUndefined()
             expect(toggle('query-params-short')).toBeNull()
-            vi.restoreAllMocks()
         })
 
         it('removes the clamp and the control in list layout', () => {

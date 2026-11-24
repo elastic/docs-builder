@@ -1646,8 +1646,9 @@ button.response-status-toggle:focus {
 		outline-offset: -2px;
 	}
 
-	/* Below 32rem the four tracks at their minimums do not fit, so the list stays and the control goes. */
-	@container api-param-section (max-width: 31.99rem) {
+	/* Below 32rem the four tracks at their minimums do not fit, so the list stays and the control goes. The range is the
+	   complement of the table's, so no fractional width falls between them. */
+	@container api-param-section (width < 32rem) {
 		.api-param-section > .api-param-section-header > .api-param-layout {
 			display: none;
 		}
@@ -1945,21 +1946,30 @@ button.response-status-toggle:focus {
 			display: -webkit-box;
 			-webkit-box-orient: vertical;
 			-webkit-line-clamp: 3;
+			line-clamp: 3;
 			overflow: hidden;
 			padding-bottom: 0;
 			margin-bottom: var(--space-2);
+		}
+
+		/* The control sits in a dd of its own, so the row stays a list of terms and descriptions. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-clamp-row {
+			padding: 0 var(--space-3) var(--space-2);
 		}
 
 		.api-param-section[data-layout='table']
 			> .api-param-section-body
 			> .property-list
 			> .property-item
+			> .api-param-clamp-row
 			> .api-param-clamp-toggle {
 			display: inline-block;
-			grid-column: 4;
-			justify-self: start;
 			margin: 0;
-			padding: 0 var(--space-3) var(--space-2);
+			padding: 0;
 			border: 0;
 			background: none;
 			color: var(--color-accent);
@@ -1973,6 +1983,7 @@ button.response-status-toggle:focus {
 			> .api-param-section-body
 			> .property-list
 			> .property-item
+			> .api-param-clamp-row
 			> .api-param-clamp-toggle:hover {
 			color: var(--color-accent-hover);
 			text-decoration: underline;
@@ -1982,6 +1993,7 @@ button.response-status-toggle:focus {
 			> .api-param-section-body
 			> .property-list
 			> .property-item
+			> .api-param-clamp-row
 			> .api-param-clamp-toggle:focus-visible {
 			outline: 2px solid var(--color-focus-ring);
 			outline-offset: -2px;

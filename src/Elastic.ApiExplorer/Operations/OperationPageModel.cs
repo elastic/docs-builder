@@ -43,7 +43,13 @@ public partial record OperationPageModel
 			{
 				new ParameterListSection(
 					ParameterLocation.Path,
-					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames, SummaryStyle.List, ParameterLayoutSwitch),
+					new ParamSectionHeader(
+						"Path parameters",
+						"path-params",
+						PathParameterNames,
+						SummaryStyle.List,
+						LayoutSwitch: ParameterLayoutSwitch
+					),
 					"path-params-list",
 					PathParameters,
 					"Path parameters"
@@ -55,7 +61,7 @@ public partial record OperationPageModel
 						"query-params",
 						QueryParameterNames,
 						SummaryStyle.List,
-						ParameterLayoutSwitch
+						LayoutSwitch: ParameterLayoutSwitch
 					),
 					"query-params-list",
 					QueryParameters,
@@ -68,7 +74,7 @@ public partial record OperationPageModel
 						"header-params",
 						HeaderParameterNames,
 						SummaryStyle.List,
-						ParameterLayoutSwitch
+						LayoutSwitch: ParameterLayoutSwitch
 					),
 					"header-params-list",
 					HeaderParameters,
