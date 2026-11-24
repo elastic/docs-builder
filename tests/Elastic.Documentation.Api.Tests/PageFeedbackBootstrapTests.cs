@@ -64,12 +64,8 @@ public class PageFeedbackBootstrapTests
 	{
 		var appEnvironment = new AppEnvironment { Current = env };
 		var index = new PageFeedbackIndex(appEnvironment);
-		var channel = new IngestChannel<PageFeedbackDocument>(
-			new IngestChannelOptions<PageFeedbackDocument>(transport, index.MappingContext)
-		);
 		return new PageFeedbackBootstrapService(
-			channel,
-			transport,
+			index.CreateChannel(transport),
 			index,
 			appEnvironment,
 			NullLogger<PageFeedbackBootstrapService>.Instance

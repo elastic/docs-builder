@@ -4,7 +4,11 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Strategies;
+using Elastic.Ingest.Elasticsearch.Strategies.BootstrapSteps;
 using Elastic.Mapping;
+using Elastic.Transport;
 
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 
@@ -69,4 +73,16 @@ internal sealed class PageFeedbackIndex(AppEnvironment appEnvironment)
 
 	public string Name =>
 		MappingContext.IndexStrategy?.WriteTarget ?? throw new InvalidOperationException("Page feedback index mapping has no write target.");
+
+	/// <summary>The channel that bootstraps and writes the index. Its bootstrap also updates the mapping of an index that already exists.</summary>
+	public IngestChannel<PageFeedbackDocument> CreateChannel(ITransport transport)
+	{
+		var bootstrap = new DefaultBootstrapStrategy(
+			new ComponentTemplateStep(),
+			new IndexTemplateStep(),
+			new ExistingIndexMappingStep(Name)
+		);
+		var strategy = IngestStrategies.Index<PageFeedbackDocument>(MappingContext, bootstrap);
+		return new IngestChannel<PageFeedbackDocument>(new IngestChannelOptions<PageFeedbackDocument>(transport, strategy, MappingContext));
+	}
 }
