@@ -172,7 +172,8 @@ public static class ServicesExtension
 		_ = services.AddSingleton<PageFeedbackIndex>();
 		_ = services.AddSingleton(
 			serviceProvider => serviceProvider.GetRequiredService<PageFeedbackIndex>().CreateChannel(
-				serviceProvider.GetRequiredService<ITransport>()
+				serviceProvider.GetRequiredService<ITransport>(),
+				serviceProvider.GetRequiredService<ILogger<PageFeedbackIndex>>()
 			)
 		);
 		_ = services.AddSingleton<IPageFeedbackService, ElasticsearchPageFeedbackGateway>();

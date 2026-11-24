@@ -8,6 +8,7 @@ using Elastic.Documentation.Api.Adapters.PageFeedback;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.VirtualizedCluster;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Api.Tests;
@@ -71,21 +72,39 @@ public class PageFeedbackBootstrapTests
 	}
 
 	[Test]
-	public async Task StartAsync_MappingRejectedInDev_Completes()
+	public async Task StartAsync_MappingRejectedInDev_CompletesAndLogsTheRejection()
 	{
 		var (transport, _) = CreateTransport(mappingStatus: 400);
+		var logger = new ListLogger();
 
-		var start = () => CreateService(transport, AppEnv.Dev).StartAsync(TestContext.Current!.Execution.CancellationToken);
+		await CreateService(transport, AppEnv.Dev, logger).StartAsync(TestContext.Current!.Execution.CancellationToken);
 
-		await start.Should().NotThrowAsync();
+		logger.Messages.Should().ContainSingle(m => m.Contains("page-feedback-v1-dev") && m.Contains("HTTP 400"));
 	}
 
-	private static PageFeedbackBootstrapService CreateService(ITransport transport, AppEnv env)
+	private sealed class ListLogger : ILogger
+	{
+		public List<string> Messages { get; } = [];
+
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+		public bool IsEnabled(LogLevel logLevel) => true;
+
+		public void Log<TState>(
+			LogLevel logLevel,
+			EventId eventId,
+			TState state,
+			Exception? exception,
+			Func<TState, Exception?, string> formatter
+		) => Messages.Add(formatter(state, exception));
+	}
+
+	private static PageFeedbackBootstrapService CreateService(ITransport transport, AppEnv env, ILogger? stepLogger = null)
 	{
 		var appEnvironment = new AppEnvironment { Current = env };
 		var index = new PageFeedbackIndex(appEnvironment);
 		return new PageFeedbackBootstrapService(
-			index.CreateChannel(transport),
+			index.CreateChannel(transport, stepLogger ?? NullLogger.Instance),
 			index,
 			appEnvironment,
 			NullLogger<PageFeedbackBootstrapService>.Instance

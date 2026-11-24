@@ -9,6 +9,7 @@ using Elastic.Ingest.Elasticsearch.Strategies;
 using Elastic.Ingest.Elasticsearch.Strategies.BootstrapSteps;
 using Elastic.Mapping;
 using Elastic.Transport;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 
@@ -75,12 +76,12 @@ internal sealed class PageFeedbackIndex(AppEnvironment appEnvironment)
 		MappingContext.IndexStrategy?.WriteTarget ?? throw new InvalidOperationException("Page feedback index mapping has no write target.");
 
 	/// <summary>The channel that bootstraps and writes the index. Its bootstrap also updates the mapping of an index that already exists.</summary>
-	public IngestChannel<PageFeedbackDocument> CreateChannel(ITransport transport)
+	public IngestChannel<PageFeedbackDocument> CreateChannel(ITransport transport, ILogger logger)
 	{
 		var bootstrap = new DefaultBootstrapStrategy(
 			new ComponentTemplateStep(),
 			new IndexTemplateStep(),
-			new ExistingIndexMappingStep(Name)
+			new ExistingIndexMappingStep(Name, logger)
 		);
 		var strategy = IngestStrategies.Index<PageFeedbackDocument>(MappingContext, bootstrap);
 		return new IngestChannel<PageFeedbackDocument>(new IngestChannelOptions<PageFeedbackDocument>(transport, strategy, MappingContext));

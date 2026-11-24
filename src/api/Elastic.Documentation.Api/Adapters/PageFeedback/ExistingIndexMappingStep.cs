@@ -6,6 +6,7 @@ using System.Net;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Strategies;
 using Elastic.Transport;
+using Microsoft.Extensions.Logging;
 using HttpMethod = Elastic.Transport.HttpMethod;
 
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
@@ -15,7 +16,7 @@ namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 /// so without this step a field added later is stored but, with dynamic mapping off, never indexed.
 /// </summary>
 // TODO: this belongs in Elastic.Ingest.Elasticsearch as a built-in bootstrap step; remove it once upstream ships one.
-internal sealed class ExistingIndexMappingStep(string indexName) : IBootstrapStep
+internal sealed class ExistingIndexMappingStep(string indexName, ILogger logger) : IBootstrapStep
 {
 	public string Name => "ExistingIndexMapping";
 
@@ -55,11 +56,18 @@ internal sealed class ExistingIndexMappingStep(string indexName) : IBootstrapSte
 		if (response.ApiCallDetails.HasSuccessfulStatusCode || response.ApiCallDetails.HttpStatusCode == (int)HttpStatusCode.NotFound)
 			return true;
 
-		return context.BootstrapMethod == BootstrapMethod.Silent
-			? false
-			: throw new InvalidOperationException(
+		if (context.BootstrapMethod != BootstrapMethod.Silent)
+			throw new InvalidOperationException(
 				$"Failure to apply the mapping to the existing index {indexName}: {response}",
 				response.ApiCallDetails.OriginalException
 			);
+
+		logger.LogWarning(
+			"Elasticsearch rejected the mapping update for {IndexName}: HTTP {StatusCode}. {Response}",
+			indexName,
+			response.ApiCallDetails.HttpStatusCode,
+			response.Body
+		);
+		return false;
 	}
 }
