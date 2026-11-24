@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.Adapters.PageFeedback;
 using Elastic.Documentation.Api.PageFeedback;
@@ -40,7 +41,22 @@ public class PageFeedbackGatewayTests
 		result.Should().BeFalse();
 	}
 
-	private static ITransport CreateTransport(int itemStatus) =>
+	[Test]
+	public async Task UpsertFeedbackAsync_ValidRecord_SendsDocumentWithoutEuid()
+	{
+		var bodies = new List<string>();
+		var transport = CreateTransport(201, details => bodies.Add(Encoding.UTF8.GetString(details.RequestBodyInBytes ?? [])));
+		var index = CreateIndex();
+		using var channel = CreateChannel(transport, index);
+		var gateway = new ElasticsearchPageFeedbackGateway(channel, NullLogger<ElasticsearchPageFeedbackGateway>.Instance);
+
+		_ = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
+
+		var bulkBody = bodies.Should().ContainSingle(body => body.Contains("page_url", StringComparison.Ordinal)).Subject;
+		bulkBody.Should().NotContainEquivalentOf("euid");
+	}
+
+	private static ITransport CreateTransport(int itemStatus, Action<ApiCallDetails>? onRequestCompleted = null) =>
 		Virtual
 			.Elasticsearch
 			.Bootstrap(1)
@@ -67,7 +83,7 @@ public class PageFeedbackGatewayTests
 					})
 			)
 			.StaticNodePool()
-			.Settings(settings => settings.DisablePing().EnableDebugMode())
+			.Settings(settings => settings.DisablePing().EnableDebugMode().OnRequestCompleted(onRequestCompleted ?? (_ => { })))
 			.RequestHandler;
 
 	private static PageFeedbackIndex CreateIndex() => new(new AppEnvironment { Current = AppEnv.Dev });
