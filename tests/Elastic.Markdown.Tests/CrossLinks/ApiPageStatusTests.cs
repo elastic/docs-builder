@@ -154,6 +154,17 @@ public class ApiPageStatusTests
 	}
 
 	[Test]
+	public void GetHint_MissingPage_SuggestsAVersionedTreeInTheNewForm() =>
+		ApiLinkCheck
+			.GetHint(Resolver(), "https://www.elastic.co/docs/api/elasticsearch/operation/operation-gone", "/docs", null)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				API link 'https://www.elastic.co/docs/api/elasticsearch/operation/operation-gone' does not resolve to a page of that API. Link to a page that exists, such as one in a versioned tree like /docs/api/<product>/v8/..., or confirm the endpoint was removed intentionally. Links in API descriptions are fixed in the OpenAPI spec.
+				"""
+			);
+
+	[Test]
 	public void GetHint_SuppressedHint_IsNull() =>
 		ApiLinkCheck
 			.GetHint(
