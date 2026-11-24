@@ -368,11 +368,11 @@ public class OpenApiGenerator(
 	private static ApiPageSearchText SearchText(string markdown, INavigationItem item, IApiModel page, ApiRenderContext context)
 	{
 		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
+		var text = ApiPagePlainText.Read(body);
 		// The rendered heading, so an authored page found by its H1 matches the title readers see.
-		var meta = ApiMarkdownFrontMatter.Collect(body, item, context, page);
-		var (text, headings) = ApiPagePlainText.Read(body);
-		// Plain text drops link targets, which point into one version tree and would keep identical trees from collapsing.
-		return new ApiPageSearchText(ApiPagePlainText.Line(meta.Title), ApiPagePlainText.Line(meta.Description ?? ""), text, headings);
+		var title = text.Title ?? item.NavigationTitle;
+		var description = ApiPagePlainText.Description(ApiMarkdownFrontMatter.Collect(body, item, context, page).Description);
+		return new ApiPageSearchText(title, description, text.Body, text.Headings);
 	}
 
 	/// <summary>

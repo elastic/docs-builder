@@ -10,9 +10,22 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiPagePlainTextTests
 {
 	[Test]
-	[Arguments("[Core](/docs/api/elasticsearch/v8/group/endpoint-core)", "Core")]
+	[Arguments("# 1. Authentication", "1. Authentication")]
+	[Arguments("# [Core](/docs/api/elasticsearch/v8/group/endpoint-core)", "Core")]
+	[Arguments("# The `<tenant>` parameter", "The <tenant> parameter")]
+	public void Read_Heading_IsItsVisibleText(string heading, string expected)
+	{
+		var text = ApiPagePlainText.Read($"{heading}\n\nBody.\n\n{heading.Replace("# ", "## ")}");
+
+		text.Title.Should().Be(expected);
+		text.Headings.Should().Equal(expected);
+	}
+
+	[Test]
+	[Arguments("[Core](/docs/api/elasticsearch/v8/group/endpoint-core) endpoints.", "Core endpoints.")]
 	[Arguments("Send a `<ping>` first.", "Send a <ping> first.")]
 	[Arguments("Send a <ping> first.", "Send a <ping> first.")]
-	public void Line_MarkdownOrPlainText_IsPlainTextWithoutLinkTargets(string text, string expected) =>
-		ApiPagePlainText.Line(text).Should().Be(expected);
+	[Arguments("<!-- note for authors --> Send a **ping** first.", "Send a ping first.")]
+	public void Description_MarkdownOrPlainText_IsPlainText(string description, string expected) =>
+		ApiPagePlainText.Description(description).Should().Be(expected);
 }

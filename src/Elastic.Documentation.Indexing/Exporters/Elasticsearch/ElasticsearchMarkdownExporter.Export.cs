@@ -294,16 +294,16 @@ public partial class ElasticsearchMarkdownExporter
 	}
 
 	/// <summary>
-	/// Keeps the tag names <see cref="OpenApiDocumentExporter"/> put in <c>Headings</c>. The generated body's
-	/// own headings are only the title and "Parameters", so they would say nothing about the operation.
-	/// </summary>
-	/// <summary>
 	/// Converts an operation's Markdown body to plain text. A page document's body is plain text already, and a second Markdown
 	/// pass would read literal text such as <c>&lt;tenant&gt;</c> as HTML and drop it.
 	/// </summary>
 	internal static void ApplyApiBody(DocumentationDocument doc, Func<string, string> markdownToPlainText) =>
 		ApplyApiPlainText(doc, doc.Api?.Page == true ? doc.Body ?? string.Empty : markdownToPlainText(doc.Body ?? string.Empty));
 
+	/// <summary>
+	/// Keeps the tag names <see cref="OpenApiDocumentExporter"/> put in <c>Headings</c>. The generated body's
+	/// own headings are only the title and "Parameters", so they would say nothing about the operation.
+	/// </summary>
 	internal static void ApplyApiPlainText(DocumentationDocument doc, string plainTextBody)
 	{
 		doc.Body = plainTextBody;
