@@ -48,7 +48,7 @@ internal static class UnifiedReleaseNotesDiagnosticsPage
 		if (count == 0)
 		{
 			_ = sb.AppendLine("**No pull request lacks a label right now.** There is nothing to fix.");
-			return sb.ToString();
+			return sb.ToString().ReplaceLineEndings("\n");
 		}
 
 		_ = sb
@@ -67,7 +67,7 @@ internal static class UnifiedReleaseNotesDiagnosticsPage
 				AppendRelease(sb, productName, release.Key, release.ToList());
 		}
 
-		return sb.ToString();
+		return sb.ToString().ReplaceLineEndings("\n");
 	}
 
 	private static void AppendRelease(StringBuilder sb, string productName, string release, List<PreviewProblem> problems)
