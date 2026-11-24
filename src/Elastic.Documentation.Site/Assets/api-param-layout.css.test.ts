@@ -25,16 +25,69 @@ interface Rule {
     declarations: string
 }
 
-/** Every `selectors { declarations }` pair, however it is grouped; at-rule preludes hold a brace, so they never match. */
+/** A nested prelude resolved against its parents: `&` stands for the parent, and a prelude without one descends from it. */
+function resolve(prelude: string, parents: string[]): string[] {
+    const own = prelude
+        .split(',')
+        .map((selector) => selector.trim())
+        .filter(Boolean)
+    if (parents.length === 0) return own
+    return parents.flatMap((parent) =>
+        own.map((selector) =>
+            selector.includes('&')
+                ? selector.split('&').join(parent)
+                : `${parent} ${selector}`
+        )
+    )
+}
+
+/**
+ * Every rule in the block with its selectors resolved through nesting, however deep, so a rule written as
+ * `.a { &:hover { … } }` is checked as `.a:hover`. An at-rule prelude keeps its parent's selectors.
+ */
 function rulesOf(block: string): Rule[] {
     const stripped = block.replace(/\/\*[\s\S]*?\*\//g, '')
-    return [...stripped.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
-        selectors: m[1]
-            .split(',')
-            .map((selector) => selector.trim())
-            .filter(Boolean),
-        declarations: m[2],
-    }))
+    const rules: Rule[] = []
+    const open: Rule[] = []
+    let text = ''
+    for (const char of stripped) {
+        if (char === '{') {
+            const parent = open[open.length - 1]
+            const preludeStart = text.lastIndexOf(';') + 1
+            if (parent) parent.declarations += text.slice(0, preludeStart)
+            const prelude = text.slice(preludeStart).trim()
+            const parents = parent?.selectors ?? []
+            open.push({
+                selectors: prelude.startsWith('@')
+                    ? parents
+                    : resolve(prelude, parents),
+                declarations: '',
+            })
+            text = ''
+        } else if (char === '}') {
+            const closed = open.pop()
+            if (closed)
+                rules.push({
+                    selectors: closed.selectors,
+                    declarations: closed.declarations + text,
+                })
+            text = ''
+        } else text += char
+    }
+    return rules
+}
+
+/** The rules in the block that display an element a browser without subgrid must never see. */
+function shownRules(block: string): string[] {
+    return rulesOf(block)
+        .filter((rule) =>
+            rule.selectors.some((selector) => hiddenOutside.test(selector))
+        )
+        .filter((rule) => {
+            const display = rule.declarations.match(/display:\s*([a-z-]+)/)
+            return display !== null && display[1] !== 'none'
+        })
+        .map((rule) => rule.selectors.join(', '))
 }
 
 function gatedBlock(): string {
@@ -54,15 +107,7 @@ describe('parameter table stylesheet', () => {
 
     it('shows the switch only inside the subgrid support query', () => {
         expect(gated).toContain('.api-param-layout:not([hidden])')
-        const shown = rulesOf(outside)
-            .filter((rule) =>
-                rule.selectors.some((selector) => hiddenOutside.test(selector))
-            )
-            .filter((rule) => {
-                const display = rule.declarations.match(/display:\s*([a-z-]+)/)
-                return display !== null && display[1] !== 'none'
-            })
-        expect(shown.map((rule) => rule.selectors.join(', '))).toEqual([])
+        expect(shownRules(outside)).toEqual([])
     })
 
     it('lays out the table only inside the subgrid support query', () => {
@@ -75,5 +120,45 @@ describe('parameter table stylesheet', () => {
         expect(outside).toMatch(
             /\.api-param-layout,\s*\.api-param-table-head,\s*\.api-param-clamp-toggle\s*\{\s*display:\s*none;/
         )
+    })
+
+    it('keeps the description cell at its own height so the clamp can be measured', () => {
+        expect(gated).toMatch(/> dd \{[^}]*\balign-self:\s*start;/)
+    })
+})
+
+describe('the stylesheet reader', () => {
+    it('resolves nested selectors before checking them', () => {
+        const nested = `
+            .api-param-layout {
+                display: none;
+                &:not([hidden]) { display: inline-flex; }
+                .ready & { opacity: 1; }
+                @media (min-width: 1px) { & .inner { color: red; } }
+            }`
+        expect(
+            rulesOf(nested).map((rule) => [
+                rule.selectors.join(', '),
+                rule.declarations.trim(),
+            ])
+        ).toEqual([
+            ['.api-param-layout:not([hidden])', 'display: inline-flex;'],
+            ['.ready .api-param-layout', 'opacity: 1;'],
+            ['.api-param-layout .inner', 'color: red;'],
+            ['.api-param-layout', ''],
+            ['.api-param-layout', 'display: none;'],
+        ])
+        expect(shownRules(nested)).toEqual(['.api-param-layout:not([hidden])'])
+    })
+
+    it('keeps grouped selectors apart', () => {
+        expect(
+            rulesOf('.a, .b { & > .c, .d { display: flex; } }').map(
+                (rule) => rule.selectors
+            )
+        ).toEqual([
+            ['.a > .c', '.a .d', '.b > .c', '.b .d'],
+            ['.a', '.b'],
+        ])
     })
 })

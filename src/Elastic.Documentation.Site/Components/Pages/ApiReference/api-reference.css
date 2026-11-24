@@ -1902,6 +1902,9 @@ button.response-status-toggle:focus {
 			> .property-item
 			> dd {
 			grid-column: 4;
+			/* The cell keeps its own height beside a taller type: the clamp is measured on the description's height, and a
+			   cell stretched to the row would report the same height with and without the clamp. */
+			align-self: start;
 			/* A cell is read beside its name, not as a paragraph: a measure of 65 characters and slightly smaller type keep a
 			   long description from dominating the row. */
 			max-width: 65ch;
