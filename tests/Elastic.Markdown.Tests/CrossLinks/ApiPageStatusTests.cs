@@ -138,15 +138,15 @@ public class ApiPageStatusTests
 			.MatchInlineSnapshot(
 				"""
 				https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search#responses
-				  API link 'https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search#responses' uses the legacy /docs/api/doc/ prefix. After the API Explorer cutover this page lives at 'https://www.elastic.co/docs/api/elasticsearch/operation/operation-search#responses'.
+				  API link 'https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search#responses' uses the legacy /docs/api/doc/ prefix. This page now lives at 'https://www.elastic.co/docs/api/elasticsearch/operation/operation-search#responses'.
 				https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search?lang=console#responses
-				  API link 'https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search?lang=console#responses' uses the legacy /docs/api/doc/ prefix. After the API Explorer cutover this page lives at 'https://www.elastic.co/docs/api/elasticsearch/operation/operation-search?lang=console#responses'.
+				  API link 'https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search?lang=console#responses' uses the legacy /docs/api/doc/ prefix. This page now lives at 'https://www.elastic.co/docs/api/elasticsearch/operation/operation-search?lang=console#responses'.
 				https://www.elastic.co/docs/api/doc/serverless/operation/operation-live
-				  API link 'https://www.elastic.co/docs/api/doc/serverless/operation/operation-live' uses the legacy /docs/api/doc/ prefix. After the API Explorer cutover this page lives at 'https://www.elastic.co/docs/api/kibana-serverless/operation/operation-live'.
+				  API link 'https://www.elastic.co/docs/api/doc/serverless/operation/operation-live' uses the legacy /docs/api/doc/ prefix. This page now lives at 'https://www.elastic.co/docs/api/kibana-serverless/operation/operation-live'.
 				https://www.elastic.co/docs/api/doc/elasticsearch/servers
-				  API link 'https://www.elastic.co/docs/api/doc/elasticsearch/servers' uses the legacy /docs/api/doc/ prefix. After the API Explorer cutover this page lives at 'https://www.elastic.co/docs/api/elasticsearch'.
+				  API link 'https://www.elastic.co/docs/api/doc/elasticsearch/servers' uses the legacy /docs/api/doc/ prefix. This page now lives at 'https://www.elastic.co/docs/api/elasticsearch'.
 				https://www.elastic.co/docs/api/doc/kibana/operation/operation-x
-				  API link 'https://www.elastic.co/docs/api/doc/kibana/operation/operation-x' uses the legacy /docs/api/doc/ prefix. After the API Explorer cutover this page lives at 'https://www.elastic.co/docs/api/kibana/operation/operation-x'.
+				  API link 'https://www.elastic.co/docs/api/doc/kibana/operation/operation-x' uses the legacy /docs/api/doc/ prefix. This page now lives at 'https://www.elastic.co/docs/api/kibana/operation/operation-x'.
 				https://www.elastic.co/docs/api/elasticsearch/operation/operation-search
 				  (no hint)
 				"""
