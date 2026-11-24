@@ -329,13 +329,39 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		html.Should().MatchHtmlSnapshot();
 	}
 
-	private ApiRenderContext RenderContext(INavigationItem current) =>
-		new(fixture.Context, fixture.Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
+	[Test]
+	public void Create_NavigationPreview_OffersTheLayoutSwitchOnEveryParameterSection()
+	{
+		var page = OperationPageModel.Create(DocsGet.Model, RenderContext(DocsGet, navigationPreview: true));
+
+		page.ParameterSections.Should().NotBeEmpty().And.OnlyContain(s => s.Header.LayoutSwitch);
+	}
+
+	[Test]
+	public void Create_LegacyLayout_KeepsTheParameterSectionsWithoutTheSwitch()
+	{
+		var page = OperationPageModel.Create(DocsGet.Model, RenderContext(DocsGet));
+
+		page.ParameterSections.Should().NotBeEmpty().And.OnlyContain(s => !s.Header.LayoutSwitch);
+	}
+
+	private ApiRenderContext RenderContext(INavigationItem current, bool navigationPreview = false)
+	{
+		var context = fixture.Context;
+		if (navigationPreview)
 		{
-			NavigationHtml = string.Empty,
-			CurrentNavigation = current,
-			MarkdownRenderer = PassthroughMarkdownRenderer.Instance
-		};
+			// The fixture's context is shared by the class, so the flag goes on a context of this test's own.
+			context = TestHelpers.CreateBuildContext();
+			context.Configuration.Features.NavigationPreviewEnabled = true;
+		}
+
+		return new ApiRenderContext(
+			context,
+			fixture.Document,
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		)
+		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+	}
 
 	private async Task<string> RenderAsync(OperationNavigationItem nav)
 	{

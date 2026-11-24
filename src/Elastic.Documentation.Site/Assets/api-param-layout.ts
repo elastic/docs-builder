@@ -41,6 +41,8 @@ export function applyParamLayout(
     root: ParentNode = document
 ): void {
     for (const control of root.querySelectorAll<HTMLElement>(switchSelector)) {
+        // The server renders the control hidden: without this script the Table button would do nothing.
+        control.hidden = false
         const section = control.closest<HTMLElement>(sectionSelector)
         if (section) section.dataset.layout = layout
         for (const option of control.querySelectorAll<HTMLElement>(

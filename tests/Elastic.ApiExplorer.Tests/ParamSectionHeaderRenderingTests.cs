@@ -168,7 +168,7 @@ public class ParamSectionHeaderRenderingTests
 					</span>
 					<span class="api-param-chevron" aria-hidden="true"></span>
 				</button>
-				<span class="api-param-layout" role="group" aria-label="Query parameters layout" data-param-layout="">
+				<span class="api-param-layout" role="group" aria-label="Query parameters layout" data-param-layout="" hidden="">
 					<button type="button" class="api-param-layout-option" data-layout="list" aria-pressed="true">List</button>
 					<button type="button" class="api-param-layout-option" data-layout="table" aria-pressed="false">Table</button>
 				</span>

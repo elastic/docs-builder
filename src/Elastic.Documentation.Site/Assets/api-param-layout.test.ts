@@ -12,7 +12,7 @@ function markup(): string {
             <h2 class="section-header api-param-section-header" id="${anchor}">
                 <a class="headerlink api-param-section-title" href="#${anchor}">${anchor}</a>
                 <button type="button" class="api-param-section-toggle" aria-expanded="true"></button>
-                <span class="api-param-layout" role="group" data-param-layout>
+                <span class="api-param-layout" role="group" data-param-layout hidden>
                     <button type="button" class="api-param-layout-option" data-layout="list" aria-pressed="true">List</button>
                     <button type="button" class="api-param-layout-option" data-layout="table" aria-pressed="false">Table</button>
                 </span>
@@ -42,6 +42,15 @@ describe('parameter layout switch', () => {
     beforeEach(() => {
         localStorage.clear()
         document.body.innerHTML = markup()
+    })
+
+    it('shows the control only once the script has taken it', () => {
+        const control = document.querySelector<HTMLElement>(
+            '#path-params-section [data-param-layout]'
+        )!
+        expect(control.hidden).toBe(true)
+        initParamLayout()
+        expect(control.hidden).toBe(false)
     })
 
     it('opens as a list when nothing is remembered', () => {
