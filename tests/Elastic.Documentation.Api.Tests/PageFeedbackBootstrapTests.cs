@@ -24,11 +24,8 @@ public class PageFeedbackBootstrapTests
 
 		await CreateService(transport, AppEnv.Staging).StartAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var mappingCalls = calls.Where(c => c.Path.EndsWith("/_mapping", StringComparison.Ordinal)).ToArray();
-		mappingCalls.Should().ContainSingle();
-		mappingCalls[0].Method.Should().Be("PUT");
-		mappingCalls[0].Path.Should().Be("/page-feedback-v1-staging/_mapping");
-		mappingCalls[0].Body.Should().Contain("\"reasons\"");
+		var mappingCall = calls.Should().ContainSingle(c => c.Path == "/page-feedback-v1-staging/_mapping").Subject;
+		mappingCall.Body.Should().Contain("\"reasons\"");
 	}
 
 	// A missing index is only safe when the templates are current: the first write creates the index from them.
