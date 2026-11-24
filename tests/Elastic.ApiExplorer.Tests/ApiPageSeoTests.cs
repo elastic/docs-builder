@@ -92,6 +92,16 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void SchemaPage_HasNoTocItems()
+	{
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Should().ContainSingle(n => n.Model.DisplayName == "Query").Subject;
+		var context = RenderContext(item);
+		var viewModel = new SchemaViewModel(context) { Schema = item.Model, Page = SchemaPageModel.Create(item.Model, context) };
+
+		viewModel.TocItems.Should().BeEmpty();
+	}
+
+	[Test]
 	[Arguments("v8", "Run a search | Fixture API docs (v8)")]
 	[Arguments("v9", "Run a search | Fixture API docs (v9)")]
 	[Arguments("latest", "Run a search | Fixture API docs")]
