@@ -81,6 +81,28 @@ public class PageFeedbackBootstrapTests
 	}
 
 	[Test]
+	public async Task StartAsync_MappingNotAcknowledgedInStaging_CompletesAndWarnsAboutTheIndexingGap()
+	{
+		var (transport, _) = CreateTransport(mappingStatus: 200, acknowledged: false);
+		var logger = new ListLogger();
+
+		await CreateService(transport, AppEnv.Staging, logger).StartAsync(TestContext.Current!.Execution.CancellationToken);
+
+		logger.Messages.Should().ContainSingle(m => m.Contains("page-feedback-v1-staging") && m.Contains("_update_by_query"));
+	}
+
+	[Test]
+	public async Task StartAsync_MappingAcknowledged_LogsNothing()
+	{
+		var (transport, _) = CreateTransport(mappingStatus: 200);
+		var logger = new ListLogger();
+
+		await CreateService(transport, AppEnv.Staging, logger).StartAsync(TestContext.Current!.Execution.CancellationToken);
+
+		logger.Messages.Should().BeEmpty();
+	}
+
+	[Test]
 	public async Task StartAsync_NoResponseToTheMappingInDev_LogsTheTransportFailure()
 	{
 		var (transport, _) = CreateTransport(mappingStatus: null);
@@ -127,7 +149,7 @@ public class PageFeedbackBootstrapTests
 		);
 	}
 
-	private static (ITransport Transport, List<Call> Calls) CreateTransport(int? mappingStatus)
+	private static (ITransport Transport, List<Call> Calls) CreateTransport(int? mappingStatus, bool acknowledged = true)
 	{
 		var calls = new List<Call>();
 		var transport = Virtual
@@ -138,7 +160,7 @@ public class PageFeedbackBootstrapTests
 				call =>
 					mappingStatus switch
 					{
-						200 => call.OnPath("_mapping").SucceedAlways(),
+						200 => call.OnPath("_mapping").SucceedAlways().ReturnResponse(new { acknowledged }),
 						{ } status => call.OnPath("_mapping").FailAlways(status),
 						null => call.OnPath("_mapping").FailAlways()
 					}

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
+using System.Text.Json;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Strategies;
 using Elastic.Transport;
@@ -53,8 +54,19 @@ internal sealed class ExistingIndexMappingStep(string indexName, ILogger logger)
 	private bool Applied(BootstrapContext context, StringResponse response)
 	{
 		// No index yet: the first write creates it from the templates.
-		if (response.ApiCallDetails.HasSuccessfulStatusCode || response.ApiCallDetails.HttpStatusCode == (int)HttpStatusCode.NotFound)
+		if (response.ApiCallDetails.HttpStatusCode == (int)HttpStatusCode.NotFound)
 			return true;
+
+		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			// The update is applied either way; only the wait for every node to confirm it timed out.
+			if (IsUnacknowledged(response.Body))
+				logger.LogWarning(
+					"Not every node acknowledged the mapping update for {IndexName} in time. Documents written before they do are stored without the added fields indexed; run _update_by_query on the index to index them",
+					indexName
+				);
+			return true;
+		}
 
 		if (context.BootstrapMethod != BootstrapMethod.Silent)
 			throw new InvalidOperationException(
@@ -80,5 +92,23 @@ internal sealed class ExistingIndexMappingStep(string indexName, ILogger logger)
 			response.Body
 		);
 		return false;
+	}
+
+	private static bool IsUnacknowledged(string? body)
+	{
+		if (string.IsNullOrWhiteSpace(body))
+			return false;
+
+		try
+		{
+			using var json = JsonDocument.Parse(body);
+			return json.RootElement.ValueKind is JsonValueKind.Object
+				&& json.RootElement.TryGetProperty("acknowledged", out var acknowledged)
+				&& acknowledged.ValueKind is JsonValueKind.False;
+		}
+		catch (JsonException)
+		{
+			return false;
+		}
 	}
 }
