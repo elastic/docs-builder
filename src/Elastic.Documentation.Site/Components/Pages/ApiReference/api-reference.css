@@ -1641,6 +1641,10 @@ button.response-status-toggle:focus {
 	display: none;
 }
 
+.api-param-clamp-toggle {
+	display: none;
+}
+
 /* Below 32rem the four tracks at their minimums do not fit, so the list stays and the control goes. */
 @container api-param-section (max-width: 31.99rem) {
 	.api-param-layout {
@@ -1650,13 +1654,13 @@ button.response-status-toggle:focus {
 
 @container api-param-section (min-width: 32rem) {
 	/* The body is the grid; the head row, the list, each row and each row's dt are subgrids of it, so every cell shares
-	   the same four tracks. The collapsed fallback (display: none) must still win, hence the .expanded qualifier. Only
-	   the required flag is sized to its content: a long name breaks where it must, a long type wraps between its
-	   constraints, and the description takes what is left. */
+	   the same four tracks. The collapsed fallback (display: none) must still win, hence the .expanded qualifier. The
+	   name and the type stop growing at 14rem, so the spare width goes to the description: a longer name breaks where it
+	   must and a longer type wraps between its constraints. The required flag is sized to its content. */
 	.api-param-section.expanded[data-layout='table'] > .api-param-section-body {
 		display: grid;
 		grid-template-columns:
-			minmax(8rem, max-content) minmax(5rem, auto)
+			fit-content(14rem) fit-content(14rem)
 			max-content minmax(12rem, 1fr);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md);
@@ -1768,7 +1772,7 @@ button.response-status-toggle:focus {
 		> .property-list
 		> .property-item
 		> dt
-		> code {
+		> code:not(.schema-type) {
 		grid-column: 1;
 		overflow-wrap: anywhere;
 	}
@@ -1806,7 +1810,30 @@ button.response-status-toggle:focus {
 		> .property-item
 		> dt
 		> code.schema-type {
+		/* The port to the design system dropped the legacy flex-wrap, so the groups could only overflow. */
+		flex-wrap: wrap;
+		row-gap: 0;
 		white-space: normal;
+	}
+
+	/* A constraint stays on one line; the type wraps between them. A long one is already cut with an ellipsis. */
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> code.schema-type
+		> .type-primitive,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> code.schema-type
+		> .schema-type-group {
+		flex: 0 0 auto;
+		max-width: 100%;
+		white-space: nowrap;
 	}
 
 	.api-param-section[data-layout='table']
@@ -1831,6 +1858,12 @@ button.response-status-toggle:focus {
 		> .property-item
 		> dd {
 		grid-column: 4;
+		/* A cell is read beside its name, not as a paragraph: a measure of 65 characters and slightly smaller type keep a
+		   long description from dominating the row. */
+		max-width: 65ch;
+		font-size: 0.8125rem;
+		line-height: 1.5;
+		text-wrap: pretty;
 	}
 
 	.api-param-section[data-layout='table']
@@ -1840,6 +1873,71 @@ button.response-status-toggle:focus {
 		> dd
 		+ dd {
 		padding-top: 0;
+	}
+
+	/* The reference link's tree branch joins it to the name in the list; in a cell there is nothing to join. */
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dd.reference-link-row::before,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dd.reference-link-row::after {
+		content: none;
+	}
+
+	/* A long description is clamped to three lines; the script adds a Show more control to the rows that overflow. */
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item[data-clamp='clamped']
+		> dd:not([class]) {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		overflow: hidden;
+		padding-bottom: 0;
+		margin-bottom: var(--space-2);
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> .api-param-clamp-toggle {
+		display: inline-block;
+		grid-column: 4;
+		justify-self: start;
+		margin: 0;
+		padding: 0 var(--space-3) var(--space-2);
+		border: 0;
+		background: none;
+		color: var(--color-accent);
+		font: inherit;
+		font-size: 0.8125rem;
+		line-height: 1.25rem;
+		cursor: pointer;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> .api-param-clamp-toggle:hover {
+		color: var(--color-accent-hover);
+		text-decoration: underline;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> .api-param-clamp-toggle:focus-visible {
+		outline: 2px solid var(--color-focus-ring);
+		outline-offset: -2px;
 	}
 
 	/* A parameter that is an object lists its fields below the row, across the whole table. */
