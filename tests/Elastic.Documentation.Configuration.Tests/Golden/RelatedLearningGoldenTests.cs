@@ -185,7 +185,7 @@ public class RelatedLearningGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				throws
-				YamlException: {config-runtime}/related-learning.yml: (Lin: 7, Col: 0, Chr: 105) - (Lin: 7, Col: 0, Chr: 105): Duplicate mapping key 'a'.
+				YamlException: {config-runtime}/related-learning.yml: (Lin: 5, Col: 4, Chr: 65) - (Lin: 5, Col: 4, Chr: 65): Duplicate mapping key 'a'.
 				"""
 			);
 
