@@ -13,9 +13,7 @@
 		var item = Model.Items[i];
 		<li class="text-ink-light text-sm leading-[1.2em]">
 			<a
-				itemprop="item"
 				href="@item.Url"
-				@(i == 0 ? "hx-disable=true" : "")
 				preload="mousedown">
 				<span class="hover:text-black">@StripBadge(item.NavigationTitle)</span>
 			</a>
