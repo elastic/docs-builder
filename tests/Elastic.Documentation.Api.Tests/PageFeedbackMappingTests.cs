@@ -31,7 +31,7 @@ public class PageFeedbackMappingTests
 		properties.GetProperty("reasons").GetProperty("type").GetString().Should().Be("keyword");
 		properties.GetProperty("reason_set_version").GetProperty("type").GetString().Should().Be("integer");
 		properties.GetProperty("comment").GetProperty("type").GetString().Should().Be("text");
-		properties.GetProperty("euid").GetProperty("ignore_above").GetInt32().Should().Be(256);
+		properties.TryGetProperty("euid", out _).Should().BeFalse();
 		properties.GetProperty("@timestamp").GetProperty("type").GetString().Should().Be("date");
 	}
 

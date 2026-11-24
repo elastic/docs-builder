@@ -42,6 +42,21 @@ public class PageFeedbackGatewayTests
 	}
 
 	[Test]
+	public async Task UpsertFeedbackAsync_ValidRecord_SendsDocumentWithoutEuid()
+	{
+		var requests = new List<(string Path, string Body)>();
+		var transport = CreateTransport(201, requests);
+		var index = CreateIndex();
+		using var channel = CreateChannel(transport, index);
+		var gateway = new ElasticsearchPageFeedbackGateway(channel, NullLogger<ElasticsearchPageFeedbackGateway>.Instance);
+
+		_ = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
+
+		var (_, body) = requests.Should().ContainSingle().Subject;
+		body.Should().Contain("page_url").And.NotContainEquivalentOf("euid");
+	}
+
+	[Test]
 	public async Task UpsertFeedbackAsync_ValidRecord_IndexesByFeedbackIdIntoTheEnvironmentIndex()
 	{
 		var requests = new List<(string Path, string Body)>();
@@ -112,7 +127,6 @@ public class PageFeedbackGatewayTests
 			PageFeedbackReaction.ThumbsUp,
 			[PageFeedbackReason.Accurate],
 			2,
-			"Clear and useful.",
-			"test-euid"
+			"Clear and useful."
 		);
 }
