@@ -355,6 +355,28 @@ describe('tooltips', () => {
         expect(tooltip()!.dataset.theme).toBe('mono')
     })
 
+    it('shows a map key in a property path as *, as the map key row does', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-aggs-a-terms" aria-label="Link to aggregations.additional property.terms" data-tooltip="Copy link"></a><code id="under-map">terms</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('under-map'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('aggregations.*.terms')
+    })
+
+    it('shows the explicit tooltip of a property name whose label repeats it', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-key" aria-label="Link to property name*" data-tooltip="Copy link"></a><code id="key" data-tooltip="*" data-tooltip-theme="mono">property name*</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('key'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('*')
+    })
+
     it('shows nothing on a top-level property name, whose path is its name', async () => {
         document.body.insertAdjacentHTML(
             'beforeend',

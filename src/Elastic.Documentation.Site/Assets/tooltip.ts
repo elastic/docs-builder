@@ -54,20 +54,37 @@ function tooltipElement(): HTMLElement {
 }
 
 const PERMALINK_LABEL_PREFIX = 'Link to '
+// The permalink names a map's key this way for screen readers (ApiProperty.MapKeyKind); the tooltip shows `*`.
+const MAP_KEY_LABEL = 'additional property'
+
+/** A label segment as the tooltip shows it: a map's key, with any `[]` after it, reads `*`. */
+function shownSegment(segment: string): string {
+    if (!segment.startsWith(MAP_KEY_LABEL)) return segment
+    const rest = segment.slice(MAP_KEY_LABEL.length)
+    return rest.split('[]').join('') === '' ? `*${rest}` : segment
+}
 
 /** A property name's JSON path. The row prints it once, in its permalink's label, to keep large API pages small. */
 function propertyPath(name: HTMLElement): string {
     const label = name.previousElementSibling?.getAttribute('aria-label') ?? ''
     if (!label.startsWith(PERMALINK_LABEL_PREFIX)) return ''
     const path = label.slice(PERMALINK_LABEL_PREFIX.length)
-    return path === name.textContent ? '' : path
+    return path === name.textContent
+        ? ''
+        : path.split('.').map(shownSegment).join('.')
 }
 
 function targetOf(node: EventTarget | null): HTMLElement | null {
     const target =
         node instanceof Element ? node.closest<HTMLElement>(TARGET) : null
     // A top-level property name has no path to show, so it must not close another tooltip, such as a focused control's.
-    if (target?.matches(PROPERTY_NAME) && !propertyPath(target)) return null
+    if (
+        target &&
+        target.dataset.tooltip === undefined &&
+        target.matches(PROPERTY_NAME) &&
+        !propertyPath(target)
+    )
+        return null
     return target
 }
 
