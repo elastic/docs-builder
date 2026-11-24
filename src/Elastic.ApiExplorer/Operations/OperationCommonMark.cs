@@ -18,7 +18,7 @@ internal static class OperationCommonMark
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var operation = apiOperation.Operation;
 		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
-		ApiCommonMark.Heading(markdown, 1, ApiCommonMark.Text(title));
+		ApiCommonMark.TextHeading(markdown, 1, title);
 		WriteBadges(markdown, apiOperation.Deprecated, page);
 		WriteServers(markdown, page);
 		WritePaths(markdown, page);
@@ -170,7 +170,7 @@ internal static class OperationCommonMark
 			foreach (var scheme in requirement.Schemes)
 			{
 				if (together)
-					ApiCommonMark.Heading(generated, 3, ApiCommonMark.Text(scheme.Label));
+					ApiCommonMark.TextHeading(generated, 3, scheme.Label);
 				if (!string.IsNullOrWhiteSpace(scheme.DescriptionMarkdown))
 				{
 					Flush();
@@ -322,7 +322,7 @@ internal static class OperationCommonMark
 
 		foreach (var scenario in perExample)
 		{
-			ApiCommonMark.Heading(markdown, 3, ApiCommonMark.Text(scenario.Title));
+			ApiCommonMark.TextHeading(markdown, 3, scenario.Title);
 			WriteSamples(markdown, [.. scenario.CodeSamples.Where(static c => !c.Generated)]);
 		}
 	}
@@ -331,7 +331,7 @@ internal static class OperationCommonMark
 	{
 		foreach (var sample in samples)
 		{
-			ApiCommonMark.Heading(markdown, 4, ApiCommonMark.Text(sample.Language));
+			ApiCommonMark.TextHeading(markdown, 4, sample.Language);
 			ApiCommonMark.Fence(markdown, sample.Language.ToLowerInvariant(), sample.Source);
 		}
 	}
@@ -350,14 +350,14 @@ internal static class OperationCommonMark
 		ApiCommonMark.Heading(markdown, 2, heading);
 		foreach (var example in examples)
 		{
-			ApiCommonMark.Heading(markdown, 4, ApiCommonMark.Text(example.Title));
+			ApiCommonMark.TextHeading(markdown, 4, example.Title);
 			if (example.MediaType is not null)
 				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(example.MediaType));
 			if (example.Generated)
 				ApiCommonMark.Paragraph(markdown, ResponseBodyExample.Note);
 			ApiCommonMark.Prepared(markdown, example.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrEmpty(example.ExternalValue))
-				ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(ApiCommonMark.Text(example.ExternalValue), example.ExternalValue));
+				ApiCommonMark.Paragraph(markdown, ApiCommonMark.TextLink(example.ExternalValue, example.ExternalValue));
 			ApiCommonMark.Fence(markdown, "json", example.JsonValue);
 		}
 	}

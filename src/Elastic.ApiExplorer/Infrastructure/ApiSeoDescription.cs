@@ -5,7 +5,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
-using Markdig;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -21,7 +20,7 @@ internal static partial class ApiSeoDescription
 
 		var visible = WithoutComments(markdown);
 		var paragraph = FirstParagraph(visible) ?? visible;
-		var plain = ToPlainText(paragraph);
+		var plain = ApiMarkdown.ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
 	}
 
@@ -124,21 +123,6 @@ internal static partial class ApiSeoDescription
 		return buffer.Length == 0 ? null : buffer.ToString();
 	}
 
-	// HTML stays as written, as it did before this used a parser: a literal `<index>` is a placeholder readers see, and the property
-	// index strips real tags from its descriptions afterwards.
-	private static readonly MarkdownPipeline PlainTextPipeline = new MarkdownPipelineBuilder().DisableHtml().Build();
-
-	/// <summary>
-	/// Markdown as plain text, read by a CommonMark parser: code spans, escapes, entities and underscores inside words come out as
-	/// written, and link targets and emphasis go.
-	/// </summary>
-	internal static string ToPlainText(string markdown)
-	{
-		using var writer = new StringWriter();
-		_ = Markdig.Markdown.ToPlainText(markdown, writer, PlainTextPipeline);
-		return WhitespacePattern().Replace(writer.ToString(), " ").Trim();
-	}
-
 	internal static string Truncate(string text)
 	{
 		if (text.Length <= MaxLength)
@@ -159,7 +143,4 @@ internal static partial class ApiSeoDescription
 
 	[GeneratedRegex(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HttpMethodPattern();
-
-	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex WhitespacePattern();
 }

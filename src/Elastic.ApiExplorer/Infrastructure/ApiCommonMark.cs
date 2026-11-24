@@ -26,6 +26,10 @@ internal static class ApiCommonMark
 				_ = escaped.Append('\\');
 			_ = escaped.Append(text[i]);
 		}
+		// A trailing run of `#` after a space would close a heading and vanish, so `Search by #` escapes it.
+		var run = text.Length - text.TrimEnd('#').Length;
+		if (run > 0 && (run == text.Length || text[^(run + 1)] == ' '))
+			_ = escaped.Insert(escaped.Length - run, '\\');
 		return escaped.ToString();
 	}
 
@@ -47,27 +51,23 @@ internal static class ApiCommonMark
 		return end > ampersand + 1 && text.AsSpan(ampersand + 1, end - ampersand - 1).IndexOfAnyExcept(EntityCharacters) < 0;
 	}
 
-	private static readonly SearchValues<char> EntityCharacters = System
-		.Buffers
-		.SearchValues
-		.Create("#ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+	private static readonly SearchValues<char> EntityCharacters = SearchValues.Create(
+		"#ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	);
 
+	/// <summary>A heading whose text is literal, such as a name from the spec.</summary>
+	public static void TextHeading(StringBuilder markdown, int level, string? text) => Heading(markdown, level, Text(text));
+
+	/// <summary>A link whose label is literal, such as a name from the spec.</summary>
+	public static string TextLink(string? text, string? url) => Link(Text(text), url);
+
+	/// <summary>A heading whose text is Markdown; <see cref="TextHeading"/> writes a literal one.</summary>
 	public static void Heading(StringBuilder markdown, int level, string text)
 	{
 		_ = markdown.Append('#', level);
 		_ = markdown.Append(' ');
-		_ = markdown.AppendLine(WithoutClosingSequence(text));
+		_ = markdown.AppendLine(text);
 		_ = markdown.AppendLine();
-	}
-
-	/// <summary>
-	/// A trailing run of <c>#</c> after a space would close the heading and vanish, so <c>Search by #</c> escapes it.
-	/// </summary>
-	private static string WithoutClosingSequence(string text)
-	{
-		var run = text.Length - text.TrimEnd('#').Length;
-		var closes = run > 0 && (run == text.Length || text[^(run + 1)] == ' ');
-		return closes ? $"{text[..^run]}\\{text[^run..]}" : text;
 	}
 
 	public static void Paragraph(StringBuilder markdown, string? text)

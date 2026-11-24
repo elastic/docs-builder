@@ -23,7 +23,7 @@ public class ApiCommonMarkTests
 	[Arguments("[link](url) and ![img](x)")]
 	[Arguments("back\\slash > quote")]
 	public void Text_ReadBackAsMarkdown_IsTheTextAsWritten(string text) =>
-		ApiSeoDescription.ToPlainText(ApiCommonMark.Text(text)).Should().Be(text);
+		ApiMarkdown.ToPlainText(ApiCommonMark.Text(text)).Should().Be(text);
 
 	[Test]
 	[Arguments("Search by #", "# Search by \\#")]
@@ -35,8 +35,24 @@ public class ApiCommonMarkTests
 		ApiCommonMark.Heading(markdown, 1, ApiCommonMark.Text(title));
 
 		markdown.ToString().TrimEnd().Should().Be(expected);
-		ApiSeoDescription.ToPlainText(markdown.ToString()).Should().Be(title);
+		ApiMarkdown.ToPlainText(markdown.ToString()).Should().Be(title);
 	}
+
+	[Test]
+	public void Heading_AuthoredClosingSequence_IsLeftForMarkdownToRead()
+	{
+		var markdown = new StringBuilder();
+		ApiCommonMark.Heading(markdown, 2, "Support ##");
+
+		ApiMarkdown.ToPlainText(markdown.ToString()).Should().Be("Support");
+	}
+
+	[Test]
+	public void CanonicalizeLinks_LabelEndingInAnEscapedBackslash_IsStillALink() =>
+		ApiMarkdown
+			.CanonicalizeLinks("[path\\\\](status.md)", new Uri("https://www.elastic.co"))
+			.Should()
+			.Be("[path\\\\](https://www.elastic.co/status.md)");
 
 	[Test]
 	public void Text_LinkLikeName_StaysTextThroughTheLinkPass() =>
@@ -46,10 +62,12 @@ public class ApiCommonMarkTests
 			.Be("See \\[status\\](status.md)");
 
 	[Test]
-	[Arguments("Returns <index> when available.", "Returns <index> when available.")]
-	[Arguments("<p>Returns the index name.</p>", "<p>Returns the index name.</p>")]
-	public void ToPlainText_Html_StaysAsWritten(string markdown, string expected) =>
-		ApiSeoDescription.ToPlainText(markdown).Should().Be(expected);
+	[Arguments("<p>Returns the index name.</p>", "Returns the index name.")]
+	[Arguments("See <a href=\"https://example.com\">the docs</a>.", "See the docs.")]
+	[Arguments("Use `<index>` or \\<alias\\>.", "Use <index> or <alias>.")]
+	[Arguments("Uses `max_docs` and **bold** [links](x) &amp; more.", "Uses max_docs and bold links & more.")]
+	public void ToPlainText_Markdown_IsTheTextThePageShows(string markdown, string expected) =>
+		ApiMarkdown.ToPlainText(markdown).Should().Be(expected);
 
 	[Test]
 	[Arguments("Snapshot and restore", "Snapshot and restore")]

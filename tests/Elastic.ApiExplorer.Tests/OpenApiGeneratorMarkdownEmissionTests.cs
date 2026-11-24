@@ -122,6 +122,16 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		group = group.ReplaceLineEndings("\n");
 		group.Should().StartWith("---\ntype: api\ntitle: \"HTTP <code> responses\"\n");
 		group.Should().Contain("\n# HTTP \\<code\\> responses\n");
+
+		// The title is read as a heading, so `1.` is not taken for a list marker.
+		var numbered = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-core.md"),
+				TestContext.Current!.Execution.CancellationToken
+			);
+		numbered.ReplaceLineEndings("\n").Should().StartWith("---\ntype: api\ntitle: \"1. List roles\"\n");
 	}
 
 	private static OpenApiDocument LiteralNameSpec()
@@ -155,7 +165,14 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("HTTP <code> responses"))
 					}
 				},
-				new() { Name = "core" }
+				new()
+				{
+					Name = "core",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("1. List roles"))
+					}
+				}
 			}
 		};
 	}

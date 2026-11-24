@@ -54,7 +54,7 @@ internal static class ApiMarkdownFrontMatter
 	{
 		// Front matter is plain text: the H1 is Markdown, so an escaped name such as `HTTP \<code\> responses` reads as written. It is
 		// read as a heading, so `1. List roles` is not taken for a list.
-		var title = Heading(body) is { } heading ? Plain($"# {heading}") ?? current.NavigationTitle : current.NavigationTitle;
+		var title = Plain(Heading(body) is { } heading ? $"# {heading}" : null) ?? current.NavigationTitle;
 		return new(
 			title,
 			ResolveDescription(page, context, body, current.NavigationTitle),
@@ -208,5 +208,5 @@ internal static class ApiMarkdownFrontMatter
 	}
 
 	private static string? Plain(string? markdown) =>
-		string.IsNullOrWhiteSpace(markdown) ? null : ApiSeoDescription.ToPlainText(markdown) is { Length: > 0 } plain ? plain : null;
+		string.IsNullOrWhiteSpace(markdown) ? null : ApiMarkdown.ToPlainText(markdown) is { Length: > 0 } plain ? plain : null;
 }
