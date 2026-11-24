@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Structural;
+using Elastic.Documentation.Navigation;
 using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -74,6 +75,7 @@ public class ApiPageTypeTests
 
 		item.Hidden.Should().BeTrue();
 		item.InSitemap.Should().Be(inSitemap);
-		item.ExcludeFromIndexing.Should().Be(excludeFromIndexing);
+		// the layout reads the interface member, so assert through it
+		((INavigationItem)item).ExcludeFromIndexing.Should().Be(excludeFromIndexing);
 	}
 }

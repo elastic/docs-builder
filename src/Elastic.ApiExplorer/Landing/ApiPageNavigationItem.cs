@@ -27,6 +27,10 @@ public abstract class ApiPageNavigationItem<TModel>(
 	/// names itself as canonical.
 	/// </summary>
 	public virtual bool InSitemap => true;
+
+	/// <summary>Whether the page is left out of the index. An API page follows its sidebar visibility unless it says otherwise.</summary>
+	public virtual bool ExcludeFromIndexing => Hidden;
+
 	public string NavigationTitle { get; } = navigationTitle;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
 	public int NavigationIndex { get; set; }

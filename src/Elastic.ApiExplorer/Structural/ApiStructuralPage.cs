@@ -62,7 +62,7 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 	/// <summary>Servers is kept only so old Bump.sh links land, so it is neither listed nor indexed. Authentication is a real page.</summary>
 	public override bool InSitemap => Model.Kind != ApiStructuralKind.Servers;
 
-	public bool ExcludeFromIndexing => Model.Kind == ApiStructuralKind.Servers;
+	public override bool ExcludeFromIndexing => Model.Kind == ApiStructuralKind.Servers;
 
 	private static string UrlFor(string? urlPathPrefix, string apiUrlSuffix, ApiStructuralKind kind) =>
 		kind == ApiStructuralKind.Authentication
