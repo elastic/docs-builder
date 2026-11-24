@@ -675,8 +675,9 @@ public class OpenApiDocumentExporterTests
 	[Test]
 	[Arguments("endpoint-snapshot", "\n\n", 1)]
 	[Arguments("endpoint-snapshot-restore", "\n\n", 2)]
-	[Arguments("endpoint-snapshot", " ", 2)]
-	public void Collapse_SamePageInTwoTrees_MergesOnlyAtTheSameSlugAndLayout(string v8Slug, string v8Break, int expected)
+	// A page is identified by its content hash, as the sitemap dates it, so a layout-only difference shares one document.
+	[Arguments("endpoint-snapshot", " ", 1)]
+	public void Collapse_SamePageInTwoTrees_MergesAtTheSameSlugAndContentHash(string v8Slug, string v8Break, int expected)
 	{
 		static DocumentationDocument Page(string tree, string root, string slug, string lineBreak) =>
 			new()
