@@ -67,10 +67,20 @@ public class FloatingLinkTests
 		};
 	}
 
-	private static (bool Resolved, string? Url, string? Error) Resolve(string crossLink, FloatingLinkSection? api = null)
+	// A host that still proxies /docs/api/doc/ to bump.sh, as www.elastic.co did before the API Explorer cutover.
+	private sealed class LegacyHostResolver : IsolatedBuildEnvironmentUriResolver, IUriEnvironmentResolver
+	{
+		bool IUriEnvironmentResolver.LegacyApiUrls => true;
+	}
+
+	private static (bool Resolved, string? Url, string? Error) Resolve(
+		string crossLink,
+		FloatingLinkSection? api = null,
+		IUriEnvironmentResolver? resolver = null
+	)
 	{
 		var crossLinkUri = new Uri(crossLink);
-		var resolution = CrossLinkResolver.Resolve(CrossLinks(api), new IsolatedBuildEnvironmentUriResolver(), crossLinkUri);
+		var resolution = CrossLinkResolver.Resolve(CrossLinks(api), resolver ?? new IsolatedBuildEnvironmentUriResolver(), crossLinkUri);
 		var uri = resolution.ResolvedUri();
 		return (uri is not null, uri?.ToString(), uri is null ? resolution.ToDiagnosticMessage(crossLinkUri) : null);
 	}
@@ -81,7 +91,7 @@ public class FloatingLinkTests
 		var (resolved, url, error) = Resolve("elasticsearch://api/elasticsearch/main");
 
 		resolved.Should().BeTrue(error);
-		url.Should().EndWith("/api/doc/elasticsearch/main");
+		url.Should().EndWith("/api/elasticsearch/main");
 	}
 
 	[Test]
@@ -140,7 +150,7 @@ public class FloatingLinkTests
 	[Arguments("elasticsearch://api/elasticsearch/operation/operation-search", "https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search")]
 	public void CrossLink_OnTheLegacyHost_LandsWhereBumpShServesTheVersion(string crossLink, string expected)
 	{
-		var (resolved, url, error) = Resolve(crossLink, Versioned);
+		var (resolved, url, error) = Resolve(crossLink, Versioned, new LegacyHostResolver());
 
 		resolved.Should().BeTrue(error);
 		url.Should().Be(expected);
@@ -180,7 +190,7 @@ public class FloatingLinkTests
 		var (resolved, url, _) = Resolve("elasticsearch://api/elasticsearch/operation/operation-search");
 
 		resolved.Should().BeTrue();
-		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search");
+		url.Should().Be("https://www.elastic.co/docs/api/elasticsearch/operation/operation-search");
 	}
 
 	[Test]
@@ -189,7 +199,7 @@ public class FloatingLinkTests
 		var (resolved, url, _) = Resolve("elasticsearch://api/elasticsearch/operation/operation-search#responses");
 
 		resolved.Should().BeTrue();
-		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search#responses");
+		url.Should().Be("https://www.elastic.co/docs/api/elasticsearch/operation/operation-search#responses");
 	}
 
 	[Test]
@@ -197,7 +207,7 @@ public class FloatingLinkTests
 	{
 		var (_, url, _) = Resolve("elasticsearch://api/elasticsearch/9/operation/operation-search-1#responses");
 
-		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search#responses");
+		url.Should().Be("https://www.elastic.co/docs/api/elasticsearch/v9/operation/operation-search#responses");
 	}
 
 	[Test]
@@ -213,7 +223,7 @@ public class FloatingLinkTests
 			).ResolvedUri();
 
 			uri.Should().NotBeNull();
-			uri!.ToString().Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search");
+			uri!.ToString().Should().Be("https://www.elastic.co/docs/api/elasticsearch/operation/operation-search");
 		}
 	}
 
@@ -223,7 +233,7 @@ public class FloatingLinkTests
 		var (resolved, url, _) = Resolve("elasticsearch://api/elasticsearch/8/types/legacy");
 
 		resolved.Should().BeTrue();
-		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/legacy-8/types/legacy");
+		url.Should().Be("https://www.elastic.co/docs/api/elasticsearch/legacy-8/types/legacy");
 	}
 
 	[Test]
@@ -241,7 +251,7 @@ public class FloatingLinkTests
 		var (resolved, url, _) = Resolve("elasticsearch://api/elasticsearch");
 
 		resolved.Should().BeTrue();
-		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch");
+		url.Should().Be("https://www.elastic.co/docs/api/elasticsearch");
 	}
 
 	[Test]

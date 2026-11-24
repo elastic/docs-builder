@@ -23,9 +23,9 @@ preview
   enabled: assembler-api-explorer, page-feedback
   enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: assembler-api-explorer, guide-nav
 prod
-  yaml:    
-  enabled: 
-  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: guide-nav
+  yaml:    ASSEMBLER_API_EXPLORER=true, PAGE_FEEDBACK=true
+  enabled: assembler-api-explorer, page-feedback
+  enabled with FEATURE_PAGE_FEEDBACK=false and FEATURE_GUIDE_NAV=true: assembler-api-explorer, guide-nav
 staging
   yaml:    ASSEMBLER_API_EXPLORER=true, NAVIGATION_PREVIEW=false, PAGE_FEEDBACK=true, WEBSITE_SEARCH=true
   enabled: assembler-api-explorer, page-feedback, website-search

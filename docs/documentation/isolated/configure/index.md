@@ -243,4 +243,4 @@ Suppresses hints about links to API reference pages that don't exist in the API 
 
 ### `ApiLinkLegacyPrefix`
 
-Suppresses hints about links to API reference pages that use the legacy `/docs/api/doc/` prefix. The hint names the page's URL after the API Explorer cutover. Only valid in `docset.yml`.
+Suppresses hints about links to API reference pages that use the legacy `/docs/api/doc/` prefix. The hint names the page's current URL. Only valid in `docset.yml`.
