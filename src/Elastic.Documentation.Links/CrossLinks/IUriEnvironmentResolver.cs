@@ -34,8 +34,8 @@ public class IsolatedBuildEnvironmentUriResolver : IUriEnvironmentResolver
 	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => new(PublishedBaseUri, $"docs/{sitePath}");
 
 	/// <inheritdoc />
-	/// <remarks>www.elastic.co serves bump.sh until the API Explorer cutover (elastic/docs-eng-team#725), which flips this with prod's flag.</remarks>
-	public bool LegacyApiUrls => true;
+	/// <remarks>Follows prod's API Explorer flag, since isolated builds link API pages to www.elastic.co (elastic/docs-eng-team#725).</remarks>
+	public bool LegacyApiUrls => false;
 
 	private static Uri PublishedBaseUri { get; } = new("https://www.elastic.co");
 
