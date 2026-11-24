@@ -673,18 +673,19 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Test]
-	[Arguments("endpoint-snapshot", 1)]
-	[Arguments("endpoint-snapshot-restore", 2)]
-	public void Collapse_SamePageInTwoTrees_MergesOnlyAtTheSameSlug(string v8Slug, int expected)
+	[Arguments("endpoint-snapshot", "\n\n", 1)]
+	[Arguments("endpoint-snapshot-restore", "\n\n", 2)]
+	[Arguments("endpoint-snapshot", " ", 2)]
+	public void Collapse_SamePageInTwoTrees_MergesOnlyAtTheSameSlugAndLayout(string v8Slug, string v8Break, int expected)
 	{
-		static DocumentationDocument Page(string tree, string root, string slug) =>
+		static DocumentationDocument Page(string tree, string root, string slug, string lineBreak) =>
 			new()
 			{
 				ContentType = "api",
 				Path = $"{root}/group/{slug}",
 				Title = "Snapshot and restore",
 				SearchTitle = "Snapshot and restore",
-				Body = $"# Snapshot and restore\n\n- [Create]({root}/operation/operation-create)\n",
+				Body = $"# Snapshot and restore{lineBreak}- [Create]({root}/operation/operation-create)\n",
 				ContentBodyHash = "same-page",
 				Api = new ApiOperationMetadata
 				{
@@ -699,7 +700,7 @@ public class OpenApiDocumentExporterTests
 			};
 
 		var docs = ApiTreeCollapse.Collapse(
-			[Page("9", "/docs/api/elasticsearch", "endpoint-snapshot"), Page("8", "/docs/api/elasticsearch/v8", v8Slug)],
+			[Page("9", "/docs/api/elasticsearch", "endpoint-snapshot", "\n\n"), Page("8", "/docs/api/elasticsearch/v8", v8Slug, v8Break)],
 			defaultTree: "9"
 		);
 

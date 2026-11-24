@@ -49,8 +49,8 @@ internal static class ApiTreeCollapse
 
 	/// <summary>
 	/// Everything the index stores for the document except the URLs, which differ per tree by construction. The path counts relative
-	/// to its tree's root, so pages at different slugs stay apart. A page document's body is its export, whose links point into its
-	/// tree, so its content hash, which reads those links relative to the tree, stands for it.
+	/// to its tree's root, so pages at different slugs stay apart, and so do a page body's links into its tree, so two trees that
+	/// render a page alike share one document while any other difference in its Markdown, layout included, keeps them apart.
 	/// </summary>
 	private static string Fingerprint(DocumentationDocument doc)
 	{
@@ -58,7 +58,7 @@ internal static class ApiTreeCollapse
 		var withoutUrls = doc with
 		{
 			Path = doc.Path.StartsWith(root, StringComparison.Ordinal) ? doc.Path[root.Length..] : doc.Path,
-			Body = doc.Api.Page ? "" : doc.Body,
+			Body = doc.Api.Page ? OpenApiGenerator.RelativeToTree(doc.Body ?? "", root) : doc.Body,
 			Parents = [.. doc.Parents.Select(static p => p with { Path = "" })],
 			Api = doc.Api! with { Trees = [] }
 		};
