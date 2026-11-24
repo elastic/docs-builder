@@ -13,7 +13,6 @@ using Elastic.Documentation.Api.Gcp;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
-using Elastic.Ingest.Elasticsearch;
 using Elastic.Transport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
