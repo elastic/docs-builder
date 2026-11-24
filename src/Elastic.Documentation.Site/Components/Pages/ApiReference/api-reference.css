@@ -1736,7 +1736,9 @@ button.response-status-toggle:focus {
 			> .property-item
 			> dt {
 			grid-column: 1 / 4;
-			grid-row: 1;
+			/* The dt spans every row the description column can fill (description, control, constraints, values, example,
+			   reference link), so a tall name or type never pushes the control or the values below its own bottom. */
+			grid-row: 1 / span 6;
 			align-items: start;
 		}
 
@@ -1835,69 +1837,18 @@ button.response-status-toggle:focus {
 			white-space: normal;
 		}
 
-		/* A constraint stays on one line; the type wraps between them. A long one is already cut with an ellipsis. */
+		/* The script moves a parameter's constraints to a row in the description column, so the Type cell holds the
+		   primitive, or a union of primitives, which wraps between its members. */
 		.api-param-section[data-layout='table']
 			> .api-param-section-body
 			> .property-list
 			> .property-item
 			> dt
 			> code.schema-type
-			> .type-primitive,
-		.api-param-section[data-layout='table']
-			> .api-param-section-body
-			> .property-list
-			> .property-item
-			> dt
-			> code.schema-type
-			> .schema-type-group {
+			> .type-primitive {
 			flex: 0 0 auto;
 			max-width: 100%;
 			white-space: nowrap;
-		}
-
-		/* Each constraint takes a line of its own below the primitive, without the inline separator, so every row has the
-		   same shape whether or not its constraints would fit beside the type. A constraint longer than the Type cell
-		   wraps inside it, so no range, format or pattern is cut from the reader: the server adds a tooltip only to a
-		   constraint over 40 characters. The constraint span is inline in the design system, so the group becomes a flex
-		   row to give it a box that can wrap. */
-		.api-param-section[data-layout='table']
-			> .api-param-section-body
-			> .property-list
-			> .property-item
-			> dt
-			> code.schema-type
-			> .schema-type-group {
-			display: inline-flex;
-			flex-basis: 100%;
-			min-width: 0;
-		}
-
-		.api-param-section[data-layout='table']
-			> .api-param-section-body
-			> .property-list
-			> .property-item
-			> dt
-			> code.schema-type
-			> .schema-type-group
-			> .schema-type-sep {
-			display: none;
-		}
-
-		.api-param-section[data-layout='table']
-			> .api-param-section-body
-			> .property-list
-			> .property-item
-			> dt
-			> code.schema-type
-			> .schema-type-group
-			> .type-constraint {
-			display: block;
-			min-width: 0;
-			max-width: 100%;
-			overflow: visible;
-			text-overflow: clip;
-			white-space: normal;
-			overflow-wrap: anywhere;
 		}
 
 		.api-param-section[data-layout='table']
@@ -1936,6 +1887,47 @@ button.response-status-toggle:focus {
 			> dd
 			+ dd {
 			padding-top: 0;
+		}
+
+		/* The constraints row reads like the Values row: a muted label and one chip per constraint. Out of the Type cell a
+		   constraint is no longer cut with an ellipsis, so a long pattern shows whole and wraps. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-constraints {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: var(--space-1);
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-constraints
+			> .schema-type-group
+			> .schema-type-sep {
+			display: none;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-constraints
+			> .schema-type-group
+			> .type-constraint {
+			padding-inline: 0.375rem;
+			padding-block: 0.125rem;
+			border-radius: var(--radius-sm);
+			background: var(--color-surface-sunken);
+			color: var(--color-text-muted);
+			font-family: var(--font-mono);
+			font-size: var(--text-xs);
+			white-space: normal;
+			overflow-wrap: anywhere;
 		}
 
 		/* The reference link's tree branch joins it to the name in the list; in a cell there is nothing to join. */

@@ -22,6 +22,12 @@ const clampToggleClass = 'api-param-clamp-toggle'
 // The control lives in a dd of its own: a dl group may hold only terms and descriptions.
 const clampRowClass = 'api-param-clamp-row'
 const clampToggleSelector = `:scope > .${clampRowClass} > .${clampToggleClass}`
+// In the table a parameter's constraints (min, max, pattern) leave the Type cell for a row of their own in the
+// description column, so the Type column holds only the primitive and the constraints have room to read.
+const constraintRowClass = 'api-param-constraints'
+const constraintGroupSelector =
+    ':scope > dt > code.schema-type > .schema-type-group'
+const constraintMarkers = new WeakMap<Element, Comment>()
 
 function isParamLayout(value: unknown): value is ParamLayout {
     return value === 'list' || value === 'table'
@@ -48,6 +54,16 @@ function rememberParamLayout(layout: ParamLayout): void {
 
 /** Whether a clamped description has more lines than the clamp shows. */
 export type Overflows = (description: HTMLElement) => boolean
+
+/** Whether the stylesheet lays the section out as a table: the choice is remembered, but a narrow section keeps the list. */
+export type TableApplied = (section: HTMLElement) => boolean
+
+const measuredTableApplied: TableApplied = (section) => {
+    const body = section.querySelector<HTMLElement>(
+        ':scope > .api-param-section-body'
+    )
+    return body !== null && getComputedStyle(body).display === 'grid'
+}
 
 // The clamp swaps the cell's bottom padding for a margin, so only the content box compares across the two states.
 function contentHeight(el: HTMLElement): number {
@@ -125,6 +141,66 @@ function unclampDescriptions(section: HTMLElement): void {
     }
 }
 
+/**
+ * Moves the row's constraints from the Type cell to a labelled row below the description, as the Values row is laid
+ * out. Each group leaves a marker behind so the list gets it back in its place.
+ */
+function placeConstraints(row: HTMLElement): void {
+    if (row.querySelector(`:scope > .${constraintRowClass}`)) return
+    const groups = row.querySelectorAll<HTMLElement>(constraintGroupSelector)
+    if (groups.length === 0) return
+    const constraints = document.createElement('dd')
+    constraints.className = constraintRowClass
+    const label = document.createElement('span')
+    label.className = 'values-label'
+    label.textContent = 'Constraints:'
+    constraints.append(label)
+    for (const group of groups) {
+        const marker = document.createComment('constraint')
+        constraintMarkers.set(group, marker)
+        group.replaceWith(marker)
+        constraints.append(group)
+    }
+    const after =
+        row.querySelector<HTMLElement>(`:scope > .${clampRowClass}`) ??
+        row.querySelector<HTMLElement>(descriptionSelector) ??
+        row.querySelector<HTMLElement>(':scope > dt')
+    after?.after(constraints)
+}
+
+function restoreConstraints(row: HTMLElement): void {
+    const constraints = row.querySelector<HTMLElement>(
+        `:scope > .${constraintRowClass}`
+    )
+    if (!constraints) return
+    for (const group of constraints.querySelectorAll('.schema-type-group')) {
+        const marker = constraintMarkers.get(group)
+        if (marker?.parentNode) marker.replaceWith(group)
+        constraintMarkers.delete(group)
+    }
+    constraints.remove()
+}
+
+/** Lays out the section's rows for the table: constraints move only while the stylesheet applies the table. */
+function layoutTableRows(
+    section: HTMLElement,
+    overflows: Overflows,
+    tableApplied: TableApplied
+): void {
+    const applied = tableApplied(section)
+    for (const row of section.querySelectorAll<HTMLElement>(rowSelector)) {
+        if (applied) placeConstraints(row)
+        else restoreConstraints(row)
+    }
+    clampDescriptions(section, overflows)
+}
+
+function layoutListRows(section: HTMLElement): void {
+    unclampDescriptions(section)
+    for (const row of section.querySelectorAll<HTMLElement>(rowSelector))
+        restoreConstraints(row)
+}
+
 const observedSections = new WeakSet<HTMLElement>()
 
 /**
@@ -132,13 +208,17 @@ const observedSections = new WeakSet<HTMLElement>()
  * or its width changes, the rows are measured again. The browsers without ResizeObserver also lack subgrid, so they
  * never show the table.
  */
-function observeSection(section: HTMLElement, overflows: Overflows): void {
+function observeSection(
+    section: HTMLElement,
+    overflows: Overflows,
+    tableApplied: TableApplied
+): void {
     if (observedSections.has(section) || typeof ResizeObserver === 'undefined')
         return
     observedSections.add(section)
     new ResizeObserver(() => {
         if (section.dataset.layout === 'table')
-            clampDescriptions(section, overflows)
+            layoutTableRows(section, overflows, tableApplied)
     }).observe(section)
 }
 
@@ -146,7 +226,8 @@ function observeSection(section: HTMLElement, overflows: Overflows): void {
 export function applyParamLayout(
     layout: ParamLayout,
     root: ParentNode = document,
-    overflows: Overflows = measuredOverflow
+    overflows: Overflows = measuredOverflow,
+    tableApplied: TableApplied = measuredTableApplied
 ): void {
     for (const control of root.querySelectorAll<HTMLElement>(switchSelector)) {
         // The server renders the control hidden: without this script the Table button would do nothing.
@@ -155,9 +236,9 @@ export function applyParamLayout(
         if (section) {
             section.dataset.layout = layout
             if (layout === 'table') {
-                clampDescriptions(section, overflows)
-                observeSection(section, overflows)
-            } else unclampDescriptions(section)
+                layoutTableRows(section, overflows, tableApplied)
+                observeSection(section, overflows, tableApplied)
+            } else layoutListRows(section)
         }
         for (const option of control.querySelectorAll<HTMLElement>(
             '[data-layout]'

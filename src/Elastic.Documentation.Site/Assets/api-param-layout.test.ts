@@ -21,7 +21,7 @@ function markup(): string {
             <div class="api-param-section-body" id="${anchor}-list">
                 <dl class="property-list">
                     <div class="property-item depth-0" id="${anchor}-long">
-                        <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type">string</code></dt>
+                        <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type"><span class="type-primitive">string</span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint">min length: 1</span></span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint">max length: 4096</span></span></code></dt>
                         <dd><p>A long description.</p><p><a href="#deep" id="${anchor}-deep-link">deep link</a></p></dd>
                         <dd class="reference-link-row"><a href="#">Reference</a></dd>
                         <div class="nested-properties">
@@ -231,6 +231,82 @@ describe('parameter layout switch', () => {
             applyParamLayout('list', document, longOnly)
             expect(row('query-params-long').dataset.clamp).toBeUndefined()
             expect(toggle('query-params-long')).toBeNull()
+        })
+    })
+
+    describe('constraints', () => {
+        const longOnly = (dd: HTMLElement) =>
+            dd.closest('.property-item')!.id.endsWith('-long')
+        const applied = () => true
+        const notApplied = () => false
+        const row = (id: string) => document.getElementById(id)!
+        const type = (id: string) =>
+            row(id).querySelector('dt > code.schema-type')!
+        const constraints = (id: string) =>
+            row(id).querySelector<HTMLElement>(
+                ':scope > .api-param-constraints'
+            )
+        const original = () => type('query-params-long').textContent
+
+        it('moves the constraints below the description when the table applies', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, applied)
+            expect(type('query-params-long').textContent).toBe('string')
+            const dd = constraints('query-params-long')!
+            expect(dd.querySelector('.values-label')!.textContent).toBe(
+                'Constraints:'
+            )
+            expect(
+                [...dd.querySelectorAll('.type-constraint')].map(
+                    (c) => c.textContent
+                )
+            ).toEqual(['min length: 1', 'max length: 4096'])
+            // Below the description and its control, above the values and the reference link.
+            expect(dd.previousElementSibling!.className).toBe(
+                'api-param-clamp-row'
+            )
+            expect(dd.nextElementSibling!.className).toBe('reference-link-row')
+            expect(before).not.toBe('string')
+        })
+
+        it('puts the constraints back in the type for the list', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, applied)
+            applyParamLayout('list', document, longOnly, applied)
+            expect(constraints('query-params-long')).toBeNull()
+            expect(type('query-params-long').textContent).toBe(before)
+            expect(
+                type('query-params-long').querySelector(
+                    '.schema-type-group > .schema-type-sep'
+                )
+            ).not.toBeNull()
+        })
+
+        it('keeps the constraints in the type while the section is too narrow for the table', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, notApplied)
+            expect(constraints('query-params-long')).toBeNull()
+            expect(type('query-params-long').textContent).toBe(before)
+        })
+
+        it('moves them once however often the table is applied', () => {
+            applyParamLayout('table', document, longOnly, applied)
+            applyParamLayout('table', document, longOnly, applied)
+            expect(
+                row('query-params-long').querySelectorAll(
+                    '.api-param-constraints'
+                )
+            ).toHaveLength(1)
+            expect(
+                constraints('query-params-long')!.querySelectorAll(
+                    '.type-constraint'
+                )
+            ).toHaveLength(2)
+        })
+
+        it('leaves a row without constraints alone', () => {
+            applyParamLayout('table', document, longOnly, applied)
+            expect(constraints('query-params-short')).toBeNull()
         })
     })
 })
