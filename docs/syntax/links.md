@@ -123,7 +123,7 @@ Prefer an [API cross-link](../data/openapi/api-explorer.md#api-cross-links) to a
 
 If an endpoint no longer exists in the current API docs, point the link at the versioned tree that still has it, for example `https://www.elastic.co/docs/api/kibana/v8/...`. Only the page is checked, not the `#anchor`, and `<...>` autolinks are not checked. An API the link index holds no pages for is not checked. Old bump.sh URLs are checked at the page the edge redirects them to.
 
-API pages moved from `/docs/api/doc/<api>/...` to `/docs/api/<api>/...` when the API Explorer replaced bump.sh on `www.elastic.co`. Write new links in the `/docs/api/<api>/...` form. Existing `/docs/api/doc/...` links keep working, because the edge redirects them to the new path, and the build shows a hint with the new URL for each one. You can silence it with `ApiLinkLegacyPrefix` under [`suppress`](../documentation/isolated/configure/index.md#suppress).
+API pages moved from `/docs/api/doc/<api>/...` to `/docs/api/<api>/...` when the API Explorer replaced bump.sh on `www.elastic.co`. Write new links in the `/docs/api/<api>/...` form. Most existing `/docs/api/doc/...` links keep working, because the edge redirects them to the new path, and the build shows a hint with the new URL for each one. A few have no new page, such as links to `/docs/api/doc/observability-serverless/...`. For those the build shows a missing-page hint instead, so point the link at a page that exists. You can silence it with `ApiLinkLegacyPrefix` under [`suppress`](../documentation/isolated/configure/index.md#suppress).
 
 ### Linked images
 

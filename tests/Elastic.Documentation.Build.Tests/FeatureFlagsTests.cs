@@ -172,9 +172,7 @@ public class FeatureFlagsTests
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var prod = config.Environments["prod"];
 
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in prod.FeatureFlags)
-			features.Set(key, value);
-		features.AssemblerApiExplorerEnabled.Should().BeTrue();
+		// The checked-in value, not the effective flag: CI sets FEATURE_ASSEMBLER_API_EXPLORER, which would mask a removed key.
+		prod.FeatureFlags.Should().Contain("ASSEMBLER_API_EXPLORER", true);
 	}
 }
