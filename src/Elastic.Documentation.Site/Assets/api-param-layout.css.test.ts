@@ -77,9 +77,20 @@ function rulesOf(block: string): Rule[] {
     return rules
 }
 
-/** The compound the selector targets: what follows its last combinator. An ancestor in the selector is not the subject. */
+/**
+ * The compound the selector targets: what follows its last combinator outside brackets and parentheses, so a space in
+ * an attribute value or a pseudo-class argument does not end it. An ancestor in the selector is not the subject.
+ */
 function subjectOf(selector: string): string {
-    return selector.split(/\s*[>+~]\s*|\s+/).pop() ?? ''
+    let depth = 0
+    let start = 0
+    for (let i = 0; i < selector.length; i++) {
+        const char = selector[i]
+        if (char === '[' || char === '(') depth++
+        else if (char === ']' || char === ')') depth--
+        else if (depth === 0 && /[\s>+~]/.test(char)) start = i + 1
+    }
+    return selector.slice(start)
 }
 
 /** The rules in the block that display an element a browser without subgrid must never see. */
@@ -164,10 +175,14 @@ describe('the stylesheet reader', () => {
                 & > .api-param-layout-option { display: inline-flex; }
                 .api-param-table-head & { display: flex; }
             }
-            .ready .api-param-layout { display: flex; }`
+            .ready .api-param-layout { display: flex; }
+            .api-param-layout[aria-label="Query parameters layout"] { display: flex; }
+            .api-param-layout:is(.ready > .page) { display: flex; }`
         expect(shownRules(options)).toEqual([
             '.api-param-table-head .api-param-layout',
             '.ready .api-param-layout',
+            '.api-param-layout[aria-label="Query parameters layout"]',
+            '.api-param-layout:is(.ready > .page)',
         ])
     })
 
