@@ -74,6 +74,19 @@ index from the templates.
 The generated mapping disables dynamic field mapping. Fields that are not part
 of `PageFeedbackDocument` remain unindexed instead of changing the schema.
 
+Templates only apply when an index is created, and this index has a fixed name.
+An index created before a field was added keeps its old mapping, so the new
+field is stored in `_source` but never indexed. After the templates, startup
+therefore also puts the current mapping on the existing index
+(`PUT page-feedback-v1-{environment}/_mapping`). A missing index is fine, because
+the template applies on the first write. A rejected mapping fails startup in
+`staging`, `edge`, and `prod`, and is logged in `dev`.
+
+Only additive changes are accepted this way. Changing a field's type, or removing
+a field, needs a new index name, such as `page-feedback-v2-{environment}`.
+Documents written before a field reached the mapping stay unindexed for that
+field until you run `POST page-feedback-v1-{environment}/_update_by_query?conflicts=proceed`.
+
 Bootstrap failures are logged and ignored in `dev` so the local documentation
 server can run without Elasticsearch. They prevent startup in `staging`, `edge`,
 and `prod`.
