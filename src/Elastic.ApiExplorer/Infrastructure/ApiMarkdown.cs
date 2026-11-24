@@ -226,7 +226,8 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationLinkPattern();
 
-	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	// An escaped `\](` is literal text, not the end of a link label.
+	[GeneratedRegex(@"(?<prefix>(?<!\\)\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkDestinationPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions

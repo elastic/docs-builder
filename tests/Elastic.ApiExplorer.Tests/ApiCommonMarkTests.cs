@@ -26,6 +26,32 @@ public class ApiCommonMarkTests
 		ApiSeoDescription.ToPlainText(ApiCommonMark.Text(text)).Should().Be(text);
 
 	[Test]
+	[Arguments("Search by #", "# Search by \\#")]
+	[Arguments("C#", "# C#")]
+	[Arguments("1. List roles", "# 1. List roles")]
+	public void Heading_LiteralTitle_ReadsBackAsWritten(string title, string expected)
+	{
+		var markdown = new StringBuilder();
+		ApiCommonMark.Heading(markdown, 1, ApiCommonMark.Text(title));
+
+		markdown.ToString().TrimEnd().Should().Be(expected);
+		ApiSeoDescription.ToPlainText(markdown.ToString()).Should().Be(title);
+	}
+
+	[Test]
+	public void Text_LinkLikeName_StaysTextThroughTheLinkPass() =>
+		ApiMarkdown
+			.CanonicalizeLinks(ApiCommonMark.Text("See [status](status.md)"), new Uri("https://www.elastic.co"))
+			.Should()
+			.Be("See \\[status\\](status.md)");
+
+	[Test]
+	[Arguments("Returns <index> when available.", "Returns <index> when available.")]
+	[Arguments("<p>Returns the index name.</p>", "<p>Returns the index name.</p>")]
+	public void ToPlainText_Html_StaysAsWritten(string markdown, string expected) =>
+		ApiSeoDescription.ToPlainText(markdown).Should().Be(expected);
+
+	[Test]
 	[Arguments("Snapshot and restore", "Snapshot and restore")]
 	[Arguments("max_docs", "max_docs")]
 	[Arguments("HTTP <code>", "HTTP \\<code\\>")]

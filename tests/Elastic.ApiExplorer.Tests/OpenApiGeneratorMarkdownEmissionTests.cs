@@ -119,7 +119,8 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 				Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-codes.md"),
 				TestContext.Current!.Execution.CancellationToken
 			);
-		group.Should().StartWith("---\ntype: api\ntitle: HTTP <code> responses\n");
+		group = group.ReplaceLineEndings("\n");
+		group.Should().StartWith("---\ntype: api\ntitle: \"HTTP <code> responses\"\n");
 		group.Should().Contain("\n# HTTP \\<code\\> responses\n");
 	}
 

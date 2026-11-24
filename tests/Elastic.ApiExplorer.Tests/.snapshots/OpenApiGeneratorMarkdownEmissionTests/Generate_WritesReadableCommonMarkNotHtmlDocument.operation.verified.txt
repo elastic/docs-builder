@@ -1,6 +1,6 @@
 ---
 type: api
-title: Run a search
+title: "Run a search"
 description: "Returns hits that match the query defined in the request."
 url: /api/elasticsearch/operation/operation-search
 resource: /api/elasticsearch/operation/operation-search

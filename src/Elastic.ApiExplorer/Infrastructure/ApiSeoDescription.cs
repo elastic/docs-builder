@@ -124,11 +124,13 @@ internal static partial class ApiSeoDescription
 		return buffer.Length == 0 ? null : buffer.ToString();
 	}
 
-	private static readonly MarkdownPipeline PlainTextPipeline = new MarkdownPipelineBuilder().Build();
+	// HTML stays as written, as it did before this used a parser: a literal `<index>` is a placeholder readers see, and the property
+	// index strips real tags from its descriptions afterwards.
+	private static readonly MarkdownPipeline PlainTextPipeline = new MarkdownPipelineBuilder().DisableHtml().Build();
 
 	/// <summary>
 	/// Markdown as plain text, read by a CommonMark parser: code spans, escapes, entities and underscores inside words come out as
-	/// written, and link targets, emphasis and HTML go.
+	/// written, and link targets and emphasis go.
 	/// </summary>
 	internal static string ToPlainText(string markdown)
 	{

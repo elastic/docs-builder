@@ -36,7 +36,7 @@ internal static class LandingCommonMark
 		var url = entry.Url;
 		_ = markdown.AppendLine($"- {ApiCommonMark.Link(ApiCommonMark.Text(entry.Title), url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
 		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
-			_ = markdown.AppendLine($"  {summary}");
+			_ = markdown.AppendLine($"  {ApiCommonMark.Text(summary)}");
 		_ = markdown.AppendLine(
 			$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(url))}"
 		);

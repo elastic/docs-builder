@@ -56,8 +56,18 @@ internal static class ApiCommonMark
 	{
 		_ = markdown.Append('#', level);
 		_ = markdown.Append(' ');
-		_ = markdown.AppendLine(text);
+		_ = markdown.AppendLine(WithoutClosingSequence(text));
 		_ = markdown.AppendLine();
+	}
+
+	/// <summary>
+	/// A trailing run of <c>#</c> after a space would close the heading and vanish, so <c>Search by #</c> escapes it.
+	/// </summary>
+	private static string WithoutClosingSequence(string text)
+	{
+		var run = text.Length - text.TrimEnd('#').Length;
+		var closes = run > 0 && (run == text.Length || text[^(run + 1)] == ' ');
+		return closes ? $"{text[..^run]}\\{text[^run..]}" : text;
 	}
 
 	public static void Paragraph(StringBuilder markdown, string? text)
