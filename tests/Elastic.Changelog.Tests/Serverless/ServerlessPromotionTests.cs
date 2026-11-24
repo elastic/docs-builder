@@ -309,7 +309,7 @@ public class ServerlessPromotionTests
 			.Should()
 			.Equal(
 				new ServerlessPreviewTarget("staging", "6ee008fd791e", "0c0f8abbf51d"),
-				new ServerlessPreviewTarget("head", "6ee008fd791e", BranchHead)
+				new ServerlessPreviewTarget("edge", "6ee008fd791e", BranchHead)
 			);
 
 	[Test]
@@ -322,7 +322,7 @@ public class ServerlessPromotionTests
 			)
 			.Select(t => t.Label)
 			.Should()
-			.Equal("head");
+			.Equal("edge");
 
 	[Test]
 	public void PlanPreview_HeadEqualToProductionIgnoringCaseAndLength_LeavesHeadOut() =>
@@ -343,7 +343,7 @@ public class ServerlessPromotionTests
 			.Should()
 			.Equal(
 				new ServerlessPreviewTarget("staging", "d3124c7dda83", "2d4c3217bf7c"),
-				new ServerlessPreviewTarget("head", "d3124c7dda83", BranchHead)
+				new ServerlessPreviewTarget("edge", "d3124c7dda83", BranchHead)
 			);
 
 	[Test]
@@ -364,8 +364,10 @@ public class ServerlessPromotionTests
 			.Should()
 			.Equal(
 				"elasticsearch-serverless-cloud-serverless-staging.yaml",
+				"elasticsearch-serverless-cloud-serverless-edge.yaml",
 				"elasticsearch-serverless-cloud-serverless-head.yaml",
 				"elasticsearch-cloud-serverless-staging.yaml",
+				"elasticsearch-cloud-serverless-edge.yaml",
 				"elasticsearch-cloud-serverless-head.yaml"
 			);
 
@@ -374,5 +376,5 @@ public class ServerlessPromotionTests
 		ServerlessPromotion
 			.PreviewBundleFileNames(ServerlessPromotion.Services["kibana"])
 			.Should()
-			.Equal("kibana-cloud-serverless-staging.yaml", "kibana-cloud-serverless-head.yaml");
+			.Equal("kibana-cloud-serverless-staging.yaml", "kibana-cloud-serverless-edge.yaml", "kibana-cloud-serverless-head.yaml");
 }

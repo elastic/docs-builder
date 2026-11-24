@@ -10,7 +10,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 public class PreviewProblemMergeTests
 {
-	private static PreviewProblem Problem(string product, string repo, int number, string release = "head") =>
+	private static PreviewProblem Problem(string product, string repo, int number, string release = "edge") =>
 		new()
 		{
 			Product = product,
@@ -71,12 +71,12 @@ public class PreviewProblemMergeTests
 		var log = new PreviewProblemLog();
 		log.Add(
 			"kibana",
-			"head",
+			"edge",
 			new GitRangePrProblem(1, "https://github.com/elastic/kibana/pull/1", "t", PreviewProblemKind.MissingTypeLabel, string.Empty)
 		);
 		log.Add(
 			"kibana",
-			"head",
+			"edge",
 			new GitRangePrProblem(1, "https://github.com/elastic/kibana/pull/1", "t", PreviewProblemKind.MissingAreaLabel, string.Empty)
 		);
 		log.Add(
@@ -86,7 +86,7 @@ public class PreviewProblemMergeTests
 		);
 		log.Add(
 			"kibana",
-			"head",
+			"edge",
 			new GitRangePrProblem(2, "https://github.com/elastic/kibana/pull/2", "t", PreviewProblemKind.MissingTypeLabel, string.Empty)
 		);
 
