@@ -126,7 +126,8 @@ internal static partial class ApiSeoDescription
 
 	internal static string ToPlainText(string markdown)
 	{
-		var text = ImagePattern().Replace(markdown, "$1");
+		// The slot markers below are control characters no reader sees, so any already in the text go first.
+		var text = ImagePattern().Replace(markdown.Replace("\u0001", "").Replace("\u0002", ""), "$1");
 		text = LinkPattern().Replace(text, "$1");
 		text = HeadingPattern().Replace(text, string.Empty);
 		// A code span is quoted as written, so `___value___` keeps its underscores. Each one waits in a slot while emphasis is
@@ -186,7 +187,8 @@ internal static partial class ApiSeoDescription
 	[GeneratedRegex(@"(?<![\p{L}\p{N}])_([^_]+)_(?![\p{L}\p{N}])", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ItalicUnderscorePattern();
 
-	[GeneratedRegex(@"`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	// An escaped backtick, `\``, is a literal backtick and never opens a code span.
+	[GeneratedRegex(@"(?<!\\)`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CodePattern();
 
 	[GeneratedRegex("\u0001(\\d+)\u0002", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]

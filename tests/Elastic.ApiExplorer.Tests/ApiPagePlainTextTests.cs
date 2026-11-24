@@ -48,6 +48,8 @@ public class ApiPagePlainTextTests
 	[Arguments("Use ___both___ methods.", "Use both methods.")]
 	[Arguments("Use `___value___` as is.", "Use ___value___ as is.")]
 	[Arguments("Use **`max_docs`** here.", "Use max_docs here.")]
+	[Arguments("A \\` and **bold** \\` text.", "A \\` and bold \\` text.")]
+	[Arguments("Slot \u00010\u0002 and `code`.", "Slot 0 and code.")]
 	public void Description_MarkdownOrPlainText_IsPlainText(string description, string expected) =>
 		ApiPagePlainText.Description(description).Should().Be(expected);
 }
