@@ -805,7 +805,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			[Problem("kibana", 1, ":Search"), Problem("elasticsearch", 2, ":Analytics, :Ingest")]
 		);
 
-		var page = files["diagnostics.md"];
+		var page = files["diagnostics.md"].ReplaceLineEndings("\n");
 		page.Should().Contain(
 			"**elastic/elasticsearch**\n\nAdd one of these labels: `:Analytics`, `:Ingest`.\n\n- [elastic/elasticsearch\\#2]"
 		);
