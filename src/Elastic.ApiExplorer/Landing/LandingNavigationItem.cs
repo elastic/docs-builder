@@ -81,6 +81,9 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	/// <summary>Whether the sitemap lists the pages of this tree. The page type of the tree decides it, not <see cref="Hidden"/>.</summary>
 	public bool InSitemap { get; set; } = true;
 
+	/// <summary>The landing of a tree hidden from navigation is still a page to index. The page type of the tree decides it, not <see cref="Hidden"/>.</summary>
+	public bool ExcludeFromIndexing => false;
+
 	public Uri Identifier { get; } = new Uri("todo://");
 
 	public string NavigationTitle => Index.NavigationTitle;

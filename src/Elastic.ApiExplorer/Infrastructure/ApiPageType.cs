@@ -46,10 +46,11 @@ public static class ApiPageTypes
 
 	/// <summary>
 	/// The robots value of a page. A build that disallows indexing wins on every page. <c>noindex</c> stands alone:
-	/// a long-term <c>noindex,follow</c> is read as <c>noindex,nofollow</c>.
+	/// a long-term <c>noindex,follow</c> is read as <c>noindex,nofollow</c>. <paramref name="excludeFromIndexing"/> is the page's own
+	/// <c>ExcludeFromIndexing</c>, such as Servers, which is kept only so old links land.
 	/// </summary>
-	public static string Robots(ApiPageType type, bool buildAllowsIndexing) =>
-		!buildAllowsIndexing ? "noindex, nofollow" : Indexing(type).Index ? "index, follow" : "noindex";
+	public static string Robots(ApiPageType type, bool buildAllowsIndexing, bool excludeFromIndexing) =>
+		!buildAllowsIndexing ? "noindex, nofollow" : Indexing(type).Index && !excludeFromIndexing ? "index, follow" : "noindex";
 
 	/// <summary>
 	/// The path a page names as canonical. <paramref name="treeRootUrl"/> is the root of the page's own tree and

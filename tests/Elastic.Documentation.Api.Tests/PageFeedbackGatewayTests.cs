@@ -44,19 +44,35 @@ public class PageFeedbackGatewayTests
 	[Test]
 	public async Task UpsertFeedbackAsync_ValidRecord_SendsDocumentWithoutEuid()
 	{
-		var bodies = new List<string>();
-		var transport = CreateTransport(201, details => bodies.Add(Encoding.UTF8.GetString(details.RequestBodyInBytes ?? [])));
+		var requests = new List<(string Path, string Body)>();
+		var transport = CreateTransport(201, requests);
 		var index = CreateIndex();
 		using var channel = CreateChannel(transport, index);
 		var gateway = new ElasticsearchPageFeedbackGateway(channel, NullLogger<ElasticsearchPageFeedbackGateway>.Instance);
 
 		_ = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
 
-		var bulkBody = bodies.Should().ContainSingle(body => body.Contains("page_url", StringComparison.Ordinal)).Subject;
-		bulkBody.Should().NotContainEquivalentOf("euid");
+		var (_, body) = requests.Should().ContainSingle().Subject;
+		body.Should().Contain("page_url").And.NotContainEquivalentOf("euid");
 	}
 
-	private static ITransport CreateTransport(int itemStatus, Action<ApiCallDetails>? onRequestCompleted = null) =>
+	[Test]
+	public async Task UpsertFeedbackAsync_ValidRecord_IndexesByFeedbackIdIntoTheEnvironmentIndex()
+	{
+		var requests = new List<(string Path, string Body)>();
+		var transport = CreateTransport(201, requests);
+		var index = CreateIndex();
+		using var channel = CreateChannel(transport, index);
+		var gateway = new ElasticsearchPageFeedbackGateway(channel, NullLogger<ElasticsearchPageFeedbackGateway>.Instance);
+
+		_ = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
+
+		var (path, body) = requests.Should().ContainSingle().Subject;
+		path.Should().Be("/page-feedback-v1-dev/_bulk");
+		body.Split('\n')[0].Should().Be("""{"index":{"_id":"00000000-0000-4000-8000-000000000001"}}""");
+	}
+
+	private static ITransport CreateTransport(int itemStatus, List<(string Path, string Body)>? requests = null) =>
 		Virtual
 			.Elasticsearch
 			.Bootstrap(1)
@@ -83,13 +99,25 @@ public class PageFeedbackGatewayTests
 					})
 			)
 			.StaticNodePool()
-			.Settings(settings => settings.DisablePing().EnableDebugMode().OnRequestCompleted(onRequestCompleted ?? (_ => { })))
+			.Settings(
+				settings => settings
+					.DisablePing()
+					.EnableDebugMode()
+					.OnRequestCompleted(
+						details => requests?.Add(
+							(details.Uri?.AbsolutePath ?? string.Empty, details.RequestBodyInBytes is { } bytes
+								? Encoding.UTF8.GetString(bytes)
+								: string.Empty)
+						)
+					)
+			)
 			.RequestHandler;
 
 	private static PageFeedbackIndex CreateIndex() => new(new AppEnvironment { Current = AppEnv.Dev });
 
+	// The factory the API registers, so a change to its strategy is exercised by these writes.
 	private static IngestChannel<PageFeedbackDocument> CreateChannel(ITransport transport, PageFeedbackIndex index) =>
-		new(new IngestChannelOptions<PageFeedbackDocument>(transport, index.MappingContext));
+		index.CreateChannel(transport, NullLogger.Instance);
 
 	private static PageFeedbackRecord CreateRecord() =>
 		new(

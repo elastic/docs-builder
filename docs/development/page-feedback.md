@@ -74,14 +74,28 @@ index from the templates.
 The generated mapping disables dynamic field mapping. Fields that are not part
 of `PageFeedbackDocument` remain unindexed instead of changing the schema.
 
+Templates only apply when an index is created, and this index has a fixed name.
+An index created before a field was added keeps its old mapping, so the new
+field is stored in `_source` but never indexed. After the templates, startup
+therefore also puts the current mapping on the existing index
+(`PUT page-feedback-v1-{environment}/_mapping`). A missing index is fine, because
+the template applies on the first write. A rejected mapping is a bootstrap failure.
+
+Documents written before a field reached the mapping stay unindexed for that
+field until you run `POST page-feedback-v1-{environment}/_update_by_query?conflicts=proceed`.
+
 Bootstrap failures are logged and ignored in `dev` so the local documentation
 server can run without Elasticsearch. They prevent startup in `staging`, `edge`,
 and `prod`.
 
 Runtime credentials require permission to manage component and index templates,
-create the environment's index, and write its documents.
+create the environment's index, and write its documents. The mapping update also
+needs the `manage` index privilege on `page-feedback-v1-{environment}`. Grant it
+before you deploy a build that has the update, because without it Elasticsearch
+answers 403 and bootstrap fails.
 
-Template updates do not modify existing indices. For a mapping change, increment
+An added field needs no new index, because startup applies it in place. For an
+incompatible mapping change, such as a changed field type or a removed field, increment
 the schema version in the index name, deploy the new template, and migrate any
 documents that must be retained. Mixed task versions then write to separate
 versioned indices during a rolling deployment. The assembly mapping version is
