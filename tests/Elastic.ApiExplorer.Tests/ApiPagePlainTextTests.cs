@@ -15,11 +15,15 @@ public class ApiPagePlainTextTests
 	[Arguments("# The `<tenant>` parameter", "The <tenant> parameter")]
 	public void Read_Heading_IsItsVisibleText(string heading, string expected)
 	{
-		var text = ApiPagePlainText.Read($"{heading}\n\nBody.\n\n{heading.Replace("# ", "## ")}");
+		var text = ApiPagePlainText.Read($"{heading}\n\nBody.\n\n{heading.Replace("# ", "## ")}", "Fallback", description: null);
 
 		text.Title.Should().Be(expected);
 		text.Headings.Should().Equal(expected);
 	}
+
+	[Test]
+	public void Read_WithoutAnH1_UsesTheFallbackTitle() =>
+		ApiPagePlainText.Read("Body only.", "Fallback", description: null).Title.Should().Be("Fallback");
 
 	[Test]
 	[Arguments("[Core](/docs/api/elasticsearch/v8/group/endpoint-core) endpoints.", "Core endpoints.")]

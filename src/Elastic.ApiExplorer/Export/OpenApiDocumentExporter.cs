@@ -90,39 +90,27 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	}
 
 	/// <summary>
-	/// A page of the API that is neither an operation nor the landing page. It has no operation, so those members stay empty and
-	/// <see cref="ApiOperationMetadata.Page"/> marks it.
+	/// A page of the API that is neither an operation nor the landing page: the sitemap-only document with the page's search text,
+	/// shown to search and marked by <see cref="ApiOperationMetadata.Page"/>.
 	/// </summary>
 	private DocumentationDocument PageDocument(IndexedTree tree, ApiPageContent page, ApiPageSearchText search)
 	{
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
+		var dated = SitemapOnlyDocument(tree, page);
 		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
-		return new DocumentationDocument
+		return dated with
 		{
-			ContentType = "api",
-			Path = page.Url,
 			Title = search.Title,
 			SearchTitle = search.Title,
 			Description = search.Description,
 			Body = search.Body,
 			Headings = search.Headings,
-			Links = [],
-			ContentBodyHash = page.ContentHash,
+			Hidden = false,
 			Parents =
 			[
 				new ParentDocument { Title = "API", Path = "/docs/api" },
-				new ParentDocument { Title = ProductApiLabel(tree.ApiKey), Path = productUrl }
+				new ParentDocument { Title = ProductApiLabel(tree.ApiKey), Path = dated.Api!.Trees[0].Root }
 			],
-			Api = new ApiOperationMetadata
-			{
-				Key = tree.ApiKey,
-				Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
-				Endpoints = [],
-				Method = "",
-				Path = "",
-				OperationId = "",
-				Page = true
-			},
+			Api = dated.Api with { SitemapOnly = false, Page = true },
 			Product = inference?.Product?.Id,
 			RelatedProducts = IndexedRelatedProducts(inference)
 		};

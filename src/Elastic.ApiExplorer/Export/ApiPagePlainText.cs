@@ -15,21 +15,21 @@ internal static class ApiPagePlainText
 {
 	private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().Build();
 
-	public sealed record PageText(string Body, string? Title, string[] Headings);
-
 	/// <summary>
-	/// Parses <paramref name="markdown"/> once. Titles are read from each heading's own inline content, so a heading such as
-	/// <c>1. Authentication</c> is never parsed again as a list, and a linked heading keeps its text without its target.
+	/// Reads the search text of <paramref name="markdown"/>. Titles come from each heading's own inline content, so a heading such as
+	/// <c>1. Authentication</c> is never parsed again as a list, and a linked heading keeps its text without its target. Without an
+	/// H1, the title is <paramref name="fallbackTitle"/>.
 	/// </summary>
-	public static PageText Read(string markdown)
+	public static ApiPageSearchText Read(string markdown, string fallbackTitle, string? description)
 	{
 		var document = Markdown.Parse(markdown, Pipeline);
 		var headings = document.Descendants<HeadingBlock>().ToArray();
 		using var writer = new StringWriter();
 		_ = Markdown.ToPlainText(markdown, writer, Pipeline);
-		return new PageText(
+		return new ApiPageSearchText(
+			headings.Where(static h => h.Level == 1).Select(HeadingText).FirstOrDefault(static t => t.Length > 0) ?? fallbackTitle,
+			Description(description),
 			writer.ToString().Trim(),
-			headings.Where(static h => h.Level == 1).Select(HeadingText).FirstOrDefault(static t => t.Length > 0),
 			[
 				.. headings
 					.Where(static h => h.Level > 1)
