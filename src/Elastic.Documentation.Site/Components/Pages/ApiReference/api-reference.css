@@ -1849,6 +1849,35 @@ button.response-status-toggle:focus {
 			white-space: nowrap;
 		}
 
+		/* A constraint longer than the Type cell is cut with an ellipsis rather than run into the next column. The
+	   constraint span is inline in the design system, so the group becomes a flex row to give it a box to cut. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> code.schema-type
+			> .schema-type-group {
+			display: inline-flex;
+			min-width: 0;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> code.schema-type
+			> .schema-type-group
+			> .type-constraint {
+			display: block;
+			min-width: 0;
+			max-width: 100%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
 		.api-param-section[data-layout='table']
 			> .api-param-section-body
 			> .property-list

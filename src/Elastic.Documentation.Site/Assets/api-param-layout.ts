@@ -46,15 +46,25 @@ function rememberParamLayout(layout: ParamLayout): void {
 /** Whether a clamped description has more lines than the clamp shows. */
 export type Overflows = (description: HTMLElement) => boolean
 
+// The clamp swaps the cell's bottom padding for a margin, so only the content box compares across the two states.
+function contentHeight(el: HTMLElement): number {
+    const style = getComputedStyle(el)
+    return (
+        el.clientHeight -
+        parseFloat(style.paddingTop) -
+        parseFloat(style.paddingBottom)
+    )
+}
+
 // Clamping removes the hidden lines from layout, so scrollHeight no longer tells; the heights with and without the clamp do.
 const measuredOverflow: Overflows = (description) => {
     const row = description.closest<HTMLElement>('.property-item')
     if (!row) return false
     const previous = row.dataset.clamp
     delete row.dataset.clamp
-    const full = description.offsetHeight
+    const full = contentHeight(description)
     row.dataset.clamp = 'clamped'
-    const clamped = description.offsetHeight
+    const clamped = contentHeight(description)
     if (previous) row.dataset.clamp = previous
     else delete row.dataset.clamp
     return full > clamped + 1
@@ -63,6 +73,14 @@ const measuredOverflow: Overflows = (description) => {
 function setClampToggle(toggle: HTMLButtonElement, expanded: boolean): void {
     toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false')
     toggle.textContent = expanded ? 'Show less' : 'Show more'
+}
+
+function setRowExpanded(row: HTMLElement, expanded: boolean): void {
+    row.dataset.clamp = expanded ? 'expanded' : 'clamped'
+    const toggle = row.querySelector<HTMLButtonElement>(
+        `:scope > .${clampToggleClass}`
+    )
+    if (toggle) setClampToggle(toggle, expanded)
 }
 
 /**
@@ -104,12 +122,21 @@ function unclampDescriptions(section: HTMLElement): void {
     }
 }
 
-function toggleClamp(toggle: HTMLButtonElement): void {
-    const row = toggle.closest<HTMLElement>('.property-item')
-    if (!row) return
-    const expanded = row.dataset.clamp !== 'expanded'
-    row.dataset.clamp = expanded ? 'expanded' : 'clamped'
-    setClampToggle(toggle, expanded)
+const observedSections = new WeakSet<HTMLElement>()
+
+/**
+ * A section measured while collapsed, or while its column was too narrow for the table, has no clamps. When it opens
+ * or its width changes, the rows are measured again. The browsers without ResizeObserver also lack subgrid, so they
+ * never show the table.
+ */
+function observeSection(section: HTMLElement, overflows: Overflows): void {
+    if (observedSections.has(section) || typeof ResizeObserver === 'undefined')
+        return
+    observedSections.add(section)
+    new ResizeObserver(() => {
+        if (section.dataset.layout === 'table')
+            clampDescriptions(section, overflows)
+    }).observe(section)
 }
 
 /** Every section with a switch takes the layout, so one click lays out path, query and header parameters alike. */
@@ -124,8 +151,10 @@ export function applyParamLayout(
         const section = control.closest<HTMLElement>(sectionSelector)
         if (section) {
             section.dataset.layout = layout
-            if (layout === 'table') clampDescriptions(section, overflows)
-            else unclampDescriptions(section)
+            if (layout === 'table') {
+                clampDescriptions(section, overflows)
+                observeSection(section, overflows)
+            } else unclampDescriptions(section)
         }
         for (const option of control.querySelectorAll<HTMLElement>(
             '[data-layout]'
@@ -137,18 +166,21 @@ export function applyParamLayout(
     }
 }
 
-let clickHandlerBound = false
+let handlersBound = false
 
-/** Applies the remembered layout to the sections on the page and binds the switch once, for every page swap. */
+/** Applies the remembered layout to the sections on the page and binds the handlers once, for every page swap. */
 export function initParamLayout(): void {
     applyParamLayout(storedParamLayout())
-    if (clickHandlerBound) return
-    clickHandlerBound = true
+    if (handlersBound) return
+    handlersBound = true
     document.addEventListener('click', (e) => {
         const target = e.target as Element | null
-        const clamp = target?.closest<HTMLButtonElement>(`.${clampToggleClass}`)
-        if (clamp) {
-            toggleClamp(clamp)
+        const toggle = target?.closest<HTMLButtonElement>(
+            `.${clampToggleClass}`
+        )
+        if (toggle) {
+            const row = toggle.closest<HTMLElement>('.property-item')
+            if (row) setRowExpanded(row, row.dataset.clamp !== 'expanded')
             return
         }
         const option = target?.closest<HTMLElement>(optionSelector)
@@ -157,5 +189,17 @@ export function initParamLayout(): void {
         if (!isParamLayout(layout)) return
         rememberParamLayout(layout)
         applyParamLayout(layout)
+    })
+    // The clamp only clips the text, so a link below the third line is still a tab stop: focus inside shows the row.
+    document.addEventListener('focusin', (e) => {
+        const target = e.target as Element | null
+        const row = target?.closest<HTMLElement>(
+            '.property-item[data-clamp="clamped"]'
+        )
+        if (
+            row &&
+            target?.closest(descriptionSelector.replace(':scope > ', ''))
+        )
+            setRowExpanded(row, true)
     })
 }

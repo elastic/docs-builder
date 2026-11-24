@@ -22,7 +22,7 @@ function markup(): string {
                 <dl class="property-list">
                     <div class="property-item depth-0" id="${anchor}-long">
                         <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type">string</code></dt>
-                        <dd><p>A long description.</p></dd>
+                        <dd><p>A long description.</p><p><a href="#deep" id="${anchor}-deep-link">deep link</a></p></dd>
                         <dd class="reference-link-row"><a href="#">Reference</a></dd>
                     </div>
                     <div class="property-item depth-0" id="${anchor}-short">
@@ -120,6 +120,9 @@ describe('parameter layout switch', () => {
         // jsdom lays nothing out, so the fixture says which description overflows the clamp.
         const longOnly = (dd: HTMLElement) =>
             dd.closest('.property-item')!.id.endsWith('-long')
+
+        // The handlers bind once per document; a test that clicks or focuses needs them bound.
+        beforeEach(() => initParamLayout())
         const row = (id: string) => document.getElementById(id)!
         const toggle = (id: string) =>
             row(id).querySelector<HTMLButtonElement>('.api-param-clamp-toggle')
@@ -136,7 +139,6 @@ describe('parameter layout switch', () => {
         })
 
         it('expands and clamps a row from its control', () => {
-            initParamLayout()
             applyParamLayout('table', document, longOnly)
             toggle('query-params-long')!.click()
             expect(row('query-params-long').dataset.clamp).toBe('expanded')
@@ -161,6 +163,13 @@ describe('parameter layout switch', () => {
                     '.api-param-clamp-toggle'
                 )
             ).toHaveLength(1)
+        })
+
+        it('shows a clamped row when focus lands on a link in its description', () => {
+            applyParamLayout('table', document, longOnly)
+            document.getElementById('query-params-deep-link')!.focus()
+            expect(row('query-params-long').dataset.clamp).toBe('expanded')
+            expect(toggle('query-params-long')!.textContent).toBe('Show less')
         })
 
         it('removes the clamp and the control in list layout', () => {
