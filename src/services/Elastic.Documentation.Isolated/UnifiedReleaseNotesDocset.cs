@@ -208,8 +208,7 @@ public static class UnifiedReleaseNotesDocset
 		{
 			"staging" =>
 				"These are the changes running on the staging environment that are not in production yet. They are next to be released.",
-			"edge" =>
-				"These are all the changes merged to the default branch that are not in production yet. They include the changes on staging.",
+			"edge" => "These are all the changes merged to the default branch that are not in production yet.",
 			_ => null
 		};
 		return what is null || today is not { } date ? what : $"{what} If released today, this release would be dated **{Format(date)}**.";

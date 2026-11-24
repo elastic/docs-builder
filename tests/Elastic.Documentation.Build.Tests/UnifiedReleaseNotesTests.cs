@@ -296,7 +296,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			This is a preview of an unreleased version. The release notes can change until the version ships.
 			:::
 
-			These are all the changes merged to the default branch that are not in production yet. They include the changes on staging. If released today, this release would be dated **2026-11-24**.
+			These are all the changes merged to the default branch that are not in production yet. If released today, this release would be dated **2026-11-24**.
 
 			:::{changelog} /changelog/bundles/cloud-serverless
 			:version: edge

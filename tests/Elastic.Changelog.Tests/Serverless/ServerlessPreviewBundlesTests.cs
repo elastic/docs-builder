@@ -105,14 +105,36 @@ public class ServerlessPreviewBundlesTests : IDisposable
 	}
 
 	[Test]
-	public void Replace_AFolderFromBeforeTheRenameToEdge_LosesTheHeadBundleOfTheServiceOnly()
+	public void RemoveLegacy_AFolderFromBeforeTheRenameToEdge_LosesTheHeadBundleOfEveryService()
 	{
 		Existing("kibana-cloud-serverless-head.yaml", "kibana, called head before");
 		Existing("elasticsearch-serverless-cloud-serverless-head.yaml", "elasticsearch, called head before");
-		var pending = Pending(("kibana-cloud-serverless-edge.yaml", "kibana edge"));
+		Existing("kibana-cloud-serverless-staging.yaml", "kibana staging");
+		Existing("kibana-cloud-serverless-edge.yaml", "kibana edge");
 
-		ServerlessPreviewBundles.Replace(Kibana, _root, pending, NullLogger.Instance);
+		ServerlessPreviewBundles.RemoveLegacy(_root, NullLogger.Instance);
 
-		ProductFiles().Should().Equal("elasticsearch-serverless-cloud-serverless-head.yaml", "kibana-cloud-serverless-edge.yaml");
+		ProductFiles().Should().Equal("kibana-cloud-serverless-edge.yaml", "kibana-cloud-serverless-staging.yaml");
+	}
+
+	[Test]
+	public void RemoveLegacy_ARunOfOneServiceNextToAStaleHeadBundleOfAnother_DoesNotLeaveASecondReleaseBehind()
+	{
+		// Only Kibana is refreshed. Elasticsearch still has the bundle of the release that was called head.
+		Existing("elasticsearch-serverless-cloud-serverless-head.yaml", "elasticsearch, called head before");
+		Existing("kibana-cloud-serverless-head.yaml", "kibana, called head before");
+
+		ServerlessPreviewBundles.RemoveLegacy(_root, NullLogger.Instance);
+		ServerlessPreviewBundles.Replace(Kibana, _root, Pending(("kibana-cloud-serverless-edge.yaml", "kibana edge")), NullLogger.Instance);
+
+		ProductFiles().Should().Equal("kibana-cloud-serverless-edge.yaml");
+	}
+
+	[Test]
+	public void RemoveLegacy_NothingToRemove_LeavesNoProductFolder()
+	{
+		ServerlessPreviewBundles.RemoveLegacy(_root, NullLogger.Instance);
+
+		Directory.Exists(Path.Combine(_root.FullName, "cloud-serverless")).Should().BeFalse();
 	}
 }

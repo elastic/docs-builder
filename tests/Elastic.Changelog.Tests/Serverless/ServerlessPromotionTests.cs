@@ -365,10 +365,8 @@ public class ServerlessPromotionTests
 			.Equal(
 				"elasticsearch-serverless-cloud-serverless-staging.yaml",
 				"elasticsearch-serverless-cloud-serverless-edge.yaml",
-				"elasticsearch-serverless-cloud-serverless-head.yaml",
 				"elasticsearch-cloud-serverless-staging.yaml",
-				"elasticsearch-cloud-serverless-edge.yaml",
-				"elasticsearch-cloud-serverless-head.yaml"
+				"elasticsearch-cloud-serverless-edge.yaml"
 			);
 
 	[Test]
@@ -376,5 +374,17 @@ public class ServerlessPromotionTests
 		ServerlessPromotion
 			.PreviewBundleFileNames(ServerlessPromotion.Services["kibana"])
 			.Should()
-			.Equal("kibana-cloud-serverless-staging.yaml", "kibana-cloud-serverless-edge.yaml", "kibana-cloud-serverless-head.yaml");
+			.Equal("kibana-cloud-serverless-staging.yaml", "kibana-cloud-serverless-edge.yaml");
+
+	[Test]
+	public void LegacyBundleFileNames_NameTheHeadBundleOfEveryRepositoryOfEveryService() =>
+		ServerlessPromotion
+			.LegacyBundleFileNames()
+			.Should()
+			.Equal(
+				("cloud-serverless", "kibana-cloud-serverless-head.yaml"),
+				("cloud-serverless", "elasticsearch-serverless-cloud-serverless-head.yaml"),
+				("cloud-serverless", "elasticsearch-cloud-serverless-head.yaml"),
+				("cloud-hosted", "cloud-cloud-hosted-head.yaml")
+			);
 }

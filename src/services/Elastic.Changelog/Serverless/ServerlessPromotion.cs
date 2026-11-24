@@ -168,7 +168,7 @@ public static partial class ServerlessPromotion
 	/// <summary>
 	/// The files a preview of <paramref name="svc"/> writes, named <c>{repo}-{product}-{label}.yaml</c>: one per repository
 	/// (the service repository and its submodules) and label. A run removes them first, so a release that no longer has changes,
-	/// because production caught up, does not stay on the site. The legacy <c>head</c> names are included. Other services write to the same product folder, so only these names go.
+	/// because production caught up, does not stay on the site. Other services write to the same product folder, so only these names go.
 	/// </summary>
 	public static IReadOnlyList<string> PreviewBundleFileNames(ServerlessService svc) =>
 		[
@@ -177,11 +177,22 @@ public static partial class ServerlessPromotion
 			)
 		];
 
+	private static readonly string[] CleanupLabels = [StagingLabel, EdgeLabel];
+
 	/// <summary>
-	/// The labels whose bundles a run removes: the current ones, and <c>head</c>, which the edge release was called. A folder reused
-	/// since then still holds a <c>head</c> bundle, and the site build would publish it as a release of its own.
+	/// The bundles an earlier version of the preview wrote for the edge release, which it called <c>head</c>, for every service. A folder
+	/// reused since then still holds them, and the site build would publish them as a release of their own, next to Edge. A run
+	/// removes all of them, also those of a service it does not refresh: a service left out of a partial run has no Edge bundle until
+	/// it is refreshed, and that is better than a second, stale release.
 	/// </summary>
-	private static readonly string[] CleanupLabels = [StagingLabel, EdgeLabel, "head"];
+	public static IReadOnlyList<(string Product, string FileName)> LegacyBundleFileNames() =>
+		[
+			.. Services.Values.SelectMany(
+				svc => new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).Select(
+					repo => (svc.Product, $"{repo}-{svc.Product}-head.yaml")
+				)
+			)
+		];
 
 	/// <summary>The first 12 characters of a ref, in lower case. It names a promotion in serverless-gitops and in its review pull request.</summary>
 	public static string ShortRef(string gitRef) => (gitRef.Length > 12 ? gitRef[..12] : gitRef).ToLowerInvariant();

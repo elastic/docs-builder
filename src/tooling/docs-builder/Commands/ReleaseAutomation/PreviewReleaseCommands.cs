@@ -105,6 +105,7 @@ internal sealed class PreviewReleaseCommands(
 
 		var cache = ChangelogCache.Create(cacheDir, noCache, _logger);
 		var bundler = new ServerlessBundler(logFactory, collector, configurationContext, http, cache);
+		ServerlessPreviewBundles.RemoveLegacy(rootOutput, _logger);
 		foreach (var service in selected)
 		{
 			if (!await BundleServiceAsync(bundler, service, rootOutput, problems, ctx))
