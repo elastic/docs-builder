@@ -24,7 +24,8 @@ public class PageFeedbackBootstrapTests
 
 		await CreateService(transport, AppEnv.Staging).StartAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var mappingCall = calls.Should().ContainSingle(c => c.Path == "/page-feedback-v1-staging/_mapping").Subject;
+		var mappingCall = calls.Should().ContainSingle(c => c.Path.EndsWith("/_mapping", StringComparison.Ordinal)).Subject;
+		mappingCall.Path.Should().Be("/page-feedback-v1-staging/_mapping");
 		mappingCall.Body.Should().Contain("\"reasons\"");
 	}
 
