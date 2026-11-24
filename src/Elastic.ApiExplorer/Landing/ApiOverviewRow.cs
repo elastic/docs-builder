@@ -160,8 +160,7 @@ public static class ApiOverviewBuilder
 							Kind = OverviewRowKind.TagHeading,
 							Title = tag.NavigationTitle,
 							Url = tag.Url,
-							Summary = summarize?.Invoke(tag.Index.Model),
-							Deprecated = tag.Deprecated
+							Summary = summarize?.Invoke(tag.Index.Model)
 						});
 						AddProductRows(tag, rows);
 						break;

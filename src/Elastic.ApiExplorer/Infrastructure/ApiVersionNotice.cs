@@ -17,7 +17,12 @@ public sealed record VersionNoticeLinkModel(LatestVersionLink Latest, bool Desig
 public closed record ApiVersionNotice(LatestVersionLink? Latest);
 
 /// <param name="Version">The major the page belongs to, such as <c>8</c>.</param>
-public sealed record OlderMajorNotice(string Version, LatestVersionLink? Latest) : ApiVersionNotice(Latest);
+/// <param name="Release">The minor release the major renders from, such as <c>8.19</c>, or null when the version index names none.</param>
+public sealed record OlderMajorNotice(string Version, LatestVersionLink? Latest, string? Release = null) : ApiVersionNotice(Latest)
+{
+	/// <summary>What the badge names: the minor release when known, else the major.</summary>
+	public string Label => Release ?? Version;
+}
 
 public sealed record UnreleasedNotice(LatestVersionLink? Latest) : ApiVersionNotice(Latest);
 

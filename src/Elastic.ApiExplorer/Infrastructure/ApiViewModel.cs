@@ -71,8 +71,16 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		field ??= ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
 
 	/// <summary>The line under the title of an older or unreleased version, or null on the newest major.</summary>
-	public ApiVersionNotice? VersionNotice =>
-		ApiVersionNotices.For(RenderContext.PageType, RenderContext.Moniker, RenderContext.DefaultMoniker, PageVersions);
+	public ApiVersionNotice? VersionNotice => ApiVersionNotices.For(
+		RenderContext.PageType,
+		RenderContext.Moniker,
+		RenderContext.DefaultMoniker,
+		PageVersions
+	) switch
+	{
+		OlderMajorNotice older => older with { Release = RenderContext.Release },
+		var notice => notice
+	};
 
 	/// <summary>True when the page shows the quiet older-major label and link as badges, so the notice under the title keeps only the warning.</summary>
 	public virtual bool VersionNoticeInBadges => false;
@@ -95,6 +103,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
 	protected virtual string? LayoutPageDescription => null;
+
+	/// <summary>Plain text for the meta description when <see cref="LayoutPageDescription"/> gives none; see <see cref="ApiFallbackDescription"/>.</summary>
+	protected virtual string? FallbackPageDescription => null;
 
 	private string? GetGitHubDocsUrl()
 	{
@@ -121,7 +132,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		return new()
 		{
 			DocSetName = "Api Explorer",
-			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
+			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? FallbackPageDescription ?? "",
 			Title = SeoDocumentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,

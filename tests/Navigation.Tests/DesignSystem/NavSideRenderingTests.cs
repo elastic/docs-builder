@@ -48,11 +48,11 @@ public class NavSideRenderingTests
 	}
 
 	[Test]
-	public async Task Tree_DeprecatedOperation_DimsTheRowAndNamesItForScreenReaders()
+	public async Task Tree_DeprecatedOperation_LooksCurrentAndNamesItForScreenReaders()
 	{
 		var html = await RenderAsync(NavSideExamples.Navigation with { Tree = [Operation(deprecated: true)] });
 
-		html.Should().Contain("class=\"nav-tree__link nav-tree__link--deprecated\"");
+		html.Should().Contain("class=\"nav-tree__link\"").And.NotContain("nav-tree__link--deprecated");
 		var text = html.IndexOf("class=\"nav-tree__text\"", StringComparison.Ordinal);
 		var hidden = html.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
 		var method = html.IndexOf("method method--sm", StringComparison.Ordinal);

@@ -12,8 +12,8 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
-/// <summary>A group whose every operation is deprecated reads as retired; deprecated operations list after current ones.</summary>
-public class ApiGroupDeprecationTests
+/// <summary>Deprecated operations list where their route puts them, and a group whose every operation is deprecated looks like any other group.</summary>
+public class ApiDeprecatedListingTests
 {
 	private static readonly string Spec = new MinimalSpec(
 		[
@@ -26,7 +26,7 @@ public class ApiGroupDeprecationTests
 	).ToJson();
 
 	[Test]
-	public async Task CreateNavigation_DeprecatedOperation_IsListedAfterCurrentOnes()
+	public async Task CreateNavigation_DeprecatedOperation_IsListedByRouteThenMethod()
 	{
 		var navigation = await NavigationAsync();
 
@@ -44,23 +44,15 @@ public class ApiGroupDeprecationTests
 			.Join('\n', listed)
 			.Should()
 			.MatchInlineSnapshot("""
-			GET /mixed/{id}
 			POST /mixed deprecated
+			GET /mixed/{id}
 			""");
-	}
-
-	[Test]
-	public async Task Deprecated_EveryOperationDeprecated_MarksTheGroupOnly()
-	{
-		var navigation = await NavigationAsync();
-
-		navigation.Tags().Select(t => $"{t.NavigationTitle}: {t.Deprecated}").Should().BeEquivalentTo("Mixed: False", "Retired: True");
 	}
 
 	[Test]
 	[Arguments("legacy", false)]
 	[Arguments("preview", true)]
-	public async Task Render_RetiredGroup_StrikesItsSidebarFolder(string sidebar, bool navigationPreview)
+	public async Task Render_RetiredGroup_SidebarFolderLooksCurrent(string sidebar, bool navigationPreview)
 	{
 		var navigation = await NavigationAsync();
 		var model = NavigationRenderModel.Create(
@@ -82,7 +74,7 @@ public class ApiGroupDeprecationTests
 	}
 
 	[Test]
-	public async Task Render_ProductLanding_StrikesRetiredGroup()
+	public async Task Render_ProductLanding_RetiredGroupLooksCurrent()
 	{
 		var navigation = await NavigationAsync();
 
@@ -92,23 +84,12 @@ public class ApiGroupDeprecationTests
 	}
 
 	[Test]
-	public async Task Render_RetiredGroupPage_ShowsTheDeprecatedBadgeBesideTheTitle()
+	public async Task Render_RetiredGroupPage_ShowsNoBadge()
 	{
 		var navigation = await NavigationAsync();
 		var retired = navigation.Tags().Single(t => t.NavigationTitle == "Retired");
 
 		var html = await TestHelpers.RenderTagAsync(retired);
-
-		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-page-heading"));
-	}
-
-	[Test]
-	public async Task Render_MixedGroupPage_ShowsNoBadge()
-	{
-		var navigation = await NavigationAsync();
-		var mixed = navigation.Tags().Single(t => t.NavigationTitle == "Mixed");
-
-		var html = await TestHelpers.RenderTagAsync(mixed);
 
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-page-heading"));
 	}

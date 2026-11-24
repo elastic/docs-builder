@@ -261,8 +261,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				}
 			}
 		}
-		// Spec order looks arbitrary in a long group; readers scan by the route and method each row shows, current operations first.
-		return [.. operationItems.InListOrder(static item => item.Endpoint.Rows[0], static item => item.Model.Deprecated)];
+		// Spec order looks arbitrary in a long group; readers scan by the route and method each row shows.
+		return [.. operationItems.InListOrder(static item => item.Endpoint.Rows[0])];
 	}
 
 	/// <summary>

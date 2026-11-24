@@ -60,6 +60,9 @@ public record ApiRenderContext(
 	/// <summary>The version of the tree being rendered: <c>main</c> or a numeric major. Null on the catalog and other previews.</summary>
 	public string? Moniker { get; init; }
 
+	/// <summary>The minor release the tree renders from, such as <c>9.6</c>. Null for <c>main</c> and when the version index names no minor. It does not depend on the switcher, which is empty when only one version renders.</summary>
+	public string? Release { get; init; }
+
 	/// <summary>The newest version the API declares, whether or not its tree rendered. The versionless URL belongs to it.</summary>
 	public string? DefaultMoniker { get; init; }
 
@@ -74,6 +77,9 @@ public record ApiRenderContext(
 		!string.IsNullOrWhiteSpace(Model.Info?.Description)
 			? Model.Info.Description
 			: CatalogEntries.FirstOrDefault(entry => entry.Key == CurrentApiKey)?.Description;
+
+	/// <summary>The product name the page titles and fallback descriptions use.</summary>
+	internal string ProductName => ApiPageTitle.ProductName(Product?.DisplayName, Model.Info?.Title);
 
 	/// <summary>The absolute canonical URL of <paramref name="pageUrl"/>, or its path when the build has no canonical base URL.</summary>
 	public string CanonicalUrl(string pageUrl)

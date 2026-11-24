@@ -81,6 +81,7 @@ internal sealed record ApiProductGeneration(
 	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
 	string Moniker,
 	string? DefaultMoniker,
+	string? Release,
 	bool ValidateSupplemental,
 	bool EmitUnmatchedBaseFiles,
 	ApiPageType PageType,
@@ -325,6 +326,7 @@ public class OpenApiGenerator(
 				VersionSwitcherItems: [],
 				tree.Moniker,
 				trees.Resolved.Routes.DefaultMoniker,
+				ApiVersions.ReleaseOf(versionTree.Version.Version.Version),
 				ValidateSupplemental: false,
 				EmitUnmatchedBaseFiles: false,
 				versionTree.PageType,
@@ -395,6 +397,7 @@ public class OpenApiGenerator(
 					switcherItems,
 					moniker,
 					resolved.Routes.DefaultMoniker,
+					ApiVersions.ReleaseOf(tree.Version.Version.Version),
 					// Both copies of the default major read the same files, so only the first copy reports on them.
 					ValidateSupplemental: !tree.IsMirror,
 					EmitUnmatchedBaseFiles: moniker == resolved.UnmatchedBaseFilesMoniker,
@@ -505,18 +508,21 @@ public class OpenApiGenerator(
 		}
 	}
 
-	/// <summary>The document that titles the API: the default version's, or the first that loaded when the default did not.</summary>
-	private static VersionedOpenApiDocument CanonicalDocument(ResolvedProductDocuments resolved) =>
-		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == resolved.Routes.DefaultMoniker) ?? resolved.Documents[0];
+	/// <summary>
+	/// The document that titles the API: the default version's, or the newest released one that loaded when the default
+	/// did not. Never the unreleased tree, which no listing links to.
+	/// </summary>
+	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
+		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == resolved.Routes.DefaultMoniker)
+			?? resolved.Documents.Where(v => !resolved.Routes.IsNext(v.Version.Moniker)).MaxBy(v => ApiVersions.Recency(v.Version.Moniker));
 
 	internal ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{
-		if (resolved.Documents.Count == 0)
+		if (CanonicalDocument(resolved) is not { } canonical)
 			return null;
 
-		var canonical = CanonicalDocument(resolved);
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
-		// The versionless URL when the default version rendered, else the tree that did, so the card never links to a page nothing wrote.
+		// The versionless URL when the default version rendered, else the released tree that did, so the card never links to a page nothing wrote.
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, resolved.Routes.Suffix(canonical.Version.Moniker));
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description);
 	}
@@ -631,8 +637,20 @@ public class OpenApiGenerator(
 		if (stream is null)
 			return null;
 
-		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
+		var document = await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
+		// The moniker, not the branch, marks the unreleased spec: some repositories publish main from master.
+		if (version.Moniker != "main" && document?.Info is { } info)
+			info.Description = WithSourceBranch(info.Description, version.Version);
+		return document;
 	}
+
+	/// <summary>
+	/// A released spec can be cut from <c>main</c> before its description names the release branch, so the page
+	/// would claim it is derived from <c>main</c>. Name the branch the version index actually published.
+	/// </summary>
+	// TODO: remove once the specs drop this wording and the page renders the branch from the version index (elastic/docs-eng-team#1237).
+	internal static string? WithSourceBranch(string? description, string branch) =>
+		description?.Replace("derived from the `main` branch", $"derived from the `{branch}` branch", StringComparison.Ordinal);
 
 	private static readonly OpenApiDocument CatalogDocument = new()
 	{
@@ -704,6 +722,7 @@ public class OpenApiGenerator(
 			PageType = generation.PageType,
 			Moniker = generation.Moniker,
 			DefaultMoniker = generation.DefaultMoniker,
+			Release = generation.Release,
 			VersionlessRootUrl = generation.VersionlessRootUrl,
 			OperationSupplemental = operations,
 			TagSupplemental = tags,

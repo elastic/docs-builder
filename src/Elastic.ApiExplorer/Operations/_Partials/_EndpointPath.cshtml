@@ -1,6 +1,6 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<EndpointPathModel>
-@* One merged route: one chip listing every method that behaves the same, the dominant one first, optional segments dashed. *@
+@* One merged route: one chip listing every method that behaves the same, the dominant one first, optional segments get the same dotted cue. Each segment is one element, so one rule owns its underline. *@
 @{
 	var row = Model.Row;
 }
@@ -11,7 +11,12 @@
 	{
 		var anchor = Model.AnchorFor(segment);
 		if (segment.Optional)
-		{<span class="api-url-optional" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">/@if (anchor is not null){<a class="api-url-param" href="#@anchor">@segment.Text</a>}else{@segment.Text}</span>}
+		{
+			if (anchor is not null)
+			{@("/")<a class="api-url-param api-url-optional" href="#@anchor" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</a>}
+			else
+			{@("/")<span class="api-url-optional" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</span>}
+		}
 		else if (anchor is not null)
 		{@("/")<a class="api-url-param" href="#@anchor">@segment.Text</a>}
 		else

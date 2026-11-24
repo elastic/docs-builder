@@ -195,10 +195,14 @@ For versioned products, {{dbuild}} renders every resolved version from the index
 | Index moniker | URL path | Role | Notice |
 |---|---|---|---|
 | `9`, the highest numeric major | `/api/<key>/` and `/api/<key>/v9/` | Newest released major, the default. Both URLs serve the same pages. | None |
-| `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8` label and a link to the latest version |
+| `8`, … | `/api/<key>/v8/`, … | Older released majors | A `Version 8.19` label and a link to the latest version |
 | `main` | `/api/<key>/next/` | Unreleased spec | An `Unreleased` warning and a link to the latest version |
 
-On every generated API page, the `Unreleased` warning sits directly under the title. The `Version 8` label and its link sit under the title too, except on operation pages. There they join the badges row, next to `Auth` and `Deprecated`, as `Version 8` and `Latest: v9`, so the title stays next to its request line.
+On every generated API page, the `Unreleased` warning sits directly under the title. The `Version 8.19` label and its link sit under the title too, except on operation pages. There they join the badges row, next to `Auth` and `Deprecated`, as `Version 8.19` and `Latest: v9`, so the title stays next to its request line.
+
+The landing page's `Version` fact names the minor release that the version index entry points at, such as `9.6` for `9` or `8.19` for `8`. The version picker does not decide whether it appears. When the index names no minor, as for `main` or a bare major, the fact uses the spec's own `info.version`, or shows nothing when the spec has none.
+
+The older-major label shows on older majors and on any other non-default version, such as a `beta` moniker at `/api/<key>/vbeta/`. It names the minor release when the index entry points to a `major.minor` branch, as in `Version 8.19`. Otherwise it names the moniker, as in `Version beta`. The newest major has no label, and `main` at `/next/` keeps its `Unreleased` warning in its place.
 
 Hand-written `children:` Markdown pages show no notice, so a page without one is not proof that it belongs to the latest version.
 The link in a notice opens the same page in the newest major when that major has it, and its landing page otherwise. If the newest major failed to load, the notice keeps the page's own version and has no link.
@@ -207,7 +211,9 @@ The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `m
 Search indexes the default version at `/api/<key>/` and older majors at `/api/<key>/vN/`, not `main` at `/next/` or the `/v9/` copy of the newest major. Search from a `/next/` page is the normal search with a lift for that API's default-version results. It does not filter by version, and operations that exist only in older majors stay hidden.
 An API whose index lists no numeric major keeps `main` at `/api/<key>/` and has no `/next/`.
 The default comes from the versions the index declares. If the newest major fails to load, nothing
-renders at `/api/<key>/`, and no older major takes its place.
+renders at `/api/<key>/`, and no older major takes its place. The API's card on the API landing page
+then opens the newest older major that loaded. It never opens `/next/`, so an API with no released
+version loaded has no card.
 A version named `next` in the index is a build error, because `next` is the URL segment of `main`.
 
 When a local spec file exists, it overrides only the `main` moniker. Older majors still resolve
@@ -216,8 +222,11 @@ remotely through the index. In `docs-builder serve`, a local spec edit therefore
 
 Versionless products (`versioning: serverless` and similar) render only the unversioned
 `/api/<key>/` path even when the index lists historical monikers. When more than one
-version is rendered, the bar shows a version picker beside the API name. The unreleased tree is
-labeled `Next (unreleased)`, and each frozen major is `v9`, `v8`. When the API has a numbered major, the unreleased tree is served at `/next`. Without one, it is the default and keeps the unversioned URL. The highest frozen major carries `(latest)`, as in `v9 (latest)`, and the unversioned URL serves it. Isolated builds put the same picker
+released version is rendered, the bar shows a version picker beside the API name. Each frozen major is `v9`, `v8`. When the API has a numbered major, the unreleased tree is served at `/next`. Without one, it is the default and keeps the unversioned URL. The highest frozen major carries `(latest)`, as in `v9 (latest)`, and the unversioned URL serves it.
+
+The `/next` tree is a preview that you open by its URL, `/api/<key>/next/`. No released page links to it, and the picker on a released page does not list it. On a `/next` page the picker lists it as `Next (unreleased)`, selected, above the released versions.
+
+Isolated builds put the same picker
 under the API name in the left navigation.
 Picking a version opens the same page in that version when it has one, for example the same
 operation, and that version's landing page otherwise. On a `/v9/` page, the `v9 (latest)` entry

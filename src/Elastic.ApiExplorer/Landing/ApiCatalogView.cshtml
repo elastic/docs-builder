@@ -48,6 +48,9 @@
 	}
 }
 @{
+	// Every grid steps from one to two to three columns at the same widths, so cards of different groups stay the same size.
+	// Two featured cards fill a row of two, so every grid on the page stays at two columns then.
+	var columns = Model.Groups.Any(g => g.Featured.Count == 2) ? "sm:grid-cols-2" : "sm:grid-cols-2 min-[1024px]:grid-cols-3";
 	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
 	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
 	var catalogClass = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled ? "api-catalog band band--soft band--wash-b" : "api-catalog";
@@ -57,12 +60,7 @@
 	{
 		var group = Model.Groups[i];
 		var headingId = "api-catalog-group-" + i;
-		var featuredColumns = group.Featured.Count == 3 ? "min-[1024px]:grid-cols-3" : "min-[1024px]:grid-cols-2";
-		// Without featured cards the cards of a group sit three across, so a description has room to read as a sentence.
-		var otherColumns = group.Featured.Count > 0 ? featuredColumns : "min-[1024px]:grid-cols-2 lg:grid-cols-3";
 		var unattached = group.Unattached.ToList();
-		// Everything in a group that is not featured is compact. Only the APIs that no group covers keep the full-size card.
-		var otherKind = group.Grouped ? ApiCatalogCardKind.Compact : ApiCatalogCardKind.Standard;
 		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
 			@if (group.Title is not null)
 			{
@@ -70,27 +68,30 @@
 			}
 			@if (group.Featured.Count > 0)
 			{
-				@* A tag-on follows its parent in the list, so it stays attached under it when the cards stack on narrow screens.
-				   From 1024px the cells are placed by column: parents in row 1, tag-ons in row 2. *@
-				<ul class="api-catalog-featured m-0 mb-4 grid list-none grid-cols-1 gap-6 p-0 @featuredColumns">
-					@for (var f = 0; f < group.Featured.Count; f++)
+				@* A tag-on shares the cell of its parent, so it stays attached under it however many columns the grid has. A cell with a
+				   tag-on spans two rows, so the featured cards of a row line up and the tag-ons sit in the row below them. *@
+				<ul class="api-catalog-featured m-0 mb-4 grid list-none grid-cols-1 gap-4 p-0 @columns">
+					@foreach (var item in group.Featured)
 					{
-						var item = group.Featured[f];
 						var hasVariant = group.TryGetVariant(item, out var variant);
-						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: hasVariant, Column: f + 1, HeadingLevel: cardHeadingLevel)))
-						if (hasVariant)
-						{
-							@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(variant, otherKind, Column: f + 1, HeadingLevel: cardHeadingLevel)))
-						}
+						<li class="api-catalog-cell m-0 list-none@(hasVariant ? " api-catalog-cell-tagged" : "")">
+							@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: hasVariant, HeadingLevel: cardHeadingLevel)))
+							@if (hasVariant)
+							{
+								@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(variant, ApiCatalogCardKind.Attached, HeadingLevel: cardHeadingLevel)))
+							}
+						</li>
 					}
 				</ul>
 			}
 			@if (unattached.Count > 0)
 			{
-				<ul class="m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
+				<ul class="m-0 grid list-none grid-cols-1 gap-4 p-0 @columns">
 					@foreach (var item in unattached)
 					{
-						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, HeadingLevel: cardHeadingLevel)))
+						<li class="m-0 list-none">
+							@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Standard, HeadingLevel: cardHeadingLevel)))
+						</li>
 					}
 				</ul>
 			}

@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Components.Navigation.NavTree;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Nullean.Snapshots;
@@ -82,6 +83,23 @@ public partial class ApiPagesNavRenderingTests
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Layout_PutsTheNavigationAfterTheArticleWhenPreviewEnabled()
+	{
+		var model = CreateLayoutModel(
+			"/api/elasticsearch/",
+			"/api/elasticsearch.md",
+			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
+		);
+
+		var html = await _Layout.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var articleClose = html.IndexOf("</article>", StringComparison.Ordinal);
+		var nav = html.IndexOf("id=\"pages-nav\"", StringComparison.Ordinal);
+		articleClose.Should().BeGreaterThan(-1);
+		nav.Should().BeGreaterThan(articleClose);
 	}
 
 	[Test]
@@ -222,7 +240,7 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
-	public async Task Render_DeprecatedOperationRow_MarksTheLinkAndNamesItForScreenReaders()
+	public async Task Render_DeprecatedOperationRow_LooksCurrentAndNamesItForScreenReaders()
 	{
 		NavigationRenderNode[] nodes =
 		[
@@ -241,11 +259,12 @@ public partial class ApiPagesNavRenderingTests
 		foreach (var html in new[]
 		{
 			await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct),
-			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct)
+			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct),
+			await _NavTreeItems.Create(nodes).RenderAsync(cancellationToken: ct)
 		})
 		{
 			var link = OperationLink(html);
-			link.Should().MatchRegex("class=\"sidebar-link nav-link( nav-v2-link)? nav-link--deprecated\"");
+			link[..link.IndexOf('>')].Should().NotContain("deprecated");
 			var hidden = link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
 			hidden.Should().BeGreaterThan(link.IndexOf("Get a document source", StringComparison.Ordinal));
 			hidden.Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));

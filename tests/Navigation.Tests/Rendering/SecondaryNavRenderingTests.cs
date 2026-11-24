@@ -167,6 +167,24 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	}
 
 	[Test]
+	public async Task ApiIdentityWithOneVersionNamesItInTheTriggerAndOffersNoVersionMenu()
+	{
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/a/", true, null)])],
+			"/docs/api/",
+			[new NavigationSelectOption("v9 (latest)", "/a/", true, "v9")],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<span class=\"api-identity-version-label\">v9</span>");
+		html.Should().NotContain("api-version-switcher", "one version is not a choice");
+	}
+
+	[Test]
 	public async Task ApiIdentityWithoutVersionsOrOtherApisIsPlainText()
 	{
 		var bar = new ApiIdentity("Alpha API", null, [], null, [], new ApiSpecDownload("/a.json", "/a.yaml"));

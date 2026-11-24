@@ -55,6 +55,50 @@ public class ApiCatalogViewRenderingTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Render_Catalog_OrchestrationCardsUseTheFullSizeCard()
+	{
+		var html = await RenderAsync(
+			Entry("elasticsearch", "Elasticsearch API"),
+			Entry("kibana", "Kibana APIs"),
+			Entry("logstash", "Logstash APIs"),
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API"),
+			Entry("cloud", "Elastic Cloud API"),
+			Entry("cloud-enterprise", "Elastic Cloud Enterprise API")
+		);
+
+		Count(html, "api-catalog-card-attached").Should().Be(1, "only the Serverless tag-on is attached");
+		Count(html, "text-sm").Should().Be(1, "every other card takes its size from the catalog stylesheet, and only the tag-on is small");
+	}
+
+	[Test]
+	public async Task Render_Catalog_TwoFeaturedCards_KeepEveryGridAtTwoColumns()
+	{
+		var html = await RenderAsync(
+			Entry("elasticsearch", "Elasticsearch API"),
+			Entry("kibana", "Kibana APIs"),
+			Entry("cloud", "Elastic Cloud API")
+		);
+
+		Count(html, "sm:grid-cols-2").Should().Be(2, "the featured row and the Orchestration row both step to two");
+		html.Should().NotContain("min-[1024px]:grid-cols-3");
+	}
+
+	[Test]
+	public async Task Render_Catalog_TagOnSharesTheCellOfItsParent()
+	{
+		var html = await RenderAsync(
+			Entry("elasticsearch", "Elasticsearch API"),
+			Entry("kibana", "Kibana APIs"),
+			Entry("logstash", "Logstash APIs"),
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API")
+		);
+
+		Count(html, "api-catalog-cell-tagged").Should().Be(1, "only the cell with a tag-on spans two rows");
+		var between = html[PositionOf(html, "elasticsearch")..PositionOf(html, "elasticsearch-serverless")];
+		between.Should().NotContain("<li", "the tag-on is in the same list item as its parent, so the grid cannot separate them");
+	}
+
+	[Test]
 	public async Task Render_Catalog_KeepsOrphanedAndUnrelatedCardsVisible()
 	{
 		var html = await RenderAsync(

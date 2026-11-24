@@ -55,7 +55,7 @@ internal static class ApiMarkdownFrontMatter
 		var title = Heading(body) ?? current.NavigationTitle;
 		return new(
 			title,
-			ResolveDescription(page, context, body),
+			ResolveDescription(page, context, body, current.NavigationTitle),
 			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
 			page is ApiLanding ? CollectFacts(context) : null
@@ -129,7 +129,10 @@ internal static class ApiMarkdownFrontMatter
 	private static string YamlScalar(string value) =>
 		$"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t")}\"";
 
-	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body)
+	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body, string navigationTitle) =>
+		AuthoredDescription(page, context, body) ?? ApiFallbackDescription.For(page, context, navigationTitle);
+
+	private static string? AuthoredDescription(IApiModel page, ApiRenderContext context, string body)
 	{
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		return page switch
@@ -137,22 +140,26 @@ internal static class ApiMarkdownFrontMatter
 			ApiCatalog => ApiCatalog.PageDescription,
 			ApiLanding => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
 			ApiTag tag => TagSummary(tag, context),
-			ApiOperation operation =>
-				FirstLine(
-					ApiMarkdown.Prepare(
-						ApiSeoDescription.OperationText(
-							OperationDescription(operation, context),
-							OpenApiExtensionReader.GetSummary(operation.Operation)
-						),
-						apiBaseUrl
-					)
-				),
+			ApiOperation operation => OperationDescriptionLine(operation, context, apiBaseUrl),
 			ApiStructuralPage structural => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(structural.Intro, apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
 			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
 			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
 			_ => null
 		};
+	}
+
+	/// <summary>
+	/// The first line of the operation's own text once its HTML comments are gone, as the HTML page reads it, or null when nothing a reader
+	/// would see is left. The page then takes the generated sentence.
+	/// </summary>
+	private static string? OperationDescriptionLine(ApiOperation operation, ApiRenderContext context, string apiBaseUrl)
+	{
+		var text = ApiSeoDescription.OperationText(
+			OperationDescription(operation, context),
+			OpenApiExtensionReader.GetSummary(operation.Operation)
+		);
+		return FirstLine(ApiMarkdown.Prepare(text, apiBaseUrl) is { } prepared ? ApiSeoDescription.WithoutComments(prepared) : null);
 	}
 
 	/// <summary>The one-line description of a group, from its supplemental description when it has one: what its meta description and its card on the product landing page say.</summary>
