@@ -44,6 +44,12 @@ public record UnifiedReleaseNotesBuildOptions
 	/// </summary>
 	public Func<string, string, string, Cancel, Task<string>>? ScrubBundle { get; init; }
 
+	/// <summary>
+	/// Add the diagnostics page when the bundles folder has the problems file of <c>release preview bundle</c>. Off by default: the
+	/// file names pull requests of private repositories, and a folder reused by another command must not put them on its site.
+	/// </summary>
+	public bool ShowDiagnostics { get; init; }
+
 	/// <summary>URL path prefix prepended to every generated link.</summary>
 	public string? PathPrefix { get; init; }
 
@@ -98,7 +104,9 @@ public class UnifiedReleaseNotesBuildService(
 		products = [.. bundles.Select(b => b.Product)];
 
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "unified-release-notes", "docs");
-		var checkedForProblems = PreviewProblemsFile.TryRead(realFs, options.BundlesDirectory.FullName, out var problems);
+		IReadOnlyList<PreviewProblem> problems = [];
+		var checkedForProblems = options.ShowDiagnostics
+			&& PreviewProblemsFile.TryRead(realFs, options.BundlesDirectory.FullName, out problems);
 		var mockFs = CreateVirtualDocset(docsRoot, bundles, checkedForProblems ? problems : null);
 		PrepareOutput(realFs, options.Output.FullName);
 

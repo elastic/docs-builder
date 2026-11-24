@@ -86,10 +86,27 @@ internal static class UnifiedReleaseNotesDiagnosticsPage
 			if (open)
 				_ = sb.AppendLine(":open:");
 			_ = sb.AppendLine().AppendLine(effect).AppendLine();
-			if (LabelsOf(ofKind) is { Length: > 0 } labels)
-				_ = sb.AppendLine(labels).AppendLine();
-			foreach (var problem in ofKind)
-				_ = sb.AppendLine(Line(problem));
+
+			// A product and release can hold pull requests of several repositories, and each repository maps its own labels.
+			var repositories = ofKind
+				.GroupBy(p => (p.Owner, p.Repo))
+				.OrderBy(g => g.Key.Owner, StringComparer.Ordinal)
+				.ThenBy(g => g.Key.Repo, StringComparer.Ordinal)
+				.ToList();
+			foreach (var repository in repositories)
+			{
+				if (repositories.Count > 1)
+					_ = sb.AppendLine(
+						CultureInfo.InvariantCulture,
+						$"**{Escape($"{repository.Key.Owner}/{repository.Key.Repo}".TrimStart('/'))}**"
+					).AppendLine();
+				if (LabelsOf(repository.ToList()) is { Length: > 0 } labels)
+					_ = sb.AppendLine(labels).AppendLine();
+				foreach (var problem in repository)
+					_ = sb.AppendLine(Line(problem));
+				_ = sb.AppendLine();
+			}
+
 			_ = sb.AppendLine(":::").AppendLine();
 		}
 	}
@@ -133,7 +150,7 @@ internal static class UnifiedReleaseNotesDiagnosticsPage
 		var sb = new StringBuilder(text.Length);
 		foreach (var c in text.ReplaceLineEndings(" "))
 		{
-			if ("\\`*_{}[]<>()#|!~&:@".Contains(c, StringComparison.Ordinal))
+			if ("\\`*_{}[]<>()#|!~&:@^=+".Contains(c, StringComparison.Ordinal))
 				_ = sb.Append('\\');
 			_ = sb.Append(c);
 		}

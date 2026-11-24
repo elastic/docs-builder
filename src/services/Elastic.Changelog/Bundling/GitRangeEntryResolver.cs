@@ -395,7 +395,9 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var typeString = config?.LabelToType != null ? PrInfoProcessor.MapLabelsToType(labels, config.LabelToType) : null;
 		if (typeString == null)
 		{
-			ReportProblem(options, pr, summary, PreviewProblemKind.MissingTypeLabel, config?.LabelToType?.Keys);
+			// A repository without a mapping of labels to types has no label that would fix it, so it is a configuration matter, not a pull request.
+			if (config?.LabelToType is { Count: > 0 })
+				ReportProblem(options, pr, summary, PreviewProblemKind.MissingTypeLabel, config.LabelToType.Keys);
 			collector.EmitWarning(
 				pr.Url,
 				$"Could not derive a changelog type from the labels of PR #{pr.Number}; defaulting to 'other'. " +

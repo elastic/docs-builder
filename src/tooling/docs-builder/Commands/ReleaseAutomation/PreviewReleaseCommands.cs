@@ -13,6 +13,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Configuration.ReleaseSchedule;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -52,6 +53,7 @@ internal sealed class PreviewReleaseCommands(
 	/// profile, and not an error. It is listed, with the labels to add, in <c>_diagnostics/preview-problems.json</c> in the output
 	/// folder, which <c>release preview build</c> turns into a diagnostics page. So is a pull request without a type label.
 	/// A pull request of a private repository is listed by repository and number only.
+	/// A run limited by <c>--products</c> or <c>--services</c> replaces the problems of the bundles it refreshed, and keeps the rest.
 	/// </para>
 	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the repositories of the services.</para>
 	/// </remarks>
@@ -113,8 +115,16 @@ internal sealed class PreviewReleaseCommands(
 
 		// What the site lists on its diagnostics page. Written even when empty, so the page of an earlier run does not stay.
 		var allowRepos = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assemblyConfiguration);
-		PreviewProblemsFile.Write(new FileSystem(), rootOutput.FullName, problems.ToProblems(allowRepos));
-		_logger.LogInformation("{Count} pull request(s) have a label missing. The diagnostics page lists them.", problems.Count);
+		var fileSystem = new FileSystem();
+		var fresh = problems.ToProblems(allowRepos);
+		var written = PartialRun(products, services) && PreviewProblemsFile.TryRead(fileSystem, rootOutput.FullName, out var existing)
+			? PreviewProblemMerge.Merge(existing, fresh, RefreshedDraProducts(products), RefreshedRepositories(selected))
+			: fresh;
+		PreviewProblemsFile.Write(fileSystem, rootOutput.FullName, written);
+		_logger.LogInformation(
+			"{Count} pull request(s) have a label missing in this run. The diagnostics page lists them.",
+			problems.PullRequestCount
+		);
 		return 0;
 	}
 
@@ -147,7 +157,7 @@ internal sealed class PreviewReleaseCommands(
 		var scrubber = new ChangelogContentScrubber(logFactory, LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assemblyConfiguration));
 		return await Unified.BuildSiteAsync(
 			null,
-			new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl),
+			new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl, ShowDiagnostics: true),
 			serverlessProducts,
 			async (product, fileName, content, token) => (await scrubber.ScrubAsync(
 				$"{ChangelogKeys.BundlePrefix}{product}/{fileName}",
@@ -157,6 +167,27 @@ internal sealed class PreviewReleaseCommands(
 			ctx
 		);
 	}
+
+	// A run limited to some products or services leaves the other bundles, and so their problems, where they are.
+	private static bool PartialRun(string[]? products, string[]? services) => products is { Length: > 0 } || services is { Length: > 0 };
+
+	private IReadOnlyList<string> RefreshedDraProducts(string[]? products) =>
+		[
+			.. UnifiedBundlePlanner
+				.FilterProducts(
+					UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
+					products
+				)
+				.Selected
+				.Select(p => p.Id)
+		];
+
+	private static IReadOnlyList<(string Product, string Repo)> RefreshedRepositories(IReadOnlyList<ServerlessService> services) =>
+		[
+			.. services.SelectMany(
+				svc => new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).Select(repo => (svc.Product, repo))
+			)
+		];
 
 	private IReadOnlyList<ServerlessService>? SelectServices(string[]? requested)
 	{

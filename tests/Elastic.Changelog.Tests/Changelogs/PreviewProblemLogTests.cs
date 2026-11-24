@@ -37,13 +37,13 @@ public class PreviewProblemLogTests
 	public void ToProblems_PrivateRepository_DropsTheLinkAndTheTitle()
 	{
 		var log = new PreviewProblemLog();
-		log.Add("cloud-hosted", "head", Problem("cloud", 161048, title: "Secret title"));
+		log.Add("cloud-hosted", "head", Problem("private-example", 1048, title: "Secret title"));
 
 		var problem = log.ToProblems(Allow).Should().ContainSingle().Which;
 
 		problem.Url.Should().BeNull();
 		problem.Title.Should().BeNull();
-		(problem.Owner, problem.Repo, problem.Number).Should().Be(("elastic", "cloud", 161048));
+		(problem.Owner, problem.Repo, problem.Number).Should().Be(("elastic", "private-example", 1048));
 	}
 
 	[Test]
@@ -87,9 +87,9 @@ public class PreviewProblemLogTests
 	{
 		var log = new PreviewProblemLog();
 		log.Add("kibana", "staging", Problem("kibana", 9));
-		log.Add("cloud-hosted", "head", Problem("cloud", 3, PreviewProblemKind.MissingTypeLabel));
-		log.Add("cloud-hosted", "head", Problem("cloud", 2));
-		log.Add("cloud-hosted", "head", Problem("cloud", 1));
+		log.Add("cloud-hosted", "head", Problem("private-example", 3, PreviewProblemKind.MissingTypeLabel));
+		log.Add("cloud-hosted", "head", Problem("private-example", 2));
+		log.Add("cloud-hosted", "head", Problem("private-example", 1));
 
 		log
 			.ToProblems(Allow)
@@ -109,7 +109,7 @@ public class PreviewProblemLogTests
 		var fileSystem = new MockFileSystem();
 		var log = new PreviewProblemLog();
 		log.Add("kibana", "head", Problem("kibana", 7, title: "Public title"));
-		log.Add("cloud-hosted", "head", Problem("cloud", 161048, title: "Secret title"));
+		log.Add("cloud-hosted", "head", Problem("private-example", 1048, title: "Secret title"));
 		var problems = log.ToProblems(Allow);
 
 		PreviewProblemsFile.Write(fileSystem, "/bundles", problems);
@@ -120,7 +120,7 @@ public class PreviewProblemLogTests
 			.Should()
 			.NotContain("Secret title")
 			.And
-			.NotContain("pull/161048");
+			.NotContain("pull/1048");
 		PreviewProblemsFile.TryRead(fileSystem, "/bundles", out var read).Should().BeTrue();
 		read.Should().BeEquivalentTo(problems, options => options.WithStrictOrdering());
 	}

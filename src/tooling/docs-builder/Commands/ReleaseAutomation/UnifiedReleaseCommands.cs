@@ -36,7 +36,13 @@ internal sealed record UnifiedBundleOptions(
 );
 
 /// <summary>Where <c>release unified build</c> reads its bundles, writes its site, and what it puts in the links of the site.</summary>
-internal sealed record UnifiedSiteOptions(DirectoryInfo? BundlesDir, DirectoryInfo? Output, string? PathPrefix, Uri? CanonicalBaseUrl);
+internal sealed record UnifiedSiteOptions(
+	DirectoryInfo? BundlesDir,
+	DirectoryInfo? Output,
+	string? PathPrefix,
+	Uri? CanonicalBaseUrl,
+	bool ShowDiagnostics = false
+);
 
 /// <summary>Unified release automation commands.</summary>
 internal sealed class UnifiedReleaseCommands(
@@ -374,7 +380,7 @@ internal sealed class UnifiedReleaseCommands(
 		CancellationToken ctx
 	)
 	{
-		var (bundlesDir, output, pathPrefix, canonicalBaseUrl) = site;
+		var (bundlesDir, output, pathPrefix, canonicalBaseUrl, showDiagnostics) = site;
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
@@ -400,6 +406,7 @@ internal sealed class UnifiedReleaseCommands(
 			Output = output ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "site")),
 			AdditionalProductIds = additionalProductIds,
 			ScrubBundle = scrubBundle,
+			ShowDiagnostics = showDiagnostics,
 			ExpectedVersions = [.. targets.Select(t => t.Version)],
 			PathPrefix = pathPrefix,
 			CanonicalBaseUrl = canonicalBaseUrl

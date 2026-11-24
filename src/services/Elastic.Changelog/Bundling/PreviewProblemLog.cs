@@ -20,6 +20,10 @@ public sealed partial class PreviewProblemLog
 	[GeneratedRegex(@"^https?://github\.com/(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)/(?:pull|issues)/\d+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PullRequestUrlRegex();
 
+	/// <summary>The number of pull requests with a problem. One that lacks two labels, or is in two releases, counts once.</summary>
+	public int PullRequestCount => _problems.Values.Select(v => v.Problem.Url).Distinct(StringComparer.Ordinal).Count();
+
+	/// <summary>The number of records: a pull request counts once per kind of problem and release.</summary>
 	public int Count => _problems.Count;
 
 	/// <summary>Records a problem of <paramref name="product"/> at <paramref name="release"/>. A pull request is recorded once per kind and release.</summary>

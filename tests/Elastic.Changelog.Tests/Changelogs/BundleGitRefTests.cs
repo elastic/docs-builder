@@ -94,7 +94,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		string pivotProducts = "",
 		string bundleExtra = "",
 		string topLevel = "",
-		string outputProduct = "cloud-hosted"
+		string outputProduct = "cloud-hosted",
+		bool mapTypes = true
 	)
 	{
 		// language=yaml
@@ -115,6 +116,17 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			    promotion:
 			      output_products: "OUTPUT_PRODUCT {version}"
 			"""
+			.Replace(
+				"""
+				  types:
+				    feature: ">feature"
+				    bug-fix: ">bug"
+				    breaking-change: ">breaking"
+				""".ReplaceLineEndings(
+					"\n"
+				),
+				mapTypes ? "  types:\n    feature: \">feature\"\n    bug-fix: \">bug\"\n    breaking-change: \">breaking\"" : "  # no types"
+			)
 			.Replace("PLACEHOLDER", outputDir)
 			.Replace("PIVOT_PRODUCTS", pivotProducts)
 			.Replace("TOP_LEVEL", topLevel.Length > 0 ? topLevel : "# no top-level settings")
@@ -787,12 +799,19 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		string pivotProducts,
 		string topLevel,
 		string outputProduct,
-		Func<BundleChangelogsArguments, BundleChangelogsArguments>? configure = null
+		Func<BundleChangelogsArguments, BundleChangelogsArguments>? configure = null,
+		bool mapTypes = true
 	)
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
-		var configPath = await WriteProfileConfig(outputDir, pivotProducts, topLevel: topLevel, outputProduct: outputProduct);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			pivotProducts,
+			topLevel: topLevel,
+			outputProduct: outputProduct,
+			mapTypes: mapTypes
+		);
 
 		var prService = A.Fake<IGitHubPrService>();
 		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
@@ -997,6 +1016,24 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 		bundle.Should().Contain("Faster entity resolution");
 		problems.Should().ContainSingle(p => p.Kind == PreviewProblemKind.MissingAreaLabel).Which.Labels.Should().Be(":Search");
+	}
+
+	[Test]
+	public async Task InferredEntry_NoTypeMappingInTheConfiguration_ReportsNoTypeProblemBecauseNoLabelCouldFixIt()
+	{
+		var problems = new List<GitRangePrProblem>();
+
+		var (result, _) = await BundleSinglePr(
+			["unmapped-label"],
+			string.Empty,
+			KibanaProducts,
+			"cloud-serverless",
+			arguments => arguments with { OnPullRequestProblem = problems.Add },
+			mapTypes: false
+		);
+
+		result.Should().BeTrue();
+		problems.Should().NotContain(p => p.Kind == PreviewProblemKind.MissingTypeLabel);
 	}
 
 	[Test]

@@ -503,8 +503,8 @@ public class UnifiedReleaseNotesTests : IDisposable
 			Release = "head",
 			Kind = PreviewProblemKind.MissingProductLabel,
 			Owner = "elastic",
-			Repo = "cloud",
-			Number = 161048,
+			Repo = "private-example",
+			Number = 1048,
 			Labels = "@Product:ECE, @Product:ECH"
 		},
 		new()
@@ -513,8 +513,8 @@ public class UnifiedReleaseNotesTests : IDisposable
 			Release = "head",
 			Kind = PreviewProblemKind.MissingTypeLabel,
 			Owner = "elastic",
-			Repo = "cloud",
-			Number = 161081
+			Repo = "private-example",
+			Number = 1081
 		},
 		new()
 		{
@@ -525,7 +525,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			Repo = "kibana",
 			Number = 7,
 			Url = "https://github.com/elastic/kibana/pull/7",
-			Title = "Fix [a link](https://evil.example) and *bold* | a pipe",
+			Title = "Fix [a link](https://evil.example) and *bold* | a pipe and x^2^",
 			Labels = ">bug, >enhancement"
 		}
 	];
@@ -569,14 +569,16 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 			Add one of these labels: `@Product:ECE`, `@Product:ECH`.
 
-			- `elastic/cloud#161048`
+			- `elastic/private-example#1048`
+
 			:::
 
 			:::{dropdown} No type label (1)
 
 			The release note shows under Other changes.
 
-			- `elastic/cloud#161081`
+			- `elastic/private-example#1081`
+
 			:::
 
 			## Kibana
@@ -589,7 +591,8 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 			Add one of these labels: `>bug`, `>enhancement`.
 
-			- [elastic/kibana\#7](https://github.com/elastic/kibana/pull/7) Fix \[a link\]\(https\://evil.example\) and \*bold\* \| a pipe
+			- [elastic/kibana\#7](https://github.com/elastic/kibana/pull/7) Fix \[a link\]\(https\://evil.example\) and \*bold\* \| a pipe and x\^2\^
+
 			:::
 			"""
 			);
@@ -637,7 +640,11 @@ public class UnifiedReleaseNotesTests : IDisposable
 		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), []);
 		var collector = new DiagnosticsCollector([]);
 
-		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+		var succeeded = await Service().Build(
+			collector,
+			Options("9.5.0") with { ShowDiagnostics = true },
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		succeeded.Should().BeTrue();
 		collector.Errors.Should().Be(0);
@@ -657,7 +664,11 @@ public class UnifiedReleaseNotesTests : IDisposable
 		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), DiagnosticsProblems);
 		var collector = new DiagnosticsCollector([]);
 
-		var succeeded = await Service(Hosted).Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+		var succeeded = await Service(Hosted).Build(
+			collector,
+			Options("9.5.0") with { ShowDiagnostics = true },
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		succeeded.Should().BeTrue();
 		collector.Errors.Should().Be(0);
@@ -667,13 +678,57 @@ public class UnifiedReleaseNotesTests : IDisposable
 			.Should()
 			.Contain("kibana/pull/7")
 			.And
-			.Contain("elastic/cloud#161048")
+			.Contain("elastic/private-example#1048")
 			.And
-			.NotContain("pull/161048")
+			.NotContain("pull/1048")
 			.And
 			.NotContain("href=\"https://evil.example");
 		page.Should().Contain("a pipe", "the title is text, so the pipe does not end the line").And.Contain("@Product:ECH");
+		page.Should().Contain("x^2^", "a caret is text, not superscript").And.NotContain("<sup>");
 		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "index.html")).Should().Contain("diagnostics");
+	}
+
+	[Test]
+	public async Task Build_WithAProblemsFileButDiagnosticsNotRequested_LeavesThePrivatePullRequestsOffTheSite()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), DiagnosticsProblems);
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service(Hosted).Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "diagnostics")).Should().BeFalse();
+		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "index.html")).Should().NotContain("iagnostics");
+	}
+
+	[Test]
+	public void Generate_ProblemsOfSeveralRepositoriesInOneRelease_EachRepositoryNamesItsOwnLabels()
+	{
+		PreviewProblem Problem(string repo, int number, string labels) =>
+			new()
+			{
+				Product = "cloud-serverless",
+				Release = "head",
+				Kind = PreviewProblemKind.MissingAreaLabel,
+				Owner = "elastic",
+				Repo = repo,
+				Number = number,
+				Url = $"https://github.com/elastic/{repo}/pull/{number}",
+				Title = $"Change {number}",
+				Labels = labels
+			};
+
+		var files = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Serverless, ["head"])],
+			[Problem("kibana", 1, ":Search"), Problem("elasticsearch", 2, ":Analytics, :Ingest")]
+		);
+
+		var page = files["diagnostics.md"];
+		page.Should().Contain(
+			"**elastic/elasticsearch**\n\nAdd one of these labels: `:Analytics`, `:Ingest`.\n\n- [elastic/elasticsearch\\#2]"
+		);
+		page.Should().Contain("**elastic/kibana**\n\nAdd one of these labels: `:Search`.\n\n- [elastic/kibana\\#1]");
 	}
 
 	[Test]
