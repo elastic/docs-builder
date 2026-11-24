@@ -1,6 +1,6 @@
 {
   "configuration": null,
   "diagnostics": [
-    "error {root}/docs/changelog.yml YAML parsing error in changelog configuration: {root}/docs/changelog.yml: (Lin: 0, Col: 7, Chr: 7) - (Lin: 0, Col: 7, Chr: 7): Expected a StartMapping token but found 'StartSequence'."
+    "error {root}/docs/changelog.yml YAML parsing error in changelog configuration: {root}/docs/changelog.yml: (Lin: 0, Col: 7, Chr: 7) - (Lin: 0, Col: 8, Chr: 8): Expected a StartMapping token but found 'StartSequence'."
   ]
 }

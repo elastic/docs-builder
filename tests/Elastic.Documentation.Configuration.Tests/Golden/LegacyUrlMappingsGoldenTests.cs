@@ -197,7 +197,7 @@ public class LegacyUrlMappingsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				throws
-				YamlException: {config-runtime}/legacy-url-mappings.yml: (Lin: 5, Col: 0, Chr: 69) - (Lin: 5, Col: 0, Chr: 69): Duplicate mapping key 'en/apm/'.
+				YamlException: {config-runtime}/legacy-url-mappings.yml: (Lin: 4, Col: 4, Chr: 53) - (Lin: 4, Col: 4, Chr: 53): Duplicate mapping key 'en/apm/'.
 				"""
 			);
 

@@ -633,7 +633,7 @@ public partial class AssemblerGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				throws
-				YamlException: {config-runtime}/assembler.yml: (Lin: 5, Col: 0, Chr: 92) - (Lin: 5, Col: 0, Chr: 92): Duplicate mapping key 'prod'.
+				YamlException: {config-runtime}/assembler.yml: (Lin: 4, Col: 4, Chr: 65) - (Lin: 4, Col: 4, Chr: 65): Duplicate mapping key 'prod'.
 				"""
 			);
 
@@ -994,7 +994,7 @@ public partial class AssemblerGoldenTests
 			.MatchInlineSnapshot(
 				"""
 			throws
-			YamlException: {config-runtime}/assembler.yml: (Lin: 4, Col: 0, Chr: 53) - (Lin: 4, Col: 0, Chr: 53): Duplicate mapping key 'some-repo'.
+			YamlException: {config-runtime}/assembler.yml: (Lin: 3, Col: 4, Chr: 42) - (Lin: 3, Col: 4, Chr: 42): Duplicate mapping key 'some-repo'.
 			"""
 			);
 

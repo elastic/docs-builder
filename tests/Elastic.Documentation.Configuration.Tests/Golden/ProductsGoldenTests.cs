@@ -170,7 +170,7 @@ public class ProductsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				throws
-				YamlException: {config-runtime}/products.yml: (Lin: 7, Col: 0, Chr: 98) - (Lin: 7, Col: 0, Chr: 98): Duplicate mapping key 'apm'.
+				YamlException: {config-runtime}/products.yml: (Lin: 5, Col: 4, Chr: 65) - (Lin: 5, Col: 4, Chr: 65): Duplicate mapping key 'apm'.
 				"""
 			);
 
@@ -353,7 +353,7 @@ public class ProductsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				throws
-				YamlException: {config-runtime}/products.yml: (Lin: 4, Col: 14, Chr: 64) - (Lin: 4, Col: 14, Chr: 64): Expected a StartMapping token but found 'StartSequence'.
+				YamlException: {config-runtime}/products.yml: (Lin: 4, Col: 14, Chr: 64) - (Lin: 4, Col: 15, Chr: 65): Expected a StartMapping token but found 'StartSequence'.
 				"""
 			);
 
