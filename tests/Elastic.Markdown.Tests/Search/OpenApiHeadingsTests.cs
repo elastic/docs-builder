@@ -26,4 +26,38 @@ public class OpenApiHeadingsTests
 		doc.Headings.Should().Equal("ccr");
 		doc.Summary.Should().Be("Create a follower ccr");
 	}
+
+	[Test]
+	public void ApplyApiBody_PageDocument_KeepsItsPlainTextBody()
+	{
+		var doc = new DocumentationDocument
+		{
+			Path = "/docs/api/elasticsearch/group/endpoint-core",
+			Title = "Core",
+			SearchTitle = "Core",
+			Body = "Send a <ping> first.",
+			Api = new ApiOperationMetadata { Endpoints = [], Method = "", Path = "", OperationId = "", Page = true }
+		};
+
+		ElasticsearchMarkdownExporter.ApplyApiBody(doc, _ => "converted");
+
+		doc.Body.Should().Be("Send a <ping> first.");
+	}
+
+	[Test]
+	public void ApplyApiBody_OperationDocument_ConvertsItsMarkdownBody()
+	{
+		var doc = new DocumentationDocument
+		{
+			Path = "/docs/api/elasticsearch/operation/operation-ping",
+			Title = "Ping",
+			SearchTitle = "Ping",
+			Body = "# Ping",
+			Api = new ApiOperationMetadata { Endpoints = [], Method = "GET", Path = "/", OperationId = "ping" }
+		};
+
+		ElasticsearchMarkdownExporter.ApplyApiBody(doc, _ => "converted");
+
+		doc.Body.Should().Be("converted");
+	}
 }

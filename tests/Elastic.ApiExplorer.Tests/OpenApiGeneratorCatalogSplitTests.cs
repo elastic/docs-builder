@@ -403,7 +403,8 @@ public class OpenApiGeneratorCatalogSplitTests
 				new()
 				{
 					Name = "core",
-					Description = "Endpoints every client uses.\n\n## Connecting\n\nSend a `<ping>` before anything else."
+					Description =
+						"Endpoints every client uses, starting with `<ping>`.\n\n## Connecting\n\nSend a `<ping>` before anything else."
 				},
 				new() { Name = "admin" }
 			},

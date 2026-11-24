@@ -20,12 +20,12 @@ Get the status: GET /_status
 /docs/api/elasticsearch/group/endpoint-core [9, 8] page: True, sitemap only: False, hidden: False, dated: True
 title: Core
 parents: API > Elasticsearch API
-description: Endpoints every client uses.
+description: Endpoints every client uses, starting with <ping>.
 headings: Connecting
 body:
 Core
 core
-Endpoints every client uses.
+Endpoints every client uses, starting with <ping>.
 Connecting
 Send a <ping> before anything else.
 Ping: GET /ping

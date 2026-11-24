@@ -372,7 +372,7 @@ public class OpenApiGenerator(
 		var meta = ApiMarkdownFrontMatter.Collect(body, item, context, page);
 		var (text, headings) = ApiPagePlainText.Read(body);
 		// Plain text drops link targets, which point into one version tree and would keep identical trees from collapsing.
-		return new ApiPageSearchText(meta.Title, ApiPagePlainText.Text(meta.Description ?? ""), text, headings);
+		return new ApiPageSearchText(ApiPagePlainText.Line(meta.Title), ApiPagePlainText.Line(meta.Description ?? ""), text, headings);
 	}
 
 	/// <summary>
