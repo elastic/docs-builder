@@ -224,8 +224,11 @@ body {
 			@apply box-content rounded-sm p-1;
 		}
 
-		&:hover > .nav-chevron {
-			@apply bg-grey-20;
+		/* As Tailwind's hover: does, so a tap on a touch screen leaves no grey chevron behind. */
+		@media (hover: hover) {
+			&:hover > .nav-chevron {
+				@apply bg-grey-20;
+			}
 		}
 	}
 
