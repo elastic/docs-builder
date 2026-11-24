@@ -18,7 +18,7 @@ public interface INavigationHtmlWriter
 	async Task<NavigationRenderResult> Render(NavigationRenderModel model, Cancel ctx)
 	{
 		var slice = _TocTree.Create(model);
-		var html = await slice.RenderAsync(cancellationToken: ctx);
+		var html = NavigationWhitespace.Collapse(await slice.RenderAsync(cancellationToken: ctx));
 		return new NavigationRenderResult { Html = html, Id = model.ContentHash };
 	}
 }
