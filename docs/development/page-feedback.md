@@ -92,7 +92,10 @@ server can run without Elasticsearch. They prevent startup in `staging`, `edge`,
 and `prod`.
 
 Runtime credentials require permission to manage component and index templates,
-create the environment's index, and write its documents.
+create the environment's index, and write its documents. The mapping update also
+needs the `manage` index privilege on `page-feedback-v1-{environment}`. Without
+it Elasticsearch answers 403 and startup fails in `staging`, `edge`, and `prod`,
+so grant it before you deploy a build that has the update.
 
 An added field needs no new index, because startup applies it in place. For an
 incompatible mapping change, such as a changed field type, increment
