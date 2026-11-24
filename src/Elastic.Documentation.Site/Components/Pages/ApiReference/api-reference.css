@@ -1736,9 +1736,10 @@ button.response-status-toggle:focus {
 			> .property-item
 			> dt {
 			grid-column: 1 / 4;
-			/* The dt spans every row the description column can fill (description, control, constraints, values, example,
-			   reference link), so a tall name or type never pushes the control or the values below its own bottom. */
-			grid-row: 1 / span 6;
+			/* The dt spans more rows than the description column can fill (description, control, constraints, values,
+			   example, reference link, expand toggle and the rest), so a tall name or type never pushes an entry below its
+			   own bottom. The surplus rows stay empty and add no height. */
+			grid-row: 1 / span 12;
 			align-items: start;
 		}
 

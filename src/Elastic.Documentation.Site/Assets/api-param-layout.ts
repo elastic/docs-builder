@@ -149,6 +149,7 @@ function placeConstraints(row: HTMLElement): void {
     if (row.querySelector(`:scope > .${constraintRowClass}`)) return
     const groups = row.querySelectorAll<HTMLElement>(constraintGroupSelector)
     if (groups.length === 0) return
+    const focused = focusedWithin(groups)
     const constraints = document.createElement('dd')
     constraints.className = constraintRowClass
     const label = document.createElement('span')
@@ -166,6 +167,7 @@ function placeConstraints(row: HTMLElement): void {
         row.querySelector<HTMLElement>(descriptionSelector) ??
         row.querySelector<HTMLElement>(':scope > dt')
     after?.after(constraints)
+    focused?.focus({ preventScroll: true })
 }
 
 function restoreConstraints(row: HTMLElement): void {
@@ -173,12 +175,25 @@ function restoreConstraints(row: HTMLElement): void {
         `:scope > .${constraintRowClass}`
     )
     if (!constraints) return
-    for (const group of constraints.querySelectorAll('.schema-type-group')) {
+    const groups =
+        constraints.querySelectorAll<HTMLElement>('.schema-type-group')
+    const focused = focusedWithin(groups)
+    for (const group of groups) {
         const marker = constraintMarkers.get(group)
         if (marker?.parentNode) marker.replaceWith(group)
         constraintMarkers.delete(group)
     }
     constraints.remove()
+    focused?.focus({ preventScroll: true })
+}
+
+// A constraint with a tooltip is a tab stop. Moving it out of the document drops the focus, so the reader who was on it
+// when the layout changed (a zoom can do that) gets it back in the new place.
+function focusedWithin(groups: Iterable<HTMLElement>): HTMLElement | null {
+    const active = document.activeElement
+    if (!(active instanceof HTMLElement)) return null
+    for (const group of groups) if (group.contains(active)) return active
+    return null
 }
 
 /** Lays out the section's rows for the table: constraints move only while the stylesheet applies the table. */
@@ -216,9 +231,16 @@ function observeSection(
     if (observedSections.has(section) || typeof ResizeObserver === 'undefined')
         return
     observedSections.add(section)
+    // Laying the rows out changes the section's own height, which the observer would report as an undelivered
+    // notification if it happened inside the delivery; the next frame is outside it, and one frame serves a burst.
+    let frame = 0
     new ResizeObserver(() => {
-        if (section.dataset.layout === 'table')
-            layoutTableRows(section, overflows, tableApplied)
+        if (frame) return
+        frame = requestAnimationFrame(() => {
+            frame = 0
+            if (section.dataset.layout === 'table')
+                layoutTableRows(section, overflows, tableApplied)
+        })
     }).observe(section)
 }
 

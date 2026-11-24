@@ -21,7 +21,7 @@ function markup(): string {
             <div class="api-param-section-body" id="${anchor}-list">
                 <dl class="property-list">
                     <div class="property-item depth-0" id="${anchor}-long">
-                        <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type"><span class="type-primitive">string</span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint">min length: 1</span></span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint">max length: 4096</span></span></code></dt>
+                        <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type"><span class="type-primitive">string</span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint">min length: 1</span></span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint" tabindex="0" id="${anchor}-max-length">max length: 4096</span></span></code></dt>
                         <dd><p>A long description.</p><p><a href="#deep" id="${anchor}-deep-link">deep link</a></p></dd>
                         <dd class="reference-link-row"><a href="#">Reference</a></dd>
                         <div class="nested-properties">
@@ -287,6 +287,36 @@ describe('parameter layout switch', () => {
             applyParamLayout('table', document, longOnly, notApplied)
             expect(constraints('query-params-long')).toBeNull()
             expect(type('query-params-long').textContent).toBe(before)
+        })
+
+        it('returns the constraints to the type when the section narrows and moves them again when it widens', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, applied)
+            expect(constraints('query-params-long')).not.toBeNull()
+            applyParamLayout('table', document, longOnly, notApplied)
+            expect(constraints('query-params-long')).toBeNull()
+            expect(type('query-params-long').textContent).toBe(before)
+            applyParamLayout('table', document, longOnly, applied)
+            expect(
+                constraints('query-params-long')!.querySelectorAll(
+                    '.type-constraint'
+                )
+            ).toHaveLength(2)
+            expect(type('query-params-long').textContent).toBe('string')
+        })
+
+        it('keeps focus on a constraint that moves between the layouts', () => {
+            const constraint = document.getElementById(
+                'query-params-max-length'
+            )!
+            constraint.focus()
+            expect(document.activeElement).toBe(constraint)
+            applyParamLayout('table', document, longOnly, applied)
+            expect(constraint.closest('.api-param-constraints')).not.toBeNull()
+            expect(document.activeElement).toBe(constraint)
+            applyParamLayout('table', document, longOnly, notApplied)
+            expect(constraint.closest('dt')).not.toBeNull()
+            expect(document.activeElement).toBe(constraint)
         })
 
         it('moves them once however often the table is applied', () => {
