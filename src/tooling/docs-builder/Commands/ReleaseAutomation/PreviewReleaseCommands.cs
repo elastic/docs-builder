@@ -105,7 +105,6 @@ internal sealed class PreviewReleaseCommands(
 
 		var cache = ChangelogCache.Create(cacheDir, noCache, _logger);
 		var bundler = new ServerlessBundler(logFactory, collector, configurationContext, http, cache);
-		ServerlessPreviewBundles.RemoveLegacy(rootOutput, _logger);
 		foreach (var service in selected)
 		{
 			if (!await BundleServiceAsync(bundler, service, rootOutput, problems, ctx))
@@ -113,6 +112,10 @@ internal sealed class PreviewReleaseCommands(
 			if (cache is not null)
 				await cache.SaveAsync(ctx);
 		}
+
+		// Only now, when every service succeeded: the services this run did not refresh may still hold a bundle of the release that was
+		// called head, and the site would publish it next to Edge. A run that failed leaves the last good bundles where they were.
+		ServerlessPreviewBundles.RemoveLegacy(rootOutput, _logger);
 
 		// What the site lists on its diagnostics page. Written even when empty, so the page of an earlier run does not stay.
 		var allowRepos = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assemblyConfiguration);

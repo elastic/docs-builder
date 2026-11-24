@@ -41,7 +41,8 @@ public static class ServerlessPreviewBundles
 	public static void Replace(ServerlessService svc, DirectoryInfo rootOutput, DirectoryInfo? pending, ILogger logger)
 	{
 		var productOutput = new DirectoryInfo(Path.Combine(rootOutput.FullName, svc.Product));
-		foreach (var name in ServerlessPromotion.PreviewBundleFileNames(svc))
+		// The bundle of the release that was called head goes with the first of the new ones: the service has an Edge bundle now, or none.
+		foreach (var name in ServerlessPromotion.PreviewBundleFileNames(svc).Concat(ServerlessPromotion.LegacyBundleFileNames(svc)))
 		{
 			var path = Path.Combine(productOutput.FullName, name);
 			if (!File.Exists(path))

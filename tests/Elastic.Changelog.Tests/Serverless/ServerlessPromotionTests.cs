@@ -387,4 +387,11 @@ public class ServerlessPromotionTests
 				("cloud-serverless", "elasticsearch-cloud-serverless-head.yaml"),
 				("cloud-hosted", "cloud-cloud-hosted-head.yaml")
 			);
+
+	[Test]
+	public void LegacyBundleFileNames_OfOneService_NameTheHeadBundleOfItsRepositories() =>
+		ServerlessPromotion
+			.LegacyBundleFileNames(ServerlessPromotion.Services["elasticsearch"])
+			.Should()
+			.Equal("elasticsearch-serverless-cloud-serverless-head.yaml", "elasticsearch-cloud-serverless-head.yaml");
 }

@@ -186,13 +186,11 @@ public static partial class ServerlessPromotion
 	/// it is refreshed, and that is better than a second, stale release.
 	/// </summary>
 	public static IReadOnlyList<(string Product, string FileName)> LegacyBundleFileNames() =>
-		[
-			.. Services.Values.SelectMany(
-				svc => new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).Select(
-					repo => (svc.Product, $"{repo}-{svc.Product}-head.yaml")
-				)
-			)
-		];
+		[.. Services.Values.SelectMany(svc => LegacyBundleFileNames(svc).Select(name => (svc.Product, name)))];
+
+	/// <summary>The bundles of the release that was called <c>head</c> for one service: one per repository, the service repository and its submodules.</summary>
+	public static IReadOnlyList<string> LegacyBundleFileNames(ServerlessService svc) =>
+		[.. new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).Select(repo => $"{repo}-{svc.Product}-head.yaml")];
 
 	/// <summary>The first 12 characters of a ref, in lower case. It names a promotion in serverless-gitops and in its review pull request.</summary>
 	public static string ShortRef(string gitRef) => (gitRef.Length > 12 ? gitRef[..12] : gitRef).ToLowerInvariant();
