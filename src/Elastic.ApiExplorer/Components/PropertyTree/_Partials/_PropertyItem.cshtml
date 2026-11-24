@@ -7,7 +7,11 @@
 		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel">
 			<span class="property-anchor-icon" data-tooltip="Copy link" aria-hidden="true"></span>
 		</a>
-		@if (Model.TooltipPath is { } path)
+		@if (Model.IsMapKey)
+		{
+			@(await RenderPartialAsync<_MapKeyLabel, string?>(Model.TooltipPath))
+		}
+		else if (Model.TooltipPath is { } path)
 		{
 			<code data-tooltip="@path" data-tooltip-theme="mono">@Model.Name</code>
 		}
@@ -135,7 +139,7 @@
 	{
 		<dd class="union-options">
 			<span class="values-label">@repeated.Label</span>
-			<a href="#@repeated.AnchorId"><code>@repeated.Name</code></a>
+			<a href="#@repeated.AnchorId"><code>@repeated.DisplayName</code></a>
 			@if (repeated.Owner is { Length: > 0 } owner)
 			{
 				<span class="values-label">in</span>
@@ -173,14 +177,7 @@
 				<dl class="property-list">
 					<div class="property-item depth-@dict.Depth last-sibling has-children @(dict.IsCollapsible ? (dict.DefaultExpanded ? "expanded" : "collapsed") : "")">
 						<dt id="@dict.KeyAnchorId">
-							@if (dict.JsonPath is { } keyPath)
-							{
-								<code data-tooltip="@keyPath" data-tooltip-theme="mono">&lt;string&gt;</code>
-							}
-							else
-							{
-								<code>&lt;string&gt;</code>
-							}
+							@(await RenderPartialAsync<_MapKeyLabel, string?>(dict.TooltipPath))
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
 						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))

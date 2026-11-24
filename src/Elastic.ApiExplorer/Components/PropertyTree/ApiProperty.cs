@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Site.ApplicabilityBadges;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
@@ -29,6 +30,9 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 public record RepeatedShape(string Name, string AnchorId, bool IsUnion, string? Owner = null)
 {
 	public string Label => IsUnion ? "Same options as" : "Same fields as";
+
+	/// <summary>What the link reads on the page: the name the target row shows.</summary>
+	public string DisplayName => ApiProperty.DisplayNameOf(Name);
 }
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
@@ -122,6 +126,9 @@ public record DictionaryChildDisplay
 
 	/// <summary>The JSON path of the map's values, such as <c>aggs.&lt;string&gt;</c>; null where paths are not shown.</summary>
 	public string? JsonPath { get; init; }
+
+	/// <summary>The hover tooltip of the key row: the JSON path, with <c>*</c> for the map's key.</summary>
+	public string? TooltipPath => JsonPath is { } path ? ApiProperty.ShownPath(path) : null;
 	public string ChildrenId => NestedRowsId.Of(KeyAnchorId);
 	public required int Depth { get; init; }
 	public required bool IsCollapsible { get; init; }
@@ -170,7 +177,22 @@ public record ApiPropertyChildren
 /// </summary>
 public record ApiProperty
 {
+	/// <summary>What a map's key row is called on the page. The builder names the row <c>&lt;string&gt;</c> internally.</summary>
+	public const string MapKeyDisplayName = "property name*";
+
+	/// <summary>What a map's key row says it is, and what a screen reader announces in place of the key, since a bare <c>*</c> can be skipped.</summary>
+	public const string MapKeyKind = "additional property";
+
 	public required string Name { get; init; }
+
+	/// <summary>Whether this is the synthetic row that holds a map's value fields, not a field of the schema.</summary>
+	public bool IsMapKey => Name == ApiPropertyPath.MapKeyMarker;
+
+	/// <summary>The name the page shows: <see cref="Name"/>, except on a map's key row.</summary>
+	public string DisplayName => DisplayNameOf(Name);
+
+	/// <summary>The name the page shows for a row called <paramref name="name"/>.</summary>
+	public static string DisplayNameOf(string name) => name == ApiPropertyPath.MapKeyMarker ? MapKeyDisplayName : name;
 
 	/// <summary>The underlying OpenAPI schema; views read scalar values off it directly.</summary>
 	public required IOpenApiSchema Schema { get; init; }
@@ -181,11 +203,36 @@ public record ApiProperty
 	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(AnchorId);
 
-	/// <summary>The hover tooltip: the JSON path, except on a top-level field, where it would only repeat the name.</summary>
-	public string? TooltipPath => JsonPath is { } path && path != Name ? path : null;
+	/// <summary>
+	/// The hover tooltip: the JSON path, except on a top-level field, where it would only repeat the name. A map's key reads <c>*</c>,
+	/// the JSONPath wildcard, in place of the <c>&lt;string&gt;</c> marker.
+	/// </summary>
+	public string? TooltipPath => JsonPath is { } path && path != Name ? ShownPath(path) : null;
 
-	/// <summary>What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.</summary>
-	public string PermalinkLabel => JsonPath is { Length: > 0 } path ? path : Name;
+	/// <summary>
+	/// What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.
+	/// A map's key reads as <see cref="MapKeyKind"/> in place of the <c>&lt;string&gt;</c> marker.
+	/// </summary>
+	public string PermalinkLabel => JsonPath is { Length: > 0 } path ? WithMapKeysAs(path, MapKeyKind) : IsMapKey ? MapKeyKind : Name;
+
+	/// <summary>A JSON path as the page shows it: a map's key reads <c>*</c>, the JSONPath wildcard.</summary>
+	public static string ShownPath(string path) => WithMapKeysAs(path, "*");
+
+	/// <summary>
+	/// <paramref name="path"/> with each map-key segment, and any <c>[]</c> after it, reading <paramref name="key"/>. Only a whole
+	/// segment counts, so a field whose name merely contains the marker keeps its name.
+	/// </summary>
+	private static string WithMapKeysAs(string path, string key) =>
+		string.Join('.', path.Split('.').Select(segment => MapKeyOr(segment, key)));
+
+	private static string MapKeyOr(string segment, string key)
+	{
+		if (!segment.StartsWith(ApiPropertyPath.MapKeyMarker, StringComparison.Ordinal))
+			return segment;
+
+		var rest = segment[ApiPropertyPath.MapKeyMarker.Length..];
+		return rest.Replace(ApiPropertyPath.ItemsMarker, "", StringComparison.Ordinal).Length == 0 ? key + rest : segment;
+	}
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
 
