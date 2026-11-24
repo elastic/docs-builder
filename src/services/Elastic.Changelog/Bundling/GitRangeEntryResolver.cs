@@ -38,7 +38,25 @@ public record GitRangeEntryResolutionOptions
 	/// to any product (typically the profile's <c>output_products</c>). Wildcards are ignored.
 	/// </summary>
 	public IReadOnlyList<ProductArgument>? FallbackProducts { get; init; }
+
+	/// <summary>
+	/// A pull request without a product or area label that the configuration requires is not an error. It is reported through
+	/// <see cref="OnProblem"/> and the entry is built without the label: under <see cref="FallbackProducts"/>, with no area.
+	/// For a preview, where such a pull request is what a writer has to find.
+	/// </summary>
+	public bool TolerateMissingLabels { get; init; }
+
+	/// <summary>Called for each pull request that lacks a product, area or type label.</summary>
+	public Action<GitRangePrProblem>? OnProblem { get; init; }
 }
+
+/// <summary>A pull request of a commit range whose labels leave its release note in the wrong place.</summary>
+/// <param name="Number">Pull request number.</param>
+/// <param name="Url">Pull request URL.</param>
+/// <param name="Title">Pull request title.</param>
+/// <param name="Kind">What is missing.</param>
+/// <param name="Labels">The labels that would fix it, comma separated.</param>
+public record GitRangePrProblem(int Number, string Url, string Title, PreviewProblemKind Kind, string Labels);
 
 /// <summary>How a pull request's changelog entry was sourced for a commit-range bundle.</summary>
 public enum GitRangePrSourceKind
@@ -351,14 +369,22 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 				&& (ProductResolution.RequiresProductLabelExplicitly(config) || ProductResolution.Defaults(config).Count == 0);
 			if (productLabelMissing)
 			{
-				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
-				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+				ReportProblem(options, pr, summary, PreviewProblemKind.MissingProductLabel, config.LabelToProducts?.Keys);
+				if (!options.TolerateMissingLabels)
+				{
+					collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
+					return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+				}
 			}
 
 			if (AreaResolution.RequiresAreaLabel(config) && AreaResolution.FromLabels(labels, config).Count == 0)
 			{
-				collector.EmitError(pr.Url, AreaResolution.MissingAreaLabelMessage($"PR {pr.Url}", config));
-				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+				ReportProblem(options, pr, summary, PreviewProblemKind.MissingAreaLabel, config.LabelToAreas?.Keys);
+				if (!options.TolerateMissingLabels)
+				{
+					collector.EmitError(pr.Url, AreaResolution.MissingAreaLabelMessage($"PR {pr.Url}", config));
+					return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+				}
 			}
 		}
 
@@ -369,6 +395,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var typeString = config?.LabelToType != null ? PrInfoProcessor.MapLabelsToType(labels, config.LabelToType) : null;
 		if (typeString == null)
 		{
+			ReportProblem(options, pr, summary, PreviewProblemKind.MissingTypeLabel, config?.LabelToType?.Keys);
 			collector.EmitWarning(
 				pr.Url,
 				$"Could not derive a changelog type from the labels of PR #{pr.Number}; defaulting to 'other'. " +
@@ -446,6 +473,14 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 	/// labels map to and imply (<paramref name="labelProducts"/>), else <c>products.default</c>, else the
 	/// concrete (non-wildcard) fallback products from the profile/CLI. Empty when none applies.
 	/// </summary>
+	private static void ReportProblem(
+		GitRangeEntryResolutionOptions options,
+		CommitRangePullRequest pr,
+		PullRequestSummary summary,
+		PreviewProblemKind kind,
+		IEnumerable<string>? labels
+	) => options.OnProblem?.Invoke(new GitRangePrProblem(pr.Number, pr.Url, summary.Title, kind, string.Join(", ", labels ?? [])));
+
 	private static List<ProductArgument> ResolveProductsFromConfiguration(
 		List<ProductArgument> labelProducts,
 		ChangelogConfiguration? config,

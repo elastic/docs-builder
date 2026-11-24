@@ -493,6 +493,161 @@ public class UnifiedReleaseNotesTests : IDisposable
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "kibana")).Should().BeFalse();
 	}
 
+	private static readonly Product Hosted = CreateProduct("cloud-hosted", "Elastic Cloud Hosted", ReleaseNotesPath.OnRelease);
+
+	private static readonly PreviewProblem[] DiagnosticsProblems =
+	[
+		new()
+		{
+			Product = "cloud-hosted",
+			Release = "head",
+			Kind = PreviewProblemKind.MissingProductLabel,
+			Owner = "elastic",
+			Repo = "cloud",
+			Number = 161048,
+			Labels = "@Product:ECE, @Product:ECH"
+		},
+		new()
+		{
+			Product = "cloud-hosted",
+			Release = "head",
+			Kind = PreviewProblemKind.MissingTypeLabel,
+			Owner = "elastic",
+			Repo = "cloud",
+			Number = 161081
+		},
+		new()
+		{
+			Product = "kibana",
+			Release = "9.5.0",
+			Kind = PreviewProblemKind.MissingTypeLabel,
+			Owner = "elastic",
+			Repo = "kibana",
+			Number = 7,
+			Url = "https://github.com/elastic/kibana/pull/7",
+			Title = "Fix [a link](https://evil.example) and *bold* | a pipe",
+			Labels = ">bug, >enhancement"
+		}
+	];
+
+	[Test]
+	public void Generate_WithProblems_ListsThemByProductReleaseAndKind()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Products[0], ["9.5.0"]), new ProductVersions(Hosted, ["head"])],
+			DiagnosticsProblems
+		);
+
+		files["diagnostics.md"]
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			---
+			navigation_title: Diagnostics
+			---
+
+			# Release notes diagnostics
+
+			3 pull requests lack a label that puts the release note in the right place. Add the label to the pull request. The next hourly rebuild of this site picks it up.
+
+			:::{note}
+			A pull request of a private repository is named by repository and number, without a link or a title.
+			:::
+
+			## Elastic Cloud Hosted
+
+			### Elastic Cloud Hosted HEAD
+
+			:::{dropdown} No product label (1)
+			:open:
+
+			The release note shows under the product of its bundle, which may not be its product.
+
+			Add one of these labels: `@Product:ECE`, `@Product:ECH`.
+
+			- `elastic/cloud#161048`
+			:::
+
+			:::{dropdown} No type label (1)
+
+			The release note shows under Other changes.
+
+			- `elastic/cloud#161081`
+			:::
+
+			## Kibana
+
+			### Kibana 9.5.0
+
+			:::{dropdown} No type label (1)
+
+			The release note shows under Other changes.
+
+			Add one of these labels: `>bug`, `>enhancement`.
+
+			- [elastic/kibana\#7](https://github.com/elastic/kibana/pull/7) Fix \[a link\]\(https\://evil.example\) and \*bold\* \| a pipe
+			:::
+			"""
+			);
+	}
+
+	[Test]
+	public void Generate_WithProblems_AddsTheDiagnosticsPageToTheTocAndTheIndex()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])], DiagnosticsProblems);
+
+		files["docset.yml"].Should().Contain("  - file: index.md\n  - file: diagnostics.md\n  - toc: kibana");
+		files["index.md"].Should().Contain("## Diagnostics").And.Contain("(diagnostics.md)");
+	}
+
+	[Test]
+	public void Generate_WithoutProblems_HasNoDiagnosticsPage()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])]);
+
+		files.Should().NotContainKey("diagnostics.md");
+		files["docset.yml"].Should().NotContain("diagnostics");
+		files["index.md"].Should().NotContain("Diagnostics");
+	}
+
+	[Test]
+	public async Task Build_WithAProblemsFile_RendersTheDiagnosticsPageAndLinksOnlyPublicPullRequests()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), DiagnosticsProblems);
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service(Hosted).Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		var site = _fileSystem.Path.Join(_temp.FullName, "site");
+		var page = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "diagnostics", "index.html"));
+		page
+			.Should()
+			.Contain("kibana/pull/7")
+			.And
+			.Contain("elastic/cloud#161048")
+			.And
+			.NotContain("pull/161048")
+			.And
+			.NotContain("href=\"https://evil.example");
+		page.Should().Contain("a pipe", "the title is text, so the pipe does not end the line").And.Contain("@Product:ECH");
+		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "index.html")).Should().Contain("diagnostics");
+	}
+
+	[Test]
+	public async Task Build_WithoutAProblemsFile_HasNoDiagnosticsPage()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(_temp.FullName, "site", "diagnostics")).Should().BeFalse();
+	}
+
 	[Test]
 	public async Task Build_ProductWithoutBundlesFolder_LeavesItOutOfTheSite()
 	{

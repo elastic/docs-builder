@@ -786,7 +786,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		string[] labels,
 		string pivotProducts,
 		string topLevel,
-		string outputProduct
+		string outputProduct,
+		Func<BundleChangelogsArguments, BundleChangelogsArguments>? configure = null
 	)
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -803,16 +804,17 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		});
 		var service = Service(PoolHandler(), RangeService(300), prService);
 
+		var arguments = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
 		var result = await service.BundleChangelogs(
 			Collector,
-			new BundleChangelogsArguments
-			{
-				Profile = "promotion",
-				ProfileArgument = "2026-08-13",
-				Config = configPath,
-				StartGitRef = StartRef,
-				EndGitRef = EndRef
-			},
+			configure is null ? arguments : configure(arguments),
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -922,6 +924,96 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			error https://github.com/elastic/widget/pull/300 No matching product label found on PR https://github.com/elastic/widget/pull/300. Add one of the following labels: stateful, serverless.
 			"""
 			);
+	}
+
+	private const string TwoProductsPivot = "  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless";
+
+	[Test]
+	public async Task InferredEntry_Products_NoProductLabelAndLabelsTolerated_BundlesUnderTheProfileProductAndReportsIt()
+	{
+		var problems = new List<GitRangePrProblem>();
+
+		var (result, bundle) = await BundleSinglePr(
+			[">feature"],
+			TwoProductsPivot,
+			string.Empty,
+			"cloud-serverless",
+			arguments => arguments with { TolerateMissingLabels = true, OnPullRequestProblem = problems.Add }
+		);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		bundle.Should().Contain("Faster entity resolution");
+		EntryProductsOf(bundle!).Should().Contain("cloud-serverless");
+		problems
+			.Should()
+			.ContainSingle(p => p.Kind == PreviewProblemKind.MissingProductLabel)
+			.Which
+			.Should()
+			.BeEquivalentTo(
+				new GitRangePrProblem(
+					300,
+					"https://github.com/elastic/widget/pull/300",
+					"Faster entity resolution",
+					PreviewProblemKind.MissingProductLabel,
+					"stateful, serverless"
+				)
+			);
+	}
+
+	[Test]
+	public async Task InferredEntry_Products_NoProductLabelAndLabelsNotTolerated_StillFailsAndReportsIt()
+	{
+		var problems = new List<GitRangePrProblem>();
+
+		var (result, bundle) = await BundleSinglePr(
+			[">feature"],
+			TwoProductsPivot,
+			string.Empty,
+			"cloud-serverless",
+			arguments => arguments with { OnPullRequestProblem = problems.Add }
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector.Errors.Should().Be(1);
+		problems.Should().ContainSingle(p => p.Kind == PreviewProblemKind.MissingProductLabel);
+	}
+
+	[Test]
+	public async Task InferredEntry_Areas_RequiredAndNoAreaLabelAndLabelsTolerated_BundlesWithoutAnAreaAndReportsIt()
+	{
+		var problems = new List<GitRangePrProblem>();
+
+		var (result, bundle) = await BundleSinglePr(
+			[">feature", "serverless"],
+			RequiredAreaPivot,
+			ElasticsearchProducts,
+			"cloud-serverless",
+			arguments => arguments with { TolerateMissingLabels = true, OnPullRequestProblem = problems.Add }
+		);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		bundle.Should().Contain("Faster entity resolution");
+		problems.Should().ContainSingle(p => p.Kind == PreviewProblemKind.MissingAreaLabel).Which.Labels.Should().Be(":Search");
+	}
+
+	[Test]
+	public async Task InferredEntry_NoTypeLabel_ReportsItWithoutFailing()
+	{
+		var problems = new List<GitRangePrProblem>();
+
+		var (result, _) = await BundleSinglePr(
+			["unmapped-label"],
+			string.Empty,
+			KibanaProducts,
+			"cloud-serverless",
+			arguments => arguments with { OnPullRequestProblem = problems.Add }
+		);
+
+		result.Should().BeTrue();
+		problems.Should().ContainSingle(p => p.Kind == PreviewProblemKind.MissingTypeLabel);
 	}
 
 	[Test]

@@ -98,7 +98,8 @@ public class UnifiedReleaseNotesBuildService(
 		products = [.. bundles.Select(b => b.Product)];
 
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "unified-release-notes", "docs");
-		var mockFs = CreateVirtualDocset(docsRoot, bundles);
+		var problems = PreviewProblemsFile.Read(realFs, options.BundlesDirectory.FullName);
+		var mockFs = CreateVirtualDocset(docsRoot, bundles, problems);
 		PrepareOutput(realFs, options.Output.FullName);
 
 		var docFs = DocumentationFileSystem.Resolve(
@@ -204,11 +205,15 @@ public class UnifiedReleaseNotesBuildService(
 	private static IReadOnlyList<string> NewestFirst(IEnumerable<string> versions) =>
 		[.. versions.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(VersionOrDate.Parse)];
 
-	private static MockFileSystem CreateVirtualDocset(string docsRoot, IReadOnlyList<ProductBundles> bundles)
+	private static MockFileSystem CreateVirtualDocset(
+		string docsRoot,
+		IReadOnlyList<ProductBundles> bundles,
+		IReadOnlyList<PreviewProblem> problems
+	)
 	{
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = docsRoot, CreateDefaultTempDir = false });
 
-		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate([.. bundles.Select(b => b.Versions)]))
+		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate([.. bundles.Select(b => b.Versions)], problems))
 			mockFs.AddFile(mockFs.Path.Join(docsRoot, relativePath), new MockFileData(content));
 
 		foreach (var (productVersions, files) in bundles)

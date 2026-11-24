@@ -25,6 +25,16 @@ using SharpYaml;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 
+/// <summary>The options of <c>release unified bundle</c>, as one value for the code that <c>release preview bundle</c> shares.</summary>
+internal sealed record UnifiedBundleOptions(
+	DirectoryInfo? OutputDir,
+	DirectoryInfo? ChangelogConfigs,
+	string[]? Products,
+	bool Strict,
+	DirectoryInfo? CacheDir,
+	bool NoCache
+);
+
 /// <summary>Where <c>release unified build</c> reads its bundles, writes its site, and what it puts in the links of the site.</summary>
 internal sealed record UnifiedSiteOptions(DirectoryInfo? BundlesDir, DirectoryInfo? Output, string? PathPrefix, Uri? CanonicalBaseUrl);
 
@@ -113,8 +123,26 @@ internal sealed class UnifiedReleaseCommands(
 		[ExpandUserProfile] DirectoryInfo? cacheDir = null,
 		bool noCache = false,
 		CancellationToken ctx = default
+	) =>
+		await BundleAsync(
+			versionOrKeyword,
+			new UnifiedBundleOptions(outputDir, changelogConfigs, products, strict, cacheDir, noCache),
+			null,
+			ctx
+		);
+
+	/// <summary>
+	/// Bundles the DRA products. With a <paramref name="problems"/> log, a pull request without a product or area label is bundled anyway
+	/// and recorded in the log, which <c>release preview bundle</c> writes for the site. Without one, it is an error, as it always was.
+	/// </summary>
+	internal async Task<int> BundleAsync(
+		string versionOrKeyword,
+		UnifiedBundleOptions options,
+		PreviewProblemLog? problems,
+		CancellationToken ctx
 	)
 	{
+		var (outputDir, changelogConfigs, products, strict, cacheDir, noCache) = options;
 		var (selected, unknown) = UnifiedBundlePlanner.FilterProducts(
 			UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
 			products
@@ -171,7 +199,8 @@ internal sealed class UnifiedReleaseCommands(
 			http,
 			new FileSystem(),
 			_logger,
-			collector
+			collector,
+			problems
 		);
 
 		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);

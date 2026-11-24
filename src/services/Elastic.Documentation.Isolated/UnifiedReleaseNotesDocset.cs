@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.ReleaseSchedule;
 
 namespace Elastic.Documentation.Isolated;
@@ -62,13 +63,20 @@ public static class UnifiedReleaseNotesDocset
 	public static string BundlesPath(string productId) => $"{BundlesFolder}/{productId}";
 
 	/// <summary>Generates every file of the docset, keyed by its path relative to the docset root.</summary>
-	public static IReadOnlyDictionary<string, string> Generate(IReadOnlyList<ProductVersions> products)
+	public static IReadOnlyDictionary<string, string> Generate(
+		IReadOnlyList<ProductVersions> products,
+		IReadOnlyList<PreviewProblem>? problems = null
+	)
 	{
+		problems ??= [];
 		var files = new Dictionary<string, string>(StringComparer.Ordinal)
 		{
-			["docset.yml"] = "project: unified-release-notes\n" + GenerateToc(products),
-			["index.md"] = GenerateRootIndex(products)
+			["docset.yml"] = "project: unified-release-notes\n" + GenerateToc(products, problems.Count > 0),
+			["index.md"] = GenerateRootIndex(products, problems.Count)
 		};
+
+		if (problems.Count > 0)
+			files[UnifiedReleaseNotesDiagnosticsPage.FileName] = UnifiedReleaseNotesDiagnosticsPage.Generate(products, problems);
 
 		foreach (var (product, versions) in products)
 		{
@@ -86,9 +94,11 @@ public static class UnifiedReleaseNotesDocset
 		return files;
 	}
 
-	private static string GenerateToc(IReadOnlyList<ProductVersions> products)
+	private static string GenerateToc(IReadOnlyList<ProductVersions> products, bool hasDiagnostics)
 	{
 		var lines = new List<string> { "toc:", "  - file: index.md" };
+		if (hasDiagnostics)
+			lines.Add($"  - file: {UnifiedReleaseNotesDiagnosticsPage.FileName}");
 		lines.AddRange(products.Select(p => $"  - toc: {p.Product.Id}"));
 		return string.Join('\n', lines) + "\n";
 	}
@@ -106,7 +116,7 @@ public static class UnifiedReleaseNotesDocset
 		return string.Join('\n', lines) + "\n";
 	}
 
-	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products)
+	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products, int problemCount)
 	{
 		var lines = new List<string>
 		{
@@ -126,6 +136,13 @@ public static class UnifiedReleaseNotesDocset
 			""
 		};
 		lines.AddRange(products.Select(p => $"- [{p.Product.DisplayName}]({p.Product.Id}/index.md)"));
+		if (problemCount > 0)
+			lines.AddRange([
+				"",
+				"## Diagnostics",
+				"",
+				$"Some pull requests lack a label that puts their release note in the right place. [See which and what to add]({UnifiedReleaseNotesDiagnosticsPage.FileName})."
+			]);
 		return string.Join('\n', lines) + "\n";
 	}
 
