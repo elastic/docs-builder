@@ -123,7 +123,8 @@ internal sealed class PreviewReleaseCommands(
 	/// The site has a page per version for every DRA product, and the <c>staging</c> and <c>head</c> pages of the serverless products.
 	/// A product without bundles is left out of the site, and the build fails only when no product has any bundle.
 	/// The site is built from the bundles on disk: the release schedule is not read. When the folder has the problems file of
-	/// <c>release preview bundle</c>, the site also has a diagnostics page that lists them.
+	/// <c>release preview bundle</c>, the site also has a diagnostics page. It lists the pull requests
+	/// that lack a label, or says that none does. Without the file, the folder was not checked and the site has no such page.
 	/// Bundles are scrubbed like the ones that are published: a pull request or issue reference to a repository that
 	/// <c>assembler.yml</c> marks private is removed from the entries and from their text. Other links, such as to a repository, a commit
 	/// or a comparison, are not recognized and stay as written, as they do in publication.

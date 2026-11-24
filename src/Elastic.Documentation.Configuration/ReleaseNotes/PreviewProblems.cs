@@ -74,14 +74,19 @@ public static class PreviewProblemsFile
 		);
 	}
 
-	/// <summary>The problems of a run, or none when the folder has no file: bundles from another command carry no diagnostics.</summary>
-	public static IReadOnlyList<PreviewProblem> Read(IFileSystem fileSystem, string bundlesDirectory)
+	/// <summary>
+	/// Reads the problems of a run. Returns <c>false</c> when the folder has no file, as with bundles from another command: they were
+	/// not checked, which is not the same as having no problems. A file with no problems returns <c>true</c> and an empty list.
+	/// </summary>
+	public static bool TryRead(IFileSystem fileSystem, string bundlesDirectory, out IReadOnlyList<PreviewProblem> problems)
 	{
+		problems = [];
 		var path = fileSystem.Path.Join(bundlesDirectory, RelativePath);
 		if (!fileSystem.File.Exists(path))
-			return [];
+			return false;
 
-		return JsonSerializer.Deserialize(fileSystem.File.ReadAllText(path), PreviewProblemsJsonContext.Default.PreviewProblems)?.Items
+		problems = JsonSerializer.Deserialize(fileSystem.File.ReadAllText(path), PreviewProblemsJsonContext.Default.PreviewProblems)?.Items
 			?? [];
+		return true;
 	}
 }

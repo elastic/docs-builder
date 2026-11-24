@@ -38,10 +38,21 @@ internal static class UnifiedReleaseNotesDiagnosticsPage
 			.AppendLine()
 			.AppendLine("# Release notes diagnostics")
 			.AppendLine()
+			.AppendLine("This page lists the pull requests whose release notes end up in the wrong place because a label is missing.")
+			.AppendLine("A pull request without a product label may show under the wrong product. One without an area label has no area.")
 			.AppendLine(
-				CultureInfo.InvariantCulture,
-				$"{Plural(count)} a label that puts the release note in the right place. Add the label to the pull request. The next hourly rebuild of this site picks it up."
+				"One without a type label shows under Other changes. Add the label to the pull request, and the next hourly rebuild of this site picks it up."
 			)
+			.AppendLine();
+
+		if (count == 0)
+		{
+			_ = sb.AppendLine("**No pull request lacks a label right now.** There is nothing to fix.");
+			return sb.ToString();
+		}
+
+		_ = sb
+			.AppendLine(CultureInfo.InvariantCulture, $"{Plural(count)} a label. They are listed below, by product and release.")
 			.AppendLine()
 			.AppendLine(":::{note}")
 			.AppendLine("A pull request of a private repository is named by repository and number, without a link or a title.")

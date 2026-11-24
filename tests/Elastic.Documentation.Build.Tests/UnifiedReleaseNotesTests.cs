@@ -548,7 +548,11 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 			# Release notes diagnostics
 
-			3 pull requests lack a label that puts the release note in the right place. Add the label to the pull request. The next hourly rebuild of this site picks it up.
+			This page lists the pull requests whose release notes end up in the wrong place because a label is missing.
+			A pull request without a product label may show under the wrong product. One without an area label has no area.
+			One without a type label shows under Other changes. Add the label to the pull request, and the next hourly rebuild of this site picks it up.
+
+			3 pull requests lack a label. They are listed below, by product and release.
 
 			:::{note}
 			A pull request of a private repository is named by repository and number, without a link or a title.
@@ -608,6 +612,42 @@ public class UnifiedReleaseNotesTests : IDisposable
 		files.Should().NotContainKey("diagnostics.md");
 		files["docset.yml"].Should().NotContain("diagnostics");
 		files["index.md"].Should().NotContain("Diagnostics");
+	}
+
+	[Test]
+	public void Generate_WithNoProblemsFound_HasAPageThatSaysWhatItIsForAndThatAllIsWell()
+	{
+		var files = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])], []);
+
+		files["diagnostics.md"]
+			.Should()
+			.Contain("This page lists the pull requests whose release notes end up in the wrong place because a label is missing.")
+			.And
+			.Contain("**No pull request lacks a label right now.** There is nothing to fix.")
+			.And
+			.NotContain("## ");
+		files["docset.yml"].Should().Contain("  - file: diagnostics.md");
+		files["index.md"].Should().Contain("## Diagnostics").And.Contain("No pull request lacks a label right now.");
+	}
+
+	[Test]
+	public async Task Build_WithAProblemsFileThatFoundNothing_RendersAPageThatSaysSo()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		PreviewProblemsFile.Write(_fileSystem, _fileSystem.Path.Join(_temp.FullName, "bundles"), []);
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "diagnostics", "index.html"))
+			.Should()
+			.Contain("No pull request lacks a label right now.")
+			.And
+			.Contain("end up in the wrong place");
 	}
 
 	[Test]

@@ -121,9 +121,21 @@ public class PreviewProblemLogTests
 			.NotContain("Secret title")
 			.And
 			.NotContain("pull/161048");
-		PreviewProblemsFile.Read(fileSystem, "/bundles").Should().BeEquivalentTo(problems, options => options.WithStrictOrdering());
+		PreviewProblemsFile.TryRead(fileSystem, "/bundles", out var read).Should().BeTrue();
+		read.Should().BeEquivalentTo(problems, options => options.WithStrictOrdering());
 	}
 
 	[Test]
-	public void File_WithoutAFile_HasNoProblems() => PreviewProblemsFile.Read(new MockFileSystem(), "/bundles").Should().BeEmpty();
+	public void File_WithoutAFile_WasNotChecked() =>
+		PreviewProblemsFile.TryRead(new MockFileSystem(), "/bundles", out _).Should().BeFalse();
+
+	[Test]
+	public void File_WithNoProblems_WasCheckedAndFoundNone()
+	{
+		var fileSystem = new MockFileSystem();
+		PreviewProblemsFile.Write(fileSystem, "/bundles", []);
+
+		PreviewProblemsFile.TryRead(fileSystem, "/bundles", out var read).Should().BeTrue();
+		read.Should().BeEmpty();
+	}
 }

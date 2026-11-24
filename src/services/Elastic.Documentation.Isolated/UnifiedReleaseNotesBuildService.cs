@@ -98,8 +98,8 @@ public class UnifiedReleaseNotesBuildService(
 		products = [.. bundles.Select(b => b.Product)];
 
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "unified-release-notes", "docs");
-		var problems = PreviewProblemsFile.Read(realFs, options.BundlesDirectory.FullName);
-		var mockFs = CreateVirtualDocset(docsRoot, bundles, problems);
+		var checkedForProblems = PreviewProblemsFile.TryRead(realFs, options.BundlesDirectory.FullName, out var problems);
+		var mockFs = CreateVirtualDocset(docsRoot, bundles, checkedForProblems ? problems : null);
 		PrepareOutput(realFs, options.Output.FullName);
 
 		var docFs = DocumentationFileSystem.Resolve(
@@ -208,7 +208,7 @@ public class UnifiedReleaseNotesBuildService(
 	private static MockFileSystem CreateVirtualDocset(
 		string docsRoot,
 		IReadOnlyList<ProductBundles> bundles,
-		IReadOnlyList<PreviewProblem> problems
+		IReadOnlyList<PreviewProblem>? problems
 	)
 	{
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = docsRoot, CreateDefaultTempDir = false });

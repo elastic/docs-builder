@@ -68,14 +68,14 @@ public static class UnifiedReleaseNotesDocset
 		IReadOnlyList<PreviewProblem>? problems = null
 	)
 	{
-		problems ??= [];
 		var files = new Dictionary<string, string>(StringComparer.Ordinal)
 		{
-			["docset.yml"] = "project: unified-release-notes\n" + GenerateToc(products, problems.Count > 0),
-			["index.md"] = GenerateRootIndex(products, problems.Count)
+			["docset.yml"] = "project: unified-release-notes\n" + GenerateToc(products, problems is not null),
+			["index.md"] = GenerateRootIndex(products, problems?.Count)
 		};
 
-		if (problems.Count > 0)
+		// A page that checked and found nothing is still a page: it says what it is for, and that all is well.
+		if (problems is not null)
 			files[UnifiedReleaseNotesDiagnosticsPage.FileName] = UnifiedReleaseNotesDiagnosticsPage.Generate(products, problems);
 
 		foreach (var (product, versions) in products)
@@ -116,7 +116,7 @@ public static class UnifiedReleaseNotesDocset
 		return string.Join('\n', lines) + "\n";
 	}
 
-	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products, int problemCount)
+	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products, int? problemCount)
 	{
 		var lines = new List<string>
 		{
@@ -136,12 +136,14 @@ public static class UnifiedReleaseNotesDocset
 			""
 		};
 		lines.AddRange(products.Select(p => $"- [{p.Product.DisplayName}]({p.Product.Id}/index.md)"));
-		if (problemCount > 0)
+		if (problemCount is { } count)
 			lines.AddRange([
 				"",
 				"## Diagnostics",
 				"",
-				$"Some pull requests lack a label that puts their release note in the right place. [See which and what to add]({UnifiedReleaseNotesDiagnosticsPage.FileName})."
+				count == 0
+					? $"No pull request lacks a label right now. [See what the diagnostics page checks]({UnifiedReleaseNotesDiagnosticsPage.FileName})."
+					: $"Some pull requests lack a label that puts their release note in the right place. [See which and what to add]({UnifiedReleaseNotesDiagnosticsPage.FileName})."
 			]);
 		return string.Join('\n', lines) + "\n";
 	}
