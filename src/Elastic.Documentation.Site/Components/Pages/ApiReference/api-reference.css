@@ -1600,6 +1600,7 @@ button.response-status-toggle:focus {
    list and never sees the switch. */
 .api-param-layout,
 .api-param-table-head,
+.api-param-clamp-row,
 .api-param-clamp-toggle {
 	display: none;
 }
@@ -1952,12 +1953,14 @@ button.response-status-toggle:focus {
 			margin-bottom: var(--space-2);
 		}
 
-		/* The control sits in a dd of its own, so the row stays a list of terms and descriptions. */
+		/* The control sits in a dd of its own, so the row stays a list of terms and descriptions. The dd shows only here:
+		   a row expanded in the table keeps it when the section narrows, and the list must not get a blank row from it. */
 		.api-param-section[data-layout='table']
 			> .api-param-section-body
 			> .property-list
 			> .property-item
 			> .api-param-clamp-row {
+			display: block;
 			padding: 0 var(--space-3) var(--space-2);
 		}
 

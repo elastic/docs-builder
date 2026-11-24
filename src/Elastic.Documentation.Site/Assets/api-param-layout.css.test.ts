@@ -18,7 +18,7 @@ const gateOpener = '@supports (grid-template-columns: subgrid) {'
 
 /** The elements a browser without subgrid must never see; the options live inside the switch. */
 const hiddenOutside =
-    /\.api-param-layout(?!-option)|\.api-param-table-head|\.api-param-clamp-toggle/
+    /\.api-param-layout(?!-option)|\.api-param-table-head|\.api-param-clamp-row|\.api-param-clamp-toggle/
 
 interface Rule {
     selectors: string[]
@@ -134,9 +134,9 @@ describe('parameter table stylesheet', () => {
         expect(outside).not.toContain("[data-layout='table']")
     })
 
-    it('hides the switch, the label row and the clamp control by default', () => {
+    it('hides the switch, the label row, the clamp row and its control by default', () => {
         expect(outside).toMatch(
-            /\.api-param-layout,\s*\.api-param-table-head,\s*\.api-param-clamp-toggle\s*\{\s*display:\s*none;/
+            /\.api-param-layout,\s*\.api-param-table-head,\s*\.api-param-clamp-row,\s*\.api-param-clamp-toggle\s*\{\s*display:\s*none;/
         )
     })
 
