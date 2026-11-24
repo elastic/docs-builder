@@ -146,7 +146,8 @@ public static class StringHighlightExtensions
 			if (
 				IsInsideMarkTagSyntax(textSpan, absoluteIndex, tokenSpan.Length)
 				|| IsInsideMarkTagContent(textSpan, absoluteIndex)
-				|| SplitsEntity(textSpan, absoluteIndex, tokenSpan.Length)
+				|| IsInsideEntity(textSpan, absoluteIndex)
+				|| IsInsideEntity(textSpan, absoluteIndex + tokenSpan.Length)
 			)
 			{
 				_ = sb.Append(remaining[..(matchIndex + tokenSpan.Length)]);
@@ -255,22 +256,20 @@ public static class StringHighlightExtensions
 		return false;
 	}
 
-	/// <summary>
-	/// Whether a match starts or ends inside an entity such as <c>&amp;lt;</c> in encoded text: a mark there would break the entity,
-	/// for example when a reader types <c>lt</c>.
-	/// </summary>
-	private static bool SplitsEntity(ReadOnlySpan<char> text, int position, int length) =>
-		IsInsideEntity(text, position) || IsInsideEntity(text, position + length);
-
 	// The longest entity Encode writes is `&quot;`.
 	private const int MaxEntityLength = 6;
 
+	/// <summary>
+	/// Whether <paramref name="position"/> falls inside an entity such as <c>&amp;lt;</c> in encoded text: a mark starting or ending
+	/// there would break the entity, for example when a reader types <c>lt</c>.
+	/// </summary>
 	private static bool IsInsideEntity(ReadOnlySpan<char> text, int position)
 	{
-		var start = text[Math.Max(0, position - MaxEntityLength + 1)..position].LastIndexOf('&');
-		if (start < 0)
+		var from = Math.Max(0, position - MaxEntityLength + 1);
+		var ampersand = text[from..position].LastIndexOf('&');
+		if (ampersand < 0)
 			return false;
-		var ampersand = Math.Max(0, position - MaxEntityLength + 1) + start;
+		ampersand += from;
 		var semicolon = text[ampersand..Math.Min(text.Length, ampersand + MaxEntityLength)].IndexOf(';');
 		return semicolon >= 0 && ampersand + semicolon >= position;
 	}
