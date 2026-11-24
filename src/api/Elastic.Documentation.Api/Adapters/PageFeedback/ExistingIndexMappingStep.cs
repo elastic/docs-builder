@@ -62,10 +62,21 @@ internal sealed class ExistingIndexMappingStep(string indexName, ILogger logger)
 				response.ApiCallDetails.OriginalException
 			);
 
+		if (response.ApiCallDetails.HttpStatusCode is not { } status)
+		{
+			logger.LogWarning(
+				response.ApiCallDetails.OriginalException,
+				"No response from Elasticsearch to the mapping update for {IndexName}",
+				indexName
+			);
+			return false;
+		}
+
 		logger.LogWarning(
+			response.ApiCallDetails.OriginalException,
 			"Elasticsearch rejected the mapping update for {IndexName}: HTTP {StatusCode}. {Response}",
 			indexName,
-			response.ApiCallDetails.HttpStatusCode,
+			status,
 			response.Body
 		);
 		return false;

@@ -80,9 +80,23 @@ public class PageFeedbackBootstrapTests
 		logger.Messages.Should().ContainSingle(m => m.Contains("page-feedback-v1-dev") && m.Contains("HTTP 400"));
 	}
 
+	[Test]
+	public async Task StartAsync_NoResponseToTheMappingInDev_LogsTheTransportFailure()
+	{
+		var (transport, _) = CreateTransport(mappingStatus: null);
+		var logger = new ListLogger();
+
+		await CreateService(transport, AppEnv.Dev, logger).StartAsync(TestContext.Current!.Execution.CancellationToken);
+
+		logger.Messages.Should().ContainSingle(m => m.Contains("No response from Elasticsearch") && m.Contains("page-feedback-v1-dev"));
+		logger.Exceptions.Should().ContainSingle().Which.Should().NotBeNull();
+	}
+
 	private sealed class ListLogger : ILogger
 	{
 		public List<string> Messages { get; } = [];
+
+		public List<Exception?> Exceptions { get; } = [];
 
 		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
@@ -94,7 +108,11 @@ public class PageFeedbackBootstrapTests
 			TState state,
 			Exception? exception,
 			Func<TState, Exception?, string> formatter
-		) => Messages.Add(formatter(state, exception));
+		)
+		{
+			Messages.Add(formatter(state, exception));
+			Exceptions.Add(exception);
+		}
 	}
 
 	private static PageFeedbackBootstrapService CreateService(ITransport transport, AppEnv env, ILogger? stepLogger = null)
@@ -109,7 +127,7 @@ public class PageFeedbackBootstrapTests
 		);
 	}
 
-	private static (ITransport Transport, List<Call> Calls) CreateTransport(int mappingStatus)
+	private static (ITransport Transport, List<Call> Calls) CreateTransport(int? mappingStatus)
 	{
 		var calls = new List<Call>();
 		var transport = Virtual
@@ -117,7 +135,13 @@ public class PageFeedbackBootstrapTests
 			.Bootstrap(1)
 			.Ping(call => call.SucceedAlways())
 			.ClientCalls(
-				call => mappingStatus is 200 ? call.OnPath("_mapping").SucceedAlways() : call.OnPath("_mapping").FailAlways(mappingStatus)
+				call =>
+					mappingStatus switch
+					{
+						200 => call.OnPath("_mapping").SucceedAlways(),
+						{ } status => call.OnPath("_mapping").FailAlways(status),
+						null => call.OnPath("_mapping").FailAlways()
+					}
 			)
 			.ClientCalls(call => call.SucceedAlways())
 			.StaticNodePool()
