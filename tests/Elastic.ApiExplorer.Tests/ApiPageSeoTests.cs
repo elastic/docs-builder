@@ -92,13 +92,14 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void SchemaPage_HasNoTocItems()
+	public async Task SchemaPage_RendersNoOnThisPageList()
 	{
 		var item = fixture.Walk().OfType<SchemaNavigationItem>().Should().ContainSingle(n => n.Model.DisplayName == "Query").Subject;
-		var context = RenderContext(item);
-		var viewModel = new SchemaViewModel(context) { Schema = item.Model, Page = SchemaPageModel.Create(item.Model, context) };
 
-		viewModel.TocItems.Should().BeEmpty();
+		var html = await fixture.RenderAsync(item);
+
+		html.Should().Contain("Copy page");
+		html.Should().NotContain("On this page");
 	}
 
 	[Test]
