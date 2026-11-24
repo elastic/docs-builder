@@ -59,6 +59,11 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 		// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other guide pages.
 		Hidden = true;
 
+	/// <summary>Servers is kept only so old Bump.sh links land, so it is neither listed nor indexed. Authentication is a real page.</summary>
+	public override bool InSitemap => Model.Kind != ApiStructuralKind.Servers;
+
+	public bool ExcludeFromIndexing => Model.Kind == ApiStructuralKind.Servers;
+
 	private static string UrlFor(string? urlPathPrefix, string apiUrlSuffix, ApiStructuralKind kind) =>
 		kind == ApiStructuralKind.Authentication
 			? ApiUrlBuilder.AuthenticationUrl(urlPathPrefix, apiUrlSuffix)

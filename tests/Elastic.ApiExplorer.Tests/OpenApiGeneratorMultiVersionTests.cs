@@ -937,6 +937,50 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task Generate_ServersPage_StaysNoindexWhileTheOperationPageIsIndexed()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch(), allowIndexing: true);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+
+		OpenApiDocument WithServer(string title)
+		{
+			var document = SpecDocument(title);
+			document.Servers = [new OpenApiServer { Url = "https://localhost:9200" }];
+			return document;
+		}
+
+		var reader = CreateVersionedReader(("main", WithServer("main")), ("9.4", WithServer("9")), ("8.19", WithServer("8")));
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		string Robots(params string[] segments) =>
+			Regex
+				.Match(
+					context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "index.html"])),
+					"<meta name=\"robots\" content=\"([^\"]*)\"",
+					RegexOptions.None,
+					RegexTimeouts.MatchTimeout
+				)
+				.Groups[1]
+				.Value;
+
+		// Servers is out of the sitemap, so it is not indexed either; the hidden version roots stay indexed
+		$"servers: {Robots("servers")}\nv8 servers: {Robots("v8", "servers")}\noperation: {Robots("operation", "operation-ping")}\nlanding: {Robots()}\nv8 landing: {Robots("v8")}".Should().MatchInlineSnapshot(
+			"""
+				servers: noindex
+				v8 servers: noindex
+				operation: index, follow
+				landing: index, follow
+				v8 landing: index, follow
+				"""
+		);
+	}
+
+	[Test]
 	public async Task Generate_EachTree_RendersTheVersionNoticeOfItsPageType()
 	{
 		var collector = new DiagnosticsCollector([]);
