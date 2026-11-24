@@ -273,11 +273,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		await foreach (var doc in ExportApiDocuments(exporter, ctx))
 		{
-			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
-
-			// Plain-text, markup-stripped content — the single source of truth for search, AI
-			// enrichment input, and content hashing.
-			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
+			ApplyApiMarkdown(doc, _context);
 			CommonEnrichments(doc, null);
 			// The exporter hashes the page an API document stands for; only a document that is not a page hashes its body.
 			if (string.IsNullOrEmpty(doc.ContentBodyHash))
@@ -294,6 +290,28 @@ public partial class ElasticsearchMarkdownExporter
 		_logger.LogInformation("Finished exporting OpenAPI documentation");
 		return true;
 	}
+
+	/// <summary>
+	/// Reads an API document's Markdown body once: as plain text, the single source of truth for search, AI enrichment input and
+	/// content hashing, and, on a page such as a group or type page, for the titles of its sections.
+	/// </summary>
+	internal static void ApplyApiMarkdown(DocumentationDocument doc, IDocumentationConfigurationContext context)
+	{
+		var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
+		if (doc.Api?.Page == true)
+			doc.Headings = SectionHeadings(document, context);
+		ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, context));
+	}
+
+	private static string[] SectionHeadings(MarkdownDocument document, IDocumentationConfigurationContext context) =>
+		[
+			.. document
+				.Descendants<HeadingBlock>()
+				.Where(static h => h.Level > 1)
+				.Select(h => PlainTextExporter.ConvertBlockToPlainText(h, context).Trim())
+				.Where(static t => t.Length > 0)
+				.Distinct(StringComparer.Ordinal)
+		];
 
 	/// <summary>
 	/// Keeps the tag names <see cref="OpenApiDocumentExporter"/> put in <c>Headings</c>. The generated body's

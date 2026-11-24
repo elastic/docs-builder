@@ -137,6 +137,9 @@
   "landing": {
     "type": "boolean"
   },
+  "page": {
+    "type": "boolean"
+  },
   "sitemap_only": {
     "type": "boolean"
   },

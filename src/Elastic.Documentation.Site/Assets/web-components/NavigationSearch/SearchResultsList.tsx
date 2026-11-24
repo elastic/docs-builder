@@ -375,7 +375,7 @@ const SearchResultRow = ({
                     label={
                         result.landing
                             ? GO_TO_LABELS.api
-                            : result.type === 'api'
+                            : result.type === 'api' && !result.page
                               ? GO_TO_LABELS.operation
                               : GO_TO_LABELS.page
                     }

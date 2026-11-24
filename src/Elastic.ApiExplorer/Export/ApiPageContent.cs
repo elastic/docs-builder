@@ -4,5 +4,14 @@
 
 namespace Elastic.ApiExplorer.Export;
 
-/// <summary>One rendered API page: its URL, its title and the hash of its Markdown export.</summary>
-public sealed record ApiPageContent(string Url, string Title, string ContentHash);
+/// <summary>
+/// One rendered API page: its URL, its title and the hash of its Markdown export. <paramref name="Search"/> is set on a page search
+/// should find that is neither an operation nor the landing page, such as a group, type or topic page.
+/// </summary>
+public sealed record ApiPageContent(string Url, string Title, string ContentHash, ApiPageSearch? Search = null);
+
+/// <summary>
+/// What search reads of a page: the plain-text title and description of its front matter, and its Markdown export with links into
+/// the version tree made relative, so the same page in two trees reads the same. The indexer turns the Markdown into plain text.
+/// </summary>
+public sealed record ApiPageSearch(string Title, string Description, string Markdown);

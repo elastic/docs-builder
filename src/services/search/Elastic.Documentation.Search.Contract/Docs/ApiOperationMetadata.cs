@@ -110,8 +110,17 @@ public record ApiOperationMetadata
 	public bool Landing { get; init; }
 
 	/// <summary>
-	/// True on an API page that only the sitemap reads, such as a group, type or topic page: it is indexed for its content date,
-	/// never for search. Left out of the document when false.
+	/// True on an API page that is neither an operation nor the landing page, such as a group, type or topic page: its method,
+	/// path, operation id and endpoints are empty. Left out of the document when false.
+	/// </summary>
+	[Boolean]
+	[JsonPropertyName("page")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool Page { get; init; }
+
+	/// <summary>
+	/// True on an API page that only the sitemap reads, such as an operation the exporter skips or the Servers page: it is
+	/// indexed for its content date, never for search. Left out of the document when false.
 	/// </summary>
 	[Boolean]
 	[JsonPropertyName("sitemap_only")]
