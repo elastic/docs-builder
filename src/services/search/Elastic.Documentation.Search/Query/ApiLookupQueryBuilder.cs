@@ -66,16 +66,28 @@ public static class ApiLookupQueryBuilder
 		return new BoolQuery
 		{
 			Must = [new BoolQuery { Should = clauses, MinimumShouldMatch = TokensMinimumShouldMatch }],
-			MustNot = [LandingPageWithoutName(typed)],
+			MustNot = [PageWithoutName(typed)],
 			Should = Lifts(typed, tokens)
 		};
 	}
 
 	/// <summary>
-	/// An API's landing page has no operation to explain a word, so it qualifies only when every typed word names it through
-	/// its title. Otherwise the words of its description would list it for queries about an operation.
+	/// An API's landing, group, type or topic page has no operation to explain a word, so it qualifies only when every typed word
+	/// names it through its title. Otherwise the words of its body would list it for queries about an operation.
 	/// </summary>
-	private static Query LandingPageWithoutName(string typed) => new BoolQuery { Filter = [LandingTerm()], MustNot = [TitleQuery(typed)] };
+	private static Query PageWithoutName(string typed) =>
+		new BoolQuery
+		{
+			Filter =
+			[
+				new BoolQuery
+				{
+					Should = [LandingTerm(), new TermQuery { Field = QueryFieldNames.ApiPage, Value = true }],
+					MinimumShouldMatch = 1
+				}
+			],
+			MustNot = [TitleQuery(typed)]
+		};
 
 	private static Query LandingNamed(string typed) => new BoolQuery { Filter = [LandingTerm(), TitleQuery(typed)] };
 

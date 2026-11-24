@@ -349,15 +349,32 @@ public class OpenApiGenerator(
 			var (item, page) = pages[i];
 			var pageContext = renderContext with { CurrentNavigation = item };
 			var markdown = await page.RenderCommonMarkAsync(pageContext, page.CreatePageModel(pageContext), token).ConfigureAwait(false);
-			if (!string.IsNullOrEmpty(markdown))
-				contents[i] = new ApiPageContent(
-					item.Url,
-					item.NavigationTitle,
-					ContentHash.CreateNormalized(RelativeToTree(markdown, root))
-				);
+			if (string.IsNullOrEmpty(markdown))
+				return;
+			var content = new ApiPageContent(item.Url, item.NavigationTitle, ContentHash.CreateNormalized(RelativeToTree(markdown, root)));
+			// An operation's search document is built from the spec, so only the other pages need their text.
+			contents[i] = item is OperationNavigationItem ? content : WithSearchText(content, markdown, item, page, pageContext);
 		}).ConfigureAwait(false);
 
 		return [.. contents.OfType<ApiPageContent>()];
+	}
+
+	private static ApiPageContent WithSearchText(
+		ApiPageContent content,
+		string markdown,
+		INavigationItem item,
+		IApiModel page,
+		ApiRenderContext context
+	)
+	{
+		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
+		var (text, headings) = ApiPagePlainText.Read(body);
+		return content with
+		{
+			Description = ApiMarkdownFrontMatter.Collect(body, item, context, page).Description ?? "",
+			Body = text,
+			Headings = headings
+		};
 	}
 
 	/// <summary>

@@ -48,6 +48,7 @@ const SearchResultItem = z.object({
     routes: z.array(ApiRoute).optional(),
     deprecated: z.boolean().optional(),
     landing: z.boolean().optional(),
+    page: z.boolean().optional(),
     apiKey: z.string().nullish(),
     product: z.string().nullish(),
 })

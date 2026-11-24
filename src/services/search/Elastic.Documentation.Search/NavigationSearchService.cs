@@ -74,6 +74,7 @@ public partial class NavigationSearchService(
 			Routes = item.Document.Api?.Routes ?? [],
 			Deprecated = item.Document.Api?.Deprecated ?? false,
 			Landing = item.Document.Api?.Landing ?? false,
+			Page = item.Document.Api?.Page ?? false,
 			ApiKey = item.Document.Api?.Key,
 			Product = item.Document.Product,
 			Properties = item.Properties.Select(property => ToNavigationSearchProperty(property, url)).ToArray(),

@@ -68,9 +68,10 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 
 	/// <summary>
 	/// Dates the documents of one tree by the pages they stand for. A search document of a page takes the page's content hash,
-	/// and every other page gets a hidden sitemap-only document, so each page in the sitemap has one document with a content date.
+	/// and every other page, such as a group, type or topic page, gets a search document of its own built from its Markdown export,
+	/// so each page in the sitemap has one document with a content date.
 	/// </summary>
-	internal static IEnumerable<DocumentationDocument> DatedByPage(
+	internal IEnumerable<DocumentationDocument> DatedByPage(
 		IndexedTree tree,
 		IEnumerable<DocumentationDocument> searchDocuments,
 		IReadOnlyList<ApiPageContent> pages
@@ -84,32 +85,47 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 			yield return doc;
 		}
 
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
 		foreach (var page in uncovered.Values)
+			yield return ConvertToPageDocument(tree, page);
+	}
+
+	/// <summary>
+	/// A page of the API that is neither an operation nor the landing page. It has no operation, so those members stay empty and
+	/// <see cref="ApiOperationMetadata.Page"/> marks it.
+	/// </summary>
+	private DocumentationDocument ConvertToPageDocument(IndexedTree tree, ApiPageContent page)
+	{
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
+		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
+		return new DocumentationDocument
 		{
-			yield return new DocumentationDocument
+			ContentType = "api",
+			Path = page.Url,
+			Title = page.Title,
+			SearchTitle = page.Title,
+			Description = page.Description,
+			Body = page.Body,
+			Headings = page.Headings,
+			Links = [],
+			ContentBodyHash = page.ContentHash,
+			Parents =
+			[
+				new ParentDocument { Title = "API", Path = "/docs/api" },
+				new ParentDocument { Title = ProductApiLabel(tree.ApiKey), Path = productUrl }
+			],
+			Api = new ApiOperationMetadata
 			{
-				ContentType = "api",
-				Path = page.Url,
-				Title = page.Title,
-				SearchTitle = page.Title,
-				Body = "",
-				Headings = [],
-				Links = [],
-				Hidden = true,
-				ContentBodyHash = page.ContentHash,
-				Api = new ApiOperationMetadata
-				{
-					Key = tree.ApiKey,
-					Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
-					Endpoints = [],
-					Method = "",
-					Path = "",
-					OperationId = "",
-					SitemapOnly = true
-				}
-			};
-		}
+				Key = tree.ApiKey,
+				Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
+				Endpoints = [],
+				Method = "",
+				Path = "",
+				OperationId = "",
+				Page = true
+			},
+			Product = inference?.Product?.Id,
+			RelatedProducts = IndexedRelatedProducts(inference)
+		};
 	}
 
 	/// <summary>

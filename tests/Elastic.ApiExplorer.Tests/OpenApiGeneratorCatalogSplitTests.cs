@@ -23,6 +23,7 @@ using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Nullean.ScopedFileSystem;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -313,24 +314,37 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task ExportDocuments_PagesWithoutASearchDocument_AreHiddenSitemapOnlyDocuments()
+	public async Task ExportDocuments_PagesWithoutAnOperation_AreSearchablePageDocuments()
 	{
 		using var versionIndexClient = MainNineAnd8Client();
 		var generator = MainNineAnd8Generator(versionIndexClient, TwoOperationSpecs("Ping the cluster."));
 		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
 
-		var sitemapOnly = new List<DocumentationDocument>();
+		var pages = new List<DocumentationDocument>();
 		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
 		{
-			if (doc.Api!.SitemapOnly)
-				sitemapOnly.Add(doc);
+			if (doc.Api!.Page)
+				pages.Add(doc);
 		}
 
-		sitemapOnly
-			.Select(d => d.Path)
+		string
+			.Join(
+				"\n\n",
+				pages.OrderBy(d => d.Path, StringComparer.Ordinal).Select(
+					d =>
+						$"""
+							{d.Path} [{string.Join(", ", d.Api!.Trees.Select(t => t.Tree))}] hidden: {d.Hidden}, dated: {d.ContentBodyHash != ""}
+							title: {d.Title}
+							parents: {string.Join(" > ", d.Parents.Select(p => p.Title))}
+							description: {d.Description}
+							headings: {string.Join(" | ", d.Headings)}
+							body:
+							{d.Body}
+							"""
+				)
+			)
 			.Should()
-			.BeEquivalentTo("/docs/api/elasticsearch/group/endpoint-admin", "/docs/api/elasticsearch/group/endpoint-core");
-		sitemapOnly.Should().OnlyContain(d => d.Hidden && d.Body == "" && d.ContentBodyHash != "", "the default tree does not unhide them");
+			.MatchSnapshot();
 	}
 
 	/// <summary>Each exported document's content hash, keyed by its URL and the trees it stands for.</summary>
@@ -446,15 +460,15 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var paths = new List<string>();
 		await foreach (var doc in exporter.ExportDocuments(generators, TestContext.Current!.Execution.CancellationToken))
-			paths.Add($"{doc.Path}{(doc.Api!.SitemapOnly ? " (sitemap only)" : "")}");
+			paths.Add($"{doc.Path}{(doc.Api!.Page ? " (page)" : "")}");
 
 		paths.Should().BeEquivalentTo(
 			"/docs/api/cloud-billing",
 			"/docs/api/cloud-billing/operation/operation-ping",
-			"/docs/api/cloud-billing/group/endpoint-core (sitemap only)",
+			"/docs/api/cloud-billing/group/endpoint-core (page)",
 			"/docs/api/cloud-connect",
 			"/docs/api/cloud-connect/operation/operation-ping",
-			"/docs/api/cloud-connect/group/endpoint-core (sitemap only)"
+			"/docs/api/cloud-connect/group/endpoint-core (page)"
 		);
 	}
 

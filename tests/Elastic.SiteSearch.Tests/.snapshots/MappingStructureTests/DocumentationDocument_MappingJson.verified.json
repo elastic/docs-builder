@@ -141,7 +141,7 @@
         "landing": {
           "type": "boolean"
         },
-        "sitemap_only": {
+        "page": {
           "type": "boolean"
         },
         "deprecated": {

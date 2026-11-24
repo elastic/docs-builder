@@ -50,6 +50,7 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 
 	private static readonly Query ApiDocuments = new TermQuery { Field = QueryFieldNames.ContentType, Value = ApiContentType };
 	private static readonly Query LandingPages = new TermQuery { Field = QueryFieldNames.ApiLanding, Value = true };
+	private static readonly Query OtherPages = new TermQuery { Field = QueryFieldNames.ApiPage, Value = true };
 	private static readonly Query DeprecatedOperations = new TermQuery { Field = QueryFieldNames.ApiDeprecated, Value = true };
 
 	/// <inheritdoc />
@@ -225,7 +226,7 @@ public class ApiGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ApiG
 		List<Query> filters = [SearchQueryBuilder.DocumentFilterFor(page), ApiDocuments];
 		if (scope is not null)
 			filters.Add(new TermQuery { Field = QueryFieldNames.ApiKey, Value = scope.Key });
-		return new BoolQuery { Filter = filters, MustNot = [LandingPages] };
+		return new BoolQuery { Filter = filters, MustNot = [LandingPages, OtherPages] };
 	}
 
 	private static Query Terms(string field, IEnumerable<string> values) =>
