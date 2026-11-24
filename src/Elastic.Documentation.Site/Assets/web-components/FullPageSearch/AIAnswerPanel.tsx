@@ -26,7 +26,7 @@ interface AIAnswerPanelProps {
 const PREVIEW_HEIGHT = 64 // Height to show content with read more overlay
 
 /** A result's title and description are HTML with `<mark>` highlights; the model and the source links need their plain text. */
-export const plainText = (html: string): string =>
+const plainText = (html: string): string =>
     new DOMParser().parseFromString(html, 'text/html').body.textContent ?? ''
 
 // Status badge component for AI answer states

@@ -37,6 +37,24 @@ public class HighlightEncodingTests
 	) => SearchResultProcessor.ProcessHit(ApiLookupResultTests.ParseResponse(json).Hits.Single(), query, synonyms ?? NoSynonyms, options);
 
 	[Test]
+	public async Task AutocompleteAsync_Highlights_AskElasticsearchToEncodeTheText()
+	{
+		using var request = await DocumentFilterTests.CapturedRequest(
+			s => s.AutocompleteAsync(new AutocompleteRequest { Query = "tenant" })
+		);
+
+		request.RootElement.GetProperty("highlight").GetProperty("encoder").GetString().Should().Be("html");
+	}
+
+	[Test]
+	public async Task SearchAsync_Highlights_AskElasticsearchToEncodeTheText()
+	{
+		using var request = await DocumentFilterTests.CapturedRequest(s => s.SearchAsync(new SearchRequest { Query = "tenant" }));
+
+		request.RootElement.GetProperty("highlight").GetProperty("encoder").GetString().Should().Be("html");
+	}
+
+	[Test]
 	public void ProcessHit_WithHighlightOptions_EncodesLiteralTextAndKeepsMarks()
 	{
 		var result = Process(Highlighted, "tenant", options: new HighlightOptions());
