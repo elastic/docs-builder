@@ -79,11 +79,8 @@ An index created before a field was added keeps its old mapping, so the new
 field is stored in `_source` but never indexed. After the templates, startup
 therefore also puts the current mapping on the existing index
 (`PUT page-feedback-v1-{environment}/_mapping`). A missing index is fine, because
-the template applies on the first write. A rejected mapping fails startup in
-`staging`, `edge`, and `prod`, and is logged in `dev`.
+the template applies on the first write. A rejected mapping is a bootstrap failure.
 
-Only additive changes are accepted this way. Changing a field's type, or removing
-a field, needs a new index name, such as `page-feedback-v2-{environment}`.
 Documents written before a field reached the mapping stay unindexed for that
 field until you run `POST page-feedback-v1-{environment}/_update_by_query?conflicts=proceed`.
 
@@ -93,12 +90,12 @@ and `prod`.
 
 Runtime credentials require permission to manage component and index templates,
 create the environment's index, and write its documents. The mapping update also
-needs the `manage` index privilege on `page-feedback-v1-{environment}`. Without
-it Elasticsearch answers 403 and startup fails in `staging`, `edge`, and `prod`,
-so grant it before you deploy a build that has the update.
+needs the `manage` index privilege on `page-feedback-v1-{environment}`. Grant it
+before you deploy a build that has the update, because without it Elasticsearch
+answers 403 and bootstrap fails.
 
 An added field needs no new index, because startup applies it in place. For an
-incompatible mapping change, such as a changed field type, increment
+incompatible mapping change, such as a changed field type or a removed field, increment
 the schema version in the index name, deploy the new template, and migrate any
 documents that must be retained. Mixed task versions then write to separate
 versioned indices during a rolling deployment. The assembly mapping version is
