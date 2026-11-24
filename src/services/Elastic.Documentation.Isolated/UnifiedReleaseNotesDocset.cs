@@ -155,7 +155,7 @@ public static class UnifiedReleaseNotesDocset
 			? "This site previews release notes for Elastic products that publish through the DRA (Daily Releasable Artifacts) pipeline, "
 				+ "and for Elastic Cloud Serverless and Elastic Cloud Hosted. A serverless or hosted release is previewed as "
 				+ "**Staging**, the changes running on the staging environment that are not in production yet, and **Edge**, everything "
-				+ "merged to the main branch that is not in production yet. Neither has a version number: a release is named by the day it ships."
+				+ "merged to the default branch that is not in production yet. Neither has a version number: a release is named by the day it ships."
 			: "This site previews release notes for Elastic products that publish through the DRA (Daily Releasable Artifacts) pipeline.";
 
 	private static string GenerateProductIndex(Product product, IReadOnlyList<string> versions, DateOnly? previewDate) =>
@@ -209,7 +209,7 @@ public static class UnifiedReleaseNotesDocset
 			"staging" =>
 				"These are the changes running on the staging environment that are not in production yet. They are next to be released.",
 			"edge" =>
-				"These are all the changes merged to the main branch that are not in production yet. They include the changes on staging.",
+				"These are all the changes merged to the default branch that are not in production yet. They include the changes on staging.",
 			_ => null
 		};
 		return what is null || today is not { } date ? what : $"{what} If released today, this release would be dated **{Format(date)}**.";

@@ -103,4 +103,16 @@ public class ServerlessPreviewBundlesTests : IDisposable
 
 		Directory.Exists(Path.Combine(_root.FullName, "cloud-serverless")).Should().BeFalse();
 	}
+
+	[Test]
+	public void Replace_AFolderFromBeforeTheRenameToEdge_LosesTheHeadBundleOfTheServiceOnly()
+	{
+		Existing("kibana-cloud-serverless-head.yaml", "kibana, called head before");
+		Existing("elasticsearch-serverless-cloud-serverless-head.yaml", "elasticsearch, called head before");
+		var pending = Pending(("kibana-cloud-serverless-edge.yaml", "kibana edge"));
+
+		ServerlessPreviewBundles.Replace(Kibana, _root, pending, NullLogger.Instance);
+
+		ProductFiles().Should().Equal("elasticsearch-serverless-cloud-serverless-head.yaml", "kibana-cloud-serverless-edge.yaml");
+	}
 }

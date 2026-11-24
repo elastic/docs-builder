@@ -296,7 +296,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			This is a preview of an unreleased version. The release notes can change until the version ships.
 			:::
 
-			These are all the changes merged to the main branch that are not in production yet. They include the changes on staging. If released today, this release would be dated **2026-11-24**.
+			These are all the changes merged to the default branch that are not in production yet. They include the changes on staging. If released today, this release would be dated **2026-11-24**.
 
 			:::{changelog} /changelog/bundles/cloud-serverless
 			:version: edge
@@ -483,6 +483,54 @@ public class UnifiedReleaseNotesTests : IDisposable
 		var index = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "index.html"));
 		index.IndexOf("Staging", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("Edge", StringComparison.Ordinal));
 		_fileSystem.File.Exists(_fileSystem.Path.Join(site, "kibana", "9.5.0", "index.html")).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task Build_WithAPreviewDate_ThePagesOfThePreviewReleasesSayWhatTheyWouldBeNamedToday()
+	{
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-edge.yaml", "edge", "Kibana edge change");
+		var collector = new DiagnosticsCollector([]);
+		var options = Options("9.5.0") with { AdditionalProductIds = ["cloud-serverless"], PreviewDate = new DateOnly(2026, 11, 24) };
+
+		var succeeded = await Service(Serverless).Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		var site = _fileSystem.Path.Join(_temp.FullName, "site");
+		foreach (var release in new[] { "staging", "edge" })
+			_fileSystem
+				.File
+				.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", release, "index.html"))
+				.Should()
+				.Contain("If released today, this release would be dated")
+				.And
+				.Contain("2026-11-24");
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(site, "cloud-serverless", "index.html"))
+			.Should()
+			.Contain("dated 2026-11-24 if released today");
+		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(site, "kibana", "9.5.0", "index.html")).Should().NotContain("If released today");
+	}
+
+	[Test]
+	public async Task Build_WithoutAPreviewDate_ThePreviewReleasesSayWhatTheyAreButNotWhenTheyWouldShip()
+	{
+		_ = WriteBundle("cloud-serverless", "kibana-cloud-serverless-staging.yaml", "staging", "Kibana staging change");
+		var collector = new DiagnosticsCollector([]);
+		var options = Options() with { AdditionalProductIds = ["cloud-serverless"] };
+
+		var succeeded = await Service(Serverless).Build(collector, options, TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "cloud-serverless", "staging", "index.html"))
+			.Should()
+			.Contain("running on the staging environment")
+			.And
+			.NotContain("If released today");
 	}
 
 	[Test]
@@ -677,6 +725,19 @@ public class UnifiedReleaseNotesTests : IDisposable
 			:::
 			"""
 			);
+	}
+
+	[Test]
+	public void Generate_TheDiagnosticsPage_UsesLineFeedsOnEveryPlatform()
+	{
+		var withProblems = UnifiedReleaseNotesDocset.Generate(
+			[new ProductVersions(Products[0], ["9.5.0"])],
+			DiagnosticsProblems
+		)["diagnostics.md"];
+		var withoutProblems = UnifiedReleaseNotesDocset.Generate([new ProductVersions(Products[0], ["9.5.0"])], [])["diagnostics.md"];
+
+		withProblems.Should().NotContain("\r");
+		withoutProblems.Should().NotContain("\r");
 	}
 
 	[Test]
