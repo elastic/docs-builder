@@ -4976,13 +4976,6 @@ body[data-api-column-dragging] {
 	overflow-y: auto;
 }
 
-.api-beta-feedback__intro {
-	margin: 0 0 16px;
-	color: var(--color-subdued, #516381);
-	font-size: 14px;
-	line-height: 20px;
-}
-
 /* The widget is the page's feedback widget, which has its own top rule and space above it. */
 .api-beta-feedback page-feedback {
 	margin-top: 0;
