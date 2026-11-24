@@ -119,6 +119,15 @@ public record ApiOperationMetadata
 	public bool Page { get; init; }
 
 	/// <summary>
+	/// True on an API page that only the sitemap reads, such as an operation the exporter skips or the Servers page: it is
+	/// indexed for its content date, never for search. Left out of the document when false.
+	/// </summary>
+	[Boolean]
+	[JsonPropertyName("sitemap_only")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool SitemapOnly { get; init; }
+
+	/// <summary>
 	/// Whether the spec marks the operation deprecated. The index may omit the flag on current operations, so a query for them
 	/// tests that the flag is not true rather than that it is <c>false</c>.
 	/// </summary>

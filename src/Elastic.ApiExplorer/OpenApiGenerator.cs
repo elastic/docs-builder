@@ -351,30 +351,28 @@ public class OpenApiGenerator(
 			var markdown = await page.RenderCommonMarkAsync(pageContext, page.CreatePageModel(pageContext), token).ConfigureAwait(false);
 			if (string.IsNullOrEmpty(markdown))
 				return;
-			var content = new ApiPageContent(item.Url, item.NavigationTitle, ContentHash.CreateNormalized(RelativeToTree(markdown, root)));
-			// An operation's search document is built from the spec, so only the other pages need their text.
-			contents[i] = item is OperationNavigationItem ? content : WithSearchText(content, markdown, item, page, pageContext);
+			contents[i] = new ApiPageContent(
+				item.Url,
+				item.NavigationTitle,
+				ContentHash.CreateNormalized(RelativeToTree(markdown, root)),
+				// Operations and the landing page get their search documents from the spec; an excluded page stays out of search.
+				item is OperationNavigationItem or LandingNavigationItem || item.ExcludeFromIndexing
+					? null
+					: SearchText(markdown, item, page, pageContext)
+			);
 		}).ConfigureAwait(false);
 
 		return [.. contents.OfType<ApiPageContent>()];
 	}
 
-	private static ApiPageContent WithSearchText(
-		ApiPageContent content,
-		string markdown,
-		INavigationItem item,
-		IApiModel page,
-		ApiRenderContext context
-	)
+	private static ApiPageSearchText SearchText(string markdown, INavigationItem item, IApiModel page, ApiRenderContext context)
 	{
 		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
+		// The rendered heading, so an authored page found by its H1 matches the title readers see.
+		var meta = ApiMarkdownFrontMatter.Collect(body, item, context, page);
 		var (text, headings) = ApiPagePlainText.Read(body);
-		return content with
-		{
-			Description = ApiMarkdownFrontMatter.Collect(body, item, context, page).Description ?? "",
-			Body = text,
-			Headings = headings
-		};
+		// Plain text drops link targets, which point into one version tree and would keep identical trees from collapsing.
+		return new ApiPageSearchText(meta.Title, ApiPagePlainText.Text(meta.Description ?? ""), text, headings);
 	}
 
 	/// <summary>

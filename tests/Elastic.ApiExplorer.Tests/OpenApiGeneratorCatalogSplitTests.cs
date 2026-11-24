@@ -314,7 +314,7 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task ExportDocuments_PagesWithoutAnOperation_AreSearchablePageDocuments()
+	public async Task ExportDocuments_PagesWithoutAnOperation_AreSearchableUnlessExcluded()
 	{
 		using var versionIndexClient = MainNineAnd8Client();
 		var generator = MainNineAnd8Generator(versionIndexClient, TwoOperationSpecs("Ping the cluster."));
@@ -323,7 +323,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var pages = new List<DocumentationDocument>();
 		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
 		{
-			if (doc.Api!.Page)
+			if (doc.Api!.Page || doc.Api.SitemapOnly)
 				pages.Add(doc);
 		}
 
@@ -333,7 +333,7 @@ public class OpenApiGeneratorCatalogSplitTests
 				pages.OrderBy(d => d.Path, StringComparer.Ordinal).Select(
 					d =>
 						$"""
-							{d.Path} [{string.Join(", ", d.Api!.Trees.Select(t => t.Tree))}] hidden: {d.Hidden}, dated: {d.ContentBodyHash != ""}
+							{d.Path} [{string.Join(", ", d.Api!.Trees.Select(t => t.Tree))}] page: {d.Api.Page}, sitemap only: {d.Api.SitemapOnly}, hidden: {d.Hidden}, dated: {d.ContentBodyHash != ""}
 							title: {d.Title}
 							parents: {string.Join(" > ", d.Parents.Select(p => p.Title))}
 							description: {d.Description}
@@ -398,7 +398,28 @@ public class OpenApiGeneratorCatalogSplitTests
 					}
 				}
 			},
-			Tags = new HashSet<OpenApiTag> { new() { Name = "core" }, new() { Name = "admin" } }
+			Tags = new HashSet<OpenApiTag>
+			{
+				new()
+				{
+					Name = "core",
+					Description = "Endpoints every client uses.\n\n## Connecting\n\nSend a `<ping>` before anything else."
+				},
+				new() { Name = "admin" }
+			},
+			Servers = [new OpenApiServer { Url = "https://localhost:9200" }],
+			Components = new OpenApiComponents
+			{
+				SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+				{
+					["apiKey"] = new OpenApiSecurityScheme
+					{
+						Type = SecuritySchemeType.ApiKey,
+						Name = "Authorization",
+						In = ParameterLocation.Header
+					}
+				}
+			}
 		};
 
 	private static VersionIndexClient MainNineAnd8Client() =>

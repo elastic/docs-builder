@@ -20,14 +20,14 @@ internal static class ApiPagePlainText
 			.. document
 				.Descendants<HeadingBlock>()
 				.Where(static h => h.Level > 1)
-				.Select(h => ToPlainText(markdown.Substring(h.Span.Start, h.Span.Length)))
+				.Select(h => Text(markdown.Substring(h.Span.Start, h.Span.Length)))
 				.Where(static h => h.Length > 0)
 				.Distinct(StringComparer.Ordinal)
 		];
-		return (ToPlainText(markdown), headings);
+		return (Text(markdown), headings);
 	}
 
-	private static string ToPlainText(string markdown)
+	public static string Text(string markdown)
 	{
 		using var writer = new StringWriter();
 		_ = Markdown.ToPlainText(markdown, writer, Pipeline);

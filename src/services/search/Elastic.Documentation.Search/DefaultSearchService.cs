@@ -55,7 +55,9 @@ public partial class DefaultSearchService<TDocument>(
 		// optional, so the required-member test cannot catch its absence; without it every hit reads as current
 		"api.deprecated",
 		// optional too; without it a landing page reads as an operation and loses its row
-		"api.landing"
+		"api.landing",
+		// optional too; without it a group, type or topic page reads as an operation
+		"api.page"
 	];
 
 	private static readonly string[] SearchSourceIncludes =

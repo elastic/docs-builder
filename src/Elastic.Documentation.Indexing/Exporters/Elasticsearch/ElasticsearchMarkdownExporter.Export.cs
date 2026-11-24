@@ -273,11 +273,15 @@ public partial class ElasticsearchMarkdownExporter
 
 		await foreach (var doc in ExportApiDocuments(exporter, ctx))
 		{
-			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
-
 			// Plain-text, markup-stripped content — the single source of truth for search, AI
-			// enrichment input, and content hashing.
-			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
+			// enrichment input, and content hashing. A page document's body is plain text already, and a second
+			// Markdown pass would read literal text such as `<tenant>` as HTML and drop it.
+			ApplyApiPlainText(
+				doc,
+				doc.Api?.Page == true
+					? doc.Body ?? string.Empty
+					: PlainTextExporter.ConvertToPlainText(MarkdownParser.Parse(doc.Body ?? string.Empty), _context)
+			);
 			CommonEnrichments(doc, null);
 			// The exporter hashes the page an API document stands for; only a document that is not a page hashes its body.
 			if (string.IsNullOrEmpty(doc.ContentBodyHash))
