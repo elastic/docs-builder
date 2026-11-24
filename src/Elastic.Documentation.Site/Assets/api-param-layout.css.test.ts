@@ -77,11 +77,18 @@ function rulesOf(block: string): Rule[] {
     return rules
 }
 
+/** The compound the selector targets: what follows its last combinator. An ancestor in the selector is not the subject. */
+function subjectOf(selector: string): string {
+    return selector.split(/\s*[>+~]\s*|\s+/).pop() ?? ''
+}
+
 /** The rules in the block that display an element a browser without subgrid must never see. */
 function shownRules(block: string): string[] {
     return rulesOf(block)
         .filter((rule) =>
-            rule.selectors.some((selector) => hiddenOutside.test(selector))
+            rule.selectors.some((selector) =>
+                hiddenOutside.test(subjectOf(selector))
+            )
         )
         .filter((rule) => {
             const display = rule.declarations.match(/display:\s*([a-z-]+)/)
@@ -149,6 +156,19 @@ describe('the stylesheet reader', () => {
             ['.api-param-layout', 'display: none;'],
         ])
         expect(shownRules(nested)).toEqual(['.api-param-layout:not([hidden])'])
+    })
+
+    it('judges the element a rule targets, not its ancestors', () => {
+        const options = `
+            .api-param-layout {
+                & > .api-param-layout-option { display: inline-flex; }
+                .api-param-table-head & { display: flex; }
+            }
+            .ready .api-param-layout { display: flex; }`
+        expect(shownRules(options)).toEqual([
+            '.api-param-table-head .api-param-layout',
+            '.ready .api-param-layout',
+        ])
     })
 
     it('keeps grouped selectors apart', () => {
