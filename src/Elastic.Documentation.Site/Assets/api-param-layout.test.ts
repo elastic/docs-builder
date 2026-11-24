@@ -1,5 +1,6 @@
 import {
     applyParamLayout,
+    clampDescriptions,
     initParamLayout,
     paramLayoutStorageKey,
     storedParamLayout,
@@ -17,7 +18,19 @@ function markup(): string {
                     <button type="button" class="api-param-layout-option" data-layout="table" aria-pressed="false">Table</button>
                 </span>
             </h2>
-            <div class="api-param-section-body" id="${anchor}-list"></div>
+            <div class="api-param-section-body" id="${anchor}-list">
+                <dl class="property-list">
+                    <div class="property-item depth-0" id="${anchor}-long">
+                        <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type">string</code></dt>
+                        <dd><p>A long description.</p></dd>
+                        <dd class="reference-link-row"><a href="#">Reference</a></dd>
+                    </div>
+                    <div class="property-item depth-0" id="${anchor}-short">
+                        <dt id="${anchor}-typed_keys"><code>typed_keys</code><code class="schema-type">boolean</code></dt>
+                        <dd><p>A short one.</p></dd>
+                    </div>
+                </dl>
+            </div>
         </div>`
     return `
         <section id="elastic-api-v3">
@@ -101,5 +114,60 @@ describe('parameter layout switch', () => {
     it('ignores a value in storage that is not a layout', () => {
         localStorage.setItem(paramLayoutStorageKey, 'cards')
         expect(storedParamLayout()).toBe('list')
+    })
+
+    describe('clamped descriptions', () => {
+        // jsdom lays nothing out, so the fixture says which description overflows the clamp.
+        const longOnly = (dd: HTMLElement) =>
+            dd.closest('.property-item')!.id.endsWith('-long')
+        const row = (id: string) => document.getElementById(id)!
+        const toggle = (id: string) =>
+            row(id).querySelector<HTMLButtonElement>('.api-param-clamp-toggle')
+
+        it('clamps the rows that overflow and gives only them a control', () => {
+            applyParamLayout('table', document, longOnly)
+            expect(row('query-params-long').dataset.clamp).toBe('clamped')
+            expect(toggle('query-params-long')!.textContent).toBe('Show more')
+            expect(
+                toggle('query-params-long')!.getAttribute('aria-controls')
+            ).toBe('query-params-keep_alive-description')
+            expect(row('query-params-short').dataset.clamp).toBeUndefined()
+            expect(toggle('query-params-short')).toBeNull()
+        })
+
+        it('expands and clamps a row from its control', () => {
+            initParamLayout()
+            applyParamLayout('table', document, longOnly)
+            toggle('query-params-long')!.click()
+            expect(row('query-params-long').dataset.clamp).toBe('expanded')
+            expect(toggle('query-params-long')!.textContent).toBe('Show less')
+            expect(
+                toggle('query-params-long')!.getAttribute('aria-expanded')
+            ).toBe('true')
+            toggle('query-params-long')!.click()
+            expect(row('query-params-long').dataset.clamp).toBe('clamped')
+        })
+
+        it('keeps a row the reader expanded when the layout is applied again', () => {
+            applyParamLayout('table', document, longOnly)
+            toggle('query-params-long')!.click()
+            clampDescriptions(
+                row('query-params-long').closest('[data-param-section]')!,
+                longOnly
+            )
+            expect(row('query-params-long').dataset.clamp).toBe('expanded')
+            expect(
+                row('query-params-long').querySelectorAll(
+                    '.api-param-clamp-toggle'
+                )
+            ).toHaveLength(1)
+        })
+
+        it('removes the clamp and the control in list layout', () => {
+            applyParamLayout('table', document, longOnly)
+            applyParamLayout('list', document, longOnly)
+            expect(row('query-params-long').dataset.clamp).toBeUndefined()
+            expect(toggle('query-params-long')).toBeNull()
+        })
     })
 })
