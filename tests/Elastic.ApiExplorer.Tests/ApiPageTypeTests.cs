@@ -80,11 +80,11 @@ public class ApiPageTypeTests
 	}
 
 	[Test]
-	public void LandingIndex_OfAHiddenVersionTree_StaysIndexable()
+	public void Landing_OfAHiddenVersionTree_StaysIndexable()
 	{
 		var landing = new LandingNavigationItem("/api/es/v8/") { Hidden = true, InSitemap = true };
 
-		// the rendered landing is the root's index leaf, so a tree hidden from the sidebar does not turn its landing noindex
-		((INavigationItem)landing.Index).ExcludeFromIndexing.Should().BeFalse();
+		// the generator renders a tree's landing page with the tree node as the current item, and the layout reads the interface member
+		((INavigationItem)landing).ExcludeFromIndexing.Should().BeFalse("the page type decides, not the sidebar visibility");
 	}
 }
