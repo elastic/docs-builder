@@ -343,6 +343,76 @@ describe('tooltips', () => {
         expect(topLayer[topLayer.length - 1]).toBe(tooltip())
     })
 
+    it('shows a property name its path from the permalink label, in the mono theme', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-query-bool" aria-label="Link to query.bool" data-tooltip="Copy link"></a><code id="nested">bool</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('nested'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('query.bool')
+        expect(tooltip()!.dataset.theme).toBe('mono')
+    })
+
+    it('shows a map key in a property path as *, as the map key row does', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-aggs-a-terms" aria-label="Link to aggregations.additional property.terms" data-tooltip="Copy link"></a><code id="under-map">terms</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('under-map'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('aggregations.*.terms')
+    })
+
+    it('shows the explicit tooltip of a property name whose label repeats it', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-key" aria-label="Link to property name*" data-tooltip="Copy link"></a><code id="key" data-tooltip="*" data-tooltip-theme="mono">property name*</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('key'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('*')
+    })
+
+    it('shows nothing on a map key row without a path', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-string" aria-label="Link to additional property" data-tooltip="Copy link"></a><code id="pathless-key">property name*</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('pathless-key'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBeNull()
+    })
+
+    it('shows nothing on a top-level property name, whose path is its name', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-query" aria-label="Link to query" data-tooltip="Copy link"></a><code id="top">query</code></dt></div></dl>`
+        )
+        pointer('pointerover', byId('top'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBeNull()
+    })
+
+    it('keeps the tooltip of a focused control while the pointer crosses a top-level property name', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            `<dl class="property-list"><div><dt><a class="property-anchor" href="#req-query" aria-label="Link to query" data-tooltip="Copy link"></a><code id="top">query</code></dt></div></dl>`
+        )
+        byId('plain').focus()
+        await vi.advanceTimersByTimeAsync(0)
+
+        pointer('pointerover', byId('top'))
+        await vi.advanceTimersByTimeAsync(80)
+
+        expect(shown()).toBe('Back to top')
+    })
+
     it('swaps the text of the tooltip on screen for a moment', async () => {
         pointer('pointerover', byId('copy'))
         await vi.advanceTimersByTimeAsync(80)

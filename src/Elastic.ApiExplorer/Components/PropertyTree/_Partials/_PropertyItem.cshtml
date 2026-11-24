@@ -4,19 +4,15 @@
 }
 <div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "")">
 	<dt id="@Model.AnchorId">
-		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel">
-			<span class="property-anchor-icon" data-tooltip="Copy link" aria-hidden="true"></span>
-		</a>
+		@* The link is the icon: CSS draws it, so a row carries no icon element. *@
+		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel" data-tooltip="Copy link"></a>
 		@if (Model.IsMapKey)
 		{
 			@(await RenderPartialAsync<_MapKeyLabel, string?>(Model.TooltipPath))
 		}
-		else if (Model.TooltipPath is { } path)
-		{
-			<code data-tooltip="@path" data-tooltip-theme="mono">@Model.Name</code>
-		}
 		else
 		{
+			@* The name's path tooltip reads the path from the permalink's label (tooltip.ts), so a row prints it once. *@
 			<code>@Model.Name</code>
 		}
 		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))

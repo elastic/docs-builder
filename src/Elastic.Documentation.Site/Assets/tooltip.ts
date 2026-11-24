@@ -9,12 +9,15 @@ import { autoUpdate } from '@floating-ui/dom'
  * it above its target, below when there is no room, and keeps it on screen.
  *
  * `data-tooltip-delay="slow"` waits 500ms instead of 80ms, for lists the mouse crosses. `data-tooltip-theme="mono"` sets
- * the text in a monospace font, for JSON paths.
+ * the text in a monospace font, for JSON paths. A property name on an API page shows its JSON path the same way, read from
+ * the permalink's label beside it, so the row does not print the path twice.
  */
 
-const TARGET = '[data-tooltip]:not([data-tooltip=""])'
+// A property name carries no data-tooltip: its JSON path is in the permalink's label just before it (propertyPath).
+const PROPERTY_NAME = '.property-list dt > a.property-anchor + code'
+const TARGET = `[data-tooltip]:not([data-tooltip=""]), ${PROPERTY_NAME}`
 // A click on a copy button swaps the text in place (flashTooltip); hiding the tooltip would make it flicker.
-const KEEP_ON_CLICK = '.copybtn, .api-code-preview-btn, .property-anchor-icon'
+const KEEP_ON_CLICK = '.copybtn, .api-code-preview-btn, .property-anchor'
 const DELAY_MS = 80
 const SLOW_DELAY_MS = 500
 const TOUCH_HOLD_MS = 300
@@ -50,8 +53,40 @@ function tooltipElement(): HTMLElement {
     return tooltip
 }
 
+const PERMALINK_LABEL_PREFIX = 'Link to '
+// The permalink names a map's key this way for screen readers (ApiProperty.MapKeyKind); the tooltip shows `*`.
+const MAP_KEY_LABEL = 'additional property'
+
+/** A label segment as the tooltip shows it: a map's key, with any `[]` after it, reads `*`. */
+function shownSegment(segment: string): string {
+    if (!segment.startsWith(MAP_KEY_LABEL)) return segment
+    const rest = segment.slice(MAP_KEY_LABEL.length)
+    return rest.split('[]').join('') === '' ? `*${rest}` : segment
+}
+
+/** A property name's JSON path. The row prints it once, in its permalink's label, to keep large API pages small. */
+function propertyPath(name: HTMLElement): string {
+    const label = name.previousElementSibling?.getAttribute('aria-label') ?? ''
+    if (!label.startsWith(PERMALINK_LABEL_PREFIX)) return ''
+    const path = label.slice(PERMALINK_LABEL_PREFIX.length)
+    // A top-level field's path is its name. A map key row without a path is labelled by its kind alone; with one, it
+    // carries its own data-tooltip.
+    if (path === name.textContent || path === MAP_KEY_LABEL) return ''
+    return path.split('.').map(shownSegment).join('.')
+}
+
 function targetOf(node: EventTarget | null): HTMLElement | null {
-    return node instanceof Element ? node.closest<HTMLElement>(TARGET) : null
+    const target =
+        node instanceof Element ? node.closest<HTMLElement>(TARGET) : null
+    // A top-level property name has no path to show, so it must not close another tooltip, such as a focused control's.
+    if (
+        target &&
+        target.dataset.tooltip === undefined &&
+        target.matches(PROPERTY_NAME) &&
+        !propertyPath(target)
+    )
+        return null
+    return target
 }
 
 function current(): HTMLElement | null {
@@ -84,10 +119,14 @@ async function position(target: HTMLElement, el: HTMLElement) {
 function show(target: HTMLElement) {
     hide()
     if (!target.isConnected) return
+    const text = target.dataset.tooltip ?? propertyPath(target)
+    if (!text) return
     const el = tooltipElement()
-    el.textContent = target.dataset.tooltip ?? ''
-    if (target.dataset.tooltipTheme)
-        el.dataset.theme = target.dataset.tooltipTheme
+    el.textContent = text
+    const theme =
+        target.dataset.tooltipTheme ??
+        (target.matches(PROPERTY_NAME) ? 'mono' : undefined)
+    if (theme) el.dataset.theme = theme
     else delete el.dataset.theme
     // Hidden until placed for this target, so it never flashes where the last one was.
     el.removeAttribute('data-placed')
