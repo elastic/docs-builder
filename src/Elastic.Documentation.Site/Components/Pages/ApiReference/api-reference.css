@@ -1779,6 +1779,10 @@ button.response-status-toggle:focus {
 			min-width: 0;
 			margin: 0;
 			padding: var(--space-2) var(--space-3);
+			/* One size and one line height for every cell, so the first lines of a row sit level and a cell is read beside
+			   its neighbours, not as a paragraph: slightly smaller type keeps a long description from dominating the row. */
+			font-size: 0.8125rem;
+			line-height: 1.5;
 		}
 
 		/* Name | Type | Required | Description. The badges that describe the value rather than ask for it stack under the type. */
@@ -1851,9 +1855,11 @@ button.response-status-toggle:focus {
 			white-space: nowrap;
 		}
 
-		/* A constraint longer than the Type cell wraps inside it, so no range, format or pattern is cut from the reader:
-	   the server adds a tooltip only to a constraint over 40 characters. The constraint span is inline in the design
-	   system, so the group becomes a flex row to give it a box that can wrap. */
+		/* Each constraint takes a line of its own below the primitive, without the inline separator, so every row has the
+		   same shape whether or not its constraints would fit beside the type. A constraint longer than the Type cell
+		   wraps inside it, so no range, format or pattern is cut from the reader: the server adds a tooltip only to a
+		   constraint over 40 characters. The constraint span is inline in the design system, so the group becomes a flex
+		   row to give it a box that can wrap. */
 		.api-param-section[data-layout='table']
 			> .api-param-section-body
 			> .property-list
@@ -1862,7 +1868,19 @@ button.response-status-toggle:focus {
 			> code.schema-type
 			> .schema-type-group {
 			display: inline-flex;
+			flex-basis: 100%;
 			min-width: 0;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> code.schema-type
+			> .schema-type-group
+			> .schema-type-sep {
+			display: none;
 		}
 
 		.api-param-section[data-layout='table']
@@ -1895,7 +1913,6 @@ button.response-status-toggle:focus {
 			> dt
 			> .optional.type-status {
 			grid-column: 3;
-			line-height: 1.5rem;
 		}
 
 		.api-param-section[data-layout='table']
@@ -1907,11 +1924,8 @@ button.response-status-toggle:focus {
 			/* The cell keeps its own height beside a taller type: the clamp is measured on the description's height, and a
 			   cell stretched to the row would report the same height with and without the clamp. */
 			align-self: start;
-			/* A cell is read beside its name, not as a paragraph: a measure of 65 characters and slightly smaller type keep a
-			   long description from dominating the row. */
+			/* A measure of 65 characters keeps a long description from dominating the row. */
 			max-width: 65ch;
-			font-size: 0.8125rem;
-			line-height: 1.5;
 			text-wrap: pretty;
 		}
 
@@ -1977,8 +1991,6 @@ button.response-status-toggle:focus {
 			background: none;
 			color: var(--color-accent);
 			font: inherit;
-			font-size: 0.8125rem;
-			line-height: 1.25rem;
 			cursor: pointer;
 		}
 
