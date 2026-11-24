@@ -1713,6 +1713,234 @@ button.response-status-toggle:focus {
 	border-bottom: 0;
 }
 
+/* List / Table switch for the flat parameter sections (path, query, header). The switch sits in the heading row after
+   the disclosure button. The body keeps its one definition list: the table is a grid laid over that list with subgrid, so
+   anchors, find-in-page, the disclosure and the Markdown copy are untouched. The script sets data-layout on the section
+   from the reader's remembered choice; the server renders the list. */
+.api-param-layout {
+	display: inline-flex;
+	align-self: center;
+	flex: 0 0 auto;
+	margin-left: 8px;
+	border: 1px solid #cad3e2;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.api-param-layout-option {
+	margin: 0;
+	padding: 2px 10px;
+	border: 0;
+	background: none;
+	color: #516381;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 20px;
+	cursor: pointer;
+}
+
+.api-param-layout-option + .api-param-layout-option {
+	border-left: 1px solid #cad3e2;
+}
+
+.api-param-layout-option[aria-pressed='true'] {
+	background-color: #e8f0fc;
+	color: #0b64dd;
+}
+
+.api-param-layout-option:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+.api-param-table-head {
+	display: none;
+}
+
+/* Four columns do not fit on a phone, so below 641px the switch is hidden and the list stays. */
+@media (max-width: 640px) {
+	.api-param-layout {
+		display: none;
+	}
+}
+
+@media (min-width: 641px) {
+	/* The body is the grid; the head row, the list, each row and each row's dt are subgrids of it, so every cell shares
+	   the same four tracks. The collapsed fallback (display: none) must still win, hence the .expanded qualifier.
+	   The content column is narrow next to the examples rail, so only the name and the required flag are sized to their
+	   content: a long type wraps between its constraints, and the description takes what is left. */
+	.api-param-section.expanded[data-layout='table'] > .api-param-section-body {
+		display: grid;
+		grid-template-columns: max-content minmax(0, auto) max-content minmax(
+				12rem,
+				1fr
+			);
+		border: 1px solid #e3e8f2;
+		border-radius: 6px;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .api-param-table-head,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt {
+		display: grid;
+		grid-column: 1 / -1;
+		grid-template-columns: subgrid;
+		gap: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .api-param-table-head
+		> span {
+		padding: 6px 10px;
+		border-bottom: 1px solid #e3e8f2;
+		background-color: #f5f7fa;
+		color: #516381;
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 16px;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt {
+		grid-column: 1 / 4;
+		align-items: start;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> :not(.property-anchor),
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dd {
+		box-sizing: border-box;
+		min-width: 0;
+		margin: 0;
+		padding: 8px 10px;
+		border-bottom: 1px solid #e3e8f2;
+	}
+
+	/* Name | Type | Required | Description. The badges that describe the value rather than ask for it stack under the type. */
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> code {
+		grid-column: 1;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> code.schema-type,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> .nullable-badge,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> .deprecated-badge,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> .applies {
+		grid-column: 2;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> code.schema-type {
+		white-space: normal;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> .required.type-status,
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dt
+		> .optional.type-status {
+		grid-column: 3;
+		line-height: 24px;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> dd {
+		grid-column: 4;
+	}
+
+	/* A parameter that is an object lists its fields below the row, across the whole table. */
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item
+		> .nested-properties {
+		grid-column: 1 / -1;
+		padding: 0 10px 10px;
+	}
+
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item:last-child
+		> dt
+		> :not(.property-anchor),
+	.api-param-section[data-layout='table']
+		> .api-param-section-body
+		> .property-list
+		> .property-item:last-child
+		> dd {
+		border-bottom: 0;
+	}
+}
+
 .api-param-section-toggle {
 	position: relative;
 	display: flex;

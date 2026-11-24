@@ -145,6 +145,46 @@ public class ParamSectionHeaderRenderingTests
 		);
 	}
 
+	[Test]
+	public async Task Render_LayoutSwitch_AddsListTableControlAfterTheDisclosure()
+	{
+		var html = await Render(
+			new ParamSectionHeader("Query parameters", "query-params", ["page", "per_page"], SummaryStyle.List, LayoutSwitch: true)
+		);
+
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<h2 class="section-header api-param-section-header" id="query-params" data-section="query-params" aria-label="Query parameters">
+				<a class="headerlink api-param-section-title" href="#query-params">Query parameters</a>
+				<button type="button" class="api-param-section-toggle" aria-expanded="true" aria-controls="query-params-list" aria-label="Toggle Query parameters">
+					<span class="api-param-summary" data-param-summary="">
+						<span class="api-param-summary-list">
+							<code class="api-param-summary-item" data-name="page"></code>
+							<code class="api-param-summary-item" data-name="per_page"></code>
+						</span>
+						<span class="api-param-more" data-param-more="" hidden="">
+							<span class="api-param-more-badge" data-param-more-count=""></span>
+						</span>
+					</span>
+					<span class="api-param-chevron" aria-hidden="true"></span>
+				</button>
+				<span class="api-param-layout" role="group" aria-label="Query parameters layout" data-param-layout="">
+					<button type="button" class="api-param-layout-option" data-layout="list" aria-pressed="true">List</button>
+					<button type="button" class="api-param-layout-option" data-layout="table" aria-pressed="false">Table</button>
+				</span>
+			</h2>
+			"""
+		);
+	}
+
+	[Test]
+	public async Task Render_WithoutLayoutSwitch_HasNoControl()
+	{
+		var html = await Render(new ParamSectionHeader("Request body", "request-body", ["name"], SummaryStyle.Fields));
+
+		html.Should().NotContain("data-param-layout");
+	}
+
 	private static async Task<string> Render(ParamSectionHeader model) =>
 		await _ParamSectionHeader.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 }

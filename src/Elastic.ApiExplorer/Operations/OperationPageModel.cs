@@ -40,21 +40,27 @@ public partial record OperationPageModel
 			{
 				new ParameterListSection(
 					ParameterLocation.Path,
-					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames, SummaryStyle.List),
+					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames, SummaryStyle.List, LayoutSwitch: true),
 					"path-params-list",
 					PathParameters,
 					"Path parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Query,
-					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames, SummaryStyle.List),
+					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames, SummaryStyle.List, LayoutSwitch: true),
 					"query-params-list",
 					QueryParameters,
 					"Query string parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Header,
-					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames, SummaryStyle.List),
+					new ParamSectionHeader(
+						"Header parameters",
+						"header-params",
+						HeaderParameterNames,
+						SummaryStyle.List,
+						LayoutSwitch: true
+					),
 					"header-params-list",
 					HeaderParameters,
 					"Header parameters"
