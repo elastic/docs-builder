@@ -25,7 +25,6 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 			Reasons = record.Reasons,
 			ReasonSetVersion = record.ReasonSetVersion,
 			Comment = record.Comment,
-			Euid = record.Euid,
 			Timestamp = DateTimeOffset.UtcNow
 		};
 

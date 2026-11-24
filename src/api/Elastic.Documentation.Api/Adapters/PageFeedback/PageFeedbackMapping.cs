@@ -41,11 +41,6 @@ public sealed record PageFeedbackDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? Comment { get; init; }
 
-	[Keyword(IgnoreAbove = 256)]
-	[JsonPropertyName("euid")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? Euid { get; init; }
-
 	[Timestamp]
 	[JsonPropertyName("@timestamp")]
 	public required DateTimeOffset Timestamp { get; init; }

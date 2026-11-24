@@ -83,7 +83,6 @@ public class PageFeedbackGatewayTests
 			PageFeedbackReaction.ThumbsUp,
 			[PageFeedbackReason.Accurate],
 			2,
-			"Clear and useful.",
-			"test-euid"
+			"Clear and useful."
 		);
 }

@@ -69,7 +69,7 @@ public partial class PageFeedbackEndpointTests
 	}
 
 	[Test]
-	public async Task Put_ValidFeedback_RecordsFeedbackWithEuid()
+	public async Task Put_ValidFeedback_IgnoresEuidCookie()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		PageFeedbackRecord? recorded = null;
@@ -97,8 +97,7 @@ public partial class PageFeedbackEndpointTests
 			    "accurate"
 			  ],
 			  "ReasonSetVersion": 2,
-			  "Comment": "Useful page",
-			  "Euid": "test-euid"
+			  "Comment": "Useful page"
 			}
 			""",
 			options: ScrubFeedbackId(feedbackId)
@@ -139,8 +138,7 @@ public partial class PageFeedbackEndpointTests
 			  "Reaction": "thumbsDown",
 			  "Reasons": null,
 			  "ReasonSetVersion": null,
-			  "Comment": null,
-			  "Euid": null
+			  "Comment": null
 			}
 			""",
 			options: ScrubFeedbackId(feedbackId)
@@ -186,8 +184,7 @@ public partial class PageFeedbackEndpointTests
 			    "outOfDate"
 			  ],
 			  "ReasonSetVersion": 2,
-			  "Comment": null,
-			  "Euid": null
+			  "Comment": null
 			}
 			""",
 			options: ScrubFeedbackId(feedbackId)
