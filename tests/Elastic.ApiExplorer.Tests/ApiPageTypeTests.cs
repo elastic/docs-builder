@@ -78,4 +78,13 @@ public class ApiPageTypeTests
 		// the layout reads the interface member, so assert through it
 		((INavigationItem)item).ExcludeFromIndexing.Should().Be(excludeFromIndexing);
 	}
+
+	[Test]
+	public void LandingIndex_OfAHiddenVersionTree_StaysIndexable()
+	{
+		var landing = new LandingNavigationItem("/api/es/v8/") { Hidden = true, InSitemap = true };
+
+		// the rendered landing is the root's index leaf, so a tree hidden from the sidebar does not turn its landing noindex
+		((INavigationItem)landing.Index).ExcludeFromIndexing.Should().BeFalse();
+	}
 }
