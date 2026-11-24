@@ -30,6 +30,26 @@ public class PageFeedbackBootstrapTests
 		mappingCalls[0].Body.Should().Contain("\"reasons\"");
 	}
 
+	// A missing index is only safe when the templates are current: the first write creates the index from them.
+	[Test]
+	public async Task StartAsync_IndexExists_InstallsTemplatesBeforeTheMapping()
+	{
+		var (transport, calls) = CreateTransport(mappingStatus: 200);
+
+		await CreateService(transport, AppEnv.Staging).StartAsync(TestContext.Current!.Execution.CancellationToken);
+
+		calls
+			.Where(c => c.Method == "PUT")
+			.Select(c => c.Path)
+			.Should()
+			.ContainInOrder(
+				"/_component_template/page-feedback-v1-staging-template-settings",
+				"/_component_template/page-feedback-v1-staging-template-mappings",
+				"/_index_template/page-feedback-v1-staging-template",
+				"/page-feedback-v1-staging/_mapping"
+			);
+	}
+
 	[Test]
 	public async Task StartAsync_IndexDoesNotExistYet_Completes()
 	{
