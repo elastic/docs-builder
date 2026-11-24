@@ -24,6 +24,14 @@ function markup(): string {
                         <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type">string</code></dt>
                         <dd><p>A long description.</p><p><a href="#deep" id="${anchor}-deep-link">deep link</a></p></dd>
                         <dd class="reference-link-row"><a href="#">Reference</a></dd>
+                        <div class="nested-properties">
+                            <dl class="property-list">
+                                <div class="property-item depth-1">
+                                    <dt><code>unit</code></dt>
+                                    <dd><p><a href="#unit" id="${anchor}-nested-link">nested link</a></p></dd>
+                                </div>
+                            </dl>
+                        </div>
                     </div>
                     <div class="property-item depth-0" id="${anchor}-short">
                         <dt id="${anchor}-typed_keys"><code>typed_keys</code><code class="schema-type">boolean</code></dt>
@@ -170,6 +178,48 @@ describe('parameter layout switch', () => {
             document.getElementById('query-params-deep-link')!.focus()
             expect(row('query-params-long').dataset.clamp).toBe('expanded')
             expect(toggle('query-params-long')!.textContent).toBe('Show less')
+        })
+
+        it('leaves a row clamped when focus lands in a nested field below it', () => {
+            applyParamLayout('table', document, longOnly)
+            document.getElementById('query-params-nested-link')!.focus()
+            expect(row('query-params-long').dataset.clamp).toBe('clamped')
+        })
+
+        it('measures the content box with and without the clamp', () => {
+            // jsdom has no layout, so the two descriptions report the heights a browser would: the clamp drops the
+            // bottom padding, and the long one loses lines to it while the short one keeps all of its own.
+            const heights: Record<string, [number, number]> = {
+                'query-params-long': [133, 67],
+                'query-params-short': [55, 47],
+            }
+            for (const [id, [full, clamped]] of Object.entries(heights)) {
+                const item = row(id)
+                const dd = item.querySelector<HTMLElement>(
+                    ':scope > dd:not([class])'
+                )!
+                Object.defineProperty(dd, 'clientHeight', {
+                    get: () =>
+                        item.dataset.clamp === 'clamped' ? clamped : full,
+                })
+            }
+            vi.spyOn(window, 'getComputedStyle').mockImplementation(
+                (el) =>
+                    ({
+                        paddingTop: '8px',
+                        paddingBottom:
+                            (el as HTMLElement).closest<HTMLElement>(
+                                '.property-item'
+                            )?.dataset.clamp === 'clamped'
+                                ? '0px'
+                                : '8px',
+                    }) as CSSStyleDeclaration
+            )
+            applyParamLayout('table')
+            expect(toggle('query-params-long')!.textContent).toBe('Show more')
+            expect(row('query-params-short').dataset.clamp).toBeUndefined()
+            expect(toggle('query-params-short')).toBeNull()
+            vi.restoreAllMocks()
         })
 
         it('removes the clamp and the control in list layout', () => {

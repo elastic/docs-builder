@@ -191,15 +191,14 @@ export function initParamLayout(): void {
         applyParamLayout(layout)
     })
     // The clamp only clips the text, so a link below the third line is still a tab stop: focus inside shows the row.
+    // A nested field's own description sits beside the row's, not inside it, so focus there leaves the row clamped.
     document.addEventListener('focusin', (e) => {
         const target = e.target as Element | null
         const row = target?.closest<HTMLElement>(
             '.property-item[data-clamp="clamped"]'
         )
-        if (
-            row &&
-            target?.closest(descriptionSelector.replace(':scope > ', ''))
-        )
+        const description = row?.querySelector<HTMLElement>(descriptionSelector)
+        if (row && target && description?.contains(target))
             setRowExpanded(row, true)
     })
 }

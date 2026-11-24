@@ -16,6 +16,27 @@ const css = readFileSync(
 
 const gateOpener = '@supports (grid-template-columns: subgrid) {'
 
+/** The elements a browser without subgrid must never see; the options live inside the switch. */
+const hiddenOutside =
+    /\.api-param-layout(?!-option)|\.api-param-table-head|\.api-param-clamp-toggle/
+
+interface Rule {
+    selectors: string[]
+    declarations: string
+}
+
+/** Every `selectors { declarations }` pair, however it is grouped; at-rule preludes hold a brace, so they never match. */
+function rulesOf(block: string): Rule[] {
+    const stripped = block.replace(/\/\*[\s\S]*?\*\//g, '')
+    return [...stripped.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+        selectors: m[1]
+            .split(',')
+            .map((selector) => selector.trim())
+            .filter(Boolean),
+        declarations: m[2],
+    }))
+}
+
 function gatedBlock(): string {
     const start = css.indexOf(gateOpener)
     expect(start).toBeGreaterThan(-1)
@@ -33,9 +54,15 @@ describe('parameter table stylesheet', () => {
 
     it('shows the switch only inside the subgrid support query', () => {
         expect(gated).toContain('.api-param-layout:not([hidden])')
-        expect(outside).not.toMatch(
-            /\.api-param-layout[^,{]*\{[^}]*display:\s*(?!none)/
-        )
+        const shown = rulesOf(outside)
+            .filter((rule) =>
+                rule.selectors.some((selector) => hiddenOutside.test(selector))
+            )
+            .filter((rule) => {
+                const display = rule.declarations.match(/display:\s*([a-z-]+)/)
+                return display !== null && display[1] !== 'none'
+            })
+        expect(shown.map((rule) => rule.selectors.join(', '))).toEqual([])
     })
 
     it('lays out the table only inside the subgrid support query', () => {

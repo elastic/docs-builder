@@ -1849,8 +1849,9 @@ button.response-status-toggle:focus {
 			white-space: nowrap;
 		}
 
-		/* A constraint longer than the Type cell is cut with an ellipsis rather than run into the next column. The
-	   constraint span is inline in the design system, so the group becomes a flex row to give it a box to cut. */
+		/* A constraint longer than the Type cell wraps inside it, so no range, format or pattern is cut from the reader:
+	   the server adds a tooltip only to a constraint over 40 characters. The constraint span is inline in the design
+	   system, so the group becomes a flex row to give it a box that can wrap. */
 		.api-param-section[data-layout='table']
 			> .api-param-section-body
 			> .property-list
@@ -1873,9 +1874,10 @@ button.response-status-toggle:focus {
 			display: block;
 			min-width: 0;
 			max-width: 100%;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
+			overflow: visible;
+			text-overflow: clip;
+			white-space: normal;
+			overflow-wrap: anywhere;
 		}
 
 		.api-param-section[data-layout='table']
