@@ -141,7 +141,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			NavigationActiveUrl = CurrentNavigationItem.Url,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
 			AllowIndexing = BuildContext.AllowIndexing,
-			Robots = ApiPageTypes.Robots(RenderContext.PageType, BuildContext.AllowIndexing),
+			Robots = ApiPageTypes.Robots(RenderContext.PageType, BuildContext.AllowIndexing, CurrentNavigationItem.ExcludeFromIndexing),
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			CanonicalUrl = CanonicalUrlOverride(),
 			GoogleTagManager = BuildContext.GoogleTagManager,

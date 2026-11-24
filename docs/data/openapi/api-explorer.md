@@ -331,7 +331,7 @@ The type of each version tree decides whether its pages are in the API file:
 | Numbered copy of the newest major | `/api/{key}/v{N}` | No. Its canonical is the page at `/api/{key}`. |
 | Unreleased `main` | `/api/{key}/next` | No. The page is `noindex`. |
 
-Older majors are hidden in the navigation, but they are still listed in the sitemap. So are the pages that the sidebar leaves out, such as Servers. Redirects and the `.md` renderings of pages are not listed.
+Older majors are hidden in the navigation, but they are still listed in the sitemap. The Servers page is kept only so old links land. It is not listed and carries `noindex`. The Authentication page is listed even when the sidebar leaves it out. Redirects and the `.md` renderings of pages are not listed.
 
 `assembler build` writes all three files with the build time as the date. `assembler sitemap` runs after `assembler index`, in the same output folder. It keeps the pages the build listed and dates each one from the search index, so a page's date changes only when its content changes.
 

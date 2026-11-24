@@ -23,10 +23,14 @@ public abstract class ApiPageNavigationItem<TModel>(
 	public bool Hidden { get; init; }
 
 	/// <summary>
-	/// An API page is listed whenever its tree is. A page hidden from the sidebar, such as Servers, still renders and names
-	/// itself as canonical.
+	/// An API page is listed whenever its tree is. A page hidden from the sidebar, such as Authentication, still renders and
+	/// names itself as canonical.
 	/// </summary>
-	public bool InSitemap => true;
+	public virtual bool InSitemap => true;
+
+	/// <summary>Whether the page is left out of the index. An API page follows its sidebar visibility unless it says otherwise.</summary>
+	public virtual bool ExcludeFromIndexing => Hidden;
+
 	public string NavigationTitle { get; } = navigationTitle;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
 	public int NavigationIndex { get; set; }

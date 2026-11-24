@@ -4,6 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Structural;
+using Elastic.Documentation.Navigation;
 using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -34,14 +37,21 @@ public class ApiPageTypeTests
 			);
 
 	[Test]
-	[Arguments(ApiPageType.Versionless, true, "index, follow")]
-	[Arguments(ApiPageType.NewestMajorCopy, true, "index, follow")]
-	[Arguments(ApiPageType.OlderMajor, true, "index, follow")]
-	[Arguments(ApiPageType.Unreleased, true, "noindex")]
-	[Arguments(ApiPageType.Versionless, false, "noindex, nofollow")]
-	[Arguments(ApiPageType.Unreleased, false, "noindex, nofollow")]
-	public void Robots_PageTypeAndBuild_BuildThatDisallowsIndexingWins(ApiPageType type, bool buildAllowsIndexing, string expected) =>
-		ApiPageTypes.Robots(type, buildAllowsIndexing).Should().Be(expected);
+	[Arguments(ApiPageType.Versionless, true, false, "index, follow")]
+	[Arguments(ApiPageType.NewestMajorCopy, true, false, "index, follow")]
+	[Arguments(ApiPageType.OlderMajor, true, false, "index, follow")]
+	[Arguments(ApiPageType.Unreleased, true, false, "noindex")]
+	[Arguments(ApiPageType.Versionless, false, false, "noindex, nofollow")]
+	[Arguments(ApiPageType.Unreleased, false, false, "noindex, nofollow")]
+	[Arguments(ApiPageType.Versionless, true, true, "noindex")]
+	[Arguments(ApiPageType.OlderMajor, true, true, "noindex")]
+	[Arguments(ApiPageType.Versionless, false, true, "noindex, nofollow")]
+	public void Robots_PageTypeAndBuild_BuildThatDisallowsIndexingWins(
+		ApiPageType type,
+		bool buildAllowsIndexing,
+		bool excludeFromIndexing,
+		string expected
+	) => ApiPageTypes.Robots(type, buildAllowsIndexing, excludeFromIndexing).Should().Be(expected);
 
 	[Test]
 	[Arguments(ApiPageType.NewestMajorCopy, "/api/es/v9/operation/operation-ping", "/api/es/v9", "/api/es/operation/operation-ping")]
@@ -50,4 +60,31 @@ public class ApiPageTypeTests
 	[Arguments(ApiPageType.Unreleased, "/api/es/next/operation/x", "/api/es/next", "/api/es/next/operation/x")]
 	public void CanonicalPath_PageType_KeepsThePathBelowTheRoot(ApiPageType type, string page, string treeRoot, string expected) =>
 		ApiPageTypes.CanonicalPath(type, page, treeRoot, "/api/es").Should().Be(expected);
+
+	[Test]
+	[Arguments(ApiStructuralKind.Authentication, true, false)]
+	[Arguments(ApiStructuralKind.Servers, false, true)]
+	public void StructuralPage_HiddenFromTheSidebar_OnlyServersLeavesTheSitemapAndTheIndex(
+		ApiStructuralKind kind,
+		bool inSitemap,
+		bool excludeFromIndexing
+	)
+	{
+		var landing = new LandingNavigationItem("/api/es/");
+		var item = new StructuralNavigationItem(null, "", new ApiStructuralPage(kind), landing, landing);
+
+		item.Hidden.Should().BeTrue();
+		item.InSitemap.Should().Be(inSitemap);
+		// the layout reads the interface member, so assert through it
+		((INavigationItem)item).ExcludeFromIndexing.Should().Be(excludeFromIndexing);
+	}
+
+	[Test]
+	public void Landing_OfAHiddenVersionTree_StaysIndexable()
+	{
+		var landing = new LandingNavigationItem("/api/es/v8/") { Hidden = true, InSitemap = true };
+
+		// the generator renders a tree's landing page with the tree node as the current item, and the layout reads the interface member
+		((INavigationItem)landing).ExcludeFromIndexing.Should().BeFalse("the page type decides, not the sidebar visibility");
+	}
 }
