@@ -275,6 +275,15 @@ public static class SearchQueryBuilder
 			}
 		};
 
+	/// <summary>Whether a document lists a field the name or path names, without inner hits: the lookup's field options already collect them under their own names.</summary>
+	internal static Query BuildPropertyNamedQuery(string property) =>
+		new NestedQuery
+		{
+			Path = QueryFieldNames.ApiProperties,
+			IgnoreUnmapped = true,
+			Query = BuildPropertyMatchQuery(property, new PropertyLookup(AllowPrefix: true, ExpandChildren: false))
+		};
+
 	/// <summary>
 	/// An expanded lookup also lists the direct children of the typed path. They score below every name match,
 	/// and a document never matches through them alone: a row naming the input as its parent implies that row exists.

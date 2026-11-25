@@ -348,7 +348,8 @@ public class OpenApiGenerator(
 		{
 			var (item, page) = pages[i];
 			var pageContext = renderContext with { CurrentNavigation = item };
-			var markdown = await page.RenderCommonMarkAsync(pageContext, page.CreatePageModel(pageContext), token).ConfigureAwait(false);
+			var model = page.CreatePageModel(pageContext);
+			var markdown = await page.RenderCommonMarkAsync(pageContext, model, token).ConfigureAwait(false);
 			if (string.IsNullOrEmpty(markdown))
 				return;
 			var relative = RelativeToTree(markdown, root);
@@ -356,7 +357,12 @@ public class OpenApiGenerator(
 				item.Url,
 				item.NavigationTitle,
 				ContentHash.CreateNormalized(relative),
-				IsSearchablePage(item) ? SearchOf(markdown, item, page, pageContext) : null
+				IsSearchablePage(item)
+					? SearchOf(markdown, item, page, pageContext) with
+					{
+						Properties = (model as Types.SchemaPageModel)?.IndexEntries() ?? []
+					}
+					: null
 			);
 		}).ConfigureAwait(false);
 
@@ -374,7 +380,7 @@ public class OpenApiGenerator(
 	{
 		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
 		var meta = ApiMarkdownFrontMatter.Collect(body, item, context, page);
-		return new ApiPageSearch(meta.Title, meta.Description ?? "", body);
+		return new ApiPageSearch(meta.Title, meta.Description ?? "", body, []);
 	}
 
 	/// <summary>

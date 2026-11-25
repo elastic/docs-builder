@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Search.Contract;
 
 namespace Elastic.ApiExplorer.Types;
 
@@ -53,7 +54,12 @@ public record SchemaPageModel
 		var typeInfo = analyzer.GetTypeInfo(openApiSchema);
 		var keyword = typeInfo.UnionKeyword ?? UnionKeyword.OneOf;
 		// Variant anchors keep their keyword prefix (oneof-variant-…), so links to them survive.
-		var variantScope = new PropertyTreeScope { Prefix = keyword.ToSchemaKeyword().ToLowerInvariant(), AncestorRefs = rootAncestors };
+		var variantScope = new PropertyTreeScope
+		{
+			Prefix = keyword.ToSchemaKeyword().ToLowerInvariant(),
+			JsonPath = "",
+			AncestorRefs = rootAncestors
+		};
 		var built = ApiBodyContent.BuildUnionVariants(openApiSchema, variantScope, analyzer, builder);
 		// The section's intro sentence carries the label, so the list does not repeat it.
 		var variants = built is null ? null : built with { Label = null };
@@ -79,11 +85,15 @@ public record SchemaPageModel
 			Requires = builder.DescribeRequiredAlternatives(openApiSchema),
 			Properties = listed is null
 				? null
-				: builder.BuildPropertyList(listed, new PropertyTreeScope { Prefix = "", AncestorRefs = rootAncestors }),
+				: builder.BuildPropertyList(listed, new PropertyTreeScope { Prefix = "", JsonPath = "", AncestorRefs = rootAncestors }),
 			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null,
 			EnumValues = analyzer.GetEnumValues(openApiSchema)
 		};
 	}
+
+	/// <summary>The rows the page lists, its fields then its variants, as search documents with the anchors the page renders.</summary>
+	internal ApiPropertyEntry[] IndexEntries() =>
+		[.. ApiPropertyIndex.Entries(ApiPropertyIndex.Flatten(Properties).Concat(ApiPropertyIndex.Flatten(UnionVariants)), "field", [])];
 
 	/// <summary>
 	/// "This type can be one of the following:", or for an array of a union the body label, "An array; each item is one of:",

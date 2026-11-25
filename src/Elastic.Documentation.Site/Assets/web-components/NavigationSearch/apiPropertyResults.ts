@@ -7,7 +7,14 @@ export const ApiPropertyResult = z.object({
     type: z.string(),
     description: z.string(),
     anchor: z.string(),
-    location: z.enum(['path', 'query', 'header', 'request', 'response']),
+    location: z.enum([
+        'path',
+        'query',
+        'header',
+        'request',
+        'response',
+        'field',
+    ]),
     url: z.string(),
 })
 
@@ -19,6 +26,7 @@ export const LOCATION_LABELS: Record<ApiPropertyResult['location'], string> = {
     header: 'header',
     request: 'request body',
     response: 'response body',
+    field: 'field',
 }
 
 export const ApiRoute = z.object({
