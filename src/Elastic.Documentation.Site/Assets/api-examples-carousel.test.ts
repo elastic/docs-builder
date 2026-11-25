@@ -637,20 +637,31 @@ describe('API examples telemetry', () => {
         expect(viewWatcher().observed.size).toBe(1)
     })
 
-    it('counts an example without code samples by its first card, with no language', () => {
+    it('counts an example without code samples by its first card once it is opened, with no language', () => {
         document.querySelector('[data-api-examples]')!.insertAdjacentHTML(
             'beforeend',
-            `<div class="api-examples-scenario-panel" data-scenario="response-only" hidden="until-found">
+            `<button class="api-example-chip" data-scenario="response-only"><span class="api-example-chip-title">Response only</span></button>
+            <div class="api-examples-scenario-panel" data-scenario="response-only" hidden="until-found">
                 <div class="api-code-card" data-code-card id="only-response"><span data-code-actions></span><pre><code>{}</code></pre></div>
             </div>`
         )
         const { viewWatcher, report } = stubIntersectionObserver()
         initApiExamples()
         const card = document.getElementById('only-response')!
+        const panel = card.closest<HTMLElement>('[data-scenario]')!
         expect(viewWatcher().observed.has(card)).toBe(true)
 
+        // Hidden, the card does not intersect: nothing is counted yet.
+        expect(panel.getAttribute('hidden')).toBe('until-found')
+        report(card, 0)
+        expect(logInfo).not.toHaveBeenCalled()
+
+        click('.api-example-chip[data-scenario="response-only"]')
+        expect(panel.hasAttribute('hidden')).toBe(false)
+        vi.mocked(logInfo).mockClear()
         report(card, 1)
 
+        expect(logInfo).toHaveBeenCalledTimes(1)
         const attributes = vi.mocked(logInfo).mock.calls[0][1]
         expect(logInfo).toHaveBeenCalledWith(
             'api_example_viewed',
