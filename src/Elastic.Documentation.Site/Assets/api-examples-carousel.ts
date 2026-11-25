@@ -408,6 +408,8 @@ function cardDetail(card: HTMLElement): ApiExampleDetail {
  */
 function createViewObserver(): IntersectionObserver | undefined {
     if (typeof IntersectionObserver === 'undefined') return undefined
+    // unobserve() does not remove entries already queued in this batch, so a carousel can arrive twice.
+    const counted = new WeakSet<Element>()
     return new IntersectionObserver(
         (entries, observer) => {
             for (const entry of entries) {
@@ -419,6 +421,8 @@ function createViewObserver(): IntersectionObserver | undefined {
                 }
                 // The observer also reports a sliver, when it starts watching and on any threshold it crosses.
                 if (entry.intersectionRatio < 0.5) continue
+                if (counted.has(carousel)) continue
+                counted.add(carousel)
                 logApiExampleEvent('api_example_viewed', {
                     language: activeLanguage(carousel),
                     scenario: scenarioOf(carousel),

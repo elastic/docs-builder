@@ -544,16 +544,20 @@ function stubIntersectionObserver() {
     // The observer that counts views: the carousel strips watch with their own thresholds.
     const viewWatcher = () =>
         observers.find((o) => o.options?.threshold === 0.5)!
-    const report = (target: Element, intersectionRatio: number) => {
+    // `entries` entries for one target arrive in one batch, like a fast scroll across several thresholds.
+    const report = (
+        target: Element,
+        intersectionRatio: number,
+        entries = 1
+    ) => {
         const watcher = viewWatcher()
+        const entry = {
+            isIntersecting: intersectionRatio > 0,
+            intersectionRatio,
+            target,
+        } as IntersectionObserverEntry
         watcher.callback(
-            [
-                {
-                    isIntersecting: intersectionRatio > 0,
-                    intersectionRatio,
-                    target,
-                } as IntersectionObserverEntry,
-            ],
+            Array.from({ length: entries }, () => entry),
             watcher as unknown as IntersectionObserver
         )
     }
@@ -616,6 +620,18 @@ describe('API examples telemetry', () => {
         // Initializing again after a swap must not watch the same carousels twice.
         initApiExamples()
         expect(viewWatcher().observed.size).toBe(1)
+    })
+
+    it('counts a carousel once when one batch holds two qualifying entries for it', () => {
+        const { report } = stubIntersectionObserver()
+        initApiExamples()
+        const visible = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+
+        report(visible, 1, 2)
+
+        expect(logInfo).toHaveBeenCalledTimes(1)
     })
 
     it('drops a view reported for a carousel a navigation already removed', () => {
