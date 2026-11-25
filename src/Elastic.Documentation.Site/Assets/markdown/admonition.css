@@ -8,9 +8,12 @@
 
 		.applies-admonition {
 			@apply flex min-w-0 flex-wrap items-center gap-1 font-normal;
+			.applicable-info {
+				@apply max-w-full;
+			}
 			.applicable-name,
 			.applicable-meta {
-				@apply text-xs;
+				@apply flex-wrap text-xs text-wrap;
 			}
 			.applicable-separator {
 				mix-blend-mode: multiply;
