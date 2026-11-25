@@ -654,13 +654,12 @@ function onClick(event: MouseEvent) {
     }
 
     // The copy button is made by copybutton.ts for every code block, so the rail listens for it here.
+    // The click then goes on: on a dimmed neighbour card the handler below still brings the card into view.
     const copiedCard = target
         .closest('.copybtn')
         ?.closest<HTMLElement>('[data-code-card]')
-    if (copiedCard) {
+    if (copiedCard)
         logApiExampleEvent('api_example_code_copied', cardDetail(copiedCard))
-        return
-    }
 
     if (target.closest('[data-code-preview]')) {
         const card = target.closest<HTMLElement>('[data-code-card]')

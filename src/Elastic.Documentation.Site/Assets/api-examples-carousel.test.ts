@@ -720,6 +720,26 @@ describe('API examples telemetry', () => {
         )
     })
 
+    it('still brings a dimmed neighbour card into view when its copy button is clicked', () => {
+        initApiExamples()
+        const button = document.createElement('button')
+        button.className = 'copybtn'
+        document
+            .querySelector(
+                '[data-scenario="term"] [data-lang="curl"] [data-code-actions]'
+            )!
+            .append(button)
+
+        button.click()
+
+        expect(activeLang('term')).toBe('curl')
+        expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe('curl')
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.anything()
+        )
+    })
+
     it('logs a copy from a response card with its example and no language', () => {
         initApiExamples()
         const button = document.createElement('button')
