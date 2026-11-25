@@ -2,14 +2,6 @@
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
-
-	protected override async Task ExecuteSectionAsync(string name)
-	{
-		if (name == ApiPageSections.Rail)
-		{
-			@await RenderPartialAsync(_ApiToc.Create(Model.TocItems))
-		}
-	}
 }
 @{
 	var schema = Model.Schema;
