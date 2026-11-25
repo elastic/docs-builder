@@ -92,6 +92,17 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task SchemaPage_RendersNoOnThisPageList()
+	{
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Should().ContainSingle(n => n.Model.DisplayName == "Query").Subject;
+
+		var html = await fixture.RenderAsync(item);
+
+		html.Should().Contain("Copy page");
+		html.Should().NotContain("On this page");
+	}
+
+	[Test]
 	[Arguments("v8", "Run a search | Fixture API docs (v8)")]
 	[Arguments("v9", "Run a search | Fixture API docs (v9)")]
 	[Arguments("latest", "Run a search | Fixture API docs")]

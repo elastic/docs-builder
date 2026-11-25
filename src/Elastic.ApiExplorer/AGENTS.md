@@ -45,7 +45,7 @@ Every page the layout renders has the same two columns inside `#api-content-grid
 (`.api-page-grid` in `api-docs.css`). The layout puts Copy page at the top of the rail; a view adds the rest by
 overriding `ExecuteSectionAsync` for `ApiPageSections.Rail`. Only add what helps someone use the API: examples on
 operations, server URLs, license on the spec landing, the external docs link on groups, and
-"On this page" on schema and structural pages. Below 1024px the rail's content stacks under the article and
+"On this page" on structural pages. Schema pages leave the rail empty on purpose. Below 1024px the rail's content stacks under the article and
 Copy page moves up beside the menu button. The spec download lives in the Copy page menu, not in the rail.
 
 ## Rules
