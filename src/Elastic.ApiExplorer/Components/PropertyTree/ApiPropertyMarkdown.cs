@@ -29,7 +29,9 @@ internal static class ApiPropertyMarkdown
 
 		foreach (var variant in variants.Variants)
 		{
-			var name = variant.PageUrl is { Length: > 0 } pageUrl ? ApiCommonMark.Link(variant.DisplayName, pageUrl) : variant.DisplayName;
+			var name = variant.PageUrl is { Length: > 0 } pageUrl
+				? ApiCommonMark.TextLink(variant.DisplayName, pageUrl)
+				: ApiCommonMark.Text(variant.DisplayName);
 			var label = variant.IsArrayVariant ? $"[]{name}" : name;
 			_ = markdown.Append(Indent(depth));
 			_ = markdown.Append("- **");
@@ -88,7 +90,7 @@ internal static class ApiPropertyMarkdown
 					(repeated.Owner is { Length: > 0 } owner ? $" in {ApiCommonMark.CodeSpan(owner)}" : "")
 			);
 		if (property.TypeLink is { Url: { Length: > 0 } url })
-			WriteNestedLine(markdown, depth, $"See {ApiCommonMark.Link(property.TypeLink.TypeName, url)}");
+			WriteNestedLine(markdown, depth, $"See {ApiCommonMark.TextLink(property.TypeLink.TypeName, url)}");
 
 		WriteAlsoIncludes(markdown, property, depth);
 
@@ -107,7 +109,7 @@ internal static class ApiPropertyMarkdown
 			return;
 
 		var names = property.AlsoIncludes.Select(
-			t => t.Url is { Length: > 0 } url ? ApiCommonMark.Link(t.TypeName, url) : ApiCommonMark.CodeSpan(t.TypeName)
+			t => t.Url is { Length: > 0 } url ? ApiCommonMark.TextLink(t.TypeName, url) : ApiCommonMark.CodeSpan(t.TypeName)
 		);
 		WriteNestedLine(markdown, depth, "Also includes: " + string.Join(", ", names));
 	}

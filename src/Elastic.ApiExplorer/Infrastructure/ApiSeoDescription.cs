@@ -20,7 +20,7 @@ internal static partial class ApiSeoDescription
 
 		var visible = WithoutComments(markdown);
 		var paragraph = FirstParagraph(visible) ?? visible;
-		var plain = ToPlainText(paragraph);
+		var plain = ApiMarkdown.ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
 	}
 
@@ -123,19 +123,6 @@ internal static partial class ApiSeoDescription
 		return buffer.Length == 0 ? null : buffer.ToString();
 	}
 
-	internal static string ToPlainText(string markdown)
-	{
-		var text = ImagePattern().Replace(markdown, "$1");
-		text = LinkPattern().Replace(text, "$1");
-		text = BoldStarPattern().Replace(text, "$1");
-		text = BoldUnderscorePattern().Replace(text, "$1");
-		text = CodePattern().Replace(text, "$1");
-		text = ItalicStarPattern().Replace(text, "$1");
-		text = ItalicUnderscorePattern().Replace(text, "$1");
-		text = HeadingPattern().Replace(text, string.Empty);
-		return WhitespacePattern().Replace(text, " ").Trim();
-	}
-
 	internal static string Truncate(string text)
 	{
 		if (text.Length <= MaxLength)
@@ -156,31 +143,4 @@ internal static partial class ApiSeoDescription
 
 	[GeneratedRegex(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HttpMethodPattern();
-
-	[GeneratedRegex(@"!\[([^\]]*)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex ImagePattern();
-
-	[GeneratedRegex(@"\[([^\]]+)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex LinkPattern();
-
-	[GeneratedRegex(@"\*\*([^*]+)\*\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex BoldStarPattern();
-
-	[GeneratedRegex(@"__([^_]+)__", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex BoldUnderscorePattern();
-
-	[GeneratedRegex(@"\*([^*]+)\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex ItalicStarPattern();
-
-	[GeneratedRegex(@"_([^_]+)_", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex ItalicUnderscorePattern();
-
-	[GeneratedRegex(@"`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex CodePattern();
-
-	[GeneratedRegex(@"^#{1,6}\s+", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex HeadingPattern();
-
-	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex WhitespacePattern();
 }

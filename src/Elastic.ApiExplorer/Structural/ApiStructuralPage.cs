@@ -183,7 +183,7 @@ internal static class StructuralCommonMark
 	{
 		var markdown = new StringBuilder();
 		var apiBaseUrl = page.CurrentNavigationItem.NavigationRoot.Url;
-		ApiCommonMark.Heading(markdown, 1, page.Page.Title);
+		ApiCommonMark.TextHeading(markdown, 1, page.Page.Title);
 		ApiCommonMark.Prepared(markdown, page.Page.Intro, apiBaseUrl);
 		if (page.Page.Kind == ApiStructuralKind.Authentication)
 			WriteSchemes(markdown, page, apiBaseUrl);

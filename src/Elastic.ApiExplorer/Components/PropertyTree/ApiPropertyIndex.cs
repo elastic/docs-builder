@@ -40,7 +40,7 @@ internal static class ApiPropertyIndex
 	private static string PlainText(string markdown, Dictionary<string, string> plainDescriptions)
 	{
 		if (!plainDescriptions.TryGetValue(markdown, out var text))
-			plainDescriptions[markdown] = text = ApiMarkdown.StripHtml(ApiSeoDescription.ToPlainText(markdown));
+			plainDescriptions[markdown] = text = ApiMarkdown.ToPlainText(markdown);
 		return text;
 	}
 

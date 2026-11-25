@@ -13,6 +13,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
+using Markdig;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -226,7 +227,8 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationLinkPattern();
 
-	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	// A `]` after an odd run of backslashes is escaped literal text, not the end of a link label; after an even run it still closes one.
+	[GeneratedRegex(@"(?<prefix>(?<=(?:^|[^\\])(?:\\\\)*)\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkDestinationPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
@@ -258,6 +260,14 @@ public static partial class ApiMarkdown
 		"td",
 		"th"
 	];
+
+	private static readonly MarkdownPipeline PlainTextPipeline = new MarkdownPipelineBuilder().Build();
+
+	/// <summary>
+	/// Markdown as the text a reader sees on the page: rendered to HTML, as an API description is, then read for its text. Code spans,
+	/// escapes and entities come out as written; emphasis, link targets and tags go, while the text inside HTML blocks and links stays.
+	/// </summary>
+	internal static string ToPlainText(string markdown) => StripHtml(Markdown.ToHtml(markdown, PlainTextPipeline));
 
 	/// <summary>
 	/// Extracts plain text from an HTML description for search indexing.
