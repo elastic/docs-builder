@@ -23,11 +23,13 @@ internal readonly record struct ApiPageFrontMatter(
 	string? Description,
 	string Url,
 	string? Product,
-	ApiRailFacts? Facts = null
+	ApiRailFacts? Facts = null,
+	string? Resource = null
 );
 
 /// <summary>
-/// Writes LLM-aligned YAML plus the OKF concept fields <c>type</c> and <c>resource</c>.
+/// Writes LLM-aligned YAML plus the OKF concept fields <c>type</c> and <c>resource</c>. The <c>resource</c> is the page's
+/// source when it has one, such as an operation in the spec, and the page's own URL otherwise.
 /// </summary>
 internal static class ApiMarkdownFrontMatter
 {
@@ -60,8 +62,21 @@ internal static class ApiMarkdownFrontMatter
 			ResolveDescription(page, context, body, current.NavigationTitle),
 			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
-			page is ApiLanding ? CollectFacts(context) : null
+			page is ApiLanding ? CollectFacts(context) : null,
+			page is ApiOperation operation ? SpecResource(operation, context) : null
 		);
+	}
+
+	/// <summary>
+	/// Where an operation page comes from: the operation in its tree's published spec JSON, as a JSON pointer such as
+	/// <c>.../api/elasticsearch.json#/paths/~1_search/post</c>.
+	/// </summary>
+	private static string? SpecResource(ApiOperation operation, ApiRenderContext context)
+	{
+		var path = operation.Route.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal);
+		var method = operation.OperationType.Method.ToLowerInvariant();
+		var spec = ApiOutputPaths.JsonUrl(context.CurrentNavigation.NavigationRoot.Url);
+		return UrlPath.MakeAbsolute(context.BuildContext.CanonicalBaseUrl, $"{spec}#/paths/{Uri.EscapeDataString(path)}/{method}");
 	}
 
 	private static ApiRailFacts CollectFacts(ApiRenderContext context)
@@ -87,7 +102,7 @@ internal static class ApiMarkdownFrontMatter
 			_ = markdown.AppendLine($"description: {YamlScalar(meta.Description)}");
 
 		_ = markdown.AppendLine($"url: {meta.Url}");
-		_ = markdown.AppendLine($"resource: {meta.Url}");
+		_ = markdown.AppendLine($"resource: {meta.Resource ?? meta.Url}");
 		if (!string.IsNullOrWhiteSpace(meta.Product))
 		{
 			_ = markdown.AppendLine("products:");

@@ -20,7 +20,6 @@ internal static class OperationCommonMark
 		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
 		ApiCommonMark.TextHeading(markdown, 1, title);
 		WriteBadges(markdown, apiOperation.Deprecated, page);
-		WriteSpecPointer(markdown, apiOperation, apiBaseUrl);
 		WriteServers(markdown, page);
 		WritePaths(markdown, page);
 		WritePathParameters(markdown, page, apiBaseUrl);
@@ -58,15 +57,6 @@ internal static class OperationCommonMark
 			.ToArray();
 		if (texts.Length > 0)
 			ApiCommonMark.Paragraph(markdown, $"Availability: {string.Join(", ", texts)}");
-	}
-
-	/// <summary>Links the operation in the published spec JSON, as a JSON pointer: <c>.../elasticsearch.json#/paths/~1_search/post</c>.</summary>
-	private static void WriteSpecPointer(StringBuilder markdown, ApiOperation apiOperation, string apiBaseUrl)
-	{
-		var path = apiOperation.Route.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal);
-		var method = apiOperation.OperationType.Method.ToLowerInvariant();
-		var url = $"{ApiOutputPaths.JsonUrl(apiBaseUrl)}#/paths/{Uri.EscapeDataString(path)}/{method}";
-		ApiCommonMark.Paragraph(markdown, $"OpenAPI: {ApiCommonMark.Link("spec", url)}");
 	}
 
 	private static void WriteServers(StringBuilder markdown, OperationPageModel page)

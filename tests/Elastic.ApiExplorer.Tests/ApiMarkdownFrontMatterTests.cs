@@ -66,6 +66,33 @@ public class ApiMarkdownFrontMatterTests
 	}
 
 	[Test]
+	public void Write_PageWithASource_PutsTheSourceInResource()
+	{
+		var meta = new ApiPageFrontMatter(
+			"Run a search",
+			null,
+			"/api/elasticsearch/operation/operation-search",
+			null,
+			Resource: "/api/elasticsearch.json#/paths/~1_search/post"
+		);
+
+		var markdown = ApiMarkdownFrontMatter.Write("# Run a search\n", meta);
+
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			---
+			type: api
+			title: "Run a search"
+			url: /api/elasticsearch/operation/operation-search
+			resource: /api/elasticsearch.json#/paths/~1_search/post
+			---
+
+			# Run a search
+			"""
+		);
+	}
+
+	[Test]
 	public void Write_OmitsOptionalKeysWhenMissing()
 	{
 		var markdown = ApiMarkdownFrontMatter.Write("# API Explorer\n", new ApiPageFrontMatter("API Explorer", null, "/api", null));

@@ -18,7 +18,6 @@ public class ApiPageHashTests
 		Also [serverless](/docs/api/elasticsearch-serverless/operation/operation-search).
 		Back to {root}, and the [8.19 notes]({root}/v8.19) page.
 		Read https://www.elastic.co{root}.
-		OpenAPI: [spec]({root}.json#/paths/~1_search/post)
 		""";
 
 	[Test]
@@ -39,7 +38,6 @@ public class ApiPageHashTests
 				Also [serverless](/docs/api/elasticsearch-serverless/operation/operation-search).
 				Back to {api-root}, and the [8.19 notes]({api-root}/v8.19) page.
 				Read https://www.elastic.co{api-root}.
-				OpenAPI: [spec]({api-root}.json#/paths/~1_search/post)
 				Older: [8.19](/docs/api/elasticsearch/v8/operation/operation-search), [next](/docs/api/elasticsearch/next)
 				"""
 			);
