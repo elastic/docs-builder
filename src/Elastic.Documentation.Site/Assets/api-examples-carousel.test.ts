@@ -561,7 +561,14 @@ function stubIntersectionObserver() {
             watcher as unknown as IntersectionObserver
         )
     }
-    return { viewWatcher, report }
+    // The observer that follows swipes on one carousel's strip: it watches that carousel's cards.
+    const stripWatcher = (carousel: Element) =>
+        observers.find(
+            (o) =>
+                Array.isArray(o.options?.threshold) &&
+                [...o.observed].some((card) => carousel.contains(card))
+        )!
+    return { viewWatcher, stripWatcher, report }
 }
 
 const operationPath = '/docs/api/elasticsearch/operation/operation-search'
@@ -718,6 +725,35 @@ describe('API examples telemetry', () => {
         click('.api-example-chip[data-scenario="term"]')
 
         expect(logInfo).not.toHaveBeenCalled()
+    })
+
+    it('ignores a swipe reported by a carousel that is no longer showing', () => {
+        const { stripWatcher } = stubIntersectionObserver()
+        initApiExamples()
+        const term = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+        const python = term.querySelector<HTMLElement>('[data-lang="Python"]')!
+        click('.api-example-chip[data-scenario="slicing"]')
+        vi.mocked(logInfo).mockClear()
+        const watcher = stripWatcher(term)
+
+        // Past the settle window, so the report would count as a pick if the carousel were showing.
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 5000)
+        watcher.callback(
+            [
+                {
+                    isIntersecting: true,
+                    intersectionRatio: 1,
+                    target: python,
+                } as unknown as IntersectionObserverEntry,
+            ],
+            watcher as unknown as IntersectionObserver
+        )
+        clock.mockRestore()
+
+        expect(logInfo).not.toHaveBeenCalled()
+        expect(window.localStorage.getItem(apiLanguageStorageKey)).toBeNull()
     })
 
     it('names the visible scenario on a language pick inside it', () => {

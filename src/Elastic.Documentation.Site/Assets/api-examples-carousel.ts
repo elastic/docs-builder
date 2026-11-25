@@ -470,6 +470,8 @@ function observeStrip(carousel: HTMLElement) {
     const observer = new IntersectionObserver(
         (entries) => {
             if (carousel.dataset.scrolling) return
+            // A swipe can queue this before the reader switches example: a carousel no longer showing picks nothing.
+            if (carousel !== visibleCarousel(examples)) return
             const best = entries
                 .filter((entry) => entry.isIntersecting)
                 .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
