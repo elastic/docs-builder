@@ -372,7 +372,6 @@ function applyPreferredLanguage(examples: HTMLElement, preferred?: string) {
     carousel.classList.remove('is-settling')
 }
 
-// event.name mirrors the body so records can be filtered by exact keyword, like the CTA events.
 // The events are about examples. Language is a byproduct: response cards have none, so it is left off for them.
 type ApiExampleDetail = { language?: string; scenario?: string }
 
@@ -390,13 +389,14 @@ function logApiExampleEvent(eventName: string, detail: ApiExampleDetail) {
     })
 }
 
-/** The scenario a card belongs to. Works for cards in the rail, which sit inside their scenario panel. */
+/** The scenario an element of the rail belongs to: every card and carousel sits inside its scenario panel. */
+function scenarioOf(element: HTMLElement): string | undefined {
+    return element.closest<HTMLElement>('.api-examples-scenario-panel')?.dataset
+        .scenario
+}
+
 function cardDetail(card: HTMLElement): ApiExampleDetail {
-    return {
-        language: card.dataset.lang,
-        scenario: card.closest<HTMLElement>('.api-examples-scenario-panel')
-            ?.dataset.scenario,
-    }
+    return { language: card.dataset.lang, scenario: scenarioOf(card) }
 }
 
 /**
@@ -413,9 +413,7 @@ function createViewObserver(): IntersectionObserver | undefined {
                 const carousel = entry.target as HTMLElement
                 logApiExampleEvent('api_example_viewed', {
                     language: activeLanguage(carousel),
-                    scenario: carousel.closest<HTMLElement>(
-                        '.api-examples-scenario-panel'
-                    )?.dataset.scenario,
+                    scenario: scenarioOf(carousel),
                 })
                 observer.unobserve(carousel)
             }
@@ -425,12 +423,10 @@ function createViewObserver(): IntersectionObserver | undefined {
 }
 
 function pickLanguage(examples: HTMLElement, language: string) {
-    logApiExampleEvent('api_example_language_selected', {
-        language,
-        scenario: currentScenario(examples),
-    })
+    const scenario = currentScenario(examples)
+    logApiExampleEvent('api_example_language_selected', { language, scenario })
     saveApiLanguage(language)
-    writeDeepLink(language, currentScenario(examples))
+    writeDeepLink(language, scenario)
 }
 
 const settleWindowMs = 1000

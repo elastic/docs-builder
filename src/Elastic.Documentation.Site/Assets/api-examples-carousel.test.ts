@@ -529,6 +529,8 @@ describe('API examples telemetry', () => {
         vi.mocked(logInfo).mockClear()
     })
 
+    afterEach(() => vi.unstubAllGlobals())
+
     it('logs the language of a pick, and nothing for the language applied on load', () => {
         window.localStorage.setItem(apiLanguageStorageKey, 'Python')
         initApiExamples()
@@ -549,67 +551,58 @@ describe('API examples telemetry', () => {
 
     it('logs a view once per example when it is half visible, with its scenario and the saved language', () => {
         window.localStorage.setItem(apiLanguageStorageKey, 'Python')
-        type Entry = Partial<IntersectionObserverEntry>
-        const observers: {
-            callback: (entries: Entry[], observer: unknown) => void
-            options?: IntersectionObserverInit
-            observed: Element[]
-            unobserved: Element[]
-        }[] = []
-        const Original = window.IntersectionObserver
-        window.IntersectionObserver = class {
-            record = {
-                callback: undefined as never,
-                options: undefined as IntersectionObserverInit | undefined,
-                observed: [] as Element[],
-                unobserved: [] as Element[],
-            }
-            constructor(callback: never, options?: IntersectionObserverInit) {
-                this.record.callback = callback
-                this.record.options = options
-                observers.push(this.record)
+        class FakeObserver {
+            observed = new Set<Element>()
+            constructor(
+                public callback: IntersectionObserverCallback,
+                public options?: IntersectionObserverInit
+            ) {
+                observers.push(this)
             }
             observe(element: Element) {
-                this.record.observed.push(element)
+                this.observed.add(element)
             }
             unobserve(element: Element) {
-                this.record.unobserved.push(element)
+                this.observed.delete(element)
             }
             disconnect() {}
-        } as unknown as typeof IntersectionObserver
-        try {
-            initApiExamples()
-            const watcher = observers.find((o) => o.options?.threshold === 0.5)!
-            const visible = document.querySelector<HTMLElement>(
-                '[data-scenario="term"] [data-api-carousel]'
-            )!
-            expect(watcher.observed).toHaveLength(2)
-
-            watcher.callback([{ isIntersecting: false, target: visible }], {
-                unobserve: () => {},
-            })
-            expect(logInfo).not.toHaveBeenCalled()
-
-            watcher.callback([{ isIntersecting: true, target: visible }], {
-                unobserve: (e: Element) => watcher.unobserved.push(e),
-            })
-            expect(logInfo).toHaveBeenCalledTimes(1)
-            expect(logInfo).toHaveBeenCalledWith(
-                'api_example_viewed',
-                expect.objectContaining({
-                    'event.name': 'api_example_viewed',
-                    'api_example.scenario': 'term',
-                    'api_example.language': 'Python',
-                })
-            )
-            expect(watcher.unobserved).toEqual([visible])
-
-            // Initializing again after a swap must not watch the same carousel twice.
-            initApiExamples()
-            expect(watcher.observed).toHaveLength(2)
-        } finally {
-            window.IntersectionObserver = Original
         }
+        const observers: FakeObserver[] = []
+        vi.stubGlobal('IntersectionObserver', FakeObserver)
+        const report = (watcher: FakeObserver, target: Element, hit: boolean) =>
+            watcher.callback(
+                [{ isIntersecting: hit, target } as IntersectionObserverEntry],
+                watcher as unknown as IntersectionObserver
+            )
+
+        initApiExamples()
+        const watcher = observers.find((o) => o.options?.threshold === 0.5)!
+        const visible = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+        expect(watcher.observed.size).toBe(2)
+
+        report(watcher, visible, false)
+        expect(logInfo).not.toHaveBeenCalled()
+
+        report(watcher, visible, true)
+        expect(logInfo).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_viewed',
+            expect.objectContaining({
+                'event.name': 'api_example_viewed',
+                'api_example.scenario': 'term',
+                'api_example.language': 'Python',
+            })
+        )
+        expect(watcher.observed.has(visible)).toBe(false)
+
+        // Initializing again after a swap must not watch the same carousels twice.
+        initApiExamples()
+        expect(watcher.observed.size).toBe(1)
+        expect(
+            observers.filter((o) => o.options?.threshold === 0.5)
+        ).toHaveLength(1)
     })
 
     it('logs a scenario pick, and not the scenario restored from the link on load', () => {
