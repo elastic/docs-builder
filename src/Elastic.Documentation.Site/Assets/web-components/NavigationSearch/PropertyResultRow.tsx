@@ -1,7 +1,7 @@
 import { JumpToIndicator } from './JumpToIndicator'
 import {
     GO_TO_LABELS,
-    LOCATION_LABELS,
+    locationLabel,
     type ApiPropertyResult,
 } from './apiPropertyResults'
 import {
@@ -212,7 +212,7 @@ export const PropertyResultRow = ({
                         </bdi>
                     </code>
                     <span className="property-location">
-                        {LOCATION_LABELS[property.location]}
+                        {locationLabel(property.location)}
                     </span>
                 </span>
                 <span className="property-detail-line">

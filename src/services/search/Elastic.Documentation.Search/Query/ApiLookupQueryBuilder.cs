@@ -66,16 +66,17 @@ public static class ApiLookupQueryBuilder
 		return new BoolQuery
 		{
 			Must = [new BoolQuery { Should = clauses, MinimumShouldMatch = TokensMinimumShouldMatch }],
-			MustNot = [PageWithoutName(typed)],
+			MustNot = [PageWithoutName(typed, tokens)],
 			Should = Lifts(typed, tokens)
 		};
 	}
 
 	/// <summary>
 	/// An API's landing, group, type or topic page has no operation to explain a word, so it qualifies only when every typed word
-	/// names it through its title. Otherwise the words of its body would list it for queries about an operation.
+	/// names it through its title or, on a type page, through a field it lists. Otherwise the words of its body would list it for
+	/// queries about an operation.
 	/// </summary>
-	private static Query PageWithoutName(string typed) =>
+	private static Query PageWithoutName(string typed, IReadOnlyList<ApiLookupToken> tokens) =>
 		new BoolQuery
 		{
 			Filter =
@@ -86,8 +87,33 @@ public static class ApiLookupQueryBuilder
 					MinimumShouldMatch = 1
 				}
 			],
-			MustNot = [TitleQuery(typed)]
+			MustNot = [TitleQuery(typed), EveryWordNamesTitleOrField(tokens)]
 		};
+
+	private static readonly SearchQueryBuilder.PropertyLookup PageFieldLookup = new(AllowPrefix: true, ExpandChildren: false);
+
+	/// <summary>A typed route names no title or field, so a query with one never names a page this way.</summary>
+	private static Query EveryWordNamesTitleOrField(IReadOnlyList<ApiLookupToken> tokens) =>
+		tokens.Any(t => t.Kind != ApiLookupTokenKind.Plain)
+			? new MatchNoneQuery()
+			: new BoolQuery
+			{
+				Must =
+				[
+					.. tokens.Select(
+						t =>
+							(Query)new BoolQuery
+							{
+								Should =
+								[
+									TitleQuery(t.Text),
+									SearchQueryBuilder.BuildNestedPropertyQuery(t.Text, innerHitsName: null, PageFieldLookup)
+								],
+								MinimumShouldMatch = 1
+							}
+					)
+				]
+			};
 
 	private static Query LandingNamed(string typed) => new BoolQuery { Filter = [LandingTerm(), TitleQuery(typed)] };
 
