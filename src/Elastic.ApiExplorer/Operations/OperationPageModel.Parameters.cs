@@ -54,9 +54,20 @@ public partial record OperationPageModel
 			)
 			.ToArray();
 		return source.Builder.BuildParameterList(
-			rows,
+			location == ParameterLocation.Path ? InRouteOrder(rows, source.Endpoint) : rows,
 			new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), JsonPath = "", IsRequest = true }
 		);
+	}
+
+	/// <summary>
+	/// Path parameters in the order their placeholders appear in the longest route. The spec merges an operation's own
+	/// parameters before the path item's, so declaration order is not route order. A parameter the route lacks, such as the
+	/// Kibana space, sorts first.
+	/// </summary>
+	private static ParameterRowInput[] InRouteOrder(ParameterRowInput[] rows, OperationEndpoint endpoint)
+	{
+		var route = endpoint.Rows[0].Route;
+		return [.. rows.OrderBy(r => route.IndexOf($"{{{r.Parameter.Name}}}", StringComparison.Ordinal))];
 	}
 
 	/// <summary>

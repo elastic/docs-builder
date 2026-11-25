@@ -275,6 +275,43 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Create_PathParametersSplitBetweenPathItemAndOperation_ListInRouteOrder()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			]
+		};
+		var pathItem = new OpenApiPathItem
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "index",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			]
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/{index}/_doc/{id}", pathItem, "api");
+
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		// An operation's own parameters merge before the path item's, but the route reads index first.
+		page.PathParameterNames.Should().Equal("index", "id");
+	}
+
+	[Test]
 	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterAfterTheRequiredOnes()
 	{
 		var operation = new OpenApiOperation
