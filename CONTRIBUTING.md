@@ -89,7 +89,9 @@ Notes:
 - `es:index` passes `--no-semantic --no-ai-enrichment`. The semantic index gets the lexical mapping, so no inference model runs and a full index takes minutes. Search reads the same alias; natural-language queries lose their semantic boost.
 - The build needs `FEATURE_ASSEMBLER_API_EXPLORER=true`, or API results link to pages the build did not write. The Docker route sets it by default.
 - `es:serve` sets `DOCUMENTATION_ELASTIC_URL`, which overrides any URL in your user-secrets, and `DOCS_BUILD_TYPE=assembler`, so search reads the assembler's index.
-- Security is off and the cluster runs a trial licence, which the query rules need. `mise run es:stop` stops the cluster, and `./dev.sh clean` deletes its data.
+- Security is off and the cluster runs a trial licence, which the query rules need. The licence expires 30 days after the cluster's data volume is created; after that `es:index` fails to publish query rules. `mise run es:reset` deletes the cluster and its data only, then `es:up` and `es:index` start over.
+- `es:index` and `es:serve` blank `DOCUMENTATION_ELASTIC_APIKEY` and `DOCUMENTATION_ELASTIC_PASSWORD`, so cloud credentials from your user-secrets or shell never reach the local cluster. `es:serve` also blanks `DOCUMENTATION_ELASTIC_INDEX_OVERRIDE`.
+- `mise run es:stop` stops the cluster and keeps its data.
 
 ## Validate the fully assembled documentation
 

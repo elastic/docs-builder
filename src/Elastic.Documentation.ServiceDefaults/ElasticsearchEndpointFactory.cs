@@ -40,7 +40,14 @@ public static class ElasticsearchEndpointFactory
 			return new DocumentationEndpoints { Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") } };
 		}
 
-		var endpoint = new ElasticsearchEndpoint { Uri = new Uri(url), ApiKey = apiKey, Password = password, Username = username };
+		// An empty variable still wins over user-secrets, so `DOCUMENTATION_ELASTIC_APIKEY=` clears a saved cloud key.
+		var endpoint = new ElasticsearchEndpoint
+		{
+			Uri = new Uri(url),
+			ApiKey = string.IsNullOrEmpty(apiKey) ? null : apiKey,
+			Password = string.IsNullOrEmpty(password) ? null : password,
+			Username = username
+		};
 
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
 		IEnvironmentValidator environmentValidator = buildType == "codex"

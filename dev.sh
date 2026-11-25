@@ -66,11 +66,21 @@ _es_up() {
   _compose up -d elasticsearch
   local deadline=$((SECONDS + ${ES_WAIT_SECONDS:-120}))
   echo "Waiting for Elasticsearch at $ES_URL"
-  until curl -sf "$ES_URL/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null; do
+  until curl -sf --max-time 10 "$ES_URL/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null; do
     [ "$SECONDS" -lt "$deadline" ] || { echo "error: Elasticsearch did not start" >&2; exit 1; }
     sleep 2
   done
   echo "Elasticsearch ready at $ES_URL. Index the assembled docs with ./dev.sh es-index"
+}
+
+# Delete the cluster and its data only, for example when the 30-day trial licence
+# expires. `clean` would also drop the clones, build output and package caches.
+_es_reset() {
+  local project
+  project="$(_compose config --format json | sed -n 's/^  "name": "\(.*\)",$/\1/p' | head -1)"
+  _compose rm --stop --force elasticsearch
+  docker volume rm --force "${project}_es-data" >/dev/null
+  echo "Removed the local Elasticsearch and its data. Run ./dev.sh es-up to start a fresh one."
 }
 
 # Host ports, one per mode (see the table in docker-compose.yml).
@@ -124,6 +134,7 @@ case "${1:-help}" in
     echo "  es-up                    Start Elasticsearch at $ES_URL and wait until it answers"
     echo "  es-index                 Index the assembled docs, API pages included (run es-up and assembler-clone first)"
     echo "  es-stop                  Stop Elasticsearch"
+    echo "  es-reset                 Delete Elasticsearch and its data, for example after the trial licence expires"
     echo ""
     echo "  clean                    Stop containers and remove containers, networks, and volumes"
     ;;
@@ -230,6 +241,9 @@ case "${1:-help}" in
     ;;
   es-stop)
     _compose stop elasticsearch
+    ;;
+  es-reset)
+    _es_reset
     ;;
   clean)
     _compose down --remove-orphans --volumes
