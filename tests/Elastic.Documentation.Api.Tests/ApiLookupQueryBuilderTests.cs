@@ -21,20 +21,18 @@ public class ApiLookupQueryBuilderTests
 	private static JsonDocument Json(Query query) => JsonDocument.Parse(Client.RequestResponseSerializer.SerializeToString(query));
 
 	[Test]
-	public void Build_Words_KeepsLandingPagesOutUnlessEveryWordIsInTheirTitle()
+	public void Build_Words_KeepsLandingAndOtherPagesOutUnlessEveryWordIsInTheirTitle()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("kibana api"));
 
 		var mustNot = Clauses(json.RootElement.GetProperty("bool").GetProperty("must_not")).Single().GetProperty("bool");
-		Clauses(mustNot.GetProperty("filter"))
-			.Single()
-			.GetProperty("term")
-			.GetProperty("api.landing")
-			.GetProperty("value")
-			.GetBoolean()
+		Clauses(Clauses(mustNot.GetProperty("filter")).Single().GetProperty("bool").GetProperty("should"))
+			.Select(c => c.GetProperty("term").EnumerateObject().Single().Name)
 			.Should()
-			.BeTrue();
+			.Equal("api.landing", "api.page");
 		mustNot.GetProperty("must_not").GetProperty("multi_match").GetProperty("query").GetString().Should().Be("kibana api");
+		// Every word must be in the title; a word found only in the body leaves the page out.
+		mustNot.GetProperty("must_not").GetProperty("multi_match").GetProperty("operator").GetString().Should().Be("and");
 	}
 
 	[Test]

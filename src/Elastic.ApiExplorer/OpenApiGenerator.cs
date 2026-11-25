@@ -349,15 +349,32 @@ public class OpenApiGenerator(
 			var (item, page) = pages[i];
 			var pageContext = renderContext with { CurrentNavigation = item };
 			var markdown = await page.RenderCommonMarkAsync(pageContext, page.CreatePageModel(pageContext), token).ConfigureAwait(false);
-			if (!string.IsNullOrEmpty(markdown))
-				contents[i] = new ApiPageContent(
-					item.Url,
-					item.NavigationTitle,
-					ContentHash.CreateNormalized(RelativeToTree(markdown, root))
-				);
+			if (string.IsNullOrEmpty(markdown))
+				return;
+			var relative = RelativeToTree(markdown, root);
+			contents[i] = new ApiPageContent(
+				item.Url,
+				item.NavigationTitle,
+				ContentHash.CreateNormalized(relative),
+				IsSearchablePage(item) ? SearchOf(markdown, item, page, pageContext) : null
+			);
 		}).ConfigureAwait(false);
 
 		return [.. contents.OfType<ApiPageContent>()];
+	}
+
+	/// <summary>
+	/// Operations and the landing page get their search documents from the spec, and a page excluded from indexing, such as Servers,
+	/// stays out of search. Every other page is found by its own text.
+	/// </summary>
+	private static bool IsSearchablePage(INavigationItem item) =>
+		item is not (OperationNavigationItem or LandingNavigationItem) && !item.ExcludeFromIndexing;
+
+	private static ApiPageSearch SearchOf(string markdown, INavigationItem item, IApiModel page, ApiRenderContext context)
+	{
+		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
+		var meta = ApiMarkdownFrontMatter.Collect(body, item, context, page);
+		return new ApiPageSearch(meta.Title, meta.Description ?? "", body);
 	}
 
 	/// <summary>

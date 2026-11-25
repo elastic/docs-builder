@@ -47,12 +47,18 @@ internal static class ApiTreeCollapse
 	private static (bool IsDefault, int Recency) Rank(ApiTreeEntry tree, string defaultTree) =>
 		(tree.Tree == defaultTree, ApiVersions.Recency(tree.Tree));
 
-	/// <summary>Everything the index stores for the document except the URLs, which differ per tree by construction.</summary>
+	/// <summary>
+	/// Everything the index stores for the document except the URLs, which differ per tree by construction. A page's identity across
+	/// trees is its content hash and its path relative to the tree root: the same hash the sitemap dates the page by, so a page that
+	/// shares a search document also shares its <c>lastmod</c>. Its body, whose links point into its tree, counts through that hash.
+	/// </summary>
 	private static string Fingerprint(DocumentationDocument doc)
 	{
+		var root = doc.Api!.Trees[0].Root;
 		var withoutUrls = doc with
 		{
-			Path = "",
+			Path = doc.Path.StartsWith(root, StringComparison.Ordinal) ? doc.Path[root.Length..] : doc.Path,
+			Body = doc.Api.Page ? "" : doc.Body,
 			Parents = [.. doc.Parents.Select(static p => p with { Path = "" })],
 			Api = doc.Api! with { Trees = [] }
 		};
