@@ -105,16 +105,19 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			IndexSettings = new Dictionary<string, string> { ["index.default_pipeline"] = _contentDateEnrichment.PipelineName }
 		};
 
-		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(
-			type: _buildType,
-			env: endpoints.Environment
-		) with
+		var semanticContext = es.EnableSemantic
+			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: _buildType, env: endpoints.Environment)
+			: DocumentationMappingContext.DocumentationDocumentSemanticWithoutInference.CreateContext(
+				type: _buildType,
+				env: endpoints.Environment
+			);
+		_semanticTypeContext = semanticContext with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
 			IndexSettings = new Dictionary<string, string> { ["index.final_pipeline"] = _contentDateEnrichment.PipelineName }
 		};
 
-		if (es.EnableAiEnrichment)
+		if (es.EnableAiEnrichment && es.EnableSemantic)
 		{
 			_aiEnrichment = new AiEnrichmentOrchestrator(_transport, _semanticTypeContext);
 			var provider = _semanticTypeContext.AiEnrichmentProvider!;

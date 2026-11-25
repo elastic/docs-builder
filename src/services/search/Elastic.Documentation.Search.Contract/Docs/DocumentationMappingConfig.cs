@@ -17,6 +17,8 @@ namespace Elastic.Documentation.Search.Contract;
 [ElasticsearchMappingContext]
 [Index<DocumentationDocument>(NameTemplate = "docs-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(DocumentationLexicalConfig))]
 [Index<DocumentationDocument>(NameTemplate = "docs-{type}.semantic-{env}", Variant = "Semantic", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(DocumentationSemanticConfig))]
+// The semantic index names with the lexical mapping: `--no-semantic` writes it so no inference runs and search reads the same alias.
+[Index<DocumentationDocument>(NameTemplate = "docs-{type}.semantic-{env}", Variant = "SemanticWithoutInference", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(DocumentationLexicalConfig))]
 [AiEnrichment<DocumentationDocument>(Role = "Expert technical writer creating search metadata for Elastic documentation (Elasticsearch, Kibana, Beats, Logstash). Audience: developers, DevOps, data engineers.", MatchField = "url", IndexVariant = "Semantic")]
 public static partial class DocumentationMappingContext;
 

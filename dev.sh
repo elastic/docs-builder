@@ -60,24 +60,17 @@ CODEX_CONFIG="${CODEX_CONFIG:-config/codex.example.yml}"
 
 ES_URL="http://localhost:9200"
 
-# Start the local cluster and block until ELSER answers. On a fresh volume the
-# first inference call downloads and deploys the model, which takes minutes;
-# indexing before that loses the semantic batches sent while it warms up.
+# Start the local cluster and block until it answers. Local indexing passes
+# --no-semantic, so nothing waits for an inference model.
 _es_up() {
   _compose up -d elasticsearch
-  local deadline=$((SECONDS + ${ES_WAIT_SECONDS:-900}))
+  local deadline=$((SECONDS + ${ES_WAIT_SECONDS:-120}))
   echo "Waiting for Elasticsearch at $ES_URL"
   until curl -sf "$ES_URL/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null; do
     [ "$SECONDS" -lt "$deadline" ] || { echo "error: Elasticsearch did not start" >&2; exit 1; }
     sleep 2
   done
-  echo "Waiting for ELSER (.elser-2-elasticsearch); the first run downloads the model"
-  until curl -sf -X POST "$ES_URL/_inference/sparse_embedding/.elser-2-elasticsearch?timeout=60s" \
-      -H 'content-type: application/json' -d '{"input":"warm up"}' >/dev/null; do
-    [ "$SECONDS" -lt "$deadline" ] || { echo "error: ELSER not ready after ${ES_WAIT_SECONDS:-900}s" >&2; exit 1; }
-    sleep 5
-  done
-  echo "Elasticsearch and ELSER ready at $ES_URL. Index docs/ with ./dev.sh es-index"
+  echo "Elasticsearch ready at $ES_URL. Index the assembled docs with ./dev.sh es-index"
 }
 
 # Host ports, one per mode (see the table in docker-compose.yml).
@@ -128,8 +121,8 @@ case "${1:-help}" in
     echo "  serve-mcp-internal       Run the MCP server at http://localhost:8080 (internal profile)"
     echo "  serve-mcp-detached       Run the MCP server in the background"
     echo "  stop-mcp                 Stop the MCP server"
-    echo "  es-up                    Start Elasticsearch at $ES_URL and wait until ELSER is ready"
-    echo "  es-index                 Index docs/ into the local Elasticsearch (run es-up first)"
+    echo "  es-up                    Start Elasticsearch at $ES_URL and wait until it answers"
+    echo "  es-index                 Index the assembled docs, API pages included (run es-up and assembler-clone first)"
     echo "  es-stop                  Stop Elasticsearch"
     echo ""
     echo "  clean                    Stop containers and remove containers, networks, and volumes"
@@ -231,9 +224,9 @@ case "${1:-help}" in
     _es_up
     ;;
   es-index)
-    # The assembler service runs the CLI from source at the repo root; EIS and AI
-    # enrichment need Elastic Cloud, so the local cluster uses ELSER and skips them.
-    _cli assembler index --no-eis --no-ai-enrichment "${@:2}"
+    # Only assembler builds export API pages. --no-semantic writes the semantic index
+    # without inference fields, so no model runs on the local cluster.
+    _cli assembler assembler index --no-semantic --no-ai-enrichment "${@:2}"
     ;;
   es-stop)
     _compose stop elasticsearch

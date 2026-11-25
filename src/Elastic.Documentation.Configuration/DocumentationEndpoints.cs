@@ -67,6 +67,12 @@ public class ElasticsearchEndpoint
 	/// </summary>
 	public bool EnableAiEnrichment { get; set; } = true;
 
+	/// <summary>
+	/// Write <c>semantic_text</c> fields to the semantic index. When disabled the semantic index gets the lexical mapping,
+	/// so no inference runs; AI enrichment needs those fields and is skipped too.
+	/// </summary>
+	public bool EnableSemantic { get; set; } = true;
+
 	/// <summary>Maximum documents to enrich in the post-index AI batch per run. <see langword="null"/> uses the shared default (100).</summary>
 	public int? MaxAiDocs { get; set; }
 

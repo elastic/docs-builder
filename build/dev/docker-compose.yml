@@ -23,8 +23,6 @@ x-cli: &cli
     GIT_CONFIG_KEY_0: ${GIT_CONFIG_KEY_0:-}
     GIT_CONFIG_VALUE_0: ${GIT_CONFIG_VALUE_0:-}
     GIT_TERMINAL_PROMPT: "0"
-    # Search and `index` target the local cluster (`./dev.sh es-up`) unless overridden.
-    DOCUMENTATION_ELASTIC_URL: ${DOCUMENTATION_ELASTIC_URL:-http://elasticsearch:9200}
 
 services:
   # Run a one-shot CLI command, for example:
@@ -87,6 +85,11 @@ services:
   # two sites can run side by side.
   assembler:
     <<: *cli
+    environment:
+      <<: *cli-env
+      # Search and `assembler index` use the local cluster (`./dev.sh es-up`) unless overridden.
+      DOCUMENTATION_ELASTIC_URL: ${DOCUMENTATION_ELASTIC_URL:-http://elasticsearch:9200}
+      DOCS_BUILD_TYPE: assembler
     entrypoint: ["dotnet", "run", "--project", "src/tooling/docs-builder", "--configuration", "debug", "--"]
     ports:
       - "127.0.0.1:4000:4000"
@@ -136,16 +139,16 @@ services:
     volumes:
       - mcp-artifacts:/app/.artifacts
 
-  # Local Elasticsearch for `docs-builder index`. Start with `./dev.sh es-up`,
-  # which waits until ELSER is ready, then `./dev.sh es-index`.
-  # Security is off and the trial licence enables the ML node ELSER needs.
+  # Local Elasticsearch for the assembler's search. Start with `./dev.sh es-up`,
+  # then `./dev.sh es-index`. Security is off; indexing skips inference. The trial
+  # licence is for the query rules the indexer publishes, which basic rejects.
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
       xpack.license.self_generated.type: trial
-      ES_JAVA_OPTS: -Xms2g -Xmx2g
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
     ports:
       - "127.0.0.1:9200:9200"
     volumes:
