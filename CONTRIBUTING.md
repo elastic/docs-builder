@@ -70,23 +70,22 @@ Run `./dev.sh help` for the full list of commands. Docker files live under `buil
 
 ### Search against a local Elasticsearch
 
-Debug builds of `serve` answer the search box from Elasticsearch. To use a local cluster instead of a cloud one:
+Debug builds of `serve` answer the search box from Elasticsearch. To use a local cluster in Docker instead of a cloud one:
 
 ```bash
-./dev.sh es-up      # start Elasticsearch at http://localhost:9200 and wait until ELSER is ready
-./dev.sh es-index   # index docs/ (lexical and semantic)
+mise run es:up      # start Elasticsearch at http://localhost:9200 and wait until ELSER is ready
+mise run es:index   # index docs/ (lexical and semantic); extra args pass to docs-builder index
+mise run es:serve   # serve docs/ with search answered by the local cluster
 ```
 
-Then serve with either route:
-
-- Docker: `./dev.sh isolated-serve`. The compose services point at the local cluster by default.
-- Native: `DOCUMENTATION_ELASTIC_URL=http://localhost:9200 mise run serve`. The variable overrides any URL in your user-secrets.
+Without local installs, the same steps are `./dev.sh es-up`, `./dev.sh es-index` and `./dev.sh isolated-serve`. The compose services point at the local cluster by default.
 
 Notes:
 
-- The first `es-up` downloads the ELSER model, which takes several minutes. ELSER scales to zero when idle, so run `es-up` again before each index run: semantic batches sent while it warms up are rejected.
-- To index natively, run `docs-builder index --endpoint http://localhost:9200 --eis false --ai-enrichment false`. Both flags are required locally, because EIS and AI enrichment need Elastic Cloud.
-- Security is off and the cluster runs a trial licence. `./dev.sh es-stop` stops it, and `./dev.sh clean` deletes its data.
+- The first `es:up` downloads the ELSER model, which takes several minutes. ELSER scales to zero when idle, so run `es:up` again before each index run: semantic batches sent while it warms up are rejected.
+- `es:index` passes `--no-eis --no-ai-enrichment`, because EIS and AI enrichment need Elastic Cloud.
+- `es:serve` sets `DOCUMENTATION_ELASTIC_URL`, which overrides any URL in your user-secrets.
+- Security is off and the cluster runs a trial licence. `mise run es:stop` stops it, and `./dev.sh clean` deletes its data.
 
 ## Validate the fully assembled documentation
 

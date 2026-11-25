@@ -141,6 +141,29 @@ dotnet snap journey compare 'tests/Elastic.Documentation.Journeys.Tests/journeys
   ${feature_args[@]+"${feature_args[@]}"} ${extra[@]+"${extra[@]}"}
 '''
 
+# Local Elasticsearch for search. The cluster itself runs in Docker (build/dev/docker-compose.yml).
+
+[tasks."es:up"]
+description = "Start Elasticsearch at http://localhost:9200 in Docker and wait until ELSER is ready (minutes on the first run)"
+run = "./dev.sh es-up"
+
+[tasks."es:stop"]
+description = "Stop the local Elasticsearch"
+run = "./dev.sh es-stop"
+
+[tasks."es:index"]
+description = "Index docs/ into the local Elasticsearch (run es:up first). Extra args pass to docs-builder index, e.g. mise run es:index --force-reindex"
+usage = '''
+arg "[args]..." var=#true help="Passed to docs-builder index"
+'''
+# EIS and AI enrichment need Elastic Cloud, so the local cluster uses its own ELSER and skips them.
+run = 'eval "dotnet run --project src/tooling/docs-builder -- index --endpoint http://localhost:9200 --no-eis --no-ai-enrichment ${usage_args:-}"'
+
+[tasks."es:serve"]
+description = "Serve docs/ with live reload, with search answered by the local Elasticsearch"
+env = { DOCUMENTATION_ELASTIC_URL = "http://localhost:9200" }
+run = "mise run serve"
+
 [tasks."snap:status"]
 description = "List snapshots a test run left to review (received files). Exits 1 when there are any"
 usage = '''

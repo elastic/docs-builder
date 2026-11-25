@@ -233,7 +233,7 @@ case "${1:-help}" in
   es-index)
     # The assembler service runs the CLI from source at the repo root; EIS and AI
     # enrichment need Elastic Cloud, so the local cluster uses ELSER and skips them.
-    _cli assembler index --eis false --ai-enrichment false "${@:2}"
+    _cli assembler index --no-eis --no-ai-enrichment "${@:2}"
     ;;
   es-stop)
     _compose stop elasticsearch
