@@ -64,24 +64,34 @@ internal static class ApiMarkdownFrontMatter
 			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
 			page is ApiLanding ? CollectFacts(context) : null,
-			page is ApiOperation operation
-				? SpecResource(operation, context.CurrentNavigation.NavigationRoot.Url, context.BuildContext.CanonicalBaseUrl)
-				: null
+			SpecResource(page, context.CurrentNavigation.NavigationRoot.Url, context.BuildContext.CanonicalBaseUrl)
 		);
 	}
 
 	/// <summary>
-	/// Where an operation page comes from: the operation in its tree's published spec JSON, as a JSON pointer such as
-	/// <c>.../api/elasticsearch.json#/paths/~1_search/post</c>.
+	/// Where a page comes from in its tree's published spec JSON: the whole file for the API landing page, and a JSON pointer
+	/// for an operation (<c>.../api/elasticsearch.json#/paths/~1_search/post</c>) or a type
+	/// (<c>#/components/schemas/&lt;id&gt;</c>). Null for a page that is a view rather than a spec object, such as a group.
 	/// </summary>
-	internal static string? SpecResource(ApiOperation operation, string treeRootUrl, Uri? canonicalBaseUrl)
+	internal static string? SpecResource(IApiModel page, string treeRootUrl, Uri? canonicalBaseUrl)
 	{
-		var path = operation.Route.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal);
-		// A path item that is a $ref serializes as that reference and has no operation member, so the pointer stops at the path item.
-		var method = operation.Path is OpenApiPathItemReference ? "" : $"/{operation.OperationType.Method.ToLowerInvariant()}";
-		var spec = ApiOutputPaths.JsonUrl(treeRootUrl);
-		return UrlPath.MakeAbsolute(canonicalBaseUrl, $"{spec}#/paths/{Uri.EscapeDataString(path)}{method}");
+		var fragment = page switch
+		{
+			ApiOperation operation => $"#/paths/{PointerToken(operation.Route)}{OperationMember(operation)}",
+			ApiSchema schema => $"#/components/schemas/{PointerToken(schema.SchemaId)}",
+			ApiLanding => "",
+			_ => null
+		};
+		return fragment is null ? null : UrlPath.MakeAbsolute(canonicalBaseUrl, ApiOutputPaths.JsonUrl(treeRootUrl) + fragment);
 	}
+
+	/// <summary>A path item that is a $ref serializes as that reference and has no operation member, so the pointer stops at the path item.</summary>
+	private static string OperationMember(ApiOperation operation) =>
+		operation.Path is OpenApiPathItemReference ? "" : $"/{operation.OperationType.Method.ToLowerInvariant()}";
+
+	/// <summary>One JSON Pointer token (RFC 6901) in URI-fragment form: <c>~</c> and <c>/</c> escaped, then percent-encoded.</summary>
+	private static string PointerToken(string key) =>
+		Uri.EscapeDataString(key.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal));
 
 	private static ApiRailFacts CollectFacts(ApiRenderContext context)
 	{

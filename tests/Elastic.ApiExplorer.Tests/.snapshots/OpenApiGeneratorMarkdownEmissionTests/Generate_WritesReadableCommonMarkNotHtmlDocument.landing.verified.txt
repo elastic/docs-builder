@@ -3,7 +3,7 @@ type: api
 title: "Fixture API"
 description: "A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges..."
 url: /api/elasticsearch
-resource: /api/elasticsearch
+resource: /api/elasticsearch.json
 products:
   - elasticsearch
 version: "1.2.3"

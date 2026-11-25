@@ -5,7 +5,9 @@
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Types;
 using Microsoft.OpenApi;
 using Nullean.Snapshots;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
@@ -126,6 +128,22 @@ public class ApiMarkdownFrontMatterTests
 			.Should()
 			.Be("/api/elasticsearch.json#/paths/~1foo");
 	}
+
+	[Test]
+	[Arguments("_types.query_dsl:QueryContainer", "/api/elasticsearch.json#/components/schemas/_types.query_dsl%3AQueryContainer")]
+	[Arguments("a/b~c", "/api/elasticsearch.json#/components/schemas/a~1b~0c")]
+	public void SpecResource_TypePage_PointsAtItsComponentSchema(string schemaId, string expected) =>
+		ApiMarkdownFrontMatter
+			.SpecResource(new ApiSchema(schemaId, "Name", "Category", new OpenApiSchema()), "/api/elasticsearch", canonicalBaseUrl: null)
+			.Should()
+			.Be(expected);
+
+	[Test]
+	public void SpecResource_GroupPage_HasNoSpecObjectToPointAt() =>
+		ApiMarkdownFrontMatter
+			.SpecResource(new ApiTag("tag", "Tag", "", null, "endpoint-tag", []), "/api/elasticsearch", canonicalBaseUrl: null)
+			.Should()
+			.BeNull();
 
 	[Test]
 	public void Write_OmitsOptionalKeysWhenMissing()
