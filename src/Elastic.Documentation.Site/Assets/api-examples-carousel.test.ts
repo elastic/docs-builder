@@ -622,6 +622,14 @@ describe('API examples telemetry', () => {
         )
     })
 
+    it('does not log a click on the example that is already showing', () => {
+        initApiExamples()
+
+        click('.api-example-chip[data-scenario="term"]')
+
+        expect(logInfo).not.toHaveBeenCalled()
+    })
+
     it('names the visible scenario on a language pick inside it', () => {
         initApiExamples()
         click('.api-example-chip[data-scenario="slicing"]')

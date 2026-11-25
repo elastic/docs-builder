@@ -341,9 +341,11 @@ function fitChips(examples: HTMLElement) {
 }
 
 function selectScenario(examples: HTMLElement, scenarioId: string) {
-    logApiExampleEvent('api_example_scenario_selected', {
-        scenario: scenarioId,
-    })
+    // A click on the example that is already showing is not a switch.
+    if (scenarioId !== currentScenario(examples))
+        logApiExampleEvent('api_example_scenario_selected', {
+            scenario: scenarioId,
+        })
     showScenario(examples, scenarioId)
     applyPreferredLanguage(examples)
     writeDeepLink(
