@@ -312,6 +312,32 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void InRouteOrder_LongestRouteLacksAParameter_UsesTheRouteThatHasThemAll()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new("get", "/legacy/api/items/{id}"), new("get", "/items/{id}/{tenant}")],
+			specRoute: "/items/{id}/{tenant}"
+		);
+
+		ParameterRowInput Row(string name) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var ordered = OperationPageModel.InRouteOrder([Row("tenant"), Row("id")], endpoint);
+
+		// The alias has the most segments and leads the rows, but only the spec route holds both placeholders.
+		ordered.Select(r => r.Parameter.Name).Should().Equal("id", "tenant");
+	}
+
+	[Test]
 	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterAfterTheRequiredOnes()
 	{
 		var operation = new OpenApiOperation
