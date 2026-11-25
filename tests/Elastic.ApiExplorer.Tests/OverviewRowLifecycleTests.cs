@@ -79,7 +79,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<code class="api-group-route">
-				<wbr>[/{index}]<wbr>/_search</code>
+				<span class="api-route-segment">[/{index}]</span><span class="api-route-segment">/_search</span></code>
 			"""
 		);
 	}
@@ -104,7 +104,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<code class="api-group-route">
-				<wbr>/items<wbr>/by-owner<wbr>/{owner}</code>
+				<span class="api-route-segment">/items</span><span class="api-route-segment">/by-owner</span><span class="api-route-segment">/{owner}</span></code>
 			"""
 		);
 	}
