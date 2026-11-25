@@ -25,8 +25,17 @@ public static class ElasticsearchEndpointFactory
 		var configBuilder = new ConfigurationBuilder();
 		_ = configBuilder.AddUserSecrets(UserSecretsId);
 		_ = configBuilder.AddEnvironmentVariables();
-		var config = configBuilder.Build();
+		return FromConfiguration(configBuilder.Build(), appConfiguration, buildType, environment);
+	}
 
+	/// <summary>Reads <see cref="DocumentationEndpoints"/> from an already-layered configuration, later sources winning.</summary>
+	public static DocumentationEndpoints FromConfiguration(
+		IConfiguration config,
+		IConfiguration? appConfiguration = null,
+		string? buildType = null,
+		string? environment = null
+	)
+	{
 		var url = config["DOCUMENTATION_ELASTIC_URL"] ?? config["Parameters:ElasticsearchUrl"];
 
 		var apiKey = config["DOCUMENTATION_ELASTIC_APIKEY"] ?? config["Parameters:ElasticsearchApiKey"];
