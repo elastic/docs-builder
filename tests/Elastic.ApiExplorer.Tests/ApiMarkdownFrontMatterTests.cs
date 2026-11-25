@@ -2,9 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Operations;
+using Microsoft.OpenApi;
 using Nullean.Snapshots;
+using static Elastic.ApiExplorer.Tests.TestSpecs;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -90,6 +94,37 @@ public class ApiMarkdownFrontMatterTests
 			# Run a search
 			"""
 		);
+	}
+
+	[Test]
+	public async Task SpecResource_PathItemThatIsAReference_PointsAtThePathItemTheSpecPublishes()
+	{
+		var document = await LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": { "/foo": { "$ref": "#/components/pathItems/Foo" } },
+			  "components": {
+			    "pathItems": {
+			      "Foo": { "get": { "operationId": "foo-get", "responses": { "200": { "description": "ok" } } } }
+			    }
+			  }
+			}
+			"""
+		);
+		var pathItem = document.Paths["/foo"];
+		var operation = new ApiOperation(HttpMethod.Get, pathItem.Operations![HttpMethod.Get], "/foo", pathItem, "foo");
+		using var stream = new MemoryStream();
+		await document.SerializeAsJsonAsync(stream, OpenApiSpecVersion.OpenApi3_1, TestContext.Current!.Execution.CancellationToken);
+		var published = JsonNode.Parse(stream.ToArray())!["paths"]!["/foo"]!.AsObject();
+
+		published.ContainsKey("$ref").Should().BeTrue("the spec publishes the reference, which is why the pointer cannot name `get`");
+		published.ContainsKey("get").Should().BeFalse();
+		ApiMarkdownFrontMatter
+			.SpecResource(operation, "/api/elasticsearch", canonicalBaseUrl: null)
+			.Should()
+			.Be("/api/elasticsearch.json#/paths/~1foo");
 	}
 
 	[Test]

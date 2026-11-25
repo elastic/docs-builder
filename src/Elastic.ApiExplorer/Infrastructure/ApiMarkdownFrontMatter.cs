@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -63,7 +64,9 @@ internal static class ApiMarkdownFrontMatter
 			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
 			page is ApiLanding ? CollectFacts(context) : null,
-			page is ApiOperation operation ? SpecResource(operation, context) : null
+			page is ApiOperation operation
+				? SpecResource(operation, context.CurrentNavigation.NavigationRoot.Url, context.BuildContext.CanonicalBaseUrl)
+				: null
 		);
 	}
 
@@ -71,12 +74,13 @@ internal static class ApiMarkdownFrontMatter
 	/// Where an operation page comes from: the operation in its tree's published spec JSON, as a JSON pointer such as
 	/// <c>.../api/elasticsearch.json#/paths/~1_search/post</c>.
 	/// </summary>
-	private static string? SpecResource(ApiOperation operation, ApiRenderContext context)
+	internal static string? SpecResource(ApiOperation operation, string treeRootUrl, Uri? canonicalBaseUrl)
 	{
 		var path = operation.Route.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal);
-		var method = operation.OperationType.Method.ToLowerInvariant();
-		var spec = ApiOutputPaths.JsonUrl(context.CurrentNavigation.NavigationRoot.Url);
-		return UrlPath.MakeAbsolute(context.BuildContext.CanonicalBaseUrl, $"{spec}#/paths/{Uri.EscapeDataString(path)}/{method}");
+		// A path item that is a $ref serializes as that reference and has no operation member, so the pointer stops at the path item.
+		var method = operation.Path is OpenApiPathItemReference ? "" : $"/{operation.OperationType.Method.ToLowerInvariant()}";
+		var spec = ApiOutputPaths.JsonUrl(treeRootUrl);
+		return UrlPath.MakeAbsolute(canonicalBaseUrl, $"{spec}#/paths/{Uri.EscapeDataString(path)}{method}");
 	}
 
 	private static ApiRailFacts CollectFacts(ApiRenderContext context)
