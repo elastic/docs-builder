@@ -60,14 +60,15 @@ public partial record OperationPageModel
 	}
 
 	/// <summary>
-	/// Path parameters in the order their placeholders appear in the route that holds the most of them, the leading route
-	/// when several tie. The spec merges an operation's own parameters before the path item's, so declaration order is not
-	/// route order, and a longer alias route can lack a parameter. A parameter no route holds, such as the Kibana space, sorts first.
+	/// Path parameters in the order their placeholders appear in the route that holds the most required ones, the leading route
+	/// when several tie. The spec merges an operation's own parameters before the path item's, so declaration order is not route
+	/// order, and a longer alias route can lack a parameter. Only required parameters pick the route, so the optional Kibana
+	/// space parameter cannot make a space variant outrank the leading route. A parameter no route holds sorts first.
 	/// </summary>
 	internal static ParameterRowInput[] InRouteOrder(ParameterRowInput[] rows, OperationEndpoint endpoint)
 	{
-		var placeholders = rows.Select(static r => $"{{{r.Parameter.Name}}}").ToArray();
-		var route = endpoint.Rows.Select(static r => r.Route).MaxBy(r => placeholders.Count(p => r.Contains(p, StringComparison.Ordinal)))!;
+		var required = rows.Where(static r => r.IsRequired).Select(static r => $"{{{r.Parameter.Name}}}").ToArray();
+		var route = endpoint.Rows.Select(static r => r.Route).MaxBy(r => required.Count(p => r.Contains(p, StringComparison.Ordinal)))!;
 		return [.. rows.OrderBy(r => route.IndexOf($"{{{r.Parameter.Name}}}", StringComparison.Ordinal))];
 	}
 

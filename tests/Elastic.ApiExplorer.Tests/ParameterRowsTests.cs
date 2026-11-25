@@ -338,6 +338,32 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void InRouteOrder_SpaceVariantOfAReorderedAlias_KeepsTheLeadingRoutesOrder()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new("get", "/{project}/{id}"), new("get", "/{id}/{project}"), new("get", "/s/{space_id}/{id}/{project}")],
+			specRoute: "/{project}/{id}"
+		);
+
+		ParameterRowInput Row(string name, bool required) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Path,
+					Required = required,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var ordered = OperationPageModel.InRouteOrder([Row("id", true), Row("space_id", false), Row("project", true)], endpoint);
+
+		// The space variant holds the most placeholders, but the optional space parameter must not pick the route.
+		ordered.Where(r => r.IsRequired).Select(r => r.Parameter.Name).Should().Equal("project", "id");
+	}
+
+	[Test]
 	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterAfterTheRequiredOnes()
 	{
 		var operation = new OpenApiOperation
