@@ -411,9 +411,14 @@ function createViewObserver(): IntersectionObserver | undefined {
     return new IntersectionObserver(
         (entries, observer) => {
             for (const entry of entries) {
+                const carousel = entry.target as HTMLElement
+                // A navigation can swap the carousel out before this runs, and the location is already the next page's.
+                if (!carousel.isConnected) {
+                    observer.unobserve(carousel)
+                    continue
+                }
                 // The observer also reports a sliver, when it starts watching and on any threshold it crosses.
                 if (entry.intersectionRatio < 0.5) continue
-                const carousel = entry.target as HTMLElement
                 logApiExampleEvent('api_example_viewed', {
                     language: activeLanguage(carousel),
                     scenario: scenarioOf(carousel),

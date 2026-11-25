@@ -618,6 +618,20 @@ describe('API examples telemetry', () => {
         expect(viewWatcher().observed.size).toBe(1)
     })
 
+    it('drops a view reported for a carousel a navigation already removed', () => {
+        const { viewWatcher, report } = stubIntersectionObserver()
+        initApiExamples()
+        const gone = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+        gone.remove()
+
+        report(gone, 1)
+
+        expect(logInfo).not.toHaveBeenCalled()
+        expect(viewWatcher().observed.has(gone)).toBe(false)
+    })
+
     it('waits for half of the carousel: a sliver reported on the way in is not a view', () => {
         const { viewWatcher, report } = stubIntersectionObserver()
         initApiExamples()
