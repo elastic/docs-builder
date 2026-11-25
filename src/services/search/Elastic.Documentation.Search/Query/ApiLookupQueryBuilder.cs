@@ -90,6 +90,8 @@ public static class ApiLookupQueryBuilder
 			MustNot = [TitleQuery(typed), EveryWordNamesTitleOrField(tokens)]
 		};
 
+	private static readonly SearchQueryBuilder.PropertyLookup PageFieldLookup = new(AllowPrefix: true, ExpandChildren: false);
+
 	/// <summary>A typed route names no title or field, so a query with one never names a page this way.</summary>
 	private static Query EveryWordNamesTitleOrField(IReadOnlyList<ApiLookupToken> tokens) =>
 		tokens.Any(t => t.Kind != ApiLookupTokenKind.Plain)
@@ -102,7 +104,11 @@ public static class ApiLookupQueryBuilder
 						t =>
 							(Query)new BoolQuery
 							{
-								Should = [TitleQuery(t.Text), SearchQueryBuilder.BuildPropertyNamedQuery(t.Text)],
+								Should =
+								[
+									TitleQuery(t.Text),
+									SearchQueryBuilder.BuildNestedPropertyQuery(t.Text, innerHitsName: null, PageFieldLookup)
+								],
 								MinimumShouldMatch = 1
 							}
 					)

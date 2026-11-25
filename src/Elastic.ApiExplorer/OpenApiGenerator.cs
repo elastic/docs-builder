@@ -380,7 +380,7 @@ public class OpenApiGenerator(
 	{
 		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
 		var meta = ApiMarkdownFrontMatter.Collect(body, item, context, page);
-		return new ApiPageSearch(meta.Title, meta.Description ?? "", body, []);
+		return new ApiPageSearch(meta.Title, meta.Description ?? "", body);
 	}
 
 	/// <summary>

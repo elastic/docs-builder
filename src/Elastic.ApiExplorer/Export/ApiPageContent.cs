@@ -16,4 +16,7 @@ public sealed record ApiPageContent(string Url, string Title, string ContentHash
 /// What search reads of a page: the plain-text title and description of its front matter, and its Markdown export as readers get it.
 /// The indexer turns the Markdown into plain text. <paramref name="Properties"/> are the fields a type page lists, found as an operation's are.
 /// </summary>
-public sealed record ApiPageSearch(string Title, string Description, string Markdown, ApiPropertyEntry[] Properties);
+public sealed record ApiPageSearch(string Title, string Description, string Markdown)
+{
+	public ApiPropertyEntry[] Properties { get; init; } = [];
+}

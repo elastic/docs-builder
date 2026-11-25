@@ -93,7 +93,7 @@ public record SchemaPageModel
 
 	/// <summary>The rows the page lists, its fields then its variants, as search documents with the anchors the page renders.</summary>
 	internal ApiPropertyEntry[] IndexEntries() =>
-		[.. ApiPropertyIndex.Entries(ApiPropertyIndex.Flatten(Properties).Concat(ApiPropertyIndex.Flatten(UnionVariants)), "field", [])];
+		[.. ApiPropertyIndex.Entries(ApiPropertyIndex.Flatten(Properties, UnionVariants), "field", [])];
 
 	/// <summary>
 	/// "This type can be one of the following:", or for an array of a union the body label, "An array; each item is one of:",
