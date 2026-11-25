@@ -1,0 +1,95 @@
+name: team-review
+
+# Sets the required `team-review` commit status:
+#   - PRs opened by a docs-engineering member (or dependabot) pass.
+#   - Any other PR passes once a docs-engineering member approved its current head commit.
+# This replaces the ruleset's code-owner review, which a GitHub App approval (Libra) cannot satisfy.
+# Neither trigger checks out PR code.
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_run:
+    workflows: [Team review trigger]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: team-review-${{ github.event.pull_request.number || github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+env:
+  TEAM_ORG: elastic
+  TEAM_SLUG: docs-engineering
+
+jobs:
+  evaluate:
+    if: github.event_name == 'pull_request_target' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Download the PR number
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-number
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get team-read token
+        id: get_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.OBS_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.OBS_AUTOMATION_APP_PEM }}
+          owner: ${{ env.TEAM_ORG }}
+          permission-members: read
+
+      - name: Set team-review status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAM_TOKEN: ${{ steps.get_token.outputs.token }}
+          REPO: ${{ github.repository }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          pr_number="${EVENT_PR_NUMBER:-$(cat pr-number)}"
+          [[ "$pr_number" =~ ^[0-9]+$ ]] || { echo "bad PR number: $pr_number"; exit 1; }
+
+          read -r author head_sha < <(gh api "repos/$REPO/pulls/$pr_number" --jq '[.user.login, .head.sha] | @tsv')
+
+          team=$(GH_TOKEN="$TEAM_TOKEN" gh api --paginate "orgs/$TEAM_ORG/teams/$TEAM_SLUG/members" --jq '.[].login')
+          is_member() { grep -qxF -- "$1" <<<"$team"; }
+
+          state=failure
+          description="Needs an approval from @$TEAM_ORG/$TEAM_SLUG"
+
+          # dependabot's merge is gated by dependabot-auto-merge.yml.
+          if [[ "$author" == "dependabot[bot]" ]] || is_member "$author"; then
+            state=success
+            description="Opened by a trusted author"
+          else
+            # Latest review per reviewer, on the current head commit, that approves.
+            approvers=$(gh api --paginate "repos/$REPO/pulls/$pr_number/reviews" \
+              --jq '.[] | select(.state != "COMMENTED") | [.user.login, .state, .commit_id] | @tsv' \
+              | awk -F'\t' -v sha="$head_sha" '{ latest[$1] = ($2 == "APPROVED" && $3 == sha) } END { for (u in latest) if (latest[u]) print u }')
+            for user in $approvers; do
+              if is_member "$user"; then
+                state=success
+                description="Approved by @$user"
+                break
+              fi
+            done
+          fi
+
+          gh api -X POST "repos/$REPO/statuses/$head_sha" \
+            -f state="$state" -f context=team-review -f description="$description"
+          echo "PR #$pr_number: $state ($description)"
