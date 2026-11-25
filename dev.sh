@@ -58,7 +58,7 @@ _cli_serve() {
 
 CODEX_CONFIG="${CODEX_CONFIG:-config/codex.example.yml}"
 
-ES_URL="http://localhost:9200"
+ES_URL="${ES_URL:-http://localhost:9200}"
 
 # Start the local cluster and block until it answers. Local indexing passes
 # --no-semantic, so nothing waits for an inference model.
@@ -70,7 +70,22 @@ _es_up() {
     [ "$SECONDS" -lt "$deadline" ] || { echo "error: Elasticsearch did not start" >&2; exit 1; }
     sleep 2
   done
+  _es_licence_check
   echo "Elasticsearch ready at $ES_URL. Index the assembled docs with ./dev.sh es-index"
+}
+
+# Search wraps every query in a query rule, which needs a trial (or higher) licence.
+# The trial ends 30 days after the volume is created; a reset starts a new one.
+_es_licence_check() {
+  local licence field
+  licence="$(curl -sf --max-time 10 "$ES_URL/_license")" || { echo "error: could not read the licence from $ES_URL" >&2; exit 1; }
+  field() { printf '%s' "$licence" | sed -n "s/.*\"$1\" : \"\([^\"]*\)\".*/\1/p" | head -1; }
+  if [ "$(field status)" != "active" ] || [ "$(field type)" = "basic" ]; then
+    echo "error: the local Elasticsearch licence is $(field type) ($(field status)). Query rules, and with them search, need a trial." >&2
+    echo "Run ./dev.sh es-reset (mise run es:reset) to start a fresh cluster with a new 30-day trial, then index again." >&2
+    exit 1
+  fi
+  echo "Licence: $(field type), active until $(field expiry_date)"
 }
 
 # Delete the cluster and its data only, for example when the 30-day trial licence
