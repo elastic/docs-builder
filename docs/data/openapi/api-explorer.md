@@ -12,7 +12,7 @@ The assembler also writes a combined **Elastic APIs** page at `/docs/api/`, on i
 
 Under the line of text sits the same box as in the API sidebar, labelled **Type ❲/❳ to explore API**. It explores operations across every API, so you can jump to an endpoint without knowing which product it belongs to. Type <kbd>/</kbd> or <kbd>s</kbd> anywhere on the page, outside a text field, to jump to it. Like the sidebar box, it is omitted on isolated and air-gapped builds.
 
-Each card's description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export. The front matter of an operation's `.md` rendering sets `resource` to the operation in that tree's JSON spec (a JSON pointer such as `.../elasticsearch.json#/paths/~1_search/post`), so a reader or an LLM can fetch the exact schema when the prose is not enough.
+Each card's description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export. The front matter of an operation's `.md` rendering sets `resource` to the operation in that tree's JSON spec (a JSON pointer such as `.../elasticsearch.json#/paths/~1_search/post`), so a reader or an LLM can fetch the exact schema when the prose is not enough. A plain fetch of that URL, or a browser, returns the whole spec file, because only a JSON-Pointer-aware client acts on the fragment; anyone else finds the operation at that path in the file.
 
 The API title comes from `info.title` in the spec, so fix naming and description copy in the spec.
 
