@@ -5,6 +5,9 @@ import {
     syncDescriptions,
     syncStripHeight,
 } from './api-examples-carousel'
+import { logInfo } from './telemetry/logging'
+
+vi.mock('./telemetry/logging', () => ({ logInfo: vi.fn() }))
 
 // Java is the only long sample: 20 lines, past the 16-line cap.
 function source(lang: string): string {
@@ -515,6 +518,224 @@ describe('API examples carousel', () => {
 
         expect(description.classList.contains('is-open')).toBe(false)
         expect(toggle.textContent).toBe('Show more')
+    })
+})
+
+describe('API examples telemetry', () => {
+    beforeEach(() => {
+        window.localStorage.clear()
+        window.history.replaceState(null, '', '#')
+        document.body.innerHTML = markup()
+        vi.mocked(logInfo).mockClear()
+    })
+
+    it('logs the language of a pick, and nothing for the language applied on load', () => {
+        window.localStorage.setItem(apiLanguageStorageKey, 'Python')
+        initApiExamples()
+        expect(logInfo).not.toHaveBeenCalled()
+
+        click('[data-scenario="term"] [data-carousel-dot="Java"]')
+
+        expect(logInfo).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_language_selected',
+            expect.objectContaining({
+                'event.name': 'api_example_language_selected',
+                'api_example.language': 'Java',
+                'api_example.scenario': 'term',
+            })
+        )
+    })
+
+    it('logs a view once per example when it is half visible, with its scenario and the saved language', () => {
+        window.localStorage.setItem(apiLanguageStorageKey, 'Python')
+        type Entry = Partial<IntersectionObserverEntry>
+        const observers: {
+            callback: (entries: Entry[], observer: unknown) => void
+            options?: IntersectionObserverInit
+            observed: Element[]
+            unobserved: Element[]
+        }[] = []
+        const Original = window.IntersectionObserver
+        window.IntersectionObserver = class {
+            record = {
+                callback: undefined as never,
+                options: undefined as IntersectionObserverInit | undefined,
+                observed: [] as Element[],
+                unobserved: [] as Element[],
+            }
+            constructor(callback: never, options?: IntersectionObserverInit) {
+                this.record.callback = callback
+                this.record.options = options
+                observers.push(this.record)
+            }
+            observe(element: Element) {
+                this.record.observed.push(element)
+            }
+            unobserve(element: Element) {
+                this.record.unobserved.push(element)
+            }
+            disconnect() {}
+        } as unknown as typeof IntersectionObserver
+        try {
+            initApiExamples()
+            const watcher = observers.find((o) => o.options?.threshold === 0.5)!
+            const visible = document.querySelector<HTMLElement>(
+                '[data-scenario="term"] [data-api-carousel]'
+            )!
+            expect(watcher.observed).toHaveLength(2)
+
+            watcher.callback([{ isIntersecting: false, target: visible }], {
+                unobserve: () => {},
+            })
+            expect(logInfo).not.toHaveBeenCalled()
+
+            watcher.callback([{ isIntersecting: true, target: visible }], {
+                unobserve: (e: Element) => watcher.unobserved.push(e),
+            })
+            expect(logInfo).toHaveBeenCalledTimes(1)
+            expect(logInfo).toHaveBeenCalledWith(
+                'api_example_viewed',
+                expect.objectContaining({
+                    'event.name': 'api_example_viewed',
+                    'api_example.scenario': 'term',
+                    'api_example.language': 'Python',
+                })
+            )
+            expect(watcher.unobserved).toEqual([visible])
+
+            // Initializing again after a swap must not watch the same carousel twice.
+            initApiExamples()
+            expect(watcher.observed).toHaveLength(2)
+        } finally {
+            window.IntersectionObserver = Original
+        }
+    })
+
+    it('logs a scenario pick, and not the scenario restored from the link on load', () => {
+        window.history.replaceState(null, '', '#example=slicing')
+        initApiExamples()
+        expect(logInfo).not.toHaveBeenCalled()
+
+        click('.api-example-chip[data-scenario="term"]')
+
+        expect(logInfo).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_scenario_selected',
+            expect.objectContaining({
+                'event.name': 'api_example_scenario_selected',
+                'api_example.scenario': 'term',
+            })
+        )
+    })
+
+    it('names the visible scenario on a language pick inside it', () => {
+        initApiExamples()
+        click('.api-example-chip[data-scenario="slicing"]')
+        vi.mocked(logInfo).mockClear()
+
+        click('[data-scenario="slicing"] [data-carousel-dot="curl"]')
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_language_selected',
+            expect.objectContaining({ 'api_example.scenario': 'slicing' })
+        )
+    })
+
+    it('logs a copy from a request card with its language and example', () => {
+        initApiExamples()
+        const button = document.createElement('button')
+        button.className = 'copybtn'
+        document
+            .querySelector(
+                '[data-scenario="term"] [data-lang="curl"] [data-code-actions]'
+            )!
+            .append(button)
+
+        button.click()
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.objectContaining({
+                'api_example.language': 'curl',
+                'api_example.scenario': 'term',
+            })
+        )
+    })
+
+    it('logs a copy from a response card with its example and no language', () => {
+        initApiExamples()
+        const button = document.createElement('button')
+        button.className = 'copybtn'
+        document
+            .querySelector('.example-block--response [data-code-actions]')!
+            .append(button)
+
+        button.click()
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.objectContaining({ 'api_example.scenario': 'term' })
+        )
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.not.objectContaining({
+                'api_example.language': expect.anything(),
+            })
+        )
+    })
+
+    it('logs opening the preview, with the language only for language cards', () => {
+        initApiExamples()
+        const open = (selector: string) => {
+            document.querySelector<HTMLElement>(selector)!.click()
+            document
+                .querySelector('dialog.api-code-preview')
+                ?.dispatchEvent(new Event('close'))
+        }
+
+        open('[data-scenario="term"] .is-active [data-code-preview]')
+        expect(logInfo).toHaveBeenLastCalledWith(
+            'api_example_preview_opened',
+            expect.objectContaining({
+                'api_example.language': 'Console',
+                'api_example.scenario': 'term',
+            })
+        )
+
+        open('.example-block--response [data-code-preview]')
+        expect(logInfo).toHaveBeenLastCalledWith(
+            'api_example_preview_opened',
+            expect.not.objectContaining({
+                'api_example.language': expect.anything(),
+            })
+        )
+    })
+
+    it('logs a copy from the preview with the card language', () => {
+        Object.defineProperty(navigator, 'clipboard', {
+            value: undefined,
+            configurable: true,
+        })
+        initApiExamples()
+        document
+            .querySelector<HTMLElement>(
+                '[data-scenario="term"] .is-active [data-code-preview]'
+            )!
+            .click()
+        document
+            .querySelector<HTMLElement>(
+                'dialog.api-code-preview [aria-label="Copy code"]'
+            )!
+            .click()
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.objectContaining({ 'api_example.language': 'Console' })
+        )
+        document
+            .querySelector('dialog.api-code-preview')!
+            .dispatchEvent(new Event('close'))
     })
 })
 

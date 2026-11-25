@@ -106,6 +106,8 @@
       "render.time_ms",
       "user.action",
       "ask_ai.feedback.reaction",
+      "api_example.language",
+      "api_example.scenario",
       "ask_ai.message.id",
       "cta.label",
       "cta.location",

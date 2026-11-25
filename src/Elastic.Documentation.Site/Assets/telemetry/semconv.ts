@@ -263,3 +263,19 @@ export const ATTR_EVENT_NAME = 'event.name'
  * @example "ui"
  */
 export const ATTR_EVENT_CATEGORY = 'event.category'
+
+// ============================================================================
+// API EXAMPLES ATTRIBUTES (Custom)
+// ============================================================================
+
+/**
+ * Language of the API code example a reader picked or copied
+ * @example "curl"
+ */
+export const ATTR_API_EXAMPLE_LANGUAGE = 'api_example.language'
+
+/**
+ * Id of the example scenario (the chip) on an API operation page. Pair it with url.path to name one example.
+ * @example "term-search"
+ */
+export const ATTR_API_EXAMPLE_SCENARIO = 'api_example.scenario'
