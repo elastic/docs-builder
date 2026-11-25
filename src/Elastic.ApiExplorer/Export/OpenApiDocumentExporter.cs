@@ -109,7 +109,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				new ParentDocument { Title = "API", Path = "/docs/api" },
 				new ParentDocument { Title = ProductApiLabel(tree.ApiKey), Path = dated.Api!.Trees[0].Root }
 			],
-			Api = dated.Api with { SitemapOnly = false, Page = true },
+			Api = dated.Api with { SitemapOnly = false, Page = true, Properties = search.Properties },
 			Product = inference?.Product?.Id,
 			RelatedProducts = IndexedRelatedProducts(inference)
 		};

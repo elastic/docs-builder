@@ -5,6 +5,9 @@ import {
     syncDescriptions,
     syncStripHeight,
 } from './api-examples-carousel'
+import { logInfo } from './telemetry/logging'
+
+vi.mock('./telemetry/logging', () => ({ logInfo: vi.fn() }))
 
 // Java is the only long sample: 20 lines, past the 16-line cap.
 function source(lang: string): string {
@@ -515,6 +518,384 @@ describe('API examples carousel', () => {
 
         expect(description.classList.contains('is-open')).toBe(false)
         expect(toggle.textContent).toBe('Show more')
+    })
+})
+
+/** Replaces IntersectionObserver with one that records what it watches, so a test can report visibility. */
+function stubIntersectionObserver() {
+    class FakeObserver {
+        observed = new Set<Element>()
+        constructor(
+            public callback: IntersectionObserverCallback,
+            public options?: IntersectionObserverInit
+        ) {
+            observers.push(this)
+        }
+        observe(element: Element) {
+            this.observed.add(element)
+        }
+        unobserve(element: Element) {
+            this.observed.delete(element)
+        }
+        disconnect() {}
+    }
+    const observers: FakeObserver[] = []
+    vi.stubGlobal('IntersectionObserver', FakeObserver)
+    // The observer that counts views: the carousel strips watch with their own thresholds.
+    const viewWatcher = () =>
+        observers.find((o) => o.options?.threshold === 0.5)!
+    // `entries` entries for one target arrive in one batch, like a fast scroll across several thresholds.
+    const report = (
+        target: Element,
+        intersectionRatio: number,
+        entries = 1
+    ) => {
+        const watcher = viewWatcher()
+        const entry = {
+            isIntersecting: intersectionRatio > 0,
+            intersectionRatio,
+            target,
+        } as IntersectionObserverEntry
+        watcher.callback(
+            Array.from({ length: entries }, () => entry),
+            watcher as unknown as IntersectionObserver
+        )
+    }
+    // The observer that follows swipes on one carousel's strip: it watches that carousel's cards.
+    const stripWatcher = (carousel: Element) =>
+        observers.find(
+            (o) =>
+                Array.isArray(o.options?.threshold) &&
+                [...o.observed].some((card) => carousel.contains(card))
+        )!
+    return { viewWatcher, stripWatcher, report }
+}
+
+const operationPath = '/docs/api/elasticsearch/operation/operation-search'
+
+describe('API examples telemetry', () => {
+    beforeEach(() => {
+        window.localStorage.clear()
+        // A real operation URL with a fragment: url.path must be the path alone, since scenario ids repeat across operations.
+        window.history.replaceState(null, '', `${operationPath}#top`)
+        document.body.innerHTML = markup()
+        vi.mocked(logInfo).mockClear()
+    })
+
+    afterEach(() => {
+        vi.unstubAllGlobals()
+        window.history.replaceState(null, '', '/')
+    })
+
+    it('logs the language of a pick, and nothing for the language applied on load', () => {
+        window.localStorage.setItem(apiLanguageStorageKey, 'Python')
+        initApiExamples()
+        expect(logInfo).not.toHaveBeenCalled()
+
+        click('[data-scenario="term"] [data-carousel-dot="Java"]')
+
+        expect(logInfo).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_language_selected',
+            expect.objectContaining({
+                'event.name': 'api_example_language_selected',
+                'api_example.language': 'Java',
+                'api_example.scenario': 'term',
+                'url.path': operationPath,
+            })
+        )
+    })
+
+    it('logs a view once per example when it is half visible, with its scenario and the saved language', () => {
+        window.localStorage.setItem(apiLanguageStorageKey, 'Python')
+        const { viewWatcher, report } = stubIntersectionObserver()
+
+        initApiExamples()
+        const visible = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+        expect(viewWatcher().observed.size).toBe(2)
+
+        report(visible, 0)
+        expect(logInfo).not.toHaveBeenCalled()
+
+        report(visible, 1)
+        expect(logInfo).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_viewed',
+            expect.objectContaining({
+                'event.name': 'api_example_viewed',
+                'api_example.scenario': 'term',
+                'url.path': operationPath,
+                'api_example.language': 'Python',
+            })
+        )
+        expect(viewWatcher().observed.has(visible)).toBe(false)
+
+        // Initializing again after a swap must not watch the same carousels twice.
+        initApiExamples()
+        expect(viewWatcher().observed.size).toBe(1)
+    })
+
+    it('counts an example without code samples by its first card once it is opened, with no language', () => {
+        document.querySelector('[data-api-examples]')!.insertAdjacentHTML(
+            'beforeend',
+            `<button class="api-example-chip" data-scenario="response-only"><span class="api-example-chip-title">Response only</span></button>
+            <div class="api-examples-scenario-panel" data-scenario="response-only" hidden="until-found">
+                <div class="api-code-card" data-code-card id="only-response"><span data-code-actions></span><pre><code>{}</code></pre></div>
+            </div>`
+        )
+        const { viewWatcher, report } = stubIntersectionObserver()
+        initApiExamples()
+        const card = document.getElementById('only-response')!
+        const panel = card.closest<HTMLElement>('[data-scenario]')!
+        expect(viewWatcher().observed.has(card)).toBe(true)
+
+        // Hidden, the card does not intersect: nothing is counted yet.
+        expect(panel.getAttribute('hidden')).toBe('until-found')
+        report(card, 0)
+        expect(logInfo).not.toHaveBeenCalled()
+
+        click('.api-example-chip[data-scenario="response-only"]')
+        expect(panel.hasAttribute('hidden')).toBe(false)
+        vi.mocked(logInfo).mockClear()
+        report(card, 1)
+
+        expect(logInfo).toHaveBeenCalledTimes(1)
+        const attributes = vi.mocked(logInfo).mock.calls[0][1]
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_viewed',
+            expect.objectContaining({
+                'api_example.scenario': 'response-only',
+                'url.path': operationPath,
+            })
+        )
+        expect(attributes).not.toHaveProperty('api_example.language')
+    })
+
+    it('counts a carousel once when one batch holds two qualifying entries for it', () => {
+        const { report } = stubIntersectionObserver()
+        initApiExamples()
+        const visible = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+
+        report(visible, 1, 2)
+
+        expect(logInfo).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops a view reported for a carousel a navigation already removed', () => {
+        const { viewWatcher, report } = stubIntersectionObserver()
+        initApiExamples()
+        const gone = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+        gone.remove()
+
+        report(gone, 1)
+
+        expect(logInfo).not.toHaveBeenCalled()
+        expect(viewWatcher().observed.has(gone)).toBe(false)
+    })
+
+    it('waits for half of the carousel: a sliver reported on the way in is not a view', () => {
+        const { viewWatcher, report } = stubIntersectionObserver()
+        initApiExamples()
+        const visible = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+
+        report(visible, 0.2)
+
+        expect(logInfo).not.toHaveBeenCalled()
+        expect(viewWatcher().observed.has(visible)).toBe(true)
+    })
+
+    it('logs a scenario pick, and not the scenario restored from the link on load', () => {
+        window.history.replaceState(null, '', '#example=slicing')
+        initApiExamples()
+        expect(logInfo).not.toHaveBeenCalled()
+
+        click('.api-example-chip[data-scenario="term"]')
+
+        expect(logInfo).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_scenario_selected',
+            expect.objectContaining({
+                'event.name': 'api_example_scenario_selected',
+                'api_example.scenario': 'term',
+                'url.path': operationPath,
+            })
+        )
+    })
+
+    it('does not log a click on the example that is already showing', () => {
+        initApiExamples()
+
+        click('.api-example-chip[data-scenario="term"]')
+
+        expect(logInfo).not.toHaveBeenCalled()
+    })
+
+    it('ignores a swipe reported by a carousel that is no longer showing', () => {
+        const { stripWatcher } = stubIntersectionObserver()
+        initApiExamples()
+        const term = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+        const python = term.querySelector<HTMLElement>('[data-lang="Python"]')!
+        click('.api-example-chip[data-scenario="slicing"]')
+        vi.mocked(logInfo).mockClear()
+        const watcher = stripWatcher(term)
+
+        // Past the settle window, so the report would count as a pick if the carousel were showing.
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 5000)
+        watcher.callback(
+            [
+                {
+                    isIntersecting: true,
+                    intersectionRatio: 1,
+                    target: python,
+                } as unknown as IntersectionObserverEntry,
+            ],
+            watcher as unknown as IntersectionObserver
+        )
+        clock.mockRestore()
+
+        expect(logInfo).not.toHaveBeenCalled()
+        expect(window.localStorage.getItem(apiLanguageStorageKey)).toBeNull()
+    })
+
+    it('names the visible scenario on a language pick inside it', () => {
+        initApiExamples()
+        click('.api-example-chip[data-scenario="slicing"]')
+        vi.mocked(logInfo).mockClear()
+
+        click('[data-scenario="slicing"] [data-carousel-dot="curl"]')
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_language_selected',
+            expect.objectContaining({ 'api_example.scenario': 'slicing' })
+        )
+    })
+
+    it('logs a copy from a request card with its language and example', () => {
+        initApiExamples()
+        const button = document.createElement('button')
+        button.className = 'copybtn'
+        document
+            .querySelector(
+                '[data-scenario="term"] [data-lang="curl"] [data-code-actions]'
+            )!
+            .append(button)
+
+        button.click()
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.objectContaining({
+                'api_example.language': 'curl',
+                'api_example.scenario': 'term',
+                'url.path': operationPath,
+            })
+        )
+    })
+
+    it('still brings a dimmed neighbour card into view when its copy button is clicked', () => {
+        initApiExamples()
+        const button = document.createElement('button')
+        button.className = 'copybtn'
+        document
+            .querySelector(
+                '[data-scenario="term"] [data-lang="curl"] [data-code-actions]'
+            )!
+            .append(button)
+
+        button.click()
+
+        expect(activeLang('term')).toBe('curl')
+        expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe('curl')
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.anything()
+        )
+    })
+
+    it('logs a copy from a response card with its example and no language', () => {
+        initApiExamples()
+        const button = document.createElement('button')
+        button.className = 'copybtn'
+        document
+            .querySelector('.example-block--response [data-code-actions]')!
+            .append(button)
+
+        button.click()
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.objectContaining({ 'api_example.scenario': 'term' })
+        )
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.not.objectContaining({
+                'api_example.language': expect.anything(),
+            })
+        )
+    })
+
+    it('logs opening the preview, with the language only for language cards', () => {
+        initApiExamples()
+        const open = (selector: string) => {
+            document.querySelector<HTMLElement>(selector)!.click()
+            document
+                .querySelector('dialog.api-code-preview')
+                ?.dispatchEvent(new Event('close'))
+        }
+
+        open('[data-scenario="term"] .is-active [data-code-preview]')
+        expect(logInfo).toHaveBeenLastCalledWith(
+            'api_example_preview_opened',
+            expect.objectContaining({
+                'api_example.language': 'Console',
+                'api_example.scenario': 'term',
+                'url.path': operationPath,
+            })
+        )
+
+        open('.example-block--response [data-code-preview]')
+        expect(logInfo).toHaveBeenLastCalledWith(
+            'api_example_preview_opened',
+            expect.not.objectContaining({
+                'api_example.language': expect.anything(),
+            })
+        )
+    })
+
+    it('logs a copy from the preview with the card language', () => {
+        Object.defineProperty(navigator, 'clipboard', {
+            value: undefined,
+            configurable: true,
+        })
+        initApiExamples()
+        document
+            .querySelector<HTMLElement>(
+                '[data-scenario="term"] .is-active [data-code-preview]'
+            )!
+            .click()
+        document
+            .querySelector<HTMLElement>(
+                'dialog.api-code-preview [aria-label="Copy code"]'
+            )!
+            .click()
+
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_code_copied',
+            expect.objectContaining({ 'api_example.language': 'Console' })
+        )
+        document
+            .querySelector('dialog.api-code-preview')!
+            .dispatchEvent(new Event('close'))
     })
 })
 

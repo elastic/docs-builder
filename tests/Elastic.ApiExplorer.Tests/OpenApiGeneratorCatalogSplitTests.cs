@@ -348,6 +348,61 @@ public class OpenApiGeneratorCatalogSplitTests
 			.MatchSnapshot();
 	}
 
+	[Test]
+	public async Task ExportDocuments_TypePage_ListsItsFieldsWithTheAnchorsThePageShows()
+	{
+		var specs = TwoOperationSpecs("Ping the cluster.");
+		foreach (var spec in specs)
+			spec.Components = new OpenApiComponents
+			{
+				Schemas = new Dictionary<string, IOpenApiSchema>
+				{
+					["_types.query_dsl.QueryContainer"] = new OpenApiSchema
+					{
+						Type = JsonSchemaType.Object,
+						Properties = new Dictionary<string, IOpenApiSchema>
+						{
+							["min_score"] = new OpenApiSchema { Type = JsonSchemaType.Number, Description = "Drops **low** scores." },
+							["term"] = new OpenApiSchema
+							{
+								Type = JsonSchemaType.Object,
+								Properties = new Dictionary<string, IOpenApiSchema>
+								{
+									["case_insensitive"] = new OpenApiSchema { Type = JsonSchemaType.Boolean }
+								}
+							}
+						}
+					}
+				}
+			};
+		using var versionIndexClient = MainNineAnd8Client();
+		var generator = MainNineAnd8Generator(versionIndexClient, specs);
+		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
+
+		DocumentationDocument? typePage = null;
+		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
+		{
+			if (doc.Path.Contains("/types/", StringComparison.Ordinal))
+				typePage = doc;
+		}
+
+		string
+			.Join(
+				"\n",
+				typePage!.Api!.Properties.Select(
+					p => $"{p.Path} #{p.Anchor} [{p.Type}, {p.Location}, parent '{p.Parent}'] {p.Description}".TrimEnd()
+				)
+			)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				min_score #min_score [number, field, parent ''] Drops low scores.
+				term #term [object, field, parent '']
+				term.case_insensitive #term-case_insensitive [boolean, field, parent 'term']
+				"""
+			);
+	}
+
 	/// <summary>Each exported document's content hash, keyed by its URL and the trees it stands for.</summary>
 	private static async Task<Dictionary<string, string>> ContentHashes(OpenApiDocument[] specs)
 	{
