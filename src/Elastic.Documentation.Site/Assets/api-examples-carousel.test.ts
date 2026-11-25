@@ -521,6 +521,45 @@ describe('API examples carousel', () => {
     })
 })
 
+/** Replaces IntersectionObserver with one that records what it watches, so a test can report visibility. */
+function stubIntersectionObserver() {
+    class FakeObserver {
+        observed = new Set<Element>()
+        constructor(
+            public callback: IntersectionObserverCallback,
+            public options?: IntersectionObserverInit
+        ) {
+            observers.push(this)
+        }
+        observe(element: Element) {
+            this.observed.add(element)
+        }
+        unobserve(element: Element) {
+            this.observed.delete(element)
+        }
+        disconnect() {}
+    }
+    const observers: FakeObserver[] = []
+    vi.stubGlobal('IntersectionObserver', FakeObserver)
+    // The observer that counts views: the carousel strips watch with their own thresholds.
+    const viewWatcher = () =>
+        observers.find((o) => o.options?.threshold === 0.5)!
+    const report = (target: Element, intersectionRatio: number) => {
+        const watcher = viewWatcher()
+        watcher.callback(
+            [
+                {
+                    isIntersecting: intersectionRatio > 0,
+                    intersectionRatio,
+                    target,
+                } as IntersectionObserverEntry,
+            ],
+            watcher as unknown as IntersectionObserver
+        )
+    }
+    return { viewWatcher, report }
+}
+
 describe('API examples telemetry', () => {
     beforeEach(() => {
         window.localStorage.clear()
@@ -551,41 +590,18 @@ describe('API examples telemetry', () => {
 
     it('logs a view once per example when it is half visible, with its scenario and the saved language', () => {
         window.localStorage.setItem(apiLanguageStorageKey, 'Python')
-        class FakeObserver {
-            observed = new Set<Element>()
-            constructor(
-                public callback: IntersectionObserverCallback,
-                public options?: IntersectionObserverInit
-            ) {
-                observers.push(this)
-            }
-            observe(element: Element) {
-                this.observed.add(element)
-            }
-            unobserve(element: Element) {
-                this.observed.delete(element)
-            }
-            disconnect() {}
-        }
-        const observers: FakeObserver[] = []
-        vi.stubGlobal('IntersectionObserver', FakeObserver)
-        const report = (watcher: FakeObserver, target: Element, hit: boolean) =>
-            watcher.callback(
-                [{ isIntersecting: hit, target } as IntersectionObserverEntry],
-                watcher as unknown as IntersectionObserver
-            )
+        const { viewWatcher, report } = stubIntersectionObserver()
 
         initApiExamples()
-        const watcher = observers.find((o) => o.options?.threshold === 0.5)!
         const visible = document.querySelector<HTMLElement>(
             '[data-scenario="term"] [data-api-carousel]'
         )!
-        expect(watcher.observed.size).toBe(2)
+        expect(viewWatcher().observed.size).toBe(2)
 
-        report(watcher, visible, false)
+        report(visible, 0)
         expect(logInfo).not.toHaveBeenCalled()
 
-        report(watcher, visible, true)
+        report(visible, 1)
         expect(logInfo).toHaveBeenCalledTimes(1)
         expect(logInfo).toHaveBeenCalledWith(
             'api_example_viewed',
@@ -595,14 +611,24 @@ describe('API examples telemetry', () => {
                 'api_example.language': 'Python',
             })
         )
-        expect(watcher.observed.has(visible)).toBe(false)
+        expect(viewWatcher().observed.has(visible)).toBe(false)
 
         // Initializing again after a swap must not watch the same carousels twice.
         initApiExamples()
-        expect(watcher.observed.size).toBe(1)
-        expect(
-            observers.filter((o) => o.options?.threshold === 0.5)
-        ).toHaveLength(1)
+        expect(viewWatcher().observed.size).toBe(1)
+    })
+
+    it('waits for half of the carousel: a sliver reported on the way in is not a view', () => {
+        const { viewWatcher, report } = stubIntersectionObserver()
+        initApiExamples()
+        const visible = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-api-carousel]'
+        )!
+
+        report(visible, 0.2)
+
+        expect(logInfo).not.toHaveBeenCalled()
+        expect(viewWatcher().observed.has(visible)).toBe(true)
     })
 
     it('logs a scenario pick, and not the scenario restored from the link on load', () => {

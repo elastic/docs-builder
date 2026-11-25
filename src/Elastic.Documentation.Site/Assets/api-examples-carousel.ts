@@ -411,7 +411,8 @@ function createViewObserver(): IntersectionObserver | undefined {
     return new IntersectionObserver(
         (entries, observer) => {
             for (const entry of entries) {
-                if (!entry.isIntersecting) continue
+                // The observer also reports a sliver, when it starts watching and on any threshold it crosses.
+                if (entry.intersectionRatio < 0.5) continue
                 const carousel = entry.target as HTMLElement
                 logApiExampleEvent('api_example_viewed', {
                     language: activeLanguage(carousel),
