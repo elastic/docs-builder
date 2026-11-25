@@ -564,15 +564,21 @@ function stubIntersectionObserver() {
     return { viewWatcher, report }
 }
 
+const operationPath = '/docs/api/elasticsearch/operation/operation-search'
+
 describe('API examples telemetry', () => {
     beforeEach(() => {
         window.localStorage.clear()
-        window.history.replaceState(null, '', '#')
+        // A real operation URL with a fragment: url.path must be the path alone, since scenario ids repeat across operations.
+        window.history.replaceState(null, '', `${operationPath}#top`)
         document.body.innerHTML = markup()
         vi.mocked(logInfo).mockClear()
     })
 
-    afterEach(() => vi.unstubAllGlobals())
+    afterEach(() => {
+        vi.unstubAllGlobals()
+        window.history.replaceState(null, '', '/')
+    })
 
     it('logs the language of a pick, and nothing for the language applied on load', () => {
         window.localStorage.setItem(apiLanguageStorageKey, 'Python')
@@ -588,6 +594,7 @@ describe('API examples telemetry', () => {
                 'event.name': 'api_example_language_selected',
                 'api_example.language': 'Java',
                 'api_example.scenario': 'term',
+                'url.path': operationPath,
             })
         )
     })
@@ -612,6 +619,7 @@ describe('API examples telemetry', () => {
             expect.objectContaining({
                 'event.name': 'api_example_viewed',
                 'api_example.scenario': 'term',
+                'url.path': operationPath,
                 'api_example.language': 'Python',
             })
         )
@@ -641,6 +649,7 @@ describe('API examples telemetry', () => {
             'api_example_viewed',
             expect.objectContaining({
                 'api_example.scenario': 'response-only',
+                'url.path': operationPath,
             })
         )
         expect(attributes).not.toHaveProperty('api_example.language')
@@ -698,6 +707,7 @@ describe('API examples telemetry', () => {
             expect.objectContaining({
                 'event.name': 'api_example_scenario_selected',
                 'api_example.scenario': 'term',
+                'url.path': operationPath,
             })
         )
     })
@@ -740,6 +750,7 @@ describe('API examples telemetry', () => {
             expect.objectContaining({
                 'api_example.language': 'curl',
                 'api_example.scenario': 'term',
+                'url.path': operationPath,
             })
         )
     })
@@ -801,6 +812,7 @@ describe('API examples telemetry', () => {
             expect.objectContaining({
                 'api_example.language': 'Console',
                 'api_example.scenario': 'term',
+                'url.path': operationPath,
             })
         )
 
