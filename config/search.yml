@@ -19,6 +19,7 @@ rules:
         metadata: query_string
         values:
           - data stream
+          - data streams
           - data-stream
           - data-streams
           - datastream
