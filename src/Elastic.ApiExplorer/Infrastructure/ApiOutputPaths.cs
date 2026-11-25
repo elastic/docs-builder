@@ -12,9 +12,12 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static class ApiOutputPaths
 {
+	/// <summary>The extension of the spec file written beside an API's tree root.</summary>
+	public const string JsonExtension = ".json";
+
 	public static string MarkdownUrl(string pageUrl) => SiblingUrl(pageUrl, ".md");
 
-	public static string JsonUrl(string pageUrl) => SiblingUrl(pageUrl, ".json");
+	public static string JsonUrl(string pageUrl) => SiblingUrl(pageUrl, JsonExtension);
 
 	public static string YamlUrl(string pageUrl) => SiblingUrl(pageUrl, ".yaml");
 
@@ -32,7 +35,8 @@ public static class ApiOutputPaths
 
 	public static string RelativeMarkdownFile(string pageUrl, string? urlPathPrefix) => RelativeSiblingFile(pageUrl, urlPathPrefix, ".md");
 
-	public static string RelativeJsonFile(string pageUrl, string? urlPathPrefix) => RelativeSiblingFile(pageUrl, urlPathPrefix, ".json");
+	public static string RelativeJsonFile(string pageUrl, string? urlPathPrefix) =>
+		RelativeSiblingFile(pageUrl, urlPathPrefix, JsonExtension);
 
 	public static string RelativeYamlFile(string pageUrl, string? urlPathPrefix) => RelativeSiblingFile(pageUrl, urlPathPrefix, ".yaml");
 

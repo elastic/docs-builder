@@ -50,7 +50,11 @@ public sealed record PropertyTreeScope
 
 /// <summary>A parameter to list as a row, with the description to show.</summary>
 /// <param name="RouteWithout">For a path parameter that some routes leave out, the route to use without it; null otherwise.</param>
-public record ParameterRowInput(IOpenApiParameter Parameter, string? Description, string? RouteWithout = null);
+public record ParameterRowInput(IOpenApiParameter Parameter, string? Description, string? RouteWithout = null)
+{
+	/// <summary>A path parameter is required unless some route leaves its segment out.</summary>
+	public bool IsRequired => Parameter.Required && RouteWithout is null;
+}
 
 public partial class ApiPropertyTreeBuilder(
 	OpenApiDocument document,
@@ -99,15 +103,18 @@ public partial class ApiPropertyTreeBuilder(
 	{
 		var effective = _analyzer.Flatten(schema);
 		var properties = effective.Properties;
-		// A union variant lists the property that selects it first, so the choice is the first thing its fields say.
+		var requiredProps = scope.RequiredProperties ?? effective.Required;
+		// A union variant's selecting property first, then required ones, then A to Z; the map's any-other-key row last.
 		var propArray = properties
 			.Where(p => p.Value is not null && IsListed(p.Value, scope))
 			.OrderBy(p => p.Key != leadingProperty)
+			.ThenBy(p => !requiredProps.Contains(p.Key))
+			.ThenBy(p => p.Key == DictionaryKeyName)
+			.ThenBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 		if (propArray.Length == 0)
 			return null;
 
-		var requiredProps = scope.RequiredProperties ?? effective.Required;
 		var items = new List<ApiProperty>(propArray.Length);
 		for (var i = 0; i < propArray.Length; i++)
 		{
@@ -127,26 +134,30 @@ public partial class ApiPropertyTreeBuilder(
 
 	/// <summary>
 	/// Parameters as property rows, so an object or a map lists its fields the way a body property does. Each parameter
-	/// gives its row's name, description, requiredness and deprecation; its schema gives the rest.
+	/// gives its row's name, description, requiredness and deprecation; its schema gives the rest. Required parameters list
+	/// first, then A to Z; path parameters keep their route order within each group.
 	/// </summary>
-	public ApiPropertyList BuildParameterList(IReadOnlyList<ParameterRowInput> parameters, PropertyTreeScope scope)
+	public ApiPropertyList BuildParameterList(IReadOnlyList<ParameterRowInput> input, PropertyTreeScope scope)
 	{
-		var items = new List<ApiProperty>(parameters.Count);
-		for (var i = 0; i < parameters.Count; i++)
+		var parameters = input
+			.OrderBy(static p => !p.IsRequired)
+			.ThenBy(static p => p.Parameter.In == ParameterLocation.Path ? "" : p.Parameter.Name, StringComparer.OrdinalIgnoreCase)
+			.ToArray();
+		var items = new List<ApiProperty>(parameters.Length);
+		for (var i = 0; i < parameters.Length; i++)
 		{
 			var (parameter, description, routeWithout) = parameters[i];
 			var name = parameter.Name ?? "";
 			var schema = RowSchema(parameter);
 			var row = CreateRow(name, schema, name, scope) with
 			{
-				// A path parameter is required unless some route leaves its segment out.
-				IsRequired = parameter.Required && routeWithout is null,
-				IsLast = i == parameters.Count - 1,
+				IsRequired = parameters[i].IsRequired,
+				IsLast = i == parameters.Length - 1,
 				Description = description,
 				IsDeprecated = parameter.Deprecated,
 				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions),
 				OptionalRoute = routeWithout,
-				IsOptionalPath = parameter.In == ParameterLocation.Path && (!parameter.Required || routeWithout is not null),
+				IsOptionalPath = parameter.In == ParameterLocation.Path && !parameters[i].IsRequired,
 				Example = ParameterExample.Pick(parameter, _analyzer.ResolveSchema(schema) ?? schema, _analyzer.GetEnumValues(schema))
 			};
 			items.Add(BuildProperty(row, scope));

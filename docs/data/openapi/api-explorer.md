@@ -12,7 +12,7 @@ The assembler also writes a combined **Elastic APIs** page at `/docs/api/`, on i
 
 Under the line of text sits the same box as in the API sidebar, labelled **Type ❲/❳ to explore API**. It explores operations across every API, so you can jump to an endpoint without knowing which product it belongs to. Type <kbd>/</kbd> or <kbd>s</kbd> anywhere on the page, outside a text field, to jump to it. Like the sidebar box, it is omitted on isolated and air-gapped builds.
 
-Each card's description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export.
+Each card's description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export. The `.md` rendering of an operation starts with an `OpenAPI:` line that links to the API's JSON spec at that operation (a JSON pointer such as `#/paths/~1_search/post`), so a reader or an LLM can fetch the exact schema when the prose is not enough.
 
 The API title comes from `info.title` in the spec, so fix naming and description copy in the spec.
 
@@ -335,7 +335,7 @@ Older majors are hidden in the navigation, but they are still listed in the site
 
 `assembler build` writes all three files with the build time as the date. `assembler sitemap` runs after `assembler index`, in the same output folder. It keeps the pages the build listed and dates each one from the search index, so a page's date changes only when its content changes.
 
-The search export indexes one document for every API page. Operation and landing pages are search results. Group, type, topic, authentication, servers and Markdown pages are indexed only for their date, and search never returns them. A document's content hash is the hash of the page's `.md` rendering, with links into the page's own version tree made relative. A page that reads the same in two majors shares one document and one date. The `/docs/api` hub takes the newest date of the API landing pages. If a listed page has no document, `assembler sitemap` warns and keeps the build date for it.
+The search export indexes one document for every API page. Operation and landing pages are search results. Group, type, topic, authentication, servers and Markdown pages are indexed only for their date, and search never returns them. A document's content hash is the hash of the page's `.md` rendering, with links into the page's own version tree made relative, including the link to its spec file. A page that reads the same in two majors shares one document and one date. The `/docs/api` hub takes the newest date of the API landing pages. If a listed page has no document, `assembler sitemap` warns and keeps the build date for it.
 
 ### Link to an API page from Markdown [api-cross-links]
 
@@ -371,6 +371,8 @@ A request body leaves out `readOnly` fields, because only the server sets them, 
 A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
 
 A row of section links sits above the description of an operation page: **Overview**, then one link for each of **Path**, **Query**, **Headers**, **Body** and **Responses** that the operation has. It stays under the page header as you scroll and marks the section in view. **Overview** scrolls back to the top. Once you reach the sections, the row also shows **Expand all**. A page with a single section has no row.
+
+Fields and parameters list the required ones first, then the rest from A to Z, in the page and in its `.md` rendering. A union variant still leads with the property that selects it, and a map's any-other-key row comes last. Path parameters keep the order of the route within each group.
 
 A link to a property scrolls it to just below the row, so its name stays in view. A page without the row keeps the site's usual scroll position for links.
 

@@ -149,7 +149,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 			.Items
 			.Select(p => (p.AnchorId, p.IsRequired, p.OptionalRoute))
 			.Should()
-			.Equal(("path-index", false, "/_search"), ("path-id", true, null));
+			.Equal(("path-id", true, null), ("path-index", false, "/_search"));
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		html.Should().MatchHtmlSnapshot();
 		RequiredStatusRegex().Matches(html).Should().ContainSingle("only the parameter every route needs reads required");
@@ -275,7 +275,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterFirst()
+	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterAfterTheRequiredOnes()
 	{
 		var operation = new OpenApiOperation
 		{
@@ -297,8 +297,8 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 
 		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
 
-		page.PathParameterNames.Should().Equal("space_id", "id");
-		var space = page.PathParameters.Items[0];
+		page.PathParameterNames.Should().Equal("id", "space_id");
+		var space = page.PathParameters.Items[1];
 		space.IsRequired.Should().BeFalse();
 		space.IsOptionalPath.Should().BeTrue();
 		space.OptionalRoute.Should().BeNull("only a path some routes leave out gets the hint");

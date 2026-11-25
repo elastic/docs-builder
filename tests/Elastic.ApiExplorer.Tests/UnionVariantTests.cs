@@ -357,7 +357,7 @@ public class UnionVariantTests
 		var policy = variants.Single(v => v.DisplayName == "Policy");
 		policy.IsArrayVariant.Should().BeTrue();
 		policy.ShowProperties.Should().BeTrue("an array-only variant lists the properties of its items");
-		policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");
+		policy.Properties!.Items.Select(p => p.Name).Should().Equal("inputs", "name");
 		variants.Single(v => v.DisplayName == "string").Properties.Should().BeNull();
 	}
 
@@ -481,7 +481,7 @@ public class UnionVariantTests
 			.Variants
 			.Select(v => v.Properties!.Items.Select(p => p.Name).First())
 			.Should()
-			.Equal("field", "field", "always");
+			.Equal("field", "exists", "always");
 	}
 
 	[Test]
@@ -565,7 +565,7 @@ public class UnionVariantTests
 			.SingleOrArray
 			.Should()
 			.Be(new SingleOrArray("object", "object[]"), "the row lists the object's fields and its type reads only union oneOf");
-		Row("rescore").Children.Properties!.Items.Select(p => p.Name).Should().Equal("window_size", "query");
+		Row("rescore").Children.Properties!.Items.Select(p => p.Name).Should().Equal("query", "window_size");
 		Row("fields")
 			.SingleOrArray
 			.Should()
@@ -815,7 +815,7 @@ public class UnionVariantTests
 
 		where.Children.Kind.Should().Be(ChildKind.UnionVariants);
 		var variants = where.Children.Variants!.Variants;
-		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("field", "eq");
+		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("eq", "field");
 		var and = variants[1].Properties!.Items.Single();
 		and.Repeats.Should().Be(new RepeatedShape("where", "where", IsUnion: true));
 		and.Children.Kind.Should().Be(ChildKind.None);

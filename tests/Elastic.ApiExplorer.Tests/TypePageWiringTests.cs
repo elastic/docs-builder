@@ -100,8 +100,10 @@ public class TypePageWiringTests(ApiExplorerFixture fixture)
 		processors.Children.Kind.Should().Be(ChildKind.None, "the processors are listed on their own page, not again here");
 
 		var schemaPage = SchemaPageModel.Create(typePage.Model, RenderContext(document, typePage));
-		schemaPage.Properties!.Items.Select(p => p.Name).Should().Equal("set", "remove");
-		var onFailure = schemaPage.Properties.Items[0].Children.Properties!.Items.Single(p => p.Name == "on_failure");
+		schemaPage.Properties!.Items.Select(p => p.Name).Should().Equal("remove", "set");
+		var onFailure = schemaPage.Properties.Items.Single(p => p.Name == "set").Children.Properties!.Items.Single(
+			p => p.Name == "on_failure"
+		);
 		onFailure.TypeLink.Should().BeNull("the page never links to itself");
 	}
 

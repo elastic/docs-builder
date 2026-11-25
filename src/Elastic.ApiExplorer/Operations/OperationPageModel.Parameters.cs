@@ -61,7 +61,7 @@ public partial record OperationPageModel
 
 	/// <summary>
 	/// Kibana specs declare the <c>/s/{space_id}</c> route only in the description, so the page lists the parameter itself,
-	/// first as it is the route's first segment, unless the spec declares it.
+	/// before the other optional ones as it is the route's first segment, unless the spec declares it.
 	/// </summary>
 	private static IEnumerable<IOpenApiParameter> WithSpaceParameter(
 		IEnumerable<IOpenApiParameter> parameters,

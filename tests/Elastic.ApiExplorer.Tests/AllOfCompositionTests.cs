@@ -51,7 +51,7 @@ public class AllOfCompositionTests
 
 		var variants = list!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
 		var cat = variants[0].Properties!.Items;
-		cat.Select(p => p.Name).Should().Equal("kind", "id");
+		cat.Select(p => p.Name).Should().Equal("id", "kind");
 		cat.Single(p => p.Name == "kind").EnumValues.Should().Equal("cat");
 		variants[1].Properties!.Items.Single(p => p.Name == "kind").EnumValues.Should().BeEmpty();
 	}
@@ -142,7 +142,7 @@ public class AllOfCompositionTests
 		var variants = pet.Children.Variants!.Variants;
 		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
-		variants[1].Properties!.Items.Select(p => p.Name).Should().Equal("id", "barks");
+		variants[1].Properties!.Items.Select(p => p.Name).Should().Equal("barks", "id");
 
 		var wrapped = list.Items.Single(p => p.Name == "wrapped");
 		wrapped.Children.Kind.Should().Be(ChildKind.None, "an allOf with no property-bearing base keeps its previous rendering");

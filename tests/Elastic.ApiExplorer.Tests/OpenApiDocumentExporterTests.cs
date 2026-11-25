@@ -509,28 +509,28 @@ public class OpenApiDocumentExporterTests
 	[Test]
 	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverStandardListsItsDirectChildren() =>
 		(await SearchRequestChildNames("retriever.standard")).Should().Equal(
+			"collapse",
 			"filter",
 			"min_score",
-			"_name",
 			"query",
 			"search_after",
-			"terminate_after",
 			"sort",
-			"collapse"
+			"terminate_after",
+			"_name"
 		);
 
 	[Test]
 	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverListsEveryRetrieverKind() =>
 		(await SearchRequestChildNames("retriever")).Should().Equal(
-			"standard",
+			"diversify",
 			"knn",
-			"rrf",
-			"text_similarity_reranker",
-			"rule",
-			"rescorer",
 			"linear",
 			"pinned",
-			"diversify"
+			"rescorer",
+			"rrf",
+			"rule",
+			"standard",
+			"text_similarity_reranker"
 		);
 
 	[Test]

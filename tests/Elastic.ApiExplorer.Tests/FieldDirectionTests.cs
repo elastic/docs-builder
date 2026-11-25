@@ -61,7 +61,7 @@ public partial class FieldDirectionTests
 	{
 		var rows = await RowsAsync("Account", new PropertyTreeScope { Prefix = "req", IsRequest = true });
 
-		rows.Select(r => r.Name).Should().Equal("name", "password", "audit");
+		rows.Select(r => r.Name).Should().Equal("name", "audit", "password");
 		rows
 			.Single(r => r.Name == "audit")
 			.Children
@@ -84,7 +84,43 @@ public partial class FieldDirectionTests
 	{
 		var rows = await RowsAsync("Account", new PropertyTreeScope { Prefix = "" });
 
-		rows.Select(r => r.Name).Should().Equal("id", "name", "password", "audit");
+		rows.Select(r => r.Name).Should().Equal("id", "name", "audit", "password");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_RequiredFieldSortingLate_ListsBeforeTheOptionalOnes()
+	{
+		var document = await LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Mixed": {
+			        "type": "object",
+			        "required": ["zone", "Mode"],
+			        "properties": {
+			          "beta": { "type": "string" },
+			          "zone": { "type": "string" },
+			          "alpha": { "type": "string" },
+			          "Mode": { "type": "string" }
+			        }
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+
+		var rows = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Mixed"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items;
+
+		rows.Select(r => r.Name).Should().Equal("Mode", "zone", "alpha", "beta");
+		rows[^1].IsLast.Should().BeTrue("the last row follows the new order");
 	}
 
 	[Test]

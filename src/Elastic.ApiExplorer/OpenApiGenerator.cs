@@ -286,10 +286,11 @@ public class OpenApiGenerator(
 		return result.Append(markdown, start, markdown.Length - start).ToString();
 
 		// Sentence punctuation ends a bare autolink only before a space or the end, as the Markdown renderer reads it,
-		// so a slug such as `v8.19` stays one segment.
+		// so a slug such as `v8.19` stays one segment. The tree's spec file, `<root>.json#/paths/...`, is a link into the tree.
 		static bool EndsAt(string text, int index) =>
 			index == text.Length
 				|| text[index] is '/' or '#' or '?' or ')' or '"' or '\'' or '>' or ']'
+				|| text.AsSpan(index).StartsWith(ApiOutputPaths.JsonExtension + "#", StringComparison.Ordinal)
 				|| char.IsWhiteSpace(text[index])
 				|| (text[index] is '.' or ',' or ';' or ':' or '!' && (index + 1 == text.Length || char.IsWhiteSpace(text[index + 1])));
 
