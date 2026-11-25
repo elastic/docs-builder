@@ -6,20 +6,20 @@
 }
 <span class="api-url">
 	@(await RenderPartialAsync<_HttpMethodBadge, IReadOnlyList<string>>(row.Methods))
-	@* Segments on the brace lines: Razor would otherwise emit the indentation and line breaks as text, which inline layout shows as a space after each optional segment. *@
-	<span class="api-url-path">@if (row.Segments.Count == 0){@("/")}@foreach (var segment in row.Segments)
+	@* Each "/segment" is one .api-route-segment, the unit the route wraps by. Segments sit on the brace lines: Razor would otherwise emit the indentation and line breaks as text, which inline layout shows as a space after each optional segment. *@
+	<span class="api-url-path">@if (row.Segments.Count == 0){<span class="api-route-segment">@("/")</span>}@foreach (var segment in row.Segments)
 	{
 		var anchor = Model.AnchorFor(segment);
 		if (segment.Optional)
 		{
 			if (anchor is not null)
-			{@("/")<a class="api-url-param api-url-optional" href="#@anchor" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</a>}
+			{<span class="api-route-segment">@("/")<a class="api-url-param api-url-optional" href="#@anchor" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</a></span>}
 			else
-			{@("/")<span class="api-url-optional" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</span>}
+			{<span class="api-route-segment">@("/")<span class="api-url-optional" data-tooltip="Optional. Leave it out to call @Model.ShortestRoute">@segment.Text</span></span>}
 		}
 		else if (anchor is not null)
-		{@("/")<a class="api-url-param" href="#@anchor">@segment.Text</a>}
+		{<span class="api-route-segment">@("/")<a class="api-url-param" href="#@anchor">@segment.Text</a></span>}
 		else
-		{@("/" + segment.Text)}
+		{<span class="api-route-segment">@("/" + segment.Text)</span>}
 	}</span>
 </span>

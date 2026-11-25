@@ -63,7 +63,7 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 					</span>
 					<span class="api-method-label">GET</span>
 				</span>
-				<span class="api-url-path">/</span>
+				<span class="api-url-path"><span class="api-route-segment">/</span></span>
 			</span>
 			"""
 		);
@@ -97,7 +97,7 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 					</span>
 					<span class="api-method-label">GET</span>
 				</span>
-				<span class="api-url-path">/_cluster/state/<a class="api-url-param api-url-optional" href="#path-metric" data-tooltip="Optional. Leave it out to call /_cluster/state">{metric}</a>/<span class="api-url-optional" data-tooltip="Optional. Leave it out to call /_cluster/state">{index}</span></span>
+				<span class="api-url-path"><span class="api-route-segment">/_cluster</span><span class="api-route-segment">/state</span><span class="api-route-segment">/<a class="api-url-param api-url-optional" href="#path-metric" data-tooltip="Optional. Leave it out to call /_cluster/state">{metric}</a></span><span class="api-route-segment">/<span class="api-url-optional" data-tooltip="Optional. Leave it out to call /_cluster/state">{index}</span></span></span>
 			</span>
 			"""
 		);

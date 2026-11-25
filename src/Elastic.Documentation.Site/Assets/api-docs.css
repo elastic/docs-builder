@@ -3607,6 +3607,13 @@ html:has(.api-page-shell) {
 	min-width: 0;
 }
 
+/* A route wraps between segments only; a single segment wider than the line still wraps inside itself. */
+.api-route-segment {
+	display: inline-block;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
 /* A placeholder reads as path text with a faint dotted cue; it turns into a link only on hover or focus.
    Optional segments use the same cue: each segment is one element, so one rule owns its underline. */
 .api-url-optional,
