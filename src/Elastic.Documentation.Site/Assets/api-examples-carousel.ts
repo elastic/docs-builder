@@ -402,32 +402,33 @@ function cardDetail(card: HTMLElement): ApiExampleDetail {
 }
 
 /**
- * Logs 'api_example_viewed' the first time a carousel is at least half visible, then stops watching it, so a
+ * Logs 'api_example_viewed' the first time an example is at least half visible, then stops watching it, so a
  * page view counts each example once. Hidden scenarios do not intersect, so one is counted when it is opened.
  * It is the denominator for the copy and preview events.
  */
 function createViewObserver(): IntersectionObserver | undefined {
     if (typeof IntersectionObserver === 'undefined') return undefined
-    // unobserve() does not remove entries already queued in this batch, so a carousel can arrive twice.
+    // unobserve() does not remove entries already queued in this batch, so a target can arrive twice.
     const counted = new WeakSet<Element>()
     return new IntersectionObserver(
         (entries, observer) => {
             for (const entry of entries) {
-                const carousel = entry.target as HTMLElement
-                // A navigation can swap the carousel out before this runs, and the location is already the next page's.
-                if (!carousel.isConnected) {
-                    observer.unobserve(carousel)
+                const target = entry.target as HTMLElement
+                // A navigation can swap the example out before this runs, and the location is already the next page's.
+                if (!target.isConnected) {
+                    observer.unobserve(target)
                     continue
                 }
                 // The observer also reports a sliver, when it starts watching and on any threshold it crosses.
                 if (entry.intersectionRatio < 0.5) continue
-                if (counted.has(carousel)) continue
-                counted.add(carousel)
+                if (counted.has(target)) continue
+                counted.add(target)
+                // Only a carousel has an active language: a lone request or response card has none.
                 logApiExampleEvent('api_example_viewed', {
-                    language: activeLanguage(carousel),
-                    scenario: scenarioOf(carousel),
+                    language: activeLanguage(target),
+                    scenario: scenarioOf(target),
                 })
-                observer.unobserve(carousel)
+                observer.unobserve(target)
             }
         },
         { threshold: 0.5 }
@@ -753,14 +754,18 @@ export function initApiExamples(root: ParentNode = document): void {
             })
             examples
                 .querySelectorAll<HTMLElement>('[data-api-carousel]')
-                .forEach((carousel) => {
-                    observeStrip(carousel)
-                    if (carousel.dataset.viewObserved) return
-                    viewObserver ??= createViewObserver()
-                    if (!viewObserver) return
-                    carousel.dataset.viewObserved = 'true'
-                    viewObserver.observe(carousel)
-                })
+                .forEach(observeStrip)
+            scenarioPanels(examples).forEach((panel) => {
+                // An example without code samples has no carousel: its first request or response card stands in.
+                const target = panel.querySelector<HTMLElement>(
+                    '[data-api-carousel], [data-code-card]'
+                )
+                if (!target || target.dataset.viewObserved) return
+                viewObserver ??= createViewObserver()
+                if (!viewObserver) return
+                target.dataset.viewObserved = 'true'
+                viewObserver.observe(target)
+            })
             applyPreferredLanguage(examples, link.lang)
             if (!link.example) syncDescriptions(examples)
             fitChips(examples)

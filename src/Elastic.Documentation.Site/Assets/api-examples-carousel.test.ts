@@ -622,6 +622,30 @@ describe('API examples telemetry', () => {
         expect(viewWatcher().observed.size).toBe(1)
     })
 
+    it('counts an example without code samples by its first card, with no language', () => {
+        document.querySelector('[data-api-examples]')!.insertAdjacentHTML(
+            'beforeend',
+            `<div class="api-examples-scenario-panel" data-scenario="response-only" hidden="until-found">
+                <div class="api-code-card" data-code-card id="only-response"><span data-code-actions></span><pre><code>{}</code></pre></div>
+            </div>`
+        )
+        const { viewWatcher, report } = stubIntersectionObserver()
+        initApiExamples()
+        const card = document.getElementById('only-response')!
+        expect(viewWatcher().observed.has(card)).toBe(true)
+
+        report(card, 1)
+
+        const attributes = vi.mocked(logInfo).mock.calls[0][1]
+        expect(logInfo).toHaveBeenCalledWith(
+            'api_example_viewed',
+            expect.objectContaining({
+                'api_example.scenario': 'response-only',
+            })
+        )
+        expect(attributes).not.toHaveProperty('api_example.language')
+    })
+
     it('counts a carousel once when one batch holds two qualifying entries for it', () => {
         const { report } = stubIntersectionObserver()
         initApiExamples()
