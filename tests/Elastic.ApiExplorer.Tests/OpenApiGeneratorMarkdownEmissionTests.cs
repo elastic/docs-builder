@@ -76,10 +76,9 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 
 		JsonNode Resolve(params string[] page)
 		{
-			var markdown = context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, .. page]));
-			var resource = markdown.Split('\n').Single(
-				line => line.StartsWith("resource: ", StringComparison.Ordinal)
-			)["resource: ".Length..];
+			// ReadAllLines splits on `\r\n` as well as `\n`: the front matter uses the platform's line ending.
+			var lines = context.WriteFileSystem.File.ReadAllLines(Path.Join([outputRoot, .. page]));
+			var resource = lines.Single(line => line.StartsWith("resource: ", StringComparison.Ordinal))["resource: ".Length..];
 			var parts = resource.Split('#');
 			var spec = JsonNode.Parse(context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, parts[0].TrimStart('/'))))!;
 			return parts.Length == 1
