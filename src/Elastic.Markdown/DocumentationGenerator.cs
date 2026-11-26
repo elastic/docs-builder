@@ -16,6 +16,7 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Page;
 using Markdig.Syntax;
@@ -429,6 +430,8 @@ public partial class DocumentationGenerator
 			await _documentationFileExporter.ProcessFile(context, ctx);
 			if (file is MarkdownFile markdown)
 			{
+				// Rules live outside the docs folder; export them where their HTML page is written
+				var markdownOutputFile = markdown is DetectionRuleFile ? DetectionRuleFile.OutputPath(outputFile, Context) : outputFile;
 				foreach (var exporter in _markdownExporters)
 				{
 					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(
@@ -443,7 +446,7 @@ public partial class DocumentationGenerator
 							Resolvers = DocumentationSet.MarkdownParser.Resolvers,
 							Document = document,
 							SourceFile = markdown,
-							DefaultOutputFile = outputFile,
+							DefaultOutputFile = markdownOutputFile,
 							DocumentationSet = DocumentationSet,
 							PositionaNavigation = PositionalNavigation,
 							NavigationItem = navigationItem,
