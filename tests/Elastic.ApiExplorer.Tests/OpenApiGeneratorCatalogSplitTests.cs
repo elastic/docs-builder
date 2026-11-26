@@ -697,7 +697,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		// The card is the link itself and the heading sits inside it, so there is no stretched overlay to trap.
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("svg"));
 		html.Should().Contain(
-			"<div id=\"main-container\" class=\"flex min-h-screen flex-col items-center\">",
+			"<div id=\"main-container\" class=\"api-catalog-shell flex min-h-screen flex-col items-center\">",
 			"a short page must still fill the screen"
 		);
 		html.Should().NotContain("download");
