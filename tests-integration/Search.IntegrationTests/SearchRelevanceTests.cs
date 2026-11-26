@@ -624,7 +624,8 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
 
 	/// <summary>
-	/// Queries the report lists with no expected result, so a weight change shows what it moves beyond the judged cases.
+	/// Queries the report lists with no first-result case, so a weight change shows what it moves beyond the judged cases. Those that
+	/// <see cref="ApiSearchPlacesAResultAtItsExpectedPosition"/> judges by position stay here: the report prints their scores and winning roles.
 	/// </summary>
 	public static IEnumerable<string> ApiSearchUnjudgedReportQueries() =>
 		[
@@ -646,6 +647,10 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"create pipeline",
 			"search templates",
 			"create role",
+			"create user",
+			"cloud create user",
+			"behavior analytics",
+			"Behaviour analytics",
 			"reindex",
 			"legacy index template",
 			"install package",
