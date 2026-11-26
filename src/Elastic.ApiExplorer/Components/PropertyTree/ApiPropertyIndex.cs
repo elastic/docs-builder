@@ -49,6 +49,10 @@ internal static class ApiPropertyIndex
 
 	internal static IEnumerable<IndexedRow> Flatten(ApiUnionVariants? variants) => Flatten(variants?.Rows ?? [], "");
 
+	/// <summary>A body's or a type's rows: its fields, then its variants.</summary>
+	internal static IEnumerable<IndexedRow> Flatten(ApiPropertyList? properties, ApiUnionVariants? variants) =>
+		Flatten(properties).Concat(Flatten(variants));
+
 	private static IEnumerable<IndexedRow> Flatten(IEnumerable<ApiProperty> properties, string parent) =>
 		properties.SelectMany(
 			property => Flatten(property.Children.NestedRows, ApiPropertyPath.ParentKey(PathOf(property))).Prepend(

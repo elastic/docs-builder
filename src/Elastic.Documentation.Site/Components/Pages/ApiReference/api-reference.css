@@ -3567,6 +3567,13 @@ html:has(.api-page-shell) {
 	min-width: 0;
 }
 
+/* A route wraps between segments only; a single segment wider than the line still wraps inside itself. */
+.api-route-segment {
+	display: inline-block;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
 .api-url-optional {
 	text-decoration: underline dotted var(--color-text-muted);
 	text-decoration-thickness: 1px;

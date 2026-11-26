@@ -1,5 +1,6 @@
 import {
-    LOCATION_LABELS,
+    ApiPropertyResult,
+    locationLabel,
     fieldSearchTerms,
     groupSearchResults,
     navigableRowCount,
@@ -61,8 +62,24 @@ it.each([
     ['header', 'header'],
     ['request', 'request body'],
     ['response', 'response body'],
+    ['field', 'field'],
+    ['cookie', 'cookie'],
 ] as const)('labels the %s location as %s', (location, label) => {
-    expect(LOCATION_LABELS[location]).toBe(label)
+    expect(locationLabel(location)).toBe(label)
+})
+
+it('reads a property row whose location this bundle does not know', () => {
+    expect(
+        ApiPropertyResult.safeParse({
+            name: 'session',
+            path: 'session',
+            type: 'string',
+            description: '',
+            anchor: 'session',
+            location: 'cookie',
+            url: '/docs/api/x#session',
+        }).success
+    ).toBe(true)
 })
 
 it('lists no properties under a docs page even when the payload carries some', () => {

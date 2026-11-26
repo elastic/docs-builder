@@ -28,6 +28,12 @@ This tip applies to ECH and ECE.
 This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
 :::
 
+:::{warning}
+:applies_to: {"stack": "deprecated 9.7+", "serverless": {"elasticsearch": "deprecated", "observability": "deprecated", "security": "deprecated", "vectordb": "unavailable"}}
+
+Badges wrap onto further lines when they do not fit beside the title.
+:::
+
 ::::
 
 ::::{tab-item} Markdown
@@ -55,6 +61,12 @@ This tip applies to ECH and ECE.
 :applies_to: {"stack": "ga 9.2, preview 9.1", "serverless": "ga"}
 
 This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
+:::
+
+:::{warning}
+:applies_to: {"stack": "deprecated 9.7+", "serverless": {"elasticsearch": "deprecated", "observability": "deprecated", "security": "deprecated", "vectordb": "unavailable"}}
+
+Badges wrap onto further lines when they do not fit beside the title.
 :::
 ```
 

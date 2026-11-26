@@ -105,6 +105,8 @@
       "init.step",
       "render.time_ms",
       "user.action",
+      "api_example.language",
+      "api_example.scenario",
       "ask_ai.feedback.reaction",
       "ask_ai.message.id",
       "cta.label",

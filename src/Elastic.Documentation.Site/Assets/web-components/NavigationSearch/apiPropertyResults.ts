@@ -7,19 +7,25 @@ export const ApiPropertyResult = z.object({
     type: z.string(),
     description: z.string(),
     anchor: z.string(),
-    location: z.enum(['path', 'query', 'header', 'request', 'response']),
+    // Open, so a bundle still in a browser reads a location added after it shipped.
+    location: z.string(),
     url: z.string(),
 })
 
 export type ApiPropertyResult = z.infer<typeof ApiPropertyResult>
 
-export const LOCATION_LABELS: Record<ApiPropertyResult['location'], string> = {
+const LOCATION_LABELS: Record<string, string> = {
     path: 'path',
     query: 'query',
     header: 'header',
     request: 'request body',
     response: 'response body',
+    field: 'field',
 }
+
+/** What a property row says about where the field lives; a location this bundle does not know reads as itself. */
+export const locationLabel = (location: string) =>
+    LOCATION_LABELS[location] ?? location
 
 export const ApiRoute = z.object({
     path: z.string(),

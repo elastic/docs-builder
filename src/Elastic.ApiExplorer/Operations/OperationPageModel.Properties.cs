@@ -32,7 +32,7 @@ internal record OperationPropertyTrees(
 	}
 
 	private static IEnumerable<IndexedRow> Rows(ApiMediaContent content) =>
-		ApiPropertyIndex.Flatten(content.Properties).Concat(ApiPropertyIndex.Flatten(content.UnionVariants));
+		ApiPropertyIndex.Flatten(content.Properties, content.UnionVariants);
 }
 
 public partial record OperationPageModel
