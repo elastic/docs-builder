@@ -47,6 +47,14 @@ public static class ApiLookupQueryBuilder
 		QueryFieldNames.SearchTitleCompletion3Gram
 	];
 
+	// An operation's search_title also holds its route, id and group, so a word names an operation through its display title or
+	// through a parent title (the API's name, its group) instead.
+	private static readonly Field[] TitleOrParentFields = [QueryFieldNames.TitleCompletion, QueryFieldNames.ParentsTitle];
+	private static readonly Field[] DisplayTitleOnly = [QueryFieldNames.TitleCompletion];
+
+	private const int TitleWordFixedLetters = 5;
+	private const string RootParentTitle = "API";
+
 	private static readonly Field[] OperationWordFields =
 	[
 		QueryFieldNames.ApiWordsCompletion,
@@ -77,18 +85,7 @@ public static class ApiLookupQueryBuilder
 	/// queries about an operation.
 	/// </summary>
 	private static Query PageWithoutName(string typed, IReadOnlyList<ApiLookupToken> tokens) =>
-		new BoolQuery
-		{
-			Filter =
-			[
-				new BoolQuery
-				{
-					Should = [LandingTerm(), new TermQuery { Field = QueryFieldNames.ApiPage, Value = true }],
-					MinimumShouldMatch = 1
-				}
-			],
-			MustNot = [TitleQuery(typed), EveryWordNamesTitleOrField(tokens)]
-		};
+		new BoolQuery { Filter = [LandingOrPage()], MustNot = [TitleQuery(typed), EveryWordNamesTitleOrField(tokens)] };
 
 	private static readonly SearchQueryBuilder.PropertyLookup PageFieldLookup = new(AllowPrefix: true, ExpandChildren: false);
 
@@ -118,6 +115,9 @@ public static class ApiLookupQueryBuilder
 	private static Query LandingNamed(string typed) => new BoolQuery { Filter = [LandingTerm(), TitleQuery(typed)] };
 
 	private static Query LandingTerm() => new TermQuery { Field = QueryFieldNames.ApiLanding, Value = true };
+
+	private static Query LandingOrPage() =>
+		new BoolQuery { Should = [LandingTerm(), new TermQuery { Field = QueryFieldNames.ApiPage, Value = true }], MinimumShouldMatch = 1 };
 
 	/// <summary>The words of every plain word but the one at <paramref name="index"/>, which a field row may name besides it.</summary>
 	private static string[] OtherWords(string[][] tokenWords, int index) => [.. tokenWords.Where((_, i) => i != index).SelectMany(w => w)];
@@ -195,7 +195,11 @@ public static class ApiLookupQueryBuilder
 				ApiLookupWeights.GroupWord,
 				ApiLookupRoles.QueryName(ApiLookupRole.Group, index)
 			),
-			Constant(TitleQuery(token.Text), ApiLookupWeights.TitleWord, ApiLookupRoles.QueryName(ApiLookupRole.Title, index)),
+			Constant(
+				WordNamesTitleOrParents(token.Text, completes: true),
+				ApiLookupWeights.TitleWord,
+				ApiLookupRoles.QueryName(ApiLookupRole.Title, index)
+			),
 			MethodOption(token.Text, index),
 			FieldOption(token, index, otherWords),
 			Constant(
@@ -340,7 +344,11 @@ public static class ApiLookupQueryBuilder
 
 	private static List<Query> Lifts(string typed, IReadOnlyList<ApiLookupToken> tokens)
 	{
-		List<Query> lifts = [Constant(TitleQuery(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName), TitleNamedLift(typed)];
+		List<Query> lifts =
+		[
+			Constant(EveryWordNamesTitleOrParents(typed), ApiLookupWeights.WholeTitle, WholeTitleQueryName),
+			TitleNamedLift(typed)
+		];
 		if (SearchQueryBuilder.BuildTitleStartsWithQuery(typed) is { } startsWith)
 			lifts.Add(startsWith);
 		lifts.Add(Constant(LandingNamed(typed), ApiLookupWeights.LandingName, LandingNameQueryName));
@@ -420,6 +428,64 @@ public static class ApiLookupQueryBuilder
 	}
 
 	private static Query TitleQuery(string text) => BoolPrefix(text, TitleCompletionFields);
+
+	/// <summary>
+	/// The typed words are all in the display title or the parent titles, such as <c>cloud</c> in <c>Cloud Enterprise API</c>. A landing,
+	/// group, type or topic page also names itself through <c>search_title</c>, which for such a page is its title alone and, unlike the
+	/// display title, is stemmed as the typed words are: <c>behavior analytics</c> names <c>Behavioral analytics</c>.
+	/// </summary>
+	private static Query EveryWordNamesTitleOrParents(string typed)
+	{
+		var words = Words(typed).Take(MaxTokens).ToArray();
+		return words.Length == 0
+			? new MatchNoneQuery()
+			: new BoolQuery { Must = [.. words.Select((word, i) => WordNamesTitleOrItsPage(word, completes: i == words.Length - 1))] };
+	}
+
+	private static Query WordNamesTitleOrItsPage(string word, bool completes) =>
+		new BoolQuery
+		{
+			Should = [WordNamesTitleOrParents(word, completes), PageWordNamesItsTitle(word, completes)],
+			MinimumShouldMatch = 1
+		};
+
+	private static Query PageWordNamesItsTitle(string word, bool completes) =>
+		new BoolQuery
+		{
+			Filter = [LandingOrPage()],
+			Must =
+			[
+				completes
+					? CompletedWord(QueryFieldNames.SearchTitleCompletion, word)
+					: SearchQueryBuilder.FuzzyWordMatch(QueryFieldNames.SearchTitle, word, SynonymsAnalyzer)
+			]
+		};
+
+	/// <summary>
+	/// The last word is still being typed, so it completes. The display title has no stemmer, so an earlier word that differs only after
+	/// its first five letters still names it: <c>create</c> finds <c>Creates a new user</c>, while <c>delte</c> does not become
+	/// <c>Delete</c> and lift every title that has it. A word that analyzes to several tokens, such as a typed route, needs all of them.
+	/// Every API operation has the root parent titled <c>API</c>, which names no operation, so <c>api</c> reads the display title only.
+	/// </summary>
+	private static Query WordNamesTitleOrParents(string word, bool completes)
+	{
+		var fields = word.Equals(RootParentTitle, StringComparison.OrdinalIgnoreCase) ? DisplayTitleOnly : TitleOrParentFields;
+		return new BoolQuery
+		{
+			Should = [.. fields.Select(field => (Query)(completes ? CompletedWord(field, word) : EditedWord(field, word)))],
+			MinimumShouldMatch = 1
+		};
+	}
+
+	private static MatchBoolPrefixQuery CompletedWord(Field field, string word) =>
+		new() { Field = field, Query = word, Analyzer = SynonymsAnalyzer, Operator = Operator.And };
+
+	private static MatchQuery EditedWord(Field field, string word)
+	{
+		var match = SearchQueryBuilder.FuzzyWordMatch(field, word, SynonymsAnalyzer, TitleWordFixedLetters);
+		match.Operator = Operator.And;
+		return match;
+	}
 
 	private static Query BoolPrefix(string text, Field[] fields) =>
 		new MultiMatchQuery

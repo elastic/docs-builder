@@ -46,6 +46,7 @@ synonyms:
   - [ "agg", "aggs => aggregations" ]
   - [ "apm", "application performance monitoring" ]
   - [ "aws", "amazon" ]
+  - [ "behavior", "behaviour" ]
   - [ "ccr", "cross-cluster replication", "cross cluster replication" ]
   - [ "ccs", "cross cluster search", "cross-cluster search", "spaghetti" ]
   - [ "cps", "cross project search", "cross-project search" ]

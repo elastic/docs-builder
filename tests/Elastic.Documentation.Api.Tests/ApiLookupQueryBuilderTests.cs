@@ -151,7 +151,7 @@ public class ApiLookupQueryBuilderTests
 			.Select(c => c.EnumerateObject().Single().Value)
 			.Where(o => o.TryGetProperty("_name", out _))
 			.ToDictionary(o => o.GetProperty("_name").GetString()!);
-		lifts["title_all"].GetProperty("filter").GetProperty("multi_match").GetProperty("query").GetString().Should().Be(expectedTitleText);
+		TypedTitleWords(lifts["title_all"]).Should().Be(expectedTitleText);
 		lifts["title_named"]
 			.GetProperty("queries")[0]
 			.GetProperty("constant_score")
@@ -165,6 +165,19 @@ public class ApiLookupQueryBuilderTests
 			.Should()
 			.Be(expectedTitleText);
 	}
+
+	/// <summary>One clause per typed word of the whole-title lift: the display title or a parent title, without the page-title option.</summary>
+	private static JsonElement[] WordClauses(JsonElement titleAll) =>
+		[.. Clauses(titleAll.GetProperty("filter").GetProperty("bool").GetProperty("must")).Select(word => ShouldClauses(word)[0])];
+
+	/// <summary>The words the whole-title lift asks for, one per clause of its filter.</summary>
+	private static string TypedTitleWords(JsonElement titleAll) =>
+		string.Join(' ', WordClauses(titleAll).Select(word => Body(Body(ShouldClauses(word)[0])).GetProperty("query").GetString()));
+
+	private static JsonElement[] ShouldClauses(JsonElement boolQuery) => Clauses(boolQuery.GetProperty("bool").GetProperty("should"));
+
+	/// <summary>The value of a query object's one property, such as <c>{"match": {...}}</c>.</summary>
+	private static JsonElement Body(JsonElement query) => query.EnumerateObject().Single().Value;
 
 	/// <summary>The client writes a one-clause list as a bare object.</summary>
 	private static JsonElement[] Clauses(JsonElement clauses) =>
@@ -635,6 +648,49 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	public void Build_WholeTitleLift_EveryWordNamesTheDisplayTitleOrAParentTitleNotTheRouteText()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("cloud create user"));
+		var lift = LiftByName(json, "title_all");
+
+		var words = WordClauses(lift);
+
+		words.Should().HaveCount(3);
+		foreach (var word in words)
+			ShouldClauses(word).Select(o => Body(o).EnumerateObject().Single().Name).Should().Equal("title.completion", "parents.title");
+		// `cloud` names the API through its parent title; an earlier word may differ from the title's only after its first five letters,
+		// as a stemmer would allow, but never in its first letters: `delte` must not become `delete`. The word being typed completes.
+		var cloud = Body(ShouldClauses(words[0])[0]).GetProperty("title.completion");
+		cloud.GetProperty("fuzziness").GetString().Should().Be("AUTO:4,100");
+		cloud.GetProperty("prefix_length").GetInt32().Should().Be(5);
+		ShouldClauses(words[2])[0].TryGetProperty("match_bool_prefix", out _).Should().BeTrue();
+		// Only a landing, group, type or topic page names itself through search_title, where it is the title alone; an operation's holds its route.
+		var page = ShouldClauses(Clauses(lift.GetProperty("filter").GetProperty("bool").GetProperty("must"))[0])[1];
+		page.GetProperty("bool").GetProperty("filter").GetRawText().Should().Contain("api.landing").And.Contain("api.page");
+		page.GetRawText().Should().Contain("search_title");
+	}
+
+	[Test]
+	public void Build_WholeTitleLift_RequiresEveryTokenOfAWordAndReadsApiFromTheTitleOnly()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("api /_security/user/alice"));
+		var words = WordClauses(LiftByName(json, "title_all"));
+
+		// Every operation has the root parent "API", which names none of them.
+		ShouldClauses(words[0]).Should().ContainSingle();
+		// A typed route analyzes to several tokens, and one of them alone must not lift every title that has it.
+		ShouldClauses(words[1]).Select(o => Body(Body(o)).GetProperty("operator").GetString()).Should().AllBe("and");
+	}
+
+	[Test]
+	public void Build_WholeTitleLift_ReadsNoMoreWordsThanTheTokenLimit()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("one two three four five six seven eight nine ten"));
+
+		WordClauses(LiftByName(json, "title_all")).Should().HaveCount(8);
+	}
+
+	[Test]
 	public void Build_PlainWord_IdTitleGroupAndBodyReadTheirFields()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("cluster"));
@@ -650,14 +706,10 @@ public class ApiLookupQueryBuilderTests
 			.Select(f => f.GetString())
 			.Should()
 			.Equal("api.words.completion", "api.words.completion._2gram", "api.words.completion._3gram");
-		options["title_0"]
-			.GetProperty("filter")
-			.GetProperty("multi_match")
-			.GetProperty("fields")
-			.EnumerateArray()
-			.Select(f => f.GetString())
+		ShouldClauses(options["title_0"].GetProperty("filter"))
+			.Select(o => o.GetProperty("match_bool_prefix").EnumerateObject().Single().Name)
 			.Should()
-			.Equal("search_title.completion", "search_title.completion._2gram", "search_title.completion._3gram");
+			.Equal("title.completion", "parents.title");
 		options["group_0"]
 			.GetProperty("filter")
 			.GetProperty("match")
@@ -1110,7 +1162,7 @@ public class ApiLookupQueryBuilderTests
 			.GetProperty("constant_score");
 
 		lift.GetProperty("boost").GetSingle().Should().Be(3.0f);
-		lift.GetProperty("filter").GetProperty("multi_match").GetProperty("query").GetString().Should().Be("get cluster settings");
+		TypedTitleWords(lift).Should().Be("get cluster settings");
 	}
 
 	[Test]

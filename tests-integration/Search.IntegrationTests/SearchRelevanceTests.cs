@@ -575,6 +575,36 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	}
 
 	[Test]
+	// The deprecated Kibana "Create a new monitored user" came first, and the Elasticsearch operation was 10th, until the title roles
+	// read the display title (within one edit), a title's "X or Y" verbs joined api.words, and a word the operation names itself
+	// stopped listing a same-named request object as a path.
+	[Arguments("create user", "/operation/operation-create-user", 1)]
+	[Arguments("create user", "/operation/operation-security-put-user", 2)]
+	// A word that names the API still counts: the title match once read search_title, which holds "Cloud Enterprise API".
+	[Arguments("cloud create user", "/operation/operation-create-user", 1)]
+	// The group page is the title typed, whichever way the word is spelled: stemmed words, and the British spelling through a synonym.
+	[Arguments("behavioral analytics", "/group/endpoint-analytics", 1)]
+	[Arguments("behavior analytics", "/group/endpoint-analytics", 1)]
+	[Arguments("Behaviour analytics", "/group/endpoint-analytics", 1)]
+	public async Task ApiSearchPlacesAResultAtItsExpectedPosition(string query, string expectedUrlEnd, int expectedPosition)
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		// Positions count from 1, as the search telemetry does.
+		var urls = searchResult.Results.Select(r => r.Url).ToList();
+		var position = urls.FindIndex(u => u.EndsWith(expectedUrlEnd, StringComparison.Ordinal)) + 1;
+		position.Should().Be(expectedPosition, $"'{query}' listed {string.Join(", ", urls)}");
+	}
+
+	[Test]
 	public async Task ApiSearchWordsOfAnApisNameListItsLandingPageFirst()
 	{
 		var (gateway, _) = CreateFindPageGateway();
@@ -616,7 +646,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"create pipeline",
 			"search templates",
 			"create role",
-			"create user",
 			"reindex",
 			"legacy index template",
 			"install package",

@@ -34,8 +34,11 @@ namespace Elastic.Documentation.Search;
 /// typo of it, and a typo of an operation word beats a word that only a title, a group or a field name carries.</item>
 /// <item><see cref="TitleNamedTypo"/> sits below <see cref="TitleNamed"/>, so a title typed exactly beats one typed with a typo, and below every
 /// endpoint key, so it only breaks ties. A word one edit from another title lifts that title too, as <c>stats</c> does for <c>state</c>.</item>
-/// <item><see cref="NotDeprecated"/> sits above <see cref="BodyWord"/> and below every other role, so it only separates operations that
-/// explain the typed words equally well. <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
+/// <item><see cref="NotDeprecated"/> sits above every tie-break (<see cref="Method"/>, <see cref="Specificity"/>, <see cref="ListsChildren"/>,
+/// <see cref="SameApi"/>, 0.5 each) and below every role, so it only separates operations that explain the typed words equally well, and
+/// a tie-break never lifts a deprecated operation above a current one: <c>create user</c> lists the current <c>Create or update users</c>
+/// (8.08 + 0.4 against 8.34) above the deprecated <c>Create a new monitored user</c>, which a <c>user</c> object in its body had lifted.
+/// <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
 /// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
 /// better match beats the demotion. It lifts every operation whose flag is not true, whether the index omits the flag or writes
 /// <c>false</c>.</item>
@@ -71,7 +74,7 @@ public static class ApiLookupWeights
 	public const float TitleNamedTypo = 2.0f;
 	public const float ListsChildren = 0.5f;
 	public const float Specificity = 0.5f;
-	public const float NotDeprecated = 0.2f;
+	public const float NotDeprecated = 0.6f;
 
 	/// <summary>
 	/// Pins an API's landing page above every operation when the reader typed only words of its name, as in <c>kibana api</c>.
