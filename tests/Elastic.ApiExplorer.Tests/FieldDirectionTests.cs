@@ -124,6 +124,40 @@ public partial class FieldDirectionTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_RepeatedShapeSortedAhead_KeepsItsFieldsUnderTheFirstSpecOccurrence()
+	{
+		var fields = string.Join(", ", Enumerable.Range(0, 12).Select(i => $"\"f{i}\": {{ \"type\": \"string\" }}"));
+		var document = await LoadSpecAsync(
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Shape": { "type": "object", "properties": { {{fields}} } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": { "zeta": { "$ref": "#/components/schemas/Shape" }, "alpha": { "$ref": "#/components/schemas/Shape" } }
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+
+		var rows = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items;
+
+		rows.Select(r => r.Name).Should().Equal("alpha", "zeta");
+		// Links to `zeta`'s nested fields were valid before the rows were sorted, so `zeta` keeps them and `alpha` links to it.
+		rows.Single(r => r.Name == "zeta").Children.Kind.Should().Be(ChildKind.PropertyList);
+		rows.Single(r => r.Name == "alpha").Repeats.Should().NotBeNull();
+	}
+
+	[Test]
 	public async Task Render_FieldNamedChildren_KeepsEveryIdUnique()
 	{
 		var document = await LoadSpecAsync(Spec);

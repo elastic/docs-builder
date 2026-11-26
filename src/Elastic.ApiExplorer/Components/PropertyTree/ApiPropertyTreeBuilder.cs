@@ -104,30 +104,32 @@ public partial class ApiPropertyTreeBuilder(
 		var effective = _analyzer.Flatten(schema);
 		var properties = effective.Properties;
 		var requiredProps = scope.RequiredProperties ?? effective.Required;
-		// A union variant's selecting property first, then required ones, then A to Z; the map's any-other-key row last.
+		// Rows build in spec order, the union variant's selecting property first, because the first listing of a shape keeps its
+		// nested rows and anchors and later copies link to it. Sorting happens after, so it only changes what a reader sees.
 		var propArray = properties
 			.Where(p => p.Value is not null && IsListed(p.Value, scope))
 			.OrderBy(p => p.Key != leadingProperty)
-			.ThenBy(p => !requiredProps.Contains(p.Key))
-			.ThenBy(p => p.Key == DictionaryKeyName)
-			.ThenBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 		if (propArray.Length == 0)
 			return null;
 
-		var items = new List<ApiProperty>(propArray.Length);
-		for (var i = 0; i < propArray.Length; i++)
+		var built = new List<(string Name, ApiProperty Row)>(propArray.Length);
+		foreach (var (name, propSchema) in propArray)
 		{
-			var (name, propSchema) = propArray[i];
 			// The synthetic map row reads "<string>"; its anchor avoids a real property named "string" on the same list.
 			var anchorName = name == DictionaryKeyName ? properties.ContainsKey("string") ? "string-map" : "string" : name;
-			var row = CreateRow(name, propSchema, anchorName, scope) with
-			{
-				IsRequired = requiredProps.Contains(name),
-				IsLast = i == propArray.Length - 1
-			};
-			items.Add(BuildProperty(row, scope));
+			var row = CreateRow(name, propSchema, anchorName, scope) with { IsRequired = requiredProps.Contains(name), IsLast = false };
+			built.Add((name, BuildProperty(row, scope)));
 		}
+
+		// A union variant's selecting property first, then required ones, then A to Z; the map's any-other-key row last.
+		var items = built
+			.OrderBy(b => b.Name != leadingProperty)
+			.ThenBy(b => !requiredProps.Contains(b.Name))
+			.ThenBy(b => b.Name == DictionaryKeyName)
+			.ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
+			.Select((b, i) => b.Row with { IsLast = i == built.Count - 1 })
+			.ToList();
 
 		return new ApiPropertyList(items);
 	}
