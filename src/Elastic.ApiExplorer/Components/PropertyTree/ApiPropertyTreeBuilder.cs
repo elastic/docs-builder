@@ -125,8 +125,8 @@ public partial class ApiPropertyTreeBuilder(
 		// A union variant's selecting property first, then required ones, then A to Z; the map's any-other-key row last.
 		var items = built
 			.OrderBy(b => b.Name != leadingProperty)
-			.ThenBy(b => !requiredProps.Contains(b.Name))
 			.ThenBy(b => b.Name == DictionaryKeyName)
+			.ThenBy(b => !requiredProps.Contains(b.Name))
 			.ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
 			.Select((b, i) => b.Row with { IsLast = i == built.Count - 1 })
 			.ToList();

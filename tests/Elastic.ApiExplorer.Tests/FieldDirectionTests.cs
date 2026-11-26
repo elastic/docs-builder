@@ -158,6 +158,52 @@ public partial class FieldDirectionTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_SchemaRequiringAKeyNamedLikeTheMapRow_StillListsTheMapRowLast()
+	{
+		var document = await LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": {
+			            "allOf": [
+			              {
+			                "type": "object",
+			                "required": ["<string>"],
+			                "properties": { "id": { "type": "string" } },
+			                "additionalProperties": { "$ref": "#/components/schemas/Input" }
+			              },
+			              { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+
+		var cat = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!
+			.Items
+			.Single(p => p.Name == "pet")
+			.Children
+			.Variants!.Variants[0].Properties!.Items;
+
+		// The synthetic any-other-key row is never required, even when the schema requires a literal key with its name.
+		cat.Select(p => p.Name).Should().Equal("id", "lives", "<string>");
+	}
+
+	[Test]
 	public async Task Render_FieldNamedChildren_KeepsEveryIdUnique()
 	{
 		var document = await LoadSpecAsync(Spec);
