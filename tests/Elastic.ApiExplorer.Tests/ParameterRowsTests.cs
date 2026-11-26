@@ -312,6 +312,33 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task BuildParameterList_QueryParameters_ListRequiredFirstThenAToZ()
+	{
+		var document = await TestSpecs.LoadSpecAsync("""{ "openapi": "3.0.3", "info": { "title": "t", "version": "1" }, "paths": {} }""");
+
+		ParameterRowInput Row(string name, bool required) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Query,
+					Required = required,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var list = TestSpecs.BuilderFor(document).BuildParameterList(
+			[Row("beta", false), Row("zone", true), Row("alpha", false), Row("Mode", true)],
+			new PropertyTreeScope { Prefix = "query", IsRequest = true }
+		);
+
+		// `zone` sorts after `alpha`, but required parameters list first.
+		list.Items.Select(p => p.Name).Should().Equal("Mode", "zone", "alpha", "beta");
+		list.Items[^1].IsLast.Should().BeTrue();
+	}
+
+	[Test]
 	public void InRouteOrder_LongestRouteLacksAParameter_UsesTheRouteThatHasThemAll()
 	{
 		var endpoint = OperationEndpoint.FromVariants(
