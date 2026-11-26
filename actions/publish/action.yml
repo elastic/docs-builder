@@ -8,7 +8,7 @@ branding:
 outputs:
   page_url:
     description: "The github actions url"
-    value: ${{steps.deployment.outputs.page_url}}
+    value: ${{ steps.deployment.outputs.page_url || steps.deployment-retry-1.outputs.page_url || steps.deployment-retry-2.outputs.page_url || steps.deployment-retry-3.outputs.page_url }}
 
 inputs:
   strict:
@@ -56,6 +56,35 @@ runs:
       uses: actions/upload-pages-artifact@v5.0.0
       with:
         path: .artifacts/docs/html
+    # actions/deploy-pages can miss the artifact right after the upload (actions/deploy-pages#451).
+    # Upload once and retry only the deploy; remove the retries once the upstream fix (#455) is released.
     - name: Deploy artifact
       id: deployment
+      uses: actions/deploy-pages@v5.0.1
+      continue-on-error: true
+    - name: Wait before deploy retry 1
+      if: steps.deployment.outcome == 'failure'
+      shell: bash
+      run: sleep 5
+    - name: Deploy artifact (retry 1)
+      id: deployment-retry-1
+      if: steps.deployment.outcome == 'failure'
+      uses: actions/deploy-pages@v5.0.1
+      continue-on-error: true
+    - name: Wait before deploy retry 2
+      if: steps.deployment-retry-1.outcome == 'failure'
+      shell: bash
+      run: sleep 20
+    - name: Deploy artifact (retry 2)
+      id: deployment-retry-2
+      if: steps.deployment-retry-1.outcome == 'failure'
+      uses: actions/deploy-pages@v5.0.1
+      continue-on-error: true
+    - name: Wait before deploy retry 3
+      if: steps.deployment-retry-2.outcome == 'failure'
+      shell: bash
+      run: sleep 60
+    - name: Deploy artifact (retry 3)
+      id: deployment-retry-3
+      if: steps.deployment-retry-2.outcome == 'failure'
       uses: actions/deploy-pages@v5.0.1
