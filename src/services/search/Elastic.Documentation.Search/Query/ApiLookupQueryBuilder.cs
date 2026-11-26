@@ -52,6 +52,10 @@ public static class ApiLookupQueryBuilder
 	private static readonly Field[] TitleOrParentFields = [QueryFieldNames.TitleCompletion, QueryFieldNames.ParentsTitle];
 	private static readonly Field[] DisplayTitleOnly = [QueryFieldNames.TitleCompletion];
 
+	// The titles are indexed as written, but the synonyms analyzer stems the typed word. A word matches as stemmed, which finds a title
+	// written in base form, and as written, which finds `policies` in "Lifecycle policies" and `ES|QL` (`es`, `ql`) in "Run an ES|QL query".
+	private static readonly string[] TitleWordAnalyzers = [SynonymsAnalyzer, "standard"];
+
 	private const int TitleWordFixedLetters = 5;
 	private const string RootParentTitle = "API";
 
@@ -462,27 +466,34 @@ public static class ApiLookupQueryBuilder
 		};
 
 	/// <summary>
-	/// The last word is still being typed, so it completes. The display title has no stemmer, so an earlier word that differs only after
-	/// its first five letters still names it: <c>create</c> finds <c>Creates a new user</c>, while <c>delte</c> does not become
-	/// <c>Delete</c> and lift every title that has it. A word that analyzes to several tokens, such as a typed route, needs all of them.
-	/// Every API operation has the root parent titled <c>API</c>, which names no operation, so <c>api</c> reads the display title only.
+	/// The last word is still being typed, so it completes. An earlier word that differs only after its first five letters still names a
+	/// title: <c>create</c> finds <c>Creates a new user</c>, while <c>delte</c> does not become <c>Delete</c> and lift every title that has
+	/// it. A word that analyzes to several tokens, such as a typed route, needs all of them. Every API operation has the root parent titled
+	/// <c>API</c>, which names no operation, so <c>api</c> reads the display title only.
 	/// </summary>
 	private static Query WordNamesTitleOrParents(string word, bool completes)
 	{
 		var fields = word.Equals(RootParentTitle, StringComparison.OrdinalIgnoreCase) ? DisplayTitleOnly : TitleOrParentFields;
 		return new BoolQuery
 		{
-			Should = [.. fields.Select(field => (Query)(completes ? CompletedWord(field, word) : EditedWord(field, word)))],
+			Should =
+			[
+				.. fields.SelectMany(
+					field => TitleWordAnalyzers.Select(
+						analyzer => (Query)(completes ? CompletedWord(field, word, analyzer) : EditedWord(field, word, analyzer))
+					)
+				)
+			],
 			MinimumShouldMatch = 1
 		};
 	}
 
-	private static MatchBoolPrefixQuery CompletedWord(Field field, string word) =>
-		new() { Field = field, Query = word, Analyzer = SynonymsAnalyzer, Operator = Operator.And };
+	private static MatchBoolPrefixQuery CompletedWord(Field field, string word, string analyzer = SynonymsAnalyzer) =>
+		new() { Field = field, Query = word, Analyzer = analyzer, Operator = Operator.And };
 
-	private static MatchQuery EditedWord(Field field, string word)
+	private static MatchQuery EditedWord(Field field, string word, string analyzer)
 	{
-		var match = SearchQueryBuilder.FuzzyWordMatch(field, word, SynonymsAnalyzer, TitleWordFixedLetters);
+		var match = SearchQueryBuilder.FuzzyWordMatch(field, word, analyzer, TitleWordFixedLetters);
 		match.Operator = Operator.And;
 		return match;
 	}

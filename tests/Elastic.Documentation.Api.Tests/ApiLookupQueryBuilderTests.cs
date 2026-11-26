@@ -176,6 +176,16 @@ public class ApiLookupQueryBuilderTests
 
 	private static JsonElement[] ShouldClauses(JsonElement boolQuery) => Clauses(boolQuery.GetProperty("bool").GetProperty("should"));
 
+	/// <summary>Each option as <c>field/analyzer</c>, such as <c>title.completion/standard</c>.</summary>
+	private static string[] FieldAnalyzers(JsonElement[] options) =>
+		[
+			.. options.Select(option =>
+			{
+				var field = Body(option).EnumerateObject().Single();
+				return $"{field.Name}/{field.Value.GetProperty("analyzer").GetString()}";
+			})
+		];
+
 	/// <summary>The value of a query object's one property, such as <c>{"match": {...}}</c>.</summary>
 	private static JsonElement Body(JsonElement query) => query.EnumerateObject().Single().Value;
 
@@ -657,7 +667,14 @@ public class ApiLookupQueryBuilderTests
 
 		words.Should().HaveCount(3);
 		foreach (var word in words)
-			ShouldClauses(word).Select(o => Body(o).EnumerateObject().Single().Name).Should().Equal("title.completion", "parents.title");
+			FieldAnalyzers(ShouldClauses(word))
+				.Should()
+				.Equal(
+					"title.completion/synonyms_analyzer",
+					"title.completion/standard",
+					"parents.title/synonyms_analyzer",
+					"parents.title/standard"
+				);
 		// `cloud` names the API through its parent title; an earlier word may differ from the title's only after its first five letters,
 		// as a stemmer would allow, but never in its first letters: `delte` must not become `delete`. The word being typed completes.
 		var cloud = Body(ShouldClauses(words[0])[0]).GetProperty("title.completion");
@@ -677,7 +694,7 @@ public class ApiLookupQueryBuilderTests
 		var words = WordClauses(LiftByName(json, "title_all"));
 
 		// Every operation has the root parent "API", which names none of them.
-		ShouldClauses(words[0]).Should().ContainSingle();
+		FieldAnalyzers(ShouldClauses(words[0])).Should().Equal("title.completion/synonyms_analyzer", "title.completion/standard");
 		// A typed route analyzes to several tokens, and one of them alone must not lift every title that has it.
 		ShouldClauses(words[1]).Select(o => Body(Body(o)).GetProperty("operator").GetString()).Should().AllBe("and");
 	}
@@ -688,6 +705,22 @@ public class ApiLookupQueryBuilderTests
 		using var json = Json(ApiLookupQueryBuilder.Build("one two three four five six seven eight nine ten"));
 
 		WordClauses(LiftByName(json, "title_all")).Should().HaveCount(8);
+	}
+
+	[Test]
+	[Arguments("lifecycle policies", "policies")]
+	[Arguments("run an ES|QL query", "ES|QL")]
+	public void Build_WholeTitleLift_AlsoMatchesAWordAsWrittenBecauseTitlesAreNotStemmed(string query, string word)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(query));
+
+		var asWritten = WordClauses(LiftByName(json, "title_all"))
+			.SelectMany(ShouldClauses)
+			.Select(option => Body(Body(option)))
+			.Where(match => match.GetProperty("analyzer").GetString() == "standard")
+			.Select(match => match.GetProperty("query").GetString());
+
+		asWritten.Should().Contain(word);
 	}
 
 	[Test]
@@ -706,10 +739,14 @@ public class ApiLookupQueryBuilderTests
 			.Select(f => f.GetString())
 			.Should()
 			.Equal("api.words.completion", "api.words.completion._2gram", "api.words.completion._3gram");
-		ShouldClauses(options["title_0"].GetProperty("filter"))
-			.Select(o => o.GetProperty("match_bool_prefix").EnumerateObject().Single().Name)
+		FieldAnalyzers(ShouldClauses(options["title_0"].GetProperty("filter")))
 			.Should()
-			.Equal("title.completion", "parents.title");
+			.Equal(
+				"title.completion/synonyms_analyzer",
+				"title.completion/standard",
+				"parents.title/synonyms_analyzer",
+				"parents.title/standard"
+			);
 		options["group_0"]
 			.GetProperty("filter")
 			.GetProperty("match")
