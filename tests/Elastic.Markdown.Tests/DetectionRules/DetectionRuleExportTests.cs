@@ -15,7 +15,8 @@ namespace Elastic.Markdown.Tests.DetectionRules;
 
 public class DetectionRuleExportTests
 {
-	// DetectionRule reads the rule from disk, so the docset is written to a temporary folder.
+	// DetectionRule reads the rule from disk, so the docset is written to a temporary folder. The output
+	// folder is outside the checkout, so a write next to it is refused.
 	[Test]
 	public async Task GenerateAll_RuleOutsideDocsFolder_WritesMarkdownNextToHtml()
 	{
@@ -23,8 +24,9 @@ public class DetectionRuleExportTests
 		var root = Directory.CreateTempSubdirectory("docs-builder-rules-");
 		try
 		{
+			var repo = root.CreateSubdirectory("repo");
 			WriteFile(
-				root,
+				repo,
 				"docs/docset.yml",
 				//language=yaml
 				"""
@@ -38,10 +40,10 @@ public class DetectionRuleExportTests
 				      - ../rules
 				"""
 			);
-			WriteFile(root, "docs/index.md", "# Home");
-			WriteFile(root, "docs/rules.md", "# Rules");
+			WriteFile(repo, "docs/index.md", "# Home");
+			WriteFile(repo, "docs/rules.md", "# Rules");
 			WriteFile(
-				root,
+				repo,
 				"rules/linux/kernel_ring_buffer.toml",
 				//language=toml
 				"""
@@ -62,13 +64,13 @@ public class DetectionRuleExportTests
 				query = "process.name : evil.exe"
 				"""
 			);
-			_ = root.CreateSubdirectory(".git");
+			_ = repo.CreateSubdirectory(".git");
 
 			var fs = new FileSystem();
 			var logger = new TestLoggerFactory();
 			await using var collector = new DiagnosticsCollector([]).StartAsync(ctx);
 			var documentationFileSystem = DocumentationFileSystem.Resolve(
-				fs.DirectoryInfo.New(Path.Join(root.FullName, "docs")),
+				fs.DirectoryInfo.New(Path.Join(repo.FullName, "docs")),
 				new DocumentationScopeOptions { Inner = fs, Output = Path.Join(root.FullName, "out", "html") }
 			);
 			var context = new BuildContext(collector, documentationFileSystem, TestHelpers.CreateConfigurationContext(fs))
