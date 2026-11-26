@@ -82,7 +82,9 @@ internal static class ApiMarkdownFrontMatter
 			ApiLanding => "",
 			_ => null
 		};
-		return fragment is null ? null : UrlPath.MakeAbsolute(canonicalBaseUrl, ApiOutputPaths.JsonUrl(treeRootUrl) + fragment);
+		// The fragment goes on after the URL is absolute: MakeAbsolute leaves a URL it cannot read as a relative URI unchanged,
+		// and that includes one with a percent-encoded fragment, so it would stay relative.
+		return fragment is null ? null : UrlPath.MakeAbsolute(canonicalBaseUrl, ApiOutputPaths.JsonUrl(treeRootUrl)) + fragment;
 	}
 
 	/// <summary>A path item that is a $ref serializes as that reference and has no operation member, so the pointer stops at the path item.</summary>

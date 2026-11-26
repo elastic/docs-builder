@@ -99,6 +99,17 @@ public class ApiMarkdownFrontMatterTests
 	}
 
 	[Test]
+	public void SpecResource_AbsoluteWithATemplatedRoute_KeepsTheFragmentPercentEncoded()
+	{
+		var operation = new ApiOperation(HttpMethod.Get, new OpenApiOperation(), "/{index}/_search", new OpenApiPathItem(), "search");
+
+		ApiMarkdownFrontMatter
+			.SpecResource(operation, "/docs/api/elasticsearch", new Uri("https://www.elastic.co"))
+			.Should()
+			.Be("https://www.elastic.co/docs/api/elasticsearch.json#/paths/~1%7Bindex%7D~1_search/get");
+	}
+
+	[Test]
 	public async Task SpecResource_PathItemThatIsAReference_PointsAtThePathItemTheSpecPublishes()
 	{
 		var document = await LoadSpecAsync(
