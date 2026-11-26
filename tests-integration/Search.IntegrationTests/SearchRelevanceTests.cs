@@ -605,6 +605,38 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	}
 
 	[Test]
+	[Arguments("run an ES|QL query", "/operation/operation-esql-query")]
+	[Arguments("Get lifecycle policies", "/operation/operation-ilm-get-lifecycle")]
+	public async Task ApiSearchTitleTypedAsWrittenEarnsTheWholeTitleLift(string title, string expectedUrlEnd)
+	{
+		var (gateway, clientAccessor) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		Skip.Unless(await gateway.CanConnect(ct), "Elasticsearch is not connected");
+
+		// The titles are indexed as written, while the synonyms analyzer turns `policies` into `policy` and `ES|QL` into `esql`.
+		var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
+			s => s
+				.Indices(clientAccessor.SearchIndex)
+				.Size(50)
+				.Query(SearchQueryBuilder.FilterDocuments(ApiLookupQueryBuilder.Build(title), page: null))
+				.PostFilter(new TermQuery { Field = QueryFieldNames.ContentType, Value = "api" })
+				.Source(sf => sf.Filter(f => f.Includes(ReportSourceIncludes)))
+				.IncludeNamedQueriesScore(true),
+			ct
+		);
+
+		var hit = response.Hits.FirstOrDefault(h => h.Source?.Path?.EndsWith(expectedUrlEnd, StringComparison.Ordinal) == true);
+		hit.Should().NotBeNull($"'{title}' lists {expectedUrlEnd}");
+		var scored = hit!.MatchedQueries?.Match(_ => null, scores => scores) ?? new Dictionary<string, double>();
+		scored
+			.TryGetValue("title_all", out var lift)
+			.Should()
+			.BeTrue($"the title '{title}' names its own operation, which scored {string.Join(", ", scored)}");
+		lift.Should().Be(ApiLookupWeights.WholeTitle);
+	}
+
+	[Test]
 	public async Task ApiSearchWordsOfAnApisNameListItsLandingPageFirst()
 	{
 		var (gateway, _) = CreateFindPageGateway();
