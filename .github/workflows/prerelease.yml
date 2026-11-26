@@ -43,32 +43,67 @@ jobs:
           
       # actions/deploy-pages can miss the artifact right after the upload (actions/deploy-pages#451).
       # Upload once and retry only the deploy; remove the retries once the upstream fix (#455) is released.
+      # A missing artifact fails within a second. A deploy that ran longer (for example a Pages status timeout)
+      # is not retried, so a slow failure cannot hold the deploy concurrency slot for four attempts.
+      - name: Mark deploy start
+        id: deploy-start
+        run: echo "t=$(date +%s)" >> "$GITHUB_OUTPUT"
       - name: Deploy artifact
         id: deployment
         uses: actions/deploy-pages@v5.0.1
         continue-on-error: true
       - name: Wait before deploy retry 1
+        id: gate-1
         if: steps.deployment.outcome == 'failure'
-        run: sleep 5
+        env:
+          STARTED: ${{ steps.deploy-start.outputs.t }}
+        run: |
+            elapsed=$(( $(date +%s) - STARTED ))
+            if [ "$elapsed" -ge 30 ]; then
+              echo "::error::The deploy ran for ${elapsed}s before it failed, so a missing artifact was not the cause. Not retrying."
+              exit 1
+            fi
+            sleep 5
+            echo "t=$(date +%s)" >> "$GITHUB_OUTPUT"
       - name: Deploy artifact (retry 1)
         id: deployment-retry-1
-        if: steps.deployment.outcome == 'failure'
+        if: steps.gate-1.outcome == 'success'
         uses: actions/deploy-pages@v5.0.1
         continue-on-error: true
       - name: Wait before deploy retry 2
+        id: gate-2
         if: steps.deployment-retry-1.outcome == 'failure'
-        run: sleep 20
+        env:
+          STARTED: ${{ steps.gate-1.outputs.t }}
+        run: |
+            elapsed=$(( $(date +%s) - STARTED ))
+            if [ "$elapsed" -ge 30 ]; then
+              echo "::error::The deploy ran for ${elapsed}s before it failed, so a missing artifact was not the cause. Not retrying."
+              exit 1
+            fi
+            sleep 20
+            echo "t=$(date +%s)" >> "$GITHUB_OUTPUT"
       - name: Deploy artifact (retry 2)
         id: deployment-retry-2
-        if: steps.deployment-retry-1.outcome == 'failure'
+        if: steps.gate-2.outcome == 'success'
         uses: actions/deploy-pages@v5.0.1
         continue-on-error: true
       - name: Wait before deploy retry 3
+        id: gate-3
         if: steps.deployment-retry-2.outcome == 'failure'
-        run: sleep 60
+        env:
+          STARTED: ${{ steps.gate-2.outputs.t }}
+        run: |
+            elapsed=$(( $(date +%s) - STARTED ))
+            if [ "$elapsed" -ge 30 ]; then
+              echo "::error::The deploy ran for ${elapsed}s before it failed, so a missing artifact was not the cause. Not retrying."
+              exit 1
+            fi
+            sleep 60
+            echo "t=$(date +%s)" >> "$GITHUB_OUTPUT"
       - name: Deploy artifact (retry 3)
         id: deployment-retry-3
-        if: steps.deployment-retry-2.outcome == 'failure'
+        if: steps.gate-3.outcome == 'success'
         uses: actions/deploy-pages@v5.0.1
 
   build:
