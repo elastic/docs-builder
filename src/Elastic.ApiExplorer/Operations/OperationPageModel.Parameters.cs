@@ -60,17 +60,32 @@ public partial record OperationPageModel
 	}
 
 	/// <summary>
-	/// Path parameters in the order their placeholders appear in the route that holds the most required ones, the leading route
-	/// when several tie. The spec merges an operation's own parameters before the path item's, so declaration order is not route
-	/// order, and a longer alias route can lack a parameter. Only required parameters pick the route, so the optional Kibana
-	/// space parameter cannot make a space variant outrank the leading route. A parameter no route holds sorts first.
+	/// Required path parameters first, each group in the order its placeholders appear in the route that holds the most of that
+	/// group, the leading route when several tie. The spec merges an operation's own parameters before the path item's, so
+	/// declaration order is not route order, and a longer alias route can lack a parameter. The optional Kibana space parameter
+	/// never picks a route, so a space variant cannot outrank the leading one. A parameter no route holds sorts first in its group.
 	/// </summary>
 	internal static ParameterRowInput[] InRouteOrder(ParameterRowInput[] rows, OperationEndpoint endpoint)
 	{
-		var required = rows.Where(static r => r.IsRequired).Select(static r => $"{{{r.Parameter.Name}}}").ToArray();
-		var route = endpoint.Rows.Select(static r => r.Route).MaxBy(r => required.Count(p => r.Contains(p, StringComparison.Ordinal)))!;
-		return [.. rows.OrderBy(r => route.IndexOf($"{{{r.Parameter.Name}}}", StringComparison.Ordinal))];
+		var requiredRoute = RouteHolding(rows.Where(static r => r.IsRequired), endpoint);
+		var optionalRoute = RouteHolding(rows.Where(r => !r.IsRequired && r.Parameter.Name != endpoint.SpaceParameter), endpoint);
+		return [
+			.. rows.OrderBy(static r => !r.IsRequired).ThenBy(
+				r => (r.IsRequired ? requiredRoute : optionalRoute).IndexOf(Placeholder(r), StringComparison.Ordinal)
+			)
+		];
 	}
+
+	private static string RouteHolding(IEnumerable<ParameterRowInput> group, OperationEndpoint endpoint)
+	{
+		var placeholders = group.Select(Placeholder).ToArray();
+		return endpoint
+			.Rows
+			.Select(static r => r.Route)
+			.MaxBy(route => placeholders.Count(p => route.Contains(p, StringComparison.Ordinal)))!;
+	}
+
+	private static string Placeholder(ParameterRowInput row) => $"{{{row.Parameter.Name}}}";
 
 	/// <summary>
 	/// Kibana specs declare the <c>/s/{space_id}</c> route only in the description, so the page lists the parameter itself,

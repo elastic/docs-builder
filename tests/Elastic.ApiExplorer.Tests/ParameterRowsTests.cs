@@ -364,6 +364,32 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void InRouteOrder_LeadingRouteLacksOptionalPlaceholders_OrdersThemByTheRouteThatHasThem()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new("get", "/legacy/api/v1/items/{id}"), new("get", "/items/{id}/{region}/{zone}")],
+			specRoute: "/items/{id}/{region}/{zone}"
+		);
+
+		ParameterRowInput Row(string name, bool required) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Path,
+					Required = required,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var ordered = OperationPageModel.InRouteOrder([Row("zone", false), Row("region", false), Row("id", true)], endpoint);
+
+		// The leading alias holds the required `id` but neither optional placeholder, so each group picks its own route.
+		ordered.Select(r => r.Parameter.Name).Should().Equal("id", "region", "zone");
+	}
+
+	[Test]
 	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterAfterTheRequiredOnes()
 	{
 		var operation = new OpenApiOperation
