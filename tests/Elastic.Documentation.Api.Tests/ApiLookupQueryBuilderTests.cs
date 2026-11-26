@@ -66,6 +66,32 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	public void Weights_NotDeprecated_SitsAboveTieBreaksAndBelowTheRolesThatNameAWord()
+	{
+		float[] tieBreaksAndWeakEvidence =
+		[
+			ApiLookupWeights.Method,
+			ApiLookupWeights.Specificity,
+			ApiLookupWeights.ListsChildren,
+			ApiLookupWeights.SameApi,
+			ApiLookupWeights.FieldWord,
+			ApiLookupWeights.ChildOption,
+			ApiLookupWeights.BodyWord
+		];
+		float[] rolesThatNameAWord =
+		[
+			ApiLookupWeights.GroupWord,
+			ApiLookupWeights.TitleWord,
+			ApiLookupWeights.FieldName,
+			ApiLookupWeights.OperationWordTypo,
+			ApiLookupWeights.OperationWord
+		];
+
+		tieBreaksAndWeakEvidence.Should().OnlyContain(weight => weight < ApiLookupWeights.NotDeprecated);
+		rolesThatNameAWord.Should().OnlyContain(weight => weight > ApiLookupWeights.NotDeprecated);
+	}
+
+	[Test]
 	public void Build_Words_LiftsOperationsNotMarkedDeprecated()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("isolate endpoint"));

@@ -35,9 +35,11 @@ namespace Elastic.Documentation.Search;
 /// <item><see cref="TitleNamedTypo"/> sits below <see cref="TitleNamed"/>, so a title typed exactly beats one typed with a typo, and below every
 /// endpoint key, so it only breaks ties. A word one edit from another title lifts that title too, as <c>stats</c> does for <c>state</c>.</item>
 /// <item><see cref="NotDeprecated"/> sits above every tie-break (<see cref="Method"/>, <see cref="Specificity"/>, <see cref="ListsChildren"/>,
-/// <see cref="SameApi"/>, 0.5 each) and below every role, so it only separates operations that explain the typed words equally well, and
-/// a tie-break never lifts a deprecated operation above a current one: <c>create user</c> lists the current <c>Create or update users</c>
-/// (8.08 + 0.4 against 8.34) above the deprecated <c>Create a new monitored user</c>, which a <c>user</c> object in its body had lifted.
+/// <see cref="SameApi"/>, 0.5 each), above <see cref="FieldWord"/> and <see cref="ChildOption"/>, level with <see cref="FieldNamePrefix"/>, and
+/// below every role of 1.0 or more. So a tie-break never lifts a deprecated operation above a current one: <c>create user</c> lists the
+/// current <c>Create or update users</c> (8.08 + 0.4 against 8.34) above the deprecated <c>Create a new monitored user</c>, which a
+/// <c>user</c> object in its body had lifted. The demotion also outweighs weak field evidence: a current operation that explains a word only
+/// through its body (0.1 + 0.6) outranks a deprecated one that explains it through a field word (0.5). A role of 1.0 or more still wins.
 /// <c>template</c> lists the current <c>HEAD /_template/{name}</c> (10.08) above the three
 /// deprecated legacy template operations (9.88), and <c>legacy index template</c> still puts those first (11.88 against 8.18), since a
 /// better match beats the demotion. It lifts every operation whose flag is not true, whether the index omits the flag or writes
