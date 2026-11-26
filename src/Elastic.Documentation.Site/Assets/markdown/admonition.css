@@ -3,14 +3,17 @@
 		@apply mt-4 rounded-sm border-1 pb-4;
 
 		.admonition-header {
-			@apply flex items-center gap-3 rounded-t-sm px-4 py-2 font-bold;
+			@apply flex flex-wrap items-center gap-x-3 gap-y-2 rounded-t-sm px-4 py-2 font-bold;
 		}
 
 		.applies-admonition {
-			@apply flex items-center gap-1 font-normal;
+			@apply flex min-w-0 flex-wrap items-center gap-1 font-normal;
+			.applicable-info {
+				@apply max-w-full;
+			}
 			.applicable-name,
 			.applicable-meta {
-				@apply text-xs;
+				@apply flex-wrap text-xs text-wrap;
 			}
 			.applicable-separator {
 				mix-blend-mode: multiply;
