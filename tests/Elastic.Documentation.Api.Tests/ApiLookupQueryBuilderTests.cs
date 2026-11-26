@@ -92,6 +92,17 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	public void Weights_NotDeprecated_OutweighsWeakFieldEvidenceButNotAnOperationWord()
+	{
+		// A current operation with a field word, and the lift, outranks a deprecated one with an exact field name.
+		(ApiLookupWeights.FieldWord + ApiLookupWeights.NotDeprecated).Should().BeGreaterThan(ApiLookupWeights.FieldName);
+		// A current operation with only a body word outranks a deprecated one with a field word.
+		(ApiLookupWeights.BodyWord + ApiLookupWeights.NotDeprecated).Should().BeGreaterThan(ApiLookupWeights.FieldWord);
+		// A deprecated operation with an operation word is ahead by more than the lift can overcome.
+		ApiLookupWeights.OperationWord.Should().BeGreaterThan(ApiLookupWeights.FieldWord + ApiLookupWeights.NotDeprecated);
+	}
+
+	[Test]
 	public void Build_Words_LiftsOperationsNotMarkedDeprecated()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("isolate endpoint"));
