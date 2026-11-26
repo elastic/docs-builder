@@ -469,11 +469,11 @@ public static class ApiLookupQueryBuilder
 	/// The last word is still being typed, so it completes. An earlier word that differs only after its first five letters still names a
 	/// title: <c>create</c> finds <c>Creates a new user</c>, while <c>delte</c> does not become <c>Delete</c> and lift every title that has
 	/// it. A word that analyzes to several tokens, such as a typed route, needs all of them. Every API operation has the root parent titled
-	/// <c>API</c>, which names no operation, so <c>api</c> reads the display title only.
+	/// <c>API</c>, which names no operation, so <c>api</c> reads the display title only, however punctuation surrounds it.
 	/// </summary>
 	private static Query WordNamesTitleOrParents(string word, bool completes)
 	{
-		var fields = word.Equals(RootParentTitle, StringComparison.OrdinalIgnoreCase) ? DisplayTitleOnly : TitleOrParentFields;
+		var fields = NamesOnlyTheRootParent(word) ? DisplayTitleOnly : TitleOrParentFields;
 		return new BoolQuery
 		{
 			Should =
@@ -487,6 +487,10 @@ public static class ApiLookupQueryBuilder
 			MinimumShouldMatch = 1
 		};
 	}
+
+	/// <summary>The <c>standard</c> analyzer drops punctuation, so <c>api:</c> and <c>(api)</c> reach the root parent as <c>api</c> does.</summary>
+	private static bool NamesOnlyTheRootParent(string word) =>
+		string.Concat(word.Where(char.IsLetterOrDigit)).Equals(RootParentTitle, StringComparison.OrdinalIgnoreCase);
 
 	private static MatchBoolPrefixQuery CompletedWord(Field field, string word, string analyzer = SynonymsAnalyzer) =>
 		new() { Field = field, Query = word, Analyzer = analyzer, Operator = Operator.And };

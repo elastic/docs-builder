@@ -734,6 +734,22 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	[Arguments("api")]
+	[Arguments("API")]
+	[Arguments("api:")]
+	[Arguments("(api)")]
+	[Arguments("api,")]
+	public void Build_WholeTitleLift_ReadsApiFromTheTitleOnlyWhateverPunctuationSurroundsIt(string word)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build($"{word} key"));
+
+		var words = WordClauses(LiftByName(json, "title_all"));
+
+		// Every operation has the root parent "API", which names none of them.
+		FieldAnalyzers(ShouldClauses(words[0])).Should().Equal("title.completion/synonyms_analyzer", "title.completion/standard");
+	}
+
+	[Test]
 	[Arguments("lifecycle policies", "policies")]
 	[Arguments("run an ES|QL query", "ES|QL")]
 	public void Build_WholeTitleLift_AlsoMatchesAWordAsWrittenBecauseTitlesAreNotStemmed(string query, string word)
