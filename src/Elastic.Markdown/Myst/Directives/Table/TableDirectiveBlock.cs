@@ -4,8 +4,10 @@
 
 using System.Linq;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Directives.Table;
 
@@ -35,10 +37,29 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public bool Filterable { get; private set; }
 
+	/// <summary>
+	/// Set by <c>:filterable: search</c>. The client adds the search box and count but no
+	/// dropdown filters, for tables where no column groups the rows in a useful way.
+	/// </summary>
+	public bool FilterSearchOnly { get; private set; }
+
+	/// <summary>
+	/// Column header names from <c>:filter-columns:</c>. When set, only these columns get a
+	/// dropdown filter, in place of the automatic choice. Empty means automatic.
+	/// </summary>
+	public IReadOnlyList<string> FilterColumns { get; private set; } = [];
+
+	/// <summary>
+	/// Zero-based positions of the columns that <see cref="FilterColumns"/> matched, in table
+	/// order. Set at render time. The client filters by position, so header text is only ever
+	/// compared here, never again in the browser.
+	/// </summary>
+	public IReadOnlyList<int> FilterColumnIndexes { get; private set; } = [];
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Matrix = PropBool("matrix");
-		Filterable = PropBool("filterable");
+		ParseFilterOptions();
 
 		var widthsValue = Prop("widths")?.Trim();
 
@@ -63,6 +84,155 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 		}
 
 		ColumnWidths = gridUnits.Select(u => u / 12.0 * 100).ToArray();
+	}
+
+	/// <summary>
+	/// Reads <c>:filterable:</c> and <c>:filter-columns:</c>. A bare <c>:filterable:</c>
+	/// (or <c>true</c>) keeps the automatic dropdowns, <c>search</c> turns them off, and
+	/// <c>:filter-columns:</c> names the columns that get one.
+	/// </summary>
+	private void ParseFilterOptions()
+	{
+		var filterable = Prop("filterable")?.Trim();
+		if (filterable is not null)
+		{
+			if (filterable.Length == 0 || filterable.Equals("true", StringComparison.OrdinalIgnoreCase))
+				Filterable = true;
+			else if (filterable.Equals("search", StringComparison.OrdinalIgnoreCase))
+				(Filterable, FilterSearchOnly) = (true, true);
+			else if (!filterable.Equals("false", StringComparison.OrdinalIgnoreCase))
+				this.EmitError(
+					$"Invalid filterable value '{filterable}'. Use :filterable: on its own for automatic dropdown filters, or :filterable: search for a search box without dropdowns."
+				);
+		}
+
+		var columns = Prop("filter-columns");
+		if (columns is null)
+			return;
+
+		if (!Filterable)
+		{
+			this.EmitWarning(":filter-columns: has no effect without :filterable:. Add :filterable: to the table directive.");
+			return;
+		}
+
+		if (FilterSearchOnly)
+		{
+			this.EmitError(
+				":filter-columns: can't be combined with :filterable: search, which shows no dropdown filters. Remove one of the two options."
+			);
+			return;
+		}
+
+		var names = columns.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+		if (names.Length == 0)
+		{
+			this.EmitError(":filter-columns: needs at least one column header name. To show no dropdown filters, use :filterable: search.");
+			return;
+		}
+
+		FilterColumns = names;
+	}
+
+	/// <summary>
+	/// Matches every <c>:filter-columns:</c> name against the table's header row and records
+	/// the matched column positions for the client. A name that matches no header fails the
+	/// build instead of silently dropping a filter, and is removed.
+	/// </summary>
+	private void ValidateFilterColumns(Markdig.Extensions.Tables.Table table)
+	{
+		if (FilterColumns.Count == 0)
+			return;
+
+		var headers = table.Count > 0 && table[0] is TableRow { IsHeader: true } headerRow
+			? headerRow.OfType<TableCell>().Select(CellText).ToList()
+			: [];
+
+		if (headers.All(h => h.Length == 0))
+		{
+			this.EmitError(":filter-columns: needs a table with a header row, because it matches columns by their header text.");
+			FilterColumns = [];
+			return;
+		}
+
+		var known = new List<string>(FilterColumns.Count);
+		var indexes = new SortedSet<int>();
+		foreach (var name in FilterColumns)
+		{
+			var wanted = CollapseWhitespace(name);
+			var matches = Enumerable
+				.Range(0, headers.Count)
+				.Where(i => headers[i].Length > 0 && headers[i].Equals(wanted, StringComparison.OrdinalIgnoreCase))
+				.ToList();
+
+			if (matches.Count == 0)
+			{
+				this.EmitError(
+					$"Filter column '{name}' doesn't match any column header. Available headers: {string.Join(", ", headers.Where(h => h.Length > 0))}."
+				);
+				continue;
+			}
+
+			known.Add(name);
+			indexes.UnionWith(matches);
+		}
+
+		FilterColumns = known;
+		FilterColumnIndexes = indexes.ToArray();
+	}
+
+	/// <summary>
+	/// The text a reader sees in a header cell: literal and code text, substitution values,
+	/// and HTML entities, with emphasis and links unwrapped. Footnote markers are skipped,
+	/// and runs of whitespace become one space. A role keeps its raw content, which can
+	/// differ from what the role renders.
+	/// </summary>
+	private static string CellText(TableCell cell)
+	{
+		var sb = new System.Text.StringBuilder();
+		foreach (var paragraph in cell.OfType<LeafBlock>())
+		{
+			if (paragraph.Inline is not null)
+				AppendInlineText(paragraph.Inline, sb);
+		}
+
+		return CollapseWhitespace(sb.ToString());
+	}
+
+	private static string CollapseWhitespace(string text) =>
+		string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+	private static void AppendInlineText(ContainerInline container, System.Text.StringBuilder sb)
+	{
+		foreach (var inline in container)
+		{
+			switch (inline)
+			{
+				case LiteralInline literal:
+					_ = sb.Append(literal.Content);
+					break;
+				// Before CodeInline, which SubstitutionLeaf derives from: write the value
+				// the page shows, the same way SubstitutionRenderer does.
+				case SubstitutionLeaf substitution:
+					_ = sb.Append(
+						!substitution.Found
+							? substitution.Content
+							: substitution.Mutations is null or { Count: 0 }
+								? substitution.Replacement
+								: SubstitutionMutationHelper.ApplyMutations(substitution.Replacement, substitution.Mutations)
+					);
+					break;
+				case HtmlEntityInline entity:
+					_ = sb.Append(entity.Transcoded.ToString());
+					break;
+				case CodeInline code:
+					_ = sb.Append(code.Content);
+					break;
+				case ContainerInline nested:
+					AppendInlineText(nested, sb);
+					break;
+			}
+		}
 	}
 
 	/// <summary>
@@ -102,6 +272,8 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			this.EmitError($"Column width count ({ColumnWidths.Count}) does not match table column count ({columnCount}).");
 			ColumnWidths = [];
 		}
+
+		ValidateFilterColumns(table);
 	}
 
 	private static int GetTableColumnCount(Markdig.Extensions.Tables.Table table)
