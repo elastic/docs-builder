@@ -24,9 +24,9 @@ public class ApiGatewayTests
 		    "hits": [
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/elasticsearch/operation/operation-get",
+		        "_id": "/docs/api/elasticsearch/operation/operation-get",
 		        "_source": {
-		          "path": "/docs/api/doc/elasticsearch/operation/operation-get",
+		          "path": "/docs/api/elasticsearch/operation/operation-get",
 		          "title": "Get a document by its ID",
 		          "search_title": "Get a document by its ID",
 		          "content_type": "api",
@@ -38,15 +38,15 @@ public class ApiGatewayTests
 		            "group": "Document",
 		            "endpoints": ["*/_doc/*", "*/_doc", "_doc/*", "_doc"],
 		            "routes": [ { "path": "/{index}/_doc/{id}", "methods": ["GET"] } ],
-		            "trees": [ { "tree": "main", "root": "/docs/api/doc/elasticsearch" } ]
+		            "trees": [ { "tree": "main", "root": "/docs/api/elasticsearch" } ]
 		          }
 		        }
 		      },
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/elasticsearch/operation/operation-search",
+		        "_id": "/docs/api/elasticsearch/operation/operation-search",
 		        "_source": {
-		          "path": "/docs/api/doc/elasticsearch/operation/operation-search",
+		          "path": "/docs/api/elasticsearch/operation/operation-search",
 		          "title": "Run a search",
 		          "search_title": "Run a search",
 		          "content_type": "api",
@@ -62,7 +62,7 @@ public class ApiGatewayTests
 		              { "path": "/_search", "methods": ["POST", "GET"] },
 		              { "path": "/{index}/_search", "methods": ["POST", "GET"] }
 		            ],
-		            "trees": [ { "tree": "main", "root": "/docs/api/doc/elasticsearch" } ],
+		            "trees": [ { "tree": "main", "root": "/docs/api/elasticsearch" } ],
 		            "properties": [
 		              {
 		                "name": "index",
@@ -92,9 +92,9 @@ public class ApiGatewayTests
 		    "hits": [
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/elasticsearch/operation/operation-indices-get",
+		        "_id": "/docs/api/elasticsearch/operation/operation-indices-get",
 		        "_source": {
-		          "path": "/docs/api/doc/elasticsearch/operation/operation-indices-get",
+		          "path": "/docs/api/elasticsearch/operation/operation-indices-get",
 		          "title": "Get index information",
 		          "search_title": "Get index information",
 		          "content_type": "api",
@@ -110,9 +110,9 @@ public class ApiGatewayTests
 		      },
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/elasticsearch/operation/operation-indices-create",
+		        "_id": "/docs/api/elasticsearch/operation/operation-indices-create",
 		        "_source": {
-		          "path": "/docs/api/doc/elasticsearch/operation/operation-indices-create",
+		          "path": "/docs/api/elasticsearch/operation/operation-indices-create",
 		          "title": "Create an index",
 		          "search_title": "Create an index",
 		          "content_type": "api",
@@ -142,30 +142,30 @@ public class ApiGatewayTests
 		    "hits": [
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/elasticsearch/8",
+		        "_id": "/docs/api/elasticsearch/8",
 		        "_source": {
-		          "path": "/docs/api/doc/elasticsearch/8",
+		          "path": "/docs/api/elasticsearch/8",
 		          "title": "Elasticsearch API (8)",
 		          "search_title": "Elasticsearch API (8)",
 		          "content_type": "api",
 		          "hidden": true,
 		          "api": {
 		            "key": "elasticsearch", "landing": true, "method": "", "path": "", "operation_id": "", "endpoints": [], "routes": [],
-		            "trees": [ { "tree": "8", "root": "/docs/api/doc/elasticsearch/8" } ]
+		            "trees": [ { "tree": "8", "root": "/docs/api/elasticsearch/8" } ]
 		          }
 		        }
 		      },
 		      {
 		        "_index": "test-index",
-		        "_id": "/docs/api/doc/elasticsearch",
+		        "_id": "/docs/api/elasticsearch",
 		        "_source": {
-		          "path": "/docs/api/doc/elasticsearch",
+		          "path": "/docs/api/elasticsearch",
 		          "title": "Elasticsearch API",
 		          "search_title": "Elasticsearch API",
 		          "content_type": "api",
 		          "api": {
 		            "key": "elasticsearch", "landing": true, "method": "", "path": "", "operation_id": "", "endpoints": [], "routes": [],
-		            "trees": [ { "tree": "main", "root": "/docs/api/doc/elasticsearch" }, { "tree": "9", "root": "/docs/api/doc/elasticsearch/9" } ]
+		            "trees": [ { "tree": "main", "root": "/docs/api/elasticsearch" }, { "tree": "9", "root": "/docs/api/elasticsearch/9" } ]
 		          }
 		        }
 		      }
@@ -258,129 +258,145 @@ public class ApiGatewayTests
 			.Should()
 			.MatchInlineJsonSnapshot(
 				"""
-			{
-			  "query": {
-			    "bool": {
-			      "filter": [
-			        {
-			          "bool": {
-			            "filter": [
-			              {
-			                "bool": {
-			                  "minimum_should_match": 1,
-			                  "must_not": {
-			                    "terms": {
-			                      "path.keyword": [
-			                        "/docs",
-			                        "/docs/",
-			                        "/docs/404",
-			                        "/docs/404/"
-			                      ]
-			                    }
-			                  },
-			                  "should": [
-			                    {
-			                      "bool": {
-			                        "must_not": [
-			                          {
-			                            "term": {
-			                              "hidden": {
-			                                "value": true
-			                              }
-			                            }
-			                          },
-			                          {
-			                            "term": {
-			                              "api.key": {
-			                                "value": "elasticsearch"
-			                              }
-			                            }
-			                          }
-			                        ]
-			                      }
-			                    },
-			                    {
-			                      "bool": {
-			                        "filter": [
-			                          {
-			                            "term": {
-			                              "api.key": {
-			                                "value": "elasticsearch"
-			                              }
-			                            }
-			                          },
-			                          {
-			                            "term": {
-			                              "api.trees.tree": {
-			                                "value": "9"
-			                              }
-			                            }
-			                          }
-			                        ]
-			                      }
-			                    }
-			                  ]
-			                }
-			              },
-			              {
-			                "term": {
-			                  "content_type": {
-			                    "value": "api"
-			                  }
-			                }
-			              },
-			              {
-			                "term": {
-			                  "api.key": {
-			                    "value": "elasticsearch"
-			                  }
-			                }
-			              }
-			            ],
-			            "must_not": {
-			              "term": {
-			                "api.landing": {
-			                  "value": true
-			                }
-			              }
-			            }
-			          }
-			        },
-			        {
-			          "term": {
-			            "api.operation_id": {
-			              "value": "search"
-			            }
-			          }
-			        }
-			      ]
-			    }
-			  },
-			  "size": 10,
-			  "_source": {
-			    "includes": [
-			      "title",
-			      "search_title",
-			      "path",
-			      "description",
-			      "content_type",
-			      "api.key",
-			      "api.method",
-			      "api.path",
-			      "api.operation_id",
-			      "api.endpoints",
-			      "api.routes",
-			      "api.group",
-			      "api.deprecated",
-			      "api.landing",
-			      "api.trees",
-			      "api.properties",
-			      "ai_short_summary",
-			      "body"
-			    ]
-			  }
-			}
-			"""
+				{
+				  "query": {
+				    "bool": {
+				      "filter": [
+				        {
+				          "bool": {
+				            "filter": [
+				              {
+				                "bool": {
+				                  "minimum_should_match": 1,
+				                  "must_not": {
+				                    "terms": {
+				                      "path.keyword": [
+				                        "/docs",
+				                        "/docs/",
+				                        "/docs/404",
+				                        "/docs/404/"
+				                      ]
+				                    }
+				                  },
+				                  "should": [
+				                    {
+				                      "bool": {
+				                        "must_not": [
+				                          {
+				                            "term": {
+				                              "hidden": {
+				                                "value": true
+				                              }
+				                            }
+				                          },
+				                          {
+				                            "term": {
+				                              "api.key": {
+				                                "value": "elasticsearch"
+				                              }
+				                            }
+				                          }
+				                        ]
+				                      }
+				                    },
+				                    {
+				                      "bool": {
+				                        "filter": [
+				                          {
+				                            "term": {
+				                              "api.key": {
+				                                "value": "elasticsearch"
+				                              }
+				                            }
+				                          },
+				                          {
+				                            "term": {
+				                              "api.trees.tree": {
+				                                "value": "9"
+				                              }
+				                            }
+				                          }
+				                        ],
+				                        "must_not": {
+				                          "term": {
+				                            "api.sitemap_only": {
+				                              "value": true
+				                            }
+				                          }
+				                        }
+				                      }
+				                    }
+				                  ]
+				                }
+				              },
+				              {
+				                "term": {
+				                  "content_type": {
+				                    "value": "api"
+				                  }
+				                }
+				              },
+				              {
+				                "term": {
+				                  "api.key": {
+				                    "value": "elasticsearch"
+				                  }
+				                }
+				              }
+				            ],
+				            "must_not": [
+				              {
+				                "term": {
+				                  "api.landing": {
+				                    "value": true
+				                  }
+				                }
+				              },
+				              {
+				                "term": {
+				                  "api.page": {
+				                    "value": true
+				                  }
+				                }
+				              }
+				            ]
+				          }
+				        },
+				        {
+				          "term": {
+				            "api.operation_id": {
+				              "value": "search"
+				            }
+				          }
+				        }
+				      ]
+				    }
+				  },
+				  "size": 10,
+				  "_source": {
+				    "includes": [
+				      "title",
+				      "search_title",
+				      "path",
+				      "description",
+				      "content_type",
+				      "api.key",
+				      "api.method",
+				      "api.path",
+				      "api.operation_id",
+				      "api.endpoints",
+				      "api.routes",
+				      "api.group",
+				      "api.deprecated",
+				      "api.landing",
+				      "api.trees",
+				      "api.properties",
+				      "ai_short_summary",
+				      "body"
+				    ]
+				  }
+				}
+				"""
 			);
 	}
 
@@ -496,7 +512,7 @@ public class ApiGatewayTests
 		var apis = await gateway.ListApisAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var api = apis.Should().ContainSingle().Subject;
-		api.Url.Should().Be("/docs/api/doc/elasticsearch");
+		api.Url.Should().Be("/docs/api/elasticsearch");
 		api.Title.Should().Be("Elasticsearch API");
 		api.Versions.Should().BeEquivalentTo("8", "main", "9");
 	}

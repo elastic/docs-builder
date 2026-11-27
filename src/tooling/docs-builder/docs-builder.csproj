@@ -20,6 +20,11 @@
     <NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101</NoWarn>
   </PropertyGroup>
 
+  <!-- API generation allocates from every core at once. Workstation GC collects on one heap and made it 4x slower. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Nullean.Argh.Hosting" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />

@@ -206,6 +206,7 @@ suppress:
   - FolderFileNameMismatch
   - AutolinkElasticCoDocs
   - ApiLinkMissingPage
+  - ApiLinkLegacyPrefix
 ```
 
 ### Scope
@@ -215,7 +216,7 @@ Where you put `suppress` decides which navigation entries it covers:
 - In `docset.yml`, the list applies to the entries declared in `docset.yml` itself.
 - In a nested `toc.yml`, the list applies only to the entries in that `toc.yml`. It doesn't carry over to `docset.yml` or to other `toc.yml` files, and a `toc.yml` doesn't inherit the list from `docset.yml`.
 
-`AutolinkElasticCoDocs` and `ApiLinkMissingPage` are raised while Markdown is parsed, so they're only read from `docset.yml` and apply to every page in the docset.
+`AutolinkElasticCoDocs`, `ApiLinkMissingPage` and `ApiLinkLegacyPrefix` are raised while Markdown is parsed, so they're only read from `docset.yml` and apply to every page in the docset.
 
 ### `DeepLinkingVirtualFile`
 
@@ -239,3 +240,7 @@ Suppresses hints about bare URLs pointing to elastic.co/docs. Prefer cross-links
 ### `ApiLinkMissingPage`
 
 Suppresses hints about links to API reference pages that don't exist in the API pages of the link index. Prefer fixing the link or using an API cross-link. Only valid in `docset.yml`.
+
+### `ApiLinkLegacyPrefix`
+
+Suppresses hints about links to API reference pages that use the legacy `/docs/api/doc/` prefix. The hint names the page's current URL. Only valid in `docset.yml`.

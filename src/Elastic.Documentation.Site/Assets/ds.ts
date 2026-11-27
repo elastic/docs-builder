@@ -4,6 +4,7 @@
 import { bindApiBetaBanner } from './api-beta-banner'
 import { initApiChromeSync } from './api-chrome-sync'
 import { initApiColumnResize } from './api-column-resize'
+import { initAppliesPopovers } from './ds/applies-popover'
 import { initAskAi } from './ds/ask-ai'
 import { initCarousels } from './ds/carousel'
 import { initCopyButtons, initCopyText } from './ds/copy'
@@ -12,12 +13,10 @@ import { initDocsBarSync } from './ds/docs-bar'
 import { initFeedback } from './ds/feedback'
 import { initLightboxes } from './ds/lightbox'
 import { initListings } from './ds/listing'
-import { bindOutsideClick, initMenus } from './ds/menu'
-import { initNav } from './ds/nav'
+import { bindDrawerFocus, initNav } from './ds/nav'
 import { initNavFilter } from './ds/nav-filter'
 import { initFlyoutResize, initFlyouts, initToasts } from './ds/overlays'
 import { initPageJumpers } from './ds/page-jumper'
-import { initInlinePopovers, initPopovers } from './ds/popover'
 import { initPreferences } from './ds/preferences'
 import './ds/runtime'
 import { bindSearchShortcut, initSearch } from './ds/search'
@@ -45,9 +44,7 @@ function init(scope: ParentNode = document) {
     initTabSync(scope)
     initCopyButtons(scope)
     initCopyText(scope)
-    initMenus(scope)
-    initPopovers(scope)
-    initInlinePopovers(scope)
+    initAppliesPopovers(scope)
     initFeedback(scope)
     initSearch(scope)
     initSearchPage(scope)
@@ -69,12 +66,12 @@ function init(scope: ParentNode = document) {
     void loadStorybookStories(scope)
 }
 
-bindOutsideClick()
 // The banner sits outside #main-container, so htmx:load does not reach a banner that navigation brings in.
 bindApiBetaBanner((banner) => init(banner))
 initDocsBarSync()
 initApiChromeSync()
 bindSearchShortcut()
+bindDrawerFocus()
 document.addEventListener('DOMContentLoaded', () => init())
 // htmx swaps #main-container; re-bind inside the swapped content
 document.addEventListener('htmx:load', (event) => {

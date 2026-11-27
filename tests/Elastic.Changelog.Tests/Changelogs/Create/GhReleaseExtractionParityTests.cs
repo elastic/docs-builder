@@ -208,7 +208,7 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 			.ToSnapshotText()
 			.Should()
 			.MatchInlineSnapshot(
-				"error 12345.yaml Checked-in changelog entry '12345.yaml' matches PR #12345 but could not be parsed: 12345.yaml: (Lin: 0, Col: 7, Chr: 7) - (Lin: 0, Col: 7, Chr: 7): Expected a Scalar token but found 'StartSequence'."
+				"error 12345.yaml Checked-in changelog entry '12345.yaml' matches PR #12345 but could not be parsed: 12345.yaml: (Lin: 0, Col: 7, Chr: 7) - (Lin: 0, Col: 8, Chr: 8): Expected a Scalar token but found 'StartSequence'."
 			);
 	}
 

@@ -1,4 +1,5 @@
 import { fullscreenIcon } from './icons'
+import { anchorZoomDialog } from './image-modal'
 import { lockPageScroll } from './scroll-lock'
 
 // Zoom configuration
@@ -150,7 +151,7 @@ function setupControls(
 
     // Fullscreen handler
     fullscreenBtn.addEventListener('click', () => {
-        openFullscreenModal(imgSrc)
+        openFullscreenModal(imgSrc, container)
     })
 
     // Pan with mouse drag
@@ -205,13 +206,10 @@ function calculateFitScale(
 /**
  * Open fullscreen modal with the diagram
  */
-function openFullscreenModal(imgSrc: string): void {
-    // Create modal elements
-    const modal = document.createElement('div')
+function openFullscreenModal(imgSrc: string, opener: Element): void {
+    const modal = document.createElement('dialog')
     modal.className = 'mermaid-modal'
-
-    const modalContent = document.createElement('div')
-    modalContent.className = 'mermaid-modal-content'
+    modal.setAttribute('aria-label', 'Mermaid diagram')
 
     const closeBtn = document.createElement('button')
     closeBtn.type = 'button'
@@ -230,9 +228,8 @@ function openFullscreenModal(imgSrc: string): void {
     rendered.appendChild(modalImg)
 
     viewport.appendChild(rendered)
-    modalContent.appendChild(closeBtn)
-    modalContent.appendChild(viewport)
-    modal.appendChild(modalContent)
+    modal.appendChild(closeBtn)
+    modal.appendChild(viewport)
 
     // State for modal zoom/pan - initial zoom will be calculated after mount
     const state: DiagramState = {
@@ -242,8 +239,6 @@ function openFullscreenModal(imgSrc: string): void {
         startX: 0,
         startY: 0,
     }
-    let isDragging = false
-
     // Store initial zoom for reset
     let initialZoom = 1
 
@@ -270,7 +265,7 @@ function openFullscreenModal(imgSrc: string): void {
     controls.appendChild(zoomInBtn)
     controls.appendChild(zoomOutBtn)
     controls.appendChild(resetBtn)
-    modalContent.appendChild(controls)
+    modal.appendChild(controls)
 
     // Modal zoom handlers
     zoomInBtn.addEventListener('click', () => {
@@ -297,29 +292,12 @@ function openFullscreenModal(imgSrc: string): void {
     // Modal pan handlers
     viewport.addEventListener('mousedown', (e: MouseEvent) => {
         if (e.button !== 0) return
-        isDragging = true
         state.startX = e.clientX - state.panX * state.zoom
         state.startY = e.clientY - state.panY * state.zoom
         viewport.classList.add('is-dragging')
+        drag = { state, viewport, rendered }
         e.preventDefault()
     })
-
-    const onMouseMove = (e: MouseEvent) => {
-        if (!isDragging) return
-        state.panX = (e.clientX - state.startX) / state.zoom
-        state.panY = (e.clientY - state.startY) / state.zoom
-        applyTransform(rendered, state)
-    }
-
-    const onMouseUp = () => {
-        if (isDragging) {
-            isDragging = false
-            viewport.classList.remove('is-dragging')
-        }
-    }
-
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
 
     // Modal wheel zoom
     viewport.addEventListener('wheel', (e: WheelEvent) => {
@@ -338,37 +316,24 @@ function openFullscreenModal(imgSrc: string): void {
         }
     })
 
-    // Close modal function
-    const closeModal = () => {
-        document.removeEventListener('mousemove', onMouseMove)
-        document.removeEventListener('mouseup', onMouseUp)
-        unlockScroll()
-        modal.remove()
-    }
-
-    // Close on button click
-    closeBtn.addEventListener('click', closeModal)
-
-    // Close on backdrop click
+    closeBtn.addEventListener('click', () => modal.close())
+    // A click on the backdrop lands on the dialog itself; the viewport fills the rest of it.
     modal.addEventListener('click', (e: MouseEvent) => {
-        if (e.target === modal) {
-            closeModal()
-        }
+        if (e.target === modal) modal.close()
     })
 
-    // Close on Escape key
-    const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            closeModal()
-            document.removeEventListener('keydown', onKeyDown)
-        }
-    }
-    document.addEventListener('keydown', onKeyDown)
-
+    // The dialog handles Escape and returns focus to the opener; the page behind it would still scroll.
     const unlockScroll = lockPageScroll()
+    modal.addEventListener('close', () => {
+        // Escape mid-pan removes the dialog before any mouseup; the shared drag must not outlive it.
+        if (drag?.viewport === viewport) drag = null
+        unlockScroll()
+        modal.remove()
+    })
 
-    // Add modal to document
+    anchorZoomDialog(modal, opener)
     document.body.appendChild(modal)
+    modal.showModal()
 
     // Calculate and apply initial zoom to fit diagram in viewport
     requestAnimationFrame(() => {

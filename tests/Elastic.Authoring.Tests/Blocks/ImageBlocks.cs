@@ -21,22 +21,20 @@ public class StaticPathToImage : MarkdownTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-D9161EE2').style.display='flex'">
-			<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
-		</a>
-		<div id="modal-D9161EE2" class="modal" onclick="document.querySelector('#modal-D9161EE2 .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-D9161EE2').style.display='none'">
-			<div class="modal-content">
-				<span class="modal-close">
-					<a href="javascript:void(0);" class="close-button" onclick="document.getElementById('modal-D9161EE2').style.display='none'">
-						×
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-D9161EE2">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-D9161EE2" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png">
 					</a>
-				</span>
-				<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
-					<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png">
-				</a>
-			</div>
-		</div>
-		"""
+				</div>
+			</dialog>
+			"""
 		);
 }
 
@@ -73,44 +71,40 @@ public class SupportsUrlPathPrefix : GeneratorTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-7F46B77E').style.display='flex'">
-			<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
-		</a>
-		<div id="modal-7F46B77E" class="modal" onclick="document.querySelector('#modal-7F46B77E .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-7F46B77E').style.display='none'">
-			<div class="modal-content">
-				<span class="modal-close">
-					<a href="javascript:void(0);" class="close-button" onclick="document.getElementById('modal-7F46B77E').style.display='none'">
-						×
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7F46B77E">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-7F46B77E" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
 					</a>
-				</span>
-				<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
-					<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
-				</a>
-			</div>
-		</div>
-		"""
+				</div>
+			</dialog>
+			"""
 		);
 
 	[Test, DisplayName("renders HTML")]
 	public async Task RendersHtmlOfFolderRelative() =>
 		await Docs.Converts("folder/relative.md").ToHtml(
 			"""
-		<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-7F46B77E').style.display='flex'">
-			<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
-		</a>
-		<div id="modal-7F46B77E" class="modal" onclick="document.querySelector('#modal-7F46B77E .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-7F46B77E').style.display='none'">
-			<div class="modal-content">
-				<span class="modal-close">
-					<a href="javascript:void(0);" class="close-button" onclick="document.getElementById('modal-7F46B77E').style.display='none'">
-						×
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7F46B77E">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-7F46B77E" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
 					</a>
-				</span>
-				<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
-					<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
-				</a>
-			</div>
-		</div>
-		"""
+				</div>
+			</dialog>
+			"""
 		);
 
 	[Test, DisplayName("has no errors")]
@@ -140,22 +134,20 @@ public class ImageRefOutOfScope : GeneratorTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-7F46B77E').style.display='flex'">
-			<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
-		</a>
-		<div id="modal-7F46B77E" class="modal" onclick="document.querySelector('#modal-7F46B77E .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-7F46B77E').style.display='none'">
-			<div class="modal-content">
-				<span class="modal-close">
-					<a href="javascript:void(0);" class="close-button" onclick="document.getElementById('modal-7F46B77E').style.display='none'">
-						×
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7F46B77E">
+				<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+			</a>
+			<dialog id="modal-7F46B77E" class="modal" aria-label="Elasticsearch">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
+						<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
 					</a>
-				</span>
-				<a class="reference internal image-reference" href="/docs/img/observability.png" target="_blank">
-					<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png">
-				</a>
-			</div>
-		</div>
-		"""
+				</div>
+			</dialog>
+			"""
 		);
 
 	[Test, DisplayName("reports diagnostics")]
@@ -191,37 +183,35 @@ public class ScreenshotClassInsideListInAppliesSwitch : MarkdownTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<div class="applies-switch">
-			<input class="applies-switch-input" checked="checked" id="applies-switch-item-1-0" name="applies-switch-set-1" type="radio" tabindex="0">
-			<label class="applies-switch-label" data-sync-id="applies-54C48F79" data-sync-group="applies-switches" for="applies-switch-item-1-0">
-				<span class="applies applies-item">
-					<applies-to-popover badge-key="Serverless" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="" show-popover="false" is-inline="true"></applies-to-popover>
-				</span>
-			</label>
-			<div class="applies-switch-content" tabindex="0">
-				<ol>
-					<li>
-						<p>Customize the lifecycle.</p>
-						<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-D9161EE2').style.display='flex'">
-							<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
-						</a>
-						<div id="modal-D9161EE2" class="modal" onclick="document.querySelector('#modal-D9161EE2 .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-D9161EE2').style.display='none'">
-							<div class="modal-content">
-								<span class="modal-close">
-									<a href="javascript:void(0);" class="close-button" onclick="document.getElementById('modal-D9161EE2').style.display='none'">
-										×
+			<div class="applies-switch">
+				<input class="applies-switch-input" checked="checked" id="applies-switch-item-1-0" name="applies-switch-set-1" type="radio" tabindex="0">
+				<label class="applies-switch-label" data-sync-id="applies-54C48F79" data-sync-group="applies-switches" for="applies-switch-item-1-0">
+					<span class="applies applies-item">
+						<applies-to-popover badge-key="Serverless" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="" show-popover="false" is-inline="true"></applies-to-popover>
+					</span>
+				</label>
+				<div class="applies-switch-content" tabindex="0">
+					<ol>
+						<li>
+							<p>Customize the lifecycle.</p>
+							<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-D9161EE2">
+								<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
+							</a>
+							<dialog id="modal-D9161EE2" class="modal" aria-label="Elasticsearch">
+								<div class="modal-content">
+									<form method="dialog" class="modal-close">
+										<button type="submit" class="close-button" aria-label="Close">×</button>
+									</form>
+									<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
+										<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png">
 									</a>
-								</span>
-								<a class="reference internal image-reference" href="/img/observability.png" target="_blank">
-									<img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png">
-								</a>
-							</div>
-						</div>
-					</li>
-				</ol>
+								</div>
+							</dialog>
+						</li>
+					</ol>
+				</div>
 			</div>
-		</div>
-		"""
+			"""
 		);
 }
 
@@ -238,21 +228,19 @@ public class EmptyAltText : MarkdownTest
 	public async Task RendersHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-7A740365').style.display='flex'">
-			<img loading="lazy" alt="" src="/img/some-image.png" style="width: 250px;">
-		</a>
-		<div id="modal-7A740365" class="modal" onclick="document.querySelector('#modal-7A740365 .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-7A740365').style.display='none'">
-			<div class="modal-content">
-				<span class="modal-close">
-					<a href="javascript:void(0);" class="close-button" onclick="document.getElementById('modal-7A740365').style.display='none'">
-						×
+			<a class="reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-7A740365">
+				<img loading="lazy" alt="" src="/img/some-image.png" style="width: 250px;">
+			</a>
+			<dialog id="modal-7A740365" class="modal" aria-label="Image">
+				<div class="modal-content">
+					<form method="dialog" class="modal-close">
+						<button type="submit" class="close-button" aria-label="Close">×</button>
+					</form>
+					<a class="reference internal image-reference" href="/img/some-image.png" target="_blank">
+						<img loading="lazy" alt="" src="/img/some-image.png">
 					</a>
-				</span>
-				<a class="reference internal image-reference" href="/img/some-image.png" target="_blank">
-					<img loading="lazy" alt="" src="/img/some-image.png">
-				</a>
-			</div>
-		</div>
-		"""
+				</div>
+			</dialog>
+			"""
 		);
 }

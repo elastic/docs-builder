@@ -1,5 +1,3 @@
-import { initMenus } from './menu'
-import { initPopovers } from './popover'
 import { initPreferences } from './preferences'
 
 // htmx swaps #main-container and the docs bar sits above it, so after a boosted navigation the bar would keep the previous page's
@@ -13,9 +11,8 @@ export function syncDocsBar(html: string): boolean {
     // A partial response, such as a search result, has no bar and leaves ours alone.
     if (!next) return false
     current.replaceWith(next)
-    // The htmx:load initializers only scan the swapped container, so the new bar's menus, their top-layer popovers and its theme switch are bound here.
-    initMenus(next)
-    initPopovers(next)
+    // The htmx:load initializers only scan the swapped container, so the new bar's theme switch is bound here. Its menus are popovers
+    // that need no binding.
     initPreferences(next)
     return true
 }

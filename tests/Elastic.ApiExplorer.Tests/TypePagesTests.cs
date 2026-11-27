@@ -35,7 +35,7 @@ public class TypePagesTests
 	[Test]
 	public void Url_UsesTheSchemaMoniker() =>
 		TypePages
-			.Url("/api/doc/elasticsearch/", "ingest._types.ProcessorContainer")
+			.Url("/api/elasticsearch/", "ingest._types.ProcessorContainer")
 			.Should()
-			.Be("/api/doc/elasticsearch/types/ingest-_types-processorcontainer");
+			.Be("/api/elasticsearch/types/ingest-_types-processorcontainer");
 }

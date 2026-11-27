@@ -28,10 +28,7 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	public required string MarkdownUrl { get; init; }
 
-	/// <summary>Intro/outro markdown pages have no Markdown export, so they have no Copy page.</summary>
-	public bool ShowPageActions { get; init; } = true;
-
-	/// <summary>The Copy page menu, the spec download alone on a page with no Markdown export, or null when the page has neither.</summary>
+	/// <summary>The Copy page menu, with the spec download when the page belongs to an API.</summary>
 	public ApiPageActionsModel? PageActions { get; init; }
 
 	/// <summary>The design-system rail's page actions. The assembler's docs bar already carries the spec download.</summary>
@@ -69,9 +66,26 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public IReadOnlyList<TocItem> TocItems => field ??= GetTocItems();
 
-	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
+	/// <summary>The version switcher items, each pointed at this page when its version renders it.</summary>
+	private IReadOnlyList<ApiVersionSwitcherItem> PageVersions =>
+		field ??= ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
 
-	protected virtual bool ShowPageActions => true;
+	/// <summary>The line under the title of an older or unreleased version, or null on the newest major.</summary>
+	public ApiVersionNotice? VersionNotice => ApiVersionNotices.For(
+		RenderContext.PageType,
+		RenderContext.Moniker,
+		RenderContext.DefaultMoniker,
+		PageVersions
+	) switch
+	{
+		OlderMajorNotice older => older with { Release = RenderContext.Release },
+		var notice => notice
+	};
+
+	/// <summary>True when the page shows the quiet older-major label and link as badges, so the notice under the title keeps only the warning.</summary>
+	public virtual bool VersionNoticeInBadges => false;
+
+	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
 
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
@@ -89,6 +103,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
 	protected virtual string? LayoutPageDescription => null;
+
+	/// <summary>Plain text for the meta description when <see cref="LayoutPageDescription"/> gives none; see <see cref="ApiFallbackDescription"/>.</summary>
+	protected virtual string? FallbackPageDescription => null;
 
 	private string? GetGitHubDocsUrl()
 	{
@@ -115,7 +132,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		return new()
 		{
 			DocSetName = "Api Explorer",
-			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
+			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? FallbackPageDescription ?? "",
 			Title = SeoDocumentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
@@ -124,7 +141,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			NavigationActiveUrl = CurrentNavigationItem.Url,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
 			AllowIndexing = BuildContext.AllowIndexing,
+			Robots = ApiPageTypes.Robots(RenderContext.PageType, BuildContext.AllowIndexing, CurrentNavigationItem.ExcludeFromIndexing),
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
+			CanonicalUrl = CanonicalUrlOverride(),
 			GoogleTagManager = BuildContext.GoogleTagManager,
 			Optimizely = BuildContext.Optimizely,
 			Features = BuildContext.Configuration.Features,
@@ -147,8 +166,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			ShowSecondaryNav = false,
 			ApiContext = apiContext,
 			MarkdownUrl = markdownUrl,
-			ShowPageActions = ShowPageActions,
-			PageActions = BuildPageActions(markdownUrl, apiContext?.Spec),
+			PageActions = new ApiPageActionsModel(markdownUrl, apiContext?.Spec),
 			DesignSystemPageActions = BuildDesignSystemPageActions(markdownUrl, apiContext?.Spec),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
@@ -161,8 +179,11 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		};
 	}
 
-	private ApiPageActionsModel? BuildPageActions(string markdownUrl, ApiSpecDownload? spec) =>
-		ShowPageActions || spec is not null ? new ApiPageActionsModel(ShowPageActions ? markdownUrl : null, spec) : null;
+	/// <summary>Set only for a page that names another page as canonical; every other page keeps the layout's default.</summary>
+	private string? CanonicalUrlOverride() =>
+		RenderContext.PageType == ApiPageType.NewestMajorCopy && BuildContext.CanonicalBaseUrl is not null
+			? RenderContext.CanonicalUrl(CurrentNavigationItem.Url)
+			: null;
 
 	/// <summary>The API name followed by the selected version, when the API has more than one.</summary>
 	private string SpecCrumbName(string docTitle)
@@ -171,7 +192,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		return selected?.ShortLabel is { Length: > 0 } version ? $"{docTitle} {version}" : docTitle;
 	}
 
-	private PageActionsModel? BuildDesignSystemPageActions(string markdownUrl, ApiSpecDownload? spec)
+	private PageActionsModel BuildDesignSystemPageActions(string markdownUrl, ApiSpecDownload? spec)
 	{
 		var downloads = spec is not null && BuildContext.BuildType != BuildType.Assembler
 			? new PageActionDownload[]
@@ -180,16 +201,12 @@ public abstract class ApiViewModel(ApiRenderContext context)
 				new("Download OpenAPI spec (YAML)", spec.YamlUrl)
 			}
 			: [];
-		if (!ShowPageActions && downloads.Length == 0)
-			return null;
-
-		return new PageActionsModel { MarkdownUrl = ShowPageActions ? markdownUrl : null, Downloads = downloads };
+		return new PageActionsModel { MarkdownUrl = markdownUrl, Downloads = downloads };
 	}
 
 	private ApiIdentity BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
 	{
 		var productId = RenderContext.Product?.Id ?? RenderContext.CurrentApiKey;
-		var versions = ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
 		var productGroups = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey);
 		// Same text as the menu row, so the trigger and the menu name the API alike.
 		var title = productGroups.SelectMany(static g => g.Products).FirstOrDefault(static p => p.Selected)?.Label
@@ -200,7 +217,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			ProductIcons.Get(productId),
 			productGroups,
 			catalogUrl,
-			[.. versions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected, v.ShortLabel))],
+			[.. PageVersions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected, v.ShortLabel))],
 			new ApiSpecDownload(ApiOutputPaths.JsonUrl(specRootUrl), ApiOutputPaths.YamlUrl(specRootUrl))
 		);
 	}

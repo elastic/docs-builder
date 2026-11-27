@@ -28,6 +28,7 @@ The LLM Markdown is not the raw source — it is a rendered, simplified represen
 - Substitution variables are resolved to their values
 - MyST directives are simplified to standard Markdown equivalents
 - Code blocks, tables, and list structure are preserved
+- Console code blocks keep their request lines (for example `GET /books/_search`) and use a `console` fence
 - Navigation-only elements (TOC references, page cards) are stripped
 - Applies-to metadata is included as readable frontmatter context
 

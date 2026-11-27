@@ -43,13 +43,14 @@ if (isAssemblerApiExplorerEnabled()) {
         })
 
         step('Open the Elasticsearch API landing page', async () => {
+            // The catalog links to the versionless URL, which serves the newest released major.
             await page
                 .locator('#elastic-docs-v3')
                 .getByRole('link', { name: /Elasticsearch/i })
                 .first()
                 .click()
             await expect(page).toHaveURL(
-                new RegExp(`${escapeRegex(host)}/docs/api/doc/elasticsearch/?$`)
+                new RegExp(`${escapeRegex(host)}/docs/api/elasticsearch/?$`)
             )
         })
 
@@ -60,8 +61,9 @@ if (isAssemblerApiExplorerEnabled()) {
             await expect(picker).toBeVisible()
 
             await picker.locator('button').click()
+            // The newest major links to the versionless URL and main to /next, so the first /v link is an older major.
             const target = page
-                .locator('a[href*="/docs/api/doc/elasticsearch/v"]')
+                .locator('a[href*="/docs/api/elasticsearch/v"]')
                 .first()
             await expect(target).toBeVisible()
 
@@ -71,9 +73,7 @@ if (isAssemblerApiExplorerEnabled()) {
                 target.click(),
             ])
 
-            await expect(page).toHaveURL(
-                /\/docs\/api\/doc\/elasticsearch\/v\d+\//
-            )
+            await expect(page).toHaveURL(/\/docs\/api\/elasticsearch\/v\d+\//)
             await expect(picker).toBeVisible()
         })
 
@@ -99,7 +99,7 @@ if (isAssemblerApiExplorerEnabled()) {
             await operationLink.click()
 
             await expect(page).toHaveURL(
-                /\/docs\/api\/doc\/elasticsearch\/v\d+\/operation\//
+                /\/docs\/api\/elasticsearch\/v\d+\/operation\//
             )
 
             // Operation pages render their own section, not the markdown one, and the

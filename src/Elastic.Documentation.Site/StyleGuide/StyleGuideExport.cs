@@ -118,8 +118,10 @@ public static partial class StyleGuideExport
 		{
 			foreach (var entry in StyleGuidePreviewCatalog.Entries)
 			{
-				if (await previewRenderer(entry.Id) is { } preview)
-					pages.Add(($"preview/{entry.Id}.html", preview.Replace("/_static/", $"../{StaticFolder}/", StringComparison.Ordinal)));
+				if (await previewRenderer(entry.Id) is not { } preview)
+					continue;
+				var relinked = RelinkPreviews(preview.Replace("/_static/", $"../{StaticFolder}/", StringComparison.Ordinal));
+				pages.Add(($"preview/{entry.Id}.html", relinked));
 			}
 		}
 
@@ -142,6 +144,14 @@ public static partial class StyleGuideExport
 
 	private static string RedirectTo(string target) =>
 		$"<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={target}\"><title>Style guide</title></head><body><a href=\"{target}\">Open the style guide</a></body></html>\n";
+
+	/// <summary>Points links from one preview to another at the sibling file in the archive, since previews sit together in <c>preview/</c>.</summary>
+	public static string RelinkPreviews(string html)
+	{
+		foreach (var entry in StyleGuidePreviewCatalog.Entries)
+			html = html.Replace($"\"{StyleGuidePreviewCatalog.Route}/{entry.Id}\"", $"\"{entry.Id}.html\"", StringComparison.Ordinal);
+		return html;
+	}
 
 	/// <summary>Points links between guide pages at the exported files instead of the dev-server routes.</summary>
 	public static string RelinkPages(string html)

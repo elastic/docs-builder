@@ -5,9 +5,9 @@
 namespace Elastic.ApiExplorer.Operations;
 
 /// <summary>
-/// The order operations are listed in: by route, then by method in resource lifecycle order (GET, POST, PUT, PATCH,
-/// DELETE, HEAD, OPTIONS, TRACE, CONNECT). Unlike <see cref="OperationEndpoint"/>'s dominant method, this ranks for
-/// scanning a list, not for choosing which method a page leads with.
+/// The order operations are listed in: by route, then by method in resource lifecycle
+/// order (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, TRACE, CONNECT). Unlike <see cref="OperationEndpoint"/>'s
+/// dominant method, this ranks for scanning a list, not for choosing which method a page leads with.
 /// </summary>
 public static class ApiOperationOrder
 {

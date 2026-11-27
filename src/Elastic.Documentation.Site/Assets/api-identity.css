@@ -1,7 +1,7 @@
 /*
  * The API identity at the top of the API sidebar: product and version in one trigger and one menu.
  * Used on API pages in the current layout, so nothing here is scoped to body.navigation-preview.
- * The menu is a popover placed by api-menu.ts; the rows reuse .secondary-nav-dropdown-link from
+ * The menu is a popover placed by floating.ts; the rows reuse .secondary-nav-dropdown-link from
  * secondary-nav-dropdown.css.
  */
 
@@ -109,17 +109,12 @@
 		background: #eeeff1;
 	}
 
-	/*
-	 * Menus. A popover sits in the top layer, so no ancestor can clip it. Floating UI sets
-	 * left/top (api-menu.ts); everything the browser puts on [popover] is reset here.
-	 */
+	/* Menus. floating.ts places the popover beside its button (floating.css). */
 	.api-menu {
-		position: fixed;
-		inset: auto;
 		box-sizing: border-box;
-		min-width: 160px;
+		min-width: max(160px, var(--floating-anchor-width, 0px));
 		max-width: min(20rem, calc(100vw - 16px));
-		margin: 0;
+		max-height: max(120px, var(--floating-available-height, 100vh));
 		padding: 8px;
 		overflow-y: auto;
 		border: 0;
@@ -134,21 +129,6 @@
 		filter: drop-shadow(0 0 2px rgb(43 57 79 / 0.16))
 			drop-shadow(0 3px 10px rgb(43 57 79 / 0.1))
 			drop-shadow(0 6px 14px rgb(43 57 79 / 0.06));
-		transition: opacity 0.15s ease;
-	}
-	/* Hidden until api-menu.ts has placed it, so it never flashes at the wrong spot. */
-	.api-menu:not([data-placed]) {
-		visibility: hidden;
-	}
-	@starting-style {
-		.api-menu:popover-open {
-			opacity: 0;
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.api-menu {
-			transition: none;
-		}
 	}
 
 	/* The version sits beside the name, on its first line. A long name wraps and the version stays put. */

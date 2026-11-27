@@ -108,12 +108,6 @@
 	font-weight: var(--weight-semibold);
 }
 
-/* The same state as a deprecated sidebar row: struck, dimmed title and the Deprecated badge beside it. */
-.search-result[data-deprecated] .search-result__title {
-	text-decoration: line-through;
-	opacity: 0.7;
-}
-
 .search-result__deprecated {
 	height: 1.125rem;
 	padding: 0 var(--space-1);

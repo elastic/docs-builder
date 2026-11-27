@@ -569,24 +569,6 @@ describe('collapseAllFolders', () => {
             document.querySelector<HTMLInputElement>('#folder-a')?.checked
         ).toBe(false)
     })
-
-    it('keeps a default-open group expanded', () => {
-        document.body.innerHTML = pagesNav(
-            'nav-tree-guides',
-            'Get started',
-            '<input id="folder-a" type="checkbox" checked><input id="topics" type="checkbox" checked data-nav-default-open>'
-        )
-        const nav = document.querySelector<HTMLElement>('#pages-nav')!
-
-        collapseAllFolders(nav)
-
-        expect(
-            document.querySelector<HTMLInputElement>('#folder-a')?.checked
-        ).toBe(false)
-        expect(
-            document.querySelector<HTMLInputElement>('#topics')?.checked
-        ).toBe(true)
-    })
 })
 
 describe('ensureSubtreeClips', () => {
@@ -902,7 +884,7 @@ describe('shouldRetargetApiContentSwap', () => {
 })
 
 describe('API sidebar scroller', () => {
-    const operation = '/api/doc/es/operation/operation-search'
+    const operation = '/api/es/operation/operation-search'
 
     // The switcher sits outside the scroller, so the tree scrolls on its own and the nav itself never does.
     function apiSidebar() {
@@ -986,7 +968,7 @@ describe('API sidebar scroller', () => {
 })
 
 describe('API nav deep link', () => {
-    const operation = '/api/doc/es/operation/operation-search'
+    const operation = '/api/es/operation/operation-search'
 
     function scrolledApiPage() {
         document.body.innerHTML = `
@@ -997,14 +979,14 @@ describe('API nav deep link', () => {
                         <li class="nav-folder">
                             <div class="peer nav-folder-peer">
                                 <input id="other-group" type="checkbox" checked>
-                                <a class="sidebar-link current" href="/api/doc/es/operation/operation-other">Other</a>
+                                <a class="sidebar-link current" href="/api/es/operation/operation-other">Other</a>
                             </div>
                             <ul class="nav-subtree"><li>Other child</li></ul>
                         </li>
                         <li class="nav-folder">
                             <div class="peer nav-folder-peer">
                                 <input id="search-group" type="checkbox">
-                                <a class="sidebar-link" href="/api/doc/es/group/search">Search</a>
+                                <a class="sidebar-link" href="/api/es/group/search">Search</a>
                             </div>
                             <ul class="nav-subtree">
                                 <li><a class="sidebar-link" href="${operation}">Run a search</a></li>
@@ -1061,9 +1043,7 @@ describe('API nav deep link', () => {
         ).toBe(true)
         expect(
             document
-                .querySelector(
-                    'a[href="/api/doc/es/operation/operation-other"]'
-                )
+                .querySelector('a[href="/api/es/operation/operation-other"]')
                 ?.classList.contains('current')
         ).toBe(false)
         expect(
@@ -1154,7 +1134,7 @@ describe('API nav deep link', () => {
     })
 
     it('keeps the article scroll when the current folder row is toggled', () => {
-        const currentHref = '/api/doc/es/operation/operation-other'
+        const currentHref = '/api/es/operation/operation-other'
         window.history.pushState({}, '', currentHref)
         scrolledApiPage()
         initNav()
@@ -1173,7 +1153,7 @@ describe('API nav deep link', () => {
     })
 
     it('keeps the article scroll when Enter toggles the current folder row', () => {
-        const currentHref = '/api/doc/es/operation/operation-other'
+        const currentHref = '/api/es/operation/operation-other'
         window.history.pushState({}, '', currentHref)
         scrolledApiPage()
         setScrollY(220)

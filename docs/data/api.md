@@ -24,7 +24,7 @@ The `apis` resource describes the REST APIs that API Explorer publishes and, und
 
 Every operation request names its API, such as `elasticsearch` or `kibana`. Many operation ids and routes exist in several APIs: `elasticsearch` and `elasticsearch-serverless` share most of theirs. A lookup across APIs would have to pick one, so there is none. The MCP tools still search across APIs when no API is given.
 
-`version` is `main` or a major such as `9`. Without it, a request reads the API's current version.
+`version` is `main` or a major such as `9`. Without it, a request reads the API's current version: its newest released major, or `main` when the API has no numeric major.
 
 ### APIs
 

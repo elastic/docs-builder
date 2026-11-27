@@ -36,13 +36,6 @@
 <div class="layout @(hub ? "layout--bands layout--wash" : "layout--three")">
 	<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
 	<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
-	<aside class="layout__nav" id="pages-nav">
-		@if (Layout.ShowVersionDropdown && Elastic.Documentation.Site.Components.Navigation.LinkMenu.VersionMenu.FromJson(Layout.VersionDropdownSerializedModel, Layout.CurrentVersion, Layout.AllVersionsUrl) is { } versions)
-		{
-			<div class="layout__version">@await RenderPartialAsync(Elastic.Documentation.Site.Components.Navigation.LinkMenu._LinkMenu.Create(versions))</div>
-		}
-		@(new HtmlString(Layout.NavigationHtml))
-	</aside>
 	<div class="layout__main">
 		<main id="content-container" class="layout__content">
 			<label class="layout__menu-button" for="pages-nav-hamburger">

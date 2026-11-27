@@ -163,8 +163,16 @@ public record GlobalLayoutViewModel
 	public string? GitHubDocsUrl { get; init; }
 	/// <summary>Full ref from GitHub Actions (e.g. refs/pull/123/merge). Set when built in a pull request workflow.</summary>
 	public string? GitHubRef { get; init; }
-	public string? CanonicalUrl =>
-		CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
+	/// <summary>The canonical URL. A page whose canonical is not itself, such as an API page that repeats another, sets it.</summary>
+	public string? CanonicalUrl
+	{
+		get =>
+			field ?? (CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null);
+		init;
+	}
+
+	/// <summary>The robots meta value. A page that is indexable only in part, such as an unreleased API page, sets it.</summary>
+	public string Robots { get => field ?? (AllowIndexing ? "index, follow" : "noindex, nofollow"); init; }
 
 	public required FeatureFlags Features { get; init; }
 	// TODO move to @inject

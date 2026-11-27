@@ -17,6 +17,26 @@ namespace Elastic.Documentation.Search.Contract.Mapping;
 /// </summary>
 public static class SharedAnalysisFactory
 {
+	/// <summary>What <c>group_tokenizer</c> splits on; an index-time synonym spelling must contain none of these.</summary>
+	public static readonly string[] GroupTokenizerSplitChars =
+	[
+		"whitespace",
+		",",
+		";",
+		"?",
+		"!",
+		"(",
+		")",
+		"&",
+		"'",
+		"\"",
+		"/",
+		"[",
+		"]",
+		"{",
+		"}"
+	];
+
 	public static AnalysisBuilder BuildBaseAnalysis(AnalysisBuilder analysis) =>
 		analysis
 			.Normalizer(
@@ -44,10 +64,7 @@ public static class SharedAnalysisFactory
 				"starts_with_tokenizer",
 				t => t.EdgeNGram().MinGram(1).MaxGram(10).TokenChars("letter", "digit", "symbol", "whitespace")
 			)
-			.Tokenizer(
-				"group_tokenizer",
-				t => t.CharGroup().TokenizeOnChars("whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}")
-			)
+			.Tokenizer("group_tokenizer", t => t.CharGroup().TokenizeOnChars(GroupTokenizerSplitChars))
 			.Tokenizer("path_tokenizer", t => t.PathHierarchy().Delimiter('/'))
 			// content_tags is populated purely via copy_to from content_type/navigation_section (both
 			// single-token keyword-ish values) — a keyword tokenizer preserves each value whole. kstem

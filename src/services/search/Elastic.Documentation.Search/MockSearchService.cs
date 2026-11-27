@@ -74,7 +74,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		new NavigationSearchResultItem
 		{
 			Type = "docs",
-			Url = "https://www.elastic.co/docs/api/doc/elasticsearch/group/endpoint-document",
+			Url = "https://www.elastic.co/docs/api/elasticsearch/group/endpoint-document",
 			Title = "Elasticsearch API documentation",
 			Description =
 				"Elastic provides REST APIs that are used by the UI components and can be called directly to configure and access Elasticsearch features.",

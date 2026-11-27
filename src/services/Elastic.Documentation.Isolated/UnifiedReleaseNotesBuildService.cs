@@ -31,6 +31,31 @@ public record UnifiedReleaseNotesBuildOptions
 	/// </summary>
 	public IReadOnlyCollection<string> ExpectedVersions { get; init; } = [];
 
+	/// <summary>
+	/// Products without <c>release-notes: dra</c> to put on the site, by id, such as the serverless products. Their releases are
+	/// labels, so <see cref="ExpectedVersions"/> does not apply to them.
+	/// </summary>
+	public IReadOnlyCollection<string> AdditionalProductIds { get; init; } = [];
+
+	/// <summary>
+	/// Rewrites the content of a bundle file as it is copied into the site: product id, file name and content in, content out.
+	/// <c>release preview build</c> uses it to scrub references to private repositories, so the preview shows what publication
+	/// would. A failure to scrub fails the build. Not applied by default.
+	/// </summary>
+	public Func<string, string, string, Cancel, Task<string>>? ScrubBundle { get; init; }
+
+	/// <summary>
+	/// Add the diagnostics page when the bundles folder has the problems file of <c>release preview bundle</c>. Off by default: the
+	/// file names pull requests of private repositories, and a folder reused by another command must not put them on its site.
+	/// </summary>
+	public bool ShowDiagnostics { get; init; }
+
+	/// <summary>
+	/// The day the site is built, for the preview releases of the serverless products. They have no version number: a release is named
+	/// by the day it ships, so the page says what the name would be if it shipped today. Left out when <c>null</c>.
+	/// </summary>
+	public DateOnly? PreviewDate { get; init; }
+
 	/// <summary>URL path prefix prepended to every generated link.</summary>
 	public string? PathPrefix { get; init; }
 
@@ -61,7 +86,10 @@ public class UnifiedReleaseNotesBuildService(
 
 	public async Task<bool> Build(IDiagnosticsCollector collector, UnifiedReleaseNotesBuildOptions options, Cancel ctx = default)
 	{
-		var products = UnifiedReleaseNotesDocset.SelectProducts(configurationContext.ProductsConfiguration.Products.Values);
+		var products = UnifiedReleaseNotesDocset.SelectProducts(
+			configurationContext.ProductsConfiguration.Products.Values,
+			options.AdditionalProductIds
+		);
 		if (products.Count == 0)
 		{
 			collector.EmitError(string.Empty, "No products with 'release-notes: dra' found in products.yml. There is nothing to build.");
@@ -69,7 +97,7 @@ public class UnifiedReleaseNotesBuildService(
 		}
 
 		var realFs = new FileSystem();
-		var bundles = LoadBundles(collector, realFs, products, options);
+		var bundles = await LoadBundlesAsync(collector, realFs, products, options, ctx);
 		if (bundles.Count == 0)
 		{
 			collector.EmitError(
@@ -82,7 +110,10 @@ public class UnifiedReleaseNotesBuildService(
 		products = [.. bundles.Select(b => b.Product)];
 
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "unified-release-notes", "docs");
-		var mockFs = CreateVirtualDocset(docsRoot, bundles);
+		IReadOnlyList<PreviewProblem> problems = [];
+		var checkedForProblems = options.ShowDiagnostics
+			&& PreviewProblemsFile.TryRead(realFs, options.BundlesDirectory.FullName, out problems);
+		var mockFs = CreateVirtualDocset(docsRoot, bundles, checkedForProblems ? problems : null, options.PreviewDate);
 		PrepareOutput(realFs, options.Output.FullName);
 
 		var docFs = DocumentationFileSystem.Resolve(
@@ -116,11 +147,12 @@ public class UnifiedReleaseNotesBuildService(
 		return await service.BuildFrom(collector, buildOptions, docFs, ctx);
 	}
 
-	private IReadOnlyList<ProductBundles> LoadBundles(
+	private async Task<IReadOnlyList<ProductBundles>> LoadBundlesAsync(
 		IDiagnosticsCollector collector,
 		IFileSystem realFs,
 		IReadOnlyList<Product> products,
-		UnifiedReleaseNotesBuildOptions options
+		UnifiedReleaseNotesBuildOptions options,
+		Cancel ctx
 	)
 	{
 		var loader = new BundleLoader(realFs);
@@ -142,7 +174,8 @@ public class UnifiedReleaseNotesBuildService(
 				continue;
 			}
 
-			var missing = MissingVersions(loaded.Select(b => b.Version), options.ExpectedVersions);
+			var isDra = product.Features.ReleaseNotes == ReleaseNotesPath.DailyReleasableArtifacts;
+			var missing = isDra ? MissingVersions(loaded.Select(b => b.Version), options.ExpectedVersions) : [];
 			if (missing.Count > 0)
 				_logger.LogInformation(
 					"'{Product}' has no bundle for {Versions}. It did not change in them.",
@@ -152,13 +185,21 @@ public class UnifiedReleaseNotesBuildService(
 
 			// Copy every YAML file, not only the loaded bundles: LoadBundles folds amend sidecars into their
 			// parent and drops them from its result, and the directive merges them again from the docset folder.
-			var files = realFs
+			var files = new List<(string FileName, string Content)>();
+			var paths = realFs
 				.Directory
 				.EnumerateFiles(folder, "*.yaml")
 				.Concat(realFs.Directory.EnumerateFiles(folder, "*.yml"))
-				.Order(StringComparer.Ordinal)
-				.Select(file => (FileName: realFs.Path.GetFileName(file), Content: realFs.File.ReadAllText(file)))
-				.ToArray();
+				.Order(StringComparer.Ordinal);
+			foreach (var file in paths)
+			{
+				var fileName = realFs.Path.GetFileName(file);
+				var content = realFs.File.ReadAllText(file);
+				if (options.ScrubBundle is { } scrub)
+					content = await scrub(product.Id, fileName, content, ctx);
+				files.Add((fileName, content));
+			}
+
 			result.Add(
 				new ProductBundles(new ProductVersions(product, NewestFirst(loaded.Select(b => NormalizeVersion(b.Version)))), files)
 			);
@@ -178,11 +219,20 @@ public class UnifiedReleaseNotesBuildService(
 	private static IReadOnlyList<string> NewestFirst(IEnumerable<string> versions) =>
 		[.. versions.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(VersionOrDate.Parse)];
 
-	private static MockFileSystem CreateVirtualDocset(string docsRoot, IReadOnlyList<ProductBundles> bundles)
+	private static MockFileSystem CreateVirtualDocset(
+		string docsRoot,
+		IReadOnlyList<ProductBundles> bundles,
+		IReadOnlyList<PreviewProblem>? problems,
+		DateOnly? previewDate
+	)
 	{
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = docsRoot, CreateDefaultTempDir = false });
 
-		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate([.. bundles.Select(b => b.Versions)]))
+		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate(
+			[.. bundles.Select(b => b.Versions)],
+			problems,
+			previewDate
+		))
 			mockFs.AddFile(mockFs.Path.Join(docsRoot, relativePath), new MockFileData(content));
 
 		foreach (var (productVersions, files) in bundles)

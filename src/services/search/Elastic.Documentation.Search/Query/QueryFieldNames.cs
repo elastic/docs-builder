@@ -31,6 +31,8 @@ public static class QueryFieldNames
 	public static string ApiTitleFingerprint { get; } = $"{Doc.Fields.Api}.title_fingerprint";
 	public static string ApiMethod { get; } = $"{Doc.Fields.Api}.method";
 	public static string ApiLanding { get; } = $"{Doc.Fields.Api}.landing";
+	public static string ApiSitemapOnly { get; } = $"{Doc.Fields.Api}.sitemap_only";
+	public static string ApiPage { get; } = $"{Doc.Fields.Api}.page";
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
 	public static string ApiKey { get; } = $"{Doc.Fields.Api}.key";
 	public static string ApiOperationId { get; } = $"{Doc.Fields.Api}.operation_id";

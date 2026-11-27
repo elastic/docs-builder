@@ -55,7 +55,9 @@ public partial class DefaultSearchService<TDocument>(
 		// optional, so the required-member test cannot catch its absence; without it every hit reads as current
 		"api.deprecated",
 		// optional too; without it a landing page reads as an operation and loses its row
-		"api.landing"
+		"api.landing",
+		// optional too; without it a group, type or topic page reads as an operation
+		"api.page"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
@@ -142,7 +144,7 @@ public partial class DefaultSearchService<TDocument>(
 					.Aggregations(agg => agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType))))
 					.Source(sf => sf.Filter(f => f.Includes(AutocompleteSourceIncludes)))
 					.Highlight(
-						h => h.Fields(
+						h => h.Encoder(Elastic.Clients.Elasticsearch.Core.Search.HighlighterEncoder.Html).Fields(
 							f => f.Add(
 								QueryFieldNames.Title,
 								hf => hf
@@ -250,7 +252,7 @@ public partial class DefaultSearchService<TDocument>(
 				if (request.IncludeHighlighting)
 				{
 					_ = s.Highlight(
-						h => h.Fields(
+						h => h.Encoder(Elastic.Clients.Elasticsearch.Core.Search.HighlighterEncoder.Html).Fields(
 							f => f.Add(
 								QueryFieldNames.Title,
 								hf => hf

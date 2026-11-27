@@ -102,7 +102,7 @@ public class VersionsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				throws
-				YamlException: {config-runtime}/versions.yml: (Lin: 0, Col: 20, Chr: 20) - (Lin: 0, Col: 20, Chr: 20): Expected a StartMapping token but found 'StartSequence'.
+				YamlException: {config-runtime}/versions.yml: (Lin: 0, Col: 20, Chr: 20) - (Lin: 0, Col: 21, Chr: 21): Expected a StartMapping token but found 'StartSequence'.
 				"""
 			);
 
@@ -145,7 +145,7 @@ public class VersionsGoldenTests
 			.MatchInlineSnapshot(
 				"""
 				throws
-				YamlException: {config-runtime}/versions.yml: (Lin: 7, Col: 0, Chr: 100) - (Lin: 7, Col: 0, Chr: 100): Duplicate mapping key 'stack'.
+				YamlException: {config-runtime}/versions.yml: (Lin: 5, Col: 4, Chr: 73) - (Lin: 5, Col: 4, Chr: 73): Duplicate mapping key 'stack'.
 				"""
 			);
 

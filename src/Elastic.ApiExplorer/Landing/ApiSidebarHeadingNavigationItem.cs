@@ -17,7 +17,7 @@ public record ApiSidebarSection(string Name) : IApiGroupingModel
 }
 
 /// <summary>
-/// A top-level group of the API sidebar, such as Topics, Operations or Types: a plain label with no page of its own,
+/// A top-level group of the API sidebar, such as Operations or Types: a plain label with no page of its own,
 /// always open, with no toggle. Like
 /// <see cref="ClassificationNavigationItem"/>, it points at the product overview, so breadcrumbs fold it into the spec crumb.
 /// </summary>
@@ -39,7 +39,7 @@ public abstract class ApiSidebarHeadingNavigationItem(
 	public override string Id { get; } = ShortId.Create("api-section", title);
 }
 
-/// <summary>The Operations sidebar group. It labels the endpoint groups between the topics and the types.</summary>
+/// <summary>The Operations sidebar group. It labels the endpoint groups between the guide pages and the types.</summary>
 public class OperationsNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(Title, rootNavigation)
 {
 	public const string Title = "Operations";

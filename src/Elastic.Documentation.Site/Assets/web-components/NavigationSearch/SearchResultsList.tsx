@@ -1,5 +1,5 @@
 import { config } from '../../config'
-import { DeprecatedBadge, deprecatedTitleText } from './DeprecatedBadge'
+import { DeprecatedBadge } from './DeprecatedBadge'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { RouteLine } from './RouteLine'
@@ -28,7 +28,6 @@ import {
 import { css } from '@emotion/react'
 import htmx from 'htmx.org'
 import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
-import type { Instance } from 'tippy.js'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
@@ -118,18 +117,6 @@ export const SearchResultsList = ({
     // React renders the rows after htmx's own pass over the page, so they need their own to inherit hx-boost.
     useEffect(() => {
         if (containerRef.current) htmx.process(containerRef.current)
-    }, [results])
-
-    // The page's tippy delegate mounts tooltips on the body and only drops them on an htmx swap, so a tooltip shown
-    // over a row would outlive it. Captured now: by cleanup time React has already detached the rows it removed.
-    useEffect(() => {
-        const tooltipped = Array.from(
-            containerRef.current?.querySelectorAll('[data-tippy-content]') ?? []
-        )
-        return () =>
-            tooltipped.forEach((el) =>
-                (el as Element & { _tippy?: Instance })._tippy?.destroy()
-            )
     }, [results])
 
     const containerStyles = css`
@@ -349,12 +336,6 @@ const SearchResultRow = ({
                         }
                     }
                 }
-
-                ${
-                    result.deprecated
-                        ? `.route-line .api-method { filter: saturate(0.4); }`
-                        : ''
-                }
             `}
         >
             {result.landing && (
@@ -394,7 +375,7 @@ const SearchResultRow = ({
                     label={
                         result.landing
                             ? GO_TO_LABELS.api
-                            : result.type === 'api'
+                            : result.type === 'api' && !result.page
                               ? GO_TO_LABELS.operation
                               : GO_TO_LABELS.page
                     }
@@ -560,8 +541,6 @@ const Title = ({
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
-
-                ${deprecated ? deprecatedTitleText : ''}
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />

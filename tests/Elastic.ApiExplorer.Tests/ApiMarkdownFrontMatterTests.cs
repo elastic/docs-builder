@@ -18,7 +18,7 @@ public class ApiMarkdownFrontMatterTests
 			new ApiPageFrontMatter(
 				"Run a search",
 				"Returns hits that match the query",
-				"https://cdn.example/api/doc/elasticsearch/operation/operation-search",
+				"https://cdn.example/api/elasticsearch/operation/operation-search",
 				"Elasticsearch"
 			)
 		);
@@ -27,10 +27,10 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: Run a search
-			description: Returns hits that match the query
-			url: https://cdn.example/api/doc/elasticsearch/operation/operation-search
-			resource: https://cdn.example/api/doc/elasticsearch/operation/operation-search
+			title: "Run a search"
+			description: "Returns hits that match the query"
+			url: https://cdn.example/api/elasticsearch/operation/operation-search
+			resource: https://cdn.example/api/elasticsearch/operation/operation-search
 			products:
 			  - Elasticsearch
 			---
@@ -38,6 +38,29 @@ public class ApiMarkdownFrontMatterTests
 			# Run a search
 
 			Returns hits.
+			"""
+		);
+	}
+
+	[Test]
+	public void Write_QuotesDescriptionWithColonAndQuote()
+	{
+		var markdown = ApiMarkdownFrontMatter.Write(
+			"# X\n",
+			new ApiPageFrontMatter("X", "Send a header like Authorization: \"ApiKey abc\" to authenticate.", "/api", null)
+		);
+
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			---
+			type: api
+			title: "X"
+			description: "Send a header like Authorization: \"ApiKey abc\" to authenticate."
+			url: /api
+			resource: /api
+			---
+
+			# X
 			"""
 		);
 	}
@@ -51,7 +74,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: API Explorer
+			title: "API Explorer"
 			url: /api
 			resource: /api
 			---
@@ -68,8 +91,8 @@ public class ApiMarkdownFrontMatterTests
 			"1.2",
 			"Apache 2.0: see terms",
 			["https://api.example.com", "{scheme}://x"],
-			"https://cdn.example/api/doc/es.json",
-			"https://cdn.example/api/doc/es.yaml"
+			"https://cdn.example/api/es.json",
+			"https://cdn.example/api/es.yaml"
 		);
 
 		// AppendLine writes the platform newline; normalise so the multi-line assertions hold on Windows too.
@@ -82,7 +105,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: Elasticsearch
+			title: "Elasticsearch"
 			url: /api
 			resource: /api
 			version: "1.2"
@@ -91,8 +114,8 @@ public class ApiMarkdownFrontMatterTests
 			  - "https://api.example.com"
 			  - "{scheme}://x"
 			spec:
-			  json: https://cdn.example/api/doc/es.json
-			  yaml: https://cdn.example/api/doc/es.yaml
+			  json: https://cdn.example/api/es.json
+			  yaml: https://cdn.example/api/es.yaml
 			---
 
 			# Elasticsearch
@@ -111,7 +134,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: X
+			title: "X"
 			url: /api
 			resource: /api
 			---

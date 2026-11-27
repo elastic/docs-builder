@@ -51,15 +51,16 @@
 	font-size: var(--text-sm);
 	font-weight: var(--weight-semibold);
 	white-space: nowrap;
-	list-style: none;
 	cursor: pointer;
 	transition:
 		color var(--duration-fast) var(--ease-standard),
 		border-color var(--duration-fast) var(--ease-standard);
 }
 
-.docs-bar__link::-webkit-details-marker {
-	display: none;
+button.docs-bar__link {
+	border-top: 0;
+	border-inline: 0;
+	background: none;
 }
 
 .docs-bar__link:hover {
@@ -76,37 +77,16 @@
 	outline-offset: -3px;
 }
 
-.docs-bar__dropdown {
-	position: relative;
-}
-
+/* A popover placed under its tab by floating.ts. */
 .docs-bar__menu {
-	position: absolute;
-	z-index: var(--z-overlay);
-	top: 100%;
-	left: 0;
 	min-width: 14rem;
+	max-height: var(--floating-available-height, none);
+	overflow-y: auto;
 	padding: var(--space-2) 0;
 	border: var(--border-width) solid var(--color-border-strong);
 	border-radius: var(--radius-md);
 	background: var(--color-surface);
 	box-shadow: var(--shadow-slab-sm);
-}
-
-/* The tab list scrolls sideways, which would clip a menu hanging below it, so the script shows the menu in the top layer instead. */
-.docs-bar__menu[popover] {
-	position: fixed;
-	inset: auto;
-	margin: 0;
-	overflow: auto;
-}
-
-/* Without the Popover API the menu cannot leave the tab list, which scrolls and so clips it, so the tabs wrap instead of scrolling. */
-@supports not selector(:popover-open) {
-	.docs-bar__list {
-		flex-wrap: wrap;
-		overflow: visible;
-	}
 }
 
 .docs-bar__group {

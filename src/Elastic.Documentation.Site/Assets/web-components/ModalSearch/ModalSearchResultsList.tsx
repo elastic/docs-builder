@@ -1,8 +1,5 @@
 import { config } from '../../config'
-import {
-    DeprecatedBadge,
-    deprecatedTitleText,
-} from '../NavigationSearch/DeprecatedBadge'
+import { DeprecatedBadge } from '../NavigationSearch/DeprecatedBadge'
 import { SanitizedHtmlContent } from '../NavigationSearch/SanitizedHtmlContent'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import {
@@ -365,8 +362,6 @@ const Title = ({
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
-
-                ${deprecated ? deprecatedTitleText : ''}
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />

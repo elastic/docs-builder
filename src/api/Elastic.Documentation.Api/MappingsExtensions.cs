@@ -381,7 +381,6 @@ public static class MappingsExtension
 			.MapPut("/page-feedback/{feedbackId:guid}", async (
 				Guid feedbackId,
 				PageFeedbackRequest request,
-				HttpContext context,
 				IPageFeedbackService feedbackService,
 				ILogger<Program> logger,
 				Cancel ctx
@@ -390,7 +389,7 @@ public static class MappingsExtension
 				if (!IsValidPageFeedback(request))
 					return Invalid("The page feedback is invalid. Check pageUrl, pageTitle, reaction, reasons and comment.");
 
-				var record = PageFeedbackRecord.From(feedbackId, request, TryGetEuid(context));
+				var record = PageFeedbackRecord.From(feedbackId, request);
 				var pageUrlForLog = SanitizeForLog(request.PageUrl);
 				if (!await feedbackService.UpsertFeedbackAsync(record, ctx))
 				{

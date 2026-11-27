@@ -38,3 +38,4 @@ meta_title: Title as it appears in search results and browser tabs
 
 Use `meta_title` when the browser and search title needs different wording than the page heading.
 The builder appends the site name, so don't include it in `meta_title`.
+When the title equals the site name, ignoring case, the builder leaves the site name off. The root page of a site shows `Elastic Docs`, not `Elastic Docs | Elastic Docs`.

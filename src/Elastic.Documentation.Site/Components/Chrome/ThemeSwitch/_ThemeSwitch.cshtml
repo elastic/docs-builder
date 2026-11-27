@@ -14,15 +14,15 @@
 		("motion", "Motion", [("full", "Full", null, false, false), ("reduce", "Reduced", null, false, false), ("system", "Match system", null, false, true)])
 	];
 }
-<div class="theme-switch@(Model.OpensLeft ? " theme-switch--left" : "")">
-	<input class="theme-switch__open" type="checkbox" id="@(id)-open" aria-label="Display options">
+@* The quick picks are labels for radios in the menu. The cog opens the menu, a popover placed under it by floating.ts. *@
+<div class="theme-switch">
 	<div class="theme-group">
 		<label class="theme-group__opt" data-v="light" for="@(id)-theme-light" title="Light">@Sun</label>
 		<label class="theme-group__opt" data-v="dark" for="@(id)-theme-dark" title="Dark">@Moon</label>
 		<span class="theme-group__sep"></span>
-		<label class="theme-group__opt theme-group__opt--cog" for="@(id)-open" title="Display options">@Cog</label>
+		<button type="button" class="theme-group__opt theme-group__opt--cog" popovertarget="@(id)-menu" aria-label="Display options" title="Display options">@Cog</button>
 	</div>
-	<div class="theme-menu">
+	<div id="@(id)-menu" class="theme-menu" popover data-placement="bottom-end" aria-label="Display options">
 		@foreach (var group in groups)
 		{
 			<div class="theme-menu__group" role="radiogroup" aria-label="@group.Label">

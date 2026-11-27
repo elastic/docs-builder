@@ -43,18 +43,15 @@ public class SearchRelevanceTests
 		yield return () =>
 			("dotnet client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"]);
 		yield return () =>
-			("runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [
-				"/docs/solutions/security/endpoint-response-actions"
-			]);
-		yield return () => ("_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("GET /_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("my-index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("_cat/indices/logs-2026", "/docs/api/doc/elasticsearch/operation/operation-cat-indices", null);
-		yield return () => ("_bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk", null);
-		yield return () =>
-			("_security/user/alice/_password", "/docs/api/doc/elasticsearch/operation/operation-security-change-password", null);
+			("runscript", "/docs/api/kibana/operation/operation-runscriptaction", ["/docs/solutions/security/endpoint-response-actions"]);
+		yield return () => ("_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("/_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("GET /_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("index/_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("my-index/_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("_cat/indices/logs-2026", "/docs/api/elasticsearch/operation/operation-cat-indices", null);
+		yield return () => ("_bulk", "/docs/api/elasticsearch/operation/operation-bulk", null);
+		yield return () => ("_security/user/alice/_password", "/docs/api/elasticsearch/operation/operation-security-change-password", null);
 		yield return () => ("data-streams", "/docs/manage-data/data-store/data-streams", null);
 		yield return () => ("datastream", "/docs/manage-data/data-store/data-streams", null);
 		yield return () => ("data stream", "/docs/manage-data/data-store/data-streams", null);
@@ -373,6 +370,26 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("scroll id", "operation-scroll", "scroll_id");
 	}
 
+	// The index keeps "data streams" as plain words, so the singular finds a plural-only page only through the
+	// search-time "data streams" expansion in search.yml. The pin keeps the overview first either way.
+	[Test]
+	[Arguments("data stream")]
+	[Arguments("datastream")]
+	public async Task SearchSingular_FindsAPageThatOnlyUsesThePluralWords(string query)
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 20 },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		searchResult.Results.Select(r => r.Url).Should().Contain("/docs/reference/fleet/data-streams");
+	}
+
 	[Test]
 	[MethodDataSource(nameof(ApiSearchQueryTestCases))]
 	public async Task ApiSearchReturnsExpectedFirstResult(string query, string expectedOperation)
@@ -570,7 +587,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		searchResult.Results.First().Url.Should().Be("/docs/api/doc/kibana");
+		searchResult.Results.First().Url.Should().Be("/docs/api/kibana");
 	}
 
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.

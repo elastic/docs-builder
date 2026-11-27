@@ -24,19 +24,8 @@ public class FloatingSectionLinksTests
 		var reference = set.CreateLinkReference();
 
 		reference.Links.Keys.Should().BeEquivalentTo("index.md", "page.md");
-		reference
-			.Floating
-			.Should()
-			.ContainKey("api/demo")
-			.WhoseValue
-			.Versions
-			.Should()
-			.ContainSingle()
-			.Which
-			.Root
-			.Should()
-			.Be("api/doc/demo");
-		set.NavigationIndexedByOrder.Values.Should().Contain(i => i.Url == "/api/doc/demo");
+		reference.Floating.Should().ContainKey("api/demo").WhoseValue.Versions.Should().ContainSingle().Which.Root.Should().Be("api/demo");
+		set.NavigationIndexedByOrder.Values.Should().Contain(i => i.Url == "/api/demo");
 		provider.ResolveCalls.Should().Be(1);
 	}
 
@@ -103,7 +92,7 @@ public class FloatingSectionLinksTests
 	{
 		public string Kind => "api";
 		public string Key => "demo";
-		public string UrlRoot => "api/doc/demo";
+		public string UrlRoot => "api/demo";
 
 		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
 			new DemoRoot(parent) { Hidden = hidden };
@@ -129,7 +118,7 @@ public class FloatingSectionLinksTests
 	private sealed class DemoLandingLeaf(DemoRoot root) : ILeafNavigationItem<DemoModel>
 	{
 		public DemoModel Model { get; } = new();
-		public string Url => "/api/doc/demo";
+		public string Url => "/api/demo";
 		public string NavigationTitle => "Demo API";
 		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => root;
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = root;

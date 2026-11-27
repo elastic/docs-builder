@@ -36,7 +36,8 @@ public sealed class UnifiedProductBundler(
 	HttpClient http,
 	IFileSystem fileSystem,
 	ILogger logger,
-	IDiagnosticsCollector collector
+	IDiagnosticsCollector collector,
+	PreviewProblemLog? problems = null
 )
 {
 	public async Task<ProductBundleOutcome> BundleAsync(
@@ -121,7 +122,9 @@ public sealed class UnifiedProductBundler(
 			var arguments = UnifiedBundleArguments.Create(range, profileName, tempConfig, outputDirectory) with
 			{
 				OnPoolMissing = failWhenNotOnboarded ? null : message => poolMissing = message,
-				OnEmptyRange = () => emptyRange = true
+				OnEmptyRange = () => emptyRange = true,
+				TolerateMissingLabels = problems is not null,
+				OnPullRequestProblem = problems is null ? null : problem => problems.Add(range.ProductId, range.Version, problem)
 			};
 
 			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);

@@ -15,6 +15,12 @@ public interface IUriEnvironmentResolver
 	/// so the repository mappings that <see cref="Resolve"/> applies do not apply to them.
 	/// </summary>
 	Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => Resolve(crossLinkUri, sitePath);
+
+	/// <summary>
+	/// Whether the host this resolver links to still proxies the legacy <c>/docs/api/doc/</c> API URLs to bump.sh, so
+	/// links to API pages take that form.
+	/// </summary>
+	bool LegacyApiUrls => false;
 }
 
 public class IsolatedBuildEnvironmentUriResolver : IUriEnvironmentResolver
@@ -26,6 +32,10 @@ public class IsolatedBuildEnvironmentUriResolver : IUriEnvironmentResolver
 
 	// Floating sections are not part of a repository's source tree, so an isolated build links to the published page.
 	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => new(PublishedBaseUri, $"docs/{sitePath}");
+
+	/// <inheritdoc />
+	/// <remarks>Follows prod's API Explorer flag, since isolated builds link API pages to www.elastic.co (elastic/docs-eng-team#725).</remarks>
+	public bool LegacyApiUrls => false;
 
 	private static Uri PublishedBaseUri { get; } = new("https://www.elastic.co");
 
@@ -54,4 +64,7 @@ public class CodexAwareUriResolver(FrozenSet<string> codexRepositories, bool use
 			: PublicResolver.Resolve(crossLinkUri, path);
 
 	public Uri ResolveSitePath(Uri crossLinkUri, string sitePath) => PublicResolver.ResolveSitePath(crossLinkUri, sitePath);
+
+	/// <inheritdoc />
+	public bool LegacyApiUrls => PublicResolver.LegacyApiUrls;
 }

@@ -562,8 +562,8 @@ public class SiteLayoutNavigationTests
 				    FileNavigationLeaf  /docs/kibana/dashboards  "kibana: dashboards"
 				  SectionNavigation  /docs/api  "APIs" [island]
 				    index: SectionIndexLeaf  /docs/api  "APIs"
-				    DemoRoot  /api/doc/demo  "Demo API" [island]
-				      index: DemoLandingLeaf  /api/doc/demo  "Demo API"
+				    DemoRoot  /api/demo  "Demo API" [island]
+				      index: DemoLandingLeaf  /api/demo  "Demo API"
 				"""
 			);
 }

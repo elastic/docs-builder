@@ -3,34 +3,35 @@
 	<div class="docs-bar__inner">
 		<a class="docs-bar__home" href="@Model.HomeHref">@Model.HomeLabel</a>
 		<ul class="docs-bar__list">
-			@foreach (var item in Model.Items)
+			@for (var index = 0; index < Model.Items.Count; index++)
 			{
+				var item = Model.Items[index];
 				<li class="docs-bar__item">
 					@if (item.IsDropdown)
 					{
-						<details class="docs-bar__dropdown" data-menu data-popover>
-							<summary class="docs-bar__link">
-								@if (item.Icon is { } dropdownIcon)
+						var menuId = $"docs-bar-menu-{index}";
+						@* The tab list scrolls sideways and would clip a menu hanging below it, so the menu is a popover (top layer) that floating.ts places under its tab. *@
+						<button type="button" class="docs-bar__link" popovertarget="@menuId">
+							@if (item.Icon is { } dropdownIcon)
+							{
+								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = dropdownIcon, Size = IconSize.Small }))
+							}
+							<span>@item.Title</span>
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
+						</button>
+						<div id="@menuId" class="docs-bar__menu" aria-label="@item.Title" popover>
+							@foreach (var group in item.Groups)
+							{
+								@if (group.Label is { } label)
 								{
-									@await RenderPartialAsync(_Icon.Create(new IconModel { Name = dropdownIcon, Size = IconSize.Small }))
+									<p class="docs-bar__group">@label</p>
 								}
-								<span>@item.Title</span>
-								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
-							</summary>
-							<div class="docs-bar__menu" aria-label="@item.Title" data-popover-panel>
-								@foreach (var group in item.Groups)
+								@foreach (var link in group.Links)
 								{
-									@if (group.Label is { } label)
-									{
-										<p class="docs-bar__group">@label</p>
-									}
-									@foreach (var link in group.Links)
-									{
-										<a class="docs-bar__menu-link" href="@link.Href">@link.Title</a>
-									}
+									<a class="docs-bar__menu-link" href="@link.Href">@link.Title</a>
 								}
-							</div>
-						</details>
+							}
+						</div>
 					}
 					else
 					{

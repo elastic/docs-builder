@@ -9,20 +9,20 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiCatalogViewModelTests
 {
-	// Mirrors the api: block in elastic/docs-content docset.yml: key, title, categories.
+	// Mirrors the api: block in elastic/docs-content docset.yml: key, title.
 	private static readonly ApiCatalogEntry[] Production =
 	[
-		Entry("cloud-serverless", "Elastic Cloud Serverless API", "serverless"),
-		Entry("logstash", "Logstash APIs", "self"),
-		Entry("cloud-billing", "Cloud Billing API", "ess"),
-		Entry("kibana-serverless", "Kibana Serverless APIs", "serverless"),
+		Entry("cloud-serverless", "Elastic Cloud Serverless API"),
+		Entry("logstash", "Logstash APIs"),
+		Entry("cloud-billing", "Cloud Billing API"),
+		Entry("kibana-serverless", "Kibana Serverless APIs"),
 		Entry("cloud-connect", "Elastic Cloud Connected API"),
-		Entry("elasticsearch", "Elasticsearch API", "self", "ece", "ess"),
+		Entry("elasticsearch", "Elasticsearch API"),
 		Entry("cloud-enterprise", "Elastic Cloud Enterprise API"),
-		Entry("kibana", "Kibana APIs", "self", "ece", "ess"),
+		Entry("kibana", "Kibana APIs"),
 		Entry("cloud", "Elastic Cloud API"),
 		Entry("cloud-monitoring", "Elastic Cloud Monitoring API"),
-		Entry("elasticsearch-serverless", "Elasticsearch Serverless API", "serverless")
+		Entry("elasticsearch-serverless", "Elasticsearch Serverless API")
 	];
 
 	[Test]
@@ -112,18 +112,6 @@ public class ApiCatalogViewModelTests
 	}
 
 	[Test]
-	public void ColumnOf_Variant_IsTheColumnOfItsParentWhateverTheOrder()
-	{
-		var elasticsearch = Item("elasticsearch");
-		var kibana = Item("kibana");
-		var logstash = Item("logstash");
-		var kibanaServerless = Item("kibana-serverless", parentKey: "kibana");
-		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [elasticsearch, kibana, logstash], [kibanaServerless]);
-
-		group.ColumnOf(kibanaServerless).Should().Be(2, "the tag-on sits under Kibana even though Elasticsearch has no variant");
-	}
-
-	[Test]
 	public void TryGetVariant_FeaturedWithATagOn_ReturnsIt()
 	{
 		var elasticsearch = Item("elasticsearch");
@@ -153,62 +141,26 @@ public class ApiCatalogViewModelTests
 	}
 
 	[Test]
-	public void ColumnOf_VariantWithoutAFeaturedParent_IsNull()
-	{
-		var orphan = Item("kibana-serverless", parentKey: "kibana");
-		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [Item("elasticsearch"), Item("logstash")], [orphan]);
-
-		group.ColumnOf(orphan).Should().BeNull("Kibana is not featured here, so the tag-on stays a separate card");
-	}
+	public void ToItem_LinksToTheVersionlessRoot() => ApiCatalogViewModel.ToItem(Entry("kibana", "Kibana")).Url.Should().Be("/api/kibana/");
 
 	[Test]
-	public void DeploymentsOf_AllCategories_ListsThemInReadingOrderWithFullNames()
+	public void CatalogMarkdown_LinksToTheVersionlessRootAndItsSiblingFiles()
 	{
-		var deployments = ApiCatalogViewModel.DeploymentsOf(
-			Entry("elasticsearch", "Elasticsearch API", "serverless", "ess", "self", "ece")
-		);
+		var markdown = LandingCommonMark.Catalog([Entry("kibana", "Kibana")]);
 
-		deployments.Select(d => d.Label).Should().Equal("Self-managed", "ECE", "ECH", "Serverless");
-		deployments.Select(d => d.Name).Should().Equal("Self-managed", "Elastic Cloud Enterprise", "Elastic Cloud Hosted", "Serverless");
-	}
-
-	[Test]
-	public void DeploymentsOf_NoCategories_IsEmpty() =>
-		ApiCatalogViewModel.DeploymentsOf(Entry("cloud", "Elastic Cloud API")).Should().BeEmpty();
-
-	[Test]
-	public void ToItem_LinksToTheLatestVersionWhenThereIsOne()
-	{
-		ApiCatalogViewModel
-			.ToItem(Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" })
-			.Url
-			.Should()
-			.Be("/api/doc/kibana/v9");
-		ApiCatalogViewModel.ToItem(Entry("cloud", "Elastic Cloud API")).Url.Should().Be("/api/doc/cloud/");
-	}
-
-	[Test]
-	public void CatalogMarkdown_LinksToTheLatestVersionAndItsSiblingFiles()
-	{
-		var markdown = LandingCommonMark.Catalog([
-			Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" },
-			Entry("cloud", "Elastic Cloud API")
-		]);
-
-		markdown.Should().Contain("[Kibana](/api/doc/kibana/v9)");
 		markdown
 			.Should()
-			.Contain("[Markdown](/api/doc/kibana/v9.md)")
+			.Contain("[Kibana](/api/kibana/)")
 			.And
-			.Contain("[JSON](/api/doc/kibana/v9.json)")
+			.Contain("[Markdown](/api/kibana.md)")
 			.And
-			.Contain("[YAML](/api/doc/kibana/v9.yaml)");
-		markdown.Should().Contain("[Elastic Cloud API](/api/doc/cloud/)").And.Contain("[Markdown](/api/doc/cloud.md)");
+			.Contain("[JSON](/api/kibana.json)")
+			.And
+			.Contain("[YAML](/api/kibana.yaml)");
 	}
 
 	private static ApiCatalogItem Item(string key, string? parentKey = null) =>
-		new(key, key, $"/api/doc/{key}/", "<svg></svg>", null, [], parentKey);
+		new(key, key, $"/api/{key}/", "<svg></svg>", null, parentKey);
 
-	private static ApiCatalogEntry Entry(string key, string title, params string[] categories) =>
-		new(key, title, $"/api/doc/{key}/") { CatalogCategories = categories };
+	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/{key}/");
 }

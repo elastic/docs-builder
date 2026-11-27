@@ -126,18 +126,18 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 				new ApiIdentityProductGroup(
 					"Elastic Stack",
 					[
-						new ApiIdentityProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
-						new ApiIdentityProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
+						new ApiIdentityProduct("Elasticsearch API", "/docs/api/elasticsearch/", true, "<svg></svg>"),
+						new ApiIdentityProduct("Kibana APIs", "/docs/api/kibana/", false, null)
 					]
 				),
-				new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
+				new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/docs/api/alpha/", false, null)])
 			],
 			"/docs/api/",
 			[
-				new NavigationSelectOption("main", "/docs/api/doc/elasticsearch/", true),
-				new NavigationSelectOption("v8", "/docs/api/doc/elasticsearch/v8/", false)
+				new NavigationSelectOption("main", "/docs/api/elasticsearch/", true),
+				new NavigationSelectOption("v8", "/docs/api/elasticsearch/v8/", false)
 			],
-			new ApiSpecDownload("/docs/api/doc/elasticsearch.json", "/docs/api/doc/elasticsearch.yaml")
+			new ApiSpecDownload("/docs/api/elasticsearch.json", "/docs/api/elasticsearch.yaml")
 		);
 
 		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
@@ -154,7 +154,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 			[],
 			"/docs/api/",
 			[
-				new NavigationSelectOption("main", "/a/", false),
+				new NavigationSelectOption("Next (unreleased)", "/a/next/", false, "Next"),
 				new NavigationSelectOption("v9 (latest)", "/a/v9/", true, "v9"),
 				new NavigationSelectOption("v8", "/a/v8/", false)
 			],
@@ -164,6 +164,24 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().MatchHtmlSnapshot(DocsHtml.Body());
+	}
+
+	[Test]
+	public async Task ApiIdentityWithOneVersionNamesItInTheTriggerAndOffersNoVersionMenu()
+	{
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/a/", true, null)])],
+			"/docs/api/",
+			[new NavigationSelectOption("v9 (latest)", "/a/", true, "v9")],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<span class=\"api-identity-version-label\">v9</span>");
+		html.Should().NotContain("api-version-switcher", "one version is not a choice");
 	}
 
 	[Test]
@@ -214,12 +232,6 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		var desktopTabs = reference.Split("<ul").Last();
 		var referenceListItem = desktopTabs.Split("<li").First(li => li.Contains("Reference"));
 		referenceListItem.Should().Contain("secondary-nav-item--active");
-
-		// Dropdown tabs have no tree backing — they are never marked active via section ID.
-		var product = await Render(TopNav, currentUrl: "/docs/products/elasticsearch/index");
-		desktopTabs = product.Split("<ul").Last();
-		var productListItem = desktopTabs.Split("<li").First(li => li.Contains("Products"));
-		productListItem.Should().NotContain("secondary-nav-item--active");
 	}
 
 	[Test]

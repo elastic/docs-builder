@@ -16,14 +16,6 @@ namespace Elastic.ApiExplorer.Landing;
 
 public sealed record ApiCatalogEntry(string Key, string Title, string Url, string? ProductId = null, string? Description = null)
 {
-	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
-
-	/// <summary>The highest frozen major's root, such as <c>/api/doc/kibana/v9</c>. Null when the API has no numbered version.</summary>
-	public string? LatestUrl { get; init; }
-
-	/// <summary>Where a link to this API goes: its latest numbered version, or its root.</summary>
-	public string OpenUrl => LatestUrl ?? Url;
-
 	public string? IconSvg => ProductIcons.Get(ProductId ?? Key);
 }
 
@@ -31,9 +23,9 @@ public class ApiCatalog : IApiGroupingModel
 {
 	public const string PageTitle = "Elastic APIs";
 
-	/// <summary>The line under the title. It also tells a reader what the deployment tags on the cards refer to.</summary>
+	/// <summary>The line under the title.</summary>
 	public const string PageLede =
-		"Reference documentation for the Elastic REST APIs, for self-managed, Elastic Cloud and Serverless deployments.";
+		"Reference documentation for Elastic REST APIs. Use them to interact with the Elastic Stack and orchestrate your deployments.";
 
 	/// <summary>Section the catalog view hands to its layout, rendered above the width-limited container.</summary>
 	public const string HeroSection = "api-catalog-hero";

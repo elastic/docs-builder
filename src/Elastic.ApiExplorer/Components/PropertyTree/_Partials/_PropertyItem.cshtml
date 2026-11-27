@@ -2,14 +2,18 @@
 @{
 	var hasChildren = Model.Children.Kind != ChildKind.None;
 }
-<div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "") @(Model.ShowDeprecatedBadge ? "deprecated" : "")">
+<div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "")">
 	<dt id="@Model.AnchorId">
 		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel">
-			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			<span class="property-anchor-icon" data-tooltip="Copy link" aria-hidden="true"></span>
 		</a>
-		@if (Model.TooltipPath is { } path)
+		@if (Model.IsMapKey)
 		{
-			<code data-tippy-content="@path" data-tippy-theme="mono">@Model.Name</code>
+			@(await RenderPartialAsync<_MapKeyLabel, string?>(Model.TooltipPath))
+		}
+		else if (Model.TooltipPath is { } path)
+		{
+			<code data-tooltip="@path" data-tooltip-theme="mono">@Model.Name</code>
 		}
 		else
 		{
@@ -26,7 +30,7 @@
 		}
 		@if (Model.IsNullable)
 		{
-			<span class="nullable-badge @SchemaHelpers.StatusCssClass" data-tippy-content="This value can be null">nullable</span>
+			<span class="nullable-badge @SchemaHelpers.StatusCssClass" data-tooltip="This value can be null">nullable</span>
 		}
 		@if (Model.ShowDeprecatedBadge)
 		{
@@ -135,7 +139,7 @@
 	{
 		<dd class="union-options">
 			<span class="values-label">@repeated.Label</span>
-			<a href="#@repeated.AnchorId"><code>@repeated.Name</code></a>
+			<a href="#@repeated.AnchorId"><code>@repeated.DisplayName</code></a>
 			@if (repeated.Owner is { Length: > 0 } owner)
 			{
 				<span class="values-label">in</span>
@@ -173,14 +177,7 @@
 				<dl class="property-list">
 					<div class="property-item depth-@dict.Depth last-sibling has-children @(dict.IsCollapsible ? (dict.DefaultExpanded ? "expanded" : "collapsed") : "")">
 						<dt id="@dict.KeyAnchorId">
-							@if (dict.JsonPath is { } keyPath)
-							{
-								<code data-tippy-content="@keyPath" data-tippy-theme="mono">&lt;string&gt;</code>
-							}
-							else
-							{
-								<code>&lt;string&gt;</code>
-							}
+							@(await RenderPartialAsync<_MapKeyLabel, string?>(dict.TooltipPath))
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
 						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))

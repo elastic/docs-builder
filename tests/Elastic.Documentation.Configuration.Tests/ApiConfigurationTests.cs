@@ -19,34 +19,6 @@ using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
-public class ApiCatalogCategoryTests
-{
-	[Test]
-	[Arguments("self", "self")]
-	[Arguments("ECE", "ece")]
-	[Arguments("ess", "ess")]
-	[Arguments("ech", "ess")]
-	[Arguments("ECH", "ess")]
-	[Arguments("serverless", "serverless")]
-	public void TryNormalize_AcceptsCatalogKeysAndAliases(string raw, string canonical) =>
-		ApiCatalogCategory.Normalize(raw).Should().Be(canonical);
-
-	[Test]
-	[Arguments("eck")]
-	[Arguments("stack")]
-	[Arguments("hosted")]
-	public void TryNormalize_RejectsUnknownKeys(string raw) => ApiCatalogCategory.Normalize(raw).Should().BeNull();
-
-	[Test]
-	public void DisplayName_UsesCatalogLabels()
-	{
-		ApiCatalogCategory.DisplayName("self").Should().Be("Self-managed");
-		ApiCatalogCategory.DisplayName("ece").Should().Be("Elastic Cloud Enterprise");
-		ApiCatalogCategory.DisplayName("ess").Should().Be("Elastic Cloud Hosted");
-		ApiCatalogCategory.DisplayName("serverless").Should().Be("Serverless");
-	}
-}
-
 public class ApiProductEntryTests
 {
 	[Test]
@@ -220,55 +192,6 @@ public class ApiConfigurationConverterTests
 
 		sequence.Entries.Should().HaveCount(2);
 		sequence.IsValid.Should().BeFalse();
-	}
-
-	[Test]
-	public void AcceptsCatalogCategories()
-	{
-		const string yaml =
-			"""
-			- spec: elasticsearch-openapi.json
-			  product: elasticsearch
-			  catalog:
-			    categories:
-			      - self
-			      - ece
-			      - ess
-			""";
-
-		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
-
-		sequence.SingleEntry!.Catalog.Should().NotBeNull();
-		sequence.SingleEntry.Catalog!.Categories.Should().Equal("self", "ece", "ess");
-	}
-
-	[Test]
-	public void AcceptsCatalogCategories_AsInlineSequence()
-	{
-		const string yaml =
-			"""
-			- spec: api.json
-			  product: elasticsearch
-			  catalog:
-			    categories: [self, serverless]
-			""";
-
-		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
-
-		sequence.SingleEntry!.Catalog!.Categories.Should().Equal("self", "serverless");
-	}
-
-	[Test]
-	public void Catalog_IsOptional()
-	{
-		const string yaml = """
-			- spec: api.json
-			  product: elasticsearch
-			""";
-
-		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
-
-		sequence.SingleEntry!.Catalog.Should().BeNull();
 	}
 
 	[Test]
@@ -562,88 +485,6 @@ public class ConfigurationFileApiTests
 
 		collector.Errors.Should().Be(0);
 		config.ApiConfigurations!["elasticsearch"].Repository.Should().Be("elastic/elasticsearch-specification");
-	}
-
-	[Test]
-	public void ResolvesCatalogCategories_NormalizesAliasAndDedupes()
-	{
-		var docSetFile = new DocumentationSetFile
-		{
-			Api = new Dictionary<string, ApiProductSequence>
-			{
-				["elasticsearch"] = new()
-				{
-					Entries =
-					[
-						new ApiProductEntry
-						{
-							Spec = "elasticsearch-openapi.json",
-							Product = "elasticsearch",
-							Catalog = new ApiCatalogSettings { Categories = ["ECH", "self", "ech", "ece"] }
-						}
-					]
-				}
-			}
-		};
-
-		var (config, collector) = CreateConfiguration(docSetFile);
-
-		collector.Errors.Should().Be(0);
-		config.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().Equal("ece", "ess", "self");
-	}
-
-	[Test]
-	public void EmitsError_WhenCatalogCategoryUnknown()
-	{
-		var docSetFile = new DocumentationSetFile
-		{
-			Api = new Dictionary<string, ApiProductSequence>
-			{
-				["elasticsearch"] = new()
-				{
-					Entries =
-					[
-						new ApiProductEntry
-						{
-							Spec = "elasticsearch-openapi.json",
-							Product = "elasticsearch",
-							Catalog = new ApiCatalogSettings { Categories = ["self", "eck"] }
-						}
-					]
-				}
-			}
-		};
-
-		var (config, collector) = CreateConfiguration(docSetFile);
-
-		collector
-			.Captured
-			.ToSnapshotText()
-			.Should()
-			.MatchInlineSnapshot(
-				"error {repo}/docs/_docset.yml Unknown catalog category 'eck' for API 'elasticsearch'. Valid categories: ece, ess, self, serverless (or ech for ess)."
-			);
-		config.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().Equal("self");
-	}
-
-	[Test]
-	public void CatalogCategories_DefaultEmpty_WhenOmitted()
-	{
-		var docSetFile = new DocumentationSetFile
-		{
-			Api = new Dictionary<string, ApiProductSequence>
-			{
-				["elasticsearch"] = new()
-				{
-					Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
-				}
-			}
-		};
-
-		var (config, collector) = CreateConfiguration(docSetFile);
-
-		collector.Errors.Should().Be(0);
-		config.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().BeEmpty();
 	}
 
 	[Test]

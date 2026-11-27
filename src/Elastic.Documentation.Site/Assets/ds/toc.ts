@@ -11,9 +11,20 @@ function isInView(element: Element): boolean {
     return top >= 0 && top < window.innerHeight
 }
 
-export function initToc(scope: ParentNode = document) {
+// A heading's slug can hold a literal percent sign ("100% coverage"), which decodeURIComponent rejects. The raw text is the id then.
+export function fragmentId(hash: string): string {
+    const raw = hash.slice(1)
+    try {
+        return decodeURIComponent(raw)
+    } catch {
+        return raw
+    }
+}
+
+// `selector` narrows which outlines to bind: the production bundle owns only the operation page's section links.
+export function initToc(scope: ParentNode = document, selector = '[data-toc]') {
     scope
-        .querySelectorAll<HTMLElement>('[data-toc]:not([data-toc-bound])')
+        .querySelectorAll<HTMLElement>(`:is(${selector}):not([data-toc-bound])`)
         .forEach((toc) => {
             toc.dataset.tocBound = ''
             const links = Array.from(
@@ -21,9 +32,7 @@ export function initToc(scope: ParentNode = document) {
             )
             const targets = links.map((link) => ({
                 link,
-                heading: document.getElementById(
-                    decodeURIComponent(link.hash.slice(1))
-                ),
+                heading: document.getElementById(fragmentId(link.hash)),
             }))
 
             const listeners = new AbortController()
@@ -35,8 +44,14 @@ export function initToc(scope: ParentNode = document) {
                     listeners.abort()
                     return
                 }
-                const line = toc.hasAttribute('data-toc-sticky')
-                    ? toc.getBoundingClientRect().bottom + stickySlack
+                const sticky = toc.hasAttribute('data-toc-sticky')
+                const rect = sticky ? toc.getBoundingClientRect() : null
+                // A sticky outline at its sticky top has pinned: the page can show more in it then.
+                const pinned =
+                    rect !== null &&
+                    rect.top <= parseFloat(getComputedStyle(toc).top) + 1
+                const line = rect
+                    ? rect.bottom + stickySlack
                     : window.innerHeight * activationOffset
                 let active: HTMLAnchorElement | null = null
                 for (const { link, heading } of targets) {
@@ -64,8 +79,9 @@ export function initToc(scope: ParentNode = document) {
                     }
                 }
                 // A sticky bar can be on screen above every section, so until one reaches the line none is current.
-                if (!toc.hasAttribute('data-toc-sticky'))
-                    active ??= targets[0]?.link ?? null
+                if (!sticky) active ??= targets[0]?.link ?? null
+                // Written after every read, so the frame lays the page out once.
+                if (sticky) toc.toggleAttribute('data-pinned', pinned)
                 for (const { link } of targets) {
                     if (link === active) {
                         link.setAttribute('aria-current', 'location')
