@@ -215,12 +215,34 @@ body {
 		@apply hover:bg-grey-20 cursor-pointer rounded-sm p-1;
 	}
 
+	/* On folder and heading rows the label fills the row height, so a click below the chevron of a wrapped title still
+	   toggles; the chevron carries the button box the inner div used to. Island rows keep the div. */
+	.nav-folder > .peer > label {
+		@apply cursor-pointer;
+
+		& > .nav-chevron {
+			@apply box-content rounded-sm p-1;
+		}
+
+		/* As Tailwind's hover: does, so a tap on a touch screen leaves no grey chevron behind. */
+		@media (hover: hover) {
+			&:hover > .nav-chevron {
+				@apply bg-grey-20;
+			}
+		}
+	}
+
 	.nav-chevron {
 		@apply w-3.5 shrink-0 -rotate-90 group-has-checked/label:rotate-0;
 
 		/* The symbols are filled hairline paths; a stroke on top of the fill makes them heavy. */
 		fill: currentColor;
 		stroke: none;
+	}
+
+	/* An open folder points its chevron down; the label no longer carries the group/label class this used. */
+	.nav-folder > .peer > label:has(:checked) .nav-chevron {
+		@apply rotate-0;
 	}
 
 	.nav-subtree {
@@ -601,5 +623,14 @@ h1:has(.cli-badge-ns, .cli-badge-cmd) {
 
 	:where([id^='nav-tree-']) li.nav-top {
 		@apply mt-6 flex pr-8 font-semibold;
+	}
+
+	/* A folder or heading row's title and toggle, and the toggle's place in it: the classes the row used to carry. */
+	:where(.nav-folder > .peer) {
+		@apply grid w-full grid-cols-[1fr_auto];
+	}
+
+	:where(.nav-folder > .peer > label) {
+		@apply mr-2 flex items-start;
 	}
 }
