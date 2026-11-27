@@ -90,7 +90,7 @@ public class PlainTextRoleRenderer : MarkdownObjectRenderer<PlainTextRenderer, R
 				// Render applies-to as readable text (without XML tags)
 				var appliesText = LlmApplicabilityHelper.RenderForLlm(
 					appliesToRole.AppliesTo,
-					appliesToRole.BuildContext.VersionsConfiguration,
+					appliesToRole.BuildContext.Catalog.VersioningSystems,
 					useInlineTag: false
 				);
 				if (!string.IsNullOrEmpty(appliesText))

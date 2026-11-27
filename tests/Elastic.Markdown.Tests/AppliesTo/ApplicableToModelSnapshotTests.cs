@@ -236,7 +236,7 @@ public class ApplicableToModelSnapshotTests
 			.YamlSerialization
 			.Deserialize<ApplicableTo>(
 				yaml,
-				TestHelpers.CreateConfigurationContext(new System.IO.Abstractions.TestingHelpers.MockFileSystem()).ProductsConfiguration
+				TestHelpers.CreateConfigurationContext(new System.IO.Abstractions.TestingHelpers.MockFileSystem()).Catalog.Products
 			);
 
 	[Test]

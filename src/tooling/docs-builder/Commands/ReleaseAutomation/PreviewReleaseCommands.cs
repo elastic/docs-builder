@@ -186,10 +186,7 @@ internal sealed class PreviewReleaseCommands(
 	private IReadOnlyList<string> RefreshedDraProducts(string[]? products) =>
 		[
 			.. UnifiedBundlePlanner
-				.FilterProducts(
-					UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
-					products
-				)
+				.FilterProducts(UnifiedBundlePlanner.SelectDraProducts(configurationContext.Catalog.Products.Products.Values), products)
 				.Selected
 				.Select(p => p.Id)
 		];

@@ -109,8 +109,8 @@ public class ChangelogEntryValidatorSnapshotTests : ChangelogTestBase
 		{
 			Products =
 			[
-				ConfigurationContext.ProductsConfiguration.Products["elasticsearch"],
-				ConfigurationContext.ProductsConfiguration.Products["kibana"]
+				ConfigurationContext.Catalog.Products.Products["elasticsearch"],
+				ConfigurationContext.Catalog.Products.Products["kibana"]
 			],
 			Areas = ["Search", "Security"],
 			Lifecycles = [Lifecycle.Beta, Lifecycle.Ga]

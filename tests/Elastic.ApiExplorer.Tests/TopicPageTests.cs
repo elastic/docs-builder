@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
@@ -420,7 +421,7 @@ public partial class TopicPageTests
 		);
 
 		var groups = ApiOverviewBuilder.WithoutGuidePages(
-			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.VersionsConfiguration))
+			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.Catalog.VersioningSystems))
 		);
 
 		groups

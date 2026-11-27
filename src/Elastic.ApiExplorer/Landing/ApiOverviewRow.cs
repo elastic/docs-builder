@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.ApplicabilityBadges;
@@ -60,7 +61,7 @@ public static class ApiOverviewBuilder
 	/// <summary>Rows for the product landing page: the full navigation tree. <paramref name="summarize"/> fills each group row's summary.</summary>
 	public static IReadOnlyList<ApiOverviewRow> Build(
 		INavigationItem root,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem = false,
 		Func<ApiTag, string?>? summarize = null
 	)
@@ -125,7 +126,7 @@ public static class ApiOverviewBuilder
 	/// <summary>Rows for a tag landing page: endpoints and operations only.</summary>
 	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(
 		INavigationItem tagItem,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem = false
 	)
 	{
@@ -135,7 +136,7 @@ public static class ApiOverviewBuilder
 	}
 
 	/// <summary>Walks the navigation tree into rows. <paramref name="summarize"/> gives a group row its one-line description.</summary>
-	private sealed class Walker(VersionsConfiguration? versionsConfig, bool designSystem, Func<ApiTag, string?>? summarize)
+	private sealed class Walker(VersioningSystemCatalog? versionsConfig, bool designSystem, Func<ApiTag, string?>? summarize)
 	{
 		public void AddProductRows(INavigationItem item, List<ApiOverviewRow> rows)
 		{
