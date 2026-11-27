@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Sync;
 
 namespace Elastic.Documentation.Deploying.Synchronization;
 
@@ -90,6 +91,11 @@ public record SyncPlan
 	/// Stale hashed frontend assets kept by <see cref="StaticAssetRetention"/>; not counted in <see cref="TotalSyncRequests"/>
 	[JsonPropertyName("retain")]
 	public IReadOnlyList<string> RetainedPaths { get; init; } = [];
+
+	/// <summary>The numbers the plan is judged by; the rules live on <see cref="SyncPlanCounts"/>.</summary>
+	[JsonIgnore]
+	public SyncPlanCounts Counts =>
+		new(RemoteListingCompleted, DeleteThresholdDefault, TotalSourceFiles, TotalRemoteFiles, DeleteRequests.Count);
 
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 
