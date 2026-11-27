@@ -10,14 +10,13 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Build.Tests;
 
-// FeatureFlagsMatrixTests sets process-wide environment variables that the flag-reading tests here depend on
-[NotInParallel(nameof(FeatureFlagsTests))]
+// Every flag here reads a MockEnvironmentVariables, never the process environment
 public class FeatureFlagsTests
 {
 	[Test]
 	public void AssemblerApiExplorerEnabled_ReadsYamlKey()
 	{
-		var flags = new FeatureFlags([]);
+		var flags = new FeatureFlags([], new MockEnvironmentVariables());
 		flags = flags.With("ASSEMBLER_API_EXPLORER", true);
 
 		flags.AssemblerApiExplorerEnabled.Should().BeTrue();
@@ -26,7 +25,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void AssemblerApiExplorerEnabled_DefaultsToFalse()
 	{
-		var flags = new FeatureFlags([]);
+		var flags = new FeatureFlags([], new MockEnvironmentVariables());
 
 		flags.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
@@ -107,7 +106,7 @@ public class FeatureFlagsTests
 
 		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
 
-		var features = new FeatureFlags([]).With(environment.FeatureFlags);
+		var features = new FeatureFlags([], new MockEnvironmentVariables()).With(environment.FeatureFlags);
 		features.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
 
@@ -121,7 +120,7 @@ public class FeatureFlagsTests
 		var seen = new List<string>();
 		foreach (var key in FeatureFlags.KnownKeys)
 		{
-			var flags = new FeatureFlags([]).With(key, true);
+			var flags = new FeatureFlags([], new MockEnvironmentVariables()).With(key, true);
 
 			var enabled = flags.EnabledKeys();
 			enabled.Should().ContainSingle($"{key} is one flag and enables one key").Which.Should().Be(key);
@@ -134,23 +133,16 @@ public class FeatureFlagsTests
 	}
 
 	[Test]
-	public void EnabledKeys_DefaultsToNone() => new FeatureFlags([]).EnabledKeys().Should().BeEmpty();
+	public void EnabledKeys_DefaultsToNone() => new FeatureFlags([], new MockEnvironmentVariables()).EnabledKeys().Should().BeEmpty();
 
 	[Test]
 	public void EnabledKeys_EnvironmentVariableOverridesYaml()
 	{
-		var previous = Environment.GetEnvironmentVariable("FEATURE_PAGE_FEEDBACK");
-		try
-		{
-			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", "false");
-			var flags = new FeatureFlags(new Dictionary<string, bool> { ["page-feedback"] = true, ["guide-nav"] = true });
+		var environment = new MockEnvironmentVariables();
+		environment.Set("FEATURE_PAGE_FEEDBACK", "false");
+		var flags = new FeatureFlags(new Dictionary<string, bool> { ["page-feedback"] = true, ["guide-nav"] = true }, environment);
 
-			flags.EnabledKeys().Should().Equal("guide-nav");
-		}
-		finally
-		{
-			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", previous);
-		}
+		flags.EnabledKeys().Should().Equal("guide-nav");
 	}
 
 	[Test]
@@ -166,7 +158,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void With_LeavesTheOriginalUnchanged()
 	{
-		var original = new FeatureFlags([]);
+		var original = new FeatureFlags([], new MockEnvironmentVariables());
 		var changed = original.With("PRIMARY_NAV", true);
 
 		changed.PrimaryNavEnabled.Should().BeTrue();

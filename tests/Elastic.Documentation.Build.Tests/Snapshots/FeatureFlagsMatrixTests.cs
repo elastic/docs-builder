@@ -15,9 +15,9 @@ namespace Elastic.Documentation.Build.Tests.Snapshots;
 
 /// <summary>
 /// How a feature flag resolves from the YAML value, the FEATURE_* environment variable and an explicit setter, as tables.
-/// Shares the lock of <see cref="FeatureFlagsTests"/>: both change process-wide environment variables.
+/// Reads the process environment on purpose, so its tests change process-wide variables and do not run in parallel.
 /// </summary>
-[NotInParallel(nameof(FeatureFlagsTests))]
+[NotInParallel(nameof(FeatureFlagsMatrixTests))]
 public class FeatureFlagsMatrixTests
 {
 	private static readonly string?[] EnvironmentValues = [null, "true", "false", "TRUE", "0", "1", "garbage"];
