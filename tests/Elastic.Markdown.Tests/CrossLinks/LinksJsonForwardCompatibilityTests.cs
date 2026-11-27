@@ -97,7 +97,7 @@ public class LinksJsonForwardCompatibilityTests
 	[Test]
 	public void Deserialize_AnIndexPublishedWithTheDocSegment_ReadsTheCurrentRoots()
 	{
-		var legacy = RepositoryLinks.Deserialize(WithProperty(FloatingSection.Replace("\"root\": \"api/", "\"root\": \"api/doc/")));
+		var legacy = LinkManifestJson.Read(WithProperty(FloatingSection.Replace("\"root\": \"api/", "\"root\": \"api/doc/")));
 
 		legacy.Floating!["api/elasticsearch"].Versions.Select(v => v.Root).Should().Equal("api/elasticsearch/v8", "api/elasticsearch");
 	}
