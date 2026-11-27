@@ -503,6 +503,13 @@
         },
         {
           "role": "flag",
+          "name": "semantic",
+          "type": "boolean",
+          "required": false,
+          "summary": "Write semantic_text fields, which run inference for every document (enabled by default). Disable to index without an inference endpoint; AI enrichment is skipped too."
+        },
+        {
+          "role": "flag",
           "name": "max-ai-docs",
           "type": "integer",
           "required": false,
@@ -970,6 +977,13 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "semantic",
+              "type": "boolean",
+              "required": false,
+              "summary": "Write semantic_text fields, which run inference for every document (enabled by default). Disable to index without an inference endpoint; AI enrichment is skipped too."
             },
             {
               "role": "flag",
@@ -1452,6 +1466,13 @@
             },
             {
               "role": "flag",
+              "name": "semantic",
+              "type": "boolean",
+              "required": false,
+              "summary": "Write semantic_text fields, which run inference for every document (enabled by default). Disable to index without an inference endpoint; AI enrichment is skipped too."
+            },
+            {
+              "role": "flag",
               "name": "max-ai-docs",
               "type": "integer",
               "required": false,
@@ -1823,6 +1844,13 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "semantic",
+              "type": "boolean",
+              "required": false,
+              "summary": "Write semantic_text fields, which run inference for every document (enabled by default). Disable to index without an inference endpoint; AI enrichment is skipped too."
             },
             {
               "role": "flag",
@@ -5983,6 +6011,13 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "semantic",
+              "type": "boolean",
+              "required": false,
+              "summary": "Write semantic_text fields, which run inference for every document (enabled by default). Disable to index without an inference endpoint; AI enrichment is skipped too."
             },
             {
               "role": "flag",

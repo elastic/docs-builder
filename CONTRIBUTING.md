@@ -68,6 +68,31 @@ Notes for the assembler and codex modes:
 
 Run `./dev.sh help` for the full list of commands. Docker files live under `build/dev/`.
 
+### Search against a local Elasticsearch
+
+Debug builds of the assembler's `serve` answer the search box from Elasticsearch. To search the entire assembled docs, API pages included, from a local cluster in Docker instead of a cloud one:
+
+```bash
+mise run es:up                          # start Elasticsearch at http://localhost:9200
+dotnet run --project src/tooling/docs-builder -- assembler clone
+FEATURE_ASSEMBLER_API_EXPLORER=true dotnet run --project src/tooling/docs-builder -- assembler build
+mise run es:index                       # index the assembled docs; extra args pass to docs-builder assembler index
+mise run es:serve                       # serve the build at http://localhost:4000 with local search
+```
+
+Without local installs, the same steps are `./dev.sh es-up`, `./dev.sh assembler-clone`, `./dev.sh assembler-build`, `./dev.sh es-index` and `./dev.sh assembler-serve`. The `assembler` compose service points at the local cluster by default.
+
+Only assembler builds index API pages, so these tasks do not index an isolated `docs/` build.
+
+Notes:
+
+- `es:index` passes `--no-semantic --no-ai-enrichment`. The semantic index gets the lexical mapping, so no inference model runs and a full index takes minutes. Search reads the same alias; natural-language queries lose their semantic boost.
+- The build needs `FEATURE_ASSEMBLER_API_EXPLORER=true`, or API results link to pages the build did not write. The Docker route sets it by default.
+- `es:serve` sets `DOCUMENTATION_ELASTIC_URL`, which overrides any URL in your user-secrets, and `DOCS_BUILD_TYPE=assembler`, so search reads the assembler's index.
+- Security is off and the cluster runs a trial licence, which the query rules need. The licence expires 30 days after the cluster's data volume is created. `es:up` prints the expiry date, and once the licence has expired it stops and asks for `mise run es:reset`, which deletes the cluster and its data only. Then run `es:up` and `es:index` again.
+- `es:index` and `es:serve` blank `DOCUMENTATION_ELASTIC_APIKEY` and `DOCUMENTATION_ELASTIC_PASSWORD`, so cloud credentials from your user-secrets or shell never reach the local cluster. `es:serve` also blanks `DOCUMENTATION_ELASTIC_INDEX_OVERRIDE`.
+- `mise run es:stop` stops the cluster and keeps its data.
+
 ## Validate the fully assembled documentation
 
 ```bash

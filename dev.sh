@@ -58,6 +58,57 @@ _cli_serve() {
 
 CODEX_CONFIG="${CODEX_CONFIG:-config/codex.example.yml}"
 
+ES_URL="http://localhost:9200"
+
+# Start the local cluster and block until it answers. Local indexing passes
+# --no-semantic, so nothing waits for an inference model.
+_es_up() {
+  _compose up -d elasticsearch
+  local deadline=$((SECONDS + ${ES_WAIT_SECONDS:-120}))
+  echo "Waiting for Elasticsearch at $ES_URL"
+  until curl -sf --max-time 10 "$ES_URL/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null; do
+    [ "$SECONDS" -lt "$deadline" ] || { echo "error: Elasticsearch did not start" >&2; exit 1; }
+    sleep 2
+  done
+  _es_licence_check "$deadline"
+  echo "Elasticsearch ready at $ES_URL. Index the assembled docs with ./dev.sh es-index"
+}
+
+# Prints one string field of a JSON object, whatever the whitespace around the colon.
+_json_field() {
+  printf '%s' "$1" | tr -d '\n' | sed -n "s/.*\"$2\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p"
+}
+
+# Search wraps every query in a query rule, which needs a trial (or higher) licence.
+# The trial ends 30 days after the volume is created; a reset starts a new one.
+_es_licence_check() {
+  local deadline="$1" licence="" status="" type=""
+  # A fresh cluster can answer 404 here while it installs its licence, so retry within the start-up wait.
+  until [ -n "$status" ] && [ -n "$type" ]; do
+    [ "$SECONDS" -lt "$deadline" ] || { echo "error: could not read the licence from $ES_URL/_license" >&2; exit 1; }
+    licence="$(curl -sf --max-time 10 "$ES_URL/_license" || true)"
+    status="$(_json_field "$licence" status)"
+    type="$(_json_field "$licence" type)"
+    [ -n "$status" ] && [ -n "$type" ] || sleep 2
+  done
+  if [ "$status" != "active" ] || [ "$type" = "basic" ]; then
+    echo "error: the local Elasticsearch licence is $type ($status). Query rules, and with them search, need a trial." >&2
+    echo "Run ./dev.sh es-reset (mise run es:reset) to start a fresh cluster with a new 30-day trial, then index again." >&2
+    exit 1
+  fi
+  echo "Licence: $type, active until $(_json_field "$licence" expiry_date)"
+}
+
+# Delete the cluster and its data only, for example when the 30-day trial licence
+# expires. `clean` would also drop the clones, build output and package caches.
+_es_reset() {
+  local project
+  project="$(_compose config --format json | sed -n 's/^  "name": "\(.*\)",$/\1/p' | head -1)"
+  _compose rm --stop --force elasticsearch
+  docker volume rm --force "${project}_es-data" >/dev/null
+  echo "Removed the local Elasticsearch and its data. Run ./dev.sh es-up to start a fresh one."
+}
+
 # Host ports, one per mode (see the table in docker-compose.yml).
 ISOLATED_URL="http://localhost:3000"
 ASSEMBLER_URL="http://localhost:4000"
@@ -106,6 +157,10 @@ case "${1:-help}" in
     echo "  serve-mcp-internal       Run the MCP server at http://localhost:8080 (internal profile)"
     echo "  serve-mcp-detached       Run the MCP server in the background"
     echo "  stop-mcp                 Stop the MCP server"
+    echo "  es-up                    Start Elasticsearch at $ES_URL and wait until it answers"
+    echo "  es-index                 Index the assembled docs, API pages included (run es-up and assembler-clone first)"
+    echo "  es-stop                  Stop Elasticsearch"
+    echo "  es-reset                 Delete Elasticsearch and its data, for example after the trial licence expires"
     echo ""
     echo "  clean                    Stop containers and remove containers, networks, and volumes"
     ;;
@@ -201,6 +256,20 @@ case "${1:-help}" in
     ;;
   stop-mcp)
     _compose stop mcp
+    ;;
+  es-up)
+    _es_up
+    ;;
+  es-index)
+    # Only assembler builds export API pages. --no-semantic writes the semantic index
+    # without inference fields, so no model runs on the local cluster.
+    _cli assembler assembler index --no-semantic --no-ai-enrichment "${@:2}"
+    ;;
+  es-stop)
+    _compose stop elasticsearch
+    ;;
+  es-reset)
+    _es_reset
     ;;
   clean)
     _compose down --remove-orphans --volumes

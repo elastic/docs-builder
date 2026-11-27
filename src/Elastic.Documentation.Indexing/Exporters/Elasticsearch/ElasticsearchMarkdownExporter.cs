@@ -105,16 +105,13 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			IndexSettings = new Dictionary<string, string> { ["index.default_pipeline"] = _contentDateEnrichment.PipelineName }
 		};
 
-		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(
-			type: _buildType,
-			env: endpoints.Environment
-		) with
+		_semanticTypeContext = SemanticTypeContextFor(es, _buildType, endpoints.Environment) with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
 			IndexSettings = new Dictionary<string, string> { ["index.final_pipeline"] = _contentDateEnrichment.PipelineName }
 		};
 
-		if (es.EnableAiEnrichment)
+		if (UsesAiEnrichment(es))
 		{
 			_aiEnrichment = new AiEnrichmentOrchestrator(_transport, _semanticTypeContext);
 			var provider = _semanticTypeContext.AiEnrichmentProvider!;
@@ -188,6 +185,15 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			await PublishQueryRulesAsync(ct);
 		});
 	}
+
+	/// <summary>The semantic index's mapping: with inference fields, or the lexical mapping under the same names for <c>--no-semantic</c>.</summary>
+	internal static ElasticsearchTypeContext SemanticTypeContextFor(ElasticsearchEndpoint es, string buildType, string environment) =>
+		es.EnableSemantic
+			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: buildType, env: environment)
+			: DocumentationMappingContext.DocumentationDocumentSemanticWithoutInference.CreateContext(type: buildType, env: environment);
+
+	/// <summary>AI enrichment writes to the semantic fields, so it runs only when they exist.</summary>
+	internal static bool UsesAiEnrichment(ElasticsearchEndpoint es) => es.EnableAiEnrichment && es.EnableSemantic;
 
 	private void ConfigureChannelOptions(string label, IngestChannelOptions<DocumentationDocument> options)
 	{

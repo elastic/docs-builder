@@ -141,6 +141,36 @@ dotnet snap journey compare 'tests/Elastic.Documentation.Journeys.Tests/journeys
   ${feature_args[@]+"${feature_args[@]}"} ${extra[@]+"${extra[@]}"}
 '''
 
+# Local Elasticsearch for search. The cluster itself runs in Docker (build/dev/docker-compose.yml).
+
+[tasks."es:up"]
+description = "Start Elasticsearch at http://localhost:9200 in Docker and wait until it answers"
+run = "./dev.sh es-up"
+
+[tasks."es:stop"]
+description = "Stop the local Elasticsearch"
+run = "./dev.sh es-stop"
+
+[tasks."es:reset"]
+description = "Delete the local Elasticsearch and its data, for example after its 30-day trial licence expires"
+run = "./dev.sh es-reset"
+
+[tasks."es:index"]
+description = "Index the assembled docs, API pages included, into the local Elasticsearch (run es:up, then docs-builder assembler clone and build first). Extra args pass to docs-builder assembler index, e.g. mise run es:index --force-reindex"
+usage = '''
+arg "[args]..." var=#true help="Passed to docs-builder assembler index"
+'''
+# --no-semantic writes the semantic index without inference fields, so no model runs on the local cluster.
+# Empty credentials keep a saved cloud API key or password from going to the local cluster.
+env = { DOCUMENTATION_ELASTIC_APIKEY = "", DOCUMENTATION_ELASTIC_PASSWORD = "" }
+run = 'eval "dotnet run --project src/tooling/docs-builder -- assembler index --endpoint http://localhost:9200 --no-semantic --no-ai-enrichment ${usage_args:-}"'
+
+[tasks."es:serve"]
+description = "Serve the last assembler build at http://localhost:4000, with search answered by the local Elasticsearch"
+# Empty values override user-secrets: no cloud credentials, and no index override pointing at a cloud index.
+env = { DOCUMENTATION_ELASTIC_URL = "http://localhost:9200", DOCS_BUILD_TYPE = "assembler", DOCUMENTATION_ELASTIC_APIKEY = "", DOCUMENTATION_ELASTIC_PASSWORD = "", DOCUMENTATION_ELASTIC_INDEX_OVERRIDE = "" }
+run = "dotnet run --project src/tooling/docs-builder -- assembler serve"
+
 [tasks."snap:status"]
 description = "List snapshots a test run left to review (received files). Exits 1 when there are any"
 usage = '''

@@ -36,6 +36,9 @@ public record ElasticsearchIndexOptions
 	/// <summary>Enable AI enrichment of documents using LLM-generated metadata (enabled by default).</summary>
 	public bool? AiEnrichment { get; init; }
 
+	/// <summary>Write semantic_text fields, which run inference for every document (enabled by default). Disable to index without an inference endpoint; AI enrichment is skipped too.</summary>
+	public bool? Semantic { get; init; }
+
 	/// <summary>Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.</summary>
 	[Range(1, int.MaxValue)]
 	public int? MaxAiDocs { get; init; }
@@ -166,6 +169,8 @@ public static class ElasticsearchEndpointConfigurator
 			cfg.BootstrapTimeout = options.BootstrapTimeout.Value;
 		if (options.AiEnrichment.HasValue)
 			cfg.EnableAiEnrichment = options.AiEnrichment.Value;
+		if (options.Semantic.HasValue)
+			cfg.EnableSemantic = options.Semantic.Value;
 		if (options.MaxAiDocs.HasValue)
 			cfg.MaxAiDocs = options.MaxAiDocs.Value;
 		if (options.MaxAiTime.HasValue)
