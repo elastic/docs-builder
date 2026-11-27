@@ -57,7 +57,7 @@ public class ApiPageStatusTests
 
 	private static CrossLinkResolver Resolver()
 	{
-		var links = new RepositoryLinks
+		var links = new LinkManifest
 		{
 			Origin = GitCheckoutInformation.Unavailable,
 			UrlPathPrefix = "/elastic/elasticsearch/tree/main",
@@ -73,7 +73,7 @@ public class ApiPageStatusTests
 		return new CrossLinkResolver(new FetchedCrossLinks
 		{
 			DeclaredRepositories = ["elasticsearch"],
-			LinkReferences = new Dictionary<string, RepositoryLinks> { ["elasticsearch"] = links }.ToFrozenDictionary(),
+			LinkReferences = new Dictionary<string, LinkManifest> { ["elasticsearch"] = links }.ToFrozenDictionary(),
 			LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
 		});
 	}

@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Build.Tests.CrossLinks;
 
@@ -96,7 +97,7 @@ internal static class CrossLinkFixtures
 		}
 		""";
 
-	private static RepositoryLinks Parse(string json) => RepositoryLinks.Deserialize(json);
+	private static LinkManifest Parse(string json) => LinkManifestJson.Read(json);
 
 	private static LinkRegistryEntry Entry(string repository) =>
 		new()
@@ -119,7 +120,7 @@ internal static class CrossLinkFixtures
 		new()
 		{
 			DeclaredRepositories = ["example-repo", "other-repo", "declared-only", "codex-repo"],
-			LinkReferences = new Dictionary<string, RepositoryLinks>
+			LinkReferences = new Dictionary<string, LinkManifest>
 			{
 				["example-repo"] = Parse(ExampleRepoLinks),
 				["other-repo"] = Parse(OtherRepoLinks),

@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Testing;
 using Nullean.Snapshots;
 
 namespace Elastic.Documentation.Build.Tests.CrossLinks;
@@ -356,7 +357,7 @@ public class CrossLinkResolutionSnapshotTests
 	public void UpdateLinkReference_ReplacesOrAddsARepository_AndResolvesFromIt()
 	{
 		var resolver = new CrossLinkResolver(Index);
-		var replacement = RepositoryLinks.Deserialize(
+		var replacement = LinkManifestJson.Read(
 			// language=json
 			"""
 			{

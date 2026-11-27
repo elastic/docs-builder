@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Testing;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -52,7 +53,7 @@ public sealed partial class FakeSiteContent
 	/// </summary>
 	public FetchedCrossLinks CrossLinks()
 	{
-		var references = new Dictionary<string, RepositoryLinks>();
+		var references = new Dictionary<string, LinkManifest>();
 		foreach (var (repository, files) in _repositories)
 		{
 			var links = string.Join(
@@ -73,7 +74,7 @@ public sealed partial class FakeSiteContent
 				  "links": { {{links}} }
 				}
 				""";
-			references[repository] = CrossLinkFetcher.Deserialize(json);
+			references[repository] = LinkManifestJson.Read(json);
 		}
 
 		return new FetchedCrossLinks
