@@ -18,6 +18,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Optional members of an aggregate are internal init: the readers in Configuration are the way to build one, and tests build records by hand. -->
+    <InternalsVisibleTo Include="Elastic.Documentation.Configuration" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Configuration.Tests" />
+    <InternalsVisibleTo Include="Elastic.Authoring.Tests" />
+    <InternalsVisibleTo Include="Elastic.Markdown.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
     <!-- The core and the file rules: no CsCheck, no Rx, trim and AOT clean. -->
     <PackageReference Include="Nullean.Entities" />
