@@ -47,7 +47,7 @@ applies_to:
 ---
 ```
 
-API Explorer pages use the same `title`, `description`, `url`, and `products` keys. They also set `type: api` and `resource` (the same URI as `url`) so an OKF consumer can read the file as a concept.
+API Explorer pages use the same `title`, `description`, `url`, and `products` keys. They also set `type: api` and `resource` so an OKF consumer can read the file as a concept. `resource` is the same URI as `url`, except on three kinds of page. On the API landing page it is the API's JSON spec file. On an operation page or a type page it is that page's entry in the spec. Every other page, including a topic page built from `x-topics`, keeps `resource` equal to `url`.
 
 ## Content negotiation
 

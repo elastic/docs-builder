@@ -3,7 +3,7 @@ type: api
 title: "Run a search"
 description: "Returns hits that match the query defined in the request."
 url: /api/elasticsearch/operation/operation-search
-resource: /api/elasticsearch/operation/operation-search
+resource: /api/elasticsearch.json#/paths/~1%7Bindex%7D~1_search/post
 products:
   - elasticsearch
 ---
@@ -50,14 +50,14 @@ Supports pagination through `size` and `from`.
 - `expand_wildcards` (enum) — optional
   The type of index that wildcard patterns can match.
   Values: `all`, `open`, `closed`, `hidden`
+- `pretty` (boolean) — optional — deprecated
+  Pretty-print the response body.
 - `q` (string · min length: 1 · max length: 2048) — optional
   A query in the Lucene query string syntax.
 - `routing` (string) — optional
   A custom value used to route operations to a specific shard.
 - `timeout` (integer | string) — optional
   The period to wait for a response, as an integer number of milliseconds or a duration string.
-- `pretty` (boolean) — optional — deprecated
-  Pretty-print the response body.
 
 ## Request body
 
@@ -68,11 +68,20 @@ The search definition using the fixture Query DSL.
 - `query` ({} Query) — required
   A container for a single query variant. Query containers can nest other query containers, which exercises recursion detection.
   See [Query](/api/elasticsearch/types/_types-query_dsl-querycontainer)
-- `fields` (union string | string[]) — optional
-  A field or list of fields to return, exercising the X | X[] simple-union path.
 - `aggs` (map string to {} Aggregation) — optional
   Aggregations to run, keyed by name.
   See [Aggregation](/api/elasticsearch/types/_types-aggregations-aggregationcontainer)
+- `fields` (union string | string[]) — optional
+  A field or list of fields to return, exercising the X | X[] simple-union path.
+- `legacy_size` (integer) — optional — deprecated
+  Use `size` on the query string instead.
+- `mode` (enum) — optional
+  Trade accuracy for speed.
+  Values: `fast`, `accurate`
+- `pit` (object) — optional
+  A point in time to search, exercising inline nested object expansion.
+  - `id` (string) — required
+  - `keep_alive` (string) — optional
 - `settings` (map string to string) — optional
   Free-form string settings, exercising the plain dictionary path.
 - `sort` (union oneOf) — optional
@@ -87,15 +96,6 @@ The search definition using the fixture Query DSL.
     Sort by relevance score.
     - `order` (enum) — optional
       Values: `asc`, `desc`
-- `mode` (enum) — optional
-  Trade accuracy for speed.
-  Values: `fast`, `accurate`
-- `pit` (object) — optional
-  A point in time to search, exercising inline nested object expansion.
-  - `id` (string) — required
-  - `keep_alive` (string) — optional
-- `legacy_size` (integer) — optional — deprecated
-  Use `size` on the query string instead.
 
 ## Responses
 
@@ -105,17 +105,17 @@ Search results
 
 `application/json`
 
-- `took` (integer)
-  The time the request took in milliseconds.
-- `timed_out` (boolean)
+- `aggregations` (map string to {} Aggregation result)
+  Aggregation results keyed by name.
+  See [Aggregation result](/api/elasticsearch/types/_types-aggregations-aggregate)
 - `hits` (object[])
   The matching documents.
   - `_id` (string)
   - `_score` (number)
   - `_source` (object)
-- `aggregations` (map string to {} Aggregation result)
-  Aggregation results keyed by name.
-  See [Aggregation result](/api/elasticsearch/types/_types-aggregations-aggregate)
+- `timed_out` (boolean)
+- `took` (integer)
+  The time the request took in milliseconds.
 ##### Response headers
 
 - `X-Found` (boolean) — required
@@ -128,8 +128,8 @@ The target index does not exist.
 `application/json`
 
 - `error` (object)
-  - `type` (string)
   - `reason` (string)
+  - `type` (string)
 - `status` (integer)
 ## Code examples
 

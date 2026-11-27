@@ -219,9 +219,9 @@ public class XStateApplicabilityTests
 
 		var rows = builder.BuildParameterList(parameters, new PropertyTreeScope { Prefix = "query" }).Items;
 
-		rows[0].Availability!.GetApplicabilityItems().Single().RenderData.Version.Should().Be("8.11+");
-		rows[1].Availability!.GetApplicabilityItems().Single().RenderData.Version.Should().Be("8.1+");
-		rows[2].Availability.Should().BeNull("plain Generally available says nothing a reader can act on");
+		rows.Single(r => r.Name == "own").Availability!.GetApplicabilityItems().Single().RenderData.Version.Should().Be("8.11+");
+		rows.Single(r => r.Name == "inherited").Availability!.GetApplicabilityItems().Single().RenderData.Version.Should().Be("8.1+");
+		rows.Single(r => r.Name == "plain").Availability.Should().BeNull("plain Generally available says nothing a reader can act on");
 	}
 
 	private static OpenApiOperation OperationWithState(string xState) =>

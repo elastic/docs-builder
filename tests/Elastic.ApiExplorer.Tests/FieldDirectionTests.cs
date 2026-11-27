@@ -61,7 +61,7 @@ public partial class FieldDirectionTests
 	{
 		var rows = await RowsAsync("Account", new PropertyTreeScope { Prefix = "req", IsRequest = true });
 
-		rows.Select(r => r.Name).Should().Equal("name", "password", "audit");
+		rows.Select(r => r.Name).Should().Equal("name", "audit", "password");
 		rows
 			.Single(r => r.Name == "audit")
 			.Children
@@ -84,7 +84,123 @@ public partial class FieldDirectionTests
 	{
 		var rows = await RowsAsync("Account", new PropertyTreeScope { Prefix = "" });
 
-		rows.Select(r => r.Name).Should().Equal("id", "name", "password", "audit");
+		rows.Select(r => r.Name).Should().Equal("id", "name", "audit", "password");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_RequiredFieldSortingLate_ListsBeforeTheOptionalOnes()
+	{
+		var document = await LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Mixed": {
+			        "type": "object",
+			        "required": ["zone", "Mode"],
+			        "properties": {
+			          "beta": { "type": "string" },
+			          "zone": { "type": "string" },
+			          "alpha": { "type": "string" },
+			          "Mode": { "type": "string" }
+			        }
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+
+		var rows = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Mixed"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items;
+
+		rows.Select(r => r.Name).Should().Equal("Mode", "zone", "alpha", "beta");
+		rows[^1].IsLast.Should().BeTrue("the last row follows the new order");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_RepeatedShapeSortedAhead_KeepsItsFieldsUnderTheFirstSpecOccurrence()
+	{
+		var fields = string.Join(", ", Enumerable.Range(0, 12).Select(i => $"\"f{i}\": {{ \"type\": \"string\" }}"));
+		var document = await LoadSpecAsync(
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Shape": { "type": "object", "properties": { {{fields}} } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": { "zeta": { "$ref": "#/components/schemas/Shape" }, "alpha": { "$ref": "#/components/schemas/Shape" } }
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+
+		var rows = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items;
+
+		rows.Select(r => r.Name).Should().Equal("alpha", "zeta");
+		// Links to `zeta`'s nested fields were valid before the rows were sorted, so `zeta` keeps them and `alpha` links to it.
+		rows.Single(r => r.Name == "zeta").Children.Kind.Should().Be(ChildKind.PropertyList);
+		rows.Single(r => r.Name == "alpha").Repeats.Should().NotBeNull();
+	}
+
+	[Test]
+	public async Task BuildPropertyList_SchemaRequiringAKeyNamedLikeTheMapRow_StillListsTheMapRowLast()
+	{
+		var document = await LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": {
+			            "allOf": [
+			              {
+			                "type": "object",
+			                "required": ["<string>"],
+			                "properties": { "id": { "type": "string" } },
+			                "additionalProperties": { "$ref": "#/components/schemas/Input" }
+			              },
+			              { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+
+		var cat = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!
+			.Items
+			.Single(p => p.Name == "pet")
+			.Children
+			.Variants!.Variants[0].Properties!.Items;
+
+		// The synthetic any-other-key row is never required, even when the schema requires a literal key with its name.
+		cat.Select(p => p.Name).Should().Equal("id", "lives", "<string>");
 	}
 
 	[Test]

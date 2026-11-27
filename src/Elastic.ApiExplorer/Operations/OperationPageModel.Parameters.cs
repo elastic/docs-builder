@@ -54,14 +54,42 @@ public partial record OperationPageModel
 			)
 			.ToArray();
 		return source.Builder.BuildParameterList(
-			rows,
+			location == ParameterLocation.Path ? InRouteOrder(rows, source.Endpoint) : rows,
 			new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), JsonPath = "", IsRequest = true }
 		);
 	}
 
 	/// <summary>
+	/// Required path parameters first, each group in the order its placeholders appear in the route that holds the most of that
+	/// group, the leading route when several tie. The spec merges an operation's own parameters before the path item's, so
+	/// declaration order is not route order, and a longer alias route can lack a parameter. The optional Kibana space parameter
+	/// never picks a route, so a space variant cannot outrank the leading one. A parameter no route holds sorts first in its group.
+	/// </summary>
+	internal static ParameterRowInput[] InRouteOrder(ParameterRowInput[] rows, OperationEndpoint endpoint)
+	{
+		var requiredRoute = RouteHolding(rows.Where(static r => r.IsRequired), endpoint);
+		var optionalRoute = RouteHolding(rows.Where(r => !r.IsRequired && r.Parameter.Name != endpoint.SpaceParameter), endpoint);
+		return [
+			.. rows.OrderBy(static r => !r.IsRequired).ThenBy(
+				r => (r.IsRequired ? requiredRoute : optionalRoute).IndexOf(Placeholder(r), StringComparison.Ordinal)
+			)
+		];
+	}
+
+	private static string RouteHolding(IEnumerable<ParameterRowInput> group, OperationEndpoint endpoint)
+	{
+		var placeholders = group.Select(Placeholder).ToArray();
+		return endpoint
+			.Rows
+			.Select(static r => r.Route)
+			.MaxBy(route => placeholders.Count(p => route.Contains(p, StringComparison.Ordinal)))!;
+	}
+
+	private static string Placeholder(ParameterRowInput row) => $"{{{row.Parameter.Name}}}";
+
+	/// <summary>
 	/// Kibana specs declare the <c>/s/{space_id}</c> route only in the description, so the page lists the parameter itself,
-	/// first as it is the route's first segment, unless the spec declares it.
+	/// before the other optional ones as it is the route's first segment, unless the spec declares it.
 	/// </summary>
 	private static IEnumerable<IOpenApiParameter> WithSpaceParameter(
 		IEnumerable<IOpenApiParameter> parameters,

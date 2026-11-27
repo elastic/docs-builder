@@ -770,6 +770,34 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task Generate_EachTree_PointsResourceAtItsOwnSpec()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = MainNineAnd8Client();
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(TwoOperationSpecs("Ping the cluster."))
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		string Resource(params string[] tree) =>
+			context
+				.WriteFileSystem
+				.File
+				.ReadAllLines(Path.Join([outputRoot, "api", "elasticsearch", .. tree, "operation", "operation-ping.md"]))
+				.Single(line => line.StartsWith("resource: ", StringComparison.Ordinal));
+
+		Resource().Should().Be("resource: /docs/api/elasticsearch.json#/paths/~1ping/get");
+		Resource("v8").Should().Be("resource: /docs/api/elasticsearch/v8.json#/paths/~1ping/get");
+		Resource("next").Should().Be("resource: /docs/api/elasticsearch/next.json#/paths/~1ping/get");
+	}
+
+	[Test]
 	public async Task GenerateProducts_WithHubEntries_WritesSiblingApisOnProductPage()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");

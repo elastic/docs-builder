@@ -59,6 +59,45 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Generate_ResourceOfEachSpecPage_ResolvesInTheSpecTheBuildPublishes()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-resource-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		JsonNode Resolve(params string[] page)
+		{
+			// ReadAllLines splits on `\r\n` as well as `\n`: the front matter uses the platform's line ending.
+			var lines = context.WriteFileSystem.File.ReadAllLines(Path.Join([outputRoot, .. page]));
+			var resource = lines.Single(line => line.StartsWith("resource: ", StringComparison.Ordinal))["resource: ".Length..];
+			var parts = resource.Split('#');
+			var spec = JsonNode.Parse(context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, parts[0].TrimStart('/'))))!;
+			return parts.Length == 1
+				? spec
+				: Uri
+					.UnescapeDataString(parts[1])
+					.Split('/', StringSplitOptions.RemoveEmptyEntries)
+					.Aggregate(spec, (node, token) => node[token.Replace("~1", "/").Replace("~0", "~")]!);
+		}
+
+		Resolve("api", "elasticsearch.md")["openapi"].Should().NotBeNull("the landing page points at the whole spec file");
+		Resolve("api", "elasticsearch", "operation", "operation-search.md")["operationId"]!.GetValue<string>().Should().Be("search");
+		Resolve("api", "elasticsearch", "types", "_types-query_dsl-querycontainer.md")["description"]!
+			.GetValue<string>()
+			.Should()
+			.Contain("A container for a single query variant");
+	}
+
+	[Test]
 	public async Task Generate_WritesReadableCommonMarkNotHtmlDocument()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-content-{Guid.NewGuid():N}");

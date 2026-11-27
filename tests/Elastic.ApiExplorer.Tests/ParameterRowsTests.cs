@@ -149,7 +149,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 			.Items
 			.Select(p => (p.AnchorId, p.IsRequired, p.OptionalRoute))
 			.Should()
-			.Equal(("path-index", false, "/_search"), ("path-id", true, null));
+			.Equal(("path-id", true, null), ("path-index", false, "/_search"));
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		html.Should().MatchHtmlSnapshot();
 		RequiredStatusRegex().Matches(html).Should().ContainSingle("only the parameter every route needs reads required");
@@ -275,7 +275,149 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterFirst()
+	public void Create_PathParametersSplitBetweenPathItemAndOperation_ListInRouteOrder()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			]
+		};
+		var pathItem = new OpenApiPathItem
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "index",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			]
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/{index}/_doc/{id}", pathItem, "api");
+
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		// An operation's own parameters merge before the path item's, but the route reads index first.
+		page.PathParameterNames.Should().Equal("index", "id");
+	}
+
+	[Test]
+	public async Task BuildParameterList_QueryParameters_ListRequiredFirstThenAToZ()
+	{
+		var document = await TestSpecs.LoadSpecAsync("""{ "openapi": "3.0.3", "info": { "title": "t", "version": "1" }, "paths": {} }""");
+
+		ParameterRowInput Row(string name, bool required) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Query,
+					Required = required,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var list = TestSpecs.BuilderFor(document).BuildParameterList(
+			[Row("beta", false), Row("zone", true), Row("alpha", false), Row("Mode", true)],
+			new PropertyTreeScope { Prefix = "query", IsRequest = true }
+		);
+
+		// `zone` sorts after `alpha`, but required parameters list first.
+		list.Items.Select(p => p.Name).Should().Equal("Mode", "zone", "alpha", "beta");
+		list.Items[^1].IsLast.Should().BeTrue();
+	}
+
+	[Test]
+	public void InRouteOrder_LongestRouteLacksAParameter_UsesTheRouteThatHasThemAll()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new("get", "/legacy/api/items/{id}"), new("get", "/items/{id}/{tenant}")],
+			specRoute: "/items/{id}/{tenant}"
+		);
+
+		ParameterRowInput Row(string name) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var ordered = OperationPageModel.InRouteOrder([Row("tenant"), Row("id")], endpoint);
+
+		// The alias has the most segments and leads the rows, but only the spec route holds both placeholders.
+		ordered.Select(r => r.Parameter.Name).Should().Equal("id", "tenant");
+	}
+
+	[Test]
+	public void InRouteOrder_SpaceVariantOfAReorderedAlias_KeepsTheLeadingRoutesOrder()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new("get", "/{project}/{id}"), new("get", "/{id}/{project}"), new("get", "/s/{space_id}/{id}/{project}")],
+			specRoute: "/{project}/{id}"
+		);
+
+		ParameterRowInput Row(string name, bool required) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Path,
+					Required = required,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var ordered = OperationPageModel.InRouteOrder([Row("id", true), Row("space_id", false), Row("project", true)], endpoint);
+
+		// The space variant holds the most placeholders, but the optional space parameter must not pick the route.
+		ordered.Where(r => r.IsRequired).Select(r => r.Parameter.Name).Should().Equal("project", "id");
+	}
+
+	[Test]
+	public void InRouteOrder_LeadingRouteLacksOptionalPlaceholders_OrdersThemByTheRouteThatHasThem()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new("get", "/legacy/api/v1/items/{id}"), new("get", "/items/{id}/{region}/{zone}")],
+			specRoute: "/items/{id}/{region}/{zone}"
+		);
+
+		ParameterRowInput Row(string name, bool required) =>
+			new(
+				new OpenApiParameter
+				{
+					Name = name,
+					In = ParameterLocation.Path,
+					Required = required,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				null
+			);
+
+		var ordered = OperationPageModel.InRouteOrder([Row("zone", false), Row("region", false), Row("id", true)], endpoint);
+
+		// The leading alias holds the required `id` but neither optional placeholder, so each group picks its own route.
+		ordered.Select(r => r.Parameter.Name).Should().Equal("id", "region", "zone");
+	}
+
+	[Test]
+	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterAfterTheRequiredOnes()
 	{
 		var operation = new OpenApiOperation
 		{
@@ -297,8 +439,8 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 
 		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
 
-		page.PathParameterNames.Should().Equal("space_id", "id");
-		var space = page.PathParameters.Items[0];
+		page.PathParameterNames.Should().Equal("id", "space_id");
+		var space = page.PathParameters.Items[1];
 		space.IsRequired.Should().BeFalse();
 		space.IsOptionalPath.Should().BeTrue();
 		space.OptionalRoute.Should().BeNull("only a path some routes leave out gets the hint");

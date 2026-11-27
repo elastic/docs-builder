@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -23,11 +24,13 @@ internal readonly record struct ApiPageFrontMatter(
 	string? Description,
 	string Url,
 	string? Product,
-	ApiRailFacts? Facts = null
+	ApiRailFacts? Facts = null,
+	string? Resource = null
 );
 
 /// <summary>
-/// Writes LLM-aligned YAML plus the OKF concept fields <c>type</c> and <c>resource</c>.
+/// Writes LLM-aligned YAML plus the OKF concept fields <c>type</c> and <c>resource</c>. The <c>resource</c> is the page's
+/// source when it has one, such as an operation in the spec, and the page's own URL otherwise.
 /// </summary>
 internal static class ApiMarkdownFrontMatter
 {
@@ -60,9 +63,37 @@ internal static class ApiMarkdownFrontMatter
 			ResolveDescription(page, context, body, current.NavigationTitle),
 			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
-			page is ApiLanding ? CollectFacts(context) : null
+			page is ApiLanding ? CollectFacts(context) : null,
+			SpecResource(page, context.CurrentNavigation.NavigationRoot.Url, context.BuildContext.CanonicalBaseUrl)
 		);
 	}
+
+	/// <summary>
+	/// Where a page comes from in its tree's published spec JSON: the whole file for the API landing page, and a JSON pointer
+	/// for an operation (<c>.../api/elasticsearch.json#/paths/~1_search/post</c>) or a type
+	/// (<c>#/components/schemas/&lt;id&gt;</c>). Null for a page that is a view rather than a spec object, such as a group.
+	/// </summary>
+	internal static string? SpecResource(IApiModel page, string treeRootUrl, Uri? canonicalBaseUrl)
+	{
+		var fragment = page switch
+		{
+			ApiOperation operation => $"#/paths/{PointerToken(operation.Route)}{OperationMember(operation)}",
+			ApiSchema schema => $"#/components/schemas/{PointerToken(schema.SchemaId)}",
+			ApiLanding => "",
+			_ => null
+		};
+		// The fragment goes on after the URL is absolute: MakeAbsolute leaves a URL it cannot read as a relative URI unchanged,
+		// and that includes one with a percent-encoded fragment, so it would stay relative.
+		return fragment is null ? null : UrlPath.MakeAbsolute(canonicalBaseUrl, ApiOutputPaths.JsonUrl(treeRootUrl)) + fragment;
+	}
+
+	/// <summary>A path item that is a $ref serializes as that reference and has no operation member, so the pointer stops at the path item.</summary>
+	private static string OperationMember(ApiOperation operation) =>
+		operation.Path is OpenApiPathItemReference ? "" : $"/{operation.OperationType.Method.ToLowerInvariant()}";
+
+	/// <summary>One JSON Pointer token (RFC 6901) in URI-fragment form: <c>~</c> and <c>/</c> escaped, then percent-encoded.</summary>
+	private static string PointerToken(string key) =>
+		Uri.EscapeDataString(key.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal));
 
 	private static ApiRailFacts CollectFacts(ApiRenderContext context)
 	{
@@ -87,7 +118,7 @@ internal static class ApiMarkdownFrontMatter
 			_ = markdown.AppendLine($"description: {YamlScalar(meta.Description)}");
 
 		_ = markdown.AppendLine($"url: {meta.Url}");
-		_ = markdown.AppendLine($"resource: {meta.Url}");
+		_ = markdown.AppendLine($"resource: {meta.Resource ?? meta.Url}");
 		if (!string.IsNullOrWhiteSpace(meta.Product))
 		{
 			_ = markdown.AppendLine("products:");

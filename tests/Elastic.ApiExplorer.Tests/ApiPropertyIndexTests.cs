@@ -92,12 +92,12 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 			.Should()
 			.MatchInlineSnapshot(
 				"""
-			unrated_docs -> unrated docs
-			indexPattern -> index pattern
-			min-score -> min score
-			hits -> hits
-			hits[].total_hits -> total hits
-			"""
+				hits -> hits
+				hits[].total_hits -> total hits
+				indexPattern -> index pattern
+				min-score -> min score
+				unrated_docs -> unrated docs
+				"""
 			);
 	}
 
