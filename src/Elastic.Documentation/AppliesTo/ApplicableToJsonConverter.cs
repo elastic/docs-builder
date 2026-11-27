@@ -11,7 +11,7 @@ namespace Elastic.Documentation.AppliesTo;
 
 /// <summary>
 /// JSON converter for ApplicableTo that serializes to a flat array of objects with:
-/// - type: stack, deployment, serverless, or product
+/// - type: stack, deployment, serverless, cloud, or product
 /// - sub-type: the property name (e.g., "self", "ece", "elasticsearch", "vectordb", "ecctl")
 /// - lifecycle: the lifecycle value (if applicable)
 /// - version: the version value (if applicable)
@@ -32,6 +32,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 		var productProps = new Dictionary<string, List<Applicability>>();
 		var stackItems = new List<Applicability>();
 		var productItems = new List<Applicability>();
+		var cloudItems = new List<Applicability>();
 
 		while (reader.Read())
 		{
@@ -104,6 +105,9 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 						serverlessProps[subType] = [];
 					serverlessProps[subType].Add(applicability);
 					break;
+				case "cloud":
+					cloudItems.Add(applicability);
+					break;
 				case "product" when subType == "product":
 					productItems.Add(applicability);
 					break;
@@ -118,6 +122,10 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 		// Create Stack collection
 		if (stackItems.Count > 0)
 			result.Stack = new AppliesCollection(stackItems.ToArray());
+
+		// Create Cloud collection
+		if (cloudItems.Count > 0)
+			result.Cloud = new AppliesCollection(cloudItems.ToArray());
 
 		// Create Product collection
 		if (productItems.Count > 0)
@@ -203,6 +211,10 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			if (value.Serverless.VectorDatabase != null)
 				WriteApplicabilityEntries(writer, "serverless", "vectordb", value.Serverless.VectorDatabase);
 		}
+
+		// Cloud
+		if (value.Cloud != null)
+			WriteApplicabilityEntries(writer, "cloud", "cloud", value.Cloud);
 
 		// Product (simple)
 		if (value.Product != null)

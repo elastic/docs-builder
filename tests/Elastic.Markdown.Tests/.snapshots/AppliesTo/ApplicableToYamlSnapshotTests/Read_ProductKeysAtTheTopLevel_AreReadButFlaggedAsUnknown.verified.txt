@@ -1,22 +1,22 @@
 yaml: ecctl: beta
 json: [{"type":"product","sub_type":"ecctl","lifecycle":"beta"}]
 text: products: ecctl=beta, 
-  hint: Unknown key 'ecctl' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'ecctl' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: curator: beta
 json: [{"type":"product","sub_type":"curator","lifecycle":"beta"}]
 text: products: curator=beta, 
-  hint: Unknown key 'curator' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'curator' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: apm_agent_android: beta
 json: [{"type":"product","sub_type":"apm-agent-android","lifecycle":"beta"}]
 text: products: apm-agent-android=beta, 
-  hint: Unknown key 'apm-agent-android' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'apm-agent-android' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: apm_agent_dotnet: beta
 json: [{"type":"product","sub_type":"apm-agent-dotnet","lifecycle":"beta"}]
 text: products: apm-agent-dotnet=beta, 
-  hint: Unknown key 'apm-agent-dotnet' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'apm-agent-dotnet' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: apm_agent_go: beta
 json: [{"type":"product","sub_type":"apm-agent-go","lifecycle":"beta"}]
@@ -31,12 +31,12 @@ text: products: apm-agent-ios=beta,
 yaml: apm_agent_java: beta
 json: [{"type":"product","sub_type":"apm-agent-java","lifecycle":"beta"}]
 text: products: apm-agent-java=beta, 
-  hint: Unknown key 'apm-agent-java' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'apm-agent-java' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: apm_agent_node: beta
 json: [{"type":"product","sub_type":"apm-agent-node","lifecycle":"beta"}]
 text: products: apm-agent-node=beta, 
-  hint: Unknown key 'apm-agent-node' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'apm-agent-node' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: apm_agent_php: beta
 json: [{"type":"product","sub_type":"apm-agent-php","lifecycle":"beta"}]
@@ -46,79 +46,79 @@ text: products: apm-agent-php=beta,
 yaml: apm_agent_python: beta
 json: [{"type":"product","sub_type":"apm-agent-python","lifecycle":"beta"}]
 text: products: apm-agent-python=beta, 
-  hint: Unknown key 'apm-agent-python' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'apm-agent-python' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: apm_agent_ruby: beta
 json: [{"type":"product","sub_type":"apm-agent-ruby","lifecycle":"beta"}]
 text: products: apm-agent-ruby=beta, 
-  hint: Unknown key 'apm-agent-ruby' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'apm-agent-ruby' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: apm_agent_rum_js: beta
 json: [{"type":"product","sub_type":"apm-agent-rum-js","lifecycle":"beta"}]
 text: products: apm-agent-rum-js=beta, 
-  hint: Unknown key 'apm-agent-rum-js' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'apm-agent-rum-js' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_ios: beta
 json: [{"type":"product","sub_type":"edot-ios","lifecycle":"beta"}]
 text: products: edot-ios=beta, 
-  hint: Unknown key 'edot-ios' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-ios' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_android: beta
 json: [{"type":"product","sub_type":"edot-android","lifecycle":"beta"}]
 text: products: edot-android=beta, 
-  hint: Unknown key 'edot-android' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-android' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_collector: beta
 json: [{"type":"product","sub_type":"edot-collector","lifecycle":"beta"}]
 text: products: edot-collector=beta, 
-  hint: Unknown key 'edot-collector' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-collector' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_dotnet: beta
 json: [{"type":"product","sub_type":"edot-dotnet","lifecycle":"beta"}]
 text: products: edot-dotnet=beta, 
-  hint: Unknown key 'edot-dotnet' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-dotnet' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_java: beta
 json: [{"type":"product","sub_type":"edot-java","lifecycle":"beta"}]
 text: products: edot-java=beta, 
-  hint: Unknown key 'edot-java' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-java' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_node: beta
 json: [{"type":"product","sub_type":"edot-node","lifecycle":"beta"}]
 text: products: edot-node=beta, 
-  hint: Unknown key 'edot-node' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-node' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_browser: beta
 json: [{"type":"product","sub_type":"edot-browser","lifecycle":"beta"}]
 text: products: edot-browser=beta, 
-  hint: Unknown key 'edot-browser' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-browser' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_react_native: beta
 json: [{"type":"product","sub_type":"edot-react-native","lifecycle":"beta"}]
 text: products: edot-react-native=beta, 
-  hint: Unknown key 'edot-react-native' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-react-native' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_php: beta
 json: [{"type":"product","sub_type":"edot-php","lifecycle":"beta"}]
 text: products: edot-php=beta, 
-  hint: Unknown key 'edot-php' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-php' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_python: beta
 json: [{"type":"product","sub_type":"edot-python","lifecycle":"beta"}]
 text: products: edot-python=beta, 
-  hint: Unknown key 'edot-python' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-python' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_cf_aws: beta
 json: [{"type":"product","sub_type":"edot-cf-aws","lifecycle":"beta"}]
 text: products: edot-cf-aws=beta, 
-  hint: Unknown key 'edot-cf-aws' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-cf-aws' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_cf_azure: beta
 json: [{"type":"product","sub_type":"edot-cf-azure","lifecycle":"beta"}]
 text: products: edot-cf-azure=beta, 
-  hint: Unknown key 'edot-cf-azure' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-cf-azure' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: edot_cf_gcp: beta
 json: [{"type":"product","sub_type":"edot-cf-gcp","lifecycle":"beta"}]
 text: products: edot-cf-gcp=beta, 
-  hint: Unknown key 'edot-cf-gcp' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'edot-cf-gcp' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….

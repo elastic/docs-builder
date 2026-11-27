@@ -1008,3 +1008,48 @@ public class StackRemovedThenDeprecatedDropsAdditionalInfo : MarkdownTest
 		html.Should().NotContain("Unless stated otherwise on the page, this functionality is available when your Elastic Stack");
 	}
 }
+
+public class CloudGaApplicability : MarkdownTest
+{
+	protected override string Markdown => """
+		```{applies_to}
+		cloud: ga
+		```
+		""";
+
+	[Test, DisplayName("renders cloud badge")]
+	public async Task RendersCloudBadge() =>
+		await Docs.ConvertsToHtml(
+			@"
+<p class=""applies applies-block"">
+	<applies-to-popover badge-key=""Cloud"" lifecycle-class=""ga"" lifecycle-name=""GA"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud\u003C/strong\u003E is a managed service that lets you centrally administer Elastic Cloud Hosted deployments, Elastic Cloud Serverless projects, and cloud connected services.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}"" show-popover=""true"" is-inline=""false"">
+</applies-to-popover>
+</p>
+"
+		);
+}
+
+public class CloudAndEceApplicability : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		```{applies_to}
+		deployment:
+		  ece: ga 9.0.0
+		cloud: ga
+		```
+		""";
+
+	[Test, DisplayName("renders cloud badge before ece badge")]
+	public async Task RendersCloudBeforeEce() =>
+		await Docs.ConvertsToHtml(
+			@"
+<p class=""applies applies-block"">
+	<applies-to-popover badge-key=""Cloud"" lifecycle-class=""ga"" lifecycle-name=""GA"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud\u003C/strong\u003E is a managed service that lets you centrally administer Elastic Cloud Hosted deployments, Elastic Cloud Serverless projects, and cloud connected services.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}"" show-popover=""true"" is-inline=""false"">
+</applies-to-popover>
+	<applies-to-popover badge-key=""ECE"" badge-lifecycle-text=""Planned"" lifecycle-class=""ga"" lifecycle-name=""GA"" show-lifecycle-name=""false"" show-version=""false"" has-multiple-lifecycles=""false"" popover-data=""{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Enterprise\u003C/strong\u003E is a self-managed orchestration platform for deploying and managing the Elastic Stack at scale.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Cloud Enterprise update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}"" show-popover=""true"" is-inline=""false"">
+</applies-to-popover>
+</p>
+"
+		);
+}

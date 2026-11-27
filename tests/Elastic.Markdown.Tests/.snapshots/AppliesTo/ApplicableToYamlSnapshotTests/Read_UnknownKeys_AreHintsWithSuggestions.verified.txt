@@ -8,17 +8,17 @@ yaml:
   | unknown: ga
 json: [{"type":"stack","sub_type":"stack","lifecycle":"ga"}]
 text: stack: ga, 
-  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: unknown:
 json: []
 text: 
-  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: unknown: ga
 json: []
 text: 
-  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'unknown' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: deployments: ga
 json: []
@@ -93,7 +93,7 @@ text: stack: beta,
 yaml: stack-trace: ga
 json: []
 text: 
-  hint: Unknown key 'stack-trace' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'stack-trace' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: vector_db: ga
 json: []
@@ -103,7 +103,7 @@ text:
 yaml: vectordatabase: ga
 json: []
 text: 
-  hint: Unknown key 'vectordatabase' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'vectordatabase' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
 
 yaml: ESS: ga
 json: []
@@ -120,5 +120,5 @@ yaml:
   | z: w
 json: []
 text: 
-  hint: Unknown key 'x' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
-  hint: Unknown key 'z' in applies_to. Valid keys: apm, apm-agent, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, security, ….
+  hint: Unknown key 'x' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….
+  hint: Unknown key 'z' in applies_to. Valid keys: apm, apm-agent, cloud, deployment, ece, ech, eck, elasticsearch, ess, kibana, observability, product, ….

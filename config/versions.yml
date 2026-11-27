@@ -32,6 +32,9 @@ versioning_systems:
     base: 9.0
     current: 9.0.0
 
+  # Elastic Cloud platform layer
+  cloud: *all
+
   # Serverless
   serverless: *all
   elasticsearch: *all

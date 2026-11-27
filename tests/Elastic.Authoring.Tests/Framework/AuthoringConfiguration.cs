@@ -61,6 +61,12 @@ public static class AuthoringConfiguration
 			Current = AllVersions.Instance,
 			Base = AllVersions.Instance
 		};
+		systems[VersioningSystemId.Cloud] = new VersioningSystem
+		{
+			Id = VersioningSystemId.Cloud,
+			Current = AllVersions.Instance,
+			Base = AllVersions.Instance
+		};
 		systems[VersioningSystemId.EdotReactNative] = new VersioningSystem
 		{
 			Id = VersioningSystemId.EdotReactNative,

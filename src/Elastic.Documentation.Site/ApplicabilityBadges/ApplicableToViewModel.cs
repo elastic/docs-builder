@@ -94,6 +94,9 @@ public class ApplicableToViewModel
 	{
 		var rawItems = new List<RawApplicabilityItem>();
 
+		if (AppliesTo.Cloud is not null)
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Cloud, ApplicabilityMappings.Cloud));
+
 		CollectServerless(rawItems);
 
 		if (AppliesTo.Stack is not null)
@@ -128,6 +131,9 @@ public class ApplicableToViewModel
 	{
 		var rawItems = new List<RawApplicabilityItem>();
 
+		if (AppliesTo.Cloud is not null)
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Cloud, ApplicabilityMappings.Cloud));
+
 		CollectServerless(rawItems);
 
 		if (AppliesTo.Deployment is not null)
@@ -136,7 +142,10 @@ public class ApplicableToViewModel
 		if (AppliesTo.ProductApplicability is not null)
 			rawItems.AddRange(CollectFromMappings(AppliesTo.ProductApplicability, ProductMappings));
 
-		var noExplicitSupportedOn = AppliesTo.Deployment is null && AppliesTo.Serverless is null && AppliesTo.ProductApplicability is null;
+		var noExplicitSupportedOn = AppliesTo.Deployment is null
+			&& AppliesTo.Serverless is null
+			&& AppliesTo.Cloud is null
+			&& AppliesTo.ProductApplicability is null;
 
 		if (rawItems.Count == 0 && noExplicitSupportedOn && AppliesTo.Stack is not null)
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Self));

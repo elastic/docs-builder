@@ -14,6 +14,7 @@ public static class ApplicabilityKeys
 	public const string Deployment = "deployment";
 	public const string Serverless = "serverless";
 	public const string Product = "product";
+	public const string Cloud = "cloud";
 
 	public const string Ece = "ece";
 	public const string Eck = "eck";

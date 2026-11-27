@@ -35,6 +35,12 @@ public static class ProductDescriptions
 			AdditionalAvailabilityInfo: "Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.",
 			IncludeVersionNote: true
 		),
+		// Elastic Cloud platform layer
+		[VersioningSystemId.Cloud] = new ProductInfo(
+			Description: "<strong>Elastic Cloud</strong> is a managed service that lets you centrally administer Elastic Cloud Hosted deployments, Elastic Cloud Serverless projects, and cloud connected services.",
+			AdditionalAvailabilityInfo: null,
+			IncludeVersionNote: false
+		),
 		// Serverless
 		[VersioningSystemId.Serverless] = new ProductInfo(
 			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.",

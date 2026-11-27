@@ -708,3 +708,49 @@ public class DeploymentStringShorthandWithVersionEmitsErrorForEss : AuthoringTes
 			"error {repo}/docs/index.md Can't specify a version for 'ess' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
 		);
 }
+
+public class ParsesCloudKey : AuthoringTest
+{
+	protected override Scenario Scenario => FrontMatter.WithYaml("""
+			applies_to:
+			   cloud: ga
+			""");
+
+	[Test, DisplayName("apply matches expected")]
+	public async Task ApplyMatchesExpected() => await Docs.AppliesTo(new ApplicableTo { Cloud = Applies("ga") });
+}
+
+public class ParsesCloudKeyAlongsideDeploymentKeys : AuthoringTest
+{
+	protected override Scenario Scenario =>
+		FrontMatter.WithYaml(
+			"""
+			applies_to:
+			   cloud: preview
+			   deployment:
+			     ece: ga 4.0
+			"""
+		);
+
+	[Test, DisplayName("apply matches expected")]
+	public async Task ApplyMatchesExpected() =>
+		await Docs.AppliesTo(new ApplicableTo
+		{
+			Cloud = Applies("preview"),
+			Deployment = new DeploymentApplicability { Ece = Applies("ga 4.0") }
+		});
+}
+
+public class CloudWithVersionEmitsError : AuthoringTest
+{
+	protected override Scenario Scenario => FrontMatter.WithYaml("""
+			applies_to:
+			   cloud: ga 9.0
+			""");
+
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md Can't specify a version for 'cloud' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."
+		);
+}
