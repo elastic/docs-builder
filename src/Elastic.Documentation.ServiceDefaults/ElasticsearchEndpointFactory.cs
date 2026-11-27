@@ -44,19 +44,17 @@ public static class ElasticsearchEndpointFactory
 
 		var username = config["DOCUMENTATION_ELASTIC_USERNAME"] ?? config["Parameters:ElasticsearchUsername"] ?? "elastic";
 
-		if (string.IsNullOrEmpty(url))
-		{
-			return new DocumentationEndpoints { Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") } };
-		}
-
+		// Without a URL, fall back to a local cluster and send no saved credentials to it.
 		// An empty variable still wins over user-secrets, so `DOCUMENTATION_ELASTIC_APIKEY=` clears a saved cloud key.
-		var endpoint = new ElasticsearchEndpoint
-		{
-			Uri = new Uri(url),
-			ApiKey = string.IsNullOrEmpty(apiKey) ? null : apiKey,
-			Password = string.IsNullOrEmpty(password) ? null : password,
-			Username = username
-		};
+		var endpoint = string.IsNullOrEmpty(url)
+			? new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") }
+			: new ElasticsearchEndpoint
+			{
+				Uri = new Uri(url),
+				ApiKey = string.IsNullOrEmpty(apiKey) ? null : apiKey,
+				Password = string.IsNullOrEmpty(password) ? null : password,
+				Username = username
+			};
 
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
 		IEnvironmentValidator environmentValidator = buildType == "codex"
