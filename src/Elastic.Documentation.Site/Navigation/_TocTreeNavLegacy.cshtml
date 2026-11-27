@@ -10,11 +10,15 @@
 	{
 		@* Leaf rows carry no layout classes: the tree's CSS in styles.css lays them out, so the classes are not repeated on every row. *@
 		<li class="@(item.IsTopLevel ? "nav-top" : null)">
-			<a href="@item.Url" class="sidebar-link"@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
+			@* A single method is drawn as the link's ::after chip from data-method (api-docs.css). *@
+			<a href="@item.Url" class="sidebar-link"@(item.SingleHttpMethod is { } method ? new Microsoft.AspNetCore.Html.HtmlString($" data-method=\"{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(method)}\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
 				<span>@item.NavigationTitle</span>
 				@if (item.Deprecated) { <span class="sr-only">Deprecated</span> }
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
-				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
+				@if (item.SingleHttpMethod is null)
+				{
+					@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
+				}
 			</a>
 		</li>
 	}
