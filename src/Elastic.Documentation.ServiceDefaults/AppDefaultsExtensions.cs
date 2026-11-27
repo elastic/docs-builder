@@ -5,8 +5,8 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.Configuration.Json;
@@ -67,7 +67,7 @@ public static class AppDefaultsExtensions
 			{
 				var versionConfiguration = p.CreateVersionConfiguration();
 				var products = p.CreateProducts(versionConfiguration);
-				var search = p.CreateSearchConfiguration();
+				var search = SearchTuningLoader.Load(p);
 				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
 				_ = s.AddSingleton(products);
 				_ = s.AddSingleton(versionConfiguration);

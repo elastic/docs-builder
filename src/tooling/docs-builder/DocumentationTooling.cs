@@ -11,9 +11,9 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -54,7 +54,7 @@ public static class DocumentationTooling
 				var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
 				var products = sp.GetRequiredService<ProductsConfiguration>();
 				var legacyUrlMappings = sp.GetRequiredService<LegacyUrlMappingConfiguration>();
-				var search = sp.GetRequiredService<SearchConfiguration>();
+				var search = sp.GetRequiredService<SearchTuning>();
 				return new ConfigurationContext
 				{
 					ConfigurationFileProvider = configurationFileProvider,
@@ -62,7 +62,7 @@ public static class DocumentationTooling
 					Endpoints = endpoints,
 					ProductsConfiguration = products,
 					LegacyUrlMappings = legacyUrlMappings,
-					SearchConfiguration = search
+					SearchTuning = search
 				};
 			});
 

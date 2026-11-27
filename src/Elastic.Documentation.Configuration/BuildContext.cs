@@ -10,11 +10,11 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.RelatedLearning;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
@@ -56,7 +56,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public ProductsConfiguration ProductsConfiguration { get; }
 	public RelatedLearningConfiguration RelatedLearningConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	public SearchConfiguration SearchConfiguration { get; }
+	public SearchTuning SearchTuning { get; }
 	public IEnvironmentVariables Environment { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public bool Force { get; init; }
@@ -107,7 +107,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		FileSystem = fileSystem;
 		AvailableExporters = ExportOptions.Default;
 		Environment = environment ?? SystemEnvironmentVariables.Instance;
-		SearchConfiguration = configurationContext.SearchConfiguration;
+		SearchTuning = configurationContext.SearchTuning;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;

@@ -4207,7 +4207,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
 			VersionsConfiguration = versions,
 			ProductsConfiguration = productsConfiguration,
-			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			SearchTuning = ConfigurationContext.SearchTuning,
 			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
 		};
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, catalogContext);
