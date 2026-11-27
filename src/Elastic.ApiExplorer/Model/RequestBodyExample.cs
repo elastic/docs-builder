@@ -39,6 +39,30 @@ public static class RequestBodyExample
 				|| type.EndsWith("+json", StringComparison.OrdinalIgnoreCase));
 	}
 
+	/// <summary>Newline-delimited JSON: <c>application/x-ndjson</c> or <c>application/ndjson</c>, with or without parameters.</summary>
+	internal static bool IsNdjson(string? mediaType) =>
+		mediaType?.Split(';', 2)[0].Trim().ToLowerInvariant() is "application/x-ndjson" or "application/ndjson";
+
+	internal static bool IsJsonDocument(string text)
+	{
+		try
+		{
+			_ = JsonNode.Parse(text);
+			return true;
+		}
+		catch (JsonException)
+		{
+			return false;
+		}
+	}
+
+	/// <summary>
+	/// One JSON value per line, as <c>_bulk</c> and <c>_msearch</c> take them. A blank line between values is not allowed,
+	/// because <c>_msearch</c> pairs each header with the line after it.
+	/// </summary>
+	internal static bool IsNdjsonDocument(string text) =>
+		text.Trim().Split('\n').All(static line => line.Trim().Length > 0 && IsJsonDocument(line));
+
 	private static JsonNode? Value(SchemaAnalyzer analyzer, IOpenApiSchema? schema, int depth)
 	{
 		var resolved = analyzer.ResolveSchema(schema);

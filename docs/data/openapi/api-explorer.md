@@ -456,6 +456,18 @@ When the request body has an example, the samples carry its body (Console under 
 
 When there is only a single example, the rail skips the example chips. **Console is the default language**, because you can paste it straight into Kibana Dev Tools. Once a reader picks another language, with a dot, an arrow, the keyboard, or by swiping the strip, that choice is remembered in the browser and applies on every operation page, and the link in the address bar follows it. Links can open a specific example and language with `#example=<example>&lang=<language>`, for example `#example=search-slicing&lang=curl`. The link is always written in lowercase and read without regard to case, so `lang=Curl` works too.
 
+### HTTP client examples [http-client-examples]
+
+JSON and bodyless requests also have an **HTTP** card. Copy its contents into an HTTP client or save them as a `.http` file. The card includes the request method, URL, headers, and body, and supports the same full-screen preview as other languages. Syntax highlighting covers request methods, variables, headers, and JSON bodies, including request lines without an HTTP version.
+
+Generated HTTP examples contain the request without local variable declarations. Concrete server URLs and parameter examples from the spec appear inline. When the spec has no server URL, examples use the same host variable as curl: `{{ELASTICSEARCH_URL}}`, `{{KIBANA_URL}}`, `{{LOGSTASH_URL}}`, or `{{API_URL}}`. A whole-host template such as `https://{kibana_url}` also uses `{{KIBANA_URL}}`, rather than the template's default value. Set these host variables in your HTTP client's environment. Relative server paths follow the product's host variable.
+
+Configure authentication variables such as `API_KEY` and `TOKEN` in your HTTP client's environment alongside the host variables. Basic authentication uses a base64-encoded `username:password` value in `BASIC_CREDENTIALS`. Unresolved path, query, header, and server values use environment references with the prefixes `PATH_`, `QUERY_`, `HEADER_`, and `SERVER_`. Stated defaults in partially templated server URLs appear inline.
+
+HTTP samples are generated even when an operation already provides samples in other languages. An authored `HTTP` sample takes precedence. Generated samples carry the same **Generated from the API spec** note as Console and curl samples.
+
+Generation supports JSON and `+json` request bodies, schema-generated JSON bodies, newline-delimited JSON bodies such as `_bulk` and `_msearch` take, and requests without bodies. A newline-delimited body is sent as the newline-delimited type the operation lists, else as `application/x-ndjson`, even when the spec lists only `application/json` for it. A blank line between its values leaves the example without an HTTP card. The request line comes from the example: its `Run` line, else the authored Console sample, else the shortest route. It supports API keys in headers or query parameters, bearer tokens, OAuth 2.0 and OpenID Connect bearer tokens, and Basic authentication. It omits examples with unsupported required authentication, external-only request bodies, multipart bodies, and authored sample scenarios whose request cannot be reconstructed from the spec. The request text remains readable without JavaScript.
+
 ### Generated response examples
 
 When a response content type has no explicit example, {{dbuild}} builds a representative JSON body from its schema. Named and media-type examples take precedence over this fallback. Each response status keeps its own examples, including content types other than the first.

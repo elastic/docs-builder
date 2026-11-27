@@ -601,8 +601,9 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     copy.addEventListener('click', () => {
         logApiExampleEvent('api_example_code_copied', cardDetail(card))
         // No Clipboard API (insecure context, old browser): nothing to copy with, so nothing to do.
+        const source = code.textContent ?? ''
         const write = navigator.clipboard?.writeText(
-            code.textContent?.trimEnd() ?? ''
+            sameLanguage(card.dataset.lang, 'HTTP') ? source : source.trimEnd()
         )
         if (!write) return
         write.then(

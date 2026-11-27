@@ -45,6 +45,22 @@ public partial class OperationExamplesPanelRenderingTests
 		_ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
 
 	[Test]
+	public async Task Render_HttpSample_ShowsSourceAndGeneratedNote()
+	{
+		var sample = SyntheticCodeSamples.CreateHttp(
+			new SyntheticSampleInput(HttpMethod.Post, "/_search", new Microsoft.OpenApi.OpenApiOperation())
+			{
+				Body = "{\"query\":{\"match_all\":{}}}"
+			},
+			"application/json"
+		);
+		var html = await RenderScenario(new ExampleScenario { Title = "Search documents", TabId = "example", CodeSamples = [sample] });
+
+		html.Should().MatchHtmlSnapshot();
+		html.Should().Contain("Generated from the API spec");
+	}
+
+	[Test]
 	public async Task Render_GeneratedResponseMedia_ShowsProvenanceAndSeparateCopyActions()
 	{
 		var html = await RenderScenario(new ExampleScenario

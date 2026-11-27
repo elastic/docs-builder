@@ -403,6 +403,31 @@ describe('API examples carousel', () => {
         ).toBeNull()
     })
 
+    it('copies the complete HTTP source from the preview', () => {
+        const source = '@BASE_URL = https://example.test\n\nGET {{BASE_URL}}/\n'
+        const element = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-code-card]'
+        )!
+        element.dataset.lang = 'HTTP'
+        element.querySelector('code')!.textContent = source
+        const writeText = vi.fn(() => Promise.resolve())
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText },
+        })
+        initApiExamples()
+
+        element.querySelector<HTMLButtonElement>('[data-code-preview]')!.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                'dialog [aria-label="Copy code"]'
+            )!
+            .click()
+
+        expect(writeText).toHaveBeenCalledWith(source)
+        document.querySelector('dialog')!.dispatchEvent(new Event('close'))
+    })
+
     it('copies from the preview, and does nothing without a Clipboard API', async () => {
         initApiExamples()
         const open = () => {

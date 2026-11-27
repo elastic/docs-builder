@@ -1,0 +1,2 @@
+###
+GET {{API_URL}}/{{PATH_A_B}}/{{PATH_A_B_2}}?ids=a%2Fb&ids=c%20d&filter%5Btag%5D=a%26b
