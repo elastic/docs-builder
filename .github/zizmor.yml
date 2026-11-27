@@ -14,10 +14,13 @@ rules:
   # The release-notes-* entries use workflow_run on purpose: commenting on a PR and
   # committing a changelog entry to its branch need base-branch permissions that a
   # pull_request job from a fork cannot be given. Neither workflow checks out PR code.
+  # team-review.yml uses both triggers for the same reason: it reads team membership
+  # with an app token and sets a commit status. It checks out no PR code either.
   dangerous-triggers:
     ignore:
       - assembler-preview-cleanup.yml
       - docs-preview-cleanup-local.yml
       - required-labels.yml
       - release-notes-comments.yml
+      - team-review.yml
       - release-notes-changelog-file.yml

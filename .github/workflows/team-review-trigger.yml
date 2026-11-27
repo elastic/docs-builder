@@ -1,0 +1,25 @@
+name: Team review trigger
+
+# A pull_request_review run from a fork gets a read-only token and no secrets, so it
+# cannot set the team-review status itself. It only hands the PR number to team-review.yml,
+# which runs from the base branch through workflow_run.
+on:
+  pull_request_review:
+    types:
+      - submitted
+      - dismissed
+
+permissions: {}
+
+jobs:
+  handoff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record the PR number
+        run: echo "$PR_NUMBER" > pr-number
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr-number
+          path: pr-number
