@@ -17,7 +17,8 @@ namespace Elastic.Documentation.Build.Tests.Snapshots;
 /// How a feature flag resolves from the YAML value, the FEATURE_* environment variable and an explicit setter, as tables.
 /// Reads the process environment on purpose, so its tests change process-wide variables and do not run in parallel.
 /// </summary>
-[NotInParallel(nameof(FeatureFlagsMatrixTests))]
+// Same group as AssemblerOpenApiBuildStepIntegrationTests, which reads FEATURE_ASSEMBLER_API_EXPLORER from the process
+[NotInParallel(nameof(FeatureFlagsTests))]
 public class FeatureFlagsMatrixTests
 {
 	private static readonly string?[] EnvironmentValues = [null, "true", "false", "TRUE", "0", "1", "garbage"];
