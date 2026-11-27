@@ -371,9 +371,12 @@ public static class SearchQueryBuilder
 		};
 	}
 
-	/// <summary>A word within one edit, the first letter fixed. A word shorter than <see cref="FuzzyMinimumLength"/> allows no edit.</summary>
-	internal static MatchQuery FuzzyWordMatch(Field field, string text, string? analyzer = null) =>
-		new() { Field = field, Query = text, Analyzer = analyzer, Fuzziness = WordFuzziness, PrefixLength = 1 };
+	/// <summary>
+	/// A word within one edit, its first <paramref name="prefixLength"/> letters fixed. A word shorter than <see cref="FuzzyMinimumLength"/>
+	/// allows no edit.
+	/// </summary>
+	internal static MatchQuery FuzzyWordMatch(Field field, string text, string? analyzer = null, int prefixLength = 1) =>
+		new() { Field = field, Query = text, Analyzer = analyzer, Fuzziness = WordFuzziness, PrefixLength = prefixLength };
 
 	private static MatchQuery NameWordsMatch(string query) => FuzzyWordMatch(QueryFieldNames.ApiPropertiesNameWords, query);
 

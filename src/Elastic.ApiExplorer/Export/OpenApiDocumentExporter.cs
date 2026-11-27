@@ -258,7 +258,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Path = path.Key,
 					OperationId = operationId,
 					Deprecated = apiOperation.Deprecated,
-					Words = ApiSearchWords.Of(operationId, path.Key),
+					Words = ApiSearchWords.OfOperation(operationId, path.Key, title),
 					Group = groupParent?.Title ?? "",
 					IdWords = ApiSearchWords.OfOperationId(operationId).Length,
 					TitleFingerprint = title
