@@ -31,8 +31,18 @@ public enum SummaryStyle
 	List
 }
 
-/// <summary>Collapsible Parameters / Query parameters heading with a one-line name summary written in <paramref name="Style"/>.</summary>
-public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, SummaryStyle Style = SummaryStyle.Fields)
+/// <summary>
+/// Collapsible Parameters / Query parameters heading with a one-line name summary written in <paramref name="Style"/>.
+/// <paramref name="LayoutSwitch"/> adds a List / Table control: a flat list of parameters can be read as a table, a nested
+/// body cannot.
+/// </summary>
+public record ParamSectionHeader(
+	string Title,
+	string Anchor,
+	IReadOnlyList<string> Names,
+	SummaryStyle Style = SummaryStyle.Fields,
+	bool LayoutSwitch = false
+)
 {
 	public static HtmlString WrapAttributes() => new("class=\"api-param-section expanded\" data-param-section");
 

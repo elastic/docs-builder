@@ -32,6 +32,9 @@ public partial record OperationPageModel
 
 	public IReadOnlyList<string> HeaderParameterNames => NamesOf(HeaderParameters.Items.Select(static h => h.Name));
 
+	/// <summary>Whether the flat parameter sections offer the List / Table control. Only the design-system layout styles it.</summary>
+	public bool ParameterLayoutSwitch { get; init; }
+
 	/// <summary>The parameter sections the page lists, in page order; a location with no parameters has none.</summary>
 	public IReadOnlyList<ParameterListSection> ParameterSections =>
 		field ??=
@@ -40,21 +43,39 @@ public partial record OperationPageModel
 			{
 				new ParameterListSection(
 					ParameterLocation.Path,
-					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames, SummaryStyle.List),
+					new ParamSectionHeader(
+						"Path parameters",
+						"path-params",
+						PathParameterNames,
+						SummaryStyle.List,
+						LayoutSwitch: ParameterLayoutSwitch
+					),
 					"path-params-list",
 					PathParameters,
 					"Path parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Query,
-					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames, SummaryStyle.List),
+					new ParamSectionHeader(
+						"Query parameters",
+						"query-params",
+						QueryParameterNames,
+						SummaryStyle.List,
+						LayoutSwitch: ParameterLayoutSwitch
+					),
 					"query-params-list",
 					QueryParameters,
 					"Query string parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Header,
-					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames, SummaryStyle.List),
+					new ParamSectionHeader(
+						"Header parameters",
+						"header-params",
+						HeaderParameterNames,
+						SummaryStyle.List,
+						LayoutSwitch: ParameterLayoutSwitch
+					),
 					"header-params-list",
 					HeaderParameters,
 					"Header parameters"
@@ -188,6 +209,7 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
+			ParameterLayoutSwitch = context.BuildContext.Configuration.Features.NavigationPreviewEnabled,
 			Availability = AvailabilityBadge.FromOperation(
 				operation,
 				context.BuildContext.VersionsConfiguration,

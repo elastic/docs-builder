@@ -1587,6 +1587,438 @@ button.response-status-toggle:focus {
 	display: none;
 }
 
+/* List / Table control on the flat parameter sections (path, query, header). The server renders the list and the
+   control hidden; the script shows the control and sets data-layout on the section from the reader's remembered
+   choice. The table is the same definition list laid out as a grid, so anchors, find-in-page, the disclosure and the
+   Markdown copy are untouched. The section is a container: the table needs room that the content column next to the
+   examples rail does not always have, whatever the viewport. */
+.api-param-section {
+	container: api-param-section / inline-size;
+}
+
+/* The table needs subgrid. A browser without it (Chromium 105 to 116 has container queries but no subgrid) keeps the
+   list and never sees the switch. */
+.api-param-layout,
+.api-param-table-head,
+.api-param-clamp-row,
+.api-param-clamp-toggle {
+	display: none;
+}
+
+@supports (grid-template-columns: subgrid) {
+	.api-param-layout:not([hidden]) {
+		display: inline-flex;
+		align-self: center;
+		flex: 0 0 auto;
+		margin-left: var(--space-2);
+		border: 1px solid var(--color-border-control);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+	}
+
+	.api-param-layout[hidden] {
+		display: none;
+	}
+
+	.api-param-layout-option {
+		margin: 0;
+		padding: var(--space-1) var(--space-3);
+		border: 0;
+		background: none;
+		color: var(--color-text-muted);
+		font: inherit;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+	}
+
+	.api-param-layout-option + .api-param-layout-option {
+		border-left: 1px solid var(--color-border-control);
+	}
+
+	.api-param-layout-option[aria-pressed='true'] {
+		background-color: var(--color-accent-surface);
+		color: var(--color-accent);
+	}
+
+	.api-param-layout-option:focus-visible {
+		outline: 2px solid var(--color-focus-ring);
+		outline-offset: -2px;
+	}
+
+	/* Below 32rem the four tracks at their minimums do not fit, so the list stays and the control goes. The range is the
+	   complement of the table's, so no fractional width falls between them. */
+	@container api-param-section (width < 32rem) {
+		.api-param-section > .api-param-section-header > .api-param-layout {
+			display: none;
+		}
+	}
+
+	@container api-param-section (min-width: 32rem) {
+		/* The body is the grid; the head row, the list, each row and each row's dt are subgrids of it, so every cell shares
+		   the same four tracks. The collapsed fallback (display: none) must still win, hence the .expanded qualifier. The
+		   name and the type stop growing at 14rem, so the spare width goes to the description: a longer name breaks where it
+		   must and a longer type wraps between its constraints. The required flag is sized to its content. */
+		.api-param-section.expanded[data-layout='table']
+			> .api-param-section-body {
+			display: grid;
+			grid-template-columns:
+				fit-content(14rem) fit-content(14rem)
+				max-content minmax(12rem, 1fr);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-md);
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .api-param-table-head,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt {
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: subgrid;
+			gap: 0;
+			margin: 0;
+			padding: 0;
+			border: 0;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .api-param-table-head {
+			border-bottom: 1px solid var(--color-border);
+			background-color: var(--color-surface-sunken);
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .api-param-table-head
+			> span {
+			padding: var(--space-2) var(--space-3);
+			color: var(--color-text-muted);
+			font-size: var(--text-xs);
+			font-weight: 600;
+			line-height: 1rem;
+			letter-spacing: 0.05em;
+			text-transform: uppercase;
+		}
+
+		/* One row per parameter. A parameter has several dd (description, values, example, default), which stack in the
+		   description column; the row's line is the item's own border, so those extra dd add no lines of their own. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item {
+			border-bottom: 1px solid var(--color-border);
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item:last-child {
+			border-bottom: 0;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt {
+			grid-column: 1 / 4;
+			/* The dt spans more rows than the description column can fill (description, control, constraints, values,
+			   example, reference link, expand toggle and the rest), so a tall name or type never pushes an entry below its
+			   own bottom. The surplus rows stay empty and add no height. */
+			grid-row: 1 / span 12;
+			align-items: start;
+		}
+
+		/* The anchor leaves the flow so it takes no track; its icon still sits to the left of the row. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> a.property-anchor {
+			position: absolute;
+			right: 100%;
+			top: var(--space-2);
+			width: 0;
+		}
+
+		/* The anchor is the icon's containing block here, so the icon's own 1rem would put it a line below the name. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> a.property-anchor
+			> .property-anchor-icon {
+			top: 0;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> :not(.property-anchor),
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dd {
+			box-sizing: border-box;
+			min-width: 0;
+			margin: 0;
+			padding: var(--space-2) var(--space-3);
+			/* One size and one line height for every cell, so the first lines of a row sit level and a cell is read beside
+			   its neighbours, not as a paragraph: slightly smaller type keeps a long description from dominating the row. */
+			font-size: 0.8125rem;
+			line-height: 1.5;
+		}
+
+		/* Name | Type | Required | Description. The badges that describe the value rather than ask for it stack under the type. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> code:not(.schema-type) {
+			grid-column: 1;
+			overflow-wrap: anywhere;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> code.schema-type,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> .nullable-badge,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> .deprecated-badge,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> .applies {
+			grid-column: 2;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> code.schema-type {
+			/* The port to the design system dropped the legacy flex-wrap, so the groups could only overflow. */
+			flex-wrap: wrap;
+			row-gap: 0;
+			white-space: normal;
+		}
+
+		/* The script moves a parameter's constraints to a row in the description column, so the Type cell holds the
+		   primitive, or a union of primitives, which wraps between its members. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> code.schema-type
+			> .type-primitive {
+			flex: 0 0 auto;
+			max-width: 100%;
+			white-space: nowrap;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> .required.type-status,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dt
+			> .optional.type-status {
+			grid-column: 3;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dd {
+			grid-column: 4;
+			/* The cell keeps its own height beside a taller type: the clamp is measured on the description's height, and a
+			   cell stretched to the row would report the same height with and without the clamp. */
+			align-self: start;
+			/* A measure of 65 characters keeps a long description from dominating the row. */
+			max-width: 65ch;
+			text-wrap: pretty;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dd
+			+ dd {
+			padding-top: 0;
+		}
+
+		/* The constraints row reads like the Values row: a muted label and one chip per constraint. Out of the Type cell a
+		   constraint is no longer cut with an ellipsis, so a long pattern shows whole and wraps. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-constraints {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: var(--space-1);
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-constraints
+			> .schema-type-group
+			> .schema-type-sep {
+			display: none;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-constraints
+			> .schema-type-group
+			> .type-constraint {
+			padding-inline: 0.375rem;
+			padding-block: 0.125rem;
+			border-radius: var(--radius-sm);
+			background: var(--color-surface-sunken);
+			color: var(--color-text-muted);
+			font-family: var(--font-mono);
+			font-size: var(--text-xs);
+			white-space: normal;
+			overflow-wrap: anywhere;
+		}
+
+		/* The reference link's tree branch joins it to the name in the list; in a cell there is nothing to join. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dd.reference-link-row::before,
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> dd.reference-link-row::after {
+			content: none;
+		}
+
+		/* A long description is clamped to three lines; the script adds a Show more control to the rows that overflow. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item[data-clamp='clamped']
+			> dd:not([class]) {
+			display: -webkit-box;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 3;
+			line-clamp: 3;
+			overflow: hidden;
+			padding-bottom: 0;
+			margin-bottom: var(--space-2);
+		}
+
+		/* The control sits in a dd of its own, so the row stays a list of terms and descriptions. The dd shows only here:
+		   a row expanded in the table keeps it when the section narrows, and the list must not get a blank row from it. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-clamp-row {
+			display: block;
+			padding: 0 var(--space-3) var(--space-2);
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-clamp-row
+			> .api-param-clamp-toggle {
+			display: inline-block;
+			margin: 0;
+			padding: 0;
+			border: 0;
+			background: none;
+			color: var(--color-accent);
+			font: inherit;
+			cursor: pointer;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-clamp-row
+			> .api-param-clamp-toggle:hover {
+			color: var(--color-accent-hover);
+			text-decoration: underline;
+		}
+
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .api-param-clamp-row
+			> .api-param-clamp-toggle:focus-visible {
+			outline: 2px solid var(--color-focus-ring);
+			outline-offset: -2px;
+		}
+
+		/* A parameter that is an object lists its fields below the row, across the whole table. */
+		.api-param-section[data-layout='table']
+			> .api-param-section-body
+			> .property-list
+			> .property-item
+			> .nested-properties {
+			grid-column: 1 / -1;
+			padding: 0 var(--space-3) var(--space-3);
+		}
+	}
+}
+
 .api-param-summary {
 	display: flex;
 	align-items: center;

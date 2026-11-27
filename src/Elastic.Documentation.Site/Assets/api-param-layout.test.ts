@@ -1,0 +1,342 @@
+import {
+    applyParamLayout,
+    clampDescriptions,
+    initParamLayout,
+    paramLayoutStorageKey,
+    storedParamLayout,
+} from './api-param-layout'
+
+/** Two flat parameter sections with the switch, and a request body without one, as an operation page renders them. */
+function markup(): string {
+    const section = (anchor: string) => `
+        <div class="api-param-section expanded" data-param-section id="${anchor}-section">
+            <h2 class="section-header api-param-section-header" id="${anchor}">
+                <a class="headerlink api-param-section-title" href="#${anchor}">${anchor}</a>
+                <button type="button" class="api-param-section-toggle" aria-expanded="true"></button>
+                <span class="api-param-layout" role="group" data-param-layout hidden>
+                    <button type="button" class="api-param-layout-option" data-layout="list" aria-pressed="true">List</button>
+                    <button type="button" class="api-param-layout-option" data-layout="table" aria-pressed="false">Table</button>
+                </span>
+            </h2>
+            <div class="api-param-section-body" id="${anchor}-list">
+                <dl class="property-list">
+                    <div class="property-item depth-0" id="${anchor}-long">
+                        <dt id="${anchor}-keep_alive"><code>keep_alive</code><code class="schema-type"><span class="type-primitive">string</span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint">min length: 1</span></span><span class="schema-type-group"><span class="schema-type-sep"> · </span><span class="type-constraint" tabindex="0" id="${anchor}-max-length">max length: 4096</span></span></code></dt>
+                        <dd><p>A long description.</p><p><a href="#deep" id="${anchor}-deep-link">deep link</a></p></dd>
+                        <dd class="reference-link-row"><a href="#">Reference</a></dd>
+                        <div class="nested-properties">
+                            <dl class="property-list">
+                                <div class="property-item depth-1">
+                                    <dt><code>unit</code></dt>
+                                    <dd><p><a href="#unit" id="${anchor}-nested-link">nested link</a></p></dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="property-item depth-0" id="${anchor}-short">
+                        <dt id="${anchor}-typed_keys"><code>typed_keys</code><code class="schema-type">boolean</code></dt>
+                        <dd><p>A short one.</p></dd>
+                    </div>
+                </dl>
+            </div>
+        </div>`
+    return `
+        <section id="elastic-api-v3">
+            ${section('path-params')}
+            ${section('query-params')}
+            <div class="api-param-section expanded" data-param-section id="request-body-section">
+                <h2 class="section-header api-param-section-header" id="request-body">
+                    <button type="button" class="api-param-section-toggle" aria-expanded="true"></button>
+                </h2>
+            </div>
+        </section>`
+}
+
+const layoutOf = (id: string) =>
+    document.getElementById(id)!.dataset.layout ?? null
+const pressed = (id: string, layout: string) =>
+    document
+        .querySelector(`#${id} [data-layout="${layout}"]`)!
+        .getAttribute('aria-pressed')
+
+describe('parameter layout switch', () => {
+    beforeEach(() => {
+        localStorage.clear()
+        document.body.innerHTML = markup()
+    })
+
+    it('shows the control only once the script has taken it', () => {
+        const control = document.querySelector<HTMLElement>(
+            '#path-params-section [data-param-layout]'
+        )!
+        expect(control.hidden).toBe(true)
+        initParamLayout()
+        expect(control.hidden).toBe(false)
+    })
+
+    it('opens as a list when nothing is remembered', () => {
+        initParamLayout()
+        expect(layoutOf('path-params-section')).toBe('list')
+        expect(pressed('path-params-section', 'list')).toBe('true')
+        expect(pressed('path-params-section', 'table')).toBe('false')
+    })
+
+    it('lays out every section with a switch from one click and remembers it', () => {
+        initParamLayout()
+        document
+            .querySelector<HTMLElement>(
+                '#path-params-section [data-layout="table"]'
+            )!
+            .click()
+        expect(layoutOf('path-params-section')).toBe('table')
+        expect(layoutOf('query-params-section')).toBe('table')
+        expect(pressed('query-params-section', 'table')).toBe('true')
+        expect(pressed('query-params-section', 'list')).toBe('false')
+        expect(localStorage.getItem(paramLayoutStorageKey)).toBe('table')
+    })
+
+    it('leaves a section without a switch alone', () => {
+        applyParamLayout('table')
+        expect(layoutOf('request-body-section')).toBeNull()
+    })
+
+    it('opens the next page in the remembered layout', () => {
+        localStorage.setItem(paramLayoutStorageKey, 'table')
+        initParamLayout()
+        expect(layoutOf('query-params-section')).toBe('table')
+        expect(pressed('query-params-section', 'table')).toBe('true')
+    })
+
+    it('forgets the choice when the reader goes back to the list', () => {
+        localStorage.setItem(paramLayoutStorageKey, 'table')
+        initParamLayout()
+        document
+            .querySelector<HTMLElement>(
+                '#query-params-section [data-layout="list"]'
+            )!
+            .click()
+        expect(layoutOf('path-params-section')).toBe('list')
+        expect(localStorage.getItem(paramLayoutStorageKey)).toBeNull()
+    })
+
+    it('ignores a value in storage that is not a layout', () => {
+        localStorage.setItem(paramLayoutStorageKey, 'cards')
+        expect(storedParamLayout()).toBe('list')
+    })
+
+    describe('clamped descriptions', () => {
+        // jsdom lays nothing out, so the fixture says which description overflows the clamp.
+        const longOnly = (dd: HTMLElement) =>
+            dd.closest('.property-item')!.id.endsWith('-long')
+
+        // The handlers bind once per document; a test that clicks or focuses needs them bound.
+        beforeEach(() => initParamLayout())
+        // A failed assertion must not leave a mocked getComputedStyle for the tests after it.
+        afterEach(() => vi.restoreAllMocks())
+        const row = (id: string) => document.getElementById(id)!
+        const toggle = (id: string) =>
+            row(id).querySelector<HTMLButtonElement>('.api-param-clamp-toggle')
+
+        it('clamps the rows that overflow and gives only them a control', () => {
+            applyParamLayout('table', document, longOnly)
+            expect(row('query-params-long').dataset.clamp).toBe('clamped')
+            expect(toggle('query-params-long')!.textContent).toBe('Show more')
+            expect(toggle('query-params-long')!.parentElement!.tagName).toBe(
+                'DD'
+            )
+            expect(
+                toggle('query-params-long')!.getAttribute('aria-controls')
+            ).toBe('query-params-keep_alive-description')
+            expect(row('query-params-short').dataset.clamp).toBeUndefined()
+            expect(toggle('query-params-short')).toBeNull()
+        })
+
+        it('expands and clamps a row from its control', () => {
+            applyParamLayout('table', document, longOnly)
+            toggle('query-params-long')!.click()
+            expect(row('query-params-long').dataset.clamp).toBe('expanded')
+            expect(toggle('query-params-long')!.textContent).toBe('Show less')
+            expect(
+                toggle('query-params-long')!.getAttribute('aria-expanded')
+            ).toBe('true')
+            toggle('query-params-long')!.click()
+            expect(row('query-params-long').dataset.clamp).toBe('clamped')
+        })
+
+        it('keeps a row the reader expanded when the layout is applied again', () => {
+            applyParamLayout('table', document, longOnly)
+            toggle('query-params-long')!.click()
+            clampDescriptions(
+                row('query-params-long').closest('[data-param-section]')!,
+                longOnly
+            )
+            expect(row('query-params-long').dataset.clamp).toBe('expanded')
+            expect(
+                row('query-params-long').querySelectorAll(
+                    '.api-param-clamp-toggle'
+                )
+            ).toHaveLength(1)
+        })
+
+        it('shows a clamped row when focus lands on a link in its description', () => {
+            applyParamLayout('table', document, longOnly)
+            document.getElementById('query-params-deep-link')!.focus()
+            expect(row('query-params-long').dataset.clamp).toBe('expanded')
+            expect(toggle('query-params-long')!.textContent).toBe('Show less')
+        })
+
+        it('leaves a row clamped when focus lands in a nested field below it', () => {
+            applyParamLayout('table', document, longOnly)
+            document.getElementById('query-params-nested-link')!.focus()
+            expect(row('query-params-long').dataset.clamp).toBe('clamped')
+        })
+
+        it('measures the content box with and without the clamp', () => {
+            // jsdom has no layout, so the two descriptions report the heights a browser would: the clamp drops the
+            // bottom padding, and the long one loses lines to it while the short one keeps all of its own.
+            const heights: Record<string, [number, number]> = {
+                'query-params-long': [133, 67],
+                'query-params-short': [55, 47],
+            }
+            for (const [id, [full, clamped]] of Object.entries(heights)) {
+                const item = row(id)
+                const dd = item.querySelector<HTMLElement>(
+                    ':scope > dd:not([class])'
+                )!
+                Object.defineProperty(dd, 'clientHeight', {
+                    get: () =>
+                        item.dataset.clamp === 'clamped' ? clamped : full,
+                })
+            }
+            vi.spyOn(window, 'getComputedStyle').mockImplementation(
+                (el) =>
+                    ({
+                        paddingTop: '8px',
+                        paddingBottom:
+                            (el as HTMLElement).closest<HTMLElement>(
+                                '.property-item'
+                            )?.dataset.clamp === 'clamped'
+                                ? '0px'
+                                : '8px',
+                    }) as CSSStyleDeclaration
+            )
+            applyParamLayout('table')
+            expect(toggle('query-params-long')!.textContent).toBe('Show more')
+            expect(row('query-params-short').dataset.clamp).toBeUndefined()
+            expect(toggle('query-params-short')).toBeNull()
+        })
+
+        it('removes the clamp and the control in list layout', () => {
+            applyParamLayout('table', document, longOnly)
+            applyParamLayout('list', document, longOnly)
+            expect(row('query-params-long').dataset.clamp).toBeUndefined()
+            expect(toggle('query-params-long')).toBeNull()
+        })
+    })
+
+    describe('constraints', () => {
+        const longOnly = (dd: HTMLElement) =>
+            dd.closest('.property-item')!.id.endsWith('-long')
+        const applied = () => true
+        const notApplied = () => false
+        const row = (id: string) => document.getElementById(id)!
+        const type = (id: string) =>
+            row(id).querySelector('dt > code.schema-type')!
+        const constraints = (id: string) =>
+            row(id).querySelector<HTMLElement>(
+                ':scope > .api-param-constraints'
+            )
+        const original = () => type('query-params-long').textContent
+
+        it('moves the constraints below the description when the table applies', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, applied)
+            expect(type('query-params-long').textContent).toBe('string')
+            const dd = constraints('query-params-long')!
+            expect(dd.querySelector('.values-label')!.textContent).toBe(
+                'Constraints:'
+            )
+            expect(
+                [...dd.querySelectorAll('.type-constraint')].map(
+                    (c) => c.textContent
+                )
+            ).toEqual(['min length: 1', 'max length: 4096'])
+            // Below the description and its control, above the values and the reference link.
+            expect(dd.previousElementSibling!.className).toBe(
+                'api-param-clamp-row'
+            )
+            expect(dd.nextElementSibling!.className).toBe('reference-link-row')
+            expect(before).not.toBe('string')
+        })
+
+        it('puts the constraints back in the type for the list', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, applied)
+            applyParamLayout('list', document, longOnly, applied)
+            expect(constraints('query-params-long')).toBeNull()
+            expect(type('query-params-long').textContent).toBe(before)
+            expect(
+                type('query-params-long').querySelector(
+                    '.schema-type-group > .schema-type-sep'
+                )
+            ).not.toBeNull()
+        })
+
+        it('keeps the constraints in the type while the section is too narrow for the table', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, notApplied)
+            expect(constraints('query-params-long')).toBeNull()
+            expect(type('query-params-long').textContent).toBe(before)
+        })
+
+        it('returns the constraints to the type when the section narrows and moves them again when it widens', () => {
+            const before = original()
+            applyParamLayout('table', document, longOnly, applied)
+            expect(constraints('query-params-long')).not.toBeNull()
+            applyParamLayout('table', document, longOnly, notApplied)
+            expect(constraints('query-params-long')).toBeNull()
+            expect(type('query-params-long').textContent).toBe(before)
+            applyParamLayout('table', document, longOnly, applied)
+            expect(
+                constraints('query-params-long')!.querySelectorAll(
+                    '.type-constraint'
+                )
+            ).toHaveLength(2)
+            expect(type('query-params-long').textContent).toBe('string')
+        })
+
+        it('keeps focus on a constraint that moves between the layouts', () => {
+            const constraint = document.getElementById(
+                'query-params-max-length'
+            )!
+            constraint.focus()
+            expect(document.activeElement).toBe(constraint)
+            applyParamLayout('table', document, longOnly, applied)
+            expect(constraint.closest('.api-param-constraints')).not.toBeNull()
+            expect(document.activeElement).toBe(constraint)
+            applyParamLayout('table', document, longOnly, notApplied)
+            expect(constraint.closest('dt')).not.toBeNull()
+            expect(document.activeElement).toBe(constraint)
+        })
+
+        it('moves them once however often the table is applied', () => {
+            applyParamLayout('table', document, longOnly, applied)
+            applyParamLayout('table', document, longOnly, applied)
+            expect(
+                row('query-params-long').querySelectorAll(
+                    '.api-param-constraints'
+                )
+            ).toHaveLength(1)
+            expect(
+                constraints('query-params-long')!.querySelectorAll(
+                    '.type-constraint'
+                )
+            ).toHaveLength(2)
+        })
+
+        it('leaves a row without constraints alone', () => {
+            applyParamLayout('table', document, longOnly, applied)
+            expect(constraints('query-params-short')).toBeNull()
+        })
+    })
+})

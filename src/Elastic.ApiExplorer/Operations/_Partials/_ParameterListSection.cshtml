@@ -2,6 +2,16 @@
 <div @ParamSectionHeader.WrapAttributes()>
 @(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(Model.Header))
 <div @ParamSectionHeader.BodyAttributes(Model.ListId)>
+@if (Model.Header.LayoutSwitch)
+{
+	@* Column labels for the table layout; the stylesheet shows them only then. *@
+	<div class="api-param-table-head">
+		<span>Name</span>
+		<span>Type</span>
+		<span>Required</span>
+		<span>Description</span>
+	</div>
+}
 @(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Parameters))
 </div>
 </div>
