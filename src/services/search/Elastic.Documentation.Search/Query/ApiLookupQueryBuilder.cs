@@ -488,9 +488,12 @@ public static class ApiLookupQueryBuilder
 		};
 	}
 
-	/// <summary>The <c>standard</c> analyzer drops punctuation, so <c>api:</c> and <c>(api)</c> reach the root parent as <c>api</c> does.</summary>
+	/// <summary>
+	/// The <c>standard</c> analyzer drops punctuation but keeps an underscore inside a word, so <c>api:</c> and <c>(api)</c> reach the root
+	/// parent as <c>api</c> does, while <c>api_</c> is its own token that can only complete a title such as <c>api_keys</c>.
+	/// </summary>
 	private static bool NamesOnlyTheRootParent(string word) =>
-		string.Concat(word.Where(char.IsLetterOrDigit)).Equals(RootParentTitle, StringComparison.OrdinalIgnoreCase);
+		string.Concat(word.Where(c => char.IsLetterOrDigit(c) || c == '_')).Equals(RootParentTitle, StringComparison.OrdinalIgnoreCase);
 
 	private static MatchBoolPrefixQuery CompletedWord(Field field, string word, string analyzer = SynonymsAnalyzer) =>
 		new() { Field = field, Query = word, Analyzer = analyzer, Operator = Operator.And };

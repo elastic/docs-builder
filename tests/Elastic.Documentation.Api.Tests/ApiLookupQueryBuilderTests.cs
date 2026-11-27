@@ -761,6 +761,28 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	[Arguments("api_")]
+	[Arguments("_api")]
+	[Arguments("api2")]
+	public void Build_WholeTitleLift_KeepsParentTitlesForAWordThatOnlyStartsWithApi(string word)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build($"{word} key"));
+
+		var words = WordClauses(LiftByName(json, "title_all"));
+
+		// The `standard` analyzer keeps the underscore, so `api_` is one token: it can complete a parent title such as `api_keys`
+		// and never matches the root breadcrumb `api`.
+		FieldAnalyzers(ShouldClauses(words[0]))
+			.Should()
+			.Equal(
+				"title.completion/synonyms_analyzer",
+				"title.completion/standard",
+				"parents.title/synonyms_analyzer",
+				"parents.title/standard"
+			);
+	}
+
+	[Test]
 	[Arguments("lifecycle policies", "policies")]
 	[Arguments("run an ES|QL query", "ES|QL")]
 	public void Build_WholeTitleLift_AlsoMatchesAWordAsWrittenBecauseTitlesAreNotStemmed(string query, string word)
