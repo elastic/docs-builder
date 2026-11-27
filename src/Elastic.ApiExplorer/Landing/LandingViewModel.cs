@@ -26,11 +26,15 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public IReadOnlyList<ApiOverviewSection> OverviewSections => field ??= ApiOverviewBuilder.Sections(OverviewRows);
 
-	/// <summary>The sections the grouped index shows.</summary>
-	public IReadOnlyList<ApiOverviewSection> IndexSections => field ??= ApiOverviewBuilder.WithoutGuidePages(OverviewSections);
+	/// <summary>The endpoint groups in lists of their own, one per classification heading, so each list can carry the group page's frame.</summary>
+	public IReadOnlyList<ApiIndexBlock> IndexBlocks => field ??= ApiIndexBlock.Of(ApiOverviewBuilder.WithoutGuidePages(OverviewSections));
 
-	private ApiMarkdown.HtmlSplit DescriptionParts =>
-		field ??= ApiMarkdown.SplitAtFirstHeading(RenderMarkdown(ApiInfo.Description).Value ?? "");
+	/// <summary>"45 groups": the caption above the endpoint groups.</summary>
+	public string GroupsLabel => CountLabel.Of(IndexBlocks.Sum(static block => block.Groups.Count), "group");
+
+	private RenderedIntro Intro => field ??= RenderIntro();
+
+	private ApiMarkdown.HtmlSplit DescriptionParts => field ??= ApiMarkdown.SplitAtFirstHeading(Intro.Html.Value ?? "");
 
 	/// <summary>The description up to its first heading; the facts sit right after it on narrow screens.</summary>
 	public HtmlString DescriptionLead => new(DescriptionParts.Lead);
@@ -39,7 +43,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public string Heading => ApiPageTitle.Heading(ApiInfo.Title, ApiPageTitle.ReleasedVersionLabel(RenderContext.VersionSwitcherItems));
 
-	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
+	/// <summary>The minor release this tree renders from, such as <c>9.6</c>. A spec's own <c>info.version</c> is only the fallback, because ECE's reads <c>1</c> for every release.</summary>
+	public string? Version => RenderContext.Release ?? (string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version);
 
 	public bool HasFacts => Servers.Count > 0 || Version is not null;
 
@@ -48,4 +53,49 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
 
 	protected override string? LayoutPageDescription => RenderContext.LandingDescription;
+
+	protected override string? FallbackPageDescription =>
+		ApiFallbackDescription.For(Landing, RenderContext, CurrentNavigationItem.NavigationTitle);
+
+	/// <summary>On this page, in page order: the description's headings, then the endpoint groups.</summary>
+	protected override IReadOnlyList<TocItem> GetTocItems() => EndpointsSection.Toc(Intro.Headings, IndexBlocks.Count > 0);
+
+	private RenderedIntro RenderIntro()
+	{
+		var (html, headings) = ApiMarkdown.RenderWithHeadings(RenderContext, ApiInfo.Description, EndpointsSection.ReservedAnchors);
+		return new RenderedIntro(html, headings);
+	}
+
+	private sealed record RenderedIntro(HtmlString Html, IReadOnlyList<TocItem> Headings);
+}
+
+/// <summary>A classification heading (null before the first) and the endpoint groups listed under it.</summary>
+public sealed record ApiIndexBlock(string? Heading, IReadOnlyList<ApiOverviewSection> Groups)
+{
+	public static IReadOnlyList<ApiIndexBlock> Of(IReadOnlyList<ApiOverviewSection> sections)
+	{
+		var blocks = new List<ApiIndexBlock>();
+		string? heading = null;
+		var groups = new List<ApiOverviewSection>();
+		foreach (var section in sections)
+		{
+			if (section.Heading is { Kind: OverviewRowKind.ClassificationHeading } classification)
+			{
+				Flush();
+				heading = classification.Title;
+				continue;
+			}
+			if (section.Heading is { Url: not null })
+				groups.Add(section);
+		}
+		Flush();
+		return blocks;
+
+		void Flush()
+		{
+			if (groups.Count > 0)
+				blocks.Add(new ApiIndexBlock(heading, groups));
+			groups = [];
+		}
+	}
 }

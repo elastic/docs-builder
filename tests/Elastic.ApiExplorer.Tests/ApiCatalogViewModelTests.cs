@@ -112,18 +112,6 @@ public class ApiCatalogViewModelTests
 	}
 
 	[Test]
-	public void ColumnOf_Variant_IsTheColumnOfItsParentWhateverTheOrder()
-	{
-		var elasticsearch = Item("elasticsearch");
-		var kibana = Item("kibana");
-		var logstash = Item("logstash");
-		var kibanaServerless = Item("kibana-serverless", parentKey: "kibana");
-		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [elasticsearch, kibana, logstash], [kibanaServerless]);
-
-		group.ColumnOf(kibanaServerless).Should().Be(2, "the tag-on sits under Kibana even though Elasticsearch has no variant");
-	}
-
-	[Test]
 	public void TryGetVariant_FeaturedWithATagOn_ReturnsIt()
 	{
 		var elasticsearch = Item("elasticsearch");
@@ -150,15 +138,6 @@ public class ApiCatalogViewModelTests
 		);
 
 		group.Unattached.Should().Equal([orphan, extra]);
-	}
-
-	[Test]
-	public void ColumnOf_VariantWithoutAFeaturedParent_IsNull()
-	{
-		var orphan = Item("kibana-serverless", parentKey: "kibana");
-		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [Item("elasticsearch"), Item("logstash")], [orphan]);
-
-		group.ColumnOf(orphan).Should().BeNull("Kibana is not featured here, so the tag-on stays a separate card");
 	}
 
 	[Test]

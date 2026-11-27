@@ -12,12 +12,11 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
-/// <summary>The Authentication section: the alternatives to authenticate with, on the Authentication page and on endpoints that set their own.</summary>
+/// <summary>The Authentication section of an endpoint that sets its own <c>security</c>: the alternatives to authenticate with.</summary>
 public record AuthenticationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	bool Optional,
-	Func<string?, HtmlString> RenderMarkdown,
-	bool AlwaysTabs = false
+	Func<string?, HtmlString> RenderMarkdown
 );
 
 /// <summary>Required privileges and credentials for the Required privileges and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
@@ -30,6 +29,9 @@ public record AuthorizationSectionModel(
 
 /// <summary>One link of the section bar above an operation's description.</summary>
 public record SectionLink(string Label, string Anchor);
+
+/// <summary>The section bar: its links, and the operation's methods and title that it shows on a row above them once it pins.</summary>
+public record SectionLinksModel(string? Title, IReadOnlyList<string> Methods, IReadOnlyList<SectionLink> Links);
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -80,6 +82,9 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	// Lifting the authorization text out can leave nothing in the description, and a page with no meta description is worse.
 	protected override string? LayoutPageDescription =>
 		ApiSeoDescription.OperationText(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
+
+	protected override string? FallbackPageDescription =>
+		ApiFallbackDescription.For(Operation, RenderContext, CurrentNavigationItem.NavigationTitle);
 
 	protected override IReadOnlyList<TocItem> GetTocItems()
 	{

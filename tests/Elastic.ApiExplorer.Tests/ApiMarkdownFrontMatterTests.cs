@@ -27,7 +27,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: Run a search
+			title: "Run a search"
 			description: "Returns hits that match the query"
 			url: https://cdn.example/api/elasticsearch/operation/operation-search
 			resource: https://cdn.example/api/elasticsearch/operation/operation-search
@@ -54,7 +54,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: X
+			title: "X"
 			description: "Send a header like Authorization: \"ApiKey abc\" to authenticate."
 			url: /api
 			resource: /api
@@ -74,7 +74,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: API Explorer
+			title: "API Explorer"
 			url: /api
 			resource: /api
 			---
@@ -105,7 +105,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: Elasticsearch
+			title: "Elasticsearch"
 			url: /api
 			resource: /api
 			version: "1.2"
@@ -134,7 +134,7 @@ public class ApiMarkdownFrontMatterTests
 			"""
 			---
 			type: api
-			title: X
+			title: "X"
 			url: /api
 			resource: /api
 			---

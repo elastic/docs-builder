@@ -31,6 +31,10 @@ public sealed partial class GitHubCommitRangeService(
 	private const int GraphQlBatchSize = 25;
 	private const int PullRequestDetailBatchSize = 50;
 	private const int MaxAssociatedPullRequests = 10;
+	private const int FullShaLength = 40;
+	private const int WarmUpStageSize = 50;
+	private const int MaxWarmUpPages = 10;
+	private const int MaxWarmUpStageAttempts = 3;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
 	private readonly GitHubApiTransport _transport = transport
@@ -186,6 +190,170 @@ public sealed partial class GitHubCommitRangeService(
 		}
 	}
 
+	/// <summary>Whether GitHub answered 422 because it has not computed the range yet, and not for another reason such as a bad ref.</summary>
+	private static async Task<bool> IsColdRangeAsync(HttpResponseMessage response, Cancel ctx)
+	{
+		if (response.StatusCode != HttpStatusCode.UnprocessableEntity)
+			return false;
+
+		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		return body.Contains("taking too long", StringComparison.OrdinalIgnoreCase)
+			|| body.Contains("not_available", StringComparison.Ordinal);
+	}
+
+	/// <summary>
+	/// Asks GitHub to compare the start with every <see cref="WarmUpStageSize"/>th commit of the range, oldest first, so that
+	/// the comparison of the whole range builds on stages it has computed. Best effort: a stage that fails is skipped, and the
+	/// caller asks for the whole range again either way.
+	/// </summary>
+	private async Task WarmUpBestEffortAsync(CommitRangeArguments args, Cancel ctx)
+	{
+		try
+		{
+			await WarmUpCompareAsync(args, ctx).ConfigureAwait(false);
+		}
+		catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested)
+		{
+			// A connection failure or a timeout of the auxiliary requests must not skip the request for the whole range.
+			_logger.LogWarning(
+				e,
+				"Comparing {Start}...{End} for {Owner}/{Repo} in stages failed.",
+				args.StartRef,
+				args.EndRef,
+				args.Owner,
+				args.Repo
+			);
+		}
+	}
+
+	private async Task WarmUpCompareAsync(CommitRangeArguments args, Cancel ctx)
+	{
+		var stages = await ListWarmUpStagesAsync(args, ctx).ConfigureAwait(false);
+		if (stages.Count == 0)
+		{
+			_logger.LogWarning(
+				"GitHub could not compare {Start}...{End} for {Owner}/{Repo} yet, and the range has no commits to compare in stages.",
+				args.StartRef,
+				args.EndRef,
+				args.Owner,
+				args.Repo
+			);
+			return;
+		}
+
+		_logger.LogInformation(
+			"GitHub could not compare {Start}...{End} for {Owner}/{Repo} yet. Comparing it in {Count} stage(s) first.",
+			args.StartRef,
+			args.EndRef,
+			args.Owner,
+			args.Repo,
+			stages.Count
+		);
+		foreach (var stage in stages)
+			await CompareStageAsync(args, stage, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>The commits to compare the start with, oldest first. Empty when the start is not among the newest commits of the end.</summary>
+	private async Task<IReadOnlyList<string>> ListWarmUpStagesAsync(CommitRangeArguments args, Cancel ctx)
+	{
+		var startSha = await ResolveCommitShaAsync(args, args.StartRef, ctx).ConfigureAwait(false);
+
+		// A ref that is still a name, such as a tag whose lookup failed, matches no commit, so reading the history would only delay the retry.
+		if (!CommitShaRegex().IsMatch(startSha))
+			return [];
+
+		var newestFirst = new List<string>();
+		for (var page = 1; page <= MaxWarmUpPages; page++)
+		{
+			var url =
+				$"https://api.github.com/repos/{args.Owner}/{args.Repo}/commits?sha={Uri.EscapeDataString(args.EndRef)}&per_page=100&page={page}";
+			using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+			if (!response.IsSuccessStatusCode)
+				return [];
+
+			var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+			var shas = ReadCommitShas(json);
+			if (shas.Count == 0)
+				return [];
+
+			var start = shas.FindIndex(sha => sha.StartsWith(startSha, StringComparison.OrdinalIgnoreCase));
+			if (start >= 0)
+			{
+				newestFirst.AddRange(shas.Take(start));
+				var oldestFirst = Enumerable.Reverse(newestFirst).ToList();
+				// The last commit is the end: the whole range is the request that follows.
+				return [.. oldestFirst.Where((_, i) => (i + 1) % WarmUpStageSize == 0 && i + 1 < oldestFirst.Count)];
+			}
+
+			newestFirst.AddRange(shas);
+		}
+
+		return [];
+	}
+
+	/// <summary>The commit a ref names. A tag or a branch, which release workflows pass, never matches the sha in a commit listing. Falls back to the ref itself.</summary>
+	private async Task<string> ResolveCommitShaAsync(CommitRangeArguments args, string gitRef, Cancel ctx)
+	{
+		// A full sha needs no lookup, and a lookup that fails must not take the stages with it.
+		if (gitRef.Length == FullShaLength && CommitShaRegex().IsMatch(gitRef))
+			return gitRef;
+
+		try
+		{
+			var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/commits/{Uri.EscapeDataString(gitRef)}";
+			using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+			if (!response.IsSuccessStatusCode)
+				return gitRef;
+
+			var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+			using var doc = JsonDocument.Parse(json);
+			return doc.RootElement is { ValueKind: JsonValueKind.Object } root
+				&& root.TryGetProperty("sha", out var sha)
+				&& sha is { ValueKind: JsonValueKind.String }
+				&& sha.GetString() is { Length: > 0 } resolved ? resolved : gitRef;
+		}
+		catch (Exception e) when (e is JsonException or HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested)
+		{
+			_logger.LogDebug(e, "Could not resolve {Ref} to a commit; looking for it as written", gitRef);
+			return gitRef;
+		}
+	}
+
+	private static List<string> ReadCommitShas(string json)
+	{
+		try
+		{
+			using var doc = JsonDocument.Parse(json);
+			return [
+				.. doc
+					.RootElement
+					.EnumerateArray()
+					.Select(c => c.GetProperty("sha").GetString() ?? string.Empty)
+					.Where(sha => sha.Length > 0)
+			];
+		}
+		catch (Exception e) when (e is JsonException or InvalidOperationException or KeyNotFoundException)
+		{
+			return [];
+		}
+	}
+
+	private async Task CompareStageAsync(CommitRangeArguments args, string stageSha, Cancel ctx)
+	{
+		var url =
+			$"https://api.github.com/repos/{args.Owner}/{args.Repo}/compare/{Uri.EscapeDataString(args.StartRef)}...{stageSha}?per_page=1";
+		for (var attempt = 1; attempt <= MaxWarmUpStageAttempts; attempt++)
+		{
+			using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+			if (!await IsColdRangeAsync(response, ctx).ConfigureAwait(false))
+				return;
+
+			_logger.LogDebug("Stage {Stage} was not ready (attempt {Attempt})", stageSha, attempt);
+			if (attempt < MaxWarmUpStageAttempts)
+				await _transport.DelayAsync(TimeSpan.FromSeconds(5 * attempt), ctx).ConfigureAwait(false);
+		}
+	}
+
 	/// <summary>One page of the compare API, or <c>null</c> after reporting why it could not be read.</summary>
 	private async Task<GitHubCompareResponse?> FetchComparePageAsync(
 		IDiagnosticsCollector collector,
@@ -198,7 +366,17 @@ public sealed partial class GitHubCommitRangeService(
 		var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/compare/{basehead}?per_page={ComparePageSize}&page={page}";
 		_logger.LogDebug("Fetching compare page {Page}: {Url}", page, url);
 
-		using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+		var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+		if (page == 1 && await IsColdRangeAsync(response, ctx).ConfigureAwait(false))
+		{
+			// GitHub answers 422 "taking too long to generate" for a range of a large repository it has not computed yet,
+			// and answers the same request when it has. Computing the range in stages makes the last step cheap.
+			response.Dispose();
+			await WarmUpBestEffortAsync(args, ctx).ConfigureAwait(false);
+			response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+		}
+
+		using var _ = response;
 		if (response.StatusCode == HttpStatusCode.NotFound)
 		{
 			collector.EmitError(

@@ -1,6 +1,6 @@
 ---
 type: api
-title: Run a search
+title: "Run a search"
 description: "Returns hits that match the query defined in the request."
 url: /api/elasticsearch/operation/operation-search
 resource: /api/elasticsearch/operation/operation-search
@@ -40,7 +40,7 @@ Supports pagination through `size` and `from`.
 
 ## Authentication
 
-- Api key: `Authorization: <value>`
+- Api key: `Authorization: ApiKey <api-key>`
   Send the encoded key with the ApiKey prefix.
 - Basic: `Authorization: Basic <credentials>`
 - Bearer: `Authorization: Bearer <token>`

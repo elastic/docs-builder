@@ -41,4 +41,16 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context) : Fenc
 	public string? Caption { get; set; }
 
 	public List<ApiSegment> ApiSegments { get; set; } = [];
+
+	/// <summary>The code lines as text, trailing blank lines dropped, with console request lines (moved to <see cref="ApiSegments"/> headers) put back.</summary>
+	public IReadOnlyList<string> TextLines()
+	{
+		var headers = ApiSegments.Where(s => s.LineNumber > 0).ToDictionary(s => s.LineNumber - 1, s => s.Header);
+		var lines = new List<string>(Lines.Count);
+		for (var i = 0; i < Lines.Count; i++)
+			lines.Add(headers.TryGetValue(i, out var header) ? header : Lines.Lines[i].ToString());
+		while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+			lines.RemoveAt(lines.Count - 1);
+		return lines;
+	}
 }

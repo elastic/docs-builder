@@ -16,6 +16,10 @@ namespace Elastic.Documentation.Search.Highlighting;
 /// </summary>
 public static class SearchResultProcessor
 {
+	/// <summary>
+	/// With <paramref name="highlightOptions"/>, the result's title and description are HTML: text outside the marks is encoded, so
+	/// literal text such as <c>&lt;tenant&gt;</c> shows as written. Without them, both are the document's plain text.
+	/// </summary>
 	public static SearchResultItem<TDocument> ProcessHit<TDocument>(
 		Hit<TDocument> hit,
 		string searchQuery,
@@ -23,6 +27,7 @@ public static class SearchResultProcessor
 		HighlightOptions? highlightOptions = null
 	) where TDocument : SearchDocumentBase
 	{
+		var html = highlightOptions is not null;
 		var options = highlightOptions ?? HighlightOptions.Default;
 		var doc = hit.Source!;
 		var highlights = hit.Highlight;
@@ -44,13 +49,14 @@ public static class SearchResultProcessor
 				highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 		}
 
-		var title = (highlightedTitle ?? doc.Title).HighlightTokens(searchTokens, synonyms, options.WholeWordOnly);
-		var description = (!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : doc.Description ?? string.Empty)
+		var matching = new TokenMatching(options.WholeWordOnly, Encoded: html);
+		var title = Html(highlightedTitle, doc.Title, html).HighlightTokens(searchTokens, synonyms, matching);
+		var description = Html(!string.IsNullOrWhiteSpace(highlightedBody) ? highlightedBody : null, doc.Description ?? string.Empty, html)
 			.Replace("\r\n", " ")
 			.Replace("\n", " ")
 			.Replace("\r", " ")
 			.Trim(['|', ' '])
-			.HighlightTokens(searchTokens, synonyms, options.WholeWordOnly);
+			.HighlightTokens(searchTokens, synonyms, matching);
 
 		return new SearchResultItem<TDocument>
 		{
@@ -61,6 +67,17 @@ public static class SearchResultProcessor
 			Properties = MatchedProperties(hit, options)
 		};
 	}
+
+	/// <summary>
+	/// The Elasticsearch fragment when there is one, else the document's own text. As HTML, the fragment is normalized and the
+	/// document text is encoded whole, so a literal <c>&lt;mark&gt;</c> in it stays text.
+	/// </summary>
+	private static string Html(string? highlighted, string text, bool html) => (html, highlighted) switch
+	{
+		(false, _) => highlighted ?? text,
+		(true, { } fragment) => fragment.ReencodeHighlight(),
+		(true, null) => StringHighlightExtensions.Encode(text)
+	};
 
 	private const int MaxMatchedProperties = 3;
 

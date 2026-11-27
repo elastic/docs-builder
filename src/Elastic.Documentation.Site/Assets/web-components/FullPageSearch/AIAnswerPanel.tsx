@@ -25,6 +25,10 @@ interface AIAnswerPanelProps {
 
 const PREVIEW_HEIGHT = 64 // Height to show content with read more overlay
 
+/** A result's title and description are HTML with `<mark>` highlights; the model and the source links need their plain text. */
+const plainText = (html: string): string =>
+    new DOMParser().parseFromString(html, 'text/html').body.textContent ?? ''
+
 // Status badge component for AI answer states
 const StatusBadge = ({
     streaming,
@@ -172,9 +176,10 @@ export const AIAnswerPanel = ({
 
             try {
                 const contextDocs = currentResults.slice(0, 5).map((r) => ({
-                    title: r.title,
+                    title: plainText(r.title),
                     url: r.url,
-                    content: r.aiRagOptimizedSummary || r.description,
+                    content:
+                        r.aiRagOptimizedSummary || plainText(r.description),
                 }))
 
                 const contextText = contextDocs
@@ -857,7 +862,7 @@ export const AIAnswerPanel = ({
                                             }
                                         `}
                                     >
-                                        {result.title}
+                                        {plainText(result.title)}
                                     </EuiLink>
                                 </EuiFlexItem>
                             ))}

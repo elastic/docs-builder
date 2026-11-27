@@ -96,5 +96,5 @@ public class OperationNavigationItem(
 	// The sidebar chip must list what the page header lists, including methods that come from the description's method listing or from collapsed siblings.
 	IReadOnlyList<string> IApiOperationNavigationItem.HttpMethods => Endpoint.Methods;
 
-	bool IApiOperationNavigationItem.Deprecated => Model.Deprecated;
+	bool IDeprecatableNavigationItem.Deprecated => Model.Deprecated;
 }

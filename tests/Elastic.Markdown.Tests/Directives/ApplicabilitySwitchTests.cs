@@ -104,6 +104,28 @@ Content B
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
+// Reproduces elastic/docs-builder#5007: a key with no value followed by a comma lost its badge in the tab label.
+[InheritsTests]
+public class ApplicabilitySwitchEmptyValueKeysTests() : DirectiveTest<AppliesSwitchBlock>(
+	"""
+:::::{applies-switch}
+
+::::{applies-item} { self:, ece: ga 4.2 }
+Content A
+::::
+
+::::{applies-item} { ess:, ece: }
+Content B
+::::
+
+:::::
+"""
+)
+{
+	[Test]
+	public void RendersEveryBadgeInTheTabLabels() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
+}
+
 [InheritsTests]
 public class MultipleApplicabilitySwitchTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""

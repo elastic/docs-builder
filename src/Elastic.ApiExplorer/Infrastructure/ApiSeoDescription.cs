@@ -18,10 +18,18 @@ internal static partial class ApiSeoDescription
 		if (string.IsNullOrWhiteSpace(markdown))
 			return null;
 
-		var paragraph = FirstParagraph(markdown) ?? markdown;
-		var plain = ToPlainText(paragraph);
+		var visible = WithoutComments(markdown);
+		var paragraph = FirstParagraph(visible) ?? visible;
+		var plain = ApiMarkdown.ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
 	}
+
+	/// <summary>
+	/// The Markdown without its HTML comments. A comment is not prose: left in, it would be the first paragraph of a description that opens
+	/// with a note to authors. Code is kept as written: a comment shown in a code span or a fence is visible text on the page.
+	/// </summary>
+	internal static string WithoutComments(string markdown) =>
+		HtmlCommentPattern().Replace(markdown, static match => match.Groups["code"].Success ? match.Value : string.Empty);
 
 	/// <summary>
 	/// The operation's own text for a meta description. Drops the leading "all methods and paths" block (a bold
@@ -115,19 +123,6 @@ internal static partial class ApiSeoDescription
 		return buffer.Length == 0 ? null : buffer.ToString();
 	}
 
-	internal static string ToPlainText(string markdown)
-	{
-		var text = ImagePattern().Replace(markdown, "$1");
-		text = LinkPattern().Replace(text, "$1");
-		text = BoldStarPattern().Replace(text, "$1");
-		text = BoldUnderscorePattern().Replace(text, "$1");
-		text = CodePattern().Replace(text, "$1");
-		text = ItalicStarPattern().Replace(text, "$1");
-		text = ItalicUnderscorePattern().Replace(text, "$1");
-		text = HeadingPattern().Replace(text, string.Empty);
-		return WhitespacePattern().Replace(text, " ").Trim();
-	}
-
 	internal static string Truncate(string text)
 	{
 		if (text.Length <= MaxLength)
@@ -139,36 +134,13 @@ internal static partial class ApiSeoDescription
 		return string.Concat(text.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 	}
 
+	[GeneratedRegex(@"(?<code>^(?<fence>```|~~~).*?^\k<fence>|(?<!\\)`[^`\n]+`)|<!--.*?-->", RegexOptions.Singleline
+		| RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex HtmlCommentPattern();
+
 	[GeneratedRegex(@"\bpaths?\b", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PathWordPattern();
 
 	[GeneratedRegex(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HttpMethodPattern();
-
-	[GeneratedRegex(@"!\[([^\]]*)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex ImagePattern();
-
-	[GeneratedRegex(@"\[([^\]]+)\]\([^)]+\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex LinkPattern();
-
-	[GeneratedRegex(@"\*\*([^*]+)\*\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex BoldStarPattern();
-
-	[GeneratedRegex(@"__([^_]+)__", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex BoldUnderscorePattern();
-
-	[GeneratedRegex(@"\*([^*]+)\*", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex ItalicStarPattern();
-
-	[GeneratedRegex(@"_([^_]+)_", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex ItalicUnderscorePattern();
-
-	[GeneratedRegex(@"`([^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex CodePattern();
-
-	[GeneratedRegex(@"^#{1,6}\s+", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex HeadingPattern();
-
-	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
-	private static partial Regex WhitespacePattern();
 }

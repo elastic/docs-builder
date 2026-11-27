@@ -81,6 +81,7 @@ internal sealed record ApiProductGeneration(
 	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
 	string Moniker,
 	string? DefaultMoniker,
+	string? Release,
 	bool ValidateSupplemental,
 	bool EmitUnmatchedBaseFiles,
 	ApiPageType PageType,
@@ -325,6 +326,7 @@ public class OpenApiGenerator(
 				VersionSwitcherItems: [],
 				tree.Moniker,
 				trees.Resolved.Routes.DefaultMoniker,
+				ApiVersions.ReleaseOf(versionTree.Version.Version.Version),
 				ValidateSupplemental: false,
 				EmitUnmatchedBaseFiles: false,
 				versionTree.PageType,
@@ -346,16 +348,39 @@ public class OpenApiGenerator(
 		{
 			var (item, page) = pages[i];
 			var pageContext = renderContext with { CurrentNavigation = item };
-			var markdown = await page.RenderCommonMarkAsync(pageContext, page.CreatePageModel(pageContext), token).ConfigureAwait(false);
-			if (!string.IsNullOrEmpty(markdown))
-				contents[i] = new ApiPageContent(
-					item.Url,
-					item.NavigationTitle,
-					ContentHash.CreateNormalized(RelativeToTree(markdown, root))
-				);
+			var model = page.CreatePageModel(pageContext);
+			var markdown = await page.RenderCommonMarkAsync(pageContext, model, token).ConfigureAwait(false);
+			if (string.IsNullOrEmpty(markdown))
+				return;
+			var relative = RelativeToTree(markdown, root);
+			contents[i] = new ApiPageContent(
+				item.Url,
+				item.NavigationTitle,
+				ContentHash.CreateNormalized(relative),
+				IsSearchablePage(item)
+					? SearchOf(markdown, item, page, pageContext) with
+					{
+						Properties = (model as Types.SchemaPageModel)?.IndexEntries() ?? []
+					}
+					: null
+			);
 		}).ConfigureAwait(false);
 
 		return [.. contents.OfType<ApiPageContent>()];
+	}
+
+	/// <summary>
+	/// Operations and the landing page get their search documents from the spec, and a page excluded from indexing, such as Servers,
+	/// stays out of search. Every other page is found by its own text.
+	/// </summary>
+	private static bool IsSearchablePage(INavigationItem item) =>
+		item is not (OperationNavigationItem or LandingNavigationItem) && !item.ExcludeFromIndexing;
+
+	private static ApiPageSearch SearchOf(string markdown, INavigationItem item, IApiModel page, ApiRenderContext context)
+	{
+		var body = ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdown);
+		var meta = ApiMarkdownFrontMatter.Collect(body, item, context, page);
+		return new ApiPageSearch(meta.Title, meta.Description ?? "", body);
 	}
 
 	/// <summary>
@@ -395,6 +420,7 @@ public class OpenApiGenerator(
 					switcherItems,
 					moniker,
 					resolved.Routes.DefaultMoniker,
+					ApiVersions.ReleaseOf(tree.Version.Version.Version),
 					// Both copies of the default major read the same files, so only the first copy reports on them.
 					ValidateSupplemental: !tree.IsMirror,
 					EmitUnmatchedBaseFiles: moniker == resolved.UnmatchedBaseFilesMoniker,
@@ -505,18 +531,21 @@ public class OpenApiGenerator(
 		}
 	}
 
-	/// <summary>The document that titles the API: the default version's, or the first that loaded when the default did not.</summary>
-	private static VersionedOpenApiDocument CanonicalDocument(ResolvedProductDocuments resolved) =>
-		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == resolved.Routes.DefaultMoniker) ?? resolved.Documents[0];
+	/// <summary>
+	/// The document that titles the API: the default version's, or the newest released one that loaded when the default
+	/// did not. Never the unreleased tree, which no listing links to.
+	/// </summary>
+	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
+		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == resolved.Routes.DefaultMoniker)
+			?? resolved.Documents.Where(v => !resolved.Routes.IsNext(v.Version.Moniker)).MaxBy(v => ApiVersions.Recency(v.Version.Moniker));
 
 	internal ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{
-		if (resolved.Documents.Count == 0)
+		if (CanonicalDocument(resolved) is not { } canonical)
 			return null;
 
-		var canonical = CanonicalDocument(resolved);
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
-		// The versionless URL when the default version rendered, else the tree that did, so the card never links to a page nothing wrote.
+		// The versionless URL when the default version rendered, else the released tree that did, so the card never links to a page nothing wrote.
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, resolved.Routes.Suffix(canonical.Version.Moniker));
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description);
 	}
@@ -631,8 +660,20 @@ public class OpenApiGenerator(
 		if (stream is null)
 			return null;
 
-		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
+		var document = await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
+		// The moniker, not the branch, marks the unreleased spec: some repositories publish main from master.
+		if (version.Moniker != "main" && document?.Info is { } info)
+			info.Description = WithSourceBranch(info.Description, version.Version);
+		return document;
 	}
+
+	/// <summary>
+	/// A released spec can be cut from <c>main</c> before its description names the release branch, so the page
+	/// would claim it is derived from <c>main</c>. Name the branch the version index actually published.
+	/// </summary>
+	// TODO: remove once the specs drop this wording and the page renders the branch from the version index (elastic/docs-eng-team#1237).
+	internal static string? WithSourceBranch(string? description, string branch) =>
+		description?.Replace("derived from the `main` branch", $"derived from the `{branch}` branch", StringComparison.Ordinal);
 
 	private static readonly OpenApiDocument CatalogDocument = new()
 	{
@@ -704,6 +745,7 @@ public class OpenApiGenerator(
 			PageType = generation.PageType,
 			Moniker = generation.Moniker,
 			DefaultMoniker = generation.DefaultMoniker,
+			Release = generation.Release,
 			VersionlessRootUrl = generation.VersionlessRootUrl,
 			OperationSupplemental = operations,
 			TagSupplemental = tags,
@@ -799,7 +841,15 @@ public class OpenApiGenerator(
 		if (item is TagNavigationItem tag && tags.TryGetValue(tag.Index.Model.Name, out var doc))
 		{
 			var description = doc.DescriptionOr(tag.Index.Model.Description);
-			tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(markdownStringRenderer, description, apiBaseUrl, doc.PostSections));
+			tag.ApplyIntroHeadings(
+				ApiMarkdown.ReadIntroHeadings(
+					markdownStringRenderer,
+					description,
+					apiBaseUrl,
+					doc.PostSections,
+					EndpointsSection.ReservedAnchors
+				)
+			);
 		}
 
 		foreach (var child in children)
@@ -961,7 +1011,8 @@ public class OpenApiGenerator(
 	)
 	{
 		var markdown = await page.RenderCommonMarkAsync(renderContext, pageModel, ctx).ConfigureAwait(false);
-		if (string.IsNullOrEmpty(markdown))
+		// An empty authored page still gets its export, which its Copy page links to.
+		if (markdown is null)
 			return;
 
 		markdown = ApiMarkdownFrontMatter.Wrap(markdown, current, renderContext, page);

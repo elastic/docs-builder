@@ -21,20 +21,33 @@ public class ApiLookupQueryBuilderTests
 	private static JsonDocument Json(Query query) => JsonDocument.Parse(Client.RequestResponseSerializer.SerializeToString(query));
 
 	[Test]
-	public void Build_Words_KeepsLandingPagesOutUnlessEveryWordIsInTheirTitle()
+	public void Build_Words_KeepsLandingAndOtherPagesOutUnlessEveryWordNamesTheirTitleOrAField()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("kibana api"));
 
 		var mustNot = Clauses(json.RootElement.GetProperty("bool").GetProperty("must_not")).Single().GetProperty("bool");
-		Clauses(mustNot.GetProperty("filter"))
-			.Single()
-			.GetProperty("term")
-			.GetProperty("api.landing")
-			.GetProperty("value")
-			.GetBoolean()
+		Clauses(Clauses(mustNot.GetProperty("filter")).Single().GetProperty("bool").GetProperty("should"))
+			.Select(c => c.GetProperty("term").EnumerateObject().Single().Name)
 			.Should()
-			.BeTrue();
-		mustNot.GetProperty("must_not").GetProperty("multi_match").GetProperty("query").GetString().Should().Be("kibana api");
+			.Equal("api.landing", "api.page");
+		var named = Clauses(mustNot.GetProperty("must_not")).ToArray();
+		named[0].GetProperty("multi_match").GetProperty("query").GetString().Should().Be("kibana api");
+		// Every word must be in the title; a word found only in the body leaves the page out.
+		named[0].GetProperty("multi_match").GetProperty("operator").GetString().Should().Be("and");
+		// Or each word names the title or a field the page lists, as a type page lists its fields.
+		Clauses(named[1].GetProperty("bool").GetProperty("must"))
+			.Select(word => Clauses(word.GetProperty("bool").GetProperty("should")).Select(o => o.EnumerateObject().Single().Name))
+			.Should()
+			.AllSatisfy(options => options.Should().Equal("multi_match", "nested"));
+	}
+
+	[Test]
+	public void Build_TypedRoute_NamesNoPageThroughItsFields()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_search query"));
+
+		var mustNot = Clauses(json.RootElement.GetProperty("bool").GetProperty("must_not")).Single().GetProperty("bool");
+		Clauses(mustNot.GetProperty("must_not")).Last().TryGetProperty("match_none", out _).Should().BeTrue();
 	}
 
 	[Test]

@@ -113,6 +113,13 @@ public class DocumentFilterTests
 	/// <summary>The <c>query</c> of the one request the service sends, over a client that answers with no hits.</summary>
 	private static async Task<JsonDocument> CapturedQuery(Func<DefaultSearchService<DocumentationDocument>, Task> search)
 	{
+		using var request = await CapturedRequest(search);
+		return JsonDocument.Parse(request.RootElement.GetProperty("query").GetRawText());
+	}
+
+	/// <summary>The body of the last request <paramref name="search"/> sends.</summary>
+	internal static async Task<JsonDocument> CapturedRequest(Func<DefaultSearchService<DocumentationDocument>, Task> search)
+	{
 		byte[]? body = null;
 		var settings = new ElasticsearchClientSettings(new InMemoryRequestInvoker(
 			Encoding.UTF8.GetBytes("""{"hits":{"hits":[]}}"""),
@@ -128,7 +135,6 @@ public class DocumentFilterTests
 		await search(service);
 
 		body.Should().NotBeNull();
-		using var request = JsonDocument.Parse(body);
-		return JsonDocument.Parse(request.RootElement.GetProperty("query").GetRawText());
+		return JsonDocument.Parse(body);
 	}
 }

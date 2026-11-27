@@ -4,10 +4,13 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Nullean.Snapshots.Html;
+using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -57,6 +60,51 @@ public class SharedListingTests
 
 		var later = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "req" })!;
 		later.Items.Single(p => p.Name == "created").Repeats!.AnchorId.Should().Be("res-200-created", "one builder serves one page");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_MapValueSharedAcrossVariants_LinksToTheKeyRowByItsDisplayName()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Big": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "f10": { "type": "string" }, "f11": { "type": "string" } } },
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Pet": {
+			        "allOf": [
+			          { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Big" } },
+			          { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			        ]
+			      },
+			      "Holder": { "type": "object", "properties": { "pet": { "$ref": "#/components/schemas/Pet" } } }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var variants = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single().Children.Variants!.Variants;
+
+		var first = variants[0].Properties!.Items.Single(p => p.IsMapKey);
+		var repeat = variants[1].Properties!.Items.Single(p => p.IsMapKey);
+		first.Children.Properties!.Items.Should().HaveCount(12);
+		repeat.Repeats!.AnchorId.Should().Be(first.AnchorId);
+		repeat.Repeats.DisplayName.Should().Be("property name*", "the link names the row the way the page shows it");
+		repeat.Repeats.Name.Should().Be("<string>", "the Markdown export keeps the raw name");
+
+		var html = await _PropertyList.Create(variants[1].Properties!).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".union-options"));
 	}
 
 	[Test]

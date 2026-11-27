@@ -16,21 +16,19 @@ namespace Elastic.ApiExplorer.Landing;
 
 public class ApiLanding : IApiGroupingModel
 {
-	public object? CreatePageModel(ApiRenderContext context) =>
+	public object? CreatePageModel(ApiRenderContext context) => OverviewRows(context);
+
+	private static IReadOnlyList<ApiOverviewRow> OverviewRows(ApiRenderContext context) =>
 		ApiOverviewBuilder.Build(
 			context.CurrentNavigation.NavigationRoot,
 			context.BuildContext.Catalog.VersioningSystems,
-			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			context.BuildContext.Configuration.Features.NavigationPreviewEnabled,
+			tag => ApiMarkdownFrontMatter.TagSummary(tag, context)
 		);
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.Build(
-				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.Catalog.VersioningSystems,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
-			);
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? OverviewRows(context);
 		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -41,12 +39,7 @@ public class ApiLanding : IApiGroupingModel
 
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.Build(
-				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.Catalog.VersioningSystems,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
-			);
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? OverviewRows(context);
 		return Task.FromResult<string?>(
 			LandingCommonMark.Product(
 				context.Model.Info,
@@ -87,6 +80,9 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 
 	/// <summary>Whether the sitemap lists the pages of this tree. The page type of the tree decides it, not <see cref="Hidden"/>.</summary>
 	public bool InSitemap { get; set; } = true;
+
+	/// <summary>The landing of a tree hidden from navigation is still a page to index. The page type of the tree decides it, not <see cref="Hidden"/>.</summary>
+	public bool ExcludeFromIndexing => false;
 
 	public Uri Identifier { get; } = new Uri("todo://");
 

@@ -86,6 +86,10 @@ public record NavigationSearchResultItem
 	/// <example>false</example>
 	public bool Landing { get; init; }
 
+	/// <summary>True when the result is an API page that is neither an operation nor the landing page, such as a group or type page.</summary>
+	/// <example>false</example>
+	public bool Page { get; init; }
+
 	/// <summary>Key of the API the result belongs to, e.g. <c>kibana</c>; null for a docs page.</summary>
 	/// <example>"elasticsearch"</example>
 	public string? ApiKey { get; init; }

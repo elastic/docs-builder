@@ -342,10 +342,12 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			u => u.StartsWith("/docs/api/elasticsearch/v8/", StringComparison.Ordinal),
 			"an older major lists its pages, not just its landing"
 		);
-		urls.Should().Contain(
-			["/docs/api/elasticsearch/servers", "/docs/api/elasticsearch/v8/servers"],
-			"a page hidden from the sidebar still renders and names itself as canonical"
-		);
+		foreach (var legacy in new[] { "/docs/api/elasticsearch/servers", "/docs/api/elasticsearch/v8/servers" })
+		{
+			urls.Should().NotContain(legacy, "the Servers page, kept only for old links, stays out of the sitemap");
+			var page = Path.Join(workspace.OutputDirectory, legacy, "index.html");
+			workspace.FileSystem.File.Exists(page).Should().BeTrue($"{legacy} still renders for old links");
+		}
 
 		ShouldEachNameItselfCanonical(workspace, urls);
 	}

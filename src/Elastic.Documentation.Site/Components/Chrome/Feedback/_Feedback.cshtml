@@ -45,8 +45,8 @@
 			</fieldset>
 		}
 		<div class="feedback__details">
-			<label class="feedback__sr-only" for="@(Model.IdPrefix)-comment">Tell us more (optional)</label>
-			<textarea class="input feedback__textarea" id="@(Model.IdPrefix)-comment" data-feedback-comment maxlength="@FeedbackReasons.CommentMaxLength" placeholder="Tell us more (optional)" aria-describedby="@(Model.IdPrefix)-guidance"></textarea>
+			<label class="feedback__comment-label" for="@(Model.IdPrefix)-comment">Tell us more (optional)</label>
+			<textarea class="input feedback__textarea" id="@(Model.IdPrefix)-comment" data-feedback-comment maxlength="@FeedbackReasons.CommentMaxLength" aria-describedby="@(Model.IdPrefix)-guidance"></textarea>
 			<div class="feedback__footer">
 				<p class="feedback__guidance" id="@(Model.IdPrefix)-guidance">Don't include passwords, API keys, or other sensitive information.</p>
 				<span class="feedback__count" data-feedback-count>0/@FeedbackReasons.CommentMaxLength</span>

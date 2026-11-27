@@ -59,6 +59,11 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 		// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other guide pages.
 		Hidden = true;
 
+	/// <summary>Servers is kept only so old Bump.sh links land, so it is neither listed nor indexed. Authentication is a real page.</summary>
+	public override bool InSitemap => Model.Kind != ApiStructuralKind.Servers;
+
+	public override bool ExcludeFromIndexing => Model.Kind == ApiStructuralKind.Servers;
+
 	private static string UrlFor(string? urlPathPrefix, string apiUrlSuffix, ApiStructuralKind kind) =>
 		kind == ApiStructuralKind.Authentication
 			? ApiUrlBuilder.AuthenticationUrl(urlPathPrefix, apiUrlSuffix)
@@ -104,26 +109,25 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiStructuralPage Page { get; init; }
-	public required IReadOnlyList<AuthRequirement> Requirements { get; init; }
 	public required IReadOnlyList<ApiServerDisplay> Servers { get; init; }
 	public required string EmptyMessage { get; init; }
-	public bool AuthenticationOptional { get; init; }
-	public HtmlString? IntroHtml { get; init; }
-	public IReadOnlyList<TocItem> IntroHeadings { get; init; } = [];
+
+	/// <summary>The Authentication page's topic prose, then a section for each alternative.</summary>
+	public HtmlString? BodyHtml { get; init; }
+	public IReadOnlyList<TocItem> BodyHeadings { get; init; } = [];
 
 	/// <summary>The empty message only shows when the page has nothing else to say.</summary>
-	public bool ShowEmptyMessage =>
-		IntroHtml is null && (Page.Kind == ApiStructuralKind.Authentication ? Requirements.Count == 0 : Servers.Count == 0);
-
-	public AuthenticationSectionModel Authentication =>
-		new(Requirements, AuthenticationOptional, markdown => RenderMarkdown(markdown), AlwaysTabs: true);
+	public bool ShowEmptyMessage => Page.Kind == ApiStructuralKind.Authentication ? BodyHtml is null : Servers.Count == 0;
 
 	protected override string? LayoutPageTitle => Page.Title;
 
-	/// <summary>Only the authentication page written as a topic has a sentence of its own; no copy is made up for the rest.</summary>
+	/// <summary>Only the authentication page written as a topic has a sentence of its own.</summary>
 	protected override string? LayoutPageDescription => Page.Intro;
 
-	protected override IReadOnlyList<TocItem> GetTocItems() => Page.Kind == ApiStructuralKind.Authentication ? IntroHeadings : [];
+	protected override string? FallbackPageDescription =>
+		ApiFallbackDescription.For(Page, RenderContext, CurrentNavigationItem.NavigationTitle);
+
+	protected override IReadOnlyList<TocItem> GetTocItems() => BodyHeadings;
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
 	{
@@ -132,32 +136,32 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 			return new StructuralViewModel(context)
 			{
 				Page = page,
-				Requirements = [],
 				Servers = ReadServers(context.Model),
 				EmptyMessage = "This API does not declare servers."
 			};
 		}
 
-		var (introHtml, introHeadings) = RenderIntro(page.Intro, context);
+		var (html, headings) = RenderAuthentication(context, page.Intro);
 		return new StructuralViewModel(context)
 		{
 			Page = page,
-			Requirements = ReadRequirements(context.Model),
-			AuthenticationOptional = OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
 			Servers = [],
 			EmptyMessage = "This API does not declare authentication schemes.",
-			IntroHtml = introHtml,
-			IntroHeadings = introHeadings
+			BodyHtml = html,
+			BodyHeadings = headings
 		};
 	}
 
-	private static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderIntro(string? intro, ApiRenderContext context)
-	{
-		if (string.IsNullOrWhiteSpace(intro))
-			return (null, []);
-
-		return ApiMarkdown.RenderWithHeadings(context, intro);
-	}
+	/// <summary>
+	/// The Authentication page's body, also appended to a <c>children:</c> page that stands for it: the prose, then a section
+	/// for each document-level alternative. The sections come from the spec, so they render as API description Markdown and
+	/// their headings are docs headings: anchored, linkable and listed in On this page.
+	/// </summary>
+	internal static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderAuthentication(ApiRenderContext context, string? intro) =>
+		ApiMarkdown.RenderFragmentsWithHeadings(
+			context,
+			[intro, .. OperationCommonMark.AuthenticationFragments(context.Model, anchors: true)]
+		);
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
 
@@ -179,7 +183,7 @@ internal static class StructuralCommonMark
 	{
 		var markdown = new StringBuilder();
 		var apiBaseUrl = page.CurrentNavigationItem.NavigationRoot.Url;
-		ApiCommonMark.Heading(markdown, 1, page.Page.Title);
+		ApiCommonMark.TextHeading(markdown, 1, page.Page.Title);
 		ApiCommonMark.Prepared(markdown, page.Page.Intro, apiBaseUrl);
 		if (page.Page.Kind == ApiStructuralKind.Authentication)
 			WriteSchemes(markdown, page, apiBaseUrl);
@@ -196,7 +200,7 @@ internal static class StructuralCommonMark
 			return;
 		}
 
-		OperationCommonMark.WriteAuthentication(markdown, page.Requirements, page.AuthenticationOptional, apiBaseUrl);
+		OperationCommonMark.WriteAuthenticationSections(markdown, page.Document, apiBaseUrl);
 	}
 
 	private static void WriteServers(StringBuilder markdown, StructuralViewModel page)

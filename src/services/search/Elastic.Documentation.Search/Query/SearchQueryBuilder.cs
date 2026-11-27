@@ -254,9 +254,10 @@ public static class SearchQueryBuilder
 	/// </summary>
 	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren, IReadOnlyList<string>? OtherWords = null);
 
+	/// <summary>A document that lists a field the name or path names. Without <paramref name="innerHitsName"/> it only tests for one, since two inner hits of one name fail the request.</summary>
 	internal static Query BuildNestedPropertyQuery(
 		string property,
-		string innerHitsName,
+		string? innerHitsName,
 		PropertyLookup lookup,
 		string? queryName = null
 	) =>
@@ -267,12 +268,14 @@ public static class SearchQueryBuilder
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
 			Query = BuildPropertyMatchQuery(property, lookup),
-			InnerHits = new InnerHits
-			{
-				Name = innerHitsName,
-				Size = lookup.ExpandChildren ? ExpandedInnerHitsSize : InnerHitsSize,
-				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
-			}
+			InnerHits = innerHitsName is null
+				? null
+				: new InnerHits
+				{
+					Name = innerHitsName,
+					Size = lookup.ExpandChildren ? ExpandedInnerHitsSize : InnerHitsSize,
+					Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
+				}
 		};
 
 	/// <summary>

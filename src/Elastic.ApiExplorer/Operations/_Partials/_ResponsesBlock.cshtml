@@ -37,7 +37,7 @@
 				</div>
 				continue;
 			}
-			<div class="response-panel @(open ? "expanded" : "collapsed")" data-status="@response.StatusCode">
+			<div class="response-panel @(open ? "expanded" : "collapsed")" data-status="@response.StatusCode" data-api-response-default="@(open ? "true" : "false")">
 				<div class="response-summary">
 					<button
 						type="button"

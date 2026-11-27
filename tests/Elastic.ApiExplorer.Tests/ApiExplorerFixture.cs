@@ -34,7 +34,10 @@ public sealed class PassthroughMarkdownRenderer : IMarkdownStringRenderer
 
 	public string Render(string markdown, IFileInfo? source) => $"<p>{markdown}</p>";
 
-	/// <summary>Reads ATX headings line by line, enough for tests that check which heading ids a page keeps.</summary>
+	/// <summary>
+	/// Reads ATX headings line by line, enough for tests that check which heading ids a page keeps. A trailing
+	/// <c>[anchor]</c> sets the slug, as in the docs parser.
+	/// </summary>
 	public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) =>
 		[
 			.. markdown
@@ -42,8 +45,16 @@ public sealed class PassthroughMarkdownRenderer : IMarkdownStringRenderer
 				.Split('\n')
 				.Select(line => (Level: line.TakeWhile(c => c == '#').Count(), Line: line))
 				.Where(h => h.Level is >= 2 and <= 6 && h.Line.Length > h.Level && h.Line[h.Level] == ' ')
-				.Select(h => new TocItem(h.Line[h.Level..].Trim(), h.Line[h.Level..].Trim().Slugify(), h.Level))
+				.Select(h => Heading(h.Line[h.Level..].Trim(), h.Level))
 		];
+
+	private static TocItem Heading(string text, int level)
+	{
+		var open = text.LastIndexOf('[');
+		return open > 0 && text.EndsWith(']')
+			? new TocItem(text[..open].Trim(), text[(open + 1)..^1], level)
+			: new TocItem(text, text.Slugify(), level);
+	}
 }
 
 /// <summary>

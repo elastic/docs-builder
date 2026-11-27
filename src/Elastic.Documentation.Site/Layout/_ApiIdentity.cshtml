@@ -5,7 +5,8 @@
 @{
 	var hasVersions = Model.Versions.Count > 1;
 	var hasProducts = Model.ProductGroups.Count > 0;
-	var current = hasVersions ? Model.Versions.FirstOrDefault(static v => v.Selected) ?? Model.Versions[0] : null;
+	// One released version is not a choice, so it has no menu group, but the trigger still names it.
+	var current = Model.Versions.FirstOrDefault(static v => v.Selected) ?? (hasVersions ? Model.Versions[0] : null);
 	// The menu label can carry a hint such as "(latest)"; the trigger names just the version.
 	var currentLabel = current?.ShortLabel ?? current?.Label;
 }

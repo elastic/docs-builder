@@ -20,6 +20,8 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -182,7 +184,7 @@ public partial class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildTitledAuthentication_ShowsTheTabsAndTakesTheBadgeLink()
+	public async Task CreateNavigation_ChildTitledAuthentication_ShowsTheSectionsAndTakesTheBadgeLink()
 	{
 		var navigation = await NavigationWithChild(
 			Spec(topics: null, withSchemes: true),
@@ -198,6 +200,55 @@ public partial class TopicPageTests
 	}
 
 	[Test]
+	public async Task RenderAsync_ChildTitledAuthentication_RendersTheSpecSectionsOnTheApiDescriptionPath()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		// A spec description can hold HTML such as <br>, which only the API description path keeps.
+		var spec = Spec(topics: null, withSchemes: true).Replace(
+			"\"in\": \"header\" }",
+			"\"in\": \"header\", \"description\": \"Send the key.<br>Keep it secret.\" }",
+			StringComparison.Ordinal
+		);
+		var folder = Directory.CreateDirectory(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", $"api-topics-{Guid.NewGuid():N}")
+		);
+		try
+		{
+			var childFile = Path.Combine(folder.FullName, "auth-intro.md");
+			await File.WriteAllTextAsync(childFile, "# Authentication\n\nUse an API key.\n", ct);
+			var context = TestHelpers.CreateBuildContext();
+			var navigation = await Navigation(spec, [childFile], context);
+			var child = ApiExplorerFixture.Walk(navigation).OfType<SimpleMarkdownNavigationItem>().Single();
+			var renderContext = new ApiRenderContext(
+				context,
+				await TestSpecs.LoadValidSpecAsync(spec),
+				new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+			)
+			{ NavigationHtml = string.Empty, CurrentNavigation = child, MarkdownRenderer = PathMarkingRenderer.Instance };
+
+			var fs = new System.IO.Abstractions.TestingHelpers.MockFileSystem();
+			await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+				await child.RenderAsync(stream, renderContext, ct);
+
+			fs.File.ReadAllText("/out.html").Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select(".api-markdown-page"));
+		}
+		finally
+		{
+			folder.Delete(recursive: true);
+		}
+	}
+
+	/// <summary>Marks which path rendered each piece of Markdown: the page's own docs parser or the API description parser.</summary>
+	private sealed class PathMarkingRenderer : IMarkdownStringRenderer
+	{
+		public static PathMarkingRenderer Instance { get; } = new();
+
+		public string Render(string markdown, IFileInfo? source) => $"<div class=\"docs-path\">{markdown}</div>";
+
+		public string RenderApiDescription(string markdown, IFileInfo? source) => $"<div class=\"api-path\">{markdown}</div>";
+	}
+
+	[Test]
 	public async Task CreateNavigation_ChildrenAndAuthenticationTopic_ChildReplacesTopic()
 	{
 		var navigation = await NavigationWithChild(
@@ -208,7 +259,7 @@ public partial class TopicPageTests
 
 		var all = ApiExplorerFixture.Walk(navigation).ToList();
 		all.OfType<StructuralNavigationItem>().Should().BeEmpty("the child page replaces the Authentication topic");
-		all.OfType<SimpleMarkdownNavigationItem>().Single().Url.Should().Be("/api/cloud/auth-intro/");
+		all.OfType<SimpleMarkdownNavigationItem>().Single().Url.Should().Be("/api/cloud/auth-intro");
 	}
 
 	[Test]
@@ -248,15 +299,10 @@ public partial class TopicPageTests
 		// The title sits in the same header as on an operation page, which sets its size and the space above it.
 		topic.Should().Contain("<header class=\"api-page-intro\">");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
-		authentication
-			.Should()
-			.Contain("Use an API key.")
-			.And
-			.Contain("api-authorization-panel")
-			.And
-			.Contain("<label class=\"tabs-label\"");
-		// The page shows the credentials open, under its own title, with no collapsible Authentication heading.
-		authentication.Should().NotContain("data-section=\"authentication\"").And.NotContain("api-param-section-toggle");
+		// The prose, then a section per alternative. The test renderer passes Markdown through, so the heading shows as written.
+		authentication.Should().Contain("Use an API key.").And.Contain("## Api key [doc-authentication-api-key]");
+		// The sections are open under the page's own title: no tabs and no collapsible Authentication heading.
+		authentication.Should().NotContain("tabs-label").And.NotContain("api-param-section-toggle");
 		// The sidebar opens with an Overview row and the guide pages, with no group label above them, then the Operations label.
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
 		landing.Should().NotContain(">Topics</span>").And.Contain("class=\"nav-group-label\">Operations</span>");
@@ -299,7 +345,7 @@ public partial class TopicPageTests
 
 		var topics = ApiExplorerFixture.GuidePages(navigation);
 		var child = topics.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
-		child.Url.Should().Be("/api/cloud/kibana-api-overview/");
+		child.Url.Should().Be("/api/cloud/kibana-api-overview");
 		child.ReplacedTopicUrls.Should().Equal("/api/cloud/topic/topic-kibana-spaces");
 		ApiExplorerFixture.Walk(navigation).OfType<TopicNavigationItem>().Should().BeEmpty();
 	}
@@ -319,7 +365,7 @@ public partial class TopicPageTests
 			.Should()
 			.Equal(
 				(nameof(StructuralNavigationItem), "/api/cloud/authentication"),
-				(nameof(SimpleMarkdownNavigationItem), "/api/cloud/kibana-api-overview/"),
+				(nameof(SimpleMarkdownNavigationItem), "/api/cloud/kibana-api-overview"),
 				(nameof(TopicNavigationItem), "/api/cloud/topic/topic-principles")
 			);
 	}
@@ -418,13 +464,19 @@ public partial class TopicPageTests
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		markdown.Should().Contain("Use an API key.");
-		markdown.Should().Contain("- Api key: `Authorization: <value>`");
-		markdown!
-			.IndexOf("Use an API key.", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(markdown.IndexOf("- Api key", StringComparison.Ordinal));
-		markdown.Should().NotContain("does not declare");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Authentication
+
+			Use an API key.
+
+			## Api key
+
+			```http
+			Authorization: ApiKey <api-key>
+			```
+			"""
+		);
 	}
 
 	[Test]

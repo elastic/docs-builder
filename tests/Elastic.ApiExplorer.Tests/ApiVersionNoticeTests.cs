@@ -63,9 +63,9 @@ public class ApiVersionNoticeTests
 			"""
 			versionless: none
 			v9 copy: none
-			v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping }, Version = 8 }
-			v8 only in v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8 }
-			v8 landing: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8 }
+			v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping }, Version = 8, Release = , Label = 8 }
+			v8 only in v8: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8, Release = , Label = 8 }
+			v8 landing: OlderMajorNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch }, Version = 8, Release = , Label = 8 }
 			next: UnreleasedNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping } }
 			next only in main: UnreleasedNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch } }
 			next with main and 9: UnreleasedNotice { Latest = LatestVersionLink { Label = v9, Url = /api/elasticsearch/operation/operation-ping } }
@@ -74,6 +74,12 @@ public class ApiVersionNoticeTests
 			"""
 		);
 	}
+
+	[Test]
+	[Arguments("8", "8.19", "8.19")]
+	[Arguments("8", null, "8")]
+	public void Label_OlderMajor_NamesTheMinorWhenKnown(string version, string? release, string expected) =>
+		new OlderMajorNotice(version, null, release).Label.Should().Be(expected);
 
 	[Test]
 	public void For_NewestMajorDidNotRender_KeepsTheVersionAndDropsTheLink()
@@ -89,10 +95,10 @@ public class ApiVersionNoticeTests
 
 		notices.Should().MatchInlineSnapshot(
 			"""
-			v9 failed, v8: OlderMajorNotice { Latest = , Version = 8 }
+			v9 failed, v8: OlderMajorNotice { Latest = , Version = 8, Release = , Label = 8 }
 			v9 failed, next: UnreleasedNotice { Latest =  }
-			only v8 rendered: OlderMajorNotice { Latest = , Version = 8 }
-			no released major: OlderMajorNotice { Latest = , Version = beta }
+			only v8 rendered: OlderMajorNotice { Latest = , Version = 8, Release = , Label = 8 }
+			no released major: OlderMajorNotice { Latest = , Version = beta, Release = , Label = beta }
 			"""
 		);
 	}

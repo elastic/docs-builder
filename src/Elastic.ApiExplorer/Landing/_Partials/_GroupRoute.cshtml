@@ -1,0 +1,3 @@
+@inherits RazorSlice<GroupRouteModel>
+@* A route as plain text, one piece per segment (GroupRouteModel). Each piece is one .api-route-segment, so the route wraps between segments only, and the pieces stay on the brace line so Razor emits no whitespace. *@
+<code class="api-group-route">@foreach (var part in Model.Parts){<span class="api-route-segment">@part</span>}</code>

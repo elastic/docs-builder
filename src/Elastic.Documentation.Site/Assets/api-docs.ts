@@ -10,7 +10,7 @@ import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
-import { initToc } from './ds/toc'
+import { fragmentId, initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
 import { flashTooltip } from './tooltip'
 
@@ -158,7 +158,9 @@ function openMainResponse(status: string): void {
     const panel = document.querySelector<HTMLElement>(
         `[data-api-responses] .response-panel:not(.response-panel--static)[data-status="${status}"]`
     )
-    if (panel) setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
+    if (!panel) return
+    setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
+    syncExpandAll()
 }
 
 /**
@@ -227,12 +229,7 @@ export function revealHiddenAncestors(target: HTMLElement): boolean {
 }
 
 function hashTarget(): HTMLElement | null {
-    let id = window.location.hash.slice(1)
-    try {
-        id = decodeURIComponent(id)
-    } catch {
-        // A malformed escape is looked up as written
-    }
+    const id = fragmentId(window.location.hash)
     return id ? document.getElementById(id) : null
 }
 
@@ -336,7 +333,8 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
-    initToc()
+    // Only the sticky section links are this bundle's: the production On this page list has its own scroll spy (toc-nav.ts).
+    initToc(document, '[data-toc][data-toc-sticky]')
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true
@@ -449,7 +447,7 @@ function initGlobalClickHandlers(): void {
 
         if (target.closest('[data-api-expand-all]')) {
             e.preventDefault()
-            setAllExpanded(apiSection, !isAllExpanded(apiSection))
+            setAllExpanded(apiSection, !isAllExpanded(expandable(apiSection)))
             return
         }
 
@@ -458,27 +456,43 @@ function initGlobalClickHandlers(): void {
     })
 }
 
-/**
- * The disclosures the page control drives: every one with a toggle, so rows with nothing to fold are left out.
- * Responses are an accordion that follows the examples rail, so the control leaves them to it.
- */
-function foldables(root: HTMLElement): [HTMLElement, Disclosure][] {
-    return DISCLOSURES.filter((d) => d !== RESPONSE_DISCLOSURE).flatMap((d) =>
+/** Every disclosure with a toggle, so rows with nothing to fold are left out. Collapse all folds them all. */
+function collapsible(root: HTMLElement): [HTMLElement, Disclosure][] {
+    return DISCLOSURES.flatMap((d) =>
         [...root.querySelectorAll<HTMLElement>(d.container)]
             .filter((container) => container.querySelector(d.toggle))
             .map((container): [HTMLElement, Disclosure] => [container, d])
     )
 }
 
-function isAllExpanded(root: HTMLElement): boolean {
-    return foldables(root).every(([container]) =>
+/**
+ * Responses are an accordion, so Expand all opens one response, the open one or else the one the page
+ * opened on load, with its fields, and leaves the others closed.
+ */
+function expandable(root: HTMLElement): [HTMLElement, Disclosure][] {
+    const all = collapsible(root)
+    const responses = all
+        .filter(([, d]) => d === RESPONSE_DISCLOSURE)
+        .map(([container]) => container)
+    const target =
+        responses.find((r) => r.classList.contains('expanded')) ??
+        responses.find((r) => r.dataset.apiResponseDefault === 'true')
+    return all.filter(([container]) => {
+        const response = container.closest(RESPONSE_DISCLOSURE.container)
+        return response === null || response === target
+    })
+}
+
+function isAllExpanded(disclosures: [HTMLElement, Disclosure][]): boolean {
+    return disclosures.every(([container]) =>
         container.classList.contains('expanded')
     )
 }
 
 /** Expand all and Collapse all share one button. */
 export function setAllExpanded(root: HTMLElement, expanded: boolean): void {
-    foldables(root).forEach(([container, d]) =>
+    const disclosures = expanded ? expandable(root) : collapsible(root)
+    disclosures.forEach(([container, d]) =>
         setDisclosureExpanded(container, d, expanded)
     )
     syncExpandAll()
@@ -491,12 +505,13 @@ function syncExpandAll(): void {
         .forEach((button) => {
             const root = button.closest<HTMLElement>(API_ROOTS)
             if (!root) return
-            const nothingToFold = foldables(root).length === 0
+            const disclosures = expandable(root)
+            const nothingToFold = disclosures.length === 0
             button.hidden = nothingToFold
             button
                 .closest('.api-expand-standalone')
                 ?.toggleAttribute('hidden', nothingToFold)
-            button.textContent = isAllExpanded(root)
+            button.textContent = isAllExpanded(disclosures)
                 ? 'Collapse all'
                 : 'Expand all'
         })

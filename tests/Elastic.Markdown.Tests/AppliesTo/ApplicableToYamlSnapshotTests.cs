@@ -305,6 +305,19 @@ public class ApplicableToYamlSnapshotTests
 		]).Should().MatchSnapshot();
 
 	[Test]
+	public void Read_FlowMappings_KeysWithoutAValue() =>
+		Table([
+			"{ self:, ece: ga 4.2 }",
+			"{ ess:, ece: }",
+			"{ self:, eck: }",
+			"{ eck:, self: }",
+			"{ self:, ece:, eck: }",
+			"{ stack:, serverless: }",
+			"{ deployment: { self:, ece: ga 4.2 } }",
+			"{ serverless: { elasticsearch:, security: ga } }"
+		]).Should().MatchSnapshot();
+
+	[Test]
 	public void Read_Stack_ValueShapes() =>
 		Table([
 			"stack:",

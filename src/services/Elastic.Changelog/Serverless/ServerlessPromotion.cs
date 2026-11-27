@@ -22,6 +22,9 @@ public sealed record ServerlessSubmodule(string Repository, string Path);
 /// <param name="FinalSlice">The last production slice of the service's rollout; release notes publish when it completes (for example <c>production-noncanary-ds-5</c>).</param>
 /// <param name="BaseBranch">Release notes cover pull requests merged into this branch. A pull request merged into a
 /// feature branch reaches the range when the branch merges, and the PR that merged the branch carries the note.</param>
+/// <param name="Product">Product the service's bundles are written for (the <c>product</c> of <see cref="Profile"/>), and the
+/// folder name of its bundles in the release notes preview (for example <c>cloud-serverless</c>).</param>
+/// <param name="StagingSlice">The slice of the staging environment, where a version runs before it reaches production (for example <c>staging-ds-1</c>).</param>
 public sealed record ServerlessService(
 	string Id,
 	string Repository,
@@ -29,8 +32,13 @@ public sealed record ServerlessService(
 	string VersionsPath,
 	IReadOnlyList<ServerlessSubmodule> Submodules,
 	string FinalSlice,
-	string BaseBranch
+	string BaseBranch,
+	string Product,
+	string StagingSlice
 );
+
+/// <summary>One release of the preview: the commits from <see cref="StartRef"/> to <see cref="EndRef"/>, shown under <see cref="Label"/>.</summary>
+public sealed record ServerlessPreviewTarget(string Label, string StartRef, string EndRef);
 
 /// <summary>A commit to a service's <c>versions.yaml</c> in serverless-gitops.</summary>
 public sealed record GitopsCommit(string Sha, string Message);
@@ -76,7 +84,9 @@ public static partial class ServerlessPromotion
 			"services/kibana/versions.yaml",
 			[],
 			"production-noncanary-ds-5",
-			"main"
+			"main",
+			"cloud-serverless",
+			"staging-ds-1"
 		),
 		["elasticsearch"] = new(
 			"elasticsearch",
@@ -85,7 +95,9 @@ public static partial class ServerlessPromotion
 			"services/elasticsearch/versions.yaml",
 			[new ServerlessSubmodule("elasticsearch", "elasticsearch")],
 			"production-noncanary-ds-5",
-			"main"
+			"main",
+			"cloud-serverless",
+			"staging-ds-1"
 		),
 		// Elastic Cloud Hosted. frontend-adminconsole is the anchor: it is the user-facing API service, its single production
 		// slice ends a release, and cloud's default branch is master.
@@ -96,9 +108,17 @@ public static partial class ServerlessPromotion
 			"services/frontend-adminconsole/versions.yaml",
 			[],
 			"production-sds-1",
-			"master"
+			"master",
+			"cloud-hosted",
+			"staging-sds-1"
 		)
 	};
+
+	/// <summary>Label of the preview release that ends at the version on the staging slice: what runs on staging and is not in production.</summary>
+	public const string StagingLabel = "staging";
+
+	/// <summary>Label of the preview release that ends at the tip of the base branch: everything merged that is not in production yet.</summary>
+	public const string EdgeLabel = "edge";
 
 	[GeneratedRegex(@"^gitops:\s+(?<slices>\S+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PromotionSlicesRegex();
@@ -118,6 +138,59 @@ public static partial class ServerlessPromotion
 	/// <summary>Reads the version of <paramref name="finalSlice"/> from a <c>versions.yaml</c>, or <c>null</c>.</summary>
 	public static string? ParseFinalSliceVersion(string versionsYaml, string finalSlice) =>
 		SliceVersionRegex().Matches(versionsYaml).FirstOrDefault(m => m.Groups["slice"].Value == finalSlice)?.Groups["sha"].Value;
+
+	/// <summary>
+	/// The releases a preview shows for a service: what runs on staging and what is on the base branch, each as the commits
+	/// since the version in production. Both start at the final slice of <paramref name="versionsYaml"/>. A release whose end is
+	/// the start has no changes and is left out, and so are both when the final slice has no version.
+	/// </summary>
+	/// <param name="versionsYaml">The service's <c>versions.yaml</c> at the head of serverless-gitops.</param>
+	/// <param name="svc">The service.</param>
+	/// <param name="baseBranchHead">The commit at the head of the service repository's base branch.</param>
+	public static IReadOnlyList<ServerlessPreviewTarget> PlanPreview(string versionsYaml, ServerlessService svc, string baseBranchHead)
+	{
+		var start = ParseFinalSliceVersion(versionsYaml, svc.FinalSlice);
+		if (start is null)
+			return [];
+
+		var ends = new[]
+		{
+			(Label: StagingLabel, End: ParseFinalSliceVersion(versionsYaml, svc.StagingSlice)),
+			(Label: EdgeLabel, End: baseBranchHead)
+		};
+		return [
+			.. ends.Where(e => !string.IsNullOrEmpty(e.End) && !SameRef(start, e.End)).Select(
+				e => new ServerlessPreviewTarget(e.Label, start, e.End!)
+			)
+		];
+	}
+
+	/// <summary>
+	/// The files a preview of <paramref name="svc"/> writes, named <c>{repo}-{product}-{label}.yaml</c>: one per repository
+	/// (the service repository and its submodules) and label. A run removes them first, so a release that no longer has changes,
+	/// because production caught up, does not stay on the site. Other services write to the same product folder, so only these names go.
+	/// </summary>
+	public static IReadOnlyList<string> PreviewBundleFileNames(ServerlessService svc) =>
+		[
+			.. new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).SelectMany(
+				repo => CleanupLabels.Select(label => $"{repo}-{svc.Product}-{label}.yaml")
+			)
+		];
+
+	private static readonly string[] CleanupLabels = [StagingLabel, EdgeLabel];
+
+	/// <summary>
+	/// The bundles an earlier version of the preview wrote for the edge release, which it called <c>head</c>, for every service. A folder
+	/// reused since then still holds them, and the site build would publish them as a release of their own, next to Edge. A run
+	/// removes all of them, also those of a service it does not refresh: a service left out of a partial run has no Edge bundle until
+	/// it is refreshed, and that is better than a second, stale release.
+	/// </summary>
+	public static IReadOnlyList<(string Product, string FileName)> LegacyBundleFileNames() =>
+		[.. Services.Values.SelectMany(svc => LegacyBundleFileNames(svc).Select(name => (svc.Product, name)))];
+
+	/// <summary>The bundles of the release that was called <c>head</c> for one service: one per repository, the service repository and its submodules.</summary>
+	public static IReadOnlyList<string> LegacyBundleFileNames(ServerlessService svc) =>
+		[.. new[] { svc.Repository }.Concat(svc.Submodules.Select(m => m.Repository)).Select(repo => $"{repo}-{svc.Product}-head.yaml")];
 
 	/// <summary>The first 12 characters of a ref, in lower case. It names a promotion in serverless-gitops and in its review pull request.</summary>
 	public static string ShortRef(string gitRef) => (gitRef.Length > 12 ? gitRef[..12] : gitRef).ToLowerInvariant();

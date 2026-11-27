@@ -18,17 +18,16 @@ public class ApiCatalogCardTests
 		ApiCatalogItem item,
 		ApiCatalogCardKind kind = ApiCatalogCardKind.Standard,
 		bool hasVariant = false,
-		int? column = null,
 		int headingLevel = 3
 	) =>
-		await _ApiCatalogCard.Create(new ApiCatalogCard(item, kind, hasVariant, column, headingLevel)).RenderAsync(
+		await _ApiCatalogCard.Create(new ApiCatalogCard(item, kind, hasVariant, headingLevel)).RenderAsync(
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 	[Test]
 	[Arguments(ApiCatalogCardKind.Standard)]
 	[Arguments(ApiCatalogCardKind.Featured)]
-	[Arguments(ApiCatalogCardKind.Compact)]
+	[Arguments(ApiCatalogCardKind.Attached)]
 	public async Task Render_Card_IsOneLinkThatWrapsTheWholeCardAndNothingElseIsALink(ApiCatalogCardKind kind)
 	{
 		var html = await Render(Item(), kind);
@@ -64,36 +63,29 @@ public class ApiCatalogCardTests
 			.Be(hasVariant);
 
 	[Test]
-	public async Task Render_CardWithAColumn_IsAttachedAndPlacedInThatColumn()
+	public async Task Render_AttachedCard_IsTheSmallTagOnUnderItsParent()
 	{
-		var html = await Render(Item(), ApiCatalogCardKind.Compact, column: 2);
+		var html = await Render(Item(), ApiCatalogCardKind.Attached);
 
 		html.Should().MatchHtmlSnapshot();
-	}
-
-	[Test]
-	public async Task Render_FeaturedCardWithAColumn_IsPlacedButNotAttached()
-	{
-		var html = await Render(Item(), ApiCatalogCardKind.Featured, column: 2);
-
-		html.Should().MatchHtmlSnapshot();
-		html.Should().NotContain("api-catalog-card-attached").And.NotContain("api-catalog-cell-variant");
-	}
-
-	[Test]
-	public async Task Render_CardWithoutAColumn_IsNotAttached()
-	{
-		var html = await Render(Item(), ApiCatalogCardKind.Compact);
-
-		html.Should().NotContain("api-catalog-card-attached");
-		html.Should().NotContain("--api-catalog-column");
 	}
 
 	[Test]
 	[Arguments(ApiCatalogCardKind.Standard)]
-	[Arguments(ApiCatalogCardKind.Compact)]
+	[Arguments(ApiCatalogCardKind.Featured)]
+	public async Task Render_CardOfAnotherKind_IsNotAttached(ApiCatalogCardKind kind)
+	{
+		var html = await Render(Item(), kind);
+
+		html.Should().NotContain("api-catalog-card-attached");
+		html.Should().NotContain("<li");
+	}
+
+	[Test]
+	[Arguments(ApiCatalogCardKind.Standard)]
+	[Arguments(ApiCatalogCardKind.Attached)]
 	public async Task Render_Card_TopAlignsTheIconWithTheTitle(ApiCatalogCardKind kind) =>
-		(await Render(Item(), kind)).Should().Contain("flex h-full items-start");
+		(await Render(Item(), kind)).Should().Contain("items-start");
 
 	[Test]
 	[Arguments(2)]

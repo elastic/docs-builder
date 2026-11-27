@@ -13,6 +13,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
+using Markdig;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -82,22 +83,41 @@ public static partial class ApiMarkdown
 	}
 
 	/// <summary>
-	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
-	/// so an intro heading with the same slug is left out rather than linking to the post section.
+	/// Renders Markdown fragments one by one, with anchors on their headings, and returns those headings in page order. A
+	/// fragment cannot change the next one, so an unclosed fence in a spec description stays inside that description.
+	/// </summary>
+	public static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderFragmentsWithHeadings(
+		ApiRenderContext context,
+		IEnumerable<string?> fragments
+	)
+	{
+		var html = new StringBuilder();
+		var headings = new List<TocItem>();
+		foreach (var fragment in fragments.Where(static f => !string.IsNullOrWhiteSpace(f)))
+		{
+			var (fragmentHtml, fragmentHeadings) = RenderWithHeadings(context, fragment);
+			_ = html.Append(fragmentHtml.Value);
+			headings.AddRange(fragmentHeadings);
+		}
+
+		return html.Length == 0 ? (null, []) : (new HtmlString(html.ToString()), headings);
+	}
+
+	/// <summary>
+	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor, and so does
+	/// each of <paramref name="reserved"/> (what the page itself owns), so an intro heading with such a slug is left out rather
+	/// than linking to them.
 	/// </summary>
 	internal static IReadOnlyList<TocItem> ReadIntroHeadings(
 		IMarkdownStringRenderer renderer,
 		string? markdown,
 		string apiBaseUrl,
-		IReadOnlyList<ApiSupplementalSection> postSections
+		IReadOnlyList<ApiSupplementalSection> postSections,
+		IReadOnlySet<string> reserved
 	)
 	{
-		var headings = ReadHeadings(renderer, markdown, apiBaseUrl);
-		if (postSections.Count == 0)
-			return headings;
-
-		var postAnchors = ApiPostSection.Anchors(postSections).ToHashSet(StringComparer.Ordinal);
-		return [.. headings.Where(heading => !postAnchors.Contains(heading.Slug))];
+		var pageAnchors = ApiPostSection.Anchors(postSections, reserved).Concat(reserved).ToHashSet(StringComparer.Ordinal);
+		return [.. ReadHeadings(renderer, markdown, apiBaseUrl).Where(heading => !pageAnchors.Contains(heading.Slug))];
 	}
 
 	/// <summary>
@@ -207,7 +227,8 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationLinkPattern();
 
-	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	// A `]` after an odd run of backslashes is escaped literal text, not the end of a link label; after an even run it still closes one.
+	[GeneratedRegex(@"(?<prefix>(?<=(?:^|[^\\])(?:\\\\)*)\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkDestinationPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
@@ -239,6 +260,14 @@ public static partial class ApiMarkdown
 		"td",
 		"th"
 	];
+
+	private static readonly MarkdownPipeline PlainTextPipeline = new MarkdownPipelineBuilder().Build();
+
+	/// <summary>
+	/// Markdown as the text a reader sees on the page: rendered to HTML, as an API description is, then read for its text. Code spans,
+	/// escapes and entities come out as written; emphasis, link targets and tags go, while the text inside HTML blocks and links stays.
+	/// </summary>
+	internal static string ToPlainText(string markdown) => StripHtml(Markdown.ToHtml(markdown, PlainTextPipeline));
 
 	/// <summary>
 	/// Extracts plain text from an HTML description for search indexing.

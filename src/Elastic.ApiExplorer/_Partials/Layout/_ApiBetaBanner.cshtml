@@ -7,7 +7,7 @@
 	var opensDialog = Model.ShowPageFeedback;
 }
 <aside id="api-beta-banner" class="api-beta-banner" aria-label="About this API reference">
-	<p class="api-beta-banner__message">We're giving our API reference a new engine and a fresh look. @if (opensDialog){<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl" data-api-beta-feedback-open="@dialogId" aria-haspopup="dialog">We'd love to hear what you think</a>}else{<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl">We'd love to hear what you think</a>}.</p>
+	<p class="api-beta-banner__message">We've rebuilt the Elastic API reference with a fresh design. @if (opensDialog){<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl" data-api-beta-feedback-open="@dialogId" aria-haspopup="dialog">Share your feedback</a>}else{<a class="api-beta-banner__link" href="@Model.BetaBanner.FeedbackUrl">Share your feedback</a>}.</p>
 	@if (opensDialog)
 	{
 		<dialog class="api-beta-feedback" id="@dialogId" aria-labelledby="@(dialogId)-title">
@@ -16,7 +16,6 @@
 				<form method="dialog"><button class="api-beta-feedback__close" type="submit" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button></form>
 			</header>
 			<div class="api-beta-feedback__content">
-			<p class="api-beta-feedback__intro">Tell us what looks wrong or is missing.</p>
 			@if (Model.Features.NavigationPreviewEnabled)
 			{
 				@await RenderPartialAsync(_Feedback.Create(new FeedbackModel

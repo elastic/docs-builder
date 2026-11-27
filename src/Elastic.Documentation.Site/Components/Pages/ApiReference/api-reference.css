@@ -186,26 +186,6 @@
 	}
 }
 
-.api-overview {
-	.api-url-listing {
-		margin: 0;
-		padding: 0;
-	}
-	.api-url-list-item {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-	.api-url-list-item + .api-url-list-item {
-		margin-top: var(--space-2);
-	}
-	.api-url-row {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-	}
-}
-
 /* The rows switch to a two-column layout by container width. The product landing page has no .api-group,
    so the overview is a container too. */
 .api-group,
@@ -224,26 +204,35 @@
 	line-height: 2rem;
 }
 
+/* The group's intro is the page's lead: a step up from body text, a step quieter in color. */
 .api-group .api-tag-description {
-	margin-top: var(--space-2);
-	font-size: 1rem;
-	line-height: 1.5rem;
+	margin-top: var(--space-3);
+	color: var(--color-text-muted);
+	font-size: 1.0625rem;
+	line-height: 1.75rem;
 }
 
 .api-group-count {
-	margin: var(--space-5) 0 0;
+	margin: 0 0 var(--space-2);
 	color: var(--color-text-muted);
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 }
 
+/* The list reset both pages share; each page then frames it its own way (a ledger on the group page, cards on the landing). */
 .api-group-list {
 	display: flex;
 	flex-direction: column;
-	margin: var(--space-3) 0 0;
+	margin: 0;
 	padding: 0;
-	border-top: 1px solid var(--color-border);
 	list-style: none;
+}
+
+/* One frame around the whole ledger, dividers between rows: never a box per row. */
+.api-group .api-group-list {
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
 }
 
 /* Docs list styles indent every ul. This list is the page body, not a bullet list. */
@@ -254,23 +243,30 @@
 .api-group-list > li {
 	margin: 0;
 	padding: 0;
-	border-bottom: 1px solid var(--color-border);
 	list-style: none;
 }
 
+.api-group .api-group-list > li + li {
+	border-top: 1px solid var(--color-border);
+}
+
+/* A Console-like ledger: the method in its own column so the verbs line up, then the title, then the route. The column is wide
+   enough for a joined two-method chip (POST | GET) in either root font size, and a row with more methods grows it, so a long
+   chip never runs into the title while the common rows stay aligned. */
 .api-group-row {
+	--api-group-method-column: minmax(8.75rem, max-content);
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-columns: var(--api-group-method-column) minmax(0, 1fr) 16px;
 	grid-template-areas:
-		'title chevron'
-		'routes chevron';
+		'method title chevron'
+		'. routes chevron';
 	column-gap: var(--space-3);
-	row-gap: var(--space-2);
+	row-gap: var(--space-1);
 	align-items: center;
 	box-sizing: border-box;
 	min-height: 2.75rem;
 	margin: 0;
-	padding: var(--space-3) var(--space-2);
+	padding: var(--space-3) var(--space-4);
 	-webkit-tap-highlight-color: color-mix(
 		in oklab,
 		var(--color-text) 16%,
@@ -307,13 +303,45 @@
 	text-underline-offset: 2px;
 }
 
-.api-group-row .api-overview-title {
+.api-group-heading {
 	grid-area: title;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: 0.5rem;
+	row-gap: 0.25rem;
+	min-width: 0;
+}
+
+/* Badges that wrap onto a second line keep a gap above it, as the title keeps one above the first line. */
+.api-group-heading .api-title-badges {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.5rem;
+}
+
+.api-group-row .api-overview-title {
 	color: inherit;
-	font-size: 1rem;
-	font-weight: 600;
+	font-size: 0.9375rem;
+	font-weight: 500;
 	line-height: 1.5rem;
 	text-decoration: none;
+}
+
+.api-group-method {
+	grid-area: method;
+	display: flex;
+}
+
+.api-group-method .api-method {
+	min-width: 72px;
+	height: 20px;
+	font-size: 11px;
+}
+
+.api-group-method .api-method-group .api-method {
+	min-width: 0;
 }
 
 .api-group-routes {
@@ -321,23 +349,18 @@
 	min-width: 0;
 }
 
-.api-group-row .api-url-row {
-	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	align-items: center;
-	column-gap: var(--space-2);
-}
-
-.api-group-row .api-url {
-	margin-left: 0;
-	min-width: 0;
-	color: var(--color-text-muted);
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 0.875rem;
-	font-weight: 400;
-	line-height: 1.5rem;
+/* Overview routes: plain monospace text that wraps at a segment boundary. */
+#markdown-content .api-group-route,
+.api-group-route {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-text);
+	font-family: var(--font-mono);
+	font-size: 0.84375rem;
+	font-variant-numeric: tabular-nums;
+	line-height: 1.25rem;
+	overflow-wrap: anywhere;
 }
 
 .api-group-chevron {
@@ -349,199 +372,75 @@
 	transform: rotate(-90deg);
 }
 
-/* Product landing: the groups as a flat index. Columns follow the container, not the viewport, so the index
-   reads the same beside the sidebar and in a narrow window. Classification headings span every column. */
-.api-index {
-	column-gap: 2.5rem;
-}
-
+/* Product landing: each endpoint group is a row of the group page's list. The endpoint count follows the name the way
+   badges follow an operation title, then comes what the group is for, which the sidebar does not say. */
 .api-index .api-index-heading {
-	column-span: all;
-	margin: var(--space-6) 0 var(--space-2);
-	font-size: 1.25rem;
-	line-height: 1.75rem;
-}
-
-/* Topic pages (Authentication, Servers) sit above the index: they are read once, not browsed with the endpoints. */
-.api-topics {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-2);
-	margin: var(--space-4) 0 var(--space-6);
-}
-
-/* Quiet outlined link: topic pages and the spec downloads. */
-#markdown-content a.api-chip-link {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.375rem;
-	padding: var(--space-1) var(--space-3);
-	border: 1px solid var(--color-border);
-	border-radius: 0.5rem;
-	color: inherit;
-	font-size: 0.875rem;
-	line-height: 1.25rem;
-	text-decoration: none;
-}
-
-.api-chip-link svg {
-	width: 0.875rem;
-	height: 0.875rem;
-}
-
-#markdown-content a.api-chip-link:hover,
-#markdown-content a.api-chip-link:focus-visible {
-	border-color: var(--color-border-strong);
-	color: var(--color-accent);
-}
-
-#markdown-content a.api-chip-link:focus-visible {
-	outline: 2px solid var(--color-accent);
-	outline-offset: 2px;
-}
-
-/* License and spec downloads: facts about the spec, so they sit under the description in the subdued colour. */
-.api-landing-meta {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--space-2) var(--space-5);
-	margin: var(--space-4) 0 0;
-	color: var(--color-text-muted);
-	font-size: 0.875rem;
-	line-height: 1.25rem;
-}
-
-.api-landing-download {
-	display: inline-flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--space-2);
-}
-
-.api-index-group {
-	break-inside: avoid;
-	margin: 0 0 var(--space-6);
-}
-
-.api-index .api-index-group-title {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: var(--space-3);
-	margin: 0;
-	padding: 0 0 var(--space-2);
-	border-bottom: 1px solid var(--color-border);
-	font-size: 1rem;
+	margin: var(--space-6) 0 8px;
+	font-size: 16px;
+	line-height: 24px;
+	color: var(--color-heading);
 	font-weight: 600;
-	line-height: 1.5rem;
 }
 
-.api-index-group-title a {
-	color: inherit;
-	text-decoration: none;
+.api-group-row.api-index-row {
+	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-rows: auto 1fr;
+	grid-template-areas:
+		'title chevron'
+		'summary chevron';
+	align-items: start;
 }
 
-.api-index-group-title a:hover,
-.api-index-group-title a:focus-visible {
-	color: var(--color-accent);
-	text-decoration: underline;
-	text-underline-offset: 2px;
+/* A cell beside a taller one grows: the text stays at the top, and only the chevron centers on the cell. */
+.api-index-row .api-group-chevron {
+	align-self: center;
 }
 
-.api-index-count {
+.api-index-row-count {
 	color: var(--color-text-muted);
-	font-size: 0.875rem;
-	font-weight: 400;
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	line-height: 24px;
+	white-space: nowrap;
 }
 
-#markdown-content .api-index-list {
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.api-index-list > li {
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-#markdown-content a.api-index-item {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	min-height: 2.25rem;
-	padding: 0.375rem var(--space-1);
-	border-bottom: 1px solid var(--color-surface-sunken);
-	color: inherit;
-	font-size: 0.875rem;
-	line-height: 1.25rem;
-	text-decoration: none;
-}
-
-/* One chip width, so the titles line up whatever the method. */
-.api-index-item .api-method {
-	min-width: 4.5rem;
-	height: 1.25rem;
-	font-size: 0.6875rem;
-}
-
-/* A joined chip is as wide as its methods; each part must not also claim a whole chip width. */
-.api-index-item .api-method-group .api-method {
-	min-width: 0;
-}
-
-.api-index-item-title {
-	min-width: 0;
-	overflow-wrap: anywhere;
-}
-
-/* The path sits under the title, so a familiar endpoint is easy to spot. The chip stays centered on the two lines. */
-.api-index-item-text {
-	display: flex;
-	flex-direction: column;
-	min-width: 0;
-}
-
-#markdown-content .api-index-item-path {
-	padding: 0;
-	border: 0;
-	background: none;
+.api-index-row-summary {
+	display: -webkit-box;
+	grid-area: summary;
+	overflow: hidden;
 	color: var(--color-text-muted);
-	font-family: var(--font-mono);
-	font-size: 12px;
-	line-height: 16px;
-	overflow-wrap: anywhere;
+	font-size: 14px;
+	line-height: 20px;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
 }
 
-#markdown-content a.api-index-item:hover,
-#markdown-content a.api-index-item:focus-visible {
-	background: var(--color-surface-sunken);
+/* Landing groups are separate cards, not rows of one frame: a gap between them, a border and radius on each. They sit two to
+   a line where they fit, and the two cards of a line share its height. */
+.api-index .api-group-list {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
 }
 
-#markdown-content a.api-index-item:hover .api-index-item-title,
-#markdown-content a.api-index-item:focus-visible .api-index-item-title {
-	color: var(--color-accent);
-	text-decoration: underline;
-	text-underline-offset: 2px;
+.api-index .api-group-list > li {
+	display: flex;
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
 }
 
-#markdown-content a.api-index-item:focus-visible,
-.api-index-group-title a:focus-visible {
-	outline: 2px solid var(--color-accent);
-	outline-offset: -2px;
+.api-index .api-group-list > li:hover {
+	border-color: var(--color-border-strong);
 }
 
-@container api-group (min-width: 44rem) {
-	.api-index {
-		column-count: 2;
-	}
+.api-index .api-group-list > li > a {
+	flex: 1;
 }
 
-@container api-group (min-width: 84rem) {
-	.api-index {
-		column-count: 3;
+@container api-group (min-width: 36rem) {
+	.api-index .api-group-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
 
@@ -597,6 +496,17 @@
 	transition: none;
 }
 
+/* On a phone the method column would squeeze the title: stack method, title and route instead. */
+@container api-group (max-width: 28rem) {
+	.api-group-row {
+		grid-template-columns: minmax(0, 1fr) 16px;
+		grid-template-areas:
+			'method chevron'
+			'title chevron'
+			'routes chevron';
+	}
+}
+
 @container api-group (min-width: 40rem) {
 	.api-group .api-page-heading > h1 {
 		font-size: 1.875rem;
@@ -604,8 +514,23 @@
 	}
 
 	.api-group-row {
-		grid-template-columns: minmax(12rem, 0.9fr) minmax(0, 1.5fr) 16px;
-		grid-template-areas: 'title routes chevron';
+		grid-template-columns:
+			var(--api-group-method-column) minmax(12rem, 1fr)
+			minmax(0, 1.6fr) 16px;
+		grid-template-areas: 'method title routes chevron';
+	}
+}
+
+/* A joined chip is about 58px per method, and the row also needs its title (12rem), the chevron and some route. With four or more
+   methods a container under 860px leaves too little, so such a row stacks as it does on a phone; a wide ledger keeps its rows
+   side by side and aligned. */
+@container api-group (max-width: 860px) {
+	.api-group-row:has(.api-method-group > :nth-child(4)) {
+		grid-template-columns: minmax(0, 1fr) 16px;
+		grid-template-areas:
+			'method chevron'
+			'title chevron'
+			'routes chevron';
 	}
 }
 
@@ -1104,10 +1029,14 @@ button.response-status-toggle:focus {
 
 .response-summary {
 	cursor: pointer;
+}
+
+.response-panel {
 	transition: background-color 0.12s ease;
 }
 
-.response-summary:hover {
+/* Hovering the header greys the whole response, in the colour of its open body. */
+.response-panel:has(> .response-summary:hover) {
 	background-color: var(--color-surface-sunken);
 }
 
@@ -1994,14 +1923,6 @@ a.type-linked:hover {
 	padding-block: 0.125rem;
 	font-size: var(--text-xs);
 	font-weight: var(--weight-medium);
-}
-
-/* Deprecated property/parameter styling - strikethrough */
-.property-item.deprecated > dt > a > code:first-child,
-.query-param.deprecated > dt > a > code:first-child,
-.path-param.deprecated > dt > a > code:first-child {
-	text-decoration: line-through;
-	opacity: 0.7;
 }
 
 /* Version badge - subtle grey */
@@ -3513,25 +3434,89 @@ button.example-response-tab:focus-visible {
 	height: 100%;
 }
 
-/* Descriptions are up to 150 characters, so they are clamped. */
+/* Descriptions are up to 150 characters, so they are clamped to two lines. */
 .api-catalog .api-catalog-desc {
 	display: -webkit-box;
 	overflow: hidden;
 	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 3;
-	line-clamp: 3;
-}
-
-/* The compact card is the small one for everything in a group but the main APIs. Two lines are enough at its size. */
-.api-catalog .api-catalog-card-compact .api-catalog-desc {
 	-webkit-line-clamp: 2;
 	line-clamp: 2;
 }
 
-/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
-   light fill and a one-line description. */
+/* The full-size card is kept small so the page shows as many cards as fit on a laptop screen: a title and two lines.
+   The type sizes are tokens, so they scale with the root font size like the type of the attached card. */
+.api-catalog .api-catalog-card:not(.api-catalog-card-attached) {
+	gap: 0.875rem;
+	padding: 1rem 1.25rem;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-icon {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-card-title {
+	font-size: var(--text-lg);
+	line-height: 1.35;
+}
+
+.api-catalog
+	.api-catalog-card:not(.api-catalog-card-attached)
+	.api-catalog-desc {
+	margin-top: 0.25rem;
+	font-size: var(--text-sm);
+	line-height: 1.45;
+}
+
+/* A featured card and its tag-on share one cell. Through a subgrid, a cell with a tag-on spans two rows of the list, so
+   the featured cards of a row share their height, the tag-ons share the row below them and a card without a tag-on
+   ends with the others. Without subgrid the cell is a plain grid and the tag-on sits flush under its parent. */
+.api-catalog .api-catalog-cell {
+	display: grid;
+}
+
+/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it in the same grid cell, sharing
+   its border, with a light fill and a one-line description. The 1px margin makes the two cards share one border. */
 .api-catalog .api-catalog-card-attached {
+	margin-top: -1px;
 	background: var(--color-surface-sunken);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+@supports (grid-template-rows: subgrid) {
+	.api-catalog .api-catalog-cell-tagged {
+		grid-row: span 2;
+		grid-template-rows: subgrid;
+	}
+
+	/* From two columns up, every cell but the last spans both rows, so a card without a tag-on still takes the row
+	   below it and the next card starts a new row instead of filling the gap beside a tag-on. The last cell has
+	   nothing after it. */
+	@media (min-width: 761px) {
+		.api-catalog .api-catalog-cell:not(:last-child) {
+			grid-row: span 2;
+			grid-template-rows: subgrid;
+		}
+	}
+
+	/* In the subgrid the tag-on sits one row gap below its parent. The negative margin cancels the 1rem gap, plus 1px
+	   for the shared border. */
+	.api-catalog .api-catalog-card-attached {
+		margin-top: calc(-1rem - 1px);
+	}
+}
+
+/* Without subgrid a cell sizes to its content, so a card without a tag-on does not stretch to the height of a
+   neighbour's card and tag-on together. */
+@supports not (grid-template-rows: subgrid) {
+	.api-catalog .api-catalog-cell {
+		align-self: start;
+	}
 }
 
 .api-catalog .api-catalog-card-attached .api-catalog-desc {
@@ -3539,38 +3524,16 @@ button.example-response-tab:focus-visible {
 	line-clamp: 1;
 }
 
-/* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
-   parent above it and stays a separate card. */
-@media (min-width: 1101px) {
-	.api-catalog .api-catalog-featured {
-		margin-bottom: 0;
-	}
+.api-catalog .api-catalog-card-parent {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
 
-	.api-catalog .api-catalog-tagons {
-		row-gap: 0;
-		margin-top: -1px;
-	}
-
-	.api-catalog .api-catalog-cell {
-		grid-column-start: var(--api-catalog-column);
-	}
-
-	.api-catalog .api-catalog-card-parent {
-		border-bottom-left-radius: 0;
-		border-bottom-right-radius: 0;
-	}
-
-	.api-catalog .api-catalog-card-attached {
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
-	}
-
-	/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
-	.api-catalog .api-catalog-card-parent:hover,
-	.api-catalog .api-catalog-card-attached:hover {
-		position: relative;
-		z-index: 1;
-	}
+/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
+.api-catalog .api-catalog-card-parent:hover,
+.api-catalog .api-catalog-card-attached:hover {
+	position: relative;
+	z-index: 1;
 }
 
 .api-landing-heading {
@@ -3604,14 +3567,18 @@ html:has(.api-page-shell) {
 	min-width: 0;
 }
 
-.api-url-optional {
-	border-bottom: 1.5px dashed var(--color-text-muted);
-	color: var(--color-text-muted);
-	cursor: help;
+/* A route wraps between segments only; a single segment wider than the line still wraps inside itself. */
+.api-route-segment {
+	display: inline-block;
+	max-width: 100%;
+	overflow-wrap: anywhere;
 }
 
-.api-url-optional:hover {
-	color: var(--color-heading);
+.api-url-optional {
+	text-decoration: underline dotted var(--color-text-muted);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	cursor: help;
 }
 
 .optional.type-status {
@@ -4397,15 +4364,64 @@ body[data-api-column-dragging] {
 	overflow-y: auto;
 }
 
-.api-beta-feedback__intro {
-	margin: 0 0 var(--space-4);
-	color: var(--color-text-muted);
-	font-size: var(--text-sm);
-}
-
 /* The widget is the page's feedback widget, which has its own top rule and space above it. */
 .api-beta-feedback .feedback {
 	margin-top: 0;
 	padding-top: 0;
 	border-top: 0;
+}
+
+/* Both pages put their list under an Endpoints heading: the same space after it, and the count caption starts the list. */
+.api-landing .api-overview,
+.api-group .api-overview {
+	margin-top: var(--space-6);
+}
+
+/* On this page shows only where the rail sits beside the content: the design system's wide breakpoint, not the docs' 1024px, which its CSS test rules out. */
+@media (max-width: 1100px) {
+	.api-rail-toc {
+		display: none;
+	}
+}
+
+/* The docs list's Tailwind classes, which the design system bundle does not build: no bullets, a rule down the left that
+   marks the current heading, and level 3 headings set in. */
+.api-rail-toc ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.api-rail-toc li {
+	padding: 0 1rem;
+	border-left: 1px solid var(--color-border);
+}
+
+/* The scroll spy (Assets/ds/toc.ts) marks the heading in view with aria-current, as the docs outline does. */
+.api-rail-toc li:has([aria-current='location']) {
+	border-left-color: var(--color-accent);
+}
+
+.api-rail-toc .sidebar-link[aria-current='location'] {
+	color: var(--color-accent);
+	font-weight: var(--weight-semibold);
+}
+
+.api-rail-toc .sidebar-link.ml-4 {
+	margin-left: 1rem;
+}
+
+/* The API rail is not inside the docs .sidebar, so its On this page links take the docs sidebar link size here. */
+.api-rail-toc .sidebar-link {
+	display: inline-block;
+	margin: 0.375rem 0;
+	color: var(--color-text-muted);
+	font-size: 0.875rem;
+	line-height: 1.2em;
+	text-wrap: pretty;
+	word-break: break-word;
+}
+
+.api-rail-toc .sidebar-link:hover {
+	color: var(--color-heading);
 }

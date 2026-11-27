@@ -44,6 +44,15 @@ public record BundleChangelogsArguments
 	public Action? OnEmptyRange { get; init; }
 
 	/// <summary>
+	/// For a preview of a range: a pull request that lacks a product or area label the configuration requires is reported through
+	/// <see cref="OnPullRequestProblem"/> and bundled without it, instead of failing the bundle.
+	/// </summary>
+	public bool TolerateMissingLabels { get; init; }
+
+	/// <summary>Called for each pull request of a commit range that lacks a product, area or type label.</summary>
+	public Action<GitRangePrProblem>? OnPullRequestProblem { get; init; }
+
+	/// <summary>
 	/// When true, a commit range with nothing to publish still writes a bundle: the profile's products, the release date and
 	/// <c>git_ref</c>, and no entries. A release that shipped without notes then stays on record, and the renderer skips it.
 	/// A pull request whose metadata could not be read is still an error. Takes the place of <see cref="OnEmptyRange"/>.
@@ -1080,7 +1089,9 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				FallbackProducts = input.OutputProducts
+				FallbackProducts = input.OutputProducts,
+				TolerateMissingLabels = input.TolerateMissingLabels,
+				OnProblem = input.OnPullRequestProblem
 			},
 			ctx
 		);

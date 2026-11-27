@@ -674,6 +674,42 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Test]
+	[Arguments("endpoint-snapshot", "\n\n", 1)]
+	[Arguments("endpoint-snapshot-restore", "\n\n", 2)]
+	// A page is identified by its content hash, as the sitemap dates it, so a layout-only difference shares one document.
+	[Arguments("endpoint-snapshot", " ", 1)]
+	public void Collapse_SamePageInTwoTrees_MergesAtTheSameSlugAndContentHash(string v8Slug, string v8Break, int expected)
+	{
+		static DocumentationDocument Page(string tree, string root, string slug, string lineBreak) =>
+			new()
+			{
+				ContentType = "api",
+				Path = $"{root}/group/{slug}",
+				Title = "Snapshot and restore",
+				SearchTitle = "Snapshot and restore",
+				Body = $"# Snapshot and restore{lineBreak}- [Create]({root}/operation/operation-create)\n",
+				ContentBodyHash = "same-page",
+				Api = new ApiOperationMetadata
+				{
+					Key = "elasticsearch",
+					Trees = [new ApiTreeEntry { Tree = tree, Root = root }],
+					Endpoints = [],
+					Method = "",
+					Path = "",
+					OperationId = "",
+					Page = true
+				}
+			};
+
+		var docs = ApiTreeCollapse.Collapse(
+			[Page("9", "/docs/api/elasticsearch", "endpoint-snapshot", "\n\n"), Page("8", "/docs/api/elasticsearch/v8", v8Slug, v8Break)],
+			defaultTree: "9"
+		);
+
+		docs.Should().HaveCount(expected);
+	}
+
+	[Test]
 	public void ConvertToLandingDocument_Tree_IndexesTheApiRootAsALandingPage()
 	{
 		var spec = TreeSpec();

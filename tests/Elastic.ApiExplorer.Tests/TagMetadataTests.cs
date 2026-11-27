@@ -806,7 +806,7 @@ public class TagMetadataTests
 			.Should()
 			.Equal(typeof(IntroHeadingNavigationItem), typeof(IntroHeadingNavigationItem), typeof(OperationNavigationItem));
 
-		var html = await RenderTagAsync(tag);
+		var html = await TestHelpers.RenderTagAsync(tag);
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
@@ -830,7 +830,9 @@ public class TagMetadataTests
 			new TocItem("Panel types", "panel-types", 2),
 			new TocItem("Embedding", "embedding", 3)
 		]);
-		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(renderer, "## x", tag.NavigationRoot.Url, []));
+		tag.ApplyIntroHeadings(
+			ApiMarkdown.ReadIntroHeadings(renderer, "## x", tag.NavigationRoot.Url, [], EndpointsSection.ReservedAnchors)
+		);
 
 		tag
 			.NavigationItems
@@ -857,12 +859,15 @@ public class TagMetadataTests
 			new TocItem("Panel types", "panel-types", 2),
 			new TocItem("What's supported", "whats-supported", 2)
 		]);
-		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
-			renderer,
-			"## Panel types\n\n## What's supported\n",
-			tag.NavigationRoot.Url,
-			[new ApiSupplementalSection("Panel types", "Owned by the post section.")]
-		));
+		tag.ApplyIntroHeadings(
+			ApiMarkdown.ReadIntroHeadings(
+				renderer,
+				"## Panel types\n\n## What's supported\n",
+				tag.NavigationRoot.Url,
+				[new ApiSupplementalSection("Panel types", "Owned by the post section.")],
+				EndpointsSection.ReservedAnchors
+			)
+		);
 
 		tag
 			.NavigationItems
@@ -888,7 +893,7 @@ public class TagMetadataTests
 		tag.Should().NotBeNull();
 		tag.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<OperationNavigationItem>();
 
-		var html = await RenderTagAsync(tag);
+		var html = await TestHelpers.RenderTagAsync(tag);
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
@@ -905,29 +910,57 @@ public class TagMetadataTests
 		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("kibana", document);
 
-		var html = await RenderIndexAsync(navigation.Index, navigation);
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation);
 		// Every endpoint stays in the page so the browser's find-in-page matches it. Authentication and Servers are
 		// topics, so they sit above the index, not in a group.
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#markdown-content"));
 	}
 
-	private static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
-
-	private static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
+	[Test]
+	public async Task ProductLanding_Render_ClassificationHeadingsAreNotScrollSpyHeadings()
 	{
-		var collector = new DiagnosticsCollector([]);
-		var context = TestHelpers.CreateBuildContext(collector);
-		var renderContext = new ApiRenderContext(
-			context,
-			new OpenApiDocument(),
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		var openApiJson = new MinimalSpec(
+			[new("/spaces", "get-spaces", ["spaces"]), new("/agents", "get-agents", ["agents"])],
+			[new("spaces", DisplayName: "Spaces"), new("agents", DisplayName: "Agents")]
 		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			ResponseDescription = "ok",
+			TagGroups = [new("Platform", ["spaces"]), new("AI", ["agents"])]
+		}.ToJson();
 
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
 
-		return fs.File.ReadAllText("/out.html");
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation);
+
+		// The docs scroll spy follows every h2 and h3. A classification has no On this page link, so as an h3 it would drop Endpoints as the current entry.
+		html.Should().Contain("<div class=\"api-index-heading\" role=\"heading\" aria-level=\"3\">Platform</div>");
+	}
+
+	[Test]
+	public async Task ProductLanding_OnThisPage_ListsIntroHeadingsThenEndpoints()
+	{
+		var openApiJson = new MinimalSpec([new("/spaces", "get-spaces", ["spaces"])], [new("spaces", DisplayName: "Spaces")])
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			ResponseDescription = "ok"
+		}.ToJson();
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+		var info = new OpenApiInfo
+		{
+			Title = "Kibana",
+			Version = "1.0",
+			Description = "Intro.\n\n## Authentication\n\n### Keys\n\n#### Rotation\n\n## Endpoints\n"
+		};
+
+		var html = await TestHelpers.RenderIndexAsync(navigation.Index, navigation, info);
+
+		// Headings down to level 3 keep their order, level 4 is left out, and the page's own Endpoints entry comes last.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#toc-nav"));
+		html.Split("id=\"endpoints\"").Length.Should().Be(2, "an intro heading cannot claim the id the endpoint list owns");
 	}
 }

@@ -142,6 +142,16 @@ const page: SearchResultItem = {
     parents: [],
 }
 
+const apiGroupPage: SearchResultItem = {
+    type: 'api',
+    url: '/docs/api/elasticsearch/group/endpoint-snapshot',
+    title: 'Snapshot and restore',
+    description: 'Snapshot and restore endpoints',
+    score: 1,
+    parents: [],
+    page: true,
+}
+
 const renderList = ({
     groups = groupSearchResults([operation]),
     isKeyboardNavigating = false,
@@ -245,12 +255,12 @@ describe('property rows', () => {
 
     it('names the Enter action after each row destination', () => {
         renderList({
-            groups: groupSearchResults([operation, page]),
+            groups: groupSearchResults([operation, page, apiGroupPage]),
             typeFilter: 'all',
         })
         expect(screen.getAllByText('Go to operation')).toHaveLength(1)
         expect(screen.getAllByText('Go to property')).toHaveLength(3)
-        expect(screen.getAllByText('Go to page')).toHaveLength(1)
+        expect(screen.getAllByText('Go to page')).toHaveLength(2)
     })
 
     it('shows the location on every property row', () => {

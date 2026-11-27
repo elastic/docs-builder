@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
@@ -22,6 +23,7 @@ using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Nullean.ScopedFileSystem;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -132,7 +134,13 @@ public class OpenApiGeneratorCatalogSplitTests
 		var errorsAfterRendering = context.Collector.Errors;
 		var export = () => generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		entries.Should().ContainSingle("pages still render the trees that loaded");
+		entries.Should().BeEmpty("only the unreleased tree loaded, and no card links to it");
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "elasticsearch", "next", "index.html"))
+			.Should()
+			.BeTrue("pages still render the trees that loaded");
 		errorsAfterRendering.Should().Be(0, "rendering skips the missing tree with a warning");
 		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
 			"The API search export stops: API 'elasticsearch': version '8' is declared in the version index but could not be loaded."
@@ -306,24 +314,92 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task ExportDocuments_PagesWithoutASearchDocument_AreHiddenSitemapOnlyDocuments()
+	public async Task ExportDocuments_PagesWithoutAnOperation_AreSearchableUnlessExcluded()
 	{
 		using var versionIndexClient = MainNineAnd8Client();
 		var generator = MainNineAnd8Generator(versionIndexClient, TwoOperationSpecs("Ping the cluster."));
 		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
 
-		var sitemapOnly = new List<DocumentationDocument>();
+		var pages = new List<DocumentationDocument>();
 		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
 		{
-			if (doc.Api!.SitemapOnly)
-				sitemapOnly.Add(doc);
+			if (doc.Api!.Page || doc.Api.SitemapOnly)
+				pages.Add(doc);
 		}
 
-		sitemapOnly
-			.Select(d => d.Path)
+		string
+			.Join(
+				"\n\n",
+				pages.OrderBy(d => d.Path, StringComparer.Ordinal).Select(
+					d =>
+						$"""
+							{d.Path} [{string.Join(", ", d.Api!.Trees.Select(t => t.Tree))}] page: {d.Api.Page}, sitemap only: {d.Api.SitemapOnly}, hidden: {d.Hidden}, dated: {d.ContentBodyHash != ""}
+							title: {d.Title}
+							parents: {string.Join(" > ", d.Parents.Select(p => p.Title))}
+							description: {d.Description}
+							headings: {string.Join(" | ", d.Headings)}
+							body:
+							{d.Body}
+							"""
+				)
+			)
 			.Should()
-			.BeEquivalentTo("/docs/api/elasticsearch/group/endpoint-admin", "/docs/api/elasticsearch/group/endpoint-core");
-		sitemapOnly.Should().OnlyContain(d => d.Hidden && d.Body == "" && d.ContentBodyHash != "", "the default tree does not unhide them");
+			.MatchSnapshot();
+	}
+
+	[Test]
+	public async Task ExportDocuments_TypePage_ListsItsFieldsWithTheAnchorsThePageShows()
+	{
+		var specs = TwoOperationSpecs("Ping the cluster.");
+		foreach (var spec in specs)
+			spec.Components = new OpenApiComponents
+			{
+				Schemas = new Dictionary<string, IOpenApiSchema>
+				{
+					["_types.query_dsl.QueryContainer"] = new OpenApiSchema
+					{
+						Type = JsonSchemaType.Object,
+						Properties = new Dictionary<string, IOpenApiSchema>
+						{
+							["min_score"] = new OpenApiSchema { Type = JsonSchemaType.Number, Description = "Drops **low** scores." },
+							["term"] = new OpenApiSchema
+							{
+								Type = JsonSchemaType.Object,
+								Properties = new Dictionary<string, IOpenApiSchema>
+								{
+									["case_insensitive"] = new OpenApiSchema { Type = JsonSchemaType.Boolean }
+								}
+							}
+						}
+					}
+				}
+			};
+		using var versionIndexClient = MainNineAnd8Client();
+		var generator = MainNineAnd8Generator(versionIndexClient, specs);
+		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
+
+		DocumentationDocument? typePage = null;
+		await foreach (var doc in exporter.ExportDocuments([generator], TestContext.Current!.Execution.CancellationToken))
+		{
+			if (doc.Path.Contains("/types/", StringComparison.Ordinal))
+				typePage = doc;
+		}
+
+		string
+			.Join(
+				"\n",
+				typePage!.Api!.Properties.Select(
+					p => $"{p.Path} #{p.Anchor} [{p.Type}, {p.Location}, parent '{p.Parent}'] {p.Description}".TrimEnd()
+				)
+			)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+				min_score #min_score [number, field, parent ''] Drops low scores.
+				term #term [object, field, parent '']
+				term.case_insensitive #term-case_insensitive [boolean, field, parent 'term']
+				"""
+			);
 	}
 
 	/// <summary>Each exported document's content hash, keyed by its URL and the trees it stands for.</summary>
@@ -377,7 +453,37 @@ public class OpenApiGeneratorCatalogSplitTests
 					}
 				}
 			},
-			Tags = new HashSet<OpenApiTag> { new() { Name = "core" }, new() { Name = "admin" } }
+			Tags = new HashSet<OpenApiTag>
+			{
+				new()
+				{
+					Name = "core",
+					Description =
+						"Endpoints every client uses, starting with `<ping>`.\n\n## Connecting\n\nSend a `<ping>` before anything else."
+				},
+				// A generated title shows as literal text, tags included.
+				new()
+				{
+					Name = "admin",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("HTTP <code> responses"))
+					}
+				}
+			},
+			Servers = [new OpenApiServer { Url = "https://localhost:9200" }],
+			Components = new OpenApiComponents
+			{
+				SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+				{
+					["apiKey"] = new OpenApiSecurityScheme
+					{
+						Type = SecuritySchemeType.ApiKey,
+						Name = "Authorization",
+						In = ParameterLocation.Header
+					}
+				}
+			}
 		};
 
 	private static VersionIndexClient MainNineAnd8Client() =>
@@ -439,15 +545,15 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var paths = new List<string>();
 		await foreach (var doc in exporter.ExportDocuments(generators, TestContext.Current!.Execution.CancellationToken))
-			paths.Add($"{doc.Path}{(doc.Api!.SitemapOnly ? " (sitemap only)" : "")}");
+			paths.Add($"{doc.Path}{(doc.Api!.Page ? " (page)" : "")}");
 
 		paths.Should().BeEquivalentTo(
 			"/docs/api/cloud-billing",
 			"/docs/api/cloud-billing/operation/operation-ping",
-			"/docs/api/cloud-billing/group/endpoint-core (sitemap only)",
+			"/docs/api/cloud-billing/group/endpoint-core (page)",
 			"/docs/api/cloud-connect",
 			"/docs/api/cloud-connect/operation/operation-ping",
-			"/docs/api/cloud-connect/group/endpoint-core (sitemap only)"
+			"/docs/api/cloud-connect/group/endpoint-core (page)"
 		);
 	}
 
@@ -590,7 +696,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		// The card is the link itself and the heading sits inside it, so there is no stretched overlay to trap.
 		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("svg"));
 		html.Should().Contain(
-			"<div id=\"main-container\" class=\"flex min-h-screen flex-col items-center\">",
+			"<div id=\"main-container\" class=\"api-catalog-shell flex min-h-screen flex-col items-center\">",
 			"a short page must still fill the screen"
 		);
 		html.Should().NotContain("download");

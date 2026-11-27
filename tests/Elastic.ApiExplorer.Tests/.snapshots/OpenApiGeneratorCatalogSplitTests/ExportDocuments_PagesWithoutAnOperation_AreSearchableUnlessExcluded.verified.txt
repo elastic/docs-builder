@@ -1,0 +1,50 @@
+/docs/api/elasticsearch/authentication [9, 8] page: True, sitemap only: False, hidden: False, dated: True
+title: Authentication
+parents: API > Elasticsearch API
+description: How to authenticate requests to the elasticsearch API: Api key.
+headings: 
+body:
+# Authentication
+
+This API does not declare authentication schemes.
+
+
+
+/docs/api/elasticsearch/group/endpoint-admin [9, 8] page: True, sitemap only: False, hidden: False, dated: True
+title: HTTP <code> responses
+parents: API > Elasticsearch API
+description: HTTP <code> responses endpoints in the elasticsearch API: Get the status.
+headings: 
+body:
+# HTTP \<code\> responses
+
+`admin`
+
+- [Get the status](/docs/api/elasticsearch/operation/operation-status): `GET` `/_status`
+
+
+/docs/api/elasticsearch/group/endpoint-core [9, 8] page: True, sitemap only: False, hidden: False, dated: True
+title: Core
+parents: API > Elasticsearch API
+description: Endpoints every client uses, starting with <ping>.
+headings: 
+body:
+# Core
+
+`core`
+
+Endpoints every client uses, starting with `<ping>`.
+
+## Connecting
+
+Send a `<ping>` before anything else.
+
+- [Ping](/docs/api/elasticsearch/operation/operation-ping): `GET` `/ping`
+
+
+/docs/api/elasticsearch/servers [9, 8] page: False, sitemap only: True, hidden: True, dated: True
+title: Servers
+parents: 
+description: 
+headings: 
+body:

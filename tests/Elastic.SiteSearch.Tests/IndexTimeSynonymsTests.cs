@@ -20,5 +20,28 @@ public class IndexTimeSynonymsTests
 	public void Docs_ContainsEsqlAliasRule() => IndexTimeSynonyms.Docs.Should().Contain("esql, es|ql => esql");
 
 	[Test]
-	public void Docs_ContainsDataStreamsAliasRules() => IndexTimeSynonyms.Docs.Should().Contain("data-streams, data streams, datastreams");
+	public void Docs_ContainsDataStreamsAliasRules() => IndexTimeSynonyms.Docs.Should().Contain("data-streams, datastreams");
+
+	// A multi-token spelling in an equivalence stacks a token graph at one position, and the search_as_you_type
+	// shingle subfields reject the document: "Data streams" failed with "first position increment must be > 0".
+	[Test]
+	public void Docs_Equivalences_ListSingleTokenSpellingsOnly() =>
+		IndexTimeSynonyms.Docs.Where(rule => !rule.Contains("=>")).Should().OnlyContain(rule => ListsSingleTokenSpellingsOnly(rule));
+
+	[Test]
+	[Arguments("data-streams, datastreams", true)]
+	[Arguments("data-streams, data streams", false)]
+	[Arguments("data-streams, data/streams", false)]
+	[Arguments(@"foo\,bar, foobar", false)]
+	public void ListsSingleTokenSpellingsOnly_SplitsLikeGroupTokenizer(string rule, bool expected) =>
+		ListsSingleTokenSpellingsOnly(rule).Should().Be(expected);
+
+	// A backslash escapes a comma or space inside one spelling, which group_tokenizer then splits, so reject escapes outright.
+	private static bool ListsSingleTokenSpellingsOnly(string rule) =>
+		!rule.Contains('\\') && rule.Split(',').Select(spelling => spelling.Trim()).All(IsOneGroupToken);
+
+	private static bool IsOneGroupToken(string spelling) =>
+		spelling.Length > 0
+			&& !spelling.Any(char.IsWhiteSpace)
+			&& !SharedAnalysisFactory.GroupTokenizerSplitChars.Where(c => c != "whitespace").Any(spelling.Contains);
 }

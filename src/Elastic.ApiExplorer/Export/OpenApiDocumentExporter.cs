@@ -70,10 +70,11 @@ public partial class OpenApiDocumentExporter(
 		[ConvertToLandingDocument(tree), .. ConvertToDocuments(tree)];
 
 	/// <summary>
-	/// Dates the documents of one tree by the pages they stand for. A search document of a page takes the page's content hash,
-	/// and every other page gets a hidden sitemap-only document, so each page in the sitemap has one document with a content date.
+	/// Dates the documents of one tree by the pages they stand for. A search document of a page takes the page's content hash. A page
+	/// with search text of its own, such as a group, type or topic page, gets a search document; every other page gets a hidden
+	/// sitemap-only document, so each page in the sitemap has one document with a content date.
 	/// </summary>
-	internal static IEnumerable<DocumentationDocument> DatedByPage(
+	internal IEnumerable<DocumentationDocument> DatedByPage(
 		IndexedTree tree,
 		IEnumerable<DocumentationDocument> searchDocuments,
 		IReadOnlyList<ApiPageContent> pages
@@ -87,32 +88,62 @@ public partial class OpenApiDocumentExporter(
 			yield return doc;
 		}
 
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
 		foreach (var page in uncovered.Values)
+			yield return page.Search is { } search ? PageDocument(tree, page, search) : SitemapOnlyDocument(tree, page);
+	}
+
+	/// <summary>
+	/// A page of the API that is neither an operation nor the landing page: its sitemap-only document, shown to search with the page's
+	/// text and marked by <see cref="ApiOperationMetadata.Page"/>. The body is Markdown, as an operation's is, for the indexer to read.
+	/// </summary>
+	private DocumentationDocument PageDocument(IndexedTree tree, ApiPageContent page, ApiPageSearch search)
+	{
+		var dated = SitemapOnlyDocument(tree, page);
+		var inference = documentInferrer?.InferForOpenApi(tree.ProductId);
+		return dated with
 		{
-			yield return new DocumentationDocument
+			Title = search.Title,
+			SearchTitle = search.Title,
+			Description = search.Description,
+			Body = search.Markdown,
+			Hidden = false,
+			Parents =
+			[
+				new ParentDocument { Title = "API", Path = "/docs/api" },
+				new ParentDocument { Title = ProductApiLabel(tree.ApiKey), Path = dated.Api!.Trees[0].Root }
+			],
+			Api = dated.Api with { SitemapOnly = false, Page = true, Properties = search.Properties },
+			Product = inference?.Product?.Id,
+			RelatedProducts = IndexedRelatedProducts(inference)
+		};
+	}
+
+	/// <summary>A page search does not find, such as an operation the exporter skips: indexed only for its content date.</summary>
+	private static DocumentationDocument SitemapOnlyDocument(IndexedTree tree, ApiPageContent page)
+	{
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", tree.Suffix);
+		return new DocumentationDocument
+		{
+			ContentType = "api",
+			Path = page.Url,
+			Title = page.Title,
+			SearchTitle = page.Title,
+			Body = "",
+			Headings = [],
+			Links = [],
+			Hidden = true,
+			ContentBodyHash = page.ContentHash,
+			Api = new ApiOperationMetadata
 			{
-				ContentType = "api",
-				Path = page.Url,
-				Title = page.Title,
-				SearchTitle = page.Title,
-				Body = "",
-				Headings = [],
-				Links = [],
-				Hidden = true,
-				ContentBodyHash = page.ContentHash,
-				Api = new ApiOperationMetadata
-				{
-					Key = tree.ApiKey,
-					Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
-					Endpoints = [],
-					Method = "",
-					Path = "",
-					OperationId = "",
-					SitemapOnly = true
-				}
-			};
-		}
+				Key = tree.ApiKey,
+				Trees = [new ApiTreeEntry { Tree = tree.Moniker, Root = productUrl }],
+				Endpoints = [],
+				Method = "",
+				Path = "",
+				OperationId = "",
+				SitemapOnly = true
+			}
+		};
 	}
 
 	/// <summary>

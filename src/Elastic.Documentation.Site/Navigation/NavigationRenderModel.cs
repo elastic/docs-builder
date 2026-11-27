@@ -34,7 +34,7 @@ public sealed record NavigationRenderNode
 	public string? Badge { get; init; }
 	/// <summary>Lowercase HTTP methods for API operation leaves, the dominant one first; drives the sidebar method chip.</summary>
 	public IReadOnlyList<string> HttpMethods { get; init; } = [];
-	/// <summary>True for an API operation leaf the spec marks deprecated.</summary>
+	/// <summary>True for an API operation the spec marks deprecated, or an API group whose every operation is.</summary>
 	public bool Deprecated { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
@@ -387,6 +387,7 @@ public sealed record NavigationRenderModel
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
 			ShowToggle = !isGroup && !node.NavigationItems.All(n => n.Hidden),
+			Deprecated = node is IDeprecatableNavigationItem { Deprecated: true },
 			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: isGroup)]
 		};
 	}
@@ -402,7 +403,7 @@ public sealed record NavigationRenderModel
 			NavigationTitle = navigationTitle,
 			Badge = badge,
 			HttpMethods = operation?.HttpMethods ?? [],
-			Deprecated = operation?.Deprecated ?? false,
+			Deprecated = item is IDeprecatableNavigationItem { Deprecated: true },
 			Url = item.Url
 		};
 	}

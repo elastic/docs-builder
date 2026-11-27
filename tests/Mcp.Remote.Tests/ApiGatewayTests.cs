@@ -258,136 +258,145 @@ public class ApiGatewayTests
 			.Should()
 			.MatchInlineJsonSnapshot(
 				"""
-			{
-			  "query": {
-			    "bool": {
-			      "filter": [
-			        {
-			          "bool": {
-			            "filter": [
-			              {
-			                "bool": {
-			                  "minimum_should_match": 1,
-			                  "must_not": {
-			                    "terms": {
-			                      "path.keyword": [
-			                        "/docs",
-			                        "/docs/",
-			                        "/docs/404",
-			                        "/docs/404/"
-			                      ]
-			                    }
-			                  },
-			                  "should": [
-			                    {
-			                      "bool": {
-			                        "must_not": [
-			                          {
-			                            "term": {
-			                              "hidden": {
-			                                "value": true
-			                              }
-			                            }
-			                          },
-			                          {
-			                            "term": {
-			                              "api.key": {
-			                                "value": "elasticsearch"
-			                              }
-			                            }
-			                          }
-			                        ]
-			                      }
-			                    },
-			                    {
-			                      "bool": {
-			                        "filter": [
-			                          {
-			                            "term": {
-			                              "api.key": {
-			                                "value": "elasticsearch"
-			                              }
-			                            }
-			                          },
-			                          {
-			                            "term": {
-			                              "api.trees.tree": {
-			                                "value": "9"
-			                              }
-			                            }
-			                          }
-			                        ],
-			                        "must_not": {
-			                          "term": {
-			                            "api.sitemap_only": {
-			                              "value": true
-			                            }
-			                          }
-			                        }
-			                      }
-			                    }
-			                  ]
-			                }
-			              },
-			              {
-			                "term": {
-			                  "content_type": {
-			                    "value": "api"
-			                  }
-			                }
-			              },
-			              {
-			                "term": {
-			                  "api.key": {
-			                    "value": "elasticsearch"
-			                  }
-			                }
-			              }
-			            ],
-			            "must_not": {
-			              "term": {
-			                "api.landing": {
-			                  "value": true
-			                }
-			              }
-			            }
-			          }
-			        },
-			        {
-			          "term": {
-			            "api.operation_id": {
-			              "value": "search"
-			            }
-			          }
-			        }
-			      ]
-			    }
-			  },
-			  "size": 10,
-			  "_source": {
-			    "includes": [
-			      "title",
-			      "search_title",
-			      "path",
-			      "description",
-			      "content_type",
-			      "api.key",
-			      "api.method",
-			      "api.path",
-			      "api.operation_id",
-			      "api.endpoints",
-			      "api.routes",
-			      "api.group",
-			      "api.deprecated",
-			      "api.landing",
-			      "api.trees",
-			      "api.properties",
-			      "ai_short_summary",
-			      "body"
-			    ]
-			  }
-			}
-			"""
+				{
+				  "query": {
+				    "bool": {
+				      "filter": [
+				        {
+				          "bool": {
+				            "filter": [
+				              {
+				                "bool": {
+				                  "minimum_should_match": 1,
+				                  "must_not": {
+				                    "terms": {
+				                      "path.keyword": [
+				                        "/docs",
+				                        "/docs/",
+				                        "/docs/404",
+				                        "/docs/404/"
+				                      ]
+				                    }
+				                  },
+				                  "should": [
+				                    {
+				                      "bool": {
+				                        "must_not": [
+				                          {
+				                            "term": {
+				                              "hidden": {
+				                                "value": true
+				                              }
+				                            }
+				                          },
+				                          {
+				                            "term": {
+				                              "api.key": {
+				                                "value": "elasticsearch"
+				                              }
+				                            }
+				                          }
+				                        ]
+				                      }
+				                    },
+				                    {
+				                      "bool": {
+				                        "filter": [
+				                          {
+				                            "term": {
+				                              "api.key": {
+				                                "value": "elasticsearch"
+				                              }
+				                            }
+				                          },
+				                          {
+				                            "term": {
+				                              "api.trees.tree": {
+				                                "value": "9"
+				                              }
+				                            }
+				                          }
+				                        ],
+				                        "must_not": {
+				                          "term": {
+				                            "api.sitemap_only": {
+				                              "value": true
+				                            }
+				                          }
+				                        }
+				                      }
+				                    }
+				                  ]
+				                }
+				              },
+				              {
+				                "term": {
+				                  "content_type": {
+				                    "value": "api"
+				                  }
+				                }
+				              },
+				              {
+				                "term": {
+				                  "api.key": {
+				                    "value": "elasticsearch"
+				                  }
+				                }
+				              }
+				            ],
+				            "must_not": [
+				              {
+				                "term": {
+				                  "api.landing": {
+				                    "value": true
+				                  }
+				                }
+				              },
+				              {
+				                "term": {
+				                  "api.page": {
+				                    "value": true
+				                  }
+				                }
+				              }
+				            ]
+				          }
+				        },
+				        {
+				          "term": {
+				            "api.operation_id": {
+				              "value": "search"
+				            }
+				          }
+				        }
+				      ]
+				    }
+				  },
+				  "size": 10,
+				  "_source": {
+				    "includes": [
+				      "title",
+				      "search_title",
+				      "path",
+				      "description",
+				      "content_type",
+				      "api.key",
+				      "api.method",
+				      "api.path",
+				      "api.operation_id",
+				      "api.endpoints",
+				      "api.routes",
+				      "api.group",
+				      "api.deprecated",
+				      "api.landing",
+				      "api.trees",
+				      "api.properties",
+				      "ai_short_summary",
+				      "body"
+				    ]
+				  }
+				}
+				"""
 			);
 	}
 

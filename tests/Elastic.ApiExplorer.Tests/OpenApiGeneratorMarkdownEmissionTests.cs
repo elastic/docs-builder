@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -95,6 +96,87 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Generate_NameWithAngleBrackets_IsEscapedInMarkdownAndPlainInFrontMatter()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-literal-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(LiteralNameSpec())
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var group = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-codes.md"),
+				TestContext.Current!.Execution.CancellationToken
+			);
+		group = group.ReplaceLineEndings("\n");
+		group.Should().StartWith("---\ntype: api\ntitle: \"HTTP <code> responses\"\n");
+		group.Should().Contain("\n# HTTP \\<code\\> responses\n");
+
+		// The title is read as a heading, so `1.` is not taken for a list marker.
+		var numbered = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-core.md"),
+				TestContext.Current!.Execution.CancellationToken
+			);
+		numbered.ReplaceLineEndings("\n").Should().StartWith("---\ntype: api\ntitle: \"1. List roles\"\n");
+	}
+
+	private static OpenApiDocument LiteralNameSpec()
+	{
+		static OpenApiPathItem Get(string id, string tag) =>
+			new()
+			{
+				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				{
+					[HttpMethod.Get] = new()
+					{
+						OperationId = id,
+						Summary = id,
+						Tags = new HashSet<OpenApiTagReference> { new(tag) },
+						Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+					}
+				}
+			};
+
+		return new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "Elasticsearch", Version = "1.0" },
+			Paths = new OpenApiPaths { ["/codes"] = Get("codes", "codes"), ["/ping"] = Get("ping", "core") },
+			Tags = new HashSet<OpenApiTag>
+			{
+				new()
+				{
+					Name = "codes",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("HTTP <code> responses"))
+					}
+				},
+				new()
+				{
+					Name = "core",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("1. List roles"))
+					}
+				}
+			}
+		};
+	}
+
+	[Test]
 	public async Task Generate_WritesAlternateLinkOnApiHtml()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-alt-{Guid.NewGuid():N}");
@@ -165,6 +247,25 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Generate_EmptyAuthoredPage_StillWritesTheExportItsCopyPageLinksTo()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-empty-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot, emptyPage: "empty-guide.md");
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "empty-guide.md")).Should().BeTrue();
+	}
+
+	[Test]
 	public async Task Generate_CollapsedOperations_RedirectFormerUrls()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-redirect-{Guid.NewGuid():N}");
@@ -206,7 +307,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		}
 		""";
 
-	private static BuildContext CreateGenerateContext(string outputRoot)
+	private static BuildContext CreateGenerateContext(string outputRoot, string? emptyPage = null)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -222,6 +323,11 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
+		if (emptyPage is not null)
+		{
+			docsetYaml += $"\n      children:\n        - file: {emptyPage}\n";
+			fs.AddFile(Path.Join(repoRoot, "docs", "api", "elasticsearch", emptyPage), new MockFileData(string.Empty));
+		}
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
 		var products = new ProductCatalog { Products = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase) };
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, stack, products);

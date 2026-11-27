@@ -107,6 +107,63 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task ResolveDocumentsForProduct_ReleasedSpecSaysMainBranch_NamesTheIndexBranch()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		// main is published from master, as elastic/cloud does: the unreleased spec must keep its wording.
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(/*lang=json,strict*/
+					"""
+					{
+						"elastic/elasticsearch": {
+							"elasticsearch-openapi.json": {
+								"main": { "version": "master" },
+								"9": { "version": "9.4" },
+								"8": { "version": "8.19" }
+							}
+						}
+					}
+					"""
+				)
+				: SpecResponse(request)
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("master", SourceBranchSpec("main")),
+			("9.4", SourceBranchSpec("main")),
+			("8.19", SourceBranchSpec("8.19"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		resolved
+			.Documents
+			.Select(d => $"{d.Version.Moniker}: {d.Document.Info.Description}")
+			.Should()
+			.BeEquivalentTo(
+				"main: This documentation is derived from the `main` branch of the repository.",
+				"9: This documentation is derived from the `9.4` branch of the repository.",
+				"8: This documentation is derived from the `8.19` branch of the repository."
+			);
+	}
+
+	private static OpenApiDocument SourceBranchSpec(string branch)
+	{
+		var document = SpecDocument("Elasticsearch");
+		document.Info.Description = $"This documentation is derived from the `{branch}` branch of the repository.";
+		return document;
+	}
+
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionNamedNext_ReportsAnErrorAndLeavesItOut()
 	{
 		var collector = new RecordingDiagnosticsCollector();
@@ -226,7 +283,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public async Task CatalogEntry_NewestMajorFailsToLoad_LinksToATreeThatRendered()
+	public async Task CatalogEntry_NewestMajorFailsToLoad_LinksToTheReleasedTreeThatRendered()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -252,7 +309,64 @@ public partial class OpenApiGeneratorMultiVersionTests
 		entry!
 			.Url
 			.Should()
-			.Be("/api/elasticsearch/next", "nothing renders at /api/elasticsearch, so the card opens the first tree that did");
+			.Be("/api/elasticsearch/v8", "nothing renders at /api/elasticsearch, and the card never opens the unreleased tree");
+	}
+
+	[Test]
+	public async Task CatalogEntry_NewestMajorFailsToLoad_PrefersTheNewestSurvivorOverIndexOrder()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(
+			BaseUri,
+			MultiVersionHandler(
+				elasticsearchVersions: /*lang=json,strict*/ """{ "main": { "version": "main" }, "7": { "version": "7.17" }, "8": { "version": "8.19" }, "9": { "version": "9.4" } }"""
+			),
+			sleep: (_, _) => Task.CompletedTask
+		);
+		var reader = CreateVersionedReader(
+			missingVersionsAreUnreadable: true,
+			("main", SpecDocument("Elasticsearch main")),
+			("7.17", SpecDocument("Elasticsearch 7")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var apiConfig = ApiConfig(product);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
+
+		entry!.Url.Should().Be("/api/elasticsearch/v8", "the index lists 7 before 8, and the card opens the newest release that rendered");
+		entry.Title.Should().Be("Elasticsearch 8");
+	}
+
+	[Test]
+	public async Task CatalogEntry_OnlyTheUnreleasedTreeLoads_HasNoCard()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(missingVersionsAreUnreadable: true, ("main", SpecDocument("Elasticsearch main")));
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var apiConfig = ApiConfig(product);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
+
+		resolved.Documents.Should().ContainSingle("the unreleased tree still renders at /next");
+		entry.Should().BeNull("a card would be the only link to the unreleased tree");
 	}
 
 	[Test]
@@ -815,6 +929,50 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task Generate_ServersPage_StaysNoindexWhileTheOperationPageIsIndexed()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch(), allowIndexing: true);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+
+		OpenApiDocument WithServer(string title)
+		{
+			var document = SpecDocument(title);
+			document.Servers = [new OpenApiServer { Url = "https://localhost:9200" }];
+			return document;
+		}
+
+		var reader = CreateVersionedReader(("main", WithServer("main")), ("9.4", WithServer("9")), ("8.19", WithServer("8")));
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		string Robots(params string[] segments) =>
+			Regex
+				.Match(
+					context.WriteFileSystem.File.ReadAllText(Path.Join([outputRoot, "api", "elasticsearch", .. segments, "index.html"])),
+					"<meta name=\"robots\" content=\"([^\"]*)\"",
+					RegexOptions.None,
+					RegexTimeouts.MatchTimeout
+				)
+				.Groups[1]
+				.Value;
+
+		// Servers is out of the sitemap, so it is not indexed either; the hidden version roots stay indexed
+		$"servers: {Robots("servers")}\nv8 servers: {Robots("v8", "servers")}\noperation: {Robots("operation", "operation-ping")}\nlanding: {Robots()}\nv8 landing: {Robots("v8")}".Should().MatchInlineSnapshot(
+			"""
+				servers: noindex
+				v8 servers: noindex
+				operation: index, follow
+				landing: index, follow
+				v8 landing: index, follow
+				"""
+		);
+	}
+
+	[Test]
 	public async Task Generate_EachTree_RendersTheVersionNoticeOfItsPageType()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -855,15 +1013,78 @@ public partial class OpenApiGeneratorMultiVersionTests
 			"""
 			versionless badges: none
 			v9 badges: none
-			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><span class="applies applies-inline"><a class="applicable-info" href="/api/elasticsearch/operation/operation-ping"><span class="applicable-name">Latest: v9</span></a></span></span></header>
+			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span><span class="applies applies-inline"><a class="applicable-info" href="/api/elasticsearch/operation/operation-ping"><span class="applicable-name">Latest: v9</span></a></span></span></header>
 			next badges: none
 			versionless: none
 			v9: none
 			v8: none
 			next: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch/operation/operation-ping"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
 			versionless landing: none
-			v8 landing: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
+			v8 landing: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
 			next landing: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span><a href="/api/elasticsearch"><span>View the latest version (v9)</span><svg class="api-version-notice__arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/></svg></a></p>
+			"""
+		);
+	}
+
+	[Test]
+	public async Task Generate_EachTree_ShowsTheIndexedMinorReleaseOnTheLandingFact()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		// the specs read 1.0, so a fact that fell back to info.version would show it on every page
+		var facts = string.Join(
+			"\n",
+			$"versionless: {ReadVersionFact(context, outputRoot, [])}",
+			$"v9: {ReadVersionFact(context, outputRoot, ["v9"])}",
+			$"v8: {ReadVersionFact(context, outputRoot, ["v8"])}",
+			$"next: {ReadVersionFact(context, outputRoot, ["next"])}"
+		);
+
+		facts.Should().MatchInlineSnapshot(
+			"""
+			versionless: <dt>Version</dt><dd>9.4</dd>
+			v9: <dt>Version</dt><dd>9.4</dd>
+			v8: <dt>Version</dt><dd>8.19</dd>
+			next: <dt>Version</dt><dd>1.0</dd>
+			"""
+		);
+	}
+
+	[Test]
+	public async Task Generate_OnlyOneTreeRenders_KeepsTheMinorReleaseWithoutASwitcher()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(missingVersionsAreUnreadable: true, ("8.19", SpecDocument("Elasticsearch 8")));
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var rendered = string.Join(
+			"\n",
+			$"v8 fact: {ReadVersionFact(context, outputRoot, ["v8"])}",
+			$"v8 landing notice: {ReadNotice(context, outputRoot, ["v8"])}"
+		);
+
+		rendered.Should().MatchInlineSnapshot(
+			"""
+			v8 fact: <dt>Version</dt><dd>8.19</dd>
+			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span></p>
 			"""
 		);
 	}
@@ -897,9 +1118,9 @@ public partial class OpenApiGeneratorMultiVersionTests
 		notices.Should().MatchInlineSnapshot(
 			"""
 			v8 notice: none
-			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span></span></header>
+			v8 badges: <span class="api-title-badges"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span></span></header>
 			next notice: <p class="api-version-notice api-version-notice--unreleased" role="note"><span class="applies applies-inline"><span class="applicable-info api-badge--warning"><span class="applicable-name">Unreleased</span></span></span><span>This version is not released yet and can change.</span></p>
-			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8</span></span></span></p>
+			v8 landing notice: <p class="api-version-notice api-version-notice--older" role="note"><span class="applies applies-inline"><span class="applicable-info"><span class="applicable-name">Version 8.19</span></span></span></p>
 			"""
 		);
 	}
@@ -969,10 +1190,11 @@ public partial class OpenApiGeneratorMultiVersionTests
 		var files = context.WriteFileSystem.File;
 		var shared = files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-ping", "index.html"));
 		shared.Should().Contain("href=\"/api/elasticsearch/v8/operation/operation-ping\"");
-		shared.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-ping\"");
+		shared.Should().NotContain("href=\"/api/elasticsearch/next", "a released page never links to the unreleased tree");
 		var mainOnly = files.ReadAllText(
 			Path.Join(outputRoot, "api", "elasticsearch", "next", "operation", "operation-newop", "index.html")
 		);
+		mainOnly.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-newop\"", "the unreleased tree lists itself");
 		mainOnly.Should().Contain("href=\"/api/elasticsearch/v8\"");
 		mainOnly.Should().Contain("href=\"/api/elasticsearch\"");
 		mainOnly.Should().NotContain("/api/elasticsearch/v8/operation/operation-newop");
@@ -981,7 +1203,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 		// the numbered copy of the newest major keeps its reader on its own URLs
 		var numbered = files.ReadAllText(Path.Join(outputRoot, "api", "elasticsearch", "v9", "operation", "operation-ping", "index.html"));
 		numbered.Should().Contain("href=\"/api/elasticsearch/v9/operation/operation-ping\"");
-		numbered.Should().Contain("href=\"/api/elasticsearch/next/operation/operation-ping\"");
+		numbered.Should().NotContain("href=\"/api/elasticsearch/next");
 	}
 
 	[Test]
@@ -1055,7 +1277,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public async Task Generate_EmptyMetaDescriptions_AreOnlyPagesWithNoSourceSentence()
+	public async Task Generate_PagesWithNoSourceSentence_GetADescriptionBuiltFromSpecFacts()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -1074,22 +1296,15 @@ public partial class OpenApiGeneratorMultiVersionTests
 		var pages = ReadMetaDescriptions(context.WriteFileSystem, outputRoot);
 		EmptyDescriptionPages(pages)
 			.Should()
-			.Equal(
-				"/api/elasticsearch/group/endpoint-bare",
-				"/api/elasticsearch/next/authentication",
-				"/api/elasticsearch/next/group/endpoint-bare",
-				"/api/elasticsearch/next/operation/operation-bare",
-				"/api/elasticsearch/next/servers",
-				"/api/elasticsearch/operation/operation-bare",
-				"/api/elasticsearch/servers",
-				"/api/elasticsearch/v8/authentication",
-				"/api/elasticsearch/v8/group/endpoint-bare",
-				"/api/elasticsearch/v8/operation/operation-bare",
-				"/api/elasticsearch/v8/servers",
-				"/api/elasticsearch/v9/group/endpoint-bare",
-				"/api/elasticsearch/v9/operation/operation-bare",
-				"/api/elasticsearch/v9/servers"
-			);
+			.BeEmpty("a page with no source sentence takes a description built from what the spec declares");
+		pages["/api/elasticsearch/group/endpoint-bare"].Should().Be("Bare endpoints in the elasticsearch API: Bare, Commented.");
+		pages["/api/elasticsearch/operation/operation-bare"].Should().Be("Bare: GET /bare in the elasticsearch API.");
+		pages["/api/elasticsearch/operation/operation-commented"].Should().Be("Commented: GET /commented in the elasticsearch API.");
+		pages["/api/elasticsearch/operation/operation-leading"]
+			.Should()
+			.Be("Written for readers.", "a leading author note does not hide the prose after it");
+		pages["/api/elasticsearch/servers"].Should().Be("Server URLs for the elasticsearch API: https://example.com.");
+		pages["/api/elasticsearch/v8/authentication"].Should().Be("How to authenticate requests to the elasticsearch API: Api key.");
 		pages["/api/elasticsearch/next"]
 			.Should()
 			.Be("Search and analyze data.", "a landing with no description of its own takes the canonical one");
@@ -1104,10 +1319,36 @@ public partial class OpenApiGeneratorMultiVersionTests
 		markdown["/api/elasticsearch/v8"].Should().Be("Search and analyze data.");
 		markdown["/api/elasticsearch/group/endpoint-described"].Should().Be("The described APIs manage documents.");
 		markdown["/api/elasticsearch/operation/operation-summarized"].Should().Be("Summarize things");
+		markdown["/api/elasticsearch/operation/operation-leading"].Should().Be("Written for readers.");
 		markdown["/api/elasticsearch/v9/authentication"].Should().Be("Topic text.");
-		markdown["/api/elasticsearch/next/authentication"].Should().BeEmpty();
 		foreach (var (url, description) in markdown.Where(page => pages.ContainsKey(page.Key)))
 			description.Should().Be(pages[url], $"the Markdown of {url} carries the same description as its HTML");
+	}
+
+	[Test]
+	public async Task Generate_LandingWhoseCanonicalSpecHasNoDescription_GetsTheGeneratedSentenceInHtmlAndMarkdown()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SeoSample("Elasticsearch main", null)),
+			("9.4", SeoSample("Elasticsearch 9", null)),
+			("8.19", SeoSample("Elasticsearch 8", null))
+		);
+
+		await CreateGenerator(context, versionIndexClient, reader).Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var pages = ReadMetaDescriptions(context.WriteFileSystem, outputRoot);
+		var markdown = ReadMarkdownDescriptions(context.WriteFileSystem, outputRoot);
+		foreach (var url in new[] { "/api/elasticsearch", "/api/elasticsearch/next", "/api/elasticsearch/v8" })
+		{
+			pages[url].Should().Be("Reference documentation for the elasticsearch API.");
+			markdown[url].Should().Be(pages[url]);
+		}
 	}
 
 	/// <summary>Front matter description per page URL, read from every generated Markdown file. A page without one reads as empty.</summary>
@@ -1173,12 +1414,14 @@ public partial class OpenApiGeneratorMultiVersionTests
 		document.Paths = new OpenApiPaths
 		{
 			["/summarized"] = SeoPath("summarized", "described", "Summarize things"),
-			["/bare"] = SeoPath("bare", "bare", null)
+			["/bare"] = SeoPath("bare", "bare", null),
+			["/commented"] = SeoPath("commented", "bare", null, "<!-- note to authors -->"),
+			["/leading"] = SeoPath("leading", "described", null, "<!-- note to authors -->\n\nWritten for readers.")
 		};
 		return document;
 	}
 
-	private static OpenApiPathItem SeoPath(string operationId, string tag, string? summary) =>
+	private static OpenApiPathItem SeoPath(string operationId, string tag, string? summary, string? description = null) =>
 		new()
 		{
 			Operations = new Dictionary<HttpMethod, OpenApiOperation>
@@ -1187,6 +1430,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 				{
 					OperationId = operationId,
 					Summary = summary,
+					Description = description,
 					Tags = new HashSet<OpenApiTagReference> { new(tag) },
 					Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
 				}
@@ -1203,6 +1447,10 @@ public partial class OpenApiGeneratorMultiVersionTests
 	/// <summary>The version notice under the title of a generated page, on one line, or <c>none</c>.</summary>
 	private static string ReadNotice(BuildContext context, string outputRoot, string[] segments) =>
 		ReadFragment(context, outputRoot, segments, "<p class=\"api-version-notice.*?</p>");
+
+	/// <summary>The "Version" fact of a generated landing page, on one line, or <c>none</c>.</summary>
+	private static string ReadVersionFact(BuildContext context, string outputRoot, string[] segments) =>
+		ReadFragment(context, outputRoot, segments, "<dt>Version</dt>\\s*<dd>.*?</dd>");
 
 	/// <summary>The badges row of a generated operation page, on one line, or <c>none</c>.</summary>
 	private static string ReadBadges(BuildContext context, string outputRoot, string[] segments) =>
@@ -1291,7 +1539,14 @@ public partial class OpenApiGeneratorMultiVersionTests
 		return reader;
 	}
 
-	private static HttpMessageHandler MultiVersionHandler(string repository = "elastic/elasticsearch") =>
+	private const string MainNineAndEight = /*lang=json,strict*/
+		"""{ "main": { "version": "main" }, "9": { "version": "9.4" }, "8": { "version": "8.19" } }""";
+
+	/// <param name="elasticsearchVersions">The versions the index declares for the Elasticsearch spec, in the order it lists them.</param>
+	private static HttpMessageHandler MultiVersionHandler(
+		string repository = "elastic/elasticsearch",
+		string elasticsearchVersions = MainNineAndEight
+	) =>
 		new StubHandler(request =>
 		{
 			if (request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal))
@@ -1300,11 +1555,7 @@ public partial class OpenApiGeneratorMultiVersionTests
 					$$"""
 					{
 						"{{repository}}": {
-							"elasticsearch-openapi.json": {
-								"main": { "version": "main" },
-								"9": { "version": "9.4" },
-								"8": { "version": "8.19" }
-							},
+							"elasticsearch-openapi.json": {{elasticsearchVersions}},
 							"elastic-cloud-serverless.yml": {
 								"main": { "version": "main" },
 								"8": { "version": "8.19" }

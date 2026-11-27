@@ -1,6 +1,6 @@
 <aside id="api-beta-banner" class="api-beta-banner" aria-label="About this API reference">
-	<p class="api-beta-banner__message">We're giving our API reference a new engine and a fresh look.
-		<a class="api-beta-banner__link" href="https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&amp;labels=source:web" data-api-beta-feedback-open="api-beta-feedback" aria-haspopup="dialog">We'd love to hear what you think</a>.</p>
+	<p class="api-beta-banner__message">We've rebuilt the Elastic API reference with a fresh design.
+		<a class="api-beta-banner__link" href="https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&amp;labels=source:web" data-api-beta-feedback-open="api-beta-feedback" aria-haspopup="dialog">Share your feedback</a>.</p>
 	<dialog class="api-beta-feedback" id="api-beta-feedback" aria-labelledby="api-beta-feedback-title">
 		<header class="api-beta-feedback__header">
 			<h2 class="api-beta-feedback__title" id="api-beta-feedback-title">Feedback on this page</h2>
@@ -13,7 +13,6 @@
 			</form>
 		</header>
 		<div class="api-beta-feedback__content">
-			<p class="api-beta-feedback__intro">Tell us what looks wrong or is missing.</p>
 			<section class="feedback" data-feedback="" hidden="" data-feedback-page-url="/docs/api/elasticsearch" data-feedback-page-title="Elastic Documentation" data-feedback-api="/docs/_api/v1/page-feedback" data-feedback-reason-version="2">
 				<div class="feedback__prompt" data-feedback-prompt="">
 					<p class="feedback__question" id="feedback-api-beta-feedback-question">Was this page helpful?</p>
@@ -82,6 +81,7 @@
 							<span class="check__box" aria-hidden="true"></span>
 							<span class="check__label">
 								<span class="feedback__reason-label">Another reason</span>
+								<span class="feedback__reason-description">Something else helped. Tell us more below.</span>
 							</span>
 						</label>
 					</fieldset>
@@ -132,12 +132,13 @@
 							<span class="check__box" aria-hidden="true"></span>
 							<span class="check__label">
 								<span class="feedback__reason-label">Another reason</span>
+								<span class="feedback__reason-description">Something else went wrong. Tell us more below.</span>
 							</span>
 						</label>
 					</fieldset>
 					<div class="feedback__details">
-						<label class="feedback__sr-only" for="feedback-api-beta-feedback-comment">Tell us more (optional)</label>
-						<textarea class="input feedback__textarea" id="feedback-api-beta-feedback-comment" data-feedback-comment="" maxlength="2000" placeholder="Tell us more (optional)" aria-describedby="feedback-api-beta-feedback-guidance"></textarea>
+						<label class="feedback__comment-label" for="feedback-api-beta-feedback-comment">Tell us more (optional)</label>
+						<textarea class="input feedback__textarea" id="feedback-api-beta-feedback-comment" data-feedback-comment="" maxlength="2000" aria-describedby="feedback-api-beta-feedback-guidance"></textarea>
 						<div class="feedback__footer">
 							<p class="feedback__guidance" id="feedback-api-beta-feedback-guidance">Don't include passwords, API keys, or other sensitive information.</p>
 							<span class="feedback__count" data-feedback-count="">0/2000</span>

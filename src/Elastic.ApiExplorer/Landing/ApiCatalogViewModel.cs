@@ -20,8 +20,8 @@ public sealed record ApiCatalogGroup(
 	IReadOnlyList<ApiCatalogItem> Others
 )
 {
-	/// <summary>The other cards that are not attached under a featured card. Attached ones render right after their parent.</summary>
-	public IEnumerable<ApiCatalogItem> Unattached => Others.Where(o => ColumnOf(o) is null);
+	/// <summary>The other cards that are not attached under a featured card. Attached ones render inside their parent's cell.</summary>
+	public IEnumerable<ApiCatalogItem> Unattached => Others.Where(o => !Featured.Any(f => f.Key == o.ParentKey));
 
 	/// <summary>The tag-on attached under <paramref name="featured"/>, if this group has one.</summary>
 	public bool TryGetVariant(ApiCatalogItem featured, out ApiCatalogItem variant)
@@ -29,17 +29,6 @@ public sealed record ApiCatalogGroup(
 		var found = Others.FirstOrDefault(o => o.ParentKey == featured.Key);
 		variant = found!;
 		return found is not null;
-	}
-
-	/// <summary>The 1-based grid column of the featured card that <paramref name="variant"/> is attached under, if it has one here.</summary>
-	public int? ColumnOf(ApiCatalogItem variant)
-	{
-		for (var i = 0; i < Featured.Count; i++)
-		{
-			if (Featured[i].Key == variant.ParentKey)
-				return i + 1;
-		}
-		return null;
 	}
 }
 
@@ -57,20 +46,18 @@ public enum ApiCatalogCardKind
 	/// <summary>The larger card for the core APIs.</summary>
 	Featured,
 
-	/// <summary>The small card for everything else in a group.</summary>
-	Compact
+	/// <summary>The small tag-on card that sits flush under its featured parent.</summary>
+	Attached
 }
 
 /// <summary>
 /// Input for the card partial. <see cref="HasVariant"/> marks a featured card with a tag-on attached under it.
-/// <see cref="Column"/> is the grid column of the card a tag-on is attached under. <see cref="HeadingLevel"/> is the level
-/// of the card title: 3 under a group heading, 2 when the page renders none.
+/// <see cref="HeadingLevel"/> is the level of the card title: 3 under a group heading, 2 when the page renders none.
 /// </summary>
 public sealed record ApiCatalogCard(
 	ApiCatalogItem Item,
 	ApiCatalogCardKind Kind = ApiCatalogCardKind.Standard,
 	bool HasVariant = false,
-	int? Column = null,
 	int HeadingLevel = 3
 );
 
