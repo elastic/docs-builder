@@ -31,6 +31,11 @@ Set the flag through the environment when you run the server:
 FEATURE_NAVIGATION_PREVIEW=true dotnet run --project src/tooling/docs-builder -- serve
 ```
 
+The assembler preview of a pull request builds with the `preview` environment of `config/assembler.yml`, which leaves `NAVIGATION_PREVIEW` off.
+To see flag-gated work on the preview, add the label `preview:navigation-preview` to the pull request: the next preview build exports `FEATURE_NAVIGATION_PREVIEW=true`, and adding or removing the label starts that build.
+Any flag that `FeatureFlags.KnownKeys` lists works the same way as `preview:<flag>`; a label naming another flag is reported in the job log and ignored.
+The label has to exist in the repository before it can be applied.
+
 When the flag is on, the page head loads `ds-layers.css`, `ds.css` and `ds.js` and nothing else: not `styles.css`, `main.js` or the build-type stylesheets.
 `ds.js` carries its own runtime in `Assets/ds/runtime.ts`, the framework-free parts of `main.ts`: htmx navigation, telemetry, code highlighting, math, diagrams and tables.
 `Assets/ds/bundle.test.ts` fails when anything in the `ds.ts` import graph pulls in React, EUI or Emotion.
