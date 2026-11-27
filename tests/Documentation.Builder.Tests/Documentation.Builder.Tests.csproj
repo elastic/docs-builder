@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsCheck" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The seed of the generated tests: random per run, replayable with CsCheck_Seed. -->
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\RunSeed.cs" Link="RunSeed.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" />
+    <!-- Script, SampleWith, SampleState: how the services are tested. Not shipped. -->
+    <PackageReference Include="Nullean.Entities.CsCheck" />
+  </ItemGroup>
+
+</Project>
