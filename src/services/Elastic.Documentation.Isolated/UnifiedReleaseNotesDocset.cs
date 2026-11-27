@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Globalization;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.ReleaseSchedule;

@@ -6,7 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Changelog.Scrubbing;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -95,12 +95,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 	private UnifiedReleaseNotesBuildService Service(params Product[] extraProducts)
 	{
 		var products = Products.Concat(extraProducts).ToDictionary(p => p.Id).ToFrozenDictionary();
-		var productsConfiguration = new ProductsConfiguration
-		{
-			Products = products,
-			PublicReferenceProducts = products,
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
+		var productsConfiguration = new ProductCatalog { Products = products };
 		var configurationContext = TestHelpers.CreateConfigurationContext(_fileSystem, productsConfiguration: productsConfiguration);
 		return new UnifiedReleaseNotesBuildService(
 			new TestLoggerFactory(),

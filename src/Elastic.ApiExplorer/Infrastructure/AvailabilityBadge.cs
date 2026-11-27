@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.ApplicabilityBadges;
 using Microsoft.OpenApi;
@@ -18,7 +19,7 @@ public static class AvailabilityBadge
 {
 	public static ApplicableToViewModel? From(
 		IDictionary<string, IOpenApiExtension>? extensions,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool designSystem = false
 	) => Create(XStateApplicability.From(extensions), versionsConfig, designSystem: designSystem);
 
@@ -28,7 +29,7 @@ public static class AvailabilityBadge
 	/// </summary>
 	public static ApplicableToViewModel? FromOperation(
 		OpenApiOperation operation,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool showTooltip = true,
 		bool designSystem = false
 	) =>
@@ -42,7 +43,7 @@ public static class AvailabilityBadge
 
 	public static ApplicableToViewModel? Create(
 		ApplicableTo? applicableTo,
-		VersionsConfiguration? versionsConfig,
+		VersioningSystemCatalog? versionsConfig,
 		bool showTooltip = true,
 		bool designSystem = false
 	)

@@ -361,7 +361,7 @@ internal static class DesignSystemDirectives
 				Inline = true,
 				ShowTooltip = showTooltip,
 				DesignSystem = true,
-				VersionsConfig = block.Build.VersionsConfiguration
+				VersionsConfig = block.Build.Catalog.VersioningSystems
 			})
 			.RenderAsync()
 			.GetAwaiter()

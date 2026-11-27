@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -87,7 +88,7 @@ public class UnifiedReleaseNotesBuildService(
 	public async Task<bool> Build(IDiagnosticsCollector collector, UnifiedReleaseNotesBuildOptions options, Cancel ctx = default)
 	{
 		var products = UnifiedReleaseNotesDocset.SelectProducts(
-			configurationContext.ProductsConfiguration.Products.Values,
+			configurationContext.Catalog.Products.Products.Values,
 			options.AdditionalProductIds
 		);
 		if (products.Count == 0)

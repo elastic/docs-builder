@@ -54,7 +54,7 @@ internal static class ModelDump
 
 		if (depth > MaxDepth || path.Any(p => ReferenceEquals(p, value)))
 		{
-			_ = sb.Append(pad).Append(label).Append(": <cycle ").Append(value.GetType().Name).Append(">\n");
+			_ = sb.Append(pad).Append(label).Append(": <cycle ").Append(NameOf(value.GetType())).Append(">\n");
 			return;
 		}
 
@@ -120,7 +120,7 @@ internal static class ModelDump
 	{
 		var pad = new string(' ', depth * 2);
 		var type = value.GetType();
-		_ = sb.Append(pad).Append(label).Append(" <").Append(type.Name).Append(">:").Append('\n');
+		_ = sb.Append(pad).Append(label).Append(" <").Append(NameOf(type)).Append(">:").Append('\n');
 		foreach (var member in Members(type))
 		{
 			if (context.Skip.Contains(member.Name))
@@ -187,6 +187,19 @@ internal static class ModelDump
 	};
 
 	// generic types are matched by name: the unbound form `typeof(X<,>)` is formatted differently by different curb versions
+	/// <summary>
+	/// The verified snapshots name these four records as they were called when the snapshots were taken: the dump stays byte-identical
+	/// across the rename to the catalog types.
+	/// </summary>
+	private static string NameOf(Type type) => type.Name switch
+	{
+		"ProductCatalog" => "ProductsConfiguration",
+		"VersioningSystemCatalog" => "VersionsConfiguration",
+		"LegacyUrlMappingCatalog" => "LegacyUrlMappingConfiguration",
+		"RelatedLearningCatalog" => "RelatedLearningConfiguration",
+		var name => name
+	};
+
 	private static bool IsKeyValuePair(Type t) => t.IsGenericType && t.GetGenericTypeDefinition().Name == "KeyValuePair`2";
 
 	private static bool IsMapType(Type t) =>

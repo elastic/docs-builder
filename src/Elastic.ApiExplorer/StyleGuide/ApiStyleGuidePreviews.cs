@@ -72,11 +72,9 @@ public static class ApiStyleGuidePreviews
 	{
 		var configuration = new ConfigurationContext
 		{
-			VersionsConfiguration = template.VersionsConfiguration,
+			Catalog = template.Catalog,
 			ConfigurationFileProvider = template.ConfigurationFileProvider,
 			Endpoints = template.Endpoints,
-			ProductsConfiguration = template.ProductsConfiguration,
-			LegacyUrlMappings = template.LegacyUrlMappings,
 			SearchConfiguration = template.SearchConfiguration
 		};
 		// The API reference is part of the assembled site, so its pages are written with the assembler chrome.

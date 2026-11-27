@@ -3,24 +3,27 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 
 namespace Elastic.Documentation.Configuration.LegacyUrlMappings;
 
-public static class LegacyUrlMappingExtensions
+internal static class LegacyUrlMappingExtensions
 {
-	public static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(
-		this ConfigurationFileProvider provider,
-		ProductsConfiguration products
-	)
+	public static LegacyUrlMappingCatalog CreateLegacyUrlMappings(this ConfigurationFileProvider provider, ProductCatalog products)
 	{
 		var legacyUrlMappingsFilePath = provider.LegacyUrlMappingsFile;
 
-		var legacyUrlMappingsDto = ConfigurationFileProvider.Deserialize<LegacyUrlMappingConfigDto>(
-			legacyUrlMappingsFilePath.OpenText(),
-			legacyUrlMappingsFilePath.FullName
+		return ToCatalog(
+			ConfigurationFileProvider.Deserialize<LegacyUrlMappingConfigDto>(
+				legacyUrlMappingsFilePath.OpenText(),
+				legacyUrlMappingsFilePath.FullName
+			),
+			products
 		);
+	}
 
+	internal static LegacyUrlMappingCatalog ToCatalog(LegacyUrlMappingConfigDto legacyUrlMappingsDto, ProductCatalog products)
+	{
 		var legacyUrlMappings = legacyUrlMappingsDto.Mappings.Select(
 			kvp => new LegacyUrlMapping
 			{
@@ -30,7 +33,7 @@ public static class LegacyUrlMappingExtensions
 			}
 		);
 
-		return new LegacyUrlMappingConfiguration { Mappings = legacyUrlMappings.ToImmutableList() };
+		return new LegacyUrlMappingCatalog { Mappings = legacyUrlMappings.ToImmutableList() };
 	}
 }
 

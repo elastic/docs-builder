@@ -28,7 +28,7 @@ public record ApiTag(
 	internal static IReadOnlyList<ApiOverviewRow> OverviewRows(ApiRenderContext context) =>
 		ApiOverviewBuilder.BuildTagChildren(
 			context.CurrentNavigation,
-			context.BuildContext.VersionsConfiguration,
+			context.BuildContext.Catalog.VersioningSystems,
 			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
 		);
 

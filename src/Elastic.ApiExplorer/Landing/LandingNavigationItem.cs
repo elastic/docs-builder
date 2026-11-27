@@ -21,7 +21,7 @@ public class ApiLanding : IApiGroupingModel
 	private static IReadOnlyList<ApiOverviewRow> OverviewRows(ApiRenderContext context) =>
 		ApiOverviewBuilder.Build(
 			context.CurrentNavigation.NavigationRoot,
-			context.BuildContext.VersionsConfiguration,
+			context.BuildContext.Catalog.VersioningSystems,
 			context.BuildContext.Configuration.Features.NavigationPreviewEnabled,
 			tag => ApiMarkdownFrontMatter.TagSummary(tag, context)
 		);

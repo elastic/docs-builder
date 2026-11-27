@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 

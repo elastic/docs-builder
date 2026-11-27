@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;

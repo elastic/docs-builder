@@ -8,10 +8,9 @@ using System.Net;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,15 +31,9 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var collector = new DiagnosticsCollector([]);
 		var versionless = TestHelpers.CreateVersionlessConfiguration();
 		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
-		var products = new ProductsConfiguration
+		var products = new ProductCatalog
 		{
-			Products = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(
-				StringComparer.OrdinalIgnoreCase
-			),
-			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName }.ToFrozenDictionary(
-				StringComparer.OrdinalIgnoreCase
-			)
+			Products = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
 		};
 		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, products);
 		var localFile = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
