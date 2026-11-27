@@ -4,6 +4,8 @@
 
 using System.Collections.Frozen;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Equality;
+using Generator.Equals;
 
 namespace Elastic.Documentation.Links;
 
@@ -49,7 +51,8 @@ public record FloatingLinkVersion
 /// so each page path appears once with a bit mask of the versions that contain it, and a lookup is a few hash
 /// lookups and a bit test no matter how many versions there are.
 /// </summary>
-public record FloatingLinkSection
+[Equatable]
+public partial record FloatingLinkSection
 {
 	/// <summary>The most versions one section can hold, one bit each.</summary>
 	public const int MaxVersions = 64;
@@ -69,6 +72,7 @@ public record FloatingLinkSection
 
 	/// <summary>The versions of the section. The index of a version is its bit position in the page masks.</summary>
 	[JsonPropertyName("versions")]
+	[OrderedEquality]
 	public required FloatingLinkVersion[] Versions { get; init; }
 
 	/// <summary>
@@ -76,6 +80,7 @@ public record FloatingLinkSection
 	/// contain it. The landing page of a version has the empty path.
 	/// </summary>
 	[JsonPropertyName("pages")]
+	[UnorderedEquality]
 	public required Dictionary<string, ulong> Pages { get; init; }
 
 	/// <summary>
@@ -85,9 +90,13 @@ public record FloatingLinkSection
 	/// </summary>
 	[JsonPropertyName("aliases")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	[CustomEquality(typeof(FloatingAliasesComparer))]
+#pragma warning disable GE001 // the whole dictionary is compared by FloatingAliasesComparer; the generator's collection attributes compare nested collections by reference
 	public Dictionary<string, Dictionary<string, string[]>>? Aliases { get; init; }
+#pragma warning restore GE001
 
 	[JsonIgnore]
+	[IgnoreEquality]
 	private FrozenDictionary<string, int> VersionBits =>
 		field ??= Versions.Take(MaxVersions).Select((version, bit) => (version.Name, bit)).ToFrozenDictionary(v => v.Name, v => v.bit);
 
@@ -102,13 +111,16 @@ public record FloatingLinkSection
 		];
 
 	[JsonIgnore]
+	[IgnoreEquality]
 	private int CurrentBit => CurrentBitCache ??= Array.FindIndex(Versions, v => v.Current);
 
 	[JsonIgnore]
+	[IgnoreEquality]
 	private int? CurrentBitCache { get; set; }
 
 	/// <summary>The reverse of <see cref="Aliases"/>, built once, so that finding the canonical page of an alias is one lookup.</summary>
 	[JsonIgnore]
+	[IgnoreEquality]
 	private FrozenDictionary<string, FrozenDictionary<string, string>> CanonicalByAlias =>
 		field ??= (Aliases ?? []).ToFrozenDictionary(
 			version => version.Key,
