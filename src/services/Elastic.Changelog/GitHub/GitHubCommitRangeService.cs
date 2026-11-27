@@ -35,6 +35,8 @@ public sealed partial class GitHubCommitRangeService(
 	private const int WarmUpStageSize = 50;
 	private const int MaxWarmUpPages = 10;
 	private const int MaxWarmUpStageAttempts = 3;
+	private const int MaxColdRangeRetries = 3;
+	private const int ColdRangeRetryDelaySeconds = 10;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
 	private readonly GitHubApiTransport _transport = transport
@@ -231,8 +233,8 @@ public sealed partial class GitHubCommitRangeService(
 		var stages = await ListWarmUpStagesAsync(args, ctx).ConfigureAwait(false);
 		if (stages.Count == 0)
 		{
-			_logger.LogWarning(
-				"GitHub could not compare {Start}...{End} for {Owner}/{Repo} yet, and the range has no commits to compare in stages.",
+			_logger.LogInformation(
+				"GitHub could not compare {Start}...{End} for {Owner}/{Repo} yet, and the range has no commits to compare in stages. Asking for the whole range again, with waits in between.",
 				args.StartRef,
 				args.EndRef,
 				args.Owner,
@@ -354,6 +356,24 @@ public sealed partial class GitHubCommitRangeService(
 		}
 	}
 
+	/// <summary>GitHub's own explanation of a failed request, as <c> (message)</c>, or nothing when the body has none.</summary>
+	private static async Task<string> ReadErrorMessageAsync(HttpResponseMessage response, Cancel ctx)
+	{
+		try
+		{
+			var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+			using var doc = JsonDocument.Parse(body);
+			return doc.RootElement is { ValueKind: JsonValueKind.Object } root
+				&& root.TryGetProperty("message", out var message)
+				&& message is { ValueKind: JsonValueKind.String }
+				&& message.GetString() is { Length: > 0 } text ? $" ({text})" : string.Empty;
+		}
+		catch (JsonException)
+		{
+			return string.Empty;
+		}
+	}
+
 	/// <summary>One page of the compare API, or <c>null</c> after reporting why it could not be read.</summary>
 	private async Task<GitHubCompareResponse?> FetchComparePageAsync(
 		IDiagnosticsCollector collector,
@@ -374,6 +394,15 @@ public sealed partial class GitHubCommitRangeService(
 			response.Dispose();
 			await WarmUpBestEffortAsync(args, ctx).ConfigureAwait(false);
 			response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+
+			// A range that is not a stage of the end's history, such as a diverged one, has no stages to warm up. GitHub
+			// computes it in the background all the same, so wait for it with a growing delay instead of giving up.
+			for (var retry = 1; retry <= MaxColdRangeRetries && await IsColdRangeAsync(response, ctx).ConfigureAwait(false); retry++)
+			{
+				response.Dispose();
+				await _transport.DelayAsync(TimeSpan.FromSeconds(ColdRangeRetryDelaySeconds * retry), ctx).ConfigureAwait(false);
+				response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
+			}
 		}
 
 		using var _ = response;
@@ -389,9 +418,10 @@ public sealed partial class GitHubCommitRangeService(
 
 		if (!response.IsSuccessStatusCode)
 		{
+			var reason = await ReadErrorMessageAsync(response, ctx).ConfigureAwait(false);
 			collector.EmitError(
 				string.Empty,
-				$"GitHub compare request for {args.Owner}/{args.Repo} {args.StartRef}...{args.EndRef} failed: {(int)response.StatusCode} {response.ReasonPhrase}."
+				$"GitHub compare request for {args.Owner}/{args.Repo} {args.StartRef}...{args.EndRef} failed: {(int)response.StatusCode} {response.ReasonPhrase}{reason}."
 			);
 			return null;
 		}
