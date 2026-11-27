@@ -488,7 +488,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task ResolvePullRequests_ColdCompareStaysUnprocessable_IsAnErrorAfterOneRetryOfTheWholeRange()
+	public async Task ResolvePullRequests_ColdCompareStaysUnprocessable_IsAnErrorAfterTheRetriesOfTheWholeRange()
 	{
 		var range = new ColdRange(() => true);
 
@@ -496,7 +496,25 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().BeNull();
 		Collector.Errors.Should().Be(1);
-		range.Compared.Count(sha => sha == ColdSha(ColdRangeCommits)).Should().Be(2);
+		Collector.Diagnostics.Single().Message.Should().Contain("taking too long to generate");
+		// The request, the one after the stages, and three more after growing waits.
+		range.Compared.Count(sha => sha == ColdSha(ColdRangeCommits)).Should().Be(5);
+		range.Delays.Should().Equal(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(30));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ColdDivergedRange_WaitsAndResolvesWithoutStages()
+	{
+		var whole = 0;
+		var range = new ColdRange(() => ++whole <= 3);
+		var args = new CommitRangeArguments { Owner = Owner, Repo = Repo, StartRef = "deadbeef", EndRef = ColdSha(ColdRangeCommits) };
+
+		var result = await range.Service().ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		range.Compared.Should().Equal(Enumerable.Repeat(ColdSha(ColdRangeCommits), 4));
+		range.Delays.Should().Equal(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(20));
 	}
 
 	[Test]
