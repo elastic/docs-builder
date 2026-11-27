@@ -31,6 +31,8 @@ public static class QueryFieldNames
 	public static string ApiTitleFingerprint { get; } = $"{Doc.Fields.Api}.title_fingerprint";
 	public static string ApiMethod { get; } = $"{Doc.Fields.Api}.method";
 	public static string ApiLanding { get; } = $"{Doc.Fields.Api}.landing";
+	public static string ApiSitemapOnly { get; } = $"{Doc.Fields.Api}.sitemap_only";
+	public static string ApiPage { get; } = $"{Doc.Fields.Api}.page";
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
 	public static string ApiKey { get; } = $"{Doc.Fields.Api}.key";
 	public static string ApiOperationId { get; } = $"{Doc.Fields.Api}.operation_id";
@@ -49,6 +51,8 @@ public static class QueryFieldNames
 	public static string SearchTitleCompletion { get; } = $"{Doc.Fields.SearchTitle}.completion";
 	public static string SearchTitleCompletion2Gram { get; } = $"{Doc.Fields.SearchTitle}.completion._2gram";
 	public static string SearchTitleCompletion3Gram { get; } = $"{Doc.Fields.SearchTitle}.completion._3gram";
+	public static string TitleCompletion { get; } = $"{Doc.Fields.Title}.completion";
+	public static string ParentsTitle { get; } = "parents.title";
 	public static string Body { get; } = Doc.Fields.Body;
 	public static string Hidden { get; } = Doc.Fields.Hidden;
 	public static string LastUpdated { get; } = Doc.Fields.LastUpdated;

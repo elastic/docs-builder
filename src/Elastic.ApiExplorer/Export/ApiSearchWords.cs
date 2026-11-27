@@ -24,4 +24,20 @@ internal static class ApiSearchWords
 		];
 
 	internal static string[] OfOperationId(string operationId) => Of(operationId, string.Empty);
+
+	/// <summary>
+	/// <see cref="Of"/> plus the two verbs of a title that opens "X or Y", because ids say <c>put</c> where readers say
+	/// <c>create</c>: <c>Create or update users</c> adds <c>create</c> and <c>update</c> to <c>security put user</c>.
+	/// Any other title opening is left out, as a plain <c>Get</c> would lift every operation that starts with it.
+	/// </summary>
+	internal static string[] OfOperation(string operationId, string path, string title) =>
+		[.. Of(operationId, path).Concat(EitherOrVerbs(title)).Distinct(StringComparer.Ordinal)];
+
+	private static IEnumerable<string> EitherOrVerbs(string title) =>
+		title
+			.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+			.Select(w => w.ToLowerInvariant())
+			.ToArray() is [var first, "or", var second, ..]
+			&& first.All(char.IsLetter)
+			&& second.All(char.IsLetter) ? [first, second] : [];
 }

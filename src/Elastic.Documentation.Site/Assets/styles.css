@@ -28,6 +28,8 @@
 @import './modal.css';
 @import './secondary-nav.css';
 @import './secondary-nav-dropdown.css';
+@import './floating.css';
+@import './tooltip.css';
 @import './api-identity.css';
 @import './archive.css';
 @import './markdown/stepper.css';
@@ -41,7 +43,6 @@
 @import './api-language-icons.css';
 @import './web-components/VectorSizingCalculator/vector-sizing-calculator.css';
 @import './pages-nav-figma.css';
-@import 'tippy.js/dist/tippy.css';
 
 html {
 	/* We need to use 14px because EUI works best with a 14px base */
@@ -148,6 +149,13 @@ body {
 			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
 			word-break: break-word;
 		}
+	}
+
+	/* On this page (_PageToc) on docs and API pages alike: the sidebar link type, wherever the rail sits. Each layout
+	   hides its rail where the rail sits under the article. The design system bundle styles its own copy. */
+	.page-toc .sidebar-link {
+		@apply text-ink-light inline-block text-sm leading-[1.2em] text-pretty hover:text-black;
+		word-break: break-word;
 	}
 
 	.nav-badge {
@@ -465,10 +473,6 @@ body {
 
 #pages-nav details > summary::-webkit-details-marker {
 	display: none;
-}
-
-.tippy-content {
-	white-space: pre-line;
 }
 
 .icon,

@@ -73,11 +73,14 @@ public static class SearchQueryBuilder
 
 	internal static readonly Query HiddenDocuments = new TermQuery { Field = QueryFieldNames.Hidden, Value = true };
 
+	/// <summary>API pages indexed only for their content date. They are hidden too, so only the tree-scoped clause has to name them.</summary>
+	private static readonly Query SitemapOnlyDocuments = new TermQuery { Field = QueryFieldNames.ApiSitemapOnly, Value = true };
+
 	private static readonly Query UnscopedDocumentFilter = new BoolQuery { MustNot = [RootUrlPlaceholders, HiddenDocuments] };
 
 	/// <summary>
 	/// Excludes bare root-URL placeholders and hidden documents. A reader in one version tree of an API instead gets
-	/// that API's documents for the tree, hidden or not, and every other document that is not hidden.
+	/// that API's documents for the tree, hidden or not, except sitemap-only pages, and every other document that is not hidden.
 	/// </summary>
 	public static Query DocumentFilterFor(ApiPageContext? page)
 	{
@@ -91,7 +94,11 @@ public static class SearchQueryBuilder
 			Should =
 			[
 				new BoolQuery { MustNot = [HiddenDocuments, scopedApi] },
-				new BoolQuery { Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = tree }] }
+				new BoolQuery
+				{
+					Filter = [scopedApi, new TermQuery { Field = QueryFieldNames.ApiTreesTree, Value = tree }],
+					MustNot = [SitemapOnlyDocuments]
+				}
 			],
 			MinimumShouldMatch = 1
 		};
@@ -247,9 +254,10 @@ public static class SearchQueryBuilder
 	/// </summary>
 	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren, IReadOnlyList<string>? OtherWords = null);
 
+	/// <summary>A document that lists a field the name or path names. Without <paramref name="innerHitsName"/> it only tests for one, since two inner hits of one name fail the request.</summary>
 	internal static Query BuildNestedPropertyQuery(
 		string property,
-		string innerHitsName,
+		string? innerHitsName,
 		PropertyLookup lookup,
 		string? queryName = null
 	) =>
@@ -260,12 +268,14 @@ public static class SearchQueryBuilder
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
 			Query = BuildPropertyMatchQuery(property, lookup),
-			InnerHits = new InnerHits
-			{
-				Name = innerHitsName,
-				Size = lookup.ExpandChildren ? ExpandedInnerHitsSize : InnerHitsSize,
-				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
-			}
+			InnerHits = innerHitsName is null
+				? null
+				: new InnerHits
+				{
+					Name = innerHitsName,
+					Size = lookup.ExpandChildren ? ExpandedInnerHitsSize : InnerHitsSize,
+					Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
+				}
 		};
 
 	/// <summary>
@@ -361,9 +371,12 @@ public static class SearchQueryBuilder
 		};
 	}
 
-	/// <summary>A word within one edit, the first letter fixed. A word shorter than <see cref="FuzzyMinimumLength"/> allows no edit.</summary>
-	internal static MatchQuery FuzzyWordMatch(Field field, string text, string? analyzer = null) =>
-		new() { Field = field, Query = text, Analyzer = analyzer, Fuzziness = WordFuzziness, PrefixLength = 1 };
+	/// <summary>
+	/// A word within one edit, its first <paramref name="prefixLength"/> letters fixed. A word shorter than <see cref="FuzzyMinimumLength"/>
+	/// allows no edit.
+	/// </summary>
+	internal static MatchQuery FuzzyWordMatch(Field field, string text, string? analyzer = null, int prefixLength = 1) =>
+		new() { Field = field, Query = text, Analyzer = analyzer, Fuzziness = WordFuzziness, PrefixLength = prefixLength };
 
 	private static MatchQuery NameWordsMatch(string query) => FuzzyWordMatch(QueryFieldNames.ApiPropertiesNameWords, query);
 

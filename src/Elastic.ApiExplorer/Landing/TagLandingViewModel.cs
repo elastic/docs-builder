@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.Documentation;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -21,30 +22,37 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 	/// <summary>Built before the slice renders so the view only iterates.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
 
-	public string? DescriptionMarkdown
-	{
-		get
-		{
-			if (RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc))
-				return doc.DescriptionOr(Tag.Description);
-			return Tag.Description;
-		}
-	}
+	private ApiSupplementalDoc? TagDoc => RenderContext.TagSupplemental.GetValueOrDefault(Tag.Name);
 
-	/// <summary>The intro keeps the heading anchor ids the sidebar links to, from <see cref="IntroHeadings.ForPage"/>.</summary>
-	public HtmlString RenderDescription()
-	{
-		var postSections = RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc) ? doc.PostSections : [];
-		var root = RenderContext.CurrentNavigation.NavigationRoot.Url;
-		var headingAnchors = ApiMarkdown
-			.ReadIntroHeadings(RenderContext.MarkdownRenderer, DescriptionMarkdown, root, postSections)
-			.Select(heading => heading.Slug)
-			.ToHashSet(StringComparer.Ordinal);
-		return ApiMarkdown.RenderWithHeadingAnchors(RenderContext, DescriptionMarkdown, headingAnchors);
-	}
+	public string? DescriptionMarkdown => ApiMarkdownFrontMatter.TagDescription(Tag, RenderContext);
+
+	/// <summary>The intro headings that get an anchor: the sidebar links to them, and so does On this page.</summary>
+	private IReadOnlyList<TocItem> IntroHeadings =>
+		field ??= ApiMarkdown.ReadIntroHeadings(
+			RenderContext.MarkdownRenderer,
+			DescriptionMarkdown,
+			RenderContext.CurrentNavigation.NavigationRoot.Url,
+			TagDoc?.PostSections ?? [],
+			EndpointsSection.ReservedAnchors
+		);
+
+	/// <summary>The intro keeps the anchor ids of its headings, which the sidebar and On this page link to.</summary>
+	public HtmlString RenderDescription() =>
+		ApiMarkdown.RenderWithHeadingAnchors(
+			RenderContext,
+			DescriptionMarkdown,
+			IntroHeadings.Select(static heading => heading.Slug).ToHashSet(StringComparer.Ordinal)
+		);
+
+	/// <summary>On this page, in page order: the intro's headings, the supplemental sections, then the endpoint list.</summary>
+	protected override IReadOnlyList<TocItem> GetTocItems() =>
+		EndpointsSection.Toc(
+			[.. IntroHeadings, .. PostSections.Select(static section => new TocItem(section.Heading, section.Anchor, 3))],
+			OverviewRows.Count > 0
+		);
 
 	public IReadOnlyList<ApiPostSection> PostSections =>
-		RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc) ? ApiPostSection.From(RenderContext, doc.PostSections) : [];
+		field ??= ApiPostSection.From(RenderContext, TagDoc?.PostSections ?? [], EndpointsSection.ReservedAnchors);
 
 	public TagExternalDocsDisplay? ExternalDocsDisplay =>
 		Tag.ExternalDocs is null
@@ -59,4 +67,7 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 	protected override string? LayoutPageTitle => Tag.DisplayName;
 
 	protected override string? LayoutPageDescription => DescriptionMarkdown;
+
+	protected override string? FallbackPageDescription =>
+		ApiFallbackDescription.For(Tag, RenderContext, CurrentNavigationItem.NavigationTitle, OverviewRows);
 }

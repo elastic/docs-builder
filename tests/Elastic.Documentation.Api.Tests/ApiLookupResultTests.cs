@@ -334,7 +334,7 @@ public class ApiLookupResultTests
 		"_source":{"name":"{{{path}}}","path":"{{{path}}}","type":"boolean","anchor":"{{{anchor}}}","location":"{{{location}}}","description":"","parent":"{{{parent}}}"}}
 		""";
 
-	private static Clients.Elasticsearch.SearchResponse<DocumentationDocument> ParseResponse(string json)
+	internal static Clients.Elasticsearch.SearchResponse<DocumentationDocument> ParseResponse(string json)
 	{
 		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json), writable: false);
 		using var accessor = new ElasticsearchClientAccessor(

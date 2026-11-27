@@ -186,7 +186,7 @@ public class AuthSchemeTests
 			.SelectMany(r => r.Schemes)
 			.Select(s => s.CredentialExample)
 			.Should()
-			.Equal("Authorization: <value>", "Authorization: Basic <credentials>", "Authorization: Bearer <token>");
+			.Equal("Authorization: ApiKey <api-key>", "Authorization: Basic <credentials>", "Authorization: Bearer <token>");
 	}
 
 	[Test]
@@ -309,4 +309,14 @@ public class AuthSchemeTests
 		var doc = await TestSpecs.LoadSpecAsync(json);
 		return (doc.Paths!["/a"].Operations![HttpMethod.Get]!, doc);
 	}
+
+	[Test]
+	[Arguments("Authorization", "Authorization: ApiKey <api-key>")]
+	[Arguments("authorization", "Authorization: ApiKey <api-key>")]
+	[Arguments("X-Api-Key", "X-Api-Key: <value>")]
+	public void CredentialExample_HeaderApiKey_UsesTheApiKeyWordOnlyInAuthorization(string header, string expected) =>
+		OpenApiAuthSchemeResolver
+			.CredentialExample(new OpenApiSecurityScheme { Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Header, Name = header })
+			.Should()
+			.Be(expected);
 }

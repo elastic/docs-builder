@@ -12,7 +12,8 @@ internal sealed record SpecOperation(
 	string OperationId,
 	IReadOnlyList<string> Tags,
 	string Method = "get",
-	string? Summary = null
+	string? Summary = null,
+	bool Deprecated = false
 );
 
 internal sealed record SpecTag(string Name, string? DisplayName = null, string? Description = null);
@@ -45,6 +46,8 @@ internal sealed record MinimalSpec(IReadOnlyList<SpecOperation> Operations, IRea
 			};
 			if (operation.Summary is not null)
 				node["summary"] = operation.Summary;
+			if (operation.Deprecated)
+				node["deprecated"] = true;
 			pathItem[operation.Method] = node;
 		}
 

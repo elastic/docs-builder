@@ -12,7 +12,14 @@ import { iconCheckEui, iconCopyEui, temporarilyChangeIcon } from './copybutton'
 import { closeIcon, fullscreenIcon } from './icons'
 import { prefersReducedMotion } from './motion'
 import { lockPageScroll } from './scroll-lock'
-import { flashTooltip, initTooltips } from './tooltip'
+import { logInfo } from './telemetry/logging'
+import {
+    ATTR_API_EXAMPLE_LANGUAGE,
+    ATTR_API_EXAMPLE_SCENARIO,
+    ATTR_EVENT_NAME,
+    ATTR_URL_PATH,
+} from './telemetry/semconv'
+import { flashTooltip } from './tooltip'
 
 export { packChips } from './chip-row'
 
@@ -334,6 +341,11 @@ function fitChips(examples: HTMLElement) {
 }
 
 function selectScenario(examples: HTMLElement, scenarioId: string) {
+    // A click on the example that is already showing is not a switch.
+    if (scenarioId !== currentScenario(examples))
+        logApiExampleEvent('api_example_scenario_selected', {
+            scenario: scenarioId,
+        })
     showScenario(examples, scenarioId)
     applyPreferredLanguage(examples)
     writeDeepLink(
@@ -362,9 +374,72 @@ function applyPreferredLanguage(examples: HTMLElement, preferred?: string) {
     carousel.classList.remove('is-settling')
 }
 
+// The events are about examples. Language is a byproduct: response cards have none, so it is left off for them.
+type ApiExampleDetail = { language?: string; scenario?: string }
+
+// event.name mirrors the body so records can be filtered by exact keyword, like the CTA events.
+function logApiExampleEvent(eventName: string, detail: ApiExampleDetail) {
+    logInfo(eventName, {
+        [ATTR_EVENT_NAME]: eventName,
+        ...(detail.language && {
+            [ATTR_API_EXAMPLE_LANGUAGE]: detail.language,
+        }),
+        ...(detail.scenario && {
+            [ATTR_API_EXAMPLE_SCENARIO]: detail.scenario,
+        }),
+        [ATTR_URL_PATH]: window.location.pathname,
+    })
+}
+
+/** The scenario an element of the rail belongs to: every card and carousel sits inside its scenario panel. */
+function scenarioOf(element: HTMLElement): string | undefined {
+    return element.closest<HTMLElement>('.api-examples-scenario-panel')?.dataset
+        .scenario
+}
+
+function cardDetail(card: HTMLElement): ApiExampleDetail {
+    return { language: card.dataset.lang, scenario: scenarioOf(card) }
+}
+
+/**
+ * Logs 'api_example_viewed' the first time an example is at least half visible, then stops watching it, so a
+ * page view counts each example once. Hidden scenarios do not intersect, so one is counted when it is opened.
+ * It is the denominator for the copy and preview events.
+ */
+function createViewObserver(): IntersectionObserver | undefined {
+    if (typeof IntersectionObserver === 'undefined') return undefined
+    // unobserve() does not remove entries already queued in this batch, so a target can arrive twice.
+    const counted = new WeakSet<Element>()
+    return new IntersectionObserver(
+        (entries, observer) => {
+            for (const entry of entries) {
+                const target = entry.target as HTMLElement
+                // A navigation can swap the example out before this runs, and the location is already the next page's.
+                if (!target.isConnected) {
+                    observer.unobserve(target)
+                    continue
+                }
+                // The observer also reports a sliver, when it starts watching and on any threshold it crosses.
+                if (entry.intersectionRatio < 0.5) continue
+                if (counted.has(target)) continue
+                counted.add(target)
+                // Only a carousel has an active language: a lone request or response card has none.
+                logApiExampleEvent('api_example_viewed', {
+                    language: activeLanguage(target),
+                    scenario: scenarioOf(target),
+                })
+                observer.unobserve(target)
+            }
+        },
+        { threshold: 0.5 }
+    )
+}
+
 function pickLanguage(examples: HTMLElement, language: string) {
+    const scenario = currentScenario(examples)
+    logApiExampleEvent('api_example_language_selected', { language, scenario })
     saveApiLanguage(language)
-    writeDeepLink(language, currentScenario(examples))
+    writeDeepLink(language, scenario)
 }
 
 const settleWindowMs = 1000
@@ -395,6 +470,8 @@ function observeStrip(carousel: HTMLElement) {
     const observer = new IntersectionObserver(
         (entries) => {
             if (carousel.dataset.scrolling) return
+            // A swipe can queue this before the reader switches example: a carousel no longer showing picks nothing.
+            if (carousel !== visibleCarousel(examples)) return
             const best = entries
                 .filter((entry) => entry.isIntersecting)
                 .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
@@ -422,7 +499,7 @@ function iconButton(className: string, label: string, icon: string) {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = className
-    button.dataset.tippyContent = label
+    button.dataset.tooltip = label
     button.setAttribute('aria-label', label)
     button.innerHTML = icon
     return button
@@ -522,6 +599,7 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     actions.dataset.codeActions = ''
     const copy = iconButton('api-code-preview-btn', 'Copy code', iconCopyEui)
     copy.addEventListener('click', () => {
+        logApiExampleEvent('api_example_code_copied', cardDetail(card))
         // No Clipboard API (insecure context, old browser): nothing to copy with, so nothing to do.
         const write = navigator.clipboard?.writeText(
             code.textContent?.trimEnd() ?? ''
@@ -578,9 +656,20 @@ function onClick(event: MouseEvent) {
         return
     }
 
+    // The copy button is made by copybutton.ts for every code block, so the rail listens for it here.
+    // The click then goes on: on a dimmed neighbour card the handler below still brings the card into view.
+    const copiedCard = target
+        .closest('.copybtn')
+        ?.closest<HTMLElement>('[data-code-card]')
+    if (copiedCard)
+        logApiExampleEvent('api_example_code_copied', cardDetail(copiedCard))
+
     if (target.closest('[data-code-preview]')) {
         const card = target.closest<HTMLElement>('[data-code-card]')
-        if (card) openPreview(card)
+        if (card) {
+            logApiExampleEvent('api_example_preview_opened', cardDetail(card))
+            openPreview(card)
+        }
         return
     }
 
@@ -650,8 +739,8 @@ export function initApiExamples(root: ParentNode = document): void {
         document.addEventListener('keydown', onKeydown)
     }
     registerChipRows(exampleChips)
-    initTooltips()
 
+    let viewObserver: IntersectionObserver | undefined
     const link = readDeepLink()
     root.querySelectorAll<HTMLElement>('[data-api-examples]').forEach(
         (examples) => {
@@ -668,6 +757,17 @@ export function initApiExamples(root: ParentNode = document): void {
             examples
                 .querySelectorAll<HTMLElement>('[data-api-carousel]')
                 .forEach(observeStrip)
+            scenarioPanels(examples).forEach((panel) => {
+                // An example without code samples has no carousel: its first request or response card stands in.
+                const target = panel.querySelector<HTMLElement>(
+                    '[data-api-carousel], [data-code-card]'
+                )
+                if (!target || target.dataset.viewObserved) return
+                viewObserver ??= createViewObserver()
+                if (!viewObserver) return
+                target.dataset.viewObserved = 'true'
+                viewObserver.observe(target)
+            })
             applyPreferredLanguage(examples, link.lang)
             if (!link.example) syncDescriptions(examples)
             fitChips(examples)

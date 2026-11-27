@@ -6,13 +6,10 @@ namespace Elastic.Documentation.Site.Components.Chrome.ThemeSwitch;
 
 /// <summary>
 /// One control for the reader's display preferences: a light and dark quick pick, and a cog that opens the theme (including true black),
-/// contrast and motion options. It is radios and a checkbox, so it opens and reads without script; script stores the choice.
+/// contrast and motion options in a popover. The options are radios; script stores the choice.
 /// </summary>
 public sealed record ThemeSwitchModel
 {
-	/// <summary>Prefix for the ids that tie each label to its radio. Unique per control on the page.</summary>
+	/// <summary>Prefix for the ids that tie each label to its radio and the cog to its menu. Unique per control on the page.</summary>
 	public string Id { get; init; } = "theme";
-
-	/// <summary>Where the menu opens from, so it stays inside the window: <c>right</c> (default) or <c>left</c>.</summary>
-	public bool OpensLeft { get; init; }
 }

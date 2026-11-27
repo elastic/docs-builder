@@ -40,7 +40,7 @@ internal static class ApiPropertyIndex
 	private static string PlainText(string markdown, Dictionary<string, string> plainDescriptions)
 	{
 		if (!plainDescriptions.TryGetValue(markdown, out var text))
-			plainDescriptions[markdown] = text = ApiMarkdown.StripHtml(ApiSeoDescription.ToPlainText(markdown));
+			plainDescriptions[markdown] = text = ApiMarkdown.ToPlainText(markdown);
 		return text;
 	}
 
@@ -48,6 +48,10 @@ internal static class ApiPropertyIndex
 	internal static IEnumerable<IndexedRow> Flatten(ApiPropertyList? properties) => Flatten(properties?.Items ?? [], "");
 
 	internal static IEnumerable<IndexedRow> Flatten(ApiUnionVariants? variants) => Flatten(variants?.Rows ?? [], "");
+
+	/// <summary>A body's or a type's rows: its fields, then its variants.</summary>
+	internal static IEnumerable<IndexedRow> Flatten(ApiPropertyList? properties, ApiUnionVariants? variants) =>
+		Flatten(properties).Concat(Flatten(variants));
 
 	private static IEnumerable<IndexedRow> Flatten(IEnumerable<ApiProperty> properties, string parent) =>
 		properties.SelectMany(

@@ -85,6 +85,18 @@ public static class StyleGuidePreviewCatalog
 			"An operation page with request and response examples next to the description."
 		),
 		new("api-operation-plain", "Operation without examples", "API", "An operation page with no request body and no examples."),
+		new(
+			"api-operation-older-major",
+			"Operation in an older major",
+			"API",
+			"An operation page of an older major, with the version notice that links to the newest major."
+		),
+		new(
+			"api-operation-next",
+			"Operation in the unreleased version",
+			"API",
+			"An operation page of the unreleased version at /next, with the warning that it can change."
+		),
 		new("codex-landing", "Landing page", "Codex", "The Codex home: hero with the MCP card, then every group of documentation sets."),
 		new("codex-group", "Group page", "Codex", "A group of documentation sets, under a hero of its own."),
 		new(

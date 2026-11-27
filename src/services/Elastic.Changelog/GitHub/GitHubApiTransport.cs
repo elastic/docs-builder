@@ -93,6 +93,9 @@ public sealed class GitHubApiTransport : IDisposable
 	public async Task<HttpResponseMessage> GetWithTransientRetryAsync(string url, Cancel ctx = default) =>
 		await SendWithRateLimitRetryAsync(() => CreateGet(url), ctx, retryTransient: true).ConfigureAwait(false);
 
+	/// <summary>Waits through the same delay hook as the retries of this transport, so a test does not sleep.</summary>
+	public Task DelayAsync(TimeSpan delay, Cancel ctx = default) => _delay(delay, ctx);
+
 	private HttpRequestMessage CreateGet(string url)
 	{
 		var request = new HttpRequestMessage(HttpMethod.Get, url);

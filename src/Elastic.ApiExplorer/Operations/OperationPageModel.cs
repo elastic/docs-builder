@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
@@ -75,7 +76,7 @@ public partial record OperationPageModel
 	public IReadOnlyList<string> RequestPropertyNames =>
 		field ??= NamesOf(
 			RequestProperties is not null
-				? RequestProperties.Items.Select(static p => p.Name)
+				? RequestProperties.Items.Select(static p => p.DisplayName)
 				: ApiBodyContent.VariantNames(RequestUnionVariants)
 		);
 
@@ -200,7 +201,7 @@ public partial record OperationPageModel
 			HeaderParameters = propertyTrees.Header,
 			RequestContents = propertyTrees.Request,
 			DescriptionMarkdown = privileges.Description,
-			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
+			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? [], FrozenSet<string>.Empty),
 			Responses = propertyTrees.Responses,
 			CodeSamples = codeSamples,
 			RequestExamples = requestExamples,

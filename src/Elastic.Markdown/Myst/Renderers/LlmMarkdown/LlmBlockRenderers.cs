@@ -211,14 +211,12 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.Write("```");
-		if (!string.IsNullOrEmpty(obj.Language))
-			renderer.Write(obj.Language);
+		// The parser relabels console blocks as json for highlighting; request lines make them console again.
+		renderer.Write(obj.ApiSegments.Count > 0 ? "console" : obj.Language);
 		renderer.WriteLine();
-		var lastNonEmptyIndex = GetLastNonEmptyLineIndex(obj);
-		for (var i = 0; i <= lastNonEmptyIndex; i++)
+		foreach (var line in obj.TextLines())
 		{
-			var line = obj.Lines.Lines[i];
-			renderer.Write(line.ToString());
+			renderer.Write(line);
 			renderer.WriteLine();
 		}
 
@@ -285,14 +283,6 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 
 		renderer.WriteLine("</contributors>");
 		renderer.EnsureLine();
-	}
-
-	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
-	{
-		var lastNonEmptyIndex = obj.Lines.Lines.Length - 1;
-		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
-			lastNonEmptyIndex--;
-		return lastNonEmptyIndex;
 	}
 }
 

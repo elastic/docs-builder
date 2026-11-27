@@ -25,6 +25,26 @@ using SharpYaml;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 
+/// <summary>The options of <c>release unified bundle</c>, as one value for the code that <c>release preview bundle</c> shares.</summary>
+internal sealed record UnifiedBundleOptions(
+	DirectoryInfo? OutputDir,
+	DirectoryInfo? ChangelogConfigs,
+	string[]? Products,
+	bool Strict,
+	DirectoryInfo? CacheDir,
+	bool NoCache
+);
+
+/// <summary>Where <c>release unified build</c> reads its bundles, writes its site, and what it puts in the links of the site.</summary>
+internal sealed record UnifiedSiteOptions(
+	DirectoryInfo? BundlesDir,
+	DirectoryInfo? Output,
+	string? PathPrefix,
+	Uri? CanonicalBaseUrl,
+	bool ShowDiagnostics = false,
+	DateOnly? PreviewDate = null
+);
+
 /// <summary>Unified release automation commands.</summary>
 internal sealed class UnifiedReleaseCommands(
 	ILoggerFactory logFactory,
@@ -110,8 +130,26 @@ internal sealed class UnifiedReleaseCommands(
 		[ExpandUserProfile] DirectoryInfo? cacheDir = null,
 		bool noCache = false,
 		CancellationToken ctx = default
+	) =>
+		await BundleAsync(
+			versionOrKeyword,
+			new UnifiedBundleOptions(outputDir, changelogConfigs, products, strict, cacheDir, noCache),
+			null,
+			ctx
+		);
+
+	/// <summary>
+	/// Bundles the DRA products. With a <paramref name="problems"/> log, a pull request without a product or area label is bundled anyway
+	/// and recorded in the log, which <c>release preview bundle</c> writes for the site. Without one, it is an error, as it always was.
+	/// </summary>
+	internal async Task<int> BundleAsync(
+		string versionOrKeyword,
+		UnifiedBundleOptions options,
+		PreviewProblemLog? problems,
+		CancellationToken ctx
 	)
 	{
+		var (outputDir, changelogConfigs, products, strict, cacheDir, noCache) = options;
 		var (selected, unknown) = UnifiedBundlePlanner.FilterProducts(
 			UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
 			products
@@ -168,7 +206,8 @@ internal sealed class UnifiedReleaseCommands(
 			http,
 			new FileSystem(),
 			_logger,
-			collector
+			collector,
+			problems
 		);
 
 		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
@@ -327,25 +366,49 @@ internal sealed class UnifiedReleaseCommands(
 		string? pathPrefix = null,
 		Uri? canonicalBaseUrl = null,
 		CancellationToken ctx = default
+	) => await BuildSiteAsync(versionOrKeyword, new UnifiedSiteOptions(bundlesDir, output, pathPrefix, canonicalBaseUrl), [], null, ctx);
+
+	/// <summary>
+	/// Builds the site, with <paramref name="additionalProductIds"/> next to the DRA products. <c>release preview build</c> adds the
+	/// serverless products. Without a <paramref name="versionOrKeyword"/> the site is built from the bundles on disk and the release
+	/// schedule is not read: it only says which DRA versions a product has no bundle for, and the log of that is all that is lost.
+	/// </summary>
+	internal async Task<int> BuildSiteAsync(
+		string? versionOrKeyword,
+		UnifiedSiteOptions site,
+		IReadOnlyCollection<string> additionalProductIds,
+		Func<string, string, string, CancellationToken, Task<string>>? scrubBundle,
+		CancellationToken ctx
 	)
 	{
+		var (bundlesDir, output, pathPrefix, canonicalBaseUrl, showDiagnostics, previewDate) = site;
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
-		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
-		if (targets is null)
-			return 1;
-
-		if (targets.Count == 0)
+		IReadOnlyList<ReleaseTarget> targets = [];
+		if (versionOrKeyword is not null)
 		{
-			_logger.LogInformation("No release targets resolved. Nothing to build.");
-			return 0;
+			var resolved = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
+			if (resolved is null)
+				return 1;
+
+			if (resolved.Count == 0)
+			{
+				_logger.LogInformation("No release targets resolved. Nothing to build.");
+				return 0;
+			}
+
+			targets = resolved;
 		}
 
 		var options = new UnifiedReleaseNotesBuildOptions
 		{
 			BundlesDirectory = bundlesDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles")),
 			Output = output ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "site")),
+			AdditionalProductIds = additionalProductIds,
+			ScrubBundle = scrubBundle,
+			ShowDiagnostics = showDiagnostics,
+			PreviewDate = previewDate,
 			ExpectedVersions = [.. targets.Select(t => t.Version)],
 			PathPrefix = pathPrefix,
 			CanonicalBaseUrl = canonicalBaseUrl

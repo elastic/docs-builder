@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public record ApiOperationMetadata
 {
-	/// <summary>Key the explorer publishes the API under, e.g. <c>elasticsearch</c> in <c>/docs/api/doc/elasticsearch</c>.</summary>
+	/// <summary>Key the explorer publishes the API under, e.g. <c>elasticsearch</c> in <c>/docs/api/elasticsearch</c>.</summary>
 	[Keyword]
 	[JsonPropertyName("key")]
 	public string Key { get; init; } = "";
@@ -108,6 +108,24 @@ public record ApiOperationMetadata
 	[JsonPropertyName("landing")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool Landing { get; init; }
+
+	/// <summary>
+	/// True on an API page that is neither an operation nor the landing page, such as a group, type or topic page: its method,
+	/// path, operation id and endpoints are empty. Left out of the document when false.
+	/// </summary>
+	[Boolean]
+	[JsonPropertyName("page")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool Page { get; init; }
+
+	/// <summary>
+	/// True on an API page that only the sitemap reads, such as an operation the exporter skips or the Servers page: it is
+	/// indexed for its content date, never for search. Left out of the document when false.
+	/// </summary>
+	[Boolean]
+	[JsonPropertyName("sitemap_only")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool SitemapOnly { get; init; }
 
 	/// <summary>
 	/// Whether the spec marks the operation deprecated. The index may omit the flag on current operations, so a query for them

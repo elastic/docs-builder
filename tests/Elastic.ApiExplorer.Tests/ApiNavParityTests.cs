@@ -70,9 +70,9 @@ public class ApiNavParityTests
 			.Subject;
 
 		page.Hidden.Should().BeFalse();
-		page.Url.Should().Be("/api/doc/test/operation/operation-op-a");
+		page.Url.Should().Be("/api/test/operation/operation-op-a");
 		page.Siblings.Select(o => o.Route).Should().Equal("/b");
-		page.AliasUrls.Should().Equal("/api/doc/test/operation/operation-op-b");
+		page.AliasUrls.Should().Equal("/api/test/operation/operation-op-b");
 	}
 
 	[Test]
@@ -82,7 +82,7 @@ public class ApiNavParityTests
 		var navigation = generator.CreateNavigation("test", document);
 
 		var types = navigation.NavigationItems.OfType<TypesNavigationItem>().Should().ContainSingle().Subject;
-		types.Should().BeAssignableTo<ISidebarGroupNavigationItem>("Types is a static group label with no page, like Topics");
+		types.Should().BeAssignableTo<ISidebarGroupNavigationItem>("Types is a static group label with no page, like Operations");
 		types.Url.Should().Be(navigation.Url);
 		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
 		var items = navigation.NavigationItems.ToList();
@@ -100,7 +100,7 @@ public class ApiNavParityTests
 
 		operations.Should().HaveCount(2);
 		operations.Should().OnlyContain(op => op.Siblings.Count == 0 && op.AliasUrls.Count == 0);
-		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
+		operations.Select(op => op.Url).Should().Equal("/api/test/operation/operation-op-a", "/api/test/operation/operation-op-b");
 	}
 
 	/// <summary>Same API name, but the POST takes a required query parameter the GET does not: not the same call.</summary>

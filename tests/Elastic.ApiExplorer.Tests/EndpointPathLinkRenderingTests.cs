@@ -63,13 +63,47 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 					</span>
 					<span class="api-method-label">GET</span>
 				</span>
-				<span class="api-url-path">/</span>
+				<span class="api-url-path"><span class="api-route-segment">/</span></span>
 			</span>
 			"""
 		);
 	}
 
-	[GeneratedRegex("""<a class="api-url-param" href="#([^"]+)">\{[^}]+\}</a>""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	[Test]
+	public async Task Render_OptionalSegments_AreOneElementEach()
+	{
+		var row = new EndpointRow(
+			"/_cluster/state/{metric}/{index}",
+			"get",
+			[],
+			[
+				new EndpointSegment("_cluster", false),
+				new EndpointSegment("state", false),
+				new EndpointSegment("{metric}", true),
+				new EndpointSegment("{index}", true)
+			]
+		);
+		var model = new EndpointPathModel(row, "/_cluster/state", new HashSet<string> { "metric" });
+		var html = await _EndpointPath.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<span class="api-url">
+				<span class="api-method api-method-get">
+					<span class="api-method-icon" aria-hidden="true">
+						<svg width="12" height="12" viewBox="0 0 12 12">
+							<use href="#icon-api-arrow"></use>
+						</svg>
+					</span>
+					<span class="api-method-label">GET</span>
+				</span>
+				<span class="api-url-path"><span class="api-route-segment">/_cluster</span><span class="api-route-segment">/state</span><span class="api-route-segment">/<a class="api-url-param api-url-optional" href="#path-metric" data-tooltip="Optional. Leave it out to call /_cluster/state">{metric}</a></span><span class="api-route-segment">/<span class="api-url-optional" data-tooltip="Optional. Leave it out to call /_cluster/state">{index}</span></span></span>
+			</span>
+			"""
+		);
+	}
+
+	[GeneratedRegex("""<a class="api-url-param(?: api-url-optional)?" href="#([^"]+)"[^>]*>/?\{[^}]+\}</a>""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PlaceholderLink();
 
 	private static string Slice(string html, string startMarker, string endMarker)

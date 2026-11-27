@@ -6,7 +6,7 @@ using Elastic.Documentation.Extensions;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-/// <summary>The beta notice above every API page since the Bump.sh cutover. Remove it with <c>_ApiBetaBanner</c> once the site leaves beta.</summary>
+/// <summary>The notice above every API page since the Bump.sh cutover. Remove it with <c>_ApiBetaBanner</c> once the new API reference is no longer new.</summary>
 public sealed record ApiBetaBanner(string FeedbackUrl)
 {
 	private const string IssueReportUrl = "https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&labels=source:web";

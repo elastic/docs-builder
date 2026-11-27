@@ -159,12 +159,10 @@ describe('search dialog', () => {
         expect(items[0].querySelector('a')!.getAttribute('href')).toBe(
             '/docs/a'
         )
-        expect(items[0].hasAttribute('data-deprecated')).toBe(false)
         expect(
             items[0].querySelector<HTMLElement>('[data-search-deprecated]')!
                 .hidden
         ).toBe(true)
-        expect(items[1].hasAttribute('data-deprecated')).toBe(true)
         expect(
             items[1].querySelector<HTMLElement>('[data-search-deprecated]')!
                 .hidden
@@ -272,19 +270,19 @@ describe('querySearch scope', () => {
     }
 
     it('sends the api key and version tree on a versioned API path', async () => {
-        expect(await urlOn('/docs/api/doc/elasticsearch/v8/operation/x')).toBe(
+        expect(await urlOn('/docs/api/elasticsearch/v8/operation/x')).toBe(
             '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=8'
         )
     })
 
-    it('sends the main tree on a main path', async () => {
-        expect(await urlOn('/docs/api/doc/elasticsearch/main/group/x')).toBe(
-            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch&api_tree=main'
+    it('sends the api key alone on a next path, which is not indexed', async () => {
+        expect(await urlOn('/docs/api/elasticsearch/next/group/x')).toBe(
+            '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch'
         )
     })
 
     it('sends the api key alone on the unversioned API path', async () => {
-        expect(await urlOn('/docs/api/doc/elasticsearch/operation/x')).toBe(
+        expect(await urlOn('/docs/api/elasticsearch/operation/x')).toBe(
             '/docs/_api/v1/navigation-search?q=alpha&page=1&api_key=elasticsearch'
         )
     })

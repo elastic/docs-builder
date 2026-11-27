@@ -10,6 +10,9 @@ environments:
     optimizely:
       enabled: false
       id: "18132920325"
+    feature_flags:
+      ASSEMBLER_API_EXPLORER: true
+      PAGE_FEEDBACK: true
     # Same AWS account as edge, so the WAF integration URL is shared.
     waf_integration_url: https://33d8ddf078ac.edge.captcha-sdk.awswaf.com/33d8ddf078ac/jsapi.js
   staging:

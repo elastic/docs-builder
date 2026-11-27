@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
 /// Merges one API's per-tree documents: an operation that reads the same in several trees becomes one document listing
-/// every tree, and a document whose trees leave out the API's default tree is hidden, so readers that ignore trees see
+/// every tree, and a document whose trees leave out the API's default tree is hidden (a sitemap-only document stays hidden), so readers that ignore trees see
 /// one document per operation.
 /// </summary>
 internal static class ApiTreeCollapse
@@ -40,19 +40,25 @@ internal static class ApiTreeCollapse
 		foreach (var (lead, trees) in groups.Values)
 		{
 			ApiTreeEntry[] ordered = [.. trees.DistinctBy(static t => t.Tree).OrderByDescending(t => Rank(t, defaultTree))];
-			yield return lead with { Api = lead.Api! with { Trees = ordered }, Hidden = ordered[0].Tree != defaultTree };
+			yield return lead with { Api = lead.Api! with { Trees = ordered }, Hidden = lead.Hidden || ordered[0].Tree != defaultTree };
 		}
 	}
 
 	private static (bool IsDefault, int Recency) Rank(ApiTreeEntry tree, string defaultTree) =>
 		(tree.Tree == defaultTree, ApiVersions.Recency(tree.Tree));
 
-	/// <summary>Everything the index stores for the document except the URLs, which differ per tree by construction.</summary>
+	/// <summary>
+	/// Everything the index stores for the document except the URLs, which differ per tree by construction. A page's identity across
+	/// trees is its content hash and its path relative to the tree root: the same hash the sitemap dates the page by, so a page that
+	/// shares a search document also shares its <c>lastmod</c>. Its body, whose links point into its tree, counts through that hash.
+	/// </summary>
 	private static string Fingerprint(DocumentationDocument doc)
 	{
+		var root = doc.Api!.Trees[0].Root;
 		var withoutUrls = doc with
 		{
-			Path = "",
+			Path = doc.Path.StartsWith(root, StringComparison.Ordinal) ? doc.Path[root.Length..] : doc.Path,
+			Body = doc.Api.Page ? "" : doc.Body,
 			Parents = [.. doc.Parents.Select(static p => p with { Path = "" })],
 			Api = doc.Api! with { Trees = [] }
 		};

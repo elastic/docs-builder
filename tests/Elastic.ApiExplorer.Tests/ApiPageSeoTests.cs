@@ -21,6 +21,47 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiPageSeoTests(ApiExplorerFixture fixture)
 {
 	[Test]
+	public void FallbackDescription_OperationWithLongRoute_StaysWithinTheLimit()
+	{
+		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var operation = item.Model with { Route = "/" + new string('a', 400) };
+
+		var description = ApiFallbackDescription.For(operation, RenderContext(item), "Run a search");
+
+		description.Should().NotBeNull();
+		description.Length.Should().BeLessThanOrEqualTo(ApiSeoDescription.MaxLength);
+		description.Should().EndWith("...");
+	}
+
+	[Test]
+	public void FallbackDescription_CutInsideASurrogatePair_KeepsNoHalfCharacter()
+	{
+		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var context = RenderContext(item);
+		const string rocket = "\U0001F680";
+
+		// Slide a two-unit rocket across the cut, so one position straddles it whatever the sentence before the route is.
+		for (var padding = 100; padding < 150; padding++)
+		{
+			var operation = item.Model with { Route = "/" + new string('a', padding) + rocket + new string('b', 100) };
+			var description = ApiFallbackDescription.For(operation, context, "S");
+
+			description.Should().NotBeNull();
+			description.Length.Should().BeLessThanOrEqualTo(ApiSeoDescription.MaxLength);
+			description
+				.Any(char.IsSurrogate)
+				.Should()
+				.Be(description.Contains(rocket, StringComparison.Ordinal), $"padding {padding}: a rocket is whole or gone, never half");
+		}
+	}
+
+	[Test]
+	[Arguments("Elasticsearch", new string[0], "The Elasticsearch API declares no authentication for the API as a whole.")]
+	[Arguments("Elasticsearch", new[] { "API key", "Basic" }, "How to authenticate requests to the Elasticsearch API: API key, Basic.")]
+	public void FallbackDescription_Authentication_ReflectsWhatTheSpecDeclares(string product, string[] labels, string expected) =>
+		ApiFallbackDescription.Authentication(product, labels).Should().Be(expected);
+
+	[Test]
 	public void OperationLayout_UsesSummaryInTitleAndExcerptedDescription()
 	{
 		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
@@ -51,6 +92,17 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task SchemaPage_RendersNoOnThisPageList()
+	{
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Should().ContainSingle(n => n.Model.DisplayName == "Query").Subject;
+
+		var html = await fixture.RenderAsync(item);
+
+		html.Should().Contain("Copy page");
+		html.Should().NotContain("On this page");
+	}
+
+	[Test]
 	[Arguments("v8", "Run a search | Fixture API docs (v8)")]
 	[Arguments("v9", "Run a search | Fixture API docs (v9)")]
 	[Arguments("latest", "Run a search | Fixture API docs")]
@@ -78,7 +130,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 			)
 			{
 				NavigationHtml = string.Empty,
-				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				CurrentNavigation = new LandingNavigationItem($"/api/elasticsearch/{version}/").Index,
 				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 			},
 			version
@@ -87,7 +139,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		viewModel.Heading.Should().Be(expected);
 		LandingCommonMark
-			.Product(document.Info, [], "/api/doc/elasticsearch", ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems))
+			.Product(document.Info, [], "/api/elasticsearch", ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems))
 			.Should()
 			.StartWith($"# {expected}");
 	}
@@ -109,7 +161,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 			)
 			{
 				NavigationHtml = string.Empty,
-				CurrentNavigation = new LandingNavigationItem($"/api/doc/elasticsearch/{version}/").Index,
+				CurrentNavigation = new LandingNavigationItem($"/api/elasticsearch/{version}/").Index,
 				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 			},
 			version
@@ -142,10 +194,10 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		{
 			Product = new Product { Id = "elasticsearch", DisplayName = displayName },
 			VersionSwitcherItems = ApiVersionSwitcher.Build(
-				"/api/doc",
-				"elasticsearch",
+				"/api",
+				TestHelpers.EsRoutes,
 				["main", "9", "8"],
-				version == "latest" ? "main" : version.TrimStart('v')
+				TestHelpers.EsRoutes.Suffix(version == "latest" ? "main" : version.TrimStart('v'))
 			)
 		};
 
@@ -155,6 +207,25 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		var excerpt = ApiSeoDescription.Excerpt("See the [search](https://example.com/search) docs for *queries* and **filters**.");
 
 		excerpt.Should().Be("See the search docs for queries and filters.");
+	}
+
+	[Test]
+	public void Excerpt_SkipsHtmlComments()
+	{
+		var excerpt = ApiSeoDescription.Excerpt("<!-- Keep this in sync with the spec. -->\n\nThe real *intro*.\n\nMore.");
+
+		excerpt.Should().Be("The real intro.");
+		ApiSeoDescription.Excerpt("<!-- only a note -->").Should().BeNull();
+	}
+
+	[Test]
+	public void Excerpt_KeepsAnHtmlCommentShownAsCode()
+	{
+		ApiSeoDescription.Excerpt("Use `<!-- marker -->` to mark a block.").Should().Be("Use <!-- marker --> to mark a block.");
+		ApiSeoDescription.Excerpt("<!-- note -->\n\nUse `<!-- marker -->` here.").Should().Be("Use <!-- marker --> here.");
+		ApiSeoDescription.Excerpt("```html\n<!-- marker -->\n```\n\nMore.").Should().Contain("<!-- marker -->");
+		// Escaped backticks are literal text, so the comment between them is a real comment and is hidden on the page.
+		ApiSeoDescription.Excerpt("Intro \\`<!-- hidden -->\\` end.").Should().NotContain("<!--");
 	}
 
 	[Test]

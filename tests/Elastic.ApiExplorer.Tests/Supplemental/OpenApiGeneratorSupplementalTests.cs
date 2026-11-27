@@ -74,13 +74,7 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture)
 	}
 
 	private static IEnumerable<string> ChildSlugs(LandingNavigationItem navigation) =>
-		navigation
-			.NavigationItems
-			.OfType<TopicsNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<SimpleMarkdownNavigationItem>()
-			.Select(n => n.Slug);
+		ApiExplorerFixture.GuidePages(navigation).OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug);
 
 	[Test]
 	[Arguments("8", 9, 8)]

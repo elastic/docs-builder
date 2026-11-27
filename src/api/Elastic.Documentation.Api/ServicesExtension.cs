@@ -13,7 +13,6 @@ using Elastic.Documentation.Api.Gcp;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
-using Elastic.Ingest.Elasticsearch;
 using Elastic.Transport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -170,13 +169,12 @@ public static class ServicesExtension
 	private static void AddPageFeedbackServices(IServiceCollection services)
 	{
 		_ = services.AddSingleton<PageFeedbackIndex>();
-		_ = services.AddSingleton(serviceProvider =>
-		{
-			var transport = serviceProvider.GetRequiredService<ITransport>();
-			var index = serviceProvider.GetRequiredService<PageFeedbackIndex>();
-			var options = new IngestChannelOptions<PageFeedbackDocument>(transport, index.MappingContext);
-			return new IngestChannel<PageFeedbackDocument>(options);
-		});
+		_ = services.AddSingleton(
+			serviceProvider => serviceProvider.GetRequiredService<PageFeedbackIndex>().CreateChannel(
+				serviceProvider.GetRequiredService<ITransport>(),
+				serviceProvider.GetRequiredService<ILogger<PageFeedbackIndex>>()
+			)
+		);
 		_ = services.AddSingleton<IPageFeedbackService, ElasticsearchPageFeedbackGateway>();
 		_ = services.AddHostedService<PageFeedbackBootstrapService>();
 	}

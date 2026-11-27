@@ -778,13 +778,6 @@
 }
 
 @layer ds.patterns {
-	/* A tooltip shown open hangs above its trigger, so the stage leaves room for it. */
-	.sg-example__stage:has(.tooltip--open) {
-		padding-top: var(--space-8);
-	}
-}
-
-@layer ds.patterns {
 	/* A hero or band as a page shows it, framed so it can sit in the guide's column. */
 	.sg-herosample {
 		overflow: hidden;

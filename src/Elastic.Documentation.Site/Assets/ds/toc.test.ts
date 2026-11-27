@@ -235,4 +235,58 @@ describe('initToc', () => {
 
         history.pushState(null, '', window.location.pathname)
     })
+
+    it('finds a heading whose id has a literal percent sign', () => {
+        document.body.innerHTML = `
+        <nav data-toc>
+          <a data-toc-link href="#intro">Intro</a>
+          <a data-toc-link href="#100%-coverage">Coverage</a>
+        </nav>
+        <h2 id="intro">Intro</h2><h2 id="100%-coverage">100% coverage</h2>`
+        const rect = (top: number) => ({ top }) as DOMRect
+        document.getElementById('intro')!.getBoundingClientRect = () =>
+            rect(-600)
+        document.getElementById('100%-coverage')!.getBoundingClientRect = () =>
+            rect(-100)
+
+        expect(() => initToc()).not.toThrow()
+
+        // The first link is the fallback when no heading is found, so the second being current proves the lookup worked.
+        expect(
+            document
+                .querySelector('[href="#100%-coverage"]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+        expect(
+            document
+                .querySelector('[href="#intro"]')!
+                .hasAttribute('aria-current')
+        ).toBe(false)
+    })
+
+    it('binds only the outlines a selector names, each once', () => {
+        document.body.innerHTML = `
+        <nav class="mine" data-toc><a data-toc-link href="#one">One</a></nav>
+        <nav class="other" data-toc><a data-toc-link href="#one">One</a></nav>
+        <nav class="third" data-toc><a data-toc-link href="#one">One</a></nav>
+        <h2 id="one">One</h2>`
+        document.getElementById('one')!.getBoundingClientRect = () =>
+            ({ top: -300 }) as DOMRect
+
+        initToc(document, '.mine, .other')
+
+        const marked = (name: string) =>
+            document.querySelector(`.${name} a`)!.hasAttribute('aria-current')
+        expect([marked('mine'), marked('other'), marked('third')]).toEqual([
+            true,
+            true,
+            false,
+        ])
+
+        // A selector list is matched as a whole, so a second call finds every outline already bound.
+        const addListener = vi.spyOn(window, 'addEventListener')
+        initToc(document, '.mine, .other')
+        expect(addListener).not.toHaveBeenCalled()
+        addListener.mockRestore()
+    })
 })

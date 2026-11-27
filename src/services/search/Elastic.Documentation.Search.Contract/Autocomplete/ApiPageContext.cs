@@ -5,7 +5,7 @@
 namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
-/// The API page a reader searches from: key <c>elasticsearch</c> anywhere under <c>/docs/api/doc/elasticsearch</c>, and
-/// tree <c>8</c> only inside <c>/docs/api/doc/elasticsearch/v8</c>. The key lifts that API's hits; the tree also scopes them.
+/// The API page a reader searches from: key <c>elasticsearch</c> anywhere under <c>/docs/api/elasticsearch</c>, and
+/// tree <c>8</c> only inside <c>/docs/api/elasticsearch/v8</c>. The key lifts that API's hits; the tree also scopes them.
 /// </summary>
 public record ApiPageContext(string Key, string? Tree);

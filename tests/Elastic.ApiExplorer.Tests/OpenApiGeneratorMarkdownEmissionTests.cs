@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -49,12 +50,12 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 
 		var write = context.WriteFileSystem.File;
 		write.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "authentication.md")).Should().BeTrue();
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "servers.md")).Should().BeTrue();
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "group", "endpoint-search.md")).Should().BeTrue();
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search.md")).Should().BeTrue();
-		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "types", "_types-query_dsl-querycontainer.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch", "authentication.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch", "servers.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-search.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-search.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "elasticsearch", "types", "_types-query_dsl-querycontainer.md")).Should().BeTrue();
 	}
 
 	[Test]
@@ -77,12 +78,12 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		var landing = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), TestContext.Current!.Execution.CancellationToken);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch.md"), TestContext.Current!.Execution.CancellationToken);
 		var operation = await context
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(
-				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search.md"),
+				Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-search.md"),
 				TestContext.Current!.Execution.CancellationToken
 			);
 		var catalog = await context
@@ -93,6 +94,87 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		landing.Should().MatchSnapshot(name: "landing");
 		operation.Should().MatchSnapshot(name: "operation");
 		catalog.Should().MatchSnapshot(name: "catalog");
+	}
+
+	[Test]
+	public async Task Generate_NameWithAngleBrackets_IsEscapedInMarkdownAndPlainInFrontMatter()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-literal-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(LiteralNameSpec())
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var group = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-codes.md"),
+				TestContext.Current!.Execution.CancellationToken
+			);
+		group = group.ReplaceLineEndings("\n");
+		group.Should().StartWith("---\ntype: api\ntitle: \"HTTP <code> responses\"\n");
+		group.Should().Contain("\n# HTTP \\<code\\> responses\n");
+
+		// The title is read as a heading, so `1.` is not taken for a list marker.
+		var numbered = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "elasticsearch", "group", "endpoint-core.md"),
+				TestContext.Current!.Execution.CancellationToken
+			);
+		numbered.ReplaceLineEndings("\n").Should().StartWith("---\ntype: api\ntitle: \"1. List roles\"\n");
+	}
+
+	private static OpenApiDocument LiteralNameSpec()
+	{
+		static OpenApiPathItem Get(string id, string tag) =>
+			new()
+			{
+				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				{
+					[HttpMethod.Get] = new()
+					{
+						OperationId = id,
+						Summary = id,
+						Tags = new HashSet<OpenApiTagReference> { new(tag) },
+						Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+					}
+				}
+			};
+
+		return new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "Elasticsearch", Version = "1.0" },
+			Paths = new OpenApiPaths { ["/codes"] = Get("codes", "codes"), ["/ping"] = Get("ping", "core") },
+			Tags = new HashSet<OpenApiTag>
+			{
+				new()
+				{
+					Name = "codes",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("HTTP <code> responses"))
+					}
+				},
+				new()
+				{
+					Name = "core",
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						["x-displayName"] = new JsonNodeExtension(JsonValue.Create("1. List roles"))
+					}
+				}
+			}
+		};
 	}
 
 	[Test]
@@ -115,24 +197,21 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(
-				Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"),
-				TestContext.Current!.Execution.CancellationToken
-			);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "elasticsearch", "index.html"), TestContext.Current!.Execution.CancellationToken);
 		var operationHtml = await context
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(
-				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search", "index.html"),
+				Path.Join(outputRoot, "api", "elasticsearch", "operation", "operation-search", "index.html"),
 				TestContext.Current!.Execution.CancellationToken
 			);
 
-		html.Should().Contain("""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch.md" title="Markdown export"/>""");
+		html.Should().Contain("""<link rel="alternate" type="text/markdown" href="/api/elasticsearch.md" title="Markdown export"/>""");
 		html.Should().Contain("View as Markdown");
 		html.Should().Contain("Copy page");
 		html.Should().Contain("api-page-actions");
 		operationHtml.Should().Contain(
-			"""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch/operation/operation-search.md" title="Markdown export"/>"""
+			"""<link rel="alternate" type="text/markdown" href="/api/elasticsearch/operation/operation-search.md" title="Markdown export"/>"""
 		);
 		operationHtml.Should().Contain("View as Markdown");
 		operationHtml.Should().Contain("Copy page");
@@ -151,7 +230,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			"kibana-api-overview.md"
 		);
 		var file = new FileSystem().FileInfo.New(introPath);
-		var item = new SimpleMarkdownNavigationItem("/api/doc/kibana/kibana-api-overview", "Spaces", file, fixture.Navigation);
+		var item = new SimpleMarkdownNavigationItem("/api/kibana/kibana-api-overview", "Spaces", file, fixture.Navigation);
 		var renderContext = new ApiRenderContext(
 			fixture.Context,
 			fixture.Document,
@@ -166,6 +245,25 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		var wrapped = ApiMarkdownFrontMatter.Wrap(markdown!, item, renderContext, item);
 
 		wrapped.Should().MatchSnapshot();
+	}
+
+	[Test]
+	public async Task Generate_EmptyAuthoredPage_StillWritesTheExportItsCopyPageLinksTo()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-empty-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot, emptyPage: "empty-guide.md");
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "elasticsearch", "empty-guide.md")).Should().BeTrue();
 	}
 
 	[Test]
@@ -184,13 +282,13 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
-		var operationDir = Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation");
+		var operationDir = Path.Join(outputRoot, "api", "elasticsearch", "operation");
 		var file = context.WriteFileSystem.File;
 		var canonical = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search", "index.html"));
 		var former = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search-1", "index.html"));
 		canonical.Should().Contain("class=\"api-method-group\"");
 		former.Should().Contain(
-			"window.location.replace(\"/api/doc/elasticsearch/operation/operation-search\" + window.location.search + window.location.hash)"
+			"window.location.replace(\"/api/elasticsearch/operation/operation-search\" + window.location.search + window.location.hash)"
 		);
 		file.Exists(Path.Join(operationDir, "operation-search-1.md")).Should().BeFalse();
 	}
@@ -210,7 +308,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		}
 		""";
 
-	private static BuildContext CreateGenerateContext(string outputRoot)
+	private static BuildContext CreateGenerateContext(string outputRoot, string? emptyPage = null)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -226,6 +324,11 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
+		if (emptyPage is not null)
+		{
+			docsetYaml += $"\n      children:\n        - file: {emptyPage}\n";
+			fs.AddFile(Path.Join(repoRoot, "docs", "api", "elasticsearch", emptyPage), new MockFileData(string.Empty));
+		}
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
 		var products = new ProductsConfiguration
 		{

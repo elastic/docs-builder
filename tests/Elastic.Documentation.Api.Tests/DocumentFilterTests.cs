@@ -34,11 +34,11 @@ public class DocumentFilterTests
 		Serialize(SearchQueryBuilder.DocumentFilterFor(new ApiPageContext("elasticsearch", null))).Should().Be(UnscopedFilter);
 
 	[Test]
-	public void DocumentFilterFor_Scope_ShowsTheScopedTreeOfThatApiAndDefaultRenderingsOfTheRest() =>
+	public void DocumentFilterFor_Scope_ShowsTheScopedTreeOfThatApiWithoutSitemapOnlyPagesAndDefaultRenderingsOfTheRest() =>
 		Serialize(SearchQueryBuilder.DocumentFilterFor(new ApiPageContext("elasticsearch", "8")))
 			.Should()
 			.Be(
-				"""{"bool":{"minimum_should_match":1,"must_not":{"terms":{"path.keyword":["/docs","/docs/","/docs/404","/docs/404/"]}},"should":[{"bool":{"must_not":[{"term":{"hidden":{"value":true}}},{"term":{"api.key":{"value":"elasticsearch"}}}]}},{"bool":{"filter":[{"term":{"api.key":{"value":"elasticsearch"}}},{"term":{"api.trees.tree":{"value":"8"}}}]}}]}}"""
+				"""{"bool":{"minimum_should_match":1,"must_not":{"terms":{"path.keyword":["/docs","/docs/","/docs/404","/docs/404/"]}},"should":[{"bool":{"must_not":[{"term":{"hidden":{"value":true}}},{"term":{"api.key":{"value":"elasticsearch"}}}]}},{"bool":{"filter":[{"term":{"api.key":{"value":"elasticsearch"}}},{"term":{"api.trees.tree":{"value":"8"}}}],"must_not":{"term":{"api.sitemap_only":{"value":true}}}}}]}}"""
 			);
 
 	[Test]
@@ -113,6 +113,13 @@ public class DocumentFilterTests
 	/// <summary>The <c>query</c> of the one request the service sends, over a client that answers with no hits.</summary>
 	private static async Task<JsonDocument> CapturedQuery(Func<DefaultSearchService<DocumentationDocument>, Task> search)
 	{
+		using var request = await CapturedRequest(search);
+		return JsonDocument.Parse(request.RootElement.GetProperty("query").GetRawText());
+	}
+
+	/// <summary>The body of the last request <paramref name="search"/> sends.</summary>
+	internal static async Task<JsonDocument> CapturedRequest(Func<DefaultSearchService<DocumentationDocument>, Task> search)
+	{
 		byte[]? body = null;
 		var settings = new ElasticsearchClientSettings(new InMemoryRequestInvoker(
 			Encoding.UTF8.GetBytes("""{"hits":{"hits":[]}}"""),
@@ -128,7 +135,6 @@ public class DocumentFilterTests
 		await search(service);
 
 		body.Should().NotBeNull();
-		using var request = JsonDocument.Parse(body);
-		return JsonDocument.Parse(request.RootElement.GetProperty("query").GetRawText());
+		return JsonDocument.Parse(body);
 	}
 }

@@ -13,9 +13,31 @@
 	body.navigation-preview {
 		--offset-top: 56px;
 	}
-	/* API pages have no Docs sub-header, so nothing sticks above the sidebar. */
-	body:not(.navigation-preview, .air-gapped):has(.api-page-shell) {
-		--offset-top: 0px;
+}
+
+/* API pages keep the elastic.co masthead's main bar (logo, menus, Search, Start free trial) in view on scroll: the utility
+   bar above it (38px at every width) scrolls away, and so does the beta banner below. --elastic-nav-main is the main bar's
+   height, border included; the breakpoints match the placeholder heights below. API pages have no Docs sub-header, so the
+   sidebar and rail stick right under the main bar. */
+body:not(.navigation-preview, .air-gapped):has(
+		.api-page-shell,
+		.api-catalog-shell
+	) {
+	--elastic-nav-main: 65px;
+	--offset-top: var(--elastic-nav-main);
+
+	@media screen and (min-width: 768px) {
+		--elastic-nav-main: 73px;
+	}
+
+	@media screen and (min-width: 1180px) {
+		--elastic-nav-main: 81px;
+	}
+
+	#elastic-nav-wrapper {
+		position: sticky;
+		top: -38px;
+		z-index: 40;
 	}
 }
 

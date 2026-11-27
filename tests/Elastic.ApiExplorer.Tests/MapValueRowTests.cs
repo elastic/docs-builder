@@ -4,6 +4,10 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Elastic.ApiExplorer.Model;
+using Nullean.Snapshots.Html;
+using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -102,6 +106,59 @@ public class MapValueRowTests
 		var row = await HolderRowAsync("tree");
 
 		row.Type.Text.Should().StartWith("map string to");
+	}
+
+	private const string BodySpec =
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "t", "version": "1" },
+		  "paths": {},
+		  "components": {
+		    "schemas": {
+		      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+		      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+		      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+		      "Inputs": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Input" } },
+		      "Pet": {
+		        "allOf": [
+		          { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Input" } },
+		          { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+		        ]
+		      }
+		    }
+		  }
+		}
+		""";
+
+	[Test]
+	public async Task Render_MapBody_LabelsTheKeyRowLikeANestedMap()
+	{
+		var html = await RenderBodyAsync("Inputs", static body => body.Properties!);
+
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	[Test]
+	public async Task Render_MapOnAUnionVariant_LabelsTheKeyRowLikeANestedMap()
+	{
+		var html = await RenderBodyAsync("Pet", static body => body.UnionVariants!.Variants[0].Properties!);
+
+		html.Should().MatchHtmlSnapshot();
+	}
+
+	private static async Task<string> RenderBodyAsync(string schemaName, Func<ApiBodyContent, ApiPropertyList> pick)
+	{
+		var document = await LoadSpecAsync(BodySpec);
+		var body = ApiBodyContent.Build(
+			document.Components!.Schemas![schemaName],
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		var list = pick(body);
+		return await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 
 	[Test]

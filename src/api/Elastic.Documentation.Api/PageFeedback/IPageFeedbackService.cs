@@ -16,11 +16,10 @@ public record PageFeedbackRecord(
 	PageFeedbackReaction Reaction,
 	IReadOnlyList<PageFeedbackReason>? Reasons,
 	int? ReasonSetVersion,
-	string? Comment,
-	string? Euid
+	string? Comment
 )
 {
-	public static PageFeedbackRecord From(Guid feedbackId, PageFeedbackRequest request, string? euid) =>
+	public static PageFeedbackRecord From(Guid feedbackId, PageFeedbackRequest request) =>
 		new(
 			feedbackId,
 			request.PageUrl,
@@ -28,7 +27,6 @@ public record PageFeedbackRecord(
 			request.Reaction,
 			request.Reasons is null or [] ? null : request.Reasons,
 			request.ReasonSetVersion,
-			string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim(),
-			euid
+			string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim()
 		);
 }

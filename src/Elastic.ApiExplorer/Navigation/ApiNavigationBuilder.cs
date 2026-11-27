@@ -153,17 +153,16 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		}
 		var typesNavigation = CreateTypesNavigation(apiUrlSuffix, openApiDocument, rootNavigation);
 
-		var finalNavigationItems = new List<INavigationItem>();
-		var (topicsNavigation, listsAuthentication) = _topics.Create(
+		var (topicItems, listsAuthentication) = _topics.Create(
 			apiUrlSuffix,
 			openApiDocument,
 			ApiTopicsNavigationBuilder.ChildFiles(apiConfig, versionMajor),
 			rootNavigation
 		);
-		if (topicsNavigation.NavigationItems.Count > 0)
-			finalNavigationItems.Add(topicsNavigation);
+		// The guide pages come first, then the endpoint groups. The sidebar puts the Overview row above them.
+		var finalNavigationItems = new List<INavigationItem>(topicItems);
 
-		// The Topics heading lists the Authentication page itself, unless a children: page stands for it. The generated page then stays hidden for old links.
+		// The guide pages list the Authentication page themselves, unless a children: page stands for it. The generated page then stays hidden for old links.
 		finalNavigationItems.AddRange(
 			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
 				item => !(listsAuthentication && item.Model.Kind == ApiStructuralKind.Authentication)
@@ -205,12 +204,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				tagNavigationItem,
 				takenMonikers
 			);
-			tagNavigationItem.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
-				markdownRenderer,
-				tag.Description,
-				rootNavigation.Url,
-				postSections: []
-			));
+			tagNavigationItem.ApplyIntroHeadings(
+				ApiMarkdown.ReadIntroHeadings(
+					markdownRenderer,
+					tag.Description,
+					rootNavigation.Url,
+					postSections: [],
+					reserved: EndpointsSection.ReservedAnchors
+				)
+			);
 		}
 	}
 

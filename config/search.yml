@@ -19,6 +19,7 @@ rules:
         metadata: query_string
         values:
           - data stream
+          - data streams
           - data-stream
           - data-streams
           - datastream
@@ -45,10 +46,12 @@ synonyms:
   - [ "agg", "aggs => aggregations" ]
   - [ "apm", "application performance monitoring" ]
   - [ "aws", "amazon" ]
+  - [ "behavior", "behaviour" ]
   - [ "ccr", "cross-cluster replication", "cross cluster replication" ]
   - [ "ccs", "cross cluster search", "cross-cluster search", "spaghetti" ]
   - [ "cps", "cross project search", "cross-project search" ]
-  - [ "data-stream", "data stream", "datastream => data-streams"]
+  # Also expand to "data streams": the index keeps that spelling as plain words (see IndexTimeSynonyms).
+  - [ "data-stream", "data stream", "datastream => data-streams, data streams"]
   - [ "data-streams", "data streams", "datastreams"]
   - [ "ecctl", "elastic cloud control" ]
   - [ "ece", "elastic cloud enterprise" ]

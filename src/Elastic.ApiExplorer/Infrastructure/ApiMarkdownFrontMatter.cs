@@ -52,11 +52,13 @@ internal static class ApiMarkdownFrontMatter
 
 	internal static ApiPageFrontMatter Collect(string body, INavigationItem current, ApiRenderContext context, IApiModel page)
 	{
-		var title = Heading(body) ?? current.NavigationTitle;
+		// Front matter is plain text: the H1 is Markdown, so an escaped name such as `HTTP \<code\> responses` reads as written. It is
+		// read as a heading, so `1. List roles` is not taken for a list.
+		var title = Plain(Heading(body) is { } heading ? $"# {heading}" : null) ?? current.NavigationTitle;
 		return new(
 			title,
-			ResolveDescription(page, context, body),
-			CanonicalUrl(context, current),
+			ResolveDescription(page, context, body, current.NavigationTitle),
+			context.CanonicalUrl(current.Url),
 			context.Product?.DisplayName,
 			page is ApiLanding ? CollectFacts(context) : null
 		);
@@ -80,9 +82,9 @@ internal static class ApiMarkdownFrontMatter
 	{
 		_ = markdown.AppendLine("---");
 		_ = markdown.AppendLine("type: api");
-		_ = markdown.AppendLine($"title: {meta.Title}");
+		_ = markdown.AppendLine($"title: {YamlScalar(meta.Title)}");
 		if (!string.IsNullOrWhiteSpace(meta.Description))
-			_ = markdown.AppendLine($"description: {meta.Description}");
+			_ = markdown.AppendLine($"description: {YamlScalar(meta.Description)}");
 
 		_ = markdown.AppendLine($"url: {meta.Url}");
 		_ = markdown.AppendLine($"resource: {meta.Url}");
@@ -129,35 +131,46 @@ internal static class ApiMarkdownFrontMatter
 	private static string YamlScalar(string value) =>
 		$"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t")}\"";
 
-	private static string CanonicalUrl(ApiRenderContext context, INavigationItem current) =>
-		UrlPath.MakeAbsolute(context.BuildContext.CanonicalBaseUrl, current.Url.TrimEnd('/'))?.TrimEnd('/') ?? current.Url.TrimEnd('/');
+	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body, string navigationTitle) =>
+		AuthoredDescription(page, context, body) ?? ApiFallbackDescription.For(page, context, navigationTitle);
 
-	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body)
+	private static string? AuthoredDescription(IApiModel page, ApiRenderContext context, string body)
 	{
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		return page switch
 		{
 			ApiCatalog => ApiCatalog.PageDescription,
-			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.Model.Info?.Description, apiBaseUrl)),
-			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
-			ApiOperation operation =>
-				FirstLine(
-					ApiMarkdown.Prepare(
-						ApiSeoDescription.OperationText(
-							OperationDescription(operation, context),
-							OpenApiExtensionReader.GetSummary(operation.Operation)
-						),
-						apiBaseUrl
-					)
-				),
+			ApiLanding => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(context.LandingDescription, apiBaseUrl)),
+			ApiTag tag => TagSummary(tag, context),
+			ApiOperation operation => OperationDescriptionLine(operation, context, apiBaseUrl),
+			ApiStructuralPage structural => ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(structural.Intro, apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
 			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
-			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
+			SimpleMarkdownNavigationItem => Plain(ApiSeoDescription.FirstParagraph(body)),
 			_ => null
 		};
 	}
 
-	private static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
+	/// <summary>
+	/// The first line of the operation's own text once its HTML comments are gone, as the HTML page reads it, or null when nothing a reader
+	/// would see is left. The page then takes the generated sentence.
+	/// </summary>
+	private static string? OperationDescriptionLine(ApiOperation operation, ApiRenderContext context, string apiBaseUrl)
+	{
+		var own = ApiSeoDescription.SkipPathPreamble(OperationDescription(operation, context));
+		if (!string.IsNullOrWhiteSpace(own))
+			return FirstLine(ApiMarkdown.Prepare(own, apiBaseUrl) is { } prepared ? ApiSeoDescription.WithoutComments(prepared) : null);
+
+		// A summary is plain text in OpenAPI, so it stays as written.
+		return OpenApiExtensionReader.GetSummary(operation.Operation)?.Trim() is { Length: > 0 } summary ? summary : null;
+	}
+
+	/// <summary>The one-line description of a group, from its supplemental description when it has one: what its meta description and its card on the product landing page say.</summary>
+	internal static string? TagSummary(ApiTag tag, ApiRenderContext context) =>
+		ApiSeoDescription.Excerpt(ApiMarkdown.Prepare(TagDescription(tag, context), context.CurrentNavigation.NavigationRoot.Url));
+
+	/// <summary>The description a group shows: its supplemental one when it has one, else the spec's.</summary>
+	internal static string? TagDescription(ApiTag tag, ApiRenderContext context) =>
 		context.TagSupplemental.TryGetValue(tag.Name, out var doc) ? doc.DescriptionOr(tag.Description) : tag.Description;
 
 	private static string? OperationDescription(ApiOperation operation, ApiRenderContext context)
@@ -184,12 +197,16 @@ internal static class ApiMarkdownFrontMatter
 		return null;
 	}
 
+	/// <summary>The first line of Markdown <paramref name="text"/>, as plain text.</summary>
 	private static string? FirstLine(string? text)
 	{
 		if (string.IsNullOrWhiteSpace(text))
 			return null;
 
 		using var reader = new StringReader(text.Trim());
-		return reader.ReadLine()?.Trim();
+		return Plain(reader.ReadLine());
 	}
+
+	private static string? Plain(string? markdown) =>
+		string.IsNullOrWhiteSpace(markdown) ? null : ApiMarkdown.ToPlainText(markdown) is { Length: > 0 } plain ? plain : null;
 }

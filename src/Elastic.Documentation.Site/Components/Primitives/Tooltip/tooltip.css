@@ -1,35 +1,17 @@
-.tooltip {
-	position: relative;
-	display: inline-block;
-}
-
-.tooltip__trigger {
+/* Any element with data-tooltip gets the shared tooltip (Assets/tooltip.ts); this marks a word that has one. */
+.tooltip-trigger {
 	border-bottom: var(--border-width) dotted var(--color-text-muted);
 	cursor: help;
 }
 
-.tooltip__bubble {
-	position: absolute;
-	bottom: 100%;
-	left: 50%;
-	z-index: var(--z-overlay);
-	width: max-content;
-	max-width: 16rem;
-	margin-bottom: var(--space-2);
-	padding: var(--space-1) var(--space-2);
-	border-radius: var(--radius-sm);
-	background: var(--color-emphasis);
-	color: var(--color-on-emphasis);
-	font-size: var(--text-xs);
-	line-height: var(--leading-snug);
-	opacity: 0;
-	pointer-events: none;
-	transform: translateX(-50%);
-	transition: opacity var(--duration-fast) var(--ease-standard);
+/* The style guide's tooltip shown open: the shared look, in flow above its trigger. */
+.tooltip-shown {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 9px;
 }
 
-.tooltip:hover .tooltip__bubble,
-.tooltip:focus-within .tooltip__bubble,
-.tooltip--open .tooltip__bubble {
-	opacity: 1;
+.tooltip-shown > .tooltip {
+	position: relative;
 }

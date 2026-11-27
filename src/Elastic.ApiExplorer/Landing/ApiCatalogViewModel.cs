@@ -3,23 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Infrastructure;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Site.Icons;
 
 namespace Elastic.ApiExplorer.Landing;
 
-/// <summary>A deployment an API is available on. <see cref="Label"/> is the short tag text, <see cref="Name"/> the full name.</summary>
-public sealed record ApiCatalogDeployment(string Label, string Name);
-
-public sealed record ApiCatalogItem(
-	string Key,
-	string Title,
-	string Url,
-	string IconSvg,
-	string? Summary,
-	IReadOnlyList<ApiCatalogDeployment> Deployments,
-	string? ParentKey = null
-);
+public sealed record ApiCatalogItem(string Key, string Title, string Url, string IconSvg, string? Summary, string? ParentKey = null);
 
 /// <summary>
 /// One labelled band of the page. <see cref="Title"/> is null for a lone group, which needs no label. A
@@ -32,8 +20,8 @@ public sealed record ApiCatalogGroup(
 	IReadOnlyList<ApiCatalogItem> Others
 )
 {
-	/// <summary>The other cards that are not attached under a featured card. Attached ones render right after their parent.</summary>
-	public IEnumerable<ApiCatalogItem> Unattached => Others.Where(o => ColumnOf(o) is null);
+	/// <summary>The other cards that are not attached under a featured card. Attached ones render inside their parent's cell.</summary>
+	public IEnumerable<ApiCatalogItem> Unattached => Others.Where(o => !Featured.Any(f => f.Key == o.ParentKey));
 
 	/// <summary>The tag-on attached under <paramref name="featured"/>, if this group has one.</summary>
 	public bool TryGetVariant(ApiCatalogItem featured, out ApiCatalogItem variant)
@@ -41,17 +29,6 @@ public sealed record ApiCatalogGroup(
 		var found = Others.FirstOrDefault(o => o.ParentKey == featured.Key);
 		variant = found!;
 		return found is not null;
-	}
-
-	/// <summary>The 1-based grid column of the featured card that <paramref name="variant"/> is attached under, if it has one here.</summary>
-	public int? ColumnOf(ApiCatalogItem variant)
-	{
-		for (var i = 0; i < Featured.Count; i++)
-		{
-			if (Featured[i].Key == variant.ParentKey)
-				return i + 1;
-		}
-		return null;
 	}
 }
 
@@ -63,26 +40,24 @@ internal sealed record ApiCatalogEntryGroup(string? Title, bool Grouped, ApiCata
 
 public enum ApiCatalogCardKind
 {
-	/// <summary>The full-size card, with the deployment pills.</summary>
+	/// <summary>The full-size card.</summary>
 	Standard,
 
 	/// <summary>The larger card for the core APIs.</summary>
 	Featured,
 
-	/// <summary>The small card for everything else in a group.</summary>
-	Compact
+	/// <summary>The small tag-on card that sits flush under its featured parent.</summary>
+	Attached
 }
 
 /// <summary>
 /// Input for the card partial. <see cref="HasVariant"/> marks a featured card with a tag-on attached under it.
-/// <see cref="Column"/> is the grid column of the card a tag-on is attached under. <see cref="HeadingLevel"/> is the level
-/// of the card title: 3 under a group heading, 2 when the page renders none.
+/// <see cref="HeadingLevel"/> is the level of the card title: 3 under a group heading, 2 when the page renders none.
 /// </summary>
 public sealed record ApiCatalogCard(
 	ApiCatalogItem Item,
 	ApiCatalogCardKind Kind = ApiCatalogCardKind.Standard,
 	bool HasVariant = false,
-	int? Column = null,
 	int HeadingLevel = 3
 );
 
@@ -96,14 +71,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 	[
 		("Elastic Stack", [.. ApiCatalogOrder.StackKeys, .. ApiCatalogOrder.VariantParents.Keys]),
 		("Orchestration", ApiCatalogOrder.OrchestrationKeys)
-	];
-
-	private static readonly (string Category, string Label)[] DeploymentLabels =
-	[
-		(ApplicabilityKeys.Self, "Self-managed"),
-		(ApplicabilityKeys.Ece, "ECE"),
-		(ApplicabilityKeys.Ess, "ECH"),
-		(ApplicabilityKeys.Serverless, "Serverless")
 	];
 
 	private const string FallbackIconSvg =
@@ -168,22 +135,13 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			: new(title, Grouped: true, [], members);
 	}
 
-	internal static IReadOnlyList<ApiCatalogDeployment> DeploymentsOf(ApiCatalogEntry entry) =>
-		[
-			.. DeploymentLabels.Where(d => entry.CatalogCategories.Contains(d.Category)).Select(
-				d => new ApiCatalogDeployment(d.Label, ApiCatalogCategory.DisplayName(d.Category))
-			)
-		];
-
-	/// <summary>A card opens the API's latest numbered version when it has one, like the sidebar selector.</summary>
 	internal static ApiCatalogItem ToItem(ApiCatalogEntry entry) =>
 		new(
 			entry.Key,
 			entry.Title,
-			entry.OpenUrl,
+			entry.Url,
 			entry.IconSvg ?? FallbackIconSvg,
 			ApiSeoDescription.Excerpt(entry.Description),
-			DeploymentsOf(entry),
 			ApiCatalogOrder.VariantParents.GetValueOrDefault(entry.Key)
 		);
 }

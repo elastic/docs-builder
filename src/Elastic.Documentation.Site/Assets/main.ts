@@ -2,13 +2,14 @@ import { initAgentSkillCopy } from './agent-skill'
 import { bindApiBetaBanner } from './api-beta-banner'
 import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
-import { initApiMenus } from './api-menu'
 import { changesPageChrome } from './api-navigation'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
+import { initFloating } from './floating'
 import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { bindImageModals } from './image-modal'
 import { initListing } from './listing'
 import { initMath } from './math'
 import { initMermaid } from './mermaid'
@@ -26,6 +27,7 @@ import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
+import { initTooltips } from './tooltip'
 import { loadWebComponents } from './web-components/loadWebComponents'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -87,10 +89,12 @@ document.addEventListener('htmx:load', function () {
 bindCtaClicks()
 initPrivacyConsent()
 initSecondaryNav()
-initApiMenus()
+initFloating()
+initTooltips()
 initApiChromeSync()
 bindApiBetaBanner()
 bindModalEscape()
+bindImageModals()
 bindHtmxHooks({
     forcesFullPageLoad: (targetPath) =>
         // A move between a docs page and an API page, or to another API product: the swap would

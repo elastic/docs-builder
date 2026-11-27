@@ -173,6 +173,9 @@ public static class OpenApiAuthSchemeResolver
 
 	internal static string? CredentialExample(IOpenApiSecurityScheme? scheme) => scheme?.Type switch
 	{
+		// An API key in the Authorization header travels behind the ApiKey scheme word, as the curl samples send it.
+		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header
+			&& string.Equals(scheme.Name, "Authorization", StringComparison.OrdinalIgnoreCase) => "Authorization: ApiKey <api-key>",
 		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
 			$"{scheme.Name}: <value>",
 		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name) =>

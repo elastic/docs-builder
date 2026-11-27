@@ -10,7 +10,6 @@
 	--cli-modifier-bg: var(--color-surface-sunken);
 	--cli-modifier-border: var(--color-border);
 
-	position: relative;
 	display: inline-flex;
 	align-items: center;
 	gap: var(--space-2);
@@ -52,30 +51,4 @@
 	--cli-modifier-fg: var(--color-success);
 	--cli-modifier-bg: var(--color-success-surface);
 	--cli-modifier-border: var(--color-success);
-}
-
-/* The tooltip is the data-tooltip text, shown on hover and keyboard focus without script. */
-.cli-modifier[data-tooltip]::after {
-	content: attr(data-tooltip);
-	position: absolute;
-	bottom: 100%;
-	left: 50%;
-	z-index: var(--z-overlay);
-	width: max-content;
-	max-width: 16rem;
-	margin-bottom: var(--space-2);
-	padding: var(--space-1) var(--space-2);
-	border-radius: var(--radius-sm);
-	background: var(--color-emphasis);
-	color: var(--color-on-emphasis);
-	font-weight: var(--weight-regular);
-	opacity: 0;
-	pointer-events: none;
-	transform: translateX(-50%);
-	transition: opacity var(--duration-fast) var(--ease-standard);
-}
-
-.cli-modifier[data-tooltip]:hover::after,
-.cli-modifier[data-tooltip]:focus-visible::after {
-	opacity: 1;
 }

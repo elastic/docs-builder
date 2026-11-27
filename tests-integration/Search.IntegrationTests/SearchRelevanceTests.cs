@@ -43,18 +43,15 @@ public class SearchRelevanceTests
 		yield return () =>
 			("dotnet client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"]);
 		yield return () =>
-			("runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [
-				"/docs/solutions/security/endpoint-response-actions"
-			]);
-		yield return () => ("_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("GET /_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("my-index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return () => ("_cat/indices/logs-2026", "/docs/api/doc/elasticsearch/operation/operation-cat-indices", null);
-		yield return () => ("_bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk", null);
-		yield return () =>
-			("_security/user/alice/_password", "/docs/api/doc/elasticsearch/operation/operation-security-change-password", null);
+			("runscript", "/docs/api/kibana/operation/operation-runscriptaction", ["/docs/solutions/security/endpoint-response-actions"]);
+		yield return () => ("_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("/_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("GET /_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("index/_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("my-index/_search", "/docs/api/elasticsearch/operation/operation-search", null);
+		yield return () => ("_cat/indices/logs-2026", "/docs/api/elasticsearch/operation/operation-cat-indices", null);
+		yield return () => ("_bulk", "/docs/api/elasticsearch/operation/operation-bulk", null);
+		yield return () => ("_security/user/alice/_password", "/docs/api/elasticsearch/operation/operation-security-change-password", null);
 		yield return () => ("data-streams", "/docs/manage-data/data-store/data-streams", null);
 		yield return () => ("datastream", "/docs/manage-data/data-store/data-streams", null);
 		yield return () => ("data stream", "/docs/manage-data/data-store/data-streams", null);
@@ -373,6 +370,26 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("scroll id", "operation-scroll", "scroll_id");
 	}
 
+	// The index keeps "data streams" as plain words, so the singular finds a plural-only page only through the
+	// search-time "data streams" expansion in search.yml. The pin keeps the overview first either way.
+	[Test]
+	[Arguments("data stream")]
+	[Arguments("datastream")]
+	public async Task SearchSingular_FindsAPageThatOnlyUsesThePluralWords(string query)
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 20 },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		searchResult.Results.Select(r => r.Url).Should().Contain("/docs/reference/fleet/data-streams");
+	}
+
 	[Test]
 	[MethodDataSource(nameof(ApiSearchQueryTestCases))]
 	public async Task ApiSearchReturnsExpectedFirstResult(string query, string expectedOperation)
@@ -558,6 +575,68 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	}
 
 	[Test]
+	// The deprecated Kibana "Create a new monitored user" came first, and the Elasticsearch operation was 10th, until the title roles
+	// read the display title (within one edit), a title's "X or Y" verbs joined api.words, and a word the operation names itself
+	// stopped listing a same-named request object as a path.
+	[Arguments("create user", "/operation/operation-create-user", 1)]
+	[Arguments("create user", "/operation/operation-security-put-user", 2)]
+	// A word that names the API still counts: the title match once read search_title, which holds "Cloud Enterprise API".
+	[Arguments("cloud create user", "/operation/operation-create-user", 1)]
+	// The group page is the title typed, whichever way the word is spelled: stemmed words, and the British spelling through a synonym.
+	[Arguments("behavioral analytics", "/group/endpoint-analytics", 1)]
+	[Arguments("behavior analytics", "/group/endpoint-analytics", 1)]
+	[Arguments("Behaviour analytics", "/group/endpoint-analytics", 1)]
+	public async Task ApiSearchPlacesAResultAtItsExpectedPosition(string query, string expectedUrlEnd, int expectedPosition)
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		// Positions count from 1, as the search telemetry does.
+		var urls = searchResult.Results.Select(r => r.Url).ToList();
+		var position = urls.FindIndex(u => u.EndsWith(expectedUrlEnd, StringComparison.Ordinal)) + 1;
+		position.Should().Be(expectedPosition, $"'{query}' listed {string.Join(", ", urls)}");
+	}
+
+	[Test]
+	[Arguments("run an ES|QL query", "/operation/operation-esql-query")]
+	[Arguments("Get lifecycle policies", "/operation/operation-ilm-get-lifecycle")]
+	public async Task ApiSearchTitleTypedAsWrittenEarnsTheWholeTitleLift(string title, string expectedUrlEnd)
+	{
+		var (gateway, clientAccessor) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		Skip.Unless(await gateway.CanConnect(ct), "Elasticsearch is not connected");
+
+		// The titles are indexed as written, while the synonyms analyzer turns `policies` into `policy` and `ES|QL` into `esql`.
+		var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
+			s => s
+				.Indices(clientAccessor.SearchIndex)
+				.Size(50)
+				.Query(SearchQueryBuilder.FilterDocuments(ApiLookupQueryBuilder.Build(title), page: null))
+				.PostFilter(new TermQuery { Field = QueryFieldNames.ContentType, Value = "api" })
+				.Source(sf => sf.Filter(f => f.Includes(ReportSourceIncludes)))
+				.IncludeNamedQueriesScore(true),
+			ct
+		);
+
+		var hit = response.Hits.FirstOrDefault(h => h.Source?.Path?.EndsWith(expectedUrlEnd, StringComparison.Ordinal) == true);
+		hit.Should().NotBeNull($"'{title}' lists {expectedUrlEnd}");
+		var scored = hit!.MatchedQueries?.Match(_ => null, scores => scores) ?? new Dictionary<string, double>();
+		scored
+			.TryGetValue("title_all", out var lift)
+			.Should()
+			.BeTrue($"the title '{title}' names its own operation, which scored {string.Join(", ", scored)}");
+		lift.Should().Be(ApiLookupWeights.WholeTitle);
+	}
+
+	[Test]
 	public async Task ApiSearchWordsOfAnApisNameListItsLandingPageFirst()
 	{
 		var (gateway, _) = CreateFindPageGateway();
@@ -570,14 +649,15 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		searchResult.Results.First().Url.Should().Be("/docs/api/doc/kibana");
+		searchResult.Results.First().Url.Should().Be("/docs/api/kibana");
 	}
 
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
 	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
 
 	/// <summary>
-	/// Queries the report lists with no expected result, so a weight change shows what it moves beyond the judged cases.
+	/// Queries the report lists with no first-result case, so a weight change shows what it moves beyond the judged cases. Those that
+	/// <see cref="ApiSearchPlacesAResultAtItsExpectedPosition"/> judges by position stay here: the report prints their scores and winning roles.
 	/// </summary>
 	public static IEnumerable<string> ApiSearchUnjudgedReportQueries() =>
 		[
@@ -600,6 +680,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			"search templates",
 			"create role",
 			"create user",
+			"cloud create user",
+			"behavior analytics",
+			"Behaviour analytics",
 			"reindex",
 			"legacy index template",
 			"install package",
