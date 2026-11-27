@@ -20,7 +20,12 @@ namespace Elastic.Documentation.Tests.Domain;
 public class DomainPurityTests
 {
 	/// <summary>Namespaces introduced by the domain model; each change that adds a bounded context adds its namespace here. Existing infrastructure namespaces are out of scope.</summary>
-	private static readonly string[] DomainNamespaces = ["Elastic.Documentation.Equality", "Elastic.Documentation.OpenApi", "Elastic.Documentation.Sync"];
+	private static readonly string[] DomainNamespaces =
+	[
+		"Elastic.Documentation.Equality",
+		"Elastic.Documentation.OpenApi",
+		"Elastic.Documentation.Sync"
+	];
 
 	private static readonly string[] ForbiddenNamespacePrefixes =
 	[
