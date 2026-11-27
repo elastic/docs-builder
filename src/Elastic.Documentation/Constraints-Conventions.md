@@ -31,7 +31,7 @@ public sealed record Widget(string Name, int Size) : IHaveConstraints<Widget>
 
 Everything that checks a record reads `T.Constraints`. There is no way to pass another set, and no `ConstraintSet.Merge/From/Pair` outside the domain.
 
-**The ban.** `BannedSymbols.txt` (Microsoft.CodeAnalysis.BannedApiAnalyzers, rule RS0030, wired in `src/Directory.Build.props`) makes the rule-authoring API a compile error in every `src` project except `Elastic.Documentation`: `Constraints<T>`, `Relation`, `Tree`, the static `ConstraintSet`, and running a set by hand (`Report`, `Validate`, `Validated`, `Ensure`, `Check`). Tests are exempt. If you think a loader or service needs a rule, add it to the `*Constraints` class instead. `ConstraintSet<T>.Apply`/`ApplyDetailed` stay allowed: they are the checked form of an operation. The single sanctioned runner outside the domain is `Loader.cs`, which suppresses RS0030 for the whole file.
+**The ban.** `BannedSymbols.txt` (Microsoft.CodeAnalysis.BannedApiAnalyzers, rule RS0030, wired in `src/Directory.Build.props`) makes the rule-authoring API a compile error in every `src` project except `Elastic.Documentation`: `Constraints<T>`, `Relation`, `Tree`, the static `ConstraintSet`, and running a set by hand (`Report`, `Validate`, `Validated`, `Ensure`, `Check`). Tests are exempt. If you think a loader or service needs a rule, add it to the `*Constraints` class instead. `ConstraintSet<T>.Apply`/`ApplyDetailed` stay allowed: they are the checked form of an operation. The one sanctioned runner is `Check` (below), which lives in the domain assembly, so no project suppresses RS0030.
 
 ## Stages are types
 
@@ -61,13 +61,21 @@ internal static class SearchLoader
 - `parse` and `map` are the only steps. Findings made in `map` go to the `MapContext` the loader creates per load, so they cannot be lost or reordered, and are kept (first) when a later step throws.
 - The record is then checked once against `T.Constraints`. `errorsAreFatal: true` (the default) makes an error an `Unreadable<T>`; `false` returns the `Loaded<T>` with its errors, for a caller that reports and continues.
 - A step that throws becomes an error finding. Its text is `describe(exception)`, declared with the loader (default: the message, so a loader keeps the text it always gave). Cancellation and out-of-memory propagate.
-- `value.Check(file)` checks a record built elsewhere against its `T.Constraints` and returns the `Loaded<T>`.
+- `value.Check(file)` checks a record built elsewhere against its `T.Constraints` and returns the `Loaded<T>` (see "Check" below).
 
 `LoadResult<T>` is a union of `Loaded<T>` (the value and every finding, a tolerant load may still hold errors) and `Unreadable<T>` (findings only). It is not `Nullean.Entities.Result<T>`, which is the outcome of an operation. A caller writes the findings with `result.Report(collector)` (returns the same result) and then chooses `OrThrow()`, `OrThrowIfMissing()`, `ValueOrNull()` or a match on the case. `EmitTo(collector)` is `Report(collector).ValueOrNull()`. `EmitErrorsTo` writes errors only and returns null when there are some; a result's own warnings are in `Findings()` and written by `EmitTo`, not by `EmitErrorsTo`. Startup-critical configuration stops the process in one place, the composition root: `Loader.Load(...).Report(collector).OrThrow()` throws a `ConfigurationException` listing every error and carrying every finding.
 
 A caller that owns a collector and has a `ConstraintReport` writes it with `collector.WriteViolations(report, file)`, which returns whether the value is usable (no errors).
 
 `BufferingDiagnosticsCollector` holds diagnostics unfiltered, for a parser that writes to a collector whose findings a loader must return.
+
+## Check: a record built elsewhere
+
+`CheckExtensions.Check<T>(this T value, string file)` is in `Elastic.Documentation/Diagnostics`, next to `Loaded<T>`. It runs `T.Constraints.Report(value)` once and returns `Loaded<T>` with the findings as diagnostics (a rule's own file wins, otherwise `file`). Loaders call it after `map`; a service calls it on a record or stage type it built itself: `new SomeStage(record).Check(file).Findings`.
+
+- **Why it is public.** It lives in the only assembly where running a set is allowed, and the ban covers every other project, so it must be public for a service to reach it. One generic entry replaces a public wrapper per type; the type constraint `IHaveConstraints<T>` keeps it to records that own their rules.
+- **What it does not do.** It takes no rule set (a call site cannot choose, add or skip a rule). It does not decide fatality: a violated Error rule still returns `Loaded<T>`, the caller reads `HasErrors` or the findings, and a loader (`Loader.For`) is what turns errors into `Unreadable<T>`. It does not write to a collector, throw, or log. It does not map or parse.
+- The ban stays in force for everything else: calling `ConstraintSet<T>.Report`/`Validate`/`Validated`/`Ensure`/`Check`, or `Constraints<T>.Always`, outside `Elastic.Documentation` fails the build (RS0030).
 
 ## Operations: methods on the record, checked by the set
 
