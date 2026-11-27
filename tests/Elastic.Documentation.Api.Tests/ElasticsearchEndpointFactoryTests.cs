@@ -47,4 +47,23 @@ public class ElasticsearchEndpointFactoryTests
 		endpoint.ApiKey.Should().Be("saved-cloud-key");
 		endpoint.Password.Should().Be("saved-cloud-password");
 	}
+
+	[Test]
+	public void FromConfiguration_NoUrl_StillAppliesBuildTypeEnvironmentAndOverride()
+	{
+		var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+		{
+			["DOCUMENTATION_ELASTIC_APIKEY"] = "saved-cloud-key",
+			["ENVIRONMENT"] = "edge",
+			["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"] = "local-override"
+		}).Build();
+
+		var endpoints = ElasticsearchEndpointFactory.FromConfiguration(config, buildType: "assembler");
+
+		endpoints.Elasticsearch.Uri.Should().Be(new Uri("http://localhost:9200"));
+		endpoints.Elasticsearch.ApiKey.Should().BeNull();
+		endpoints.BuildType.Should().Be("assembler");
+		endpoints.Environment.Should().Be("edge");
+		endpoints.SearchIndexOverride.Should().Be("local-override");
+	}
 }
