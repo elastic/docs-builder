@@ -142,7 +142,7 @@ verdict: True 0.2 0.2
 		try
 		{
 			// the rendered number follows the culture; the verdict line and the templates and properties do not
-			var actual = Scenarios().TrimEnd('\n');
+			var actual = Scenarios().ReplaceLineEndings("\n").TrimEnd('\n');
 			Console.WriteLine("ACT\n" + actual);
 			actual.Should().Be(Expected);
 		}
