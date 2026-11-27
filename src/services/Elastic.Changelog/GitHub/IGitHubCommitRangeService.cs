@@ -30,6 +30,12 @@ public record CommitRangeArguments
 	/// instead. <c>null</c> keeps every merged pull request.
 	/// </summary>
 	public string? BaseRef { get; init; }
+
+	/// <summary>
+	/// For a range whose start is not an ancestor of its end by design, such as the commit of a previous release branch.
+	/// The service then notes that the refs diverged as a hint, not a warning. <c>false</c> keeps the warning.
+	/// </summary>
+	public bool DivergenceIsExpected { get; init; }
 }
 
 /// <summary>A merged pull request left out of a range because its base branch is not the requested one.</summary>

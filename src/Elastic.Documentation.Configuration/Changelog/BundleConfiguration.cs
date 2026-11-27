@@ -102,6 +102,11 @@ public record BundleConfiguration
 	public BundleReleases? Releases { get; init; }
 }
 
+/// <summary>A bundle profile as listed in a <c>changelog.yml</c>: its name and the product it bundles.</summary>
+/// <param name="Name">The profile name.</param>
+/// <param name="Product">The profile's <c>product</c>, or <c>null</c> when it sets none.</param>
+public record BundleProfileSummary(string Name, string? Product);
+
 /// <summary>
 /// A named bundle profile configuration.
 /// Profiles can be invoked with a version number or promotion report URL.

@@ -855,6 +855,28 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	[Arguments(false, Severity.Warning)]
+	[Arguments(true, Severity.Hint)]
+	public async Task ResolvePullRequests_DivergedRefs_AreAWarningUnlessDivergenceIsExpected(bool divergenceIsExpected, Severity expected)
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(
+			_ => CompareJson(1, [sha1], status: "diverged"),
+			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])])
+		);
+
+		var result = await Service(handler).ResolvePullRequestsAsync(
+			Collector,
+			Args with { DivergenceIsExpected = divergenceIsExpected },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Where(d => d.Message.Contains("have diverged")).Select(d => d.Severity).Should().Equal(expected);
+	}
+
+	[Test]
 	public async Task ResolvePullRequests_UnknownRefs_EmitsErrorAndReturnsNull()
 	{
 		var handler = Handler(_ => null, _ => throw new InvalidOperationException("GraphQL must not be called"));

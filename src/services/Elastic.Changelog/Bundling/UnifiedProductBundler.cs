@@ -83,10 +83,10 @@ public sealed class UnifiedProductBundler(
 				failWhenNotOnboarded
 			);
 
-		IReadOnlyList<string> profiles;
+		IReadOnlyList<BundleProfileSummary> profiles;
 		try
 		{
-			profiles = ChangelogConfigurationLoader.ReadBundleProfileNames(changelogYaml);
+			profiles = ChangelogConfigurationLoader.ReadBundleProfiles(changelogYaml);
 		}
 		catch (YamlException ex)
 		{
@@ -103,14 +103,7 @@ public sealed class UnifiedProductBundler(
 				failWhenNotOnboarded
 			);
 
-		var profileName = profiles[0];
-		if (profiles.Count > 1)
-			logger.LogWarning(
-				"'{Product}' changelog.yml has {Count} profiles; using the first: '{Profile}'",
-				productId,
-				profiles.Count,
-				profileName
-			);
+		var profileName = ChooseProfile(productId, profiles);
 
 		var tempConfig = fileSystem.Path.Combine(outputDirectory, $"changelog-config-{repoKey}-{commitHash[..8]}.yml");
 		await fileSystem.File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
@@ -123,6 +116,8 @@ public sealed class UnifiedProductBundler(
 			{
 				OnPoolMissing = failWhenNotOnboarded ? null : message => poolMissing = message,
 				OnEmptyRange = () => emptyRange = true,
+				// The start is the previous release's manifest commit, usually on another branch than the end.
+				DivergenceIsExpected = true,
 				TolerateMissingLabels = problems is not null,
 				OnPullRequestProblem = problems is null ? null : problem => problems.Add(range.ProductId, range.Version, problem)
 			};
@@ -143,6 +138,31 @@ public sealed class UnifiedProductBundler(
 		{
 			fileSystem.File.Delete(tempConfig);
 		}
+	}
+
+	/// <summary>
+	/// The profile that bundles <paramref name="productId"/>. A <c>changelog.yml</c> with profiles for several products, such as
+	/// a stack release next to a serverless one, names the right one by its <c>product</c>. When none or several match, the first
+	/// profile is used and the choice is logged.
+	/// </summary>
+	private string ChooseProfile(string productId, IReadOnlyList<BundleProfileSummary> profiles)
+	{
+		if (profiles.Count == 1)
+			return profiles[0].Name;
+
+		var matching = profiles.Where(p => string.Equals(p.Product, productId, StringComparison.OrdinalIgnoreCase)).ToList();
+		if (matching.Count == 1)
+			return matching[0].Name;
+
+		var first = profiles[0].Name;
+		logger.LogWarning(
+			"'{Product}' changelog.yml has {Count} profiles and {Matching} of them bundle that product; using the first: '{Profile}'",
+			productId,
+			profiles.Count,
+			matching.Count,
+			first
+		);
+		return first;
 	}
 
 	private ProductBundleOutcome NotOnboarded(string message, bool fail)

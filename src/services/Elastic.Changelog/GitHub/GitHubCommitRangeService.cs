@@ -123,10 +123,12 @@ public sealed partial class GitHubCommitRangeService(
 
 		if (string.Equals(first.Status, "diverged", StringComparison.OrdinalIgnoreCase))
 		{
-			collector.EmitWarning(
-				string.Empty,
-				$"Refs {args.StartRef} and {args.EndRef} for {args.Owner}/{args.Repo} have diverged; only commits reachable from {args.EndRef} but not {args.StartRef} are considered."
-			);
+			var message =
+				$"Refs {args.StartRef} and {args.EndRef} for {args.Owner}/{args.Repo} have diverged; only commits reachable from {args.EndRef} but not {args.StartRef} are considered.";
+			if (args.DivergenceIsExpected)
+				collector.EmitHint(string.Empty, message);
+			else
+				collector.EmitWarning(string.Empty, message);
 		}
 
 		AddShas(commits, first);

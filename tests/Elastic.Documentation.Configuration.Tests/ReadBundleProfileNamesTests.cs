@@ -93,4 +93,29 @@ public class ReadBundleProfileNamesTests
 
 		names.Should().BeEmpty();
 	}
+
+	[Test]
+	public void ReadBundleProfiles_ReturnsEachNameWithItsProductInDefinitionOrder()
+	{
+		// language=yaml
+		var yaml =
+			"""
+			bundle:
+			  profiles:
+			    stack-release:
+			      product: kibana
+			    serverless-release:
+			      product: cloud-serverless
+			    legacy-release:
+			      products: "kibana {version} *"
+			""";
+
+		var profiles = ChangelogConfigurationLoader.ReadBundleProfiles(yaml);
+
+		profiles.Should().Equal(
+			new BundleProfileSummary("stack-release", "kibana"),
+			new BundleProfileSummary("serverless-release", "cloud-serverless"),
+			new BundleProfileSummary("legacy-release", null)
+		);
+	}
 }

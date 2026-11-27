@@ -57,12 +57,12 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 
 	private string ConfigsDirectory => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "prototypes");
 
-	private async Task WriteConfig(string content)
+	private async Task WriteConfig(string content, string product = "widget")
 	{
 		FileSystem.Directory.CreateDirectory(ConfigsDirectory);
 		FileSystem.Directory.CreateDirectory(OutputDirectory);
 		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(ConfigsDirectory, "widget.changelog.yml"),
+			FileSystem.Path.Join(ConfigsDirectory, $"{product}.changelog.yml"),
 			content,
 			TestContext.Current!.Execution.CancellationToken
 		);
@@ -145,6 +145,59 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 	private bool BundleWritten() =>
 		FileSystem.Directory.Exists(OutputDirectory)
 			&& FileSystem.Directory.GetFiles(OutputDirectory, "*.yaml").Any(f => !f.Contains("changelog-config"));
+
+	private const string TwoProductProfiles =
+		"""
+		bundle:
+		  owner: elastic
+		  repo: widget
+		  profiles:
+		    serverless:
+		      product: cloud-serverless
+		    hosted:
+		      product: cloud-hosted
+		""";
+
+	private string[] WrittenBundles() =>
+		FileSystem.Directory.Exists(OutputDirectory)
+			? [
+				.. FileSystem
+					.Directory
+					.GetFiles(OutputDirectory, "*.yaml", SearchOption.AllDirectories)
+					.Where(f => !f.Contains("changelog-config"))
+			]
+			: [];
+
+	[Test]
+	public async Task Bundle_SeveralProfiles_UsesTheOneThatBundlesTheProduct()
+	{
+		await WriteConfig($"{Pivot}\n{TwoProductProfiles}", product: "cloud-hosted");
+		var hosted = new ProductBundleRange("cloud-hosted", "widget", "2026-08-13", Start, End);
+
+		var outcome = await Bundler(Cdn()).BundleAsync(
+			hosted,
+			OutputDirectory,
+			ConfigsDirectory,
+			failWhenNotOnboarded: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		outcome.Should().Be(ProductBundleOutcome.Bundled, string.Join("; ", Collector.Diagnostics.Select(d => d.Message)));
+		WrittenBundles().Should().OnlyContain(f => f.Contains("cloud-hosted", StringComparison.Ordinal));
+		Logged.Should().NotContain(l => l.Contains("profiles", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task Bundle_SeveralProfilesAndNoneBundlesTheProduct_UsesTheFirstAndSaysSo()
+	{
+		await WriteConfig($"{Pivot}\n{TwoProductProfiles}");
+
+		var outcome = await BundleAsync(Bundler(Cdn()));
+
+		outcome.Should().Be(ProductBundleOutcome.Bundled, string.Join("; ", Collector.Diagnostics.Select(d => d.Message)));
+		WrittenBundles().Should().OnlyContain(f => f.Contains("cloud-serverless", StringComparison.Ordinal));
+		Logged.Should().Contain(l => l.Contains("2 profiles and 0 of them bundle that product", StringComparison.Ordinal));
+	}
 
 	[Test]
 	public async Task Bundle_PoolExists_WritesTheBundle()

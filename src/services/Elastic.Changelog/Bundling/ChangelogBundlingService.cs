@@ -53,6 +53,12 @@ public record BundleChangelogsArguments
 	public Action<GitRangePrProblem>? OnPullRequestProblem { get; init; }
 
 	/// <summary>
+	/// The start of the commit range is not an ancestor of its end by design, such as the manifest commit of the previous release.
+	/// A range that has diverged is then reported as a hint, not a warning.
+	/// </summary>
+	public bool DivergenceIsExpected { get; init; }
+
+	/// <summary>
 	/// When true, a commit range with nothing to publish still writes a bundle: the profile's products, the release date and
 	/// <c>git_ref</c>, and no entries. A release that shipped without notes then stays on record, and the renderer skips it.
 	/// A pull request whose metadata could not be read is still an error. Takes the place of <see cref="OnEmptyRange"/>.
@@ -1027,7 +1033,8 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				BaseRef = input.BaseRef
+				BaseRef = input.BaseRef,
+				DivergenceIsExpected = input.DivergenceIsExpected
 			},
 			ctx
 		);

@@ -178,6 +178,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var entries = new List<MatchedChangelogFile>();
 		var includedFileNames = new HashSet<string>(StringComparer.Ordinal);
 		var success = true;
+		var defaultedTypes = new TypeDefaults();
 
 		// Pull requests without a pool entry need their metadata. It is read up front, in batches, and everything after
 		// that runs in range order, so the report and diagnostics stay stable.
@@ -244,7 +245,8 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 				pr,
 				prSummaries.GetValueOrDefault(pr.Number),
 				config,
-				options
+				options,
+				defaultedTypes
 			);
 			rows.Add(row);
 			if (synthesized != null)
@@ -252,6 +254,8 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			if (failed)
 				success = false;
 		}
+
+		ReportDefaultedTypes(collector, config, options, defaultedTypes);
 
 		foreach (var excluded in resolution.ExcludedPullRequests)
 		{
@@ -326,6 +330,38 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		return candidate.Prs.Any(pr => ChangelogBundlingService.NormalizePrForComparison(pr, owner, repo) == expected);
 	}
 
+	/// <summary>The pull requests of one range whose labels map to no type, counted while their entries are synthesized.</summary>
+	private sealed class TypeDefaults
+	{
+		public int Count { get; set; }
+	}
+
+	private static void ReportDefaultedTypes(
+		IDiagnosticsCollector collector,
+		ChangelogConfiguration? config,
+		GitRangeEntryResolutionOptions options,
+		TypeDefaults defaultedTypes
+	)
+	{
+		if (defaultedTypes.Count == 0 || options.OnProblem is null)
+			return;
+
+		if (config?.LabelToType is { Count: > 0 })
+		{
+			collector.EmitHint(
+				string.Empty,
+				$"{defaultedTypes.Count} pull request(s) of {options.Owner}/{options.Repo} have no label that maps to a type and default to 'other'; the preview lists them."
+			);
+			return;
+		}
+
+		collector.EmitWarning(
+			string.Empty,
+			$"The changelog.yml for {options.Owner}/{options.Repo} maps no labels to types, so {defaultedTypes.Count} pull request(s) default to 'other'. " +
+				"Configure pivot.types in changelog.yml to map labels to types."
+		);
+	}
+
 	/// <summary>
 	/// Synthesizes an in-memory changelog entry from PR metadata — the same extraction path
 	/// <c>changelog add</c> uses: release-note text from the PR body as the description, its
@@ -338,7 +374,8 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		CommitRangePullRequest pr,
 		PullRequestSummary? summary,
 		ChangelogConfiguration? config,
-		GitRangeEntryResolutionOptions options
+		GitRangeEntryResolutionOptions options,
+		TypeDefaults defaultedTypes
 	)
 	{
 		if (summary == null || string.IsNullOrWhiteSpace(summary.Title))
@@ -395,14 +432,20 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var typeString = config?.LabelToType != null ? PrInfoProcessor.MapLabelsToType(labels, config.LabelToType) : null;
 		if (typeString == null)
 		{
+			defaultedTypes.Count++;
 			// A repository without a mapping of labels to types has no label that would fix it, so it is a configuration matter, not a pull request.
 			if (config?.LabelToType is { Count: > 0 })
 				ReportProblem(options, pr, summary, PreviewProblemKind.MissingTypeLabel, config.LabelToType.Keys);
-			collector.EmitWarning(
-				pr.Url,
-				$"Could not derive a changelog type from the labels of PR #{pr.Number}; defaulting to 'other'. " +
-					"Configure pivot.types in changelog.yml to map labels to types."
-			);
+
+			// A preview lists these pull requests itself, and a range has hundreds, so it gets one summary after the loop.
+			if (options.OnProblem is null)
+			{
+				collector.EmitWarning(
+					pr.Url,
+					$"Could not derive a changelog type from the labels of PR #{pr.Number}; defaulting to 'other'. " +
+						"Configure pivot.types in changelog.yml to map labels to types."
+				);
+			}
 		}
 
 		var type = ChangelogEntryTypeExtensions.TryParse(
