@@ -49,12 +49,13 @@ public class ElasticsearchEndpointFactoryTests
 	}
 
 	[Test]
-	public void FromConfiguration_NoUrl_StillAppliesBuildTypeAndEnvironment()
+	public void FromConfiguration_NoUrl_StillAppliesBuildTypeEnvironmentAndOverride()
 	{
 		var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
 		{
 			["DOCUMENTATION_ELASTIC_APIKEY"] = "saved-cloud-key",
-			["ENVIRONMENT"] = "edge"
+			["ENVIRONMENT"] = "edge",
+			["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"] = "local-override"
 		}).Build();
 
 		var endpoints = ElasticsearchEndpointFactory.FromConfiguration(config, buildType: "assembler");
@@ -63,5 +64,6 @@ public class ElasticsearchEndpointFactoryTests
 		endpoints.Elasticsearch.ApiKey.Should().BeNull();
 		endpoints.BuildType.Should().Be("assembler");
 		endpoints.Environment.Should().Be("edge");
+		endpoints.SearchIndexOverride.Should().Be("local-override");
 	}
 }
