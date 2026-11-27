@@ -4,7 +4,7 @@
 
 using System.Text.Json.Nodes;
 using Elastic.Documentation.Api.AskAi;
-using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.PageFeedback;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;

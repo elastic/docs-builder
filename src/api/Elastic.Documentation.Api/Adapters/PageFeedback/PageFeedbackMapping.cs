@@ -4,6 +4,7 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.PageFeedback;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Strategies;
 using Elastic.Ingest.Elasticsearch.Strategies.BootstrapSteps;

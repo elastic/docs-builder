@@ -6,6 +6,7 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.Adapters.PageFeedback;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.PageFeedback;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.VirtualizedCluster;

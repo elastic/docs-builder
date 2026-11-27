@@ -8,8 +8,8 @@ using System.Text.Json.Serialization;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.OpenApi;
-using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Api.Tests.Fixtures;
+using Elastic.Documentation.PageFeedback;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.ApiReference;
 
