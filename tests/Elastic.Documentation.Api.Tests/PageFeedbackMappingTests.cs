@@ -6,6 +6,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.Adapters.PageFeedback;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.PageFeedback;
 
 namespace Elastic.Documentation.Api.Tests;
 
