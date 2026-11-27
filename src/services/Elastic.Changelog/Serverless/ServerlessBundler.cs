@@ -159,6 +159,8 @@ public sealed class ServerlessBundler(
 				BaseRef = svc.BaseBranch,
 				WriteEmptyRange = request.WriteEmptyRange,
 				OnEmptyRange = request.OnEmptyRange,
+				// A preview compares the deployed commit with the newest one, which can sit on another branch. A deploy has no such reason.
+				DivergenceIsExpected = request.Problems is not null,
 				TolerateMissingLabels = request.Problems is not null,
 				OnPullRequestProblem = request.Problems is null
 					? null

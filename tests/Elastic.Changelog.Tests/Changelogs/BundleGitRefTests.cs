@@ -1054,6 +1054,55 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task InferredEntry_NoTypeLabelInAPreview_IsOneHintForTheRangeNotAWarningPerPullRequest()
+	{
+		var (result, _) = await BundleSinglePr(
+			["unmapped-label"],
+			string.Empty,
+			KibanaProducts,
+			"cloud-serverless",
+			arguments => arguments with { OnPullRequestProblem = _ => { } }
+		);
+
+		result.Should().BeTrue();
+		Collector
+			.Diagnostics
+			.Where(d => d.Message.Contains("'other'", StringComparison.Ordinal))
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			hint  1 pull request(s) of elastic/widget have no label that maps to a type and default to 'other'; the preview lists them.
+			"""
+			);
+	}
+
+	[Test]
+	public async Task InferredEntry_NoTypeMappingInAPreview_IsOneWarningForTheConfiguration()
+	{
+		var (result, _) = await BundleSinglePr(
+			["unmapped-label"],
+			string.Empty,
+			KibanaProducts,
+			"cloud-serverless",
+			arguments => arguments with { OnPullRequestProblem = _ => { } },
+			mapTypes: false
+		);
+
+		result.Should().BeTrue();
+		Collector
+			.Diagnostics
+			.Where(d => d.Message.Contains("'other'", StringComparison.Ordinal))
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  The changelog.yml for elastic/widget maps no labels to types, so 1 pull request(s) default to 'other'. Configure pivot.types in changelog.yml to map labels to types.
+			"""
+			);
+	}
+
+	[Test]
 	public async Task InferredEntry_Products_TwoMappedProductsAndNoDefault_SkipLabelNeedsNoProductLabel()
 	{
 		// The skip label leaves the pull request out through rules.create, so its missing product label is not an error.

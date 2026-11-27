@@ -51,10 +51,17 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	/// Returns the bundle profile names declared in a <c>changelog.yml</c> YAML string,
 	/// in definition order. Returns an empty list when the YAML has no <c>bundle.profiles</c> block.
 	/// </summary>
-	public static IReadOnlyList<string> ReadBundleProfileNames(string changelogYaml)
+	public static IReadOnlyList<string> ReadBundleProfileNames(string changelogYaml) =>
+		[.. ReadBundleProfiles(changelogYaml).Select(p => p.Name)];
+
+	/// <summary>
+	/// Returns the bundle profiles declared in a <c>changelog.yml</c> YAML string with the product each one bundles,
+	/// in definition order. Returns an empty list when the YAML has no <c>bundle.profiles</c> block.
+	/// </summary>
+	public static IReadOnlyList<BundleProfileSummary> ReadBundleProfiles(string changelogYaml)
 	{
 		var config = DeserializeConfiguration(changelogYaml);
-		return config.Bundle?.Profiles?.Keys.ToList() ?? [];
+		return [.. config.Bundle?.Profiles?.Select(p => new BundleProfileSummary(p.Key, p.Value?.Product)) ?? []];
 	}
 
 	/// <summary>
