@@ -127,7 +127,7 @@ public class KibanaApiMarkdownNavigationTests
 	private static async Task<string> RenderIntroAsync(bool navigationPreview)
 	{
 		var (_, introNav, context, document) = SetupKibanaRendering();
-		context.Configuration.Features.NavigationPreviewEnabled = navigationPreview;
+		context.OverrideFeatures(f => f.With("navigation-preview", navigationPreview));
 		var renderContext = new ApiRenderContext(
 			context,
 			document,

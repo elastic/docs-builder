@@ -188,7 +188,8 @@ public class AssemblerBuilder(
 	private void SetFeatureFlags(AssemblerDocumentationSet set)
 	{
 		// Enable primary nav by default
-		set.DocumentationSet.Configuration.Features.PrimaryNavEnabled = true;
+		var context = set.DocumentationSet.Context;
+		context.OverrideFeatures(f => f.With("primary-nav", true));
 		foreach (var configurationFeatureFlag in set.AssembleContext.Environment.FeatureFlags)
 		{
 			_logger.LogInformation(
@@ -196,10 +197,13 @@ public class AssemblerBuilder(
 				configurationFeatureFlag.Key,
 				configurationFeatureFlag.Value
 			);
-			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
+			context.OverrideFeatures(f => f.With(configurationFeatureFlag.Key, configurationFeatureFlag.Value));
 		}
-		set.DocumentationSet.Configuration.Features.WebsiteSearchScriptUrl = set.AssembleContext.Environment.WebsiteSearchScriptUrl;
-		set.DocumentationSet.Configuration.Features.WafIntegrationUrl = set.AssembleContext.Environment.WafIntegrationUrl;
+		context.OverrideFeatures(
+			f => f.WithWebsiteSearchScriptUrl(set.AssembleContext.Environment.WebsiteSearchScriptUrl).WithWafIntegrationUrl(
+				set.AssembleContext.Environment.WafIntegrationUrl
+			)
+		);
 	}
 
 	private void LogBuildTimes(List<(string Name, int FileCount, TimeSpan Duration)> buildTimes)

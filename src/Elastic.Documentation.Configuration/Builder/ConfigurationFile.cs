@@ -63,7 +63,9 @@ public record ConfigurationFile
 	private readonly Dictionary<string, bool> _features = [with(StringComparer.OrdinalIgnoreCase)];
 
 	[field: AllowNull, MaybeNull]
-	public FeatureFlags Features => field ??= new FeatureFlags(_features);
+	public FeatureFlags Features { get => field ??= new FeatureFlags(_features, _context.Environment); private set; }
+
+	internal void OverrideFeatures(Func<FeatureFlags, FeatureFlags> apply) => Features = apply(Features);
 
 	public IDirectoryInfo ScopeDirectory { get; }
 

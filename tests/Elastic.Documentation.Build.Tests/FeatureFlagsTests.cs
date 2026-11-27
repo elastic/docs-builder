@@ -10,15 +10,14 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Build.Tests;
 
-// The environment-variable override test mutates process-wide state that every flag-reading test here depends on
-[NotInParallel(nameof(FeatureFlagsTests))]
+// Every flag here reads a MockEnvironmentVariables, never the process environment
 public class FeatureFlagsTests
 {
 	[Test]
 	public void AssemblerApiExplorerEnabled_ReadsYamlKey()
 	{
-		var flags = new FeatureFlags([]);
-		flags.Set("ASSEMBLER_API_EXPLORER", true);
+		var flags = new FeatureFlags([], new MockEnvironmentVariables());
+		flags = flags.With("ASSEMBLER_API_EXPLORER", true);
 
 		flags.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
@@ -26,7 +25,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void AssemblerApiExplorerEnabled_DefaultsToFalse()
 	{
-		var flags = new FeatureFlags([]);
+		var flags = new FeatureFlags([], new MockEnvironmentVariables());
 
 		flags.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
@@ -34,18 +33,11 @@ public class FeatureFlagsTests
 	[Test]
 	public void AssemblerApiExplorerEnabled_EnvironmentVariableOverridesYaml()
 	{
-		var previous = Environment.GetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER");
-		try
-		{
-			Environment.SetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER", "false");
-			var flags = new FeatureFlags(new Dictionary<string, bool> { ["assembler-api-explorer"] = true });
+		var environment = new MockEnvironmentVariables();
+		environment.Set("FEATURE_ASSEMBLER_API_EXPLORER", "false");
+		var flags = new FeatureFlags(new Dictionary<string, bool> { ["assembler-api-explorer"] = true }, environment);
 
-			flags.AssemblerApiExplorerEnabled.Should().BeFalse();
-		}
-		finally
-		{
-			Environment.SetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER", previous);
-		}
+		flags.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
 
 	[Test]
@@ -114,56 +106,43 @@ public class FeatureFlagsTests
 
 		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
 
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in environment.FeatureFlags)
-			features.Set(key, value);
+		var features = new FeatureFlags([], new MockEnvironmentVariables()).With(environment.FeatureFlags);
 		features.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
 
 	[Test]
 	public void EnabledKeys_CoversEveryTypedFlag()
 	{
-		var flagProperties = typeof(FeatureFlags).GetProperties().Where(p => p.PropertyType == typeof(bool) && p.CanWrite).ToList();
+		var flagProperties = typeof(FeatureFlags).GetProperties().Where(p => p.PropertyType == typeof(bool)).ToList();
 		flagProperties.Should().NotBeEmpty();
+		FeatureFlags.KnownKeys.Should().HaveCount(flagProperties.Count, "a typed flag missing from KnownKeys would never reach the page");
 
 		var seen = new List<string>();
-		foreach (var property in flagProperties)
+		foreach (var key in FeatureFlags.KnownKeys)
 		{
-			var flags = new FeatureFlags([]);
-			property.SetValue(flags, true);
+			var flags = new FeatureFlags([], new MockEnvironmentVariables()).With(key, true);
 
 			var enabled = flags.EnabledKeys();
-			enabled
-				.Should()
-				.ContainSingle($"{property.Name} is one flag and enables one key")
-				.Which
-				.Should()
-				.BeOneOf(FeatureFlags.KnownKeys);
+			enabled.Should().ContainSingle($"{key} is one flag and enables one key").Which.Should().Be(key);
+			flagProperties.Count(p => (bool)p.GetValue(flags)!).Should().Be(1, $"{key} sets exactly one typed flag");
 			seen.AddRange(enabled);
 		}
 
-		seen.Should().BeEquivalentTo(FeatureFlags.KnownKeys, "a typed flag missing from KnownKeys would never reach the page");
+		seen.Should().BeEquivalentTo(FeatureFlags.KnownKeys);
 		FeatureFlags.KnownKeys.Should().BeInAscendingOrder(StringComparer.Ordinal);
 	}
 
 	[Test]
-	public void EnabledKeys_DefaultsToNone() => new FeatureFlags([]).EnabledKeys().Should().BeEmpty();
+	public void EnabledKeys_DefaultsToNone() => new FeatureFlags([], new MockEnvironmentVariables()).EnabledKeys().Should().BeEmpty();
 
 	[Test]
 	public void EnabledKeys_EnvironmentVariableOverridesYaml()
 	{
-		var previous = Environment.GetEnvironmentVariable("FEATURE_PAGE_FEEDBACK");
-		try
-		{
-			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", "false");
-			var flags = new FeatureFlags(new Dictionary<string, bool> { ["page-feedback"] = true, ["guide-nav"] = true });
+		var environment = new MockEnvironmentVariables();
+		environment.Set("FEATURE_PAGE_FEEDBACK", "false");
+		var flags = new FeatureFlags(new Dictionary<string, bool> { ["page-feedback"] = true, ["guide-nav"] = true }, environment);
 
-			flags.EnabledKeys().Should().Equal("guide-nav");
-		}
-		finally
-		{
-			Environment.SetEnvironmentVariable("FEATURE_PAGE_FEEDBACK", previous);
-		}
+		flags.EnabledKeys().Should().Equal("guide-nav");
 	}
 
 	[Test]
@@ -174,5 +153,39 @@ public class FeatureFlagsTests
 
 		// The checked-in value, not the effective flag: CI sets FEATURE_ASSEMBLER_API_EXPLORER, which would mask a removed key.
 		prod.FeatureFlags.Should().Contain("ASSEMBLER_API_EXPLORER", true);
+	}
+
+	[Test]
+	public void With_LeavesTheOriginalUnchanged()
+	{
+		var original = new FeatureFlags([], new MockEnvironmentVariables());
+		var changed = original.With("PRIMARY_NAV", true);
+
+		changed.PrimaryNavEnabled.Should().BeTrue();
+		original.PrimaryNavEnabled.Should().BeFalse();
+	}
+
+	[Test]
+	public void With_KeepsSiblingFlagsAndTheUrls()
+	{
+		var flags = new FeatureFlags(new Dictionary<string, bool> { ["guide-nav"] = true }, new MockEnvironmentVariables())
+			.WithWebsiteSearchScriptUrl("https://example.test/search.js")
+			.WithWafIntegrationUrl("https://example.test/waf.js")
+			.With("page-feedback", true);
+
+		flags.GuideNavEnabled.Should().BeTrue();
+		flags.PageFeedbackEnabled.Should().BeTrue();
+		flags.PrimaryNavEnabled.Should().BeFalse();
+		flags.WebsiteSearchScriptUrl.Should().Be("https://example.test/search.js");
+		flags.WafIntegrationUrl.Should().Be("https://example.test/waf.js");
+	}
+
+	[Test]
+	public void With_EnvironmentVariableStillOverrides()
+	{
+		var environment = new MockEnvironmentVariables();
+		environment.Set("FEATURE_PRIMARY_NAV", "false");
+
+		new FeatureFlags([], environment).With("primary-nav", true).PrimaryNavEnabled.Should().BeFalse();
 	}
 }
