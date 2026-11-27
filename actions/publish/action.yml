@@ -76,7 +76,7 @@ runs:
         STARTED: ${{ steps.deploy-start.outputs.t }}
       run: |
           elapsed=$(( $(date +%s) - STARTED ))
-          if [ "$elapsed" -ge 30 ]; then
+          if [ "$elapsed" -ge 120 ]; then
             echo "::error::The deploy ran for ${elapsed}s before it failed, so a missing artifact was not the cause. Not retrying."
             exit 1
           fi
@@ -95,7 +95,7 @@ runs:
         STARTED: ${{ steps.gate-1.outputs.t }}
       run: |
           elapsed=$(( $(date +%s) - STARTED ))
-          if [ "$elapsed" -ge 30 ]; then
+          if [ "$elapsed" -ge 120 ]; then
             echo "::error::The deploy ran for ${elapsed}s before it failed, so a missing artifact was not the cause. Not retrying."
             exit 1
           fi
@@ -114,7 +114,7 @@ runs:
         STARTED: ${{ steps.gate-2.outputs.t }}
       run: |
           elapsed=$(( $(date +%s) - STARTED ))
-          if [ "$elapsed" -ge 30 ]; then
+          if [ "$elapsed" -ge 120 ]; then
             echo "::error::The deploy ran for ${elapsed}s before it failed, so a missing artifact was not the cause. Not retrying."
             exit 1
           fi
