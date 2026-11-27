@@ -43,22 +43,18 @@ public class AwsS3SyncPlanStrategy(
 					'/'
 				))
 		).ToArray();
-		var remoteETags = remoteObjects.ToDictionary(
-			o => o.Key,
-			o => o.Value.ETag?.Trim('"') ?? string.Empty
-		); // Remove quotes from remote ETag
-
 		// only a file that is also remote needs its ETag (a hash of the file), so the work stays what it was
 		var localETags = new ConcurrentDictionary<string, string>();
 		await Parallel.ForEachAsync(
-			localFiles.Where(f => remoteETags.ContainsKey(f.DestinationPath) && !SyncPlanner.IsExcluded(f.DestinationPath, excludeGlobs)),
+			localFiles.Where(f => remoteObjects.ContainsKey(f.DestinationPath) && !SyncPlanner.IsExcluded(f.DestinationPath, excludeGlobs)),
 			ctx,
 			async (f, token) => localETags[f.LocalPath] = await _s3EtagCalculator.CalculateS3ETag(f.LocalPath, token)
 		);
 
 		var (deletes, addRequests, updateRequests, skipRequests) = SyncPlanner.Compute(
 			localFiles,
-			remoteETags,
+			remoteObjects,
+			o => o.ETag.Trim('"'), // Remove quotes from remote ETag, only for a file that is compared
 			localPath => localETags[localPath],
 			key => context
 				.ReadFileSystem

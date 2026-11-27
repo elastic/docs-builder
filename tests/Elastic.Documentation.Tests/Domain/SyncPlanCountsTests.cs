@@ -51,6 +51,11 @@ public class SyncPlanCountsTests
 			.Be("No files to sync");
 
 	[Test]
+	[Arguments(-1)]
+	[Arguments(int.MinValue)]
+	public void ANegativeSourceCount_IsNotRejected_AsOnMain(int source) => Errors(Counts(source: source)).Should().BeEmpty();
+
+	[Test]
 	public void DeletingMoreThanTheThreshold_IsAnError() =>
 		SyncPlanCounts
 			.Constraints

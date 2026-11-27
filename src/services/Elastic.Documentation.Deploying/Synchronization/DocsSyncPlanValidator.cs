@@ -28,15 +28,44 @@ public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 		if (!counts.RemoteListingCompleted || counts.TotalSourceFiles == 0)
 		{
 			foreach (var error in errors.Take(1))
-				_logger.LogError("{Message}", error.Message);
+				LogError(error, counts);
 			return new(false, 1.0f, counts.DeleteThresholdDefault ?? SyncPlanCounts.DefaultDeleteThreshold);
 		}
 
 		if (counts.DeleteThresholdReason is { } reason)
-			_logger.LogInformation("{Reason}", reason);
+			LogThresholdReason(reason);
 
 		foreach (var error in errors)
-			_logger.LogError("{Message}", error.Message);
+			LogError(error, counts);
 		return new(errors.Count == 0, counts.DeleteRatio, counts.DeleteThreshold);
 	}
+
+	// each finding is logged with the template and arguments it always had, so the properties deployment telemetry queries (Ratio, Threshold) stay fields
+	private void LogError(Diagnostic error, SyncPlanCounts counts)
+	{
+		switch (error.RuleId)
+		{
+			case "remote-listing-complete": // RemoteListingComplete
+				_logger.LogError("Remote files were not read to completion, cannot validate deployment plan");
+				break;
+			case "source-files-present": // SourceFilesPresent
+				_logger.LogError("No files to sync");
+				break;
+			case "delete-ratio-within-threshold": // DeleteRatioWithinThreshold
+				_logger.LogError(
+					"Delete ratio is {Ratio} which is greater than the threshold of {Threshold}",
+					counts.DeleteRatio,
+					counts.DeleteThreshold
+				);
+				break;
+			default:
+				_logger.LogError("{Message}", error.Message);
+				break;
+		}
+	}
+
+	// the reasons are fixed sentences without placeholders, logged as the template itself as they always were
+#pragma warning disable CA2254
+	private void LogThresholdReason(string reason) => _logger.LogInformation(reason);
+#pragma warning restore CA2254
 }

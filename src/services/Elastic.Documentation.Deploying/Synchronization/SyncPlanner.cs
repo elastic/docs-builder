@@ -17,13 +17,15 @@ public static class SyncPlanner
 	/// (different ETag); a remote key that is not excluded and has no local file is deleted.
 	/// </summary>
 	/// <param name="localFiles">The local files that are not symlinks: the full local path and the destination path (slash separated, relative to the output).</param>
-	/// <param name="remoteETags">The remote listing: key to ETag (quotes already trimmed).</param>
+	/// <param name="remote">The remote listing as it is: key to remote entry. It is not copied; only the entry of an included local file is read.</param>
+	/// <param name="remoteETag">The ETag of a remote entry (quotes trimmed), asked only when an included local file is compared with its remote counterpart.</param>
 	/// <param name="localETag">The ETag of a local file, asked by its local path only for a file that is also remote.</param>
 	/// <param name="localExists">Whether a local file for a remote key exists (a symlink exists although it is not in <paramref name="localFiles"/>).</param>
 	/// <param name="excludes">The exclude globs, already normalised.</param>
-	public static (List<DeleteRequest> Deletes, List<AddRequest> Adds, List<UpdateRequest> Updates, List<SkipRequest> Skips) Compute(
+	public static (List<DeleteRequest> Deletes, List<AddRequest> Adds, List<UpdateRequest> Updates, List<SkipRequest> Skips) Compute<TRemote>(
 		IEnumerable<(string LocalPath, string DestinationPath)> localFiles,
-		IReadOnlyDictionary<string, string> remoteETags,
+		IReadOnlyDictionary<string, TRemote> remote,
+		Func<TRemote, string> remoteETag,
 		Func<string, string> localETag,
 		Func<string, bool> localExists,
 		Glob[] excludes
@@ -39,9 +41,9 @@ public static class SyncPlanner
 			if (IsExcluded(destinationPath, excludes))
 				continue;
 
-			if (remoteETags.TryGetValue(destinationPath, out var remoteETag))
+			if (remote.TryGetValue(destinationPath, out var remoteEntry))
 			{
-				if (localETag(localPath) == remoteETag)
+				if (localETag(localPath) == remoteETag(remoteEntry))
 					skips.Add(new SkipRequest { LocalPath = localPath, DestinationPath = destinationPath });
 				else
 					updates.Add(new UpdateRequest { LocalPath = localPath, DestinationPath = destinationPath });
@@ -50,7 +52,7 @@ public static class SyncPlanner
 				adds.Add(new AddRequest { LocalPath = localPath, DestinationPath = destinationPath });
 		}
 
-		foreach (var key in remoteETags.Keys)
+		foreach (var key in remote.Keys)
 		{
 			if (IsExcluded(key, excludes) || localExists(key))
 				continue;

@@ -66,9 +66,11 @@ public static partial class SyncPlanCountsConstraints
 	);
 
 	public static readonly Constraint<SyncPlanCounts> SourceFilesPresent = Constraints<SyncPlanCounts>.Always(
-		p => p.TotalSourceFiles > 0,
+		p => p.TotalSourceFiles != 0,
 		"No files to sync"
-	).Describe("The build output has at least one file to sync; an empty output would delete everything.");
+	).Describe(
+		"The build output has files to sync; an empty output would delete everything. Only zero is rejected, as the validator always did: a persisted negative count passes."
+	);
 
 	public static readonly Constraint<SyncPlanCounts> DeleteRatioWithinThreshold = Constraints<SyncPlanCounts>.Check(
 		p => p.DeleteRatio > p.DeleteThreshold

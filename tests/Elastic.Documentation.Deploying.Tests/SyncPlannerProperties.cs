@@ -61,7 +61,7 @@ public class SyncPlannerProperties
 		var etags = local.ToDictionary(n => $"/out/{n.Path}", n => n.LocalETag);
 		var exists = nodeList.Where(n => n.Local || n.Symlink).Select(n => n.Path).ToHashSet();
 		var remote = nodeList.Where(n => n.RemoteETag is not null).ToDictionary(n => n.Path, n => n.RemoteETag!);
-		return SyncPlanner.Compute(local.Select(n => ($"/out/{n.Path}", n.Path)), remote, p => etags[p], exists.Contains, globs);
+		return SyncPlanner.Compute(local.Select(n => ($"/out/{n.Path}", n.Path)), remote, e => e, p => etags[p], exists.Contains, globs);
 	}
 
 	/// <summary>
