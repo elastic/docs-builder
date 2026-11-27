@@ -102,6 +102,7 @@ public partial record FloatingLinkSection
 
 	/// <summary>Every root and mirror root with the name of its version, longest first.</summary>
 	[JsonIgnore]
+	[IgnoreEquality]
 	private (string Name, string Root)[] RootsLongestFirst =>
 		field ??=
 		[
