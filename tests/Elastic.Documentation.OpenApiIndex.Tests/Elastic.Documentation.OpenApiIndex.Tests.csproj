@@ -8,6 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsCheck" />
     <PackageReference Include="FakeItEasy" />
   </ItemGroup>
 
