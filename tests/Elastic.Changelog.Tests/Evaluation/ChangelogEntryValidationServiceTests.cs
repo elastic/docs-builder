@@ -93,7 +93,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 			Endpoints = ConfigurationContext.Endpoints,
 			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
 			Catalog = ConfigurationContext.Catalog with { Products = new ProductCatalog { Products = productsDict.ToFrozenDictionary() } },
-			SearchConfiguration = ConfigurationContext.SearchConfiguration
+			SearchTuning = ConfigurationContext.SearchTuning
 		};
 
 		var svc = new ChangelogEntryValidationService(LoggerFactory, silentConfig, prService, RunnerTempFileSystem);
@@ -136,7 +136,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 			Endpoints = ConfigurationContext.Endpoints,
 			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
 			Catalog = ConfigurationContext.Catalog with { Products = new ProductCatalog { Products = products.ToFrozenDictionary() } },
-			SearchConfiguration = ConfigurationContext.SearchConfiguration
+			SearchTuning = ConfigurationContext.SearchTuning
 		};
 	}
 

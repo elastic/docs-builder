@@ -75,7 +75,7 @@ public static class ApiStyleGuidePreviews
 			Catalog = template.Catalog,
 			ConfigurationFileProvider = template.ConfigurationFileProvider,
 			Endpoints = template.Endpoints,
-			SearchConfiguration = template.SearchConfiguration
+			SearchTuning = template.SearchTuning
 		};
 		// The API reference is part of the assembled site, so its pages are written with the assembler chrome.
 		var context = new BuildContext(template.Collector, template.FileSystem, configuration) { BuildType = BuildType.Assembler };

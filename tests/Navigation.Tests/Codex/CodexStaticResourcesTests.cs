@@ -11,10 +11,10 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
@@ -52,6 +52,6 @@ public class CodexStaticResourcesTests
 				new ProductCatalog { Products = FrozenDictionary<string, Product>.Empty },
 				new LegacyUrlMappingCatalog { Mappings = [] }
 			),
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 }

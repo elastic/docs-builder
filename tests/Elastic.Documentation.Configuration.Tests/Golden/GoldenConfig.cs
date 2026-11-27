@@ -49,7 +49,8 @@ internal static partial class GoldenConfig
 	public static ConfigurationFileProvider CreateProvider(
 		string? replaceFile = null,
 		string? replaceWith = null,
-		bool skipPrivateRepositories = false
+		bool skipPrivateRepositories = false,
+		string? replaceStoredAs = null
 	)
 	{
 		var fileSystem = new MockFileSystem();
@@ -58,7 +59,10 @@ internal static partial class GoldenConfig
 			var text = file == replaceFile ? replaceWith : BaselineText(file);
 			if (text is null)
 				continue;
-			fileSystem.AddFile(Path.Join(ConfigurationFileProvider.AppDataConfigurationDirectory, file), new MockFileData(text));
+			fileSystem.AddFile(
+				Path.Join(ConfigurationFileProvider.AppDataConfigurationDirectory, file == replaceFile ? replaceStoredAs ?? file : file),
+				new MockFileData(text)
+			);
 		}
 
 		// the Local source reads <cwd>/config, which the scoped file system does not cover under a test host; Remote reads app data

@@ -4203,7 +4203,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Endpoints = ConfigurationContext.Endpoints,
 			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
 			Catalog = new GlobalCatalog(versions, productsConfiguration, ConfigurationContext.Catalog.LegacyUrlMappings),
-			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			SearchTuning = ConfigurationContext.SearchTuning,
 		};
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, catalogContext);
 
