@@ -53,6 +53,10 @@ public static class ApiLegacyRedirects
 		["/docs/api/doc/kibana/v9/operation/operation-put-streams-name-queries-queryid"] = "/docs/api/kibana/v9/group/endpoint-streams"
 	};
 
+	/// <summary>Every legacy path this table sends somewhere other than the <c>/doc/</c> strip: the exact pages and the renamed roots.</summary>
+	public static IEnumerable<string> RedirectedPaths =>
+		RedirectedPages.Keys.Concat(RedirectedRoots.Keys.Select(root => LegacyPrefix + root));
+
 	/// <summary>True for a root with no pages at all, so a link to it has nowhere to land.</summary>
 	public static bool IsGone(string path) => GoneRoots.Contains(RootOf(path));
 

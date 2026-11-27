@@ -48,9 +48,9 @@ public record SitemapFile(string Name, int EntryCount, long FileSizeBytes);
 /// </summary>
 public static class SitemapBuilder
 {
-	private const string IndexFileName = "sitemap.xml";
+	internal const string IndexFileName = "sitemap.xml";
 	private const string DocsFileName = "sitemap-docs.xml";
-	private const string ApiFileName = "sitemap-api.xml";
+	internal const string ApiFileName = "sitemap-api.xml";
 
 	public const int MaxEntries = 50_000;
 	public const int WarningEntryThreshold = 40_000;

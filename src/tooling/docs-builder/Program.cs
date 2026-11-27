@@ -74,6 +74,7 @@ _ = builder.Services.AddArgh(args, app =>
 		_ = g.Map<AssemblerIndexCommand>();
 		_ = g.Map<AssemblerAiEnrichCommand>();
 		_ = g.Map<AssemblerSitemapCommand>();
+		_ = g.Map<AssemblerCrawlCheckCommand>();
 	});
 
 	// codex commands

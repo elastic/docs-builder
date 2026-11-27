@@ -8,4 +8,5 @@ toc:
   - file: code-blocks.md
   - file: design-system.md
   - file: journeys.md
+  - file: api-crawl-check.md
   - toc: link-validation
